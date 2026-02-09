@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 9 Feb 2026.
+> **Read this first.** Master guide for AI agents and developers. Updated 10 Feb 2026.
 
 ## What This Is
 
@@ -14,9 +14,22 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **First client**: Campifrut (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · **Phase 6 (i18n + Route Restructuring)** 🔄 90% · **Local dev verified** (`dev.sh` ✅) · **DB seeded** (13 products, 5 categories ✅).
+**Current state**: Functional but **quality gates not fully green**. See *Verified Quality Baseline* below.
 
-**Repository**: [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (private) · CI: GitHub Actions on PRs.
+### Verified Quality Baseline (10 Feb 2026)
+
+| Gate | Command | Result |
+|------|---------|--------|
+| **Lint** | `pnpm lint` | ❌ 9 errors, 28 warnings (hook ordering, setState-in-effect, unused vars) |
+| **Type Check** | `pnpm type-check` | ❌ `@campifrut/shared` fails (`process` — missing `@types/node`) |
+| **Unit Tests** | `pnpm test:run` | ✅ 78/78 pass (7 test files, vitest) |
+| **Build** | `pnpm build` | ✅ Storefront builds cleanly (Medusa offline warnings expected) |
+| **Multi-tenant isolation** | manual audit | ⚠️ Conditional tenant scoping — `TENANT_ID` not enforced |
+| **Secrets** | `rg supersecret` | ❌ Hardcoded fallbacks in `medusa-config.ts`, `revalidate/route.ts` |
+
+**Repositories**:
+- **Template** (storefront + Medusa): [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce)
+- **SuperAdmin** (SaaS control plane): [bootandstrap/bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin)
 
 ---
 
@@ -31,6 +44,11 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │  │  Storefront   │──│  API + Admin  │──│    :6379     │ │
 │  │  :3000        │  │  :9000        │  └──────────────┘ │
 │  └───────┬───────┘  └───────┬───────┘                   │
+│          │                  │                            │
+│  ┌───────────────┐          │                            │
+│  │  SuperAdmin   │──────────┘  (separate repo/deploy)    │
+│  │  :3100        │                                       │
+│  └───────┬───────┘                                       │
 └──────────┼──────────────────┼───────────────────────────┘
            │                  │
            ▼                  ▼
@@ -38,8 +56,8 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │                   Supabase Cloud                          │
 │                                                           │
 │  Auth │ PostgreSQL (public schema only)       │ Storage   │
-│       │ feature_flags │ plan_limits │ config  │ CDN      │
-│       │ whatsapp_templates │ cms_pages        │          │
+│       │ tenants │ feature_flags │ plan_limits  │ CDN      │
+│       │ config │ whatsapp_templates │ cms_pages │          │
 └──────────────────────────────────────────────────────────┘
            │                  │
            ▼                  ▼
@@ -96,7 +114,11 @@ campifrut/
 │   │   │   │   │   │   ├── productos/   # Product list + detail
 │   │   │   │   │   │   ├── carrito/     # Cart page
 │   │   │   │   │   │   ├── checkout/    # Checkout flow
-│   │   │   │   │   │   ├── cuenta/      # Customer panel (orders, profile, addresses)
+│   │   │   │   │   │   ├── cuenta/      # Customer panel (dashboard, orders, profile, addresses)
+│   │   │   │   │   │   │   ├── page.tsx          # Dashboard (real stats + recent orders)
+│   │   │   │   │   │   │   ├── pedidos/          # Order list (paginated) + detail
+│   │   │   │   │   │   │   ├── direcciones/      # Address CRUD (modal + server actions)
+│   │   │   │   │   │   │   └── perfil/           # Profile editing + avatar upload
 │   │   │   │   │   │   ├── pedido/      # Guest order lookup
 │   │   │   │   │   │   └── paginas/     # CMS pages
 │   │   │   │   │   ├── (auth)/          # Auth routes
@@ -105,6 +127,7 @@ campifrut/
 │   │   │   │   │   └── (panel)/         # Owner panel (auth-guarded: owner/super_admin)
 │   │   │   │   │       └── panel/       # Dashboard, config, carousel, messages, badges
 │   │   │   │   ├── api/webhooks/stripe/  # Stripe webhook handler
+│   │   │   │   ├── api/health/           # ✅ Health check (Docker + monitoring)
 │   │   │   │   ├── auth/                # OAuth callback handler
 │   │   │   │   ├── sitemap.ts           # Dynamic sitemap from Medusa
 │   │   │   │   └── robots.ts            # SEO robots
@@ -113,6 +136,7 @@ campifrut/
 │   │   │   │   ├── products/    # ProductCard, ProductGrid, AddToCartButton
 │   │   │   │   ├── checkout/    # Multi-step CheckoutModal, Stripe/Bank/COD/WhatsApp flows
 │   │   │   │   ├── cart/        # CartDrawer, CartItem
+│   │   │   │   ├── account/     # AddressCard, AddressModal, AvatarUpload, ReorderButton
 │   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary
 │   │   │   │   └── home/        # HeroSection, CategoryGrid, FeaturedProducts, TrustSection
 │   │   │   ├── contexts/        # CartContext (with drawer state)
@@ -122,9 +146,11 @@ campifrut/
 │   │   │       │   ├── locale.ts    # Locale resolution (URL → cookie → Accept-Language → config)
 │   │   │       │   ├── currencies.ts# Multi-currency: formatPrice(), resolution, cookie
 │   │   │       │   └── provider.tsx # I18nProvider context (t(), localizedHref())
-│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json
+│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (340+ keys each)
 │   │   │       ├── supabase/    # Browser + Server clients
 │   │   │       ├── medusa/      # Typed API fetcher (retry + graceful degradation)
+│   │   │       │   ├── client.ts    # Base fetcher + types (MedusaAddress, MedusaOrderItem, etc.)
+│   │   │       │   └── auth-medusa.ts # Authenticated fetcher (Supabase JWT → Medusa Store API)
 │   │   │       ├── seo/         # JSON-LD builders (Product, Org, Breadcrumb)
 │   │   │       ├── whatsapp/    # Template engine + message builder
 │   │   │       ├── config.ts    # getConfig() — in-memory TTL cache (5 min)
@@ -475,18 +501,22 @@ Domains via Dokploy:
 
 ## Implementation Progress
 
+> **Note**: Phases marked "claimed" have code in place but have not passed all quality gates (lint, type-check, build, tenant isolation, secrets audit). Phase status will be updated to ✅ only after verified evidence.
+
 | Phase | Status | What |
 |-------|--------|------|
-| 1. Backend Foundation | ✅ | Schema, DB, Auth module, Storage module, Seed (idempotent) |
-| 2. Storefront MVP | ✅ | Lib layer, SOTA design, products, cart, auth, WhatsApp checkout |
-| 3. Payments & Orders | ✅ | Stripe, account dashboard, order tracking |
-| 4. Polish & Hardening | ✅ | Lighthouse ≥90, CMS, analytics, transactional emails |
-| 5. Production Deploy | ✅ | Docker, Dokploy, Redis production, CSP, health checks, GitHub CI |
-| 6. i18n + Route Restructuring | 🔄 90% | `[lang]/` routing ✅, 5 dictionaries (240+ keys) ✅, i18n system ✅, proxy ✅, 14 pages + 8 components wired to `t()` ✅ — remaining: panel page audit |
-| 7. Customer Panel Polish | 🔜 | Real Medusa data in dashboard/orders/profile, address CRUD |
-| 8. Owner Panel | 🔜 | Store config, carousel, WhatsApp templates, CMS editor |
-| 9. Admin Panel (SaaS) | 🔜 | Feature flags, plan limits, theme control, multi-client |
-| 10. Production Hardening | 🔜 | E2E tests, monitoring, multi-client deploy, client provisioning |
+| 1. Backend Foundation | ✅ claimed | Schema, DB, Auth module, Storage module, Seed (idempotent) |
+| 2. Storefront MVP | ✅ claimed | Lib layer, SOTA design, products, cart, auth, WhatsApp checkout |
+| 3. Payments & Orders | ✅ claimed | Stripe, account dashboard, order tracking |
+| 4. Polish & Hardening | ⚠️ claimed | CMS, analytics — lint/type-check not green |
+| 5. Production Deploy | ⚠️ claimed | Docker, Dokploy, Redis, CI exists — E2E only starts Redis, not full app |
+| 6. i18n + Route Restructuring | ✅ claimed | `[lang]/` routing, 5 dictionaries (340+ keys), i18n system, proxy |
+| 7. Customer Panel Polish | ✅ claimed | Dashboard, orders, addresses CRUD, avatar upload |
+| 8A. Multi-Tenant Foundation | ⚠️ partial | `tenants` table + FKs exist, but tenant scoping is conditional, not mandatory |
+| 8B. Governance Enforcement | ⚠️ partial | Auth gates exist, but tenant_id not enforced in panel writes |
+| 8C. Owner Panel | ⚠️ partial | UI exists but writes lack tenant_id scoping |
+| 8D. SuperAdmin Panel | ✅ claimed | Tenant CRUD, flag toggles, plan presets — **separated to own repo** |
+| 9. Production Hardening | ⚠️ partial | Unit tests pass (78/78), but hardcoded secrets, no full E2E in CI |
 
 See [ROADMAP.md](ROADMAP.md) for detailed progress and future plans.
 
@@ -508,6 +538,9 @@ Key findings during build verification:
 | Cart action imports break after route move | Pages moved from `(shop)/` to `[lang]/(shop)/` | Updated all import paths to `@/app/[lang]/(shop)/cart/actions` |
 | `createServerClient` undefined | Supabase SSR export renamed | Use `createClient` from `@/lib/supabase/server` |
 | TypeScript cast error in i18n | `StoreConfig` not indexable | Cast to `Record<string, unknown>` for dynamic access |
+| `X-Powered-By` header exposed | Default Next.js behavior | Added `poweredByHeader: false` to both storefront + admin `next.config.ts` |
+| Docker dev medusa networking | `network_mode: host` incompatible with Docker Desktop Mac | Switched to standard port mapping + `depends_on: redis` |
+| Admin Docker healthcheck fails | Healthcheck hit root `/` which requires auth | Created `/api/health` endpoint, updated `docker-compose.yml` URL |
 
 ---
 
@@ -515,14 +548,18 @@ Key findings during build verification:
 
 | Doc | Contents |
 |-----|----------|
+| [DOCS_GUIDE.md](DOCS_GUIDE.md) | **Documentation index** — map of all docs, admin panel, scripts |
 | [ROADMAP.md](ROADMAP.md) | Detailed progress tracker + future phases (7–10 SOTA vision) |
-| [TEMPLATE_USAGE.md](docs/TEMPLATE_USAGE.md) | How to deploy this template for a new client (superadmin/dev guide) |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, request flow, streaming architecture |
-| [AUTH_FLOW.md](docs/AUTH_FLOW.md) | Supabase Auth + Medusa integration, flag-driven providers |
-| [CHECKOUT_FLOWS.md](docs/CHECKOUT_FLOWS.md) | Dynamic N-method payment system, WhatsApp templates |
-| [DOMAIN_SPLIT.md](docs/DOMAIN_SPLIT.md) | What lives in Medusa vs Supabase |
-| [SUPABASE_SCHEMA.md](docs/SUPABASE_SCHEMA.md) | All tables, RLS policies, triggers |
-| [MEDUSA_CUSTOMIZATIONS.md](docs/MEDUSA_CUSTOMIZATIONS.md) | Custom modules, workflows, API routes |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Dokploy, Contabo VPS setup |
-| [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, commands, debugging |
-| [STACK_REFERENCE.md](docs/STACK_REFERENCE.md) | Detailed patterns for each technology |
+| [TEMPLATE_USAGE.md](docs/guides/TEMPLATE_USAGE.md) | How to deploy this template for a new client (superadmin/dev guide) |
+| [ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | System diagram, request flow, streaming architecture |
+| [AUTH_FLOW.md](docs/flows/AUTH_FLOW.md) | Supabase Auth + Medusa integration, flag-driven providers |
+| [CHECKOUT_FLOWS.md](docs/flows/CHECKOUT_FLOWS.md) | Dynamic N-method payment system, WhatsApp templates |
+| [DOMAIN_SPLIT.md](docs/architecture/DOMAIN_SPLIT.md) | What lives in Medusa vs Supabase |
+| [SUPABASE_SCHEMA.md](docs/architecture/SUPABASE_SCHEMA.md) | All tables, RLS policies, triggers |
+| [MEDUSA_CUSTOMIZATIONS.md](docs/flows/MEDUSA_CUSTOMIZATIONS.md) | Custom modules, workflows, API routes |
+| [DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) | Docker, Dokploy, Contabo VPS setup |
+| [DEVELOPMENT.md](docs/guides/DEVELOPMENT.md) | Local setup, commands, debugging |
+| [STACK_REFERENCE.md](docs/architecture/STACK_REFERENCE.md) | Detailed patterns for each technology |
+| [CLIENT_HANDOFF.md](docs/operations/CLIENT_HANDOFF.md) | Pre-delivery checklist, owner training, support tiers |
+| [API_REFERENCE.md](docs/operations/API_REFERENCE.md) | Custom routes, Server Actions, Medusa endpoints |
+

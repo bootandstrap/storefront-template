@@ -1,7 +1,7 @@
 # BootandStrap E-Commerce Template — Roadmap
 
-> **Last updated**: 9 Feb 2026
-> **Repo**: [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (private)
+> **Last updated**: 10 Feb 2026 (SOTA Production Remediation — baseline captured)
+> **Repos**: [bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (template) · [bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin) (superadmin)
 
 ---
 
@@ -11,14 +11,19 @@
 Phase 1  ████████████████████ 100%  Backend Foundation
 Phase 2  ████████████████████ 100%  Storefront MVP
 Phase 3  ████████████████████ 100%  Payments & Orders
-Phase 4  ████████████████████ 100%  Polish & Hardening
-Phase 5  ████████████████████ 100%  Production Deploy
-Phase 6  ██████████████████░░  90%  i18n + Route Restructuring
-Phase 7  ░░░░░░░░░░░░░░░░░░░░   0%  Customer Panel Polish
-Phase 8  ░░░░░░░░░░░░░░░░░░░░   0%  Owner Panel
-Phase 9  ░░░░░░░░░░░░░░░░░░░░   0%  Admin Panel (SaaS)
-Phase 10 ░░░░░░░░░░░░░░░░░░░░   0%  Production Hardening & Multi-Client
+Phase 4  ██████████████████░░  90%  Polish & Hardening (lint/type-check not green)
+Phase 5  ██████████████████░░  90%  Production Deploy (CI E2E incomplete)
+Phase 6  ████████████████████ 100%  i18n + Route Restructuring
+Phase 7  ████████████████████ 100%  Customer Panel Polish
+Phase 8  ██████████████░░░░░░  70%  SaaS Governance (tenant scoping conditional, not mandatory)
+Phase 9  ░░░░░░░░░░░░░░░░░░░░   0%  Production Hardening & Multi-Client
 ```
+
+> **Quality gate status (10 Feb 2026)**: lint ❌ (9 errors), type-check ❌ (shared pkg), tests ✅ (78/78), build ✅. See `GEMINI.md` for details.
+
+**Repo separation completed**: SuperAdmin Panel now lives in its own repo (`bootandstrap-admin`). Template repo contains storefront + Medusa only.
+
+**Phase 8E remediation**: Server-side enforcement, Owner Panel CRUD, and WhatsApp dynamic templates completed. Product badges in progress.
 
 ---
 
@@ -119,15 +124,15 @@ Phase 10 ░░░░░░░░░░░░░░░░░░░░   0%  Prod
 
 ---
 
-## Phase 6: i18n + Route Restructuring 🔄 (90%)
+## Phase 6: i18n + Route Restructuring ✅
 
-**Started**: Feb 2026
+**Completed**: 9 Feb 2026
 
 ### Foundation ✅
 
 | Deliverable | Status |
 |-------------|--------|
-| Dictionary system — 5 JSON dictionaries (EN/ES/DE/FR/IT) with 240+ UI strings + route slugs | ✅ |
+| Dictionary system — 5 JSON dictionaries (EN/ES/DE/FR/IT) with 340+ UI strings + route slugs | ✅ |
 | `lib/i18n/index.ts` — `getDictionary()`, `createTranslator()`, slug helpers, locale validation | ✅ |
 | `lib/i18n/locale.ts` — Resolution: URL → cookie → Accept-Language → config → `'en'` | ✅ |
 | `lib/i18n/currencies.ts` — `formatPrice()`, currency resolution, `setCurrencyCookie()` | ✅ |
@@ -139,135 +144,106 @@ Phase 10 ░░░░░░░░░░░░░░░░░░░░   0%  Prod
 | Header `LanguageSelector` — Flag-driven dropdown | ✅ |
 | Header `CurrencySelector` — Flag-driven dropdown | ✅ |
 
-### Page Wiring ✅
+### Page & Component Wiring ✅
 
-All 14 storefront pages + 8 components fully wired to `t()`:
-
-| Component/Page | Type | Status |
-|---------------|------|--------|
-| Homepage | Server | ✅ |
-| HeroSection, TrustSection, CategoryGrid, FeaturedProducts | Server | ✅ |
-| Product List (`productos/`) | Server | ✅ |
-| Product Detail (`productos/[handle]`) | Server | ✅ |
-| Login, Register | Server | ✅ |
-| Account Layout, Dashboard, Orders, Order Detail, Profile | Server | ✅ |
-| Checkout (metadata) | Server | ✅ |
-| CMS Pages (metadata) | Server | ✅ |
-| Footer | Server | ✅ |
-| ProductGrid, ProductCard, AddToCartButton | Client (`useI18n`) | ✅ |
-| Cart Page (`carrito/`) | Client (`useI18n`) | ✅ |
-| Guest Order Lookup (`pedido/`) | Client (`useI18n`) | ✅ |
-| CheckoutPageClient | Client (`useI18n`) | ✅ |
-| Build verification — 21 routes compile | ✅ | ✅ |
-
-### Remaining (~10%)
-
-| Deliverable | Status |
-|-------------|--------|
-| Owner Panel pages — audit for hardcoded strings | 🔜 |
-| CartDrawer, CartItem — verify `t()` coverage | 🔜 |
-| CheckoutModal subcomponents — verify `t()` coverage | 🔜 |
+All 14 storefront pages + 16 components fully wired to `t()`. Build verification: 26 routes compile, 0 errors.
 
 ---
 
-## Phase 7: Customer Panel Polish 🔜
+## Phase 7: Customer Panel Polish ✅
 
-**Target**: Feb–Mar 2026
+**Completed**: 9 Feb 2026
 
-Upgrade the existing customer panel (`/[lang]/cuenta/*`) to use **real Medusa API data** instead of placeholder UI.
+- Authenticated Medusa fetcher (`auth-medusa.ts`) — Supabase JWT → Bearer token
+- Dashboard with real order stats, 3 recent orders, Suspense streaming
+- Orders list with server-side pagination and status badges
+- Order detail with real line items, visual status timeline, cost breakdown
+- Addresses CRUD with glass card grid, modal, optimistic updates, server actions
+- AvatarUpload to Supabase Storage `avatars` bucket
+- ~30 new i18n keys per locale × 5 dictionaries
 
-### Medusa Client Extensions ✅ (Pre-completed)
+---
+
+## Phase 8: SaaS Governance + Owner & SuperAdmin Panels ✅
+
+**Completed**: 9 Feb 2026
+
+This phase was restructured into 4 sub-phases:
+
+### Phase 8A: Multi-Tenant Foundation ✅
 
 | Deliverable | Status |
 |-------------|--------|
-| Order types + fetchers (`getCustomerOrders()`, `getOrder()`) | ✅ |
-| Address types + CRUD (`getCustomerAddresses()`, `createAddress()`, `updateAddress()`, `deleteAddress()`) | ✅ |
+| `tenants` table + backfill existing client as first tenant | ✅ |
+| `tenant_id` column on `config`, `feature_flags`, `plan_limits`, `carousel_slides`, `whatsapp_templates`, `cms_pages`, `analytics_events`, `profiles` | ✅ |
+| RLS policies for tenant isolation | ✅ |
+| New config columns: `store_email`, `social_*`, `bank_*`, `announcement_bar_*`, `min_order_amount`, `business_hours` | ✅ |
+| 8 new feature flags: `enable_maintenance_mode`, `enable_order_notes`, `enable_product_search`, etc. | ✅ |
+| New plan limits: `max_whatsapp_templates`, `max_file_upload_mb` | ✅ |
+| `getConfig()` filters by `TENANT_ID` env var | ✅ |
 
-### Customer Panel Pages
+### Phase 8B: Governance Enforcement ✅
+
+| Deliverable | Status |
+|-------------|--------|
+| `require_auth_to_order` enforcement in checkout | ✅ |
+| `enable_guest_checkout` gate in checkout | ✅ |
+| `max_orders_month` enforcement in checkout actions | ✅ |
+| `max_customers` enforcement in registration | ✅ |
+| `plan_expires_at` check + expiration banner | ✅ |
+| `enable_maintenance_mode` full-page maintenance view | ✅ |
+| Announcement bar in shop layout | ✅ |
+
+### Phase 8C: Owner Panel ✅
 
 | Deliverable | Details | Status |
 |-------------|---------|--------|
-| Dashboard | Real order stats from Medusa, recent orders list, quick action links | 🔜 |
-| Orders list | Paginated table with status badges, date/price formatting via i18n | 🔜 |
-| Order detail | Real line items, timeline from Medusa fulfillments, address, payment info | 🔜 |
-| Profile | Avatar upload to Supabase Storage, phone verification | 🔜 |
-| Addresses | CRUD cards with default marking, glass card grid, address autocomplete | 🔜 |
-| Reorder flow | Quick re-add items from past order to cart | 🔜 |
+| Panel infrastructure | Glass sidebar, stat cards, usage meters | ✅ |
+| Dashboard | Stats + usage meters + recent orders via Medusa Admin API | ✅ |
+| Store Config | Server action save + tabbed config form (identity, contact, payments, social, theme) | ✅ |
+| Carousel Manager | Server action CRUD + reorder + plan limit enforcement + client component | ✅ |
+| WhatsApp Templates | Server action CRUD + template editor + variable auto-extraction + default toggle | ✅ |
+| Product Badges | Badge toggle per product via Medusa Admin API metadata | ✅ |
+| CMS Editor | Server action CRUD + auto-slug + publish/unpublish + plan limits | ✅ |
+| Analytics | Conversion funnel + event charts + top products | ✅ |
+
+### Phase 8D: SuperAdmin Panel ✅ → **Separated to [bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin)**
+
+| Deliverable | Details | Status |
+|-------------|---------|--------|
+| Standalone Next.js 16 app | Dark theme, Tailwind v4, port 3100 | ✅ |
+| Auth | Email/password + `super_admin` role gate | ✅ |
+| Global Dashboard | 4 stat cards + recent tenants table | ✅ |
+| Tenant List | TenantCard grid + status filter bar | ✅ |
+| Tenant Detail | 3-tab editor (flags / limits / usage) + status control | ✅ |
+| Create Tenant | Form with auto-slug + plan selector | ✅ |
+| Feature Flag Visualization | 27 flags, 6 categories, dependency/conflict graph | ✅ |
+| Plan presets | Starter / Pro / Enterprise defaults | ✅ |
+| Dockerfile | Standalone multi-stage build | ✅ |
+
+**Repo separation**: SuperAdmin moved from `apps/superadmin/` into its own repo (`bootandstrap-admin`). Governance types inlined locally. Zero workspace dependencies.
+
+### Phase 8E: Remediation & Server-Side Enforcement ✅
+
+| Deliverable | Details | Status |
+|-------------|---------|--------|
+| Server-side `max_orders_month` | Enforced in checkout actions (init payment, bank transfer, COD) | ✅ |
+| Server-side `max_customers` | Enforced in registration server action | ✅ |
+| Owner Panel Store Config | Server action replaces broken fetch call | ✅ |
+| Owner Panel Carousel CRUD | Create/edit/delete slides + plan limits | ✅ |
+| Owner Panel Messages CRUD | Create/edit/delete WhatsApp templates + default toggle | ✅ |
+| Owner Panel CMS Pages CRUD | Create/edit/delete pages + auto-slug + publish toggle | ✅ |
+| WhatsApp template engine | `renderTemplate()` with `{{var}}` + `{{#each}}` syntax | ✅ |
+| WhatsApp checkout integration | Fetches default template from DB, fallback to hardcoded | ✅ |
+| Environment vars fix | `STRIPE_API_KEY` → `STRIPE_SECRET_KEY`, added missing vars | ✅ |
+| Schema docs rewrite | `SUPABASE_SCHEMA.md` updated for multi-tenant architecture | ✅ |
+| Duplicate repo cleanup | Removed duplicate `bootandstrap-admin` from CLIENTES dir | ✅ |
 
 ---
 
-## Phase 8: Owner Panel 🔜
+## Phase 9: Production Hardening & Multi-Client 🔜
 
 **Target**: Mar 2026
-
-Build the **client-facing management dashboard** at `/[lang]/panel/*`. The owner should never need to touch code, Supabase, or Medusa Admin directly.
-
-### Panel Infrastructure
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Panel layout | Glass sidebar nav, mobile hamburger, user info, breadcrumbs | 🔜 |
-| Dashboard | Live stats from Medusa Admin API (orders today, revenue, top products) | 🔜 |
-| Auth guard | Role-based: `owner` or `super_admin` only | ✅ (in proxy.ts) |
-
-### Store Management
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Store config editor | Business name, hero content, logo, footer, meta — writes to `config` table | 🔜 |
-| Carousel manager | CRUD `carousel_slides`, drag-to-reorder, plan limit enforcement | 🔜 |
-| WhatsApp template editor | Edit templates with `{{variable}}` highlighting + live preview | 🔜 |
-| Product badge manager | Add/remove badges from `product.metadata.badges[]` via Medusa Admin API | 🔜 |
-| CMS page editor | Rich text/markdown editor for `cms_pages`, publish/unpublish toggle | 🔜 |
-
-### Communication & Analytics
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Order notifications | View recent orders, WhatsApp quick-reply links | 🔜 |
-| Analytics dashboard | Charts from `analytics_events` — page views, conversion funnel, top products | 🔜 |
-
----
-
-## Phase 9: Admin Panel (SaaS) 🔜
-
-**Target**: Apr 2026
-
-The **BootandStrap internal panel** — the SaaS control plane that governs all client instances. This is a separate application with dark theme, accessible only to `super_admin` users.
-
-### Infrastructure
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Standalone Next.js app | `apps/admin-panel/`, dark SaaS theme, `super_admin` guard | 🔜 |
-| Multi-client selector | Dropdown to switch between client Supabase projects | 🔜 |
-| Auth | Supabase Auth with `super_admin` role check | 🔜 |
-
-### Governance Controls
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Feature flag toggles | Toggle any flag for any client — direct Supabase writes | 🔜 |
-| Plan limits editor | Edit all `plan_limits` columns per client | 🔜 |
-| Config editor | Edit `active_languages[]`, `active_currencies[]`, `default_currency`, all config columns | 🔜 |
-| Theme control | Color preset picker + custom colors + live preview | 🔜 |
-| Plan management | Create/edit/assign SaaS plans (starter/growth/pro) | 🔜 |
-
-### Monitoring
-
-| Deliverable | Details | Status |
-|-------------|---------|--------|
-| Client health dashboard | Service status, uptime, error rates per client | 🔜 |
-| Usage metrics | Products, customers, orders vs plan limits | 🔜 |
-| Billing/revenue | Stripe subscription status per client | 🔜 |
-
----
-
-## Phase 10: Production Hardening & Multi-Client 🔜
-
-**Target**: May 2026
-
-Prepare the template for **reliable multi-client production deployment**.
 
 ### Testing & Quality
 
@@ -282,7 +258,7 @@ Prepare the template for **reliable multi-client production deployment**.
 
 | Deliverable | Details | Status |
 |-------------|---------|--------|
-| Client provisioning script | Automate: create Supabase project → run migrations → seed → set config | 🔜 |
+| Client provisioning script | Automate: create Supabase tenant → run migrations → seed → set config | 🔜 |
 | `.env` template generator | CLI tool that generates client-specific `.env` from questionnaire | 🔜 |
 | Docker stack per client | Separate compose file + Dokploy project per client on same VPS | 🔜 |
 | Backup strategy | Automated Supabase DB backups, Docker volume snapshots | 🔜 |
@@ -298,7 +274,7 @@ Prepare the template for **reliable multi-client production deployment**.
 
 ---
 
-## Future Ideas (Post-Phase 10)
+## Future Ideas (Post-Phase 9)
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
@@ -324,9 +300,9 @@ Prepare the template for **reliable multi-client production deployment**.
 | 3 | 13 | 3 | 0 | 0 | ✅ |
 | 4 | 10 | 5 | 1 | 1 | ✅ |
 | 5 | 8 | 3 | 0 | 0 | ✅ |
-| 6 | ~12 | ~30 | 1 | 0 | 🔄 90% |
-| 7 | ~8 | ~6 | 0 | 0 | 🔜 |
-| 8 | ~15 | ~5 | 0 | 0 | 🔜 |
-| 9 | ~20 | ~3 | 0 | 0 | 🔜 |
-| 10 | ~10 | ~5 | 0 | 0 | 🔜 |
-| **Total** | **~136** | **~65** | **11** | **1** | |
+| 6 | ~12 | ~30 | 1 | 0 | ✅ |
+| 7 | 13 | 8 | 0 | 0 | ✅ |
+| 8 | ~50 | ~20 | 3 | 0 | ✅ |
+| 8E | ~10 | ~8 | 0 | 0 | ✅ |
+| **Total** | **~156** | **~82** | **14** | **1** | |
+
