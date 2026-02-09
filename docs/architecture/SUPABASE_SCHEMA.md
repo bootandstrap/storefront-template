@@ -2,7 +2,7 @@
 
 > Tables managed by Supabase in the `public` schema. Medusa tables also live in `public` (no separate schema). Do NOT modify Medusa-managed tables manually.
 >
-> **Last updated**: 9 Feb 2026 — reflects `20260209_multi_tenant_foundation.sql` migration.
+> **Last updated**: 10 Feb 2026 — reflects `20260210_schema_hardening.sql` migration.
 
 ## Tables
 
@@ -27,7 +27,7 @@ Extends `auth.users` with application-specific data.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | FK → `auth.users(id)` ON DELETE CASCADE |
-| `tenant_id` | UUID | FK → `tenants(id)` ON DELETE SET NULL |
+| `tenant_id` | UUID | FK → `tenants(id)` ON DELETE SET NULL, **NULLABLE** (super_admin has no tenant) |
 | `role` | TEXT | `'customer'`, `'owner'`, `'admin'`, `'super_admin'` |
 | `full_name` | TEXT | Display name |
 | `avatar_url` | TEXT | Supabase Storage URL |
@@ -42,7 +42,7 @@ Store configuration (one row per tenant).
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
-| `tenant_id` | UUID | FK → `tenants(id)` ON DELETE CASCADE |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` ON DELETE CASCADE, UNIQUE |
 | **Branding** | | |
 | `business_name` | TEXT | |
 | `logo_url` | TEXT | Supabase Storage URL |
@@ -101,7 +101,7 @@ Per-tenant feature toggles. All features remotely toggleable.
 
 | Column | Type | Default | Controls |
 |--------|------|---------|----------|
-| `tenant_id` | UUID | — | FK → `tenants(id)` |
+| `tenant_id` | UUID NOT NULL | — | FK → `tenants(id)`, UNIQUE |
 | **Payment Methods** | | | |
 | `enable_whatsapp_checkout` | BOOLEAN | `true` | WhatsApp order method |
 | `enable_online_payments` | BOOLEAN | `true` | Stripe card payment |
@@ -140,7 +140,7 @@ Per-tenant SaaS tier enforcement.
 
 | Column | Type | Default |
 |--------|------|---------|
-| `tenant_id` | UUID | FK → `tenants(id)` |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)`, UNIQUE |
 | `plan_name` | TEXT | `'starter'` |
 | `plan_expires_at` | TIMESTAMPTZ | `NULL` |
 | `max_products` | INTEGER | `100` |
@@ -167,10 +167,10 @@ Stored message templates for WhatsApp checkout.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | Default `gen_random_uuid()` |
-| `tenant_id` | UUID | FK → `tenants(id)` |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` |
 | `name` | TEXT | e.g. "Pedido estándar" |
 | `template` | TEXT | Template with `{{var}}` + `{{#each}}` syntax |
-| `is_default` | BOOLEAN | Only one should be `true` |
+| `is_default` | BOOLEAN | Partial unique index: at most one `true` per tenant |
 | `variables` | JSONB | Available vars: `["items", "total", "customer_name", ...]` |
 | `created_at` | TIMESTAMPTZ | |
 
@@ -182,8 +182,8 @@ Dynamic content pages.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
-| `tenant_id` | UUID | FK → `tenants(id)` |
-| `slug` | TEXT UNIQUE | URL path |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` |
+| `slug` | TEXT | URL path, UNIQUE per tenant `(tenant_id, slug)` |
 | `title` | TEXT | |
 | `body` | TEXT | Content (markdown or HTML) |
 | `published` | BOOLEAN | Default `false` |
@@ -198,7 +198,7 @@ Homepage hero carousel.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
-| `tenant_id` | UUID | FK → `tenants(id)` |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` |
 | `type` | TEXT | `'product'`, `'image'`, `'offer'` |
 | `medusa_product_id` | TEXT | Reference to Medusa product |
 | `image` | TEXT | Storage URL |
@@ -215,7 +215,7 @@ High-resolution event tracking.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
-| `tenant_id` | UUID | FK → `tenants(id)` |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` |
 | `event_type` | TEXT | `page_view`, `product_view`, `add_to_cart`, `order_placed`, etc. |
 | `user_id` | UUID | FK → `auth.users(id)`, nullable |
 | `metadata` | JSONB | Event-specific data |
@@ -226,14 +226,14 @@ High-resolution event tracking.
 | Table | SELECT | INSERT | UPDATE | DELETE |
 |-------|--------|--------|--------|--------|
 | `tenants` | super_admin | super_admin | super_admin | super_admin |
-| `profiles` | Own row | Trigger only | Own row | — |
+| `profiles` | Own row + admin roles | Own row (auth trigger) | Own row | — |
 | `config` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | — |
-| `feature_flags` | Public | service_role | service_role | — |
-| `plan_limits` | Public | service_role | service_role | — |
-| `whatsapp_templates` | Public | service_role | service_role | service_role |
-| `cms_pages` | Public (published) | service_role | service_role | service_role |
-| `carousel_slides` | Public (active) | `is_admin()` | `is_admin()` | `is_admin()` |
-| `analytics_events` | `is_admin()` | Authenticated | — | — |
+| `feature_flags` | Public | super_admin | super_admin/owner (tenant) | super_admin |
+| `plan_limits` | Public | super_admin | super_admin | super_admin |
+| `whatsapp_templates` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | super_admin/owner (tenant) |
+| `cms_pages` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | super_admin/owner (tenant) |
+| `carousel_slides` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | super_admin/owner (tenant) |
+| `analytics_events` | super_admin/owner (tenant) | Public (anon) | — | super_admin |
 
 ## Indexes
 
@@ -246,6 +246,16 @@ High-resolution event tracking.
 | `idx_whatsapp_templates_tenant` | `whatsapp_templates` | `tenant_id` |
 | `idx_cms_pages_tenant` | `cms_pages` | `tenant_id` |
 | `idx_analytics_events_tenant` | `analytics_events` | `tenant_id` |
+
+## Unique Constraints
+
+| Constraint | Table | Columns / Condition |
+|-----------|-------|---------------------|
+| `uq_config_tenant_id` | `config` | `(tenant_id)` |
+| `uq_feature_flags_tenant_id` | `feature_flags` | `(tenant_id)` |
+| `uq_plan_limits_tenant_id` | `plan_limits` | `(tenant_id)` |
+| `uq_cms_pages_tenant_slug` | `cms_pages` | `(tenant_id, slug)` |
+| `uq_whatsapp_templates_default_per_tenant` | `whatsapp_templates` | `(tenant_id) WHERE is_default = true` |
 | `idx_profiles_tenant` | `profiles` | `tenant_id` |
 
 ## Triggers
