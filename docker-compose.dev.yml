@@ -1,16 +1,18 @@
 # ============================================
-# Campifrut v2 — Docker Compose (Development)
+# BootandStrap Template — Docker Compose (Development)
 # ============================================
-# Hot-reload for storefront and Medusa.
+# Hot-reload for ALL services: storefront, admin, medusa.
+#
 # Usage: docker compose -f docker-compose.dev.yml up
 #
-# Storefront: http://localhost:3000
-# Medusa API: http://localhost:9000
-# Medusa Admin: http://localhost:9000/app
+# Storefront:    http://localhost:3000
+# Medusa API:    http://localhost:9000
+# Medusa Admin:  http://localhost:9000/app
+# SuperAdmin:    http://localhost:3100
 # ============================================
 
 services:
-  # ── Next.js Storefront (hot-reload) ────────
+  # ── Next.js Storefront (hot-reload) ─────────
   storefront:
     image: node:20-alpine
     working_dir: /app
@@ -30,7 +32,6 @@ services:
     env_file: .env
     environment:
       - NODE_ENV=development
-      # Medusa runs on host network, reach it via host.docker.internal
       - MEDUSA_BACKEND_URL=http://host.docker.internal:9000
       - WATCHPACK_POLLING=true
     depends_on:
@@ -38,8 +39,33 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # ── Medusa Backend (hot-reload) ────────────
-  # Uses host networking to directly reach Supabase DB
+  # ── SuperAdmin Panel (hot-reload) ───────────
+  # Mounts the sibling admin repo for live editing.
+  # Repo: bootandstrap/bootandstrap-admin
+  admin:
+    image: node:20-alpine
+    working_dir: /app
+    command: >
+      sh -c "
+        corepack enable &&
+        corepack prepare pnpm@latest --activate &&
+        pnpm install --no-frozen-lockfile &&
+        pnpm dev --hostname 0.0.0.0
+      "
+    ports:
+      - "3100:3100"
+    volumes:
+      - ../../../bootandstrap-admin:/app
+      - admin_node_modules:/app/node_modules
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    restart: unless-stopped
+
+  # ── Medusa Backend (hot-reload) ─────────────
   medusa:
     image: node:20-alpine
     working_dir: /app
@@ -57,11 +83,10 @@ services:
     environment:
       - NODE_ENV=development
       - MEDUSA_WORKER_MODE=shared
-      # Host network: Redis is on localhost:6379 (port-mapped from container)
       - REDIS_URL=redis://localhost:6379
     restart: unless-stopped
 
-  # ── Redis ──────────────────────────────────
+  # ── Redis ───────────────────────────────────
   redis:
     image: redis:7-alpine
     ports:
@@ -77,6 +102,8 @@ services:
 
 volumes:
   storefront_node_modules:
+    driver: local
+  admin_node_modules:
     driver: local
   medusa_node_modules:
     driver: local

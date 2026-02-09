@@ -1,10 +1,13 @@
 # ============================================
-# Campifrut v2 — Docker Compose (Production)
+# BootandStrap Template — Docker Compose (Production)
 # ============================================
 # PostgreSQL is NOT included — uses Supabase Cloud.
-# Services: Next.js + Medusa Server + Medusa Worker + Redis.
+# Services: Storefront + Admin + Medusa Server + Medusa Worker + Redis.
 #
 # Deploy: docker compose up -d --build
+#
+# NOTE: For Dokploy, each service can also be deployed
+# independently from its own repo. See DEPLOYMENT.md.
 # ============================================
 
 services:
@@ -37,6 +40,42 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - campifrut
+
+  # ── SuperAdmin Panel ─────────────────────────
+  # For unified VPS deployment. On Dokploy, this is
+  # deployed as a separate service from its own repo.
+  admin:
+    build:
+      context: ../../../bootandstrap-admin
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3100 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     logging:
       driver: json-file
       options:
