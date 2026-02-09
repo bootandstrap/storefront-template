@@ -57,30 +57,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Load cart ID from localStorage on mount + hydrate cart data
     useEffect(() => {
-        const stored = localStorage.getItem(CART_ID_KEY)
-        if (stored) {
+        async function hydrateCart() {
+            const stored = localStorage.getItem(CART_ID_KEY)
+            if (!stored) {
+                setIsLoading(false)
+                return
+            }
             setCartIdState(stored)
-            // Hydrate cart from Medusa
-            const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
-            const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
-            fetch(`${medusaUrl}/store/carts/${stored}`, {
-                headers: {
-                    ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
-                },
-            })
-                .then((res) => res.ok ? res.json() : null)
-                .then((data) => {
+            try {
+                const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
+                const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+                const res = await fetch(`${medusaUrl}/store/carts/${stored}`, {
+                    headers: {
+                        ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+                    },
+                })
+                if (res.ok) {
+                    const data = await res.json()
                     if (data?.cart) setCart(data.cart)
-                })
-                .catch(() => {
-                    // Cart may have expired — clear stale ID
-                    localStorage.removeItem(CART_ID_KEY)
-                    setCartIdState(null)
-                })
-                .finally(() => setIsLoading(false))
-        } else {
-            setIsLoading(false)
+                }
+            } catch {
+                // Cart may have expired — clear stale ID
+                localStorage.removeItem(CART_ID_KEY)
+                setCartIdState(null)
+            } finally {
+                setIsLoading(false)
+            }
         }
+        hydrateCart()
     }, [])
 
     const setCartId = useCallback((id: string) => {

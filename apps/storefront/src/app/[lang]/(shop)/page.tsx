@@ -9,7 +9,6 @@ import CategoryGrid from '@/components/home/CategoryGrid'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 import TrustSection from '@/components/home/TrustSection'
 import {
-  HeroSkeleton,
   CategoryGridSkeleton,
   ProductGridSkeleton,
 } from '@/components/ui/Skeleton'

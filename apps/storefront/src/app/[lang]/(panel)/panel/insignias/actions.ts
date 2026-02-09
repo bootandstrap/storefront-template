@@ -55,8 +55,6 @@ export async function toggleBadge(
         await requirePanelAuth()
 
         // Get current product metadata via admin API
-        const { products } = await getAdminProducts({ limit: 1, offset: 0 })
-        // Re-fetch this specific product to get current badges
         const currentRes = await getAdminProducts({ limit: 100 })
         const product = currentRes.products.find((p) => p.id === productId)
 

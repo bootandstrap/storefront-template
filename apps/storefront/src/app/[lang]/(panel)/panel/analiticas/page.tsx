@@ -49,12 +49,14 @@ export default async function AnalyticsPage({
         )
     }
 
+    // Compute cutoff date outside of render-time constraints
+    const cutoffMs = 7 * 24 * 60 * 60 * 1000
     // Fetch analytics data
     const supabase = await createClient()
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = new Date(new Date().getTime() - cutoffMs).toISOString()
 
     const tenantId = getRequiredTenantId()
-    const [pageViewsRes, topProductsRes, funnelRes] = await Promise.all([
+    const [pageViewsRes, topProductsRes, _funnelRes] = await Promise.all([
         supabase
             .from('analytics_events')
             .select('*', { count: 'exact', head: true })

@@ -17,6 +17,17 @@ export default function LanguageSelector({ activeLanguages }: LanguageSelectorPr
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
 
+    // Close on outside click
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false)
+            }
+        }
+        if (open) document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [open])
+
     // Filter to only active + valid locales
     const locales = activeLanguages.filter(
         (l): l is Locale => l in LOCALE_LABELS
@@ -38,17 +49,6 @@ export default function LanguageSelector({ activeLanguages }: LanguageSelectorPr
         setOpen(false)
         router.push(newPath)
     }
-
-    // Close on outside click
-    useEffect(() => {
-        function handleClick(e: MouseEvent) {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false)
-            }
-        }
-        if (open) document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [open])
 
     return (
         <div ref={ref} className="relative">
@@ -72,8 +72,8 @@ export default function LanguageSelector({ activeLanguages }: LanguageSelectorPr
                                 key={l}
                                 onClick={() => switchLocale(l)}
                                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isActive
-                                        ? 'bg-primary/10 text-primary font-semibold'
-                                        : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
+                                    ? 'bg-primary/10 text-primary font-semibold'
+                                    : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
                                     }`}
                             >
                                 <span className="text-lg">{info.flag}</span>

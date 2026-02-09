@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 
-interface AddressFormData {
+export interface AddressFormData {
     first_name: string
     last_name: string
     address_1: string

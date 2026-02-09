@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CheckCircle, XCircle, Info, X } from 'lucide-react'
 
@@ -53,11 +53,14 @@ const COLORS: Record<ToastType, string> = {
 
 const AUTO_DISMISS_MS = 4000
 
+// Hydration-safe mount detection (avoids setState-in-effect)
+const subscribe = () => () => { }
+const getSnapshot = () => true
+const getServerSnapshot = () => false
+
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([])
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => setMounted(true), [])
+    const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
     const dismiss = useCallback((id: string) => {
         setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)))

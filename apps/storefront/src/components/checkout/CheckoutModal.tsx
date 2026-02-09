@@ -8,7 +8,7 @@ import StripeCheckoutFlow from '@/components/checkout/StripeCheckoutFlow'
 import WhatsAppCheckoutFlow from '@/components/checkout/WhatsAppCheckoutFlow'
 import BankTransferFlow from '@/components/checkout/BankTransferFlow'
 import CashOnDeliveryFlow from '@/components/checkout/CashOnDeliveryFlow'
-import type { StoreConfig, FeatureFlags, AppConfig } from '@/lib/config'
+import type { StoreConfig, FeatureFlags } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
 import { X, ArrowLeft, ArrowRight, ShoppingBag, User, MapPin, CreditCard, CheckCircle, Loader2 } from 'lucide-react'
 

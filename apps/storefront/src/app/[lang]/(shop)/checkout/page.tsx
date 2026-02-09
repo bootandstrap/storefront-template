@@ -19,7 +19,7 @@ export default async function CheckoutPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config, featureFlags, planLimits, planExpired } = await getConfig()
+    const { config, featureFlags, planLimits: _planLimits, planExpired } = await getConfig()
 
     // -----------------------------------------------------------------------
     // Governance: require_auth_to_order / enable_guest_checkout

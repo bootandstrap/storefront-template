@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
     LayoutDashboard,
     Store,
-    Image,
+    Image as ImageIcon,
     MessageSquare,
     Award,
     FileText,
@@ -42,7 +42,7 @@ export default function PanelSidebar({ lang, businessName, t }: PanelSidebarProp
         {
             label: t('panel.nav.carousel'),
             href: `/${lang}/panel/carrusel`,
-            icon: <Image className="w-5 h-5" />,
+            icon: <ImageIcon className="w-5 h-5" />,
         },
         {
             label: t('panel.nav.messages'),

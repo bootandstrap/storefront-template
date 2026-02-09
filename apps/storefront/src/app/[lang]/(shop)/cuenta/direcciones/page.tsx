@@ -2,14 +2,14 @@ import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerAddresses } from '@/lib/medusa/auth-medusa'
 import AddressesClient from './AddressesClient'
-import { MapPin } from 'lucide-react'
+
 
 export const dynamic = 'force-dynamic'
 
 // ─── Addresses content (Suspense-wrapped) ─────────────────────
 async function AddressesContent({ lang }: { lang: string }) {
     const dictionary = await getDictionary(lang as Locale)
-    const t = createTranslator(dictionary)
+    const _t = createTranslator(dictionary)
     const addresses = await getAuthCustomerAddresses()
 
     return <AddressesClient addresses={addresses} dictionary={dictionary} lang={lang} />

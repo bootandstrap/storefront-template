@@ -1,4 +1,4 @@
-import type { StoreConfig, AppConfig } from '@/lib/config'
+import type { StoreConfig } from '@/lib/config'
 import type { MedusaProduct } from '@/lib/medusa/client'
 
 /**

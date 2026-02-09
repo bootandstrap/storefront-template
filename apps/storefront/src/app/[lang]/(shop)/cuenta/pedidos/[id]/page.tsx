@@ -146,7 +146,7 @@ async function OrderDetail({
                     {t('order.items')} ({order.items?.length ?? 0})
                 </h2>
                 <div className="divide-y divide-white/5">
-                    {(order.items ?? []).map((item: any) => {
+                    {(order.items ?? []).map((item) => {
                         const price = item.unit_price
                             ? formatPrice(item.unit_price, currency, lang as Locale)
                             : '—'

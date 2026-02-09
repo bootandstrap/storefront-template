@@ -65,8 +65,6 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
 
     if (total === 0) return null
 
-    const slide = slides[current]
-
     return (
         <section
             className="relative overflow-hidden rounded-2xl min-h-[400px] md:min-h-[500px]"
@@ -164,8 +162,8 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                             key={s.id}
                             onClick={() => setCurrent(i)}
                             className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === current
-                                    ? 'bg-white w-8'
-                                    : 'bg-white/40 hover:bg-white/60'
+                                ? 'bg-white w-8'
+                                : 'bg-white/40 hover:bg-white/60'
                                 }`}
                             aria-label={`Ir al slide ${i + 1}`}
                             aria-current={i === current ? 'true' : undefined}

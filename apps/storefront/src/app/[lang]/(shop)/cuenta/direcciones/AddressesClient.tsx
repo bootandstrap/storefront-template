@@ -5,7 +5,7 @@ import type { MedusaAddress } from '@/lib/medusa/client'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import AddressCard from '@/components/account/AddressCard'
-import AddressModal from '@/components/account/AddressModal'
+import AddressModal, { type AddressFormData } from '@/components/account/AddressModal'
 import { createAddressAction, updateAddressAction, deleteAddressAction, setDefaultAddressAction } from './actions'
 import { Plus, MapPin } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toaster'
 export default function AddressesClient({
     addresses: initialAddresses,
     dictionary,
-    lang,
+    lang: _lang,
 }: {
     addresses: MedusaAddress[]
     dictionary: Dictionary
@@ -26,7 +26,7 @@ export default function AddressesClient({
     const [editingAddress, setEditingAddress] = useState<MedusaAddress | null>(null)
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-    async function handleCreate(data: any) {
+    async function handleCreate(data: AddressFormData) {
         const result = await createAddressAction(data)
         if (result.success && result.address) {
             setAddresses(prev => [...prev, result.address!])
@@ -36,7 +36,7 @@ export default function AddressesClient({
         }
     }
 
-    async function handleUpdate(data: any) {
+    async function handleUpdate(data: AddressFormData) {
         if (!editingAddress) return
         const result = await updateAddressAction(editingAddress.id, data)
         if (result.success && result.address) {

@@ -32,6 +32,17 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency }: 
     const [isPending, startTransition] = useTransition()
     const ref = useRef<HTMLDivElement>(null)
 
+    // Close on outside click
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false)
+            }
+        }
+        if (open) document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [open])
+
     // Filter to only active + valid currencies
     const currencies = SUPPORTED_CURRENCIES.filter((c) =>
         activeCurrencies.includes(c.code)
@@ -49,17 +60,6 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency }: 
             router.refresh()
         })
     }
-
-    // Close on outside click
-    useEffect(() => {
-        function handleClick(e: MouseEvent) {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false)
-            }
-        }
-        if (open) document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [open])
 
     return (
         <div ref={ref} className="relative">

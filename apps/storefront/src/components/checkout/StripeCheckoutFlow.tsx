@@ -11,7 +11,7 @@ import {
 import { CreditCard, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import type { StoreConfig } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
-import type { Locale } from '@/lib/i18n'
+
 
 // ---------------------------------------------------------------------------
 // Stripe instance (loaded once, PLACEHOLDER-safe)

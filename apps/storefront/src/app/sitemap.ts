@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { getProducts, getCategories } from '@/lib/medusa/client'
+import { getProducts } from '@/lib/medusa/client'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://campifrut.com'

@@ -24,7 +24,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     const [formData, setFormData] = useState(config)
     const [isPending, startTransition] = useTransition()
     const [saved, setSaved] = useState(false)
-    const [saveError, setSaveError] = useState<string | null>(null)
+    const [_saveError, setSaveError] = useState<string | null>(null)
 
     const tabs: { id: Tab; label: string }[] = [
         { id: 'general', label: t('panel.config.general') },

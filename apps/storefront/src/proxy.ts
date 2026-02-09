@@ -149,7 +149,7 @@ function classifyRoute(pathAfterLang: string): 'public' | 'protected' | 'owner' 
 // ---------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
-    let response = NextResponse.next({ request })
+    const response = NextResponse.next({ request })
     const path = request.nextUrl.pathname
 
     // Skip static files / Next internals
