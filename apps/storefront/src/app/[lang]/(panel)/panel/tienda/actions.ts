@@ -1,30 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import type { StoreConfig } from '@/lib/config'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function requirePanelAuth() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (!profile || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
-        throw new Error('Insufficient permissions')
-    }
-
-    return { supabase, user, role: profile.role }
-}
+import { requirePanelAuth } from '@/lib/panel-auth'
 
 // Whitelist of config columns that can be updated from Owner Panel
 const ALLOWED_CONFIG_FIELDS: (keyof StoreConfig)[] = [
@@ -56,7 +34,7 @@ export async function saveStoreConfig(
     configData: Partial<StoreConfig>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
         // Sanitize: only allow whitelisted fields
         const sanitized: Record<string, unknown> = {}
@@ -74,6 +52,7 @@ export async function saveStoreConfig(
         const { data: existing } = await supabase
             .from('config')
             .select('id')
+            .eq('tenant_id', tenantId)
             .limit(1)
             .single()
 
@@ -85,6 +64,7 @@ export async function saveStoreConfig(
             .from('config')
             .update(sanitized)
             .eq('id', existing.id)
+            .eq('tenant_id', tenantId)
 
         if (error) {
             console.error('[panel/config] Save failed:', error)

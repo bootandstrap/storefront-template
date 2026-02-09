@@ -1,31 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
-
-// ---------------------------------------------------------------------------
-// Auth helper
-// ---------------------------------------------------------------------------
-
-async function requirePanelAuth() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (!profile || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
-        throw new Error('Insufficient permissions')
-    }
-
-    return { supabase, user, role: profile.role }
-}
+import { requirePanelAuth } from '@/lib/panel-auth'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,29 +24,32 @@ export async function createTemplate(
     input: TemplateInput
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
         const { planLimits } = await getConfig()
 
         const { count } = await supabase
             .from('whatsapp_templates')
             .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId)
 
         const limitCheck = checkLimit(planLimits, 'max_whatsapp_templates', count ?? 0)
         if (!limitCheck.allowed) {
             return { success: false, error: 'WhatsApp template limit reached' }
         }
 
-        // If this is the default, unset other defaults
+        // If this is the default, unset other defaults for this tenant
         if (input.is_default) {
             await supabase
                 .from('whatsapp_templates')
                 .update({ is_default: false })
+                .eq('tenant_id', tenantId)
                 .eq('is_default', true)
         }
 
         const { error } = await supabase
             .from('whatsapp_templates')
             .insert({
+                tenant_id: tenantId,
                 name: input.name,
                 template: input.template,
                 is_default: input.is_default ?? false,
@@ -93,13 +74,14 @@ export async function updateTemplate(
     updates: Partial<TemplateInput>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
-        // If setting as default, unset other defaults
+        // If setting as default, unset other defaults for this tenant
         if (updates.is_default) {
             await supabase
                 .from('whatsapp_templates')
                 .update({ is_default: false })
+                .eq('tenant_id', tenantId)
                 .eq('is_default', true)
         }
 
@@ -107,6 +89,7 @@ export async function updateTemplate(
             .from('whatsapp_templates')
             .update(updates)
             .eq('id', id)
+            .eq('tenant_id', tenantId)
 
         if (error) {
             console.error('[panel/messages] Update failed:', error)
@@ -125,12 +108,13 @@ export async function deleteTemplate(
     id: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
         const { error } = await supabase
             .from('whatsapp_templates')
             .delete()
             .eq('id', id)
+            .eq('tenant_id', tenantId)
 
         if (error) {
             console.error('[panel/messages] Delete failed:', error)

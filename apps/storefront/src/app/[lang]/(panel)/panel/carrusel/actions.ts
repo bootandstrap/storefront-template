@@ -1,31 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
-
-// ---------------------------------------------------------------------------
-// Auth helper
-// ---------------------------------------------------------------------------
-
-async function requirePanelAuth() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (!profile || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
-        throw new Error('Insufficient permissions')
-    }
-
-    return { supabase, user, role: profile.role }
-}
+import { requirePanelAuth } from '@/lib/panel-auth'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,23 +28,25 @@ export async function createSlide(
     input: SlideInput
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
         const { planLimits } = await getConfig()
 
-        // Count existing slides
+        // Count existing slides for this tenant
         const { count } = await supabase
             .from('carousel_slides')
             .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId)
 
         const limitCheck = checkLimit(planLimits, 'max_carousel_slides', count ?? 0)
         if (!limitCheck.allowed) {
             return { success: false, error: 'Carousel slide limit reached' }
         }
 
-        // Get next sort_order
+        // Get next sort_order for this tenant
         const { data: lastSlide } = await supabase
             .from('carousel_slides')
             .select('sort_order')
+            .eq('tenant_id', tenantId)
             .order('sort_order', { ascending: false })
             .limit(1)
             .single()
@@ -76,6 +56,7 @@ export async function createSlide(
         const { error } = await supabase
             .from('carousel_slides')
             .insert({
+                tenant_id: tenantId,
                 ...input,
                 sort_order: nextOrder,
                 active: input.active ?? true,
@@ -99,12 +80,13 @@ export async function updateSlide(
     updates: Partial<SlideInput>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
         const { error } = await supabase
             .from('carousel_slides')
             .update(updates)
             .eq('id', id)
+            .eq('tenant_id', tenantId)
 
         if (error) {
             console.error('[panel/carousel] Update failed:', error)
@@ -123,12 +105,13 @@ export async function deleteSlide(
     id: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
         const { error } = await supabase
             .from('carousel_slides')
             .delete()
             .eq('id', id)
+            .eq('tenant_id', tenantId)
 
         if (error) {
             console.error('[panel/carousel] Delete failed:', error)
@@ -147,14 +130,15 @@ export async function reorderSlides(
     orderedIds: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase } = await requirePanelAuth()
+        const { supabase, tenantId } = await requirePanelAuth()
 
-        // Update sort_order for each slide
+        // Update sort_order for each slide (scoped to tenant)
         const updates = orderedIds.map((id, index) =>
             supabase
                 .from('carousel_slides')
                 .update({ sort_order: index })
                 .eq('id', id)
+                .eq('tenant_id', tenantId)
         )
 
         await Promise.all(updates)

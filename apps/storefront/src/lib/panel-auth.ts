@@ -3,9 +3,11 @@
  *
  * Shared authentication check for all Owner Panel server actions.
  * Verifies the user is authenticated and has an authorized role.
+ * Returns tenantId for mandatory write scoping.
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { getRequiredTenantId } from '@/lib/config'
 
 const PANEL_ROLES = ['owner', 'super_admin', 'admin']
 
@@ -24,5 +26,7 @@ export async function requirePanelAuth() {
         throw new Error('Insufficient permissions')
     }
 
-    return { supabase, user, role: profile.role }
+    const tenantId = getRequiredTenantId()
+
+    return { supabase, user, role: profile.role, tenantId }
 }
