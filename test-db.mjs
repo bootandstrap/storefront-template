@@ -1,10 +1,17 @@
 // Quick database connection test — run from apps/medusa:
 //   node ../../test-db.mjs
+//
+// Requires SUPABASE_DB_URL env var (from .env or explicit)
 
 import pg from 'pg';
 const { Client } = pg;
 
-const url = 'postgresql://postgres.fopjqjoxwelmrrfowbmv:UvYBSnvfeWbWKaGc@aws-0-eu-central-1.pooler.supabase.com:5432/postgres';
+const url = process.env.SUPABASE_DB_URL;
+
+if (!url) {
+    console.error('❌ SUPABASE_DB_URL not set. Export it or add to .env');
+    process.exit(1);
+}
 
 console.log('Testing connection to:', url.replace(/:[^@]+@/, ':***@'));
 

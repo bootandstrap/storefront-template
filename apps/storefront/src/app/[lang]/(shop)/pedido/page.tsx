@@ -27,10 +27,42 @@ export default function GuestOrderLookup() {
         setResult(null)
 
         try {
-            // TODO: Call Medusa Store API to look up order
-            // const res = await fetch(`/api/orders/lookup?email=${email}&display_id=${orderId}`)
-            // For now, show "not found" since the API integration is pending
-            setError(t('order.lookupNotFound'))
+            // Call Medusa Store API to look up order by display_id + email
+            const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
+            const res = await fetch(
+                `${medusaUrl}/store/orders?fields=id,display_id,status,created_at,total,currency_code&limit=1&offset=0`,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
+                    },
+                },
+            )
+
+            if (!res.ok) {
+                setError(t('order.lookupError'))
+                return
+            }
+
+            const data = await res.json()
+            const orders = data.orders ?? []
+
+            // Find order matching display_id (Medusa v2 store API doesn't filter by email directly)
+            const match = orders.find(
+                (o: { display_id: number }) => String(o.display_id) === orderId.trim(),
+            )
+
+            if (match) {
+                setResult({
+                    display_id: match.display_id,
+                    status: match.status || 'pending',
+                    created_at: match.created_at,
+                    total: match.total ?? 0,
+                    currency_code: match.currency_code || 'usd',
+                })
+            } else {
+                setError(t('order.lookupNotFound'))
+            }
         } catch {
             setError(t('order.lookupError'))
         } finally {

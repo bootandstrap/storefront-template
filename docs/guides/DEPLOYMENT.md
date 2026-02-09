@@ -71,7 +71,7 @@ See `.env.example` at project root. Critical production vars:
 | `JWT_SECRET` | medusa | Random 32+ chars |
 | `STORE_CORS` | medusa | Storefront URL |
 | `ADMIN_CORS` | medusa | Admin URLs |
-| `STRIPE_API_KEY` | medusa | Stripe secret key |
+| `STRIPE_SECRET_KEY` | medusa | Stripe secret key |
 | `NEXT_PUBLIC_SUPABASE_URL` | storefront | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | storefront | Publishable anon key |
 | `NEXT_PUBLIC_MEDUSA_BACKEND_URL` | storefront | `https://api.campifrut.com` |
@@ -111,3 +111,41 @@ Rolling update (zero downtime)
 - **medusa-server**: Increase replicas (stateless, Redis handles sessions)
 - **redis**: Consider Redis Sentinel for HA
 - **PostgreSQL**: Supabase Pro plan scales automatically
+
+## Multi-Client Topology
+
+Each client runs isolated Docker Compose stacks on the same VPS:
+
+```
+VPS (Contabo)
+├── client-a/  (storefront:3001, medusa:9001, redis-a)
+├── client-b/  (storefront:3002, medusa:9002, redis-b)
+└── client-c/  (storefront:3003, medusa:9003, redis-c)
+```
+
+Generate per-client stacks: `./scripts/provision-client.sh`
+
+Template: `scripts/templates/docker-compose.client.yml`
+
+## Monitoring & Health Checks
+
+```bash
+# Cron: check every 5 minutes
+*/5 * * * * /path/to/scripts/healthcheck.sh client-slug >> /var/log/healthcheck.log 2>&1
+
+# Webhook alerting
+export ALERT_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+## Backups & Restore
+
+```bash
+# Daily backup (cron at 2 AM)
+0 2 * * * /path/to/scripts/backup.sh client-slug >> /var/log/backup.log 2>&1
+
+# Restore from backup
+./scripts/restore.sh 20260209_020000 client-slug
+```
+
+Retention: 30 days (configurable via `RETENTION_DAYS`).
+

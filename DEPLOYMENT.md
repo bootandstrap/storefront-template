@@ -159,6 +159,9 @@ docker compose -f docker-compose.dev.yml up
 #   Redis:        localhost:6379
 ```
 
+> [!NOTE]
+> El docker-compose.dev.yml usa networking estándar de Docker (no `network_mode: host`), compatible con Docker Desktop en macOS. Medusa se conecta a Redis via el service name `redis` en lugar de `localhost`.
+
 O sin Docker:
 
 ```bash

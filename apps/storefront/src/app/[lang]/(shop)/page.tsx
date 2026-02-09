@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { createClient } from '@/lib/supabase/server'
 import { getDictionary, type Locale } from '@/lib/i18n'
@@ -32,6 +32,7 @@ export default async function HomePage({
     const { data } = await supabase
       .from('carousel_slides')
       .select('*')
+      .eq('tenant_id', getRequiredTenantId())
       .eq('active', true)
       .order('sort_order', { ascending: true })
     carouselSlides = data ?? []

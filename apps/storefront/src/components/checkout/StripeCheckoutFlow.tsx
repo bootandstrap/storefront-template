@@ -10,6 +10,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { CreditCard, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import type { StoreConfig } from '@/lib/config'
+import { useI18n } from '@/lib/i18n/provider'
+import type { Locale } from '@/lib/i18n'
 
 // ---------------------------------------------------------------------------
 // Stripe instance (loaded once, PLACEHOLDER-safe)
@@ -24,6 +26,15 @@ function getStripePromise(): Promise<Stripe | null> {
     return stripePromise!
 }
 
+// Map our locales to Stripe-supported locales
+const STRIPE_LOCALE_MAP: Record<string, 'auto' | 'en' | 'es' | 'de' | 'fr' | 'it'> = {
+    en: 'en',
+    es: 'es',
+    de: 'de',
+    fr: 'fr',
+    it: 'it',
+}
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -36,6 +47,21 @@ interface StripeCheckoutFlowProps {
     totalFormatted: string
 }
 
+interface StripePaymentFormProps {
+    onSuccess: (paymentIntentId: string) => void
+    onError: (message: string) => void
+    totalFormatted: string
+    translations: {
+        paymentSuccess: string
+        orderConfirmed: string
+        processingPayment: string
+        payLabel: string
+        securePaymentNote: string
+        paymentError: string
+        unexpectedError: string
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Inner form (must be inside <Elements>)
 // ---------------------------------------------------------------------------
@@ -44,7 +70,8 @@ function StripePaymentForm({
     onSuccess,
     onError,
     totalFormatted,
-}: Omit<StripeCheckoutFlowProps, 'clientSecret' | 'config'>) {
+    translations: t,
+}: StripePaymentFormProps) {
     const stripe = useStripe()
     const elements = useElements()
     const [isProcessing, setIsProcessing] = useState(false)
@@ -68,7 +95,7 @@ function StripePaymentForm({
             })
 
             if (error) {
-                const msg = error.message ?? 'Error al procesar el pago'
+                const msg = error.message ?? t.paymentError
                 setErrorMessage(msg)
                 onError(msg)
             } else if (paymentIntent && paymentIntent.status === 'succeeded') {
@@ -76,7 +103,7 @@ function StripePaymentForm({
                 onSuccess(paymentIntent.id)
             }
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Error inesperado'
+            const msg = err instanceof Error ? err.message : t.unexpectedError
             setErrorMessage(msg)
             onError(msg)
         } finally {
@@ -88,9 +115,9 @@ function StripePaymentForm({
         return (
             <div className="text-center py-6 animate-fade-in">
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-text-primary mb-1">¡Pago exitoso!</h3>
+                <h3 className="text-lg font-bold text-text-primary mb-1">{t.paymentSuccess}</h3>
                 <p className="text-sm text-text-secondary">
-                    Tu pedido ha sido confirmado.
+                    {t.orderConfirmed}
                 </p>
             </div>
         )
@@ -119,18 +146,18 @@ function StripePaymentForm({
                 {isProcessing ? (
                     <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Procesando pago...
+                        {t.processingPayment}
                     </>
                 ) : (
                     <>
                         <CreditCard className="w-5 h-5" />
-                        Pagar {totalFormatted}
+                        {t.payLabel} {totalFormatted}
                     </>
                 )}
             </button>
 
             <p className="text-xs text-text-muted text-center">
-                Tu información de pago se procesa de forma segura a través de Stripe.
+                {t.securePaymentNote}
             </p>
         </form>
     )
@@ -147,6 +174,7 @@ export default function StripeCheckoutFlow({
     onError,
     totalFormatted,
 }: StripeCheckoutFlowProps) {
+    const { t, locale } = useI18n()
     const [stripeInstance, setStripeInstance] = useState<Stripe | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -156,6 +184,17 @@ export default function StripeCheckoutFlow({
             setLoading(false)
         })
     }, [])
+
+    // Pre-compute translations for inner form (can't use useI18n inside Elements)
+    const translations = {
+        paymentSuccess: t('checkout.stripe.paymentSuccess'),
+        orderConfirmed: t('checkout.stripe.orderConfirmed'),
+        processingPayment: t('checkout.stripe.processing'),
+        payLabel: t('checkout.stripe.payButton'),
+        securePaymentNote: t('checkout.stripe.secureNote'),
+        paymentError: t('checkout.stripe.paymentError'),
+        unexpectedError: t('checkout.stripe.unexpectedError'),
+    }
 
     // Build Stripe Appearance matching SOTA design system
     const appearance: Appearance = {
@@ -202,7 +241,7 @@ export default function StripeCheckoutFlow({
             <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
                 <span className="ml-2 text-sm text-text-muted">
-                    Cargando formulario de pago...
+                    {t('checkout.stripe.loadingForm')}
                 </span>
             </div>
         )
@@ -214,11 +253,10 @@ export default function StripeCheckoutFlow({
                 <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
                 <div>
                     <p className="text-sm font-medium text-amber-400">
-                        Pago con tarjeta no disponible
+                        {t('checkout.stripe.unavailableTitle')}
                     </p>
                     <p className="text-xs text-amber-400/70 mt-1">
-                        El sistema de pagos en línea no está configurado todavía.
-                        Contacta al administrador.
+                        {t('checkout.stripe.unavailableMsg')}
                     </p>
                 </div>
             </div>
@@ -231,13 +269,14 @@ export default function StripeCheckoutFlow({
             options={{
                 clientSecret,
                 appearance,
-                locale: 'es',
+                locale: STRIPE_LOCALE_MAP[locale] ?? 'auto',
             }}
         >
             <StripePaymentForm
                 onSuccess={onSuccess}
                 onError={onError}
                 totalFormatted={totalFormatted}
+                translations={translations}
             />
         </Elements>
     )

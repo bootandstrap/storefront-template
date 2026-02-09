@@ -69,13 +69,14 @@ services:
   medusa:
     image: node:20-alpine
     working_dir: /app
-    network_mode: host
     command: >
       sh -c "
         apk add --no-cache python3 make g++ curl &&
         npm install --legacy-peer-deps &&
         npx medusa develop --host 0.0.0.0
       "
+    ports:
+      - "9000:9000"
     volumes:
       - ./apps/medusa:/app
       - medusa_node_modules:/app/node_modules
@@ -83,7 +84,10 @@ services:
     environment:
       - NODE_ENV=development
       - MEDUSA_WORKER_MODE=shared
-      - REDIS_URL=redis://localhost:6379
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   # ── Redis ───────────────────────────────────

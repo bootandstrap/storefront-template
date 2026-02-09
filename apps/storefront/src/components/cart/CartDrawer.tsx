@@ -4,11 +4,13 @@ import { useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { X, ShoppingBag, MessageCircle, Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import { useI18n } from '@/lib/i18n/provider'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import CartItem from './CartItem'
 
 export default function CartDrawer() {
     const { cart, cartId, drawerOpen, closeDrawer, setCart, itemCount } = useCart()
+    const { t, locale, localizedHref } = useI18n()
     const [isLoading, startTransition] = useTransition()
 
     // Load cart data when drawer opens
@@ -39,7 +41,7 @@ export default function CartDrawer() {
     const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
     const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
 
-    const formattedSubtotal = new Intl.NumberFormat('es-CO', {
+    const formattedSubtotal = new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
         style: 'currency',
         currency: currency.toUpperCase(),
         minimumFractionDigits: 0,
@@ -60,12 +62,13 @@ export default function CartDrawer() {
                     <div className="flex items-center gap-2">
                         <ShoppingBag className="w-5 h-5 text-primary" />
                         <h2 className="text-lg font-bold font-display">
-                            Carrito ({itemCount})
+                            {t('cart.title')} ({itemCount})
                         </h2>
                     </div>
                     <button
                         onClick={closeDrawer}
                         className="p-2 rounded-full hover:bg-surface-1 transition-colors"
+                        aria-label={t('common.close')}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -81,16 +84,16 @@ export default function CartDrawer() {
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <p className="text-4xl mb-4">🛒</p>
                             <h3 className="text-lg font-semibold text-text-primary mb-2">
-                                Tu carrito está vacío
+                                {t('cart.empty')}
                             </h3>
                             <p className="text-sm text-text-muted mb-6">
-                                ¡Agrega productos para empezar tu pedido!
+                                {t('cart.emptyHint')}
                             </p>
                             <button
                                 onClick={closeDrawer}
                                 className="btn btn-primary text-sm"
                             >
-                                Ver productos
+                                {t('common.viewProducts')}
                             </button>
                         </div>
                     ) : (
@@ -102,23 +105,23 @@ export default function CartDrawer() {
                 {items.length > 0 && (
                     <div className="border-t border-surface-3 p-4 space-y-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-secondary">Subtotal</span>
+                            <span className="text-text-secondary">{t('cart.subtotal')}</span>
                             <span className="font-bold text-text-primary">{formattedSubtotal}</span>
                         </div>
                         <Link
-                            href="/carrito"
+                            href={localizedHref('cart')}
                             onClick={closeDrawer}
                             className="btn btn-primary w-full text-center"
                         >
-                            Ver carrito completo
+                            {t('cart.drawer.viewFullCart')}
                         </Link>
                         <Link
-                            href="/checkout"
+                            href={localizedHref('checkout')}
                             onClick={closeDrawer}
                             className="btn btn-whatsapp w-full text-center"
                         >
                             <MessageCircle className="w-4 h-4" />
-                            Pedir por WhatsApp
+                            {t('cart.drawer.orderWhatsApp')}
                         </Link>
                     </div>
                 )}

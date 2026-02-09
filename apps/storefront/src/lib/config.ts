@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export interface StoreConfig {
     id: string
+    tenant_id: string | null
     business_name: string
     whatsapp_number: string
     default_country_prefix: string
@@ -30,27 +31,64 @@ export interface StoreConfig {
     active_languages: string[]
     active_currencies: string[]
     default_currency: string
+    // New Phase 8A columns
+    store_email: string | null
+    store_phone: string | null
+    store_address: string | null
+    social_facebook: string | null
+    social_instagram: string | null
+    social_tiktok: string | null
+    social_twitter: string | null
+    announcement_bar_text: string | null
+    announcement_bar_enabled: boolean
+    min_order_amount: number
+    max_delivery_radius_km: number | null
+    business_hours: Record<string, unknown> | null
+    delivery_info_text: string | null
+    bank_name: string | null
+    bank_account_type: string | null
+    bank_account_number: string | null
+    bank_account_holder: string | null
+    bank_id_number: string | null
+    google_analytics_id: string | null
+    facebook_pixel_id: string | null
+    sentry_dsn: string | null
+    custom_css: string | null
 }
 
 export interface FeatureFlags {
+    // Checkout
     enable_whatsapp_checkout: boolean
     enable_online_payments: boolean
     enable_cash_on_delivery: boolean
     enable_bank_transfer: boolean
+    // Auth
     enable_user_registration: boolean
     enable_guest_checkout: boolean
     require_auth_to_order: boolean
     enable_google_auth: boolean
     enable_email_auth: boolean
+    // Content
     enable_reviews: boolean
     enable_wishlist: boolean
     enable_carousel: boolean
     enable_cms_pages: boolean
+    enable_product_search: boolean
+    // Advanced
     enable_analytics: boolean
     enable_promotions: boolean
     enable_multi_language: boolean
     enable_multi_currency: boolean
     enable_admin_api: boolean
+    // Business
+    enable_social_links: boolean
+    enable_order_notes: boolean
+    enable_address_management: boolean
+    // System
+    enable_maintenance_mode: boolean
+    enable_owner_panel: boolean
+    enable_customer_accounts: boolean
+    enable_order_tracking: boolean
 }
 
 export interface PlanLimits {
@@ -67,12 +105,43 @@ export interface PlanLimits {
     plan_expires_at: string | null
     max_languages: number
     max_currencies: number
+    // New Phase 8A limits
+    max_whatsapp_templates: number
+    max_file_upload_mb: number
+    max_email_sends_month: number
+    max_custom_domains: number
 }
 
 export interface AppConfig {
     config: StoreConfig
     featureFlags: FeatureFlags
     planLimits: PlanLimits
+    planExpired: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Tenant ID resolution
+// ---------------------------------------------------------------------------
+// Server-only env var. NEXT_PUBLIC_TENANT_ID is for client-side (analytics).
+// In production, TENANT_ID *must* be set — we fail hard to prevent data leaks.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the tenant ID from environment variables.
+ * - In production: throws if TENANT_ID is not set (hard fail to prevent data leaks).
+ * - In development: warns and returns a dev placeholder if not set.
+ */
+export function getRequiredTenantId(): string {
+    const id = process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID
+    if (id) return id
+
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('[FATAL] TENANT_ID is not set in production. All multi-tenant queries require tenant scoping.')
+    }
+
+    // Development: warn once, return placeholder that will match nothing (safe)
+    console.warn('[config] ⚠️ TENANT_ID not set — queries will return no data. Set TENANT_ID in .env for local dev.')
+    return '__dev_no_tenant__'
 }
 
 // ---------------------------------------------------------------------------
@@ -82,6 +151,7 @@ export interface AppConfig {
 const FALLBACK_CONFIG: AppConfig = {
     config: {
         id: 'fallback',
+        tenant_id: null,
         business_name: 'Mi Tienda',
         whatsapp_number: '573001234567',
         default_country_prefix: '57',
@@ -105,6 +175,29 @@ const FALLBACK_CONFIG: AppConfig = {
         active_languages: ['en'],
         active_currencies: ['usd'],
         default_currency: 'usd',
+        // New columns
+        store_email: null,
+        store_phone: null,
+        store_address: null,
+        social_facebook: null,
+        social_instagram: null,
+        social_tiktok: null,
+        social_twitter: null,
+        announcement_bar_text: null,
+        announcement_bar_enabled: false,
+        min_order_amount: 0,
+        max_delivery_radius_km: null,
+        business_hours: null,
+        delivery_info_text: null,
+        bank_name: null,
+        bank_account_type: null,
+        bank_account_number: null,
+        bank_account_holder: null,
+        bank_id_number: null,
+        google_analytics_id: null,
+        facebook_pixel_id: null,
+        sentry_dsn: null,
+        custom_css: null,
     },
     featureFlags: {
         enable_whatsapp_checkout: true,
@@ -120,11 +213,19 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_wishlist: false,
         enable_carousel: true,
         enable_cms_pages: false,
+        enable_product_search: true,
         enable_analytics: false,
         enable_promotions: false,
         enable_multi_language: false,
         enable_multi_currency: false,
         enable_admin_api: false,
+        enable_social_links: true,
+        enable_order_notes: true,
+        enable_address_management: true,
+        enable_maintenance_mode: false,
+        enable_owner_panel: true,
+        enable_customer_accounts: true,
+        enable_order_tracking: true,
     },
     planLimits: {
         max_products: 100,
@@ -140,7 +241,12 @@ const FALLBACK_CONFIG: AppConfig = {
         plan_expires_at: null,
         max_languages: 1,
         max_currencies: 1,
+        max_whatsapp_templates: 5,
+        max_file_upload_mb: 5,
+        max_email_sends_month: 500,
+        max_custom_domains: 1,
     },
+    planExpired: false,
 }
 
 // ---------------------------------------------------------------------------
@@ -159,16 +265,30 @@ export async function getConfig(): Promise<AppConfig> {
 
     try {
         const supabase = await createClient()
+
+        // MANDATORY: All queries scoped by tenant_id — no data leaks
+        const tenantId = getRequiredTenantId()
+        const configQuery = supabase.from('config').select('*').eq('tenant_id', tenantId)
+        const flagsQuery = supabase.from('feature_flags').select('*').eq('tenant_id', tenantId)
+        const limitsQuery = supabase.from('plan_limits').select('*').eq('tenant_id', tenantId)
+
         const [configRes, flagsRes, limitsRes] = await Promise.all([
-            supabase.from('config').select('*').single(),
-            supabase.from('feature_flags').select('*').single(),
-            supabase.from('plan_limits').select('*').single(),
+            configQuery.single(),
+            flagsQuery.single(),
+            limitsQuery.single(),
         ])
+
+        // Check plan expiration
+        const limits = limitsRes.data ?? FALLBACK_CONFIG.planLimits
+        const planExpired = limits.plan_expires_at
+            ? new Date(limits.plan_expires_at) < new Date()
+            : false
 
         _cachedConfig = {
             config: configRes.data ?? FALLBACK_CONFIG.config,
             featureFlags: flagsRes.data ?? FALLBACK_CONFIG.featureFlags,
-            planLimits: limitsRes.data ?? FALLBACK_CONFIG.planLimits,
+            planLimits: limits,
+            planExpired,
         }
         _cacheTimestamp = now
         return _cachedConfig

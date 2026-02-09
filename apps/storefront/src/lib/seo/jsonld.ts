@@ -55,3 +55,50 @@ export function organizationJsonLD(config: StoreConfig): Record<string, unknown>
             : undefined,
     }
 }
+
+/**
+ * BreadcrumbList JSON-LD for product pages
+ */
+export function breadcrumbListJsonLD(
+    product: MedusaProduct,
+    categoryName: string | null,
+    lang: string,
+): Record<string, unknown> {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://campifrut.com'
+    const items: Array<Record<string, unknown>> = [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `${siteUrl}/${lang}`,
+        },
+        {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Products',
+            item: `${siteUrl}/${lang}/productos`,
+        },
+    ]
+
+    if (categoryName) {
+        items.push({
+            '@type': 'ListItem',
+            position: 3,
+            name: categoryName,
+            item: `${siteUrl}/${lang}/productos?category=${encodeURIComponent(categoryName)}`,
+        })
+    }
+
+    items.push({
+        '@type': 'ListItem',
+        position: categoryName ? 4 : 3,
+        name: product.title,
+        item: `${siteUrl}/${lang}/productos/${product.handle}`,
+    })
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: items,
+    }
+}

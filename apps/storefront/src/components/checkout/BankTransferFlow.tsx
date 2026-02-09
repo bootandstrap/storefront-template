@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Building2, Copy, Check, Loader2, AlertCircle } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/provider'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -46,7 +47,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
                 onClick={handleCopy}
                 className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 type="button"
-                aria-label={`Copiar ${label}`}
+                aria-label={`Copy ${label}`}
             >
                 {copied ? (
                     <Check className="w-4 h-4 text-green-400" />
@@ -67,6 +68,7 @@ export default function BankTransferFlow({
     totalFormatted,
     onConfirm,
 }: BankTransferFlowProps) {
+    const { t } = useI18n()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -78,7 +80,7 @@ export default function BankTransferFlow({
         try {
             await onConfirm()
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al crear el pedido')
+            setError(err instanceof Error ? err.message : t('checkout.errors.orderCreate'))
         } finally {
             setIsSubmitting(false)
         }
@@ -90,10 +92,10 @@ export default function BankTransferFlow({
                 <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
                 <div>
                     <p className="text-sm font-medium text-amber-400">
-                        Datos bancarios no configurados
+                        {t('checkout.bank.notConfiguredTitle')}
                     </p>
                     <p className="text-xs text-amber-400/70 mt-1">
-                        El administrador debe configurar los datos de la cuenta bancaria.
+                        {t('checkout.bank.notConfiguredMsg')}
                     </p>
                 </div>
             </div>
@@ -105,36 +107,35 @@ export default function BankTransferFlow({
             <div className="text-center mb-2">
                 <Building2 className="w-8 h-8 text-primary mx-auto mb-2" />
                 <h3 className="text-base font-bold text-text-primary">
-                    Transferencia bancaria
+                    {t('checkout.bank.title')}
                 </h3>
                 <p className="text-sm text-text-secondary mt-1">
-                    Realiza la transferencia a la siguiente cuenta:
+                    {t('checkout.bank.instructions')}
                 </p>
             </div>
 
             <div className="space-y-2">
                 {bankDetails.bank_name && (
-                    <CopyField label="Banco" value={bankDetails.bank_name} />
+                    <CopyField label={t('checkout.bank.bankName')} value={bankDetails.bank_name} />
                 )}
                 {bankDetails.bank_account_type && (
-                    <CopyField label="Tipo de cuenta" value={bankDetails.bank_account_type} />
+                    <CopyField label={t('checkout.bank.accountType')} value={bankDetails.bank_account_type} />
                 )}
                 {bankDetails.bank_account_number && (
-                    <CopyField label="Número de cuenta" value={bankDetails.bank_account_number} />
+                    <CopyField label={t('checkout.bank.accountNumber')} value={bankDetails.bank_account_number} />
                 )}
                 {bankDetails.bank_account_holder && (
-                    <CopyField label="Titular" value={bankDetails.bank_account_holder} />
+                    <CopyField label={t('checkout.bank.holder')} value={bankDetails.bank_account_holder} />
                 )}
                 {bankDetails.bank_nit && (
-                    <CopyField label="NIT / Cédula" value={bankDetails.bank_nit} />
+                    <CopyField label={t('checkout.bank.nit')} value={bankDetails.bank_nit} />
                 )}
-                <CopyField label="Monto a transferir" value={totalFormatted} />
+                <CopyField label={t('checkout.bank.amount')} value={totalFormatted} />
             </div>
 
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
                 <p className="text-xs text-blue-300">
-                    💡 Tu pedido quedará en estado <strong>pendiente</strong> hasta que
-                    confirmemos la transferencia. Te notificaremos cuando se procese.
+                    💡 {t('checkout.bank.pendingNote')}
                 </p>
             </div>
 
@@ -154,12 +155,12 @@ export default function BankTransferFlow({
                 {isSubmitting ? (
                     <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Creando pedido...
+                        {t('checkout.creatingOrder')}
                     </>
                 ) : (
                     <>
                         <Building2 className="w-5 h-5" />
-                        He realizado la transferencia
+                        {t('checkout.bank.confirmButton')}
                     </>
                 )}
             </button>

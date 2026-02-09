@@ -15,6 +15,8 @@ out/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
 apps/medusa/.env
 apps/storefront/.env.local
 
@@ -38,7 +40,34 @@ yarn-error.log*
 
 # Test
 coverage/
+playwright-report/
+test-results/
+
+# SuperAdmin Panel (separate repo)
+bootandstrap-admin/
 
 # Misc
 *.tgz
 .cache/
+
+# ── Security: Credentials & Secrets ──────────
+CREDENTIALS.md
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ── Security: Database dumps & backups ───────
+*.sql.bak
+*.dump
+*.pgdump
+*.backup
+backups/
+
+# ── Security: Secret manager exports ─────────
+*.env.vault
+.env.sops
+secrets/
+.secrets/

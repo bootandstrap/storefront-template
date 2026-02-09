@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Banknote, Loader2, AlertCircle, MapPin } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/provider'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -22,6 +23,7 @@ export default function CashOnDeliveryFlow({
     totalFormatted,
     onConfirm,
 }: CashOnDeliveryFlowProps) {
+    const { t } = useI18n()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +33,7 @@ export default function CashOnDeliveryFlow({
         try {
             await onConfirm()
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al crear el pedido')
+            setError(err instanceof Error ? err.message : t('checkout.errors.orderCreate'))
         } finally {
             setIsSubmitting(false)
         }
@@ -42,10 +44,10 @@ export default function CashOnDeliveryFlow({
             <div className="text-center mb-2">
                 <Banknote className="w-8 h-8 text-primary mx-auto mb-2" />
                 <h3 className="text-base font-bold text-text-primary">
-                    Pago contra entrega
+                    {t('checkout.cod.title')}
                 </h3>
                 <p className="text-sm text-text-secondary mt-1">
-                    Paga en efectivo cuando recibas tu pedido.
+                    {t('checkout.cod.description')}
                 </p>
             </div>
 
@@ -53,21 +55,20 @@ export default function CashOnDeliveryFlow({
             <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/8">
                 <MapPin className="w-5 h-5 text-text-muted mt-0.5 shrink-0" />
                 <div>
-                    <span className="text-xs text-text-muted block">Dirección de entrega</span>
-                    <span className="text-sm text-text-primary">{deliveryAddress || 'No especificada'}</span>
+                    <span className="text-xs text-text-muted block">{t('checkout.steps.address')}</span>
+                    <span className="text-sm text-text-primary">{deliveryAddress || t('checkout.cod.noAddress')}</span>
                 </div>
             </div>
 
             {/* Total reminder */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
-                <span className="text-sm text-text-secondary">Total a pagar en entrega:</span>
+                <span className="text-sm text-text-secondary">{t('checkout.cod.totalOnDelivery')}</span>
                 <span className="text-base font-bold text-primary">{totalFormatted}</span>
             </div>
 
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
                 <p className="text-xs text-blue-300">
-                    🚚 Prepara el monto exacto si es posible. Nuestro repartidor
-                    confirmará la entrega.
+                    🚚 {t('checkout.cod.deliveryNote')}
                 </p>
             </div>
 
@@ -87,12 +88,12 @@ export default function CashOnDeliveryFlow({
                 {isSubmitting ? (
                     <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Creando pedido...
+                        {t('checkout.creatingOrder')}
                     </>
                 ) : (
                     <>
                         <Banknote className="w-5 h-5" />
-                        Confirmar pedido — Pago contra entrega
+                        {t('checkout.cod.confirmButton')}
                     </>
                 )}
             </button>

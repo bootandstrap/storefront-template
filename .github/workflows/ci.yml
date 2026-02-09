@@ -3,14 +3,17 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ── Lint, Type Check, Build ─────────────────────
   build:
-    name: Build & Type Check
+    name: Lint, Type Check & Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -32,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm turbo lint --filter=storefront
+
+      - name: Type Check
+        run: cd apps/storefront && npx tsc --noEmit
+
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
@@ -40,3 +49,159 @@ jobs:
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_STORE_URL: https://placeholder.com
           MEDUSA_BACKEND_URL: http://localhost:9000
+
+  # ── Unit & Integration Tests ───────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm turbo test:run --filter=storefront
+
+      - name: Run tests with coverage
+        run: cd apps/storefront && pnpm vitest run --coverage
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: apps/storefront/coverage/
+          retention-days: 14
+
+  # ── E2E Tests (Playwright) ─────────────────────
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only run on PRs to main (not every push)
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd apps/storefront && npx playwright install --with-deps chromium
+
+      - name: Start services (Docker Compose)
+        run: docker compose -f docker-compose.dev.yml up -d redis
+        env:
+          COMPOSE_PROJECT_NAME: ci
+
+      - name: Wait for Redis
+        run: |
+          for i in $(seq 1 30); do
+            docker compose -f docker-compose.dev.yml exec -T redis redis-cli ping && break
+            sleep 1
+          done
+
+      - name: Run E2E tests
+        run: cd apps/storefront && npx playwright test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.TEST_MEDUSA_KEY }}
+          NEXT_PUBLIC_STORE_URL: http://localhost:3000
+          MEDUSA_BACKEND_URL: http://localhost:9000
+          REDIS_URL: redis://localhost:6379
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/storefront/playwright-report/
+          retention-days: 14
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
+
+  # ── Lighthouse CI ──────────────────────────────
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    # Only run on PRs to main
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@latest
+
+      - name: Build storefront
+        run: pnpm turbo build --filter=storefront
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_STORE_URL: http://localhost:3000
+          MEDUSA_BACKEND_URL: http://localhost:9000
+
+      - name: Run Lighthouse CI
+        run: |
+          cd apps/storefront
+          lhci autorun || echo "Lighthouse CI completed with warnings"
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: apps/storefront/.lighthouseci/
+          retention-days: 14

@@ -1,54 +1,67 @@
-import { createClient } from '@/lib/supabase/client'
+/**
+ * Analytics event tracker — client-side
+ *
+ * Gated by enable_analytics feature flag.
+ * Inserts events to analytics_events table via Supabase anon client.
+ *
+ * Usage (in Client Components):
+ *   import { trackEvent } from '@/lib/analytics'
+ *   trackEvent('product_view', { product_id: '...' })
+ */
 
-// ---------------------------------------------------------------------------
-// Analytics event tracker — inserts into analytics_events table
-// Gated by enable_analytics feature flag (checked at call site)
-// ---------------------------------------------------------------------------
+import { createBrowserClient } from '@supabase/ssr'
 
-type EventType =
+type AnalyticsEvent =
     | 'page_view'
     | 'product_view'
     | 'add_to_cart'
     | 'remove_from_cart'
     | 'checkout_start'
-    | 'checkout_complete'
+    | 'order_placed'
     | 'search'
+    | 'category_view'
+    | 'whatsapp_click'
 
-interface EventMetadata {
-    path?: string
-    product_id?: string
-    product_title?: string
-    search_query?: string
-    cart_value?: number
-    [key: string]: unknown
+let _analyticsEnabled: boolean | null = null
+
+/**
+ * Track an analytics event. No-op if analytics flag is disabled.
+ * Fails silently to never block UI.
+ */
+export async function trackEvent(
+    event: AnalyticsEvent,
+    properties: Record<string, unknown> = {},
+    analyticsEnabled?: boolean
+) {
+    // Allow explicit override, otherwise use cached value
+    if (analyticsEnabled !== undefined) {
+        _analyticsEnabled = analyticsEnabled
+    }
+
+    // Skip if analytics is disabled or we don't know yet
+    if (_analyticsEnabled === false) return
+
+    try {
+        const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        await supabase.from('analytics_events').insert({
+            event_type: event,
+            properties,
+            page_url: typeof window !== 'undefined' ? window.location.pathname : null,
+            referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+            tenant_id: process.env.NEXT_PUBLIC_TENANT_ID || null,
+        })
+    } catch {
+        // Silent fail — never block UI for analytics
+    }
 }
 
 /**
- * Track an analytics event.
- * Uses browser Supabase client — call from client components only.
+ * Set whether analytics is enabled (called once from layout/provider).
  */
-export async function trackEvent(
-    eventType: EventType,
-    metadata: EventMetadata = {}
-): Promise<void> {
-    try {
-        const supabase = createClient()
-
-        // Get current user (optional — anonymous events are allowed)
-        const { data: { user } } = await supabase.auth.getUser()
-
-        await supabase.from('analytics_events').insert({
-            event_type: eventType,
-            user_id: user?.id ?? null,
-            metadata: {
-                ...metadata,
-                timestamp: new Date().toISOString(),
-                user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-                referrer: typeof document !== 'undefined' ? document.referrer : null,
-            },
-        })
-    } catch (err) {
-        // Silent fail — analytics should never break UX
-        console.warn('[analytics] Event tracking failed:', err)
-    }
+export function setAnalyticsEnabled(enabled: boolean) {
+    _analyticsEnabled = enabled
 }

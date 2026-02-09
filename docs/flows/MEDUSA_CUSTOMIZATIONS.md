@@ -54,6 +54,39 @@
 - Triggers `whatsapp-checkout` workflow
 - Returns WhatsApp URL + order ID
 
+## Storefront — Authenticated Medusa Client (`lib/medusa/auth-medusa.ts`) ✅
+
+**Purpose**: Customer-specific operations (orders, addresses) require authentication. The authenticated fetcher reads the Supabase JWT from server-side cookies and passes it as a Bearer token to the Medusa Store API.
+
+### How It Works
+
+```
+Supabase Cookie → extract access_token → Bearer header → Medusa Store API
+```
+
+- Reads `sb-*-auth-token` from `next/headers` cookies
+- Sends as `Authorization: Bearer <token>` to Medusa's `/store/*` endpoints
+- Medusa's `supabase-auth` module validates the JWT and resolves the customer
+- Retry with doubled timeout on first failure
+
+### Available Functions
+
+| Function | Endpoint | Returns |
+|----------|----------|---------|
+| `getAuthCustomerOrders(limit, offset)` | `GET /store/orders` | Paginated orders |
+| `getAuthOrder(id)` | `GET /store/orders/:id` | Single order detail |
+| `getAuthCustomerAddresses()` | `GET /store/customers/me/addresses` | All addresses |
+| `createAuthAddress(data)` | `POST /store/customers/me/addresses` | New address |
+| `updateAuthAddress(id, data)` | `POST /store/customers/me/addresses/:id` | Updated address |
+| `deleteAuthAddress(id)` | `DELETE /store/customers/me/addresses/:id` | — |
+
+### Types (from `client.ts`)
+
+Key types used by the authenticated fetcher:
+- `MedusaAddress` — all string fields are `string | null`
+- `MedusaOrderItem` — uses `variant_title` (not `variant.title`)
+- `MedusaFulfillment`, `MedusaPayment` — for order detail rendering
+
 ## Seed Script (`src/scripts/seed.ts`) ✅
 
 Campifrut-specific seed with:

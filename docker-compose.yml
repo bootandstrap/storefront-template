@@ -49,15 +49,11 @@ services:
       - campifrut
 
   # ── SuperAdmin Panel ─────────────────────────
-  # For unified VPS deployment. On Dokploy, this is
-  # deployed as a separate service from its own repo.
+  # Deployed as a separate service from its own repo.
+  # Default image: build locally with `docker build -t bootandstrap-admin ../bootandstrap-admin`
+  # Or pull from registry: ADMIN_IMAGE=registry/bootandstrap-admin:latest
   admin:
-    build:
-      context: ../../bootandstrap-admin
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: ${ADMIN_IMAGE:-bootandstrap-admin:latest}
     ports:
       - "3100:3100"
     environment:
@@ -71,7 +67,7 @@ services:
         limits:
           memory: 256M
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:3100 || exit 1" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3100/api/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

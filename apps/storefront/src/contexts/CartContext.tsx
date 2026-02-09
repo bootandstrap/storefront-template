@@ -41,7 +41,7 @@ export function useCart(): CartContextValue {
 // Provider
 // ---------------------------------------------------------------------------
 
-const CART_ID_KEY = 'campifrut-cart-id'
+const CART_ID_KEY = 'bns-cart-id'
 
 export function CartProvider({ children }: { children: ReactNode }) {
     const [cart, setCart] = useState<MedusaCart | null>(null)
@@ -55,13 +55,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (state: MedusaLineItem[], newItem: MedusaLineItem) => [...state, newItem]
     )
 
-    // Load cart ID from localStorage on mount
+    // Load cart ID from localStorage on mount + hydrate cart data
     useEffect(() => {
         const stored = localStorage.getItem(CART_ID_KEY)
         if (stored) {
             setCartIdState(stored)
+            // Hydrate cart from Medusa
+            const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
+            const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+            fetch(`${medusaUrl}/store/carts/${stored}`, {
+                headers: {
+                    ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+                },
+            })
+                .then((res) => res.ok ? res.json() : null)
+                .then((data) => {
+                    if (data?.cart) setCart(data.cart)
+                })
+                .catch(() => {
+                    // Cart may have expired — clear stale ID
+                    localStorage.removeItem(CART_ID_KEY)
+                    setCartIdState(null)
+                })
+                .finally(() => setIsLoading(false))
+        } else {
+            setIsLoading(false)
         }
-        setIsLoading(false)
     }, [])
 
     const setCartId = useCallback((id: string) => {

@@ -10,14 +10,32 @@ export interface WhatsAppOrderData {
     config: StoreConfig
 }
 
+// ---------------------------------------------------------------------------
+// Template engine — processes {{variable}} and {{#each items}}...{{/each}}
+// ---------------------------------------------------------------------------
+
+export interface WhatsAppTemplateRow {
+    id: string
+    name: string
+    template: string
+    is_default: boolean
+    variables: string[]
+}
+
 /**
- * Build a WhatsApp order message from cart items
+ * Render a dynamic WhatsApp template with variable substitution.
+ *
+ * Supported syntax:
+ * - {{variable}} — simple substitution
+ * - {{#each items}}...{{/each}} — iteration over items array
  */
-export function buildWhatsAppMessage(data: WhatsAppOrderData): string {
-    const { items, customerName, deliveryAddress, notes, config } = data
+export function renderTemplate(
+    templateStr: string,
+    data: WhatsAppOrderData
+): string {
+    const { items, customerName, customerPhone, deliveryAddress, notes, config } = data
 
     const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
-
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat('es-CO', {
             style: 'currency',
@@ -25,36 +43,72 @@ export function buildWhatsAppMessage(data: WhatsAppOrderData): string {
             minimumFractionDigits: 0,
         }).format(amount / 100)
 
-    const itemLines = items.map((item, i) => {
-        const subtotal = item.unit_price * item.quantity
-        return `${i + 1}. ${item.title} x${item.quantity} — ${formatPrice(subtotal)}`
-    })
-
     const total = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
-    const lines = [
-        `🛒 *Nuevo pedido — ${config.business_name}*`,
-        '',
-        ...itemLines,
-        '',
-        `💰 *Total: ${formatPrice(total)}*`,
-    ]
+    // Process {{#each items}}...{{/each}} block
+    let result = templateStr.replace(
+        /\{\{#each items\}\}([\s\S]*?)\{\{\/each\}\}/g,
+        (_match, itemTemplate: string) => {
+            return items
+                .map((item, idx) => {
+                    const subtotal = item.unit_price * item.quantity
+                    return itemTemplate
+                        .replace(/\{\{name\}\}/g, item.title || '')
+                        .replace(/\{\{variant\}\}/g, item.variant?.title || '')
+                        .replace(/\{\{qty\}\}/g, String(item.quantity))
+                        .replace(/\{\{price\}\}/g, formatPrice(subtotal))
+                        .replace(/\{\{unit_price\}\}/g, formatPrice(item.unit_price))
+                        .replace(/\{\{index\}\}/g, String(idx + 1))
+                })
+                .join('')
+                .trim()
+        }
+    )
 
-    if (customerName) {
-        lines.push('', `👤 *Cliente:* ${customerName}`)
-    }
+    // Simple variable substitutions
+    result = result
+        .replace(/\{\{store_name\}\}/g, config.business_name || '')
+        .replace(/\{\{total\}\}/g, formatPrice(total))
+        .replace(/\{\{customer_name\}\}/g, customerName || '')
+        .replace(/\{\{customer_phone\}\}/g, customerPhone || '')
+        .replace(/\{\{delivery_address\}\}/g, deliveryAddress || '')
+        .replace(/\{\{notes\}\}/g, notes || '')
+        .replace(/\{\{item_count\}\}/g, String(items.length))
+        .replace(/\{\{currency\}\}/g, currency.toUpperCase())
 
-    if (deliveryAddress) {
-        lines.push(`📍 *Dirección:* ${deliveryAddress}`)
-    }
+    return result.trim()
+}
 
-    if (notes) {
-        lines.push('', `📝 *Notas:* ${notes}`)
-    }
+// ---------------------------------------------------------------------------
+// Hardcoded fallback (used when no template is found in DB)
+// ---------------------------------------------------------------------------
 
-    lines.push('', '---', `Pedido enviado desde ${config.business_name}`)
+const FALLBACK_TEMPLATE = `🛒 *Nuevo pedido — {{store_name}}*
 
-    return lines.join('\n')
+{{#each items}}
+• {{name}} x{{qty}} — {{price}}
+{{/each}}
+
+💰 *Total: {{total}}*
+
+👤 *Cliente:* {{customer_name}}
+📍 *Dirección:* {{delivery_address}}
+📝 *Notas:* {{notes}}
+
+---
+Pedido enviado desde {{store_name}}`
+
+/**
+ * Build a WhatsApp order message.
+ *
+ * Uses dynamic template from DB when provided, falls back to hardcoded template.
+ */
+export function buildWhatsAppMessage(
+    data: WhatsAppOrderData,
+    template?: WhatsAppTemplateRow | null
+): string {
+    const templateStr = template?.template || FALLBACK_TEMPLATE
+    return renderTemplate(templateStr, data)
 }
 
 /**

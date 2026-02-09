@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import CMSPageRenderer from '@/components/cms/CMSPageRenderer'
@@ -18,6 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const { data: page } = await supabase
         .from('cms_pages')
         .select('title, body')
+        .eq('tenant_id', getRequiredTenantId())
         .eq('slug', slug)
         .eq('published', true)
         .single()
@@ -47,6 +48,7 @@ export default async function CMSPage({ params }: PageProps) {
     const { data: page } = await supabase
         .from('cms_pages')
         .select('*')
+        .eq('tenant_id', getRequiredTenantId())
         .eq('slug', slug)
         .eq('published', true)
         .single()

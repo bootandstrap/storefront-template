@@ -1,7 +1,9 @@
 'use server'
 
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
+import { checkLimit } from '@/lib/limits'
+import { createClient } from '@/lib/supabase/server'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -74,6 +76,64 @@ interface OrderResult {
 }
 
 // ---------------------------------------------------------------------------
+// Minimum order amount validation
+// ---------------------------------------------------------------------------
+
+async function validateMinOrderAmount(
+    cartId: string
+): Promise<{ allowed: boolean; error?: string }> {
+    const { config } = await getConfig()
+    const minAmount = config.min_order_amount ?? 0
+    if (minAmount <= 0) return { allowed: true }
+
+    try {
+        const res = await medusaAdmin<{ cart: CartWithPayment }>(
+            `/store/carts/${cartId}?fields=total`
+        )
+        const total = res.cart.total ?? 0
+        if (total < minAmount) {
+            const formatted = (minAmount / 100).toFixed(2)
+            return { allowed: false, error: `Minimum order amount is $${formatted}` }
+        }
+        return { allowed: true }
+    } catch {
+        // Don't block checkout if validation fails
+        return { allowed: true }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Monthly order limit validation (server-side enforcement)
+// ---------------------------------------------------------------------------
+
+async function validateMaxOrdersMonth(): Promise<{ allowed: boolean; error?: string }> {
+    try {
+        const { planLimits } = await getConfig()
+        const supabase = await createClient()
+
+        // Count orders from this month using analytics_events or a direct count
+        const now = new Date()
+        const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+        const { count } = await supabase
+            .from('analytics_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', getRequiredTenantId())
+            .eq('event_type', 'order_placed')
+            .gte('created_at', firstOfMonth)
+
+        const limitCheck = checkLimit(planLimits, 'max_orders_month', count ?? 0)
+        if (!limitCheck.allowed) {
+            return { allowed: false, error: 'Monthly order limit reached. Please contact support.' }
+        }
+        return { allowed: true }
+    } catch {
+        // Don't block checkout if validation fails
+        return { allowed: true }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Server Actions
 // ---------------------------------------------------------------------------
 
@@ -86,6 +146,14 @@ export async function initializePaymentSession(
     providerId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
+        // Validate minimum order amount
+        const minCheck = await validateMinOrderAmount(cartId)
+        if (!minCheck.allowed) return { success: false, error: minCheck.error }
+
+        // Validate monthly order limit
+        const orderLimitCheck = await validateMaxOrdersMonth()
+        if (!orderLimitCheck.allowed) return { success: false, error: orderLimitCheck.error }
+
         const { featureFlags } = await getConfig()
 
         // Validate feature flag
@@ -188,6 +256,14 @@ export async function submitBankTransferOrder(
     }
 ): Promise<{ order: OrderResult | null; error?: string }> {
     try {
+        // Validate minimum order amount
+        const minCheck = await validateMinOrderAmount(cartId)
+        if (!minCheck.allowed) return { order: null, error: minCheck.error }
+
+        // Validate monthly order limit
+        const orderLimitCheck = await validateMaxOrdersMonth()
+        if (!orderLimitCheck.allowed) return { order: null, error: orderLimitCheck.error }
+
         const { featureFlags } = await getConfig()
 
         if (!isFeatureEnabled(featureFlags, 'enable_bank_transfer')) {
@@ -231,6 +307,14 @@ export async function submitCODOrder(
     }
 ): Promise<{ order: OrderResult | null; error?: string }> {
     try {
+        // Validate minimum order amount
+        const minCheck = await validateMinOrderAmount(cartId)
+        if (!minCheck.allowed) return { order: null, error: minCheck.error }
+
+        // Validate monthly order limit
+        const orderLimitCheck = await validateMaxOrdersMonth()
+        if (!orderLimitCheck.allowed) return { order: null, error: orderLimitCheck.error }
+
         const { featureFlags } = await getConfig()
 
         if (!isFeatureEnabled(featureFlags, 'enable_cash_on_delivery')) {
@@ -298,5 +382,45 @@ export async function isPaymentMethodAvailable(
             return isFeatureEnabled(featureFlags, 'enable_whatsapp_checkout')
         default:
             return false
+    }
+}
+
+// ---------------------------------------------------------------------------
+// WhatsApp: fetch default template from Supabase
+// ---------------------------------------------------------------------------
+
+export async function fetchDefaultWhatsAppTemplate(): Promise<{
+    id: string
+    name: string
+    template: string
+    is_default: boolean
+    variables: string[]
+} | null> {
+    try {
+        const supabase = await createClient()
+
+        // Try default template first
+        const { data: defaultTmpl } = await supabase
+            .from('whatsapp_templates')
+            .select('id, name, template, is_default, variables')
+            .eq('tenant_id', getRequiredTenantId())
+            .eq('is_default', true)
+            .limit(1)
+            .single()
+
+        if (defaultTmpl) return defaultTmpl
+
+        // Fallback: first template
+        const { data: firstTmpl } = await supabase
+            .from('whatsapp_templates')
+            .select('id, name, template, is_default, variables')
+            .eq('tenant_id', getRequiredTenantId())
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .single()
+
+        return firstTmpl ?? null
+    } catch {
+        return null
     }
 }

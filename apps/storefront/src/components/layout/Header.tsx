@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { ShoppingCart, Menu, X, User, MessageCircle, Search } from 'lucide-react'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 import { useCart } from '@/contexts/CartContext'
+import { useI18n } from '@/lib/i18n/provider'
 import LanguageSelector from './LanguageSelector'
 import CurrencySelector from './CurrencySelector'
 
@@ -21,6 +22,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
     const [mobileOpen, setMobileOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const { itemCount, openDrawer } = useCart()
+    const { localizedHref } = useI18n()
 
     return (
         <>
@@ -28,7 +30,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                 <div className="container-page">
                     <div className="flex items-center justify-between h-16 md:h-18">
                         {/* Logo */}
-                        <Link href="/" className="flex items-center gap-2 shrink-0">
+                        <Link href={localizedHref('home')} className="flex items-center gap-2 shrink-0">
                             {config.logo_url ? (
                                 <Image
                                     src={config.logo_url}
@@ -57,7 +59,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                         if (e.key === 'Enter') {
                                             const value = (e.target as HTMLInputElement).value
                                             if (value.trim()) {
-                                                window.location.href = `/productos?q=${encodeURIComponent(value.trim())}`
+                                                window.location.href = `${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`
                                             }
                                         }
                                     }}
@@ -68,7 +70,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {/* Desktop nav links */}
                         <nav className="hidden md:flex items-center gap-5">
                             <Link
-                                href="/productos"
+                                href={localizedHref('products')}
                                 className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
                             >
                                 Productos
@@ -126,7 +128,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
 
                             {/* Auth button — visible on mobile too */}
                             <Link
-                                href="/login"
+                                href={localizedHref('login')}
                                 className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
                             >
                                 <User className="w-4 h-4" />
@@ -163,7 +165,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                     if (e.key === 'Enter') {
                                         const value = (e.target as HTMLInputElement).value
                                         if (value.trim()) {
-                                            window.location.href = `/productos?q=${encodeURIComponent(value.trim())}`
+                                            window.location.href = `${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`
                                             setSearchOpen(false)
                                         }
                                     }
@@ -183,7 +185,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                     />
                     <nav className="absolute top-16 left-0 right-0 glass-strong border-b border-surface-3/50 p-6 flex flex-col gap-4 animate-slide-up">
                         <Link
-                            href="/productos"
+                            href={localizedHref('products')}
                             className="text-base font-medium p-2 rounded-lg hover:bg-surface-1"
                             onClick={() => setMobileOpen(false)}
                         >

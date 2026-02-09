@@ -9,6 +9,7 @@ import WhatsAppCheckoutFlow from '@/components/checkout/WhatsAppCheckoutFlow'
 import BankTransferFlow from '@/components/checkout/BankTransferFlow'
 import CashOnDeliveryFlow from '@/components/checkout/CashOnDeliveryFlow'
 import type { StoreConfig, FeatureFlags, AppConfig } from '@/lib/config'
+import { useI18n } from '@/lib/i18n/provider'
 import { X, ArrowLeft, ArrowRight, ShoppingBag, User, MapPin, CreditCard, CheckCircle, Loader2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -32,13 +33,6 @@ interface CheckoutModalProps {
 type CheckoutStep = 'info' | 'address' | 'method' | 'payment' | 'confirmation'
 
 const STEP_ORDER: CheckoutStep[] = ['info', 'address', 'method', 'payment', 'confirmation']
-const STEP_LABELS: Record<CheckoutStep, string> = {
-    info: 'Datos',
-    address: 'Dirección',
-    method: 'Método',
-    payment: 'Pago',
-    confirmation: 'Confirmación',
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -52,6 +46,7 @@ export default function CheckoutModal({
     onClose,
 }: CheckoutModalProps) {
     const { cart } = useCart()
+    const { t, locale } = useI18n()
 
     // Step navigation
     const [step, setStep] = useState<CheckoutStep>('info')
@@ -85,7 +80,7 @@ export default function CheckoutModal({
     const total = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
     const formatPrice = (amount: number) =>
-        new Intl.NumberFormat('es-CO', {
+        new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
             style: 'currency',
             currency: currency.toUpperCase(),
             minimumFractionDigits: 0,
@@ -144,19 +139,19 @@ export default function CheckoutModal({
             try {
                 const initRes = await initializePaymentSession(cart.id, 'pp_stripe_stripe')
                 if (!initRes.success) {
-                    setError(initRes.error ?? 'Error initializing payment')
+                    setError(initRes.error ?? t('checkout.errors.paymentInit'))
                     setStripeLoading(false)
                     return
                 }
                 const secretRes = await getStripeClientSecret(cart.id)
                 if (!secretRes.clientSecret) {
-                    setError(secretRes.error ?? 'Error getting payment details')
+                    setError(secretRes.error ?? t('checkout.errors.paymentDetails'))
                     setStripeLoading(false)
                     return
                 }
                 setClientSecret(secretRes.clientSecret)
             } catch {
-                setError('Error initializing card payment')
+                setError(t('checkout.errors.cardInit'))
             } finally {
                 setStripeLoading(false)
             }
@@ -255,7 +250,7 @@ export default function CheckoutModal({
                                 </button>
                             )}
                             <h2 className="text-lg font-bold font-display">
-                                Finalizar pedido
+                                {t('checkout.title')}
                             </h2>
                         </div>
                         <button
@@ -288,24 +283,24 @@ export default function CheckoutModal({
                         <div className="space-y-4 animate-fade-in">
                             <div className="flex items-center gap-2 mb-4">
                                 <User className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">Tus datos</h3>
+                                <h3 className="font-bold">{t('checkout.steps.info')}</h3>
                             </div>
                             <div>
                                 <label className="text-sm text-text-secondary block mb-1">
-                                    Nombre *
+                                    {t('checkout.form.name')} *
                                 </label>
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="Tu nombre completo"
+                                    placeholder={t('checkout.form.namePlaceholder')}
                                     className="input w-full"
                                     required
                                 />
                             </div>
                             <div>
                                 <label className="text-sm text-text-secondary block mb-1">
-                                    Email
+                                    {t('checkout.form.email')}
                                 </label>
                                 <input
                                     type="email"
@@ -317,7 +312,7 @@ export default function CheckoutModal({
                             </div>
                             <div>
                                 <label className="text-sm text-text-secondary block mb-1">
-                                    Teléfono
+                                    {t('checkout.form.phone')}
                                 </label>
                                 <input
                                     type="tel"
@@ -335,28 +330,28 @@ export default function CheckoutModal({
                         <div className="space-y-4 animate-fade-in">
                             <div className="flex items-center gap-2 mb-4">
                                 <MapPin className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">Dirección de entrega</h3>
+                                <h3 className="font-bold">{t('checkout.steps.address')}</h3>
                             </div>
                             <div>
                                 <label className="text-sm text-text-secondary block mb-1">
-                                    Dirección
+                                    {t('checkout.form.address')}
                                 </label>
                                 <input
                                     type="text"
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="Calle, barrio, ciudad"
+                                    placeholder={t('checkout.form.addressPlaceholder')}
                                     className="input w-full"
                                 />
                             </div>
                             <div>
                                 <label className="text-sm text-text-secondary block mb-1">
-                                    Notas del pedido
+                                    {t('checkout.form.notes')}
                                 </label>
                                 <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Instrucciones especiales, referencias..."
+                                    placeholder={t('checkout.form.notesPlaceholder')}
                                     rows={3}
                                     className="input w-full resize-none"
                                 />
@@ -369,20 +364,20 @@ export default function CheckoutModal({
                         <div className="space-y-4 animate-fade-in">
                             <div className="flex items-center gap-2 mb-4">
                                 <CreditCard className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">Método de pago</h3>
+                                <h3 className="font-bold">{t('checkout.steps.method')}</h3>
                             </div>
 
                             {loadingMethods ? (
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
                                     <span className="ml-2 text-sm text-text-muted">
-                                        Cargando métodos...
+                                        {t('checkout.loadingMethods')}
                                     </span>
                                 </div>
                             ) : availableMethods.length === 0 ? (
                                 <div className="text-center py-8 text-text-muted">
                                     <p className="text-sm">
-                                        No hay métodos de pago disponibles.
+                                        {t('checkout.noMethods')}
                                     </p>
                                 </div>
                             ) : (
@@ -436,7 +431,7 @@ export default function CheckoutModal({
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
                                     <span className="ml-2 text-sm text-text-muted">
-                                        Inicializando pago...
+                                        {t('checkout.initPayment')}
                                     </span>
                                 </div>
                             )}
@@ -495,11 +490,11 @@ export default function CheckoutModal({
                         <div className="text-center py-6 animate-fade-in">
                             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                             <h3 className="text-xl font-bold text-text-primary mb-2">
-                                ¡Pedido creado!
+                                {t('checkout.confirmation.title')}
                             </h3>
                             {orderResult && orderResult.display_id > 0 && (
                                 <p className="text-sm text-text-secondary mb-4">
-                                    Número de pedido:{' '}
+                                    {t('checkout.confirmation.orderNumber')}{' '}
                                     <span className="font-bold text-primary">
                                         #{orderResult.display_id}
                                     </span>
@@ -507,19 +502,19 @@ export default function CheckoutModal({
                             )}
                             <p className="text-sm text-text-muted mb-6">
                                 {selectedMethod === 'card'
-                                    ? 'Tu pago ha sido procesado. Recibirás un email de confirmación.'
+                                    ? t('checkout.confirmation.cardMsg')
                                     : selectedMethod === 'bank_transfer'
-                                        ? 'Confirmaremos tu transferencia lo antes posible.'
+                                        ? t('checkout.confirmation.bankMsg')
                                         : selectedMethod === 'cod'
-                                            ? 'Tu pedido está en camino. Paga al recibirlo.'
-                                            : 'Gracias por tu pedido.'}
+                                            ? t('checkout.confirmation.codMsg')
+                                            : t('checkout.confirmation.genericMsg')}
                             </p>
                             <button
                                 onClick={onClose}
                                 className="btn btn-primary px-8 py-2"
                                 type="button"
                             >
-                                Cerrar
+                                {t('common.close')}
                             </button>
                         </div>
                     )}
@@ -530,11 +525,11 @@ export default function CheckoutModal({
                             <div className="flex items-center gap-2 mb-2">
                                 <ShoppingBag className="w-4 h-4 text-text-muted" />
                                 <span className="text-xs text-text-muted">
-                                    {items.length} producto{items.length !== 1 ? 's' : ''}
+                                    {t('checkout.itemCount', { count: String(items.length) })}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-text-secondary">Total</span>
+                                <span className="text-sm text-text-secondary">{t('cart.total')}</span>
                                 <span className="text-lg font-bold text-primary">
                                     {formatPrice(total)}
                                 </span>
@@ -552,7 +547,7 @@ export default function CheckoutModal({
                             className="btn btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                             type="button"
                         >
-                            Continuar
+                            {t('checkout.continue')}
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>

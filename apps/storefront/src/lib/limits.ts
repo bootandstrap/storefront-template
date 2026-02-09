@@ -10,12 +10,19 @@ type LimitableResource =
     | 'max_carousel_slides'
     | 'max_admin_users'
     | 'storage_limit_mb'
+    | 'max_languages'
+    | 'max_currencies'
+    | 'max_whatsapp_templates'
+    | 'max_file_upload_mb'
+    | 'max_email_sends_month'
+    | 'max_custom_domains'
 
 export interface LimitCheckResult {
     allowed: boolean
     remaining: number
     limit: number
     current: number
+    percentage: number
 }
 
 /**
@@ -27,12 +34,24 @@ export function checkLimit(
     resource: LimitableResource,
     currentCount: number
 ): LimitCheckResult {
-    const limit = limits[resource]
+    const limit = limits[resource] as number
     const remaining = Math.max(0, limit - currentCount)
+    const percentage = limit > 0 ? Math.round((currentCount / limit) * 100) : 0
     return {
         allowed: currentCount < limit,
         remaining,
         limit,
         current: currentCount,
+        percentage,
     }
+}
+
+/**
+ * Get the severity level for a limit check result.
+ * Used by UsageMeter component for color coding.
+ */
+export function getLimitSeverity(result: LimitCheckResult): 'ok' | 'warning' | 'critical' {
+    if (result.percentage >= 90) return 'critical'
+    if (result.percentage >= 70) return 'warning'
+    return 'ok'
 }

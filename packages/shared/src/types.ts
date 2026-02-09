@@ -25,7 +25,7 @@ export type PaymentStatus =
     | "failed";
 
 /** User roles — Supabase Auth profiles */
-export type UserRole = "customer" | "admin" | "super_admin";
+export type UserRole = "customer" | "owner" | "super_admin";
 
 /** CMS Page status */
 export type PageStatus = "draft" | "published" | "archived";

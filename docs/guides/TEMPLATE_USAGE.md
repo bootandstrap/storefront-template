@@ -100,7 +100,7 @@ COOKIE_SECRET=generate-a-random-string
 JWT_SECRET=generate-another-random-string
 
 # Stripe (optional — leave empty to disable)
-STRIPE_API_KEY=sk_live_xxx
+STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
 
@@ -237,6 +237,26 @@ If migrating from the Campifrut seed, replace with client products:
 # Edit apps/medusa/src/scripts/seed.ts with client products
 cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
 ```
+
+---
+
+## Automated Provisioning (Alternative)
+
+For faster client setup, use the provisioning scripts:
+
+```bash
+# Interactive wizard — generates .env, Docker Compose, and outputs next steps
+./scripts/provision-client.sh
+
+# Or generate .env non-interactively from config.json (for CI)
+./scripts/generate-env.sh <client-slug>
+
+# Then provision tenant in Supabase
+# Edit scripts/provision-tenant.sql with client details, then run:
+psql $DATABASE_URL < scripts/provision-tenant.sql
+```
+
+See [CLIENT_HANDOFF.md](../operations/CLIENT_HANDOFF.md) for the full handoff checklist.
 
 ---
 

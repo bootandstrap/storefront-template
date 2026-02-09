@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Minus, Plus, Trash2, Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
+import { useI18n } from '@/lib/i18n/provider'
 import { updateCartItemAction, removeFromCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import type { MedusaLineItem } from '@/lib/medusa/client'
 
@@ -14,7 +15,8 @@ interface CartItemProps {
 
 export default function CartItem({ item }: CartItemProps) {
     const { cartId, setCart } = useCart()
-    const { error } = useToast()
+    const { error: showError } = useToast()
+    const { t, locale } = useI18n()
     const [isPending, startTransition] = useTransition()
     const [pendingAction, setPendingAction] = useState<'inc' | 'dec' | 'remove' | null>(null)
 
@@ -23,7 +25,7 @@ export default function CartItem({ item }: CartItemProps) {
     const currency = item.variant?.prices?.[0]?.currency_code || 'COP'
 
     function formatPrice(amount: number) {
-        return new Intl.NumberFormat('es-CO', {
+        return new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
             style: 'currency',
             currency: currency.toUpperCase(),
             minimumFractionDigits: 0,
@@ -38,7 +40,7 @@ export default function CartItem({ item }: CartItemProps) {
             if (cart) {
                 setCart(cart)
             } else {
-                error('Error al actualizar cantidad')
+                showError(t('cart.drawer.updateError'))
             }
             setPendingAction(null)
         })
@@ -52,7 +54,7 @@ export default function CartItem({ item }: CartItemProps) {
             if (cart) {
                 setCart(cart)
             } else {
-                error('Error al eliminar producto')
+                showError(t('cart.drawer.removeError'))
             }
             setPendingAction(null)
         })
@@ -122,7 +124,7 @@ export default function CartItem({ item }: CartItemProps) {
                     onClick={handleRemove}
                     disabled={isPending}
                     className="p-1 text-text-muted hover:text-red-500 transition-colors"
-                    aria-label="Eliminar producto"
+                    aria-label={t('cart.drawer.removeLabel')}
                 >
                     {pendingAction === 'remove' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
