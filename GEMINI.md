@@ -14,7 +14,9 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **First client**: Campifrut (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · **Phase 6 (i18n + Route Restructuring)** 🔄 75% · **Phase 7 (Panels + Multi-Currency)** 🔄 15% · **Local dev verified** (`dev.sh` ✅) · **DB seeded** (13 products, 5 categories ✅).
+**Current state**: Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · **Phase 6 (i18n + Route Restructuring)** 🔄 90% · **Local dev verified** (`dev.sh` ✅) · **DB seeded** (13 products, 5 categories ✅).
+
+**Repository**: [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (private) · CI: GitHub Actions on PRs.
 
 ---
 
@@ -479,9 +481,12 @@ Domains via Dokploy:
 | 2. Storefront MVP | ✅ | Lib layer, SOTA design, products, cart, auth, WhatsApp checkout |
 | 3. Payments & Orders | ✅ | Stripe, account dashboard, order tracking |
 | 4. Polish & Hardening | ✅ | Lighthouse ≥90, CMS, analytics, transactional emails |
-| 5. Production Deploy | ✅ | Docker, Dokploy, Redis production, CSP, health checks |
-| 6. i18n + Route Restructuring | 🔄 75% | `[lang]/` routing ✅, 5 dictionaries ✅, i18n system ✅, proxy ✅, Supabase migration ✅, header selectors ✅ — remaining: wire 14 pages to `t()` |
-| 7. Panels + Multi-Currency | 🔄 15% | Medusa client extensions ✅ (orders + addresses) — remaining: customer panel, owner panel, admin panel |
+| 5. Production Deploy | ✅ | Docker, Dokploy, Redis production, CSP, health checks, GitHub CI |
+| 6. i18n + Route Restructuring | 🔄 90% | `[lang]/` routing ✅, 5 dictionaries (240+ keys) ✅, i18n system ✅, proxy ✅, 14 pages + 8 components wired to `t()` ✅ — remaining: panel page audit |
+| 7. Customer Panel Polish | 🔜 | Real Medusa data in dashboard/orders/profile, address CRUD |
+| 8. Owner Panel | 🔜 | Store config, carousel, WhatsApp templates, CMS editor |
+| 9. Admin Panel (SaaS) | 🔜 | Feature flags, plan limits, theme control, multi-client |
+| 10. Production Hardening | 🔜 | E2E tests, monitoring, multi-client deploy, client provisioning |
 
 See [ROADMAP.md](ROADMAP.md) for detailed progress and future plans.
 
@@ -510,7 +515,8 @@ Key findings during build verification:
 
 | Doc | Contents |
 |-----|----------|
-| [ROADMAP.md](ROADMAP.md) | Detailed progress tracker + future phases |
+| [ROADMAP.md](ROADMAP.md) | Detailed progress tracker + future phases (7–10 SOTA vision) |
+| [TEMPLATE_USAGE.md](docs/TEMPLATE_USAGE.md) | How to deploy this template for a new client (superadmin/dev guide) |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, request flow, streaming architecture |
 | [AUTH_FLOW.md](docs/AUTH_FLOW.md) | Supabase Auth + Medusa integration, flag-driven providers |
 | [CHECKOUT_FLOWS.md](docs/CHECKOUT_FLOWS.md) | Dynamic N-method payment system, WhatsApp templates |

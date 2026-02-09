@@ -1,5 +1,7 @@
 # Development Setup
 
+> **Repository**: `git clone https://github.com/bootandstrap/bootandstrap-ecommerce.git`
+
 ## Prerequisites
 
 - Node.js 20+

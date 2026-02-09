@@ -1,5 +1,8 @@
 # Deployment — Dokploy on Contabo VPS
 
+> **Repository**: [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (private)
+> **CI**: GitHub Actions — build + type-check on PRs to `main` (see `.github/workflows/ci.yml`)
+
 ## Overview
 
 Campifrut runs as Docker containers on a **Contabo VPS** managed by **Dokploy**:
