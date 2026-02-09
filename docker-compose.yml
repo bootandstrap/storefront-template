@@ -1,0 +1,142 @@
+# ============================================
+# Campifrut v2 — Docker Compose (Production)
+# ============================================
+# PostgreSQL is NOT included — uses Supabase Cloud.
+# Services: Next.js + Medusa Server + Medusa Worker + Redis.
+#
+# Deploy: docker compose up -d --build
+# ============================================
+
+services:
+  # ── Next.js Storefront ───────────────────────
+  storefront:
+    build:
+      context: ./apps/storefront
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_STORE_URL=${NEXT_PUBLIC_STORE_URL:-https://campifrut.com}
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_BACKEND_URL=http://medusa-server:9000
+    depends_on:
+      medusa-server:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - campifrut
+
+  # ── Medusa API Server ────────────────────────
+  medusa-server:
+    build:
+      context: ./apps/medusa
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_WORKER_MODE=server
+      - DATABASE_URL=${SUPABASE_DB_URL}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9000/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - campifrut
+
+  # ── Medusa Background Worker ─────────────────
+  medusa-worker:
+    build:
+      context: ./apps/medusa
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_WORKER_MODE=worker
+      - DATABASE_URL=${SUPABASE_DB_URL}
+      - REDIS_URL=redis://redis:6379
+      - DISABLE_MEDUSA_ADMIN=true
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - campifrut
+
+  # ── Redis (Events, Cache, Sessions) ──────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - campifrut
+
+networks:
+  campifrut:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local

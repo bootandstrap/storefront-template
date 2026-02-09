@@ -1,0 +1,9 @@
+node_modules
+.medusa
+.git
+.gitignore
+*.md
+.env*
+.vscode
+coverage
+integration-tests

@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+.medusa/
+dist/
+out/
+
+# Turbo
+.turbo/
+
+# Environment (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+apps/medusa/.env
+apps/storefront/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# Debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# Test
+coverage/
+
+# Misc
+*.tgz
+.cache/

@@ -1,0 +1,669 @@
+@import "tailwindcss";
+
+/* ========================================================================
+   SOTA E-Commerce Template Design System — Tailwind v4 CSS-first config
+   ======================================================================== */
+
+@theme inline {
+  /* --- Dynamic theme (overridden at runtime via CSS vars from config) --- */
+  --color-primary: var(--config-primary, #2D5016);
+  --color-primary-light: var(--config-primary-light, #3d6b1e);
+  --color-secondary: var(--config-secondary, #8BC34A);
+  --color-secondary-light: var(--config-secondary-light, #a4d65e);
+  --color-accent: var(--config-accent, #FF9800);
+  --color-accent-light: var(--config-accent-light, #FFB74D);
+
+  /* --- Surface layers (driven by config preset) --- */
+  --color-surface-0: var(--config-surface, #ffffff);
+  --color-surface-1: color-mix(in srgb, var(--config-surface, #f8faf6) 92%, var(--config-primary, #2D5016) 8%);
+  --color-surface-2: color-mix(in srgb, var(--config-surface, #f0f4ec) 85%, var(--config-primary, #2D5016) 15%);
+  --color-surface-3: color-mix(in srgb, var(--config-surface, #e8ede3) 78%, var(--config-primary, #2D5016) 22%);
+
+  /* --- Text hierarchy (driven by config preset) --- */
+  --color-text-primary: var(--config-text, #1a2e0a);
+  --color-text-secondary: color-mix(in srgb, var(--config-text, #1a2e0a) 70%, transparent);
+  --color-text-muted: color-mix(in srgb, var(--config-text, #1a2e0a) 45%, transparent);
+  --color-text-inverse: #ffffff;
+
+  /* --- Semantic --- */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* --- Fonts --- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  /* --- Spacing scale extensions --- */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+
+  /* --- Border radius --- */
+  --radius-card: 1rem;
+  --radius-button: 0.75rem;
+  --radius-pill: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 10px 25px rgba(45, 80, 22, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.15);
+
+  /* --- Animation --- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================================================
+   Dark Mode Tokens — controlled by config.theme_mode via .dark class on <html>
+   ======================================================================== */
+
+.dark {
+  --color-surface-0: #0f1a0a;
+  --color-surface-1: #1a2e12;
+  --color-surface-2: #24401a;
+  --color-surface-3: #2e5222;
+  --color-text-primary: #e8f0e0;
+  --color-text-secondary: #b8ccaa;
+  --color-text-muted: #8aa078;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Auto mode: respect OS preference only when data-theme="auto" */
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] {
+    --color-surface-0: #0f1a0a;
+    --color-surface-1: #1a2e12;
+    --color-surface-2: #24401a;
+    --color-surface-3: #2e5222;
+    --color-text-primary: #e8f0e0;
+    --color-text-secondary: #b8ccaa;
+    --color-text-muted: #8aa078;
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ========================================================================
+   Base Styles
+   ======================================================================== */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================================================
+   Accessibility — Focus Visible
+   ======================================================================== */
+
+/* Keyboard-only focus ring (invisible for mouse users) */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip-to-content link (screen reader accessible) */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-button);
+  font-weight: 600;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 1rem;
+}
+
+/* ========================================================================
+   Glassmorphism Utilities
+   ======================================================================== */
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass {
+  background: rgba(15, 26, 10, 0.7);
+  border-color: rgba(139, 195, 74, 0.15);
+}
+
+.dark .glass-strong {
+  background: rgba(15, 26, 10, 0.85);
+  border-color: rgba(139, 195, 74, 0.2);
+}
+
+[data-theme="auto"] {
+  @media (prefers-color-scheme: dark) {
+    & .glass {
+      background: rgba(15, 26, 10, 0.7);
+      border-color: rgba(139, 195, 74, 0.15);
+    }
+    & .glass-strong {
+      background: rgba(15, 26, 10, 0.85);
+      border-color: rgba(139, 195, 74, 0.2);
+    }
+  }
+}
+
+/* ========================================================================
+   Product Card
+   ======================================================================== */
+
+.product-card {
+  border-radius: var(--radius-card);
+  background: var(--color-surface-0);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.3s var(--ease-spring),
+    box-shadow 0.3s var(--ease-smooth),
+    border-color 0.3s var(--ease-smooth);
+  border: 1px solid transparent;
+  overflow: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-secondary);
+}
+
+.product-card .product-card-image {
+  overflow: hidden;
+}
+
+.product-card:hover .product-card-image img {
+  transform: scale(1.05);
+}
+
+.product-card .product-card-image img {
+  transition: transform 0.4s var(--ease-smooth);
+}
+
+/* ========================================================================
+   Buttons
+   ======================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-radius: var(--radius-button);
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s var(--ease-smooth);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-light);
+  box-shadow: 0 4px 15px rgba(45, 80, 22, 0.3);
+}
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-3);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface-1);
+}
+
+.btn-whatsapp {
+  background: #25D366;
+  color: #ffffff;
+}
+
+.btn-whatsapp:hover {
+  background: #20bd5a;
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.btn-accent:hover {
+  background: var(--color-accent-light);
+}
+
+/* ========================================================================
+   Skeleton Shimmer Animation
+   ======================================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+      var(--color-surface-2) 25%,
+      var(--color-surface-1) 50%,
+      var(--color-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-button);
+}
+
+/* ========================================================================
+   Micro-animations
+   ======================================================================== */
+
+@keyframes pulse-badge {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fly-to-cart {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.3) translate(var(--fly-x, 100px), var(--fly-y, -200px));
+  }
+}
+
+.animate-pulse-badge {
+  animation: pulse-badge 0.4s var(--ease-spring);
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s var(--ease-smooth) both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s var(--ease-smooth);
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s var(--ease-smooth);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s var(--ease-smooth);
+}
+
+.animate-slide-right {
+  animation: slide-in-right 0.3s var(--ease-smooth);
+}
+
+/* ========================================================================
+   Toast Notifications
+   ======================================================================== */
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 0.3s var(--ease-spring);
+}
+
+.toast-exit {
+  animation: toast-out 0.2s var(--ease-smooth) forwards;
+}
+
+/* ========================================================================
+   Layout Utilities
+   ======================================================================== */
+
+.container-page {
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-page {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-page {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* WhatsApp floating CTA */
+.whatsapp-float {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  background: #25D366;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s;
+}
+
+.whatsapp-float:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(37, 211, 102, 0.5);
+}
+
+/* ========================================================================
+   CMS Content Prose Styles
+   ======================================================================== */
+
+.cms-content h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.cms-content h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cms-content p {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+}
+
+.cms-content ul,
+.cms-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.cms-content li {
+  margin-bottom: 0.5rem;
+}
+
+.cms-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cms-content a:hover {
+  color: var(--color-primary-light);
+}
+
+.cms-content blockquote {
+  border-left: 4px solid var(--color-primary);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.cms-content img {
+  border-radius: var(--radius-card);
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+}
+
+/* ========================================================================
+   Scrollbar
+   ======================================================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ========================================================================
+   Product Badge
+   ======================================================================== */
+
+.product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.product-badge-new {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.product-badge-offer {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.product-badge-soldout {
+  background: var(--color-surface-3);
+  color: var(--color-text-secondary);
+}
+
+/* ========================================================================
+   Template-Agnostic Image Fallback
+   ======================================================================== */
+
+.image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    var(--color-surface-1) 0%,
+    var(--color-surface-2) 50%,
+    var(--color-surface-1) 100%
+  );
+}
+
+.image-fallback svg {
+  width: 3rem;
+  height: 3rem;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+/* ========================================================================
+   Scroll-Reveal Animations
+   ======================================================================== */
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--ease-smooth), transform 0.6s var(--ease-smooth);
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger delays for grid children */
+.stagger-1 { transition-delay: 0.05s; }
+.stagger-2 { transition-delay: 0.1s; }
+.stagger-3 { transition-delay: 0.15s; }
+.stagger-4 { transition-delay: 0.2s; }
+.stagger-5 { transition-delay: 0.25s; }
+.stagger-6 { transition-delay: 0.3s; }
+.stagger-7 { transition-delay: 0.35s; }
+.stagger-8 { transition-delay: 0.4s; }
