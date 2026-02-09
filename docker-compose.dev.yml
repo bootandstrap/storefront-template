@@ -55,7 +55,7 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ../../../bootandstrap-admin:/app
+      - ../../bootandstrap-admin:/app
       - admin_node_modules:/app/node_modules
     env_file: .env
     environment:
