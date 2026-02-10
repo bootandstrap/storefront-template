@@ -7,10 +7,18 @@ import { revalidatePath } from 'next/cache'
 // Body: { path?: string, secret: string }
 // ---------------------------------------------------------------------------
 
-const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET || 'campifrut-revalidate-2026'
+const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET
 
 export async function POST(request: NextRequest) {
     try {
+        // If no secret is configured, the endpoint is disabled
+        if (!REVALIDATION_SECRET) {
+            return NextResponse.json(
+                { error: 'Revalidation endpoint not configured — set REVALIDATION_SECRET' },
+                { status: 503 }
+            )
+        }
+
         const body = await request.json()
         const { secret, path } = body as { secret?: string; path?: string }
 

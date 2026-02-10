@@ -2,6 +2,19 @@ import { loadEnv, defineConfig, Modules, ContainerRegistrationKeys } from '@medu
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+// ---------------------------------------------------------------------------
+// Require secrets in production — never fall back to hardcoded values
+// ---------------------------------------------------------------------------
+function requireSecret(envVar: string, name: string): string {
+  const value = process.env[envVar]
+  if (value) return value
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`[FATAL] ${name} (${envVar}) is required in production`)
+  }
+  console.warn(`[medusa] ⚠️ ${envVar} not set — using insecure dev fallback`)
+  return `__dev_only_${name}_change_me__`
+}
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
@@ -15,8 +28,8 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS || "http://localhost:3000",
       adminCors: process.env.ADMIN_CORS || "http://localhost:3000,http://localhost:5173",
       authCors: process.env.AUTH_CORS || "http://localhost:3000",
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      jwtSecret: requireSecret('JWT_SECRET', 'jwt_secret'),
+      cookieSecret: requireSecret('COOKIE_SECRET', 'cookie_secret'),
     },
   },
   modules: [
