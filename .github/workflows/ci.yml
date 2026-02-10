@@ -24,7 +24,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -63,7 +63,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -94,8 +94,20 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: build
     # Only run on PRs to main (not every push)
     if: github.event_name == 'pull_request'
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -104,7 +116,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -118,27 +130,36 @@ jobs:
       - name: Install Playwright browsers
         run: cd apps/storefront && npx playwright install --with-deps chromium
 
-      - name: Start services (Docker Compose)
-        run: docker compose -f docker-compose.dev.yml up -d redis
-        env:
-          COMPOSE_PROJECT_NAME: ci
-
-      - name: Wait for Redis
-        run: |
-          for i in $(seq 1 30); do
-            docker compose -f docker-compose.dev.yml exec -T redis redis-cli ping && break
-            sleep 1
-          done
-
-      - name: Run E2E tests
-        run: cd apps/storefront && npx playwright test
+      - name: Build storefront
+        run: pnpm turbo build --filter=storefront
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.TEST_MEDUSA_KEY }}
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           MEDUSA_BACKEND_URL: http://localhost:9000
+
+      - name: Start storefront
+        run: |
+          cd apps/storefront
+          PORT=3000 node .next/standalone/server.js &
+          # Wait for storefront to be ready
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 2
+          done
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          MEDUSA_BACKEND_URL: http://localhost:9000
           REDIS_URL: redis://localhost:6379
+          TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
+
+      - name: Run E2E tests
+        run: cd apps/storefront && npx playwright test
+        env:
+          BASE_URL: http://localhost:3000
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -147,10 +168,6 @@ jobs:
           name: playwright-report
           path: apps/storefront/playwright-report/
           retention-days: 14
-
-      - name: Cleanup
-        if: always()
-        run: docker compose -f docker-compose.dev.yml down -v
 
   # ── Lighthouse CI ──────────────────────────────
   lighthouse:
@@ -168,7 +185,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -185,8 +202,8 @@ jobs:
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           MEDUSA_BACKEND_URL: http://localhost:9000

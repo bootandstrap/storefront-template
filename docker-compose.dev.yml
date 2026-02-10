@@ -9,6 +9,9 @@
 # Medusa API:    http://localhost:9000
 # Medusa Admin:  http://localhost:9000/app
 # SuperAdmin:    http://localhost:3100
+#
+# Configure admin repo path:
+#   ADMIN_REPO_PATH=../bootandstrap-admin docker compose -f docker-compose.dev.yml up
 # ============================================
 
 services:
@@ -19,7 +22,7 @@ services:
     command: >
       sh -c "
         corepack enable &&
-        corepack prepare pnpm@latest --activate &&
+        corepack prepare pnpm@9.15.4 --activate &&
         pnpm install --no-frozen-lockfile &&
         pnpm dev --hostname 0.0.0.0
       "
@@ -42,20 +45,21 @@ services:
   # ── SuperAdmin Panel (hot-reload) ───────────
   # Mounts the sibling admin repo for live editing.
   # Repo: bootandstrap/bootandstrap-admin
+  # Override path: ADMIN_REPO_PATH=../my-admin-dir
   admin:
     image: node:20-alpine
     working_dir: /app
     command: >
       sh -c "
         corepack enable &&
-        corepack prepare pnpm@latest --activate &&
+        corepack prepare pnpm@9.15.4 --activate &&
         pnpm install --no-frozen-lockfile &&
         pnpm dev --hostname 0.0.0.0
       "
     ports:
       - "3100:3100"
     volumes:
-      - ../../bootandstrap-admin:/app
+      - ${ADMIN_REPO_PATH:-../../bootandstrap-admin}:/app
       - admin_node_modules:/app/node_modules
     env_file: .env
     environment:

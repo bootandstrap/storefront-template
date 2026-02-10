@@ -34,7 +34,7 @@ COPY --from=builder /app/.medusa/server ./
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 
 # Install production dependencies in the runner
-RUN npm ci --omit=dev 2>/dev/null || true
+RUN npm ci --omit=dev
 
 USER medusa
 
