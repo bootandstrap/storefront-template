@@ -229,13 +229,15 @@ async function triggerEmail(payload: EmailPayload): Promise<void> {
 
 async function logAnalyticsEvent(
     eventType: string,
-    metadata: Record<string, unknown>
+    properties: Record<string, unknown>
 ): Promise<void> {
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
         if (!supabaseUrl || !supabaseKey) return
+
+        const tenantId = process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID || null
 
         await fetch(`${supabaseUrl}/rest/v1/analytics_events`, {
             method: 'POST',
@@ -247,11 +249,11 @@ async function logAnalyticsEvent(
             },
             body: JSON.stringify({
                 event_type: eventType,
-                metadata: {
-                    ...metadata,
+                properties: {
+                    ...properties,
                     source: 'stripe_webhook',
-                    timestamp: new Date().toISOString(),
                 },
+                tenant_id: tenantId,
             }),
         })
     } catch (err) {

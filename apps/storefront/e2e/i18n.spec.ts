@@ -21,9 +21,11 @@ test.describe('i18n', () => {
 
     test('language selector is visible when multi-language enabled', async ({ page }) => {
         await page.goto('/es/')
-        // Language selector may or may not be present depending on feature flag
+        // Language selector may or may not be present depending on feature flag.
+        // Verify page rendered successfully by checking a core element exists.
         const _selector = page.locator('[data-testid="language-selector"], .language-selector')
-        // Just verify it doesn't error — visibility depends on flags
-        await page.waitForTimeout(2_000)
+        await expect(page.locator('main, header, [role="main"]').first()).toBeVisible({
+            timeout: 5_000,
+        })
     })
 })

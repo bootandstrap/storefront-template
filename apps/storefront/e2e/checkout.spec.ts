@@ -4,7 +4,6 @@ test.describe('Checkout', () => {
     test('checkout page requires items in cart', async ({ page }) => {
         await page.goto('/es/checkout')
         // Should redirect to cart or show empty state if cart is empty
-        const _url = page.url()
         const hasContent = await page.locator('main, [role="main"]').isVisible()
         expect(hasContent).toBeTruthy()
     })
@@ -21,15 +20,22 @@ test.describe('Checkout', () => {
         await expect(addToCart.first()).toBeVisible({ timeout: 10_000 })
         await addToCart.first().click()
 
-        // Wait for cart to update
-        await page.waitForTimeout(1_000)
+        // Wait for cart to update by observing a cart badge or toast
+        const cartIndicator = page.locator(
+            '[data-testid="cart-count"], .cart-badge, [aria-label*="cart"], .toast-message'
+        )
+        await expect(cartIndicator.first()).toBeVisible({ timeout: 5_000 }).catch(() => {
+            // Cart indicator might not exist — continue anyway
+        })
 
         // Navigate to checkout
         const checkoutLink = page.locator('a[href*="checkout"], button:has-text("checkout"), button:has-text("pagar"), button:has-text("comprar")')
         if (await checkoutLink.first().isVisible()) {
             await checkoutLink.first().click()
-            // Should be on checkout page
-            await page.waitForTimeout(2_000)
+            // Wait for checkout page to load by checking for a form or heading
+            await expect(
+                page.locator('form, h1, h2, [data-testid="checkout"]').first()
+            ).toBeVisible({ timeout: 10_000 })
         }
     })
 })
