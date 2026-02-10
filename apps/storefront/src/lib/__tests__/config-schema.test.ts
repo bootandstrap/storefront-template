@@ -5,7 +5,7 @@
  * from the database. If a flag is added to the FeatureFlags interface but not
  * to the DB (or vice-versa), these tests will catch it.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi as _vi, beforeEach, afterEach } from 'vitest'
 import type { FeatureFlags, PlanLimits, StoreConfig } from '../config'
 import { getRequiredTenantId } from '../config'
 
@@ -77,7 +77,7 @@ describe('Config Schema Alignment', () => {
     describe('FeatureFlags interface', () => {
         it('has exactly the expected number of flags', () => {
             // Create a dummy object to count interface keys at runtime
-            const dummy: FeatureFlags = {} as FeatureFlags
+            const _dummy: FeatureFlags = {} as FeatureFlags
             // We verify by checking EXPECTED array length matches the interface
             expect(EXPECTED_FEATURE_FLAGS.length).toBe(26)
         })

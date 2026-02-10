@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
 import { createSlide, updateSlide, deleteSlide } from './actions'
 
@@ -177,10 +178,12 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                         <div key={slide.id} className="glass rounded-2xl overflow-hidden">
                             {(slide.image || slide.image_url) && (
                                 <div className="aspect-video bg-surface-1 relative">
-                                    <img
+                                    <Image
                                         src={(slide.image || slide.image_url) as string}
                                         alt={slide.title ?? ''}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
                                     />
                                     {!slide.active && (
                                         <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">

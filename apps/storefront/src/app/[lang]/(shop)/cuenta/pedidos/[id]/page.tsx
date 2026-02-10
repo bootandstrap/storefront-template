@@ -8,6 +8,7 @@ import {
     Truck, XCircle, MapPin, CreditCard, ShoppingBag,
     ArrowRight
 } from 'lucide-react'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -157,12 +158,14 @@ async function OrderDetail({
                         return (
                             <div key={item.id} className="flex items-center gap-4 py-3">
                                 {/* Thumbnail */}
-                                <div className="w-14 h-14 rounded-lg bg-surface/50 flex items-center justify-center shrink-0 overflow-hidden">
+                                <div className="w-14 h-14 rounded-lg bg-surface/50 flex items-center justify-center shrink-0 overflow-hidden relative">
                                     {item.thumbnail ? (
-                                        <img
+                                        <Image
                                             src={item.thumbnail}
                                             alt={item.title}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
+                                            sizes="56px"
                                         />
                                     ) : (
                                         <Package className="w-6 h-6 text-text-muted/40" />

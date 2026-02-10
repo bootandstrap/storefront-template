@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
 import { toggleBadge } from './actions'
 import { AVAILABLE_BADGES, type BadgeId } from './badges'
@@ -99,12 +100,14 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                         <div key={product.id} className="glass rounded-2xl p-4">
                             <div className="flex items-center gap-4">
                                 {/* Thumbnail */}
-                                <div className="w-12 h-12 rounded-lg bg-surface-1 flex-shrink-0 overflow-hidden">
+                                <div className="w-12 h-12 rounded-lg bg-surface-1 flex-shrink-0 overflow-hidden relative">
                                     {product.thumbnail ? (
-                                        <img
+                                        <Image
                                             src={product.thumbnail}
                                             alt={product.title}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
+                                            sizes="48px"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-text-muted text-lg">

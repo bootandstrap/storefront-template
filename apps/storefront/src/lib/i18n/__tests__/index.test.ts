@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createTranslator, isValidLocale, SUPPORTED_LOCALES, CANONICAL_ROUTES, getLocalizedSlug, localizedHref, buildReverseSlugMap } from '../index'
+import { createTranslator, isValidLocale, SUPPORTED_LOCALES, getLocalizedSlug, localizedHref, buildReverseSlugMap } from '../index'
 import type { Dictionary } from '../index'
 
 describe('createTranslator', () => {

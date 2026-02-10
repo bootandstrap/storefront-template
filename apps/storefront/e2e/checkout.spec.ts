@@ -4,7 +4,7 @@ test.describe('Checkout', () => {
     test('checkout page requires items in cart', async ({ page }) => {
         await page.goto('/es/checkout')
         // Should redirect to cart or show empty state if cart is empty
-        const url = page.url()
+        const _url = page.url()
         const hasContent = await page.locator('main, [role="main"]').isVisible()
         expect(hasContent).toBeTruthy()
     })

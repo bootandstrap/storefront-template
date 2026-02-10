@@ -11,7 +11,7 @@ test.describe('Authentication', () => {
     test('login page has email/password fields when email auth enabled', async ({ page }) => {
         await page.goto('/es/login')
         const emailInput = page.locator('input[type="email"], input[name="email"]')
-        const passwordInput = page.locator('input[type="password"], input[name="password"]')
+        const _passwordInput = page.locator('input[type="password"], input[name="password"]')
 
         // At least one auth method should be visible
         const emailVisible = await emailInput.isVisible().catch(() => false)

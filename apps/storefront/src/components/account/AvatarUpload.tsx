@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Camera, Loader2, X } from 'lucide-react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/provider'
 
@@ -133,12 +134,15 @@ export default function AvatarUpload({
         <div className="glass rounded-2xl p-6 flex items-center gap-4">
             {/* Avatar circle */}
             <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden">
+                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden relative">
                     {displayUrl ? (
-                        <img
+                        <Image
                             src={displayUrl}
                             alt=""
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="80px"
+                            unoptimized
                         />
                     ) : (
                         initials

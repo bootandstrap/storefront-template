@@ -14,7 +14,7 @@ interface ReorderItem {
 
 export default function ReorderButton({
     items,
-    lang,
+    lang: _lang,
 }: {
     items: ReorderItem[]
     lang: string
@@ -54,8 +54,8 @@ export default function ReorderButton({
             onClick={handleReorder}
             disabled={state === 'loading'}
             className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition-all ${state === 'done'
-                    ? 'bg-green-500/15 text-green-600 border border-green-500/20'
-                    : 'btn btn-primary'
+                ? 'bg-green-500/15 text-green-600 border border-green-500/20'
+                : 'btn btn-primary'
                 }`}
         >
             {state === 'loading' && <Loader2 className="w-4 h-4 animate-spin" />}
