@@ -5,22 +5,25 @@
 --   __TENANT_SLUG__   → e.g., 'fresh-market'
 --   __TENANT_NAME__   → e.g., 'Fresh Market'
 --   __PLAN_TIER__     → 'starter' | 'pro' | 'enterprise'
---   __OWNER_EMAIL__   → e.g., 'owner@freshmarket.com'
---   __DOMAIN__        → e.g., 'freshmarket.com'
+--   __DOMAIN__        → e.g., 'freshmarket.com' (or NULL)
+--
+-- Column names aligned with:
+--   - TenantRow in bootandstrap-admin/src/lib/tenants.ts
+--   - StoreConfig in apps/storefront/src/lib/config.ts
+--   - PLAN_LIMIT_PRESETS in bootandstrap-admin/src/lib/plan-presets.ts
 -- ───────────────────────────────────────────────────────────
 
 BEGIN;
 
 -- 1. Create tenant record
 INSERT INTO tenants (
-    slug, name, status, plan_tier, domain, owner_email, created_at
+    slug, name, status, domain, created_at, updated_at
 ) VALUES (
     '__TENANT_SLUG__',
     '__TENANT_NAME__',
     'active',
-    '__PLAN_TIER__',
     '__DOMAIN__',
-    '__OWNER_EMAIL__',
+    NOW(),
     NOW()
 )
 ON CONFLICT (slug) DO NOTHING;
@@ -28,7 +31,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- 2. Create config with sensible defaults
 INSERT INTO config (
     tenant_id,
-    store_name,
+    business_name,
     language,
     color_preset,
     theme_mode,
@@ -56,7 +59,7 @@ SELECT
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
--- 3. Create feature flags (all defaults — can be customized later)
+-- 3. Create feature flags (starter defaults — customize later or use Admin Panel)
 INSERT INTO feature_flags (
     tenant_id,
     enable_whatsapp_checkout,
@@ -90,9 +93,9 @@ SELECT
     id,
     true,   -- whatsapp
     false,  -- online payments (enable after Stripe setup)
-    true,   -- cash on delivery
+    false,  -- cash on delivery
     false,  -- bank transfer
-    true,   -- registration
+    false,  -- registration (starter: disabled)
     true,   -- guest checkout
     false,  -- require auth
     false,  -- google auth (enable after OAuth setup)
@@ -107,17 +110,17 @@ SELECT
     false,  -- multi language
     false,  -- multi currency
     false,  -- admin api
-    true,   -- social links
-    true,   -- order notes
-    true,   -- address management
+    false,  -- social links (starter: disabled)
+    false,  -- order notes (starter: disabled)
+    false,  -- address management (starter: disabled)
     false,  -- maintenance mode
-    true,   -- owner panel
-    true,   -- customer accounts
-    true    -- order tracking
+    false,  -- owner panel (starter: disabled)
+    false,  -- customer accounts (starter: disabled)
+    false   -- order tracking (starter: disabled)
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
--- 4. Create plan limits based on tier
+-- 4. Create plan limits (values match PLAN_LIMIT_PRESETS in plan-presets.ts)
 INSERT INTO plan_limits (
     tenant_id,
     plan_name,
@@ -140,81 +143,36 @@ INSERT INTO plan_limits (
 SELECT
     id,
     '__PLAN_TIER__',
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 50
-        WHEN 'pro' THEN 200
-        WHEN 'enterprise' THEN 1000
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 100
-        WHEN 'pro' THEN 500
-        WHEN 'enterprise' THEN 10000
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 200
-        WHEN 'pro' THEN 1000
-        WHEN 'enterprise' THEN 10000
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 10
-        WHEN 'pro' THEN 30
-        WHEN 'enterprise' THEN 100
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 5
-        WHEN 'pro' THEN 15
-        WHEN 'enterprise' THEN 30
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 5
-        WHEN 'pro' THEN 20
-        WHEN 'enterprise' THEN 100
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 5
-        WHEN 'pro' THEN 15
-        WHEN 'enterprise' THEN 30
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 2
-        WHEN 'pro' THEN 5
-        WHEN 'enterprise' THEN 20
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 1
-        WHEN 'pro' THEN 3
-        WHEN 'enterprise' THEN 10
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 1
-        WHEN 'pro' THEN 3
-        WHEN 'enterprise' THEN 10
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 3
-        WHEN 'pro' THEN 10
-        WHEN 'enterprise' THEN 50
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 5
-        WHEN 'pro' THEN 20
-        WHEN 'enterprise' THEN 100
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 200
-        WHEN 'pro' THEN 1000
-        WHEN 'enterprise' THEN 10000
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 1
-        WHEN 'pro' THEN 3
-        WHEN 'enterprise' THEN 10
-    END,
-    CASE '__PLAN_TIER__'
-        WHEN 'starter' THEN 250
-        WHEN 'pro' THEN 1000
-        WHEN 'enterprise' THEN 5000
-    END
+    -- max_products
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 25 WHEN 'pro' THEN 100 WHEN 'enterprise' THEN 1000 END,
+    -- max_customers
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
+    -- max_orders_month
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
+    -- max_categories
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 5 WHEN 'pro' THEN 20 WHEN 'enterprise' THEN 100 END,
+    -- max_images_per_product
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 20 END,
+    -- max_cms_pages
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 50 END,
+    -- max_carousel_slides
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 20 END,
+    -- max_admin_users
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 10 END,
+    -- max_languages
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 5 END,
+    -- max_currencies
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 5 END,
+    -- max_whatsapp_templates
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 50 END,
+    -- max_file_upload_mb
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 2 WHEN 'pro' THEN 5 WHEN 'enterprise' THEN 10 END,
+    -- max_email_sends_month
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
+    -- max_custom_domains
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 0 WHEN 'pro' THEN 1 WHEN 'enterprise' THEN 5 END,
+    -- storage_limit_mb
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 2000 END
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
@@ -244,6 +202,6 @@ ON CONFLICT DO NOTHING;
 COMMIT;
 
 -- Verify
-SELECT t.slug, t.name, t.plan_tier, t.status
+SELECT t.slug, t.name, t.status
 FROM tenants t
 WHERE t.slug = '__TENANT_SLUG__';

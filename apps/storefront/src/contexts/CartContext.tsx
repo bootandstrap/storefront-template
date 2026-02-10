@@ -10,6 +10,7 @@ import {
     type ReactNode,
 } from 'react'
 import type { MedusaCart, MedusaLineItem } from '@/lib/medusa/client'
+import { getPublicMedusaUrl } from '@/lib/medusa/url'
 
 // ---------------------------------------------------------------------------
 // Context type
@@ -65,7 +66,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }
             setCartIdState(stored)
             try {
-                const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
+                const medusaUrl = getPublicMedusaUrl()
                 const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
                 const res = await fetch(`${medusaUrl}/store/carts/${stored}`, {
                     headers: {

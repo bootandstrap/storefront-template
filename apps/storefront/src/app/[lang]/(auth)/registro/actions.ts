@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit } from '@/lib/limits'
 
@@ -38,11 +38,13 @@ export async function registerAction(
     }
 
     const supabase = await createClient()
+    const tenantId = getRequiredTenantId()
 
     const { count: customerCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'customer')
+        .eq('tenant_id', tenantId)
 
     const limitCheck = checkLimit(planLimits, 'max_customers', customerCount ?? 0)
     if (!limitCheck.allowed) {

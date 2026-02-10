@@ -16,13 +16,16 @@ CREATE TABLE IF NOT EXISTS tenants (
     domain TEXT,
     status TEXT NOT NULL DEFAULT 'active'
         CHECK (status IN ('active', 'paused', 'suspended', 'trial')),
+    plan_tier TEXT NOT NULL DEFAULT 'starter'
+        CHECK (plan_tier IN ('starter', 'pro', 'enterprise')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 
--- Only super_admin can see/manage tenants
+-- Only super_admin can see/manage tenants (idempotent)
+DROP POLICY IF EXISTS "super_admin_full_access" ON tenants;
 CREATE POLICY "super_admin_full_access" ON tenants
     FOR ALL
     USING (
@@ -126,8 +129,8 @@ ALTER TABLE plan_limits ADD COLUMN IF NOT EXISTS max_custom_domains INTEGER NOT 
 -- ---------------------------------------------------------------------------
 
 -- Create Campifrut tenant (idempotent)
-INSERT INTO tenants (slug, name, domain, status)
-VALUES ('campifrut', 'Campifrut', 'campifrut.com', 'active')
+INSERT INTO tenants (slug, name, domain, status, plan_tier)
+VALUES ('campifrut', 'Campifrut', 'campifrut.com', 'active', 'starter')
 ON CONFLICT (slug) DO NOTHING;
 
 -- Backfill tenant_id on existing governance rows

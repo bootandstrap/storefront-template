@@ -1,5 +1,5 @@
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -122,17 +122,18 @@ export interface AppConfig {
 // ---------------------------------------------------------------------------
 // Tenant ID resolution
 // ---------------------------------------------------------------------------
-// Server-only env var. NEXT_PUBLIC_TENANT_ID is for client-side (analytics).
+// Server-only: reads TENANT_ID exclusively. NEXT_PUBLIC_TENANT_ID is for
+// client-side analytics ONLY — never used for data scoping on the server.
 // In production, TENANT_ID *must* be set — we fail hard to prevent data leaks.
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the tenant ID from environment variables.
+ * Returns the tenant ID from the server-only TENANT_ID env var.
  * - In production: throws if TENANT_ID is not set (hard fail to prevent data leaks).
  * - In development: warns and returns a dev placeholder if not set.
  */
 export function getRequiredTenantId(): string {
-    const id = process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID
+    const id = process.env.TENANT_ID
     if (id) return id
 
     if (process.env.NODE_ENV === 'production') {
@@ -264,7 +265,7 @@ export async function getConfig(): Promise<AppConfig> {
     }
 
     try {
-        const supabase = await createClient()
+        const supabase = createAdminClient()
 
         // MANDATORY: All queries scoped by tenant_id — no data leaks
         const tenantId = getRequiredTenantId()
@@ -277,6 +278,11 @@ export async function getConfig(): Promise<AppConfig> {
             flagsQuery.single(),
             limitsQuery.single(),
         ])
+
+        // Log any query errors (helps diagnose tenant/schema issues)
+        if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
+        if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
+        if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
 
         // Check plan expiration
         const limits = limitsRes.data ?? FALLBACK_CONFIG.planLimits
@@ -293,7 +299,7 @@ export async function getConfig(): Promise<AppConfig> {
         _cacheTimestamp = now
         return _cachedConfig
     } catch (err) {
-        console.error('[config] Failed to fetch — using fallback', err)
+        console.error('[config] Failed to fetch — using fallback (infra failure)', err)
         return FALLBACK_CONFIG
     }
 }

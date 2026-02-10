@@ -1,4 +1,5 @@
 import type { StoreConfig } from '@/lib/config'
+import { sanitizeHtml } from '@/lib/security/sanitize-html'
 
 interface CMSPageRendererProps {
     title: string
@@ -7,6 +8,8 @@ interface CMSPageRendererProps {
 }
 
 export default function CMSPageRenderer({ title, body }: CMSPageRendererProps) {
+    const safeBody = sanitizeHtml(body)
+
     return (
         <article className="container-page py-12">
             <div className="max-w-3xl mx-auto">
@@ -18,10 +21,10 @@ export default function CMSPageRenderer({ title, body }: CMSPageRendererProps) {
                     <div className="w-20 h-1 rounded-full bg-gradient-to-r from-primary to-secondary" />
                 </header>
 
-                {/* Content - renders HTML from CMS */}
+                {/* Content - sanitized HTML from CMS */}
                 <div
                     className="cms-content prose prose-lg max-w-none text-text-secondary"
-                    dangerouslySetInnerHTML={{ __html: body }}
+                    dangerouslySetInnerHTML={{ __html: safeBody }}
                 />
             </div>
         </article>

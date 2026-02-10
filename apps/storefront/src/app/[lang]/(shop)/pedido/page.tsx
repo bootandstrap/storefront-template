@@ -27,17 +27,20 @@ export default function GuestOrderLookup() {
         setResult(null)
 
         try {
-            // Call Medusa Store API to look up order by display_id + email
-            const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000'
-            const res = await fetch(
-                `${medusaUrl}/store/orders?fields=id,display_id,status,created_at,total,currency_code&limit=1&offset=0`,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
-                    },
-                },
-            )
+            // Call server-side endpoint (no direct Medusa exposure to client)
+            const res = await fetch('/api/orders/lookup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    display_id: orderId.trim(),
+                }),
+            })
+
+            if (res.status === 404) {
+                setError(t('order.lookupNotFound'))
+                return
+            }
 
             if (!res.ok) {
                 setError(t('order.lookupError'))
@@ -45,20 +48,13 @@ export default function GuestOrderLookup() {
             }
 
             const data = await res.json()
-            const orders = data.orders ?? []
-
-            // Find order matching display_id (Medusa v2 store API doesn't filter by email directly)
-            const match = orders.find(
-                (o: { display_id: number }) => String(o.display_id) === orderId.trim(),
-            )
-
-            if (match) {
+            if (data.order) {
                 setResult({
-                    display_id: match.display_id,
-                    status: match.status || 'pending',
-                    created_at: match.created_at,
-                    total: match.total ?? 0,
-                    currency_code: match.currency_code || 'usd',
+                    display_id: data.order.display_id,
+                    status: data.order.status || 'pending',
+                    created_at: data.order.created_at,
+                    total: data.order.total ?? 0,
+                    currency_code: data.order.currency_code || 'usd',
                 })
             } else {
                 setError(t('order.lookupNotFound'))

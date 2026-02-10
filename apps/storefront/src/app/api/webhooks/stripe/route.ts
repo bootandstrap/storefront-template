@@ -2,15 +2,55 @@ import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 
 // ---------------------------------------------------------------------------
-// Stripe webhook handler
+// Stripe webhook handler — idempotent processing
 // ---------------------------------------------------------------------------
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 
 /**
+ * Atomically claim a Stripe event for processing.
+ * Uses PostgREST upsert with `resolution=ignore-duplicates` (= INSERT … ON CONFLICT DO NOTHING).
+ * Returns `true` if this process successfully claimed the event (inserted the row).
+ * Returns `false` if the event was already claimed by another process.
+ */
+async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !serviceKey) return true // No dedup possible — process anyway
+
+    const tenantId = process.env.TENANT_ID || null
+
+    try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/stripe_webhook_events`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: serviceKey,
+                Authorization: `Bearer ${serviceKey}`,
+                // ignore-duplicates = ON CONFLICT(event_id) DO NOTHING
+                Prefer: 'resolution=ignore-duplicates,return=representation',
+            },
+            body: JSON.stringify({
+                event_id: eventId,
+                event_type: eventType,
+                tenant_id: tenantId,
+            }),
+        })
+        const rows = await res.json()
+        // If the response body has a row, we inserted it → we own it.
+        // If empty array → row already existed → duplicate.
+        return Array.isArray(rows) && rows.length > 0
+    } catch (err) {
+        console.error('[stripe-webhook] claimEvent error:', err)
+        // On failure, process anyway (better than dropping events)
+        return true
+    }
+}
+
+/**
  * Stripe webhook endpoint.
- * Validates signature, processes payment events, updates Medusa order.
+ * Validates signature, deduplicates events, processes payment events, updates Medusa.
  */
 export async function POST(request: NextRequest) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -57,6 +97,13 @@ export async function POST(request: NextRequest) {
         )
     }
 
+    // ── Atomic idempotency: claim-or-skip ──
+    const claimed = await claimEvent(event.id, event.type)
+    if (!claimed) {
+        console.log(`[stripe-webhook] Duplicate event ${event.id} — skipping`)
+        return NextResponse.json({ received: true, duplicate: true })
+    }
+
     // Process events
     try {
         switch (event.type) {
@@ -76,13 +123,13 @@ export async function POST(request: NextRequest) {
                 // Send order confirmation email
                 await triggerEmail({
                     to: paymentIntent.receipt_email || paymentIntent.metadata?.email || '',
-                    subject: '🎉 ¡Pedido Confirmado! — Campifrut',
+                    subject: '🎉 ¡Pedido Confirmado!',
                     template: 'order_confirmation',
                     data: {
                         customer_name: paymentIntent.metadata?.customer_name,
                         order_id: paymentIntent.metadata?.cart_id,
                         total: (paymentIntent.amount / 100).toFixed(2),
-                        store_url: process.env.NEXT_PUBLIC_STORE_URL || 'https://campifrut.com',
+                        store_url: process.env.NEXT_PUBLIC_STORE_URL || '',
                     },
                 })
 
@@ -109,7 +156,7 @@ export async function POST(request: NextRequest) {
                 // Send payment failed email
                 await triggerEmail({
                     to: paymentIntent.receipt_email || paymentIntent.metadata?.email || '',
-                    subject: '⚠️ Pago No Procesado — Campifrut',
+                    subject: '⚠️ Pago No Procesado',
                     template: 'payment_failed',
                     data: {
                         customer_name: paymentIntent.metadata?.customer_name,
@@ -131,7 +178,7 @@ export async function POST(request: NextRequest) {
                 // Send refund email
                 await triggerEmail({
                     to: charge.billing_details?.email || '',
-                    subject: '💰 Reembolso Procesado — Campifrut',
+                    subject: '💰 Reembolso Procesado',
                     template: 'refund_processed',
                     data: {
                         customer_name: charge.billing_details?.name || undefined,
@@ -147,6 +194,7 @@ export async function POST(request: NextRequest) {
                 console.log(`[stripe-webhook] Unhandled event type: ${event.type}`)
         }
 
+        // Event already recorded atomically by claimEvent above
         return NextResponse.json({ received: true })
     } catch (err) {
         console.error('[stripe-webhook] Error processing event:', err)
@@ -162,9 +210,14 @@ export async function POST(request: NextRequest) {
 
 async function completeCartInMedusa(cartId: string): Promise<void> {
     try {
+        const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+
         const res = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/complete`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+            },
         })
 
         if (!res.ok) {
@@ -237,7 +290,7 @@ async function logAnalyticsEvent(
 
         if (!supabaseUrl || !supabaseKey) return
 
-        const tenantId = process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID || null
+        const tenantId = process.env.TENANT_ID || null
 
         await fetch(`${supabaseUrl}/rest/v1/analytics_events`, {
             method: 'POST',
@@ -260,4 +313,3 @@ async function logAnalyticsEvent(
         console.error('[stripe-webhook] Analytics log error:', err)
     }
 }
-

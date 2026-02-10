@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 
-type CheckStatus = 'ok' | 'degraded' | 'error'
+// ---------------------------------------------------------------------------
+// GET /api/health/ready — Readiness probe (Docker / Kubernetes / load balancer)
+// ---------------------------------------------------------------------------
+// Uses Supabase service-role key (bypasses RLS) so the probe works reliably
+// without a user session context. Also pings Medusa /health.
+// ---------------------------------------------------------------------------
+
+export const dynamic = 'force-dynamic'
+
+type CheckStatus = 'ok' | 'degraded' | 'down'
 
 interface DependencyCheck {
     status: CheckStatus
@@ -9,37 +17,42 @@ interface DependencyCheck {
     error?: string
 }
 
-/**
- * Readiness probe — /api/health/ready
- *
- * Checks all critical dependencies (Supabase, Medusa).
- * Returns 200 only if ALL dependencies are reachable.
- * Returns 503 if any dependency is unavailable.
- *
- * Used by Docker readinessProbe / load balancer health checks.
- */
 export async function GET() {
     const checks: Record<string, DependencyCheck> = {}
 
-    // ── Supabase ────────────────────────────────────────
-    try {
-        const t0 = Date.now()
-        const supabase = await createClient()
-        const { error } = await supabase.from('config').select('id').limit(1)
-        checks.supabase = {
-            status: error ? 'degraded' : 'ok',
-            latency_ms: Date.now() - t0,
-            ...(error && { error: error.message }),
+    // ── Supabase (service-role — bypasses RLS) ──
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (supabaseUrl && serviceKey) {
+        try {
+            const t0 = Date.now()
+            const res = await fetch(
+                `${supabaseUrl}/rest/v1/config?select=id&limit=1`,
+                {
+                    headers: {
+                        apikey: serviceKey,
+                        Authorization: `Bearer ${serviceKey}`,
+                    },
+                }
+            )
+            checks.supabase = {
+                status: res.ok ? 'ok' : 'degraded',
+                latency_ms: Date.now() - t0,
+                ...((!res.ok) && { error: `HTTP ${res.status}` }),
+            }
+        } catch (err) {
+            checks.supabase = {
+                status: 'down',
+                latency_ms: -1,
+                error: err instanceof Error ? err.message : 'Unknown error',
+            }
         }
-    } catch (err) {
-        checks.supabase = {
-            status: 'error',
-            latency_ms: -1,
-            error: err instanceof Error ? err.message : 'Unknown error',
-        }
+    } else {
+        checks.supabase = { status: 'down', latency_ms: -1, error: 'Not configured' }
     }
 
-    // ── Medusa API ──────────────────────────────────────
+    // ── Medusa API ──
     const medusaUrl = process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
     try {
         const t0 = Date.now()
@@ -53,16 +66,16 @@ export async function GET() {
         }
     } catch (err) {
         checks.medusa = {
-            status: 'error',
+            status: 'down',
             latency_ms: -1,
             error: err instanceof Error ? err.message : 'Medusa unreachable',
         }
     }
 
-    // ── Overall ─────────────────────────────────────────
-    const statuses = Object.values(checks).map((c) => c.status)
-    const overall: CheckStatus = statuses.includes('error')
-        ? 'error'
+    // ── Overall ──
+    const statuses = Object.values(checks).map(c => c.status)
+    const overall: CheckStatus = statuses.includes('down')
+        ? 'down'
         : statuses.includes('degraded')
             ? 'degraded'
             : 'ok'
@@ -74,6 +87,7 @@ export async function GET() {
             status: overall,
             probe: 'readiness',
             timestamp: new Date().toISOString(),
+            uptime_seconds: Math.floor(process.uptime()),
             checks,
         },
         {

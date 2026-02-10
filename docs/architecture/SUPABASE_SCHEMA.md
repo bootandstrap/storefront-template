@@ -2,12 +2,14 @@
 
 > Tables managed by Supabase in the `public` schema. Medusa tables also live in `public` (no separate schema). Do NOT modify Medusa-managed tables manually.
 >
-> **Last updated**: 10 Feb 2026 — reflects `20260210_schema_hardening.sql` migration.
+> **Last updated**: 10 Feb 2026 — reflects `20260210_stripe_webhook_events` and `20260210_audit_log` migrations.
 
 ## Tables
 
 ### `tenants`
 Multi-tenant root table. Each client deployment gets one row.
+
+> **Note**: This table may not exist in all deployments. If absent, `tenant_id` is used as a plain UUID column (no FK) on other tables. This is the convention for the first client deployment (Campifrut).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -221,6 +223,33 @@ High-resolution event tracking.
 | `metadata` | JSONB | Event-specific data |
 | `created_at` | TIMESTAMPTZ | |
 
+### `stripe_webhook_events`
+Idempotency store for Stripe webhook processing. Prevents duplicate processing of webhook events on retries.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | Default `gen_random_uuid()` |
+| `event_id` | TEXT NOT NULL UNIQUE | Stripe event ID (dedup key) |
+| `event_type` | TEXT NOT NULL | e.g. `payment_intent.succeeded` |
+| `tenant_id` | UUID | Plain UUID, no FK |
+| `processed_at` | TIMESTAMPTZ | Default `now()` |
+
+RLS: Enabled, no policies = service-role access only.
+
+### `audit_log`
+SuperAdmin audit trail. Records every mutation for compliance and debugging.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | Default `gen_random_uuid()` |
+| `action` | TEXT NOT NULL | e.g. `update_flags`, `update_limits`, `update_config` |
+| `tenant_id` | UUID | Target tenant, plain UUID, no FK |
+| `admin_user_id` | UUID NOT NULL | Actor (SuperAdmin user) |
+| `details` | JSONB | Mutation payload / diff |
+| `created_at` | TIMESTAMPTZ | Default `now()` |
+
+RLS: Enabled, no policies = service-role access only.
+
 ## RLS Policies
 
 | Table | SELECT | INSERT | UPDATE | DELETE |
@@ -234,6 +263,8 @@ High-resolution event tracking.
 | `cms_pages` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | super_admin/owner (tenant) |
 | `carousel_slides` | Public | super_admin/owner (tenant) | super_admin/owner (tenant) | super_admin/owner (tenant) |
 | `analytics_events` | super_admin/owner (tenant) | Public (anon) | — | super_admin |
+| `stripe_webhook_events` | — (service-role only) | — (service-role only) | — | — |
+| `audit_log` | — (service-role only) | — (service-role only) | — | — |
 
 ## Indexes
 
@@ -246,6 +277,9 @@ High-resolution event tracking.
 | `idx_whatsapp_templates_tenant` | `whatsapp_templates` | `tenant_id` |
 | `idx_cms_pages_tenant` | `cms_pages` | `tenant_id` |
 | `idx_analytics_events_tenant` | `analytics_events` | `tenant_id` |
+| `idx_stripe_webhook_events_event_id` | `stripe_webhook_events` | `event_id` |
+| `idx_audit_log_created_at` | `audit_log` | `created_at DESC` |
+| `idx_audit_log_tenant_id` | `audit_log` | `tenant_id` |
 
 ## Unique Constraints
 

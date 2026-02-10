@@ -1,37 +1,18 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isPanelRole } from '@/lib/panel-access-policy'
+import { createRateLimiter, API_RATE_LIMIT, PAGE_RATE_LIMIT } from '@/lib/security/rate-limit'
 
 // ---------------------------------------------------------------------------
-// Rate limiter (in-memory, per-IP sliding window)
+// Rate limiters (extracted to lib/security/rate-limit.ts)
 // ---------------------------------------------------------------------------
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
-const RATE_LIMIT_API = 60           // 60 requests/min for API
-const RATE_LIMIT_PAGE = 200         // 200 requests/min for pages
-
-// Clean up stale entries every 60s
-setInterval(() => {
-    const now = Date.now()
-    for (const [key, val] of rateLimitMap) {
-        if (now > val.resetAt) rateLimitMap.delete(key)
-    }
-}, 60_000)
+const apiLimiter = createRateLimiter(API_RATE_LIMIT)
+const pageLimiter = createRateLimiter(PAGE_RATE_LIMIT)
 
 function isRateLimited(ip: string, isApi: boolean): boolean {
-    const limit = isApi ? RATE_LIMIT_API : RATE_LIMIT_PAGE
     const key = `${ip}:${isApi ? 'api' : 'page'}`
-    const now = Date.now()
-    const entry = rateLimitMap.get(key)
-
-    if (!entry || now > entry.resetAt) {
-        rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-        return false
-    }
-
-    entry.count++
-    return entry.count > limit
+    return isApi ? apiLimiter.isLimited(key) : pageLimiter.isLimited(key)
 }
 
 // ---------------------------------------------------------------------------
@@ -250,15 +231,14 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(loginUrl)
         }
 
-        // Check role — must be owner or super_admin
+        // Check role — must be a valid panel role (owner, admin, super_admin)
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single()
 
-        const role = profile?.role
-        if (role !== 'owner' && role !== 'super_admin') {
+        if (!isPanelRole(profile?.role)) {
             const accountUrl = request.nextUrl.clone()
             accountUrl.pathname = lang ? `/${lang}/cuenta` : '/cuenta'
             return NextResponse.redirect(accountUrl)

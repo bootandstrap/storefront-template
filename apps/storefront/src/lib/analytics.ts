@@ -2,14 +2,13 @@
  * Analytics event tracker — client-side
  *
  * Gated by enable_analytics feature flag.
- * Inserts events to analytics_events table via Supabase anon client.
+ * Sends events to /api/analytics (server-side proxy) instead of direct
+ * Supabase inserts. The server injects tenant_id and validates payloads.
  *
  * Usage (in Client Components):
  *   import { trackEvent } from '@/lib/analytics'
  *   trackEvent('product_view', { product_id: '...' })
  */
-
-import { createBrowserClient } from '@supabase/ssr'
 
 type AnalyticsEvent =
     | 'page_view'
@@ -42,17 +41,17 @@ export async function trackEvent(
     if (_analyticsEnabled === false) return
 
     try {
-        const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-
-        await supabase.from('analytics_events').insert({
-            event_type: event,
-            properties,
-            page_url: typeof window !== 'undefined' ? window.location.pathname : null,
-            referrer: typeof document !== 'undefined' ? document.referrer || null : null,
-            tenant_id: process.env.NEXT_PUBLIC_TENANT_ID || null,
+        await fetch('/api/analytics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_type: event,
+                properties,
+                page_url: typeof window !== 'undefined' ? window.location.pathname : null,
+                referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+            }),
+            // Fire-and-forget: don't wait for response
+            keepalive: true,
         })
     } catch {
         // Silent fail — never block UI for analytics

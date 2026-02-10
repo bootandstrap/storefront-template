@@ -1,5 +1,5 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit } from '@/lib/limits'
 import { createClient } from '@/lib/supabase/server'
@@ -30,10 +30,12 @@ export default async function RegistroPage({
     // Governance: max_customers plan limit
     // -----------------------------------------------------------------------
     const supabase = await createClient()
+    const tenantId = getRequiredTenantId()
     const { count: customerCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'customer')
+        .eq('tenant_id', tenantId)
 
     const limitCheck = checkLimit(planLimits, 'max_customers', customerCount ?? 0)
     if (!limitCheck.allowed) {

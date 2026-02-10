@@ -10,6 +10,7 @@ import { redirect } from 'next/navigation'
 import { getConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
+import { isPanelRole } from '@/lib/panel-access-policy'
 import PanelSidebar from '@/components/panel/PanelSidebar'
 
 export default async function PanelLayout({
@@ -44,8 +45,7 @@ export default async function PanelLayout({
         .eq('id', user.id)
         .single()
 
-    const role = profile?.role
-    if (role !== 'owner' && role !== 'super_admin') {
+    if (!isPanelRole(profile?.role)) {
         // Not authorized for panel — redirect to customer account
         redirect(`/${lang}/cuenta`)
     }

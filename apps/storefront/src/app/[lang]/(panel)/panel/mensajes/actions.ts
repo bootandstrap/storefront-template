@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
+import { TemplateInputSchema, TemplateUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,6 +26,11 @@ export async function createTemplate(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = TemplateInputSchema.safeParse(input)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
+        const validInput = parsed.data
         const { planLimits } = await getConfig()
 
         const { count } = await supabase
@@ -50,10 +56,10 @@ export async function createTemplate(
             .from('whatsapp_templates')
             .insert({
                 tenant_id: tenantId,
-                name: input.name,
-                template: input.template,
-                is_default: input.is_default ?? false,
-                variables: input.variables ?? [],
+                name: validInput.name,
+                template: validInput.template,
+                is_default: validInput.is_default ?? false,
+                variables: validInput.variables ?? [],
             })
 
         if (error) {
@@ -75,9 +81,13 @@ export async function updateTemplate(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = TemplateUpdateSchema.safeParse(updates)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
+        const validUpdates = parsed.data
 
-        // If setting as default, unset other defaults for this tenant
-        if (updates.is_default) {
+        if (validUpdates.is_default) {
             await supabase
                 .from('whatsapp_templates')
                 .update({ is_default: false })
@@ -87,7 +97,7 @@ export async function updateTemplate(
 
         const { error } = await supabase
             .from('whatsapp_templates')
-            .update(updates)
+            .update(validUpdates)
             .eq('id', id)
             .eq('tenant_id', tenantId)
 

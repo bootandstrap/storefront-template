@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
 
+  // Monorepo: tell Turbopack where the workspace root is
+  turbopack: {
+    root: "../../",
+  },
+
   images: {
     loader: "custom",
     loaderFile: "./src/lib/supabase-image-loader.ts",
@@ -64,7 +69,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              "script-src 'self' 'unsafe-inline' https://js.stripe.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co",
@@ -91,5 +96,5 @@ export default withSentryConfig(nextConfig, {
   },
 
   // Disable Sentry telemetry
-  disableLogger: true,
+  telemetry: false,
 });

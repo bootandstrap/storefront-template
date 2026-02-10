@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
+import { SlideInputSchema, SlideUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +30,11 @@ export async function createSlide(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = SlideInputSchema.safeParse(input)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
+        const validInput = parsed.data
         const { planLimits } = await getConfig()
 
         // Count existing slides for this tenant
@@ -57,9 +63,9 @@ export async function createSlide(
             .from('carousel_slides')
             .insert({
                 tenant_id: tenantId,
-                ...input,
+                ...validInput,
                 sort_order: nextOrder,
-                active: input.active ?? true,
+                active: validInput.active ?? true,
             })
 
         if (error) {
@@ -81,10 +87,14 @@ export async function updateSlide(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = SlideUpdateSchema.safeParse(updates)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
 
         const { error } = await supabase
             .from('carousel_slides')
-            .update(updates)
+            .update(parsed.data)
             .eq('id', id)
             .eq('tenant_id', tenantId)
 

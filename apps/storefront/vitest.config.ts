@@ -5,6 +5,8 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),
+            // server-only throws in non-RSC environments; stub it for tests
+            'server-only': path.resolve(__dirname, 'src/lib/__tests__/__mocks__/server-only.ts'),
         },
     },
     test: {

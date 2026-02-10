@@ -133,8 +133,11 @@ campifrut/
 | `DATABASE_URL` | Supabase pooler connection string |
 | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Medusa publishable API key (auto-generated on first run) |
 | `REDIS_URL` | Redis connection (default: `redis://localhost:6379`) |
+| `TENANT_ID` | UUID from `tenants` table — scopes storefront config/flags/limits |
 
 > **Important**: `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is auto-generated when Medusa starts for the first time. Check the Medusa startup logs for the key value, or find it in the Medusa Admin panel under Settings.
+>
+> **Important**: `TENANT_ID` must match a row in the `tenants` table in Supabase. Without it, the storefront logs `TENANT_ID not set` warnings and falls back to hardcoded defaults.
 
 ## Debugging
 
@@ -171,6 +174,23 @@ The seed script is **idempotent** — it checks for existing regions, categories
 
 Missing publishable API key. Check that `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is set in `.env`.
 
+### Medusa crashes with `Cannot read properties of undefined (reading 'def')`
+
+**Root cause**: Zod version conflict. The storefront uses `zod@4.x` and Medusa v2.13.1 requires `zod@3.x` (it uses `._def` which was removed in Zod 4). pnpm hoists `zod@4` and Medusa's `zod-validation-error` peer dep picks it up.
+
+**Fix**: `zod@3.25.76` is pinned in `apps/medusa/package.json` as a direct dependency + `pnpm.overrides` in root `package.json`. If you ever upgrade Zod in the storefront, verify Medusa still starts.
+
+```bash
+# Verify fix
+pnpm install
+./dev.sh
+# Medusa should show: ✔ Server is ready on port: 9000
+```
+
+### Storefront shows `TENANT_ID not set` warnings
+
+Set `TENANT_ID` in `.env` to a valid UUID from the `tenants` table in Supabase. Without this, config/flags/limits queries fail with `invalid input syntax for type uuid`.
+
 ## Key Conventions
 
 - **`dev.sh`** — Use this to start dev environment (handles Redis, env symlink, services)
@@ -183,3 +203,4 @@ Missing publishable API key. Check that `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is 
 - **Error boundaries** — every route segment has `error.tsx` + `loading.tsx`
 - **All tables in `public` schema** — no separate `medusa` schema
 - **Toast feedback** — use `useToast().success()` for user actions (add to cart, auth, etc.)
+- **Zod version constraint** — Medusa requires `zod@3.x`, storefront uses `zod@4.x`. Both coexist via pinning in `apps/medusa/package.json`. Do NOT remove the pin.

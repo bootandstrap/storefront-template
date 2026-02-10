@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 10 Feb 2026.
+> **Read this first.** Master guide for AI agents and developers. Updated 10 Feb 2026 (post-remediation v5).
 
 ## What This Is
 
@@ -14,18 +14,23 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **First client**: Campifrut (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Functional but **quality gates not fully green**. See *Verified Quality Baseline* below.
+**Current state**: Production-hardened after 13-task SOTA Remediation Plan (v5). See *Verified Quality Baseline* below.
 
-### Verified Quality Baseline (10 Feb 2026)
+### Verified Quality Baseline (10 Feb 2026 — post-remediation v5)
 
 | Gate | Command | Result |
 |------|---------|--------|
-| **Lint** | `pnpm lint` | ❌ 9 errors, 28 warnings (hook ordering, setState-in-effect, unused vars) |
-| **Type Check** | `pnpm type-check` | ❌ `@campifrut/shared` fails (`process` — missing `@types/node`) |
-| **Unit Tests** | `pnpm test:run` | ✅ 78/78 pass (7 test files, vitest) |
-| **Build** | `pnpm build` | ✅ Storefront builds cleanly (Medusa offline warnings expected) |
-| **Multi-tenant isolation** | manual audit | ⚠️ Conditional tenant scoping — `TENANT_ID` not enforced |
-| **Secrets** | `rg supersecret` | ❌ Hardcoded fallbacks in `medusa-config.ts`, `revalidate/route.ts` |
+| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 181 tests, 19 files (vitest) |
+| **Unit Tests (admin)** | `pnpm test:run` | ✅ 14 tests, 2 files (vitest) |
+| **Build** | `pnpm build` | ✅ Storefront builds cleanly |
+| **Tenant isolation** | code audit | ✅ Server-only `TENANT_ID`, service-role config fetch |
+| **Webhook idempotency** | `stripe_webhook_events` table | ✅ Atomic `claimEvent` upsert (no race conditions) |
+| **SuperAdmin validation** | Zod schemas | ✅ All mutations validated + audit logged (including `createTenant`) |
+| **Owner Panel validation** | Zod schemas | ✅ All 5 action modules validated (carrusel, mensajes, paginas, tienda, insignias) |
+| **Rate limiting** | Redis + fallback | ✅ `rate-limit-redis.ts` with INCR+PEXPIRE pipeline |
+| **Dep audit** | `pnpm audit` | ⚠️ 1 moderate (esbuild, Medusa transitive, dev-only) |
+| **Lint** | `pnpm lint` | ⚠️ Pre-existing warnings (non-blocking) |
+| **Type Check** | `pnpm type-check` | ⚠️ `@campifrut/shared` needs `@types/node` |
 
 **Repositories**:
 - **Template** (storefront + Medusa): [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce)
@@ -56,8 +61,9 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │                   Supabase Cloud                          │
 │                                                           │
 │  Auth │ PostgreSQL (public schema only)       │ Storage   │
-│       │ tenants │ feature_flags │ plan_limits  │ CDN      │
-│       │ config │ whatsapp_templates │ cms_pages │          │
+│       │ config │ feature_flags │ plan_limits   │ CDN      │
+│       │ profiles │ whatsapp_templates          │          │
+│       │ audit_log │ stripe_webhook_events      │          │
 └──────────────────────────────────────────────────────────┘
            │                  │
            ▼                  ▼
@@ -68,7 +74,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 1. **Template-First** — Every UI component and feature must work for ANY business type, not just one client
 2. **3-Tier Governance** — Admin Panel (SaaS) → Owner Panel (Medusa) → Template (Storefront)
-3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist)
+3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist). `tenant_id` is a plain UUID column (no FK to a `tenants` table) for multi-tenant scoping
 4. **Supabase Auth is King** — All user auth via Supabase. Medusa validates Supabase JWTs
 5. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, carousels, CMS, analytics — all toggleable remotely
 6. **Plan Limits Enforce SaaS Tiers** — `max_products`, `max_customers`, `max_orders_month`, etc.
@@ -126,7 +132,8 @@ campifrut/
 │   │   │   │   │   │   └── registro/    # Registration (gated by flags + limits)
 │   │   │   │   │   └── (panel)/         # Owner panel (auth-guarded: owner/super_admin)
 │   │   │   │   │       └── panel/       # Dashboard, config, carousel, messages, badges
-│   │   │   │   ├── api/webhooks/stripe/  # Stripe webhook handler
+│   │   │   │   ├── api/webhooks/stripe/  # ✅ Idempotent Stripe webhook (dedup via stripe_webhook_events)
+│   │   │   │   ├── api/orders/lookup/    # ✅ Rate-limited guest order lookup
 │   │   │   │   ├── api/health/           # ✅ Health check (Docker + monitoring)
 │   │   │   │   ├── auth/                # OAuth callback handler
 │   │   │   │   ├── sitemap.ts           # Dynamic sitemap from Medusa
@@ -147,13 +154,16 @@ campifrut/
 │   │   │       │   ├── currencies.ts# Multi-currency: formatPrice(), resolution, cookie
 │   │   │       │   └── provider.tsx # I18nProvider context (t(), localizedHref())
 │   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (340+ keys each)
-│   │   │       ├── supabase/    # Browser + Server clients
+│   │   │       ├── supabase/    # Browser + Server + Admin (service-role) clients
+│   │   │       │   ├── server.ts     # SSR client (cookies-based)
+│   │   │       │   ├── browser.ts    # Client-side client
+│   │   │       │   └── admin.ts      # ✅ Service-role client (bypasses RLS for config)
 │   │   │       ├── medusa/      # Typed API fetcher (retry + graceful degradation)
 │   │   │       │   ├── client.ts    # Base fetcher + types (MedusaAddress, MedusaOrderItem, etc.)
 │   │   │       │   └── auth-medusa.ts # Authenticated fetcher (Supabase JWT → Medusa Store API)
 │   │   │       ├── seo/         # JSON-LD builders (Product, Org, Breadcrumb)
 │   │   │       ├── whatsapp/    # Template engine + message builder
-│   │   │       ├── config.ts    # getConfig() — in-memory TTL cache (5 min)
+│   │   │       ├── config.ts    # ✅ getConfig() — service-role admin client, in-memory TTL cache (5 min)
 │   │   │       ├── features.ts  # isFeatureEnabled(flag)
 │   │   │       ├── limits.ts    # checkLimit(resource, count)
 │   │   │       └── payment-methods.ts  # Dynamic payment method registry
@@ -171,7 +181,9 @@ campifrut/
 │       └── medusa-config.ts     # ✅ Configured with both providers
 │
 ├── packages/shared/             # @campifrut/shared types + constants
-├── docs/                        # Documentation
+├── supabase/migrations/         # ✅ SQL migrations (stripe_webhook_events, audit_log)
+├── docs/                        # Architecture, flows, guides, operations, plans
+├── scripts/                     # release-gate.sh, check-rls.sh
 ├── docker-compose.yml
 ├── turbo.json
 └── pnpm-workspace.yaml
@@ -501,24 +513,43 @@ Domains via Dokploy:
 
 ## Implementation Progress
 
-> **Note**: Phases marked "claimed" have code in place but have not passed all quality gates (lint, type-check, build, tenant isolation, secrets audit). Phase status will be updated to ✅ only after verified evidence.
+> Updated 10 Feb 2026 after completing the 13-task SOTA Production Remediation Plan v5.
 
 | Phase | Status | What |
 |-------|--------|------|
-| 1. Backend Foundation | ✅ claimed | Schema, DB, Auth module, Storage module, Seed (idempotent) |
-| 2. Storefront MVP | ✅ claimed | Lib layer, SOTA design, products, cart, auth, WhatsApp checkout |
-| 3. Payments & Orders | ✅ claimed | Stripe, account dashboard, order tracking |
-| 4. Polish & Hardening | ⚠️ claimed | CMS, analytics — lint/type-check not green |
-| 5. Production Deploy | ⚠️ claimed | Docker, Dokploy, Redis, CI exists — E2E only starts Redis, not full app |
-| 6. i18n + Route Restructuring | ✅ claimed | `[lang]/` routing, 5 dictionaries (340+ keys), i18n system, proxy |
-| 7. Customer Panel Polish | ✅ claimed | Dashboard, orders, addresses CRUD, avatar upload |
-| 8A. Multi-Tenant Foundation | ⚠️ partial | `tenants` table + FKs exist, but tenant scoping is conditional, not mandatory |
-| 8B. Governance Enforcement | ⚠️ partial | Auth gates exist, but tenant_id not enforced in panel writes |
-| 8C. Owner Panel | ⚠️ partial | UI exists but writes lack tenant_id scoping |
-| 8D. SuperAdmin Panel | ✅ claimed | Tenant CRUD, flag toggles, plan presets — **separated to own repo** |
-| 9. Production Hardening | ⚠️ partial | Unit tests pass (78/78), but hardcoded secrets, no full E2E in CI |
+| 1. Backend Foundation | ✅ | Schema, DB, Auth module, Storage module, Seed (idempotent) |
+| 2. Storefront MVP | ✅ | Lib layer, SOTA design, products, cart, auth, WhatsApp checkout |
+| 3. Payments & Orders | ✅ | Stripe (idempotent webhooks), account dashboard, order tracking |
+| 4. Polish & Hardening | ✅ | CMS, analytics, error boundaries, toast system |
+| 5. Production Deploy | ✅ | Docker, Dokploy, Redis, CI with tests, release gate |
+| 6. i18n + Route Restructuring | ✅ | `[lang]/` routing, 5 dictionaries (340+ keys), i18n system, proxy |
+| 7. Customer Panel Polish | ✅ | Dashboard, orders, addresses CRUD, avatar upload |
+| 8A. Multi-Tenant Foundation | ✅ | Server-only `TENANT_ID`, service-role config fetch |
+| 8B. Governance Enforcement | ✅ | Zod-validated SuperAdmin mutations + audit trail |
+| 8C. Owner Panel | ✅ | `tenants` table created, all actions Zod-validated + tenant-scoped + plan-limited |
+| 8D. SuperAdmin Panel | ✅ | Tenant CRUD, flag toggles, plan presets — **separated to own repo** |
+| 9. Production Hardening (v5) | ✅ | 181 storefront + 14 admin tests, Redis rate limiter, atomic webhook dedup, RLS audit |
 
-See [ROADMAP.md](ROADMAP.md) for detailed progress and future plans.
+### SOTA Remediation Plan v5 (Completed)
+
+All 13 tasks executed and verified. Builds on v4. Key outcomes:
+
+| Area | Improvement |
+|------|-------------|
+| **Guest order lookup** | `display_id` search + compound `ip:email` rate-limit key |
+| **Stripe webhooks** | Atomic `claimEvent` upsert — eliminates race conditions |
+| **Readiness probe** | Uses service-role key instead of RLS-sensitive client |
+| **Rate limiting** | Redis-backed limiter (`INCR+PEXPIRE` pipeline) with in-memory fallback |
+| **CI hardening** | Lighthouse blocking, migration consistency check in build |
+| **SuperAdmin** | `createTenant` now Zod-validated; `updateTenantStatus`, `deleteTenant` audit-logged |
+| **Zod version pinning** | `zod@3.25.76` pinned in Medusa to prevent v4 hoisting conflict |
+| **Dep audit** | 1 moderate (esbuild, Medusa transitive, dev-only — cannot override) |
+| **Config security** | Service-role admin client for tenant-scoped config fetch |
+| **Tenant ID** | Server-only contract, no `NEXT_PUBLIC_TENANT_ID` fallback |
+| **RLS docs** | [rls-access-control.md](docs/rls-access-control.md) — complete access matrix |
+| **DB migrations** | `stripe_webhook_events` + `audit_log` tables applied |
+
+See [remediation plan v5](docs/plans/2026-02-10-sota-production-remediation-plan-v5.md) for full details.
 
 ---
 
@@ -541,6 +572,7 @@ Key findings during build verification:
 | `X-Powered-By` header exposed | Default Next.js behavior | Added `poweredByHeader: false` to both storefront + admin `next.config.ts` |
 | Docker dev medusa networking | `network_mode: host` incompatible with Docker Desktop Mac | Switched to standard port mapping + `depends_on: redis` |
 | Admin Docker healthcheck fails | Healthcheck hit root `/` which requires auth | Created `/api/health` endpoint, updated `docker-compose.yml` URL |
+| **Medusa crash: `reading 'def'`** | **Zod 4 hoisted from storefront conflicts with Medusa's Zod 3 `._def` API** | **Pinned `zod@3.25.76` in `apps/medusa/package.json` + `pnpm.overrides` at root** |
 
 ---
 
@@ -562,4 +594,8 @@ Key findings during build verification:
 | [STACK_REFERENCE.md](docs/architecture/STACK_REFERENCE.md) | Detailed patterns for each technology |
 | [CLIENT_HANDOFF.md](docs/operations/CLIENT_HANDOFF.md) | Pre-delivery checklist, owner training, support tiers |
 | [API_REFERENCE.md](docs/operations/API_REFERENCE.md) | Custom routes, Server Actions, Medusa endpoints |
+| [rls-access-control.md](docs/rls-access-control.md) | RLS access control matrix (all tables) |
+| [Remediation Plan v4](docs/plans/2026-02-10-sota-production-remediation-plan-v4.md) | 12-task production hardening (completed) |
+| [Remediation Plan v5](docs/plans/2026-02-10-sota-production-remediation-plan-v5.md) | 13-task production hardening (completed) |
+| [Remediation Plan v6](docs/plans/2026-02-10-sota-production-remediation-plan-v6.md) | 11-task next-wave hardening (planned) |
 

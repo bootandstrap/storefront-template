@@ -3,6 +3,7 @@
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
 import { revalidatePath } from 'next/cache'
+import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
 // Fetch products with their current badges
@@ -53,6 +54,10 @@ export async function toggleBadge(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         await requirePanelAuth()
+        const parsed = ToggleBadgeSchema.safeParse({ productId, badgeId, enabled })
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
 
         // Get current product metadata via admin API
         const currentRes = await getAdminProducts({ limit: 100 })
@@ -96,6 +101,10 @@ export async function setBadges(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         await requirePanelAuth()
+        const parsed = SetBadgesSchema.safeParse({ productId, badges })
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
 
         const { products } = await getAdminProducts({ limit: 100 })
         const product = products.find((p) => p.id === productId)

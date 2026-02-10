@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import type { StoreConfig } from '@/lib/config'
 import { requirePanelAuth } from '@/lib/panel-auth'
+import { StoreConfigUpdateSchema } from '@/lib/owner-validation'
 
 // Whitelist of config columns that can be updated from Owner Panel
 const ALLOWED_CONFIG_FIELDS: (keyof StoreConfig)[] = [
@@ -36,11 +37,17 @@ export async function saveStoreConfig(
     try {
         const { supabase, tenantId } = await requirePanelAuth()
 
-        // Sanitize: only allow whitelisted fields
+        // Validate with Zod first (rejects unknown fields, XSS, oversized strings)
+        const parsed = StoreConfigUpdateSchema.safeParse(configData)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
+
+        // Double-check: only allow whitelisted fields (defense in depth)
         const sanitized: Record<string, unknown> = {}
         for (const key of ALLOWED_CONFIG_FIELDS) {
-            if (key in configData) {
-                sanitized[key] = configData[key]
+            if (key in parsed.data) {
+                sanitized[key] = parsed.data[key as keyof typeof parsed.data]
             }
         }
 

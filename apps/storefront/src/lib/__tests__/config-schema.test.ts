@@ -222,12 +222,17 @@ describe('getRequiredTenantId', () => {
         expect(getRequiredTenantId()).toBe('tenant-abc')
     })
 
-    it('returns NEXT_PUBLIC_TENANT_ID as fallback when TENANT_ID is not set', () => {
+    it('does NOT fall back to NEXT_PUBLIC_TENANT_ID (server-only contract)', () => {
         process.env.NEXT_PUBLIC_TENANT_ID = 'tenant-xyz'
-        expect(getRequiredTenantId()).toBe('tenant-xyz')
+            // Without TENANT_ID set, should NOT use NEXT_PUBLIC_TENANT_ID
+            ; (process.env as Record<string, string | undefined>).NODE_ENV = 'development'
+        const result = getRequiredTenantId()
+        expect(result).toBe('__dev_no_tenant__')
+        // Must NOT return the public tenant id
+        expect(result).not.toBe('tenant-xyz')
     })
 
-    it('prefers TENANT_ID over NEXT_PUBLIC_TENANT_ID', () => {
+    it('prefers TENANT_ID (ignores NEXT_PUBLIC_TENANT_ID entirely)', () => {
         process.env.TENANT_ID = 'private-id'
         process.env.NEXT_PUBLIC_TENANT_ID = 'public-id'
         expect(getRequiredTenantId()).toBe('private-id')
@@ -235,6 +240,12 @@ describe('getRequiredTenantId', () => {
 
     it('throws in production when neither env var is set', () => {
         (process.env as Record<string, string | undefined>).NODE_ENV = 'production'
+        expect(() => getRequiredTenantId()).toThrow('[FATAL] TENANT_ID is not set in production')
+    })
+
+    it('throws in production even if NEXT_PUBLIC_TENANT_ID is set (not a valid server fallback)', () => {
+        (process.env as Record<string, string | undefined>).NODE_ENV = 'production'
+        process.env.NEXT_PUBLIC_TENANT_ID = 'public-id'
         expect(() => getRequiredTenantId()).toThrow('[FATAL] TENANT_ID is not set in production')
     })
 

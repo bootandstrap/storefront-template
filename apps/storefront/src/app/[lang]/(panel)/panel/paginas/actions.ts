@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
+import { PageInputSchema, PageUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,6 +26,11 @@ export async function createPage(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = PageInputSchema.safeParse(input)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
+        const validInput = parsed.data
         const { planLimits } = await getConfig()
 
         const { count } = await supabase
@@ -41,10 +47,10 @@ export async function createPage(
             .from('cms_pages')
             .insert({
                 tenant_id: tenantId,
-                slug: input.slug,
-                title: input.title,
-                body: input.body,
-                published: input.published ?? false,
+                slug: validInput.slug,
+                title: validInput.title,
+                body: validInput.body,
+                published: validInput.published ?? false,
             })
 
         if (error) {
@@ -69,8 +75,12 @@ export async function updatePage(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { supabase, tenantId } = await requirePanelAuth()
+        const parsed = PageUpdateSchema.safeParse(updates)
+        if (!parsed.success) {
+            return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
+        }
 
-        const updateData: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() }
+        const updateData: Record<string, unknown> = { ...parsed.data, updated_at: new Date().toISOString() }
 
         const { error } = await supabase
             .from('cms_pages')
