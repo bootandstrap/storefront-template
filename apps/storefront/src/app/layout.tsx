@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import { Inter, Outfit } from 'next/font/google'
+import { headers } from 'next/headers'
 import { getConfig } from '@/lib/config'
+import { isValidLocale } from '@/lib/i18n'
 import { resolveThemeColors, lightenHex } from '@/lib/theme/presets'
 import { CartProvider } from '@/contexts/CartContext'
+import { WishlistProvider } from '@/contexts/WishlistContext'
 import { ToastProvider } from '@/components/ui/Toaster'
 import AnalyticsTracker from '@/components/ui/AnalyticsTracker'
 import './globals.css'
@@ -52,6 +55,12 @@ export default async function RootLayout({
 }) {
   const { config, featureFlags } = await getConfig()
 
+  // Dynamically resolve locale from URL path (/{lang}/...)
+  const headersList = await headers()
+  const pathname = headersList.get('x-invoke-path') || headersList.get('x-matched-path') || ''
+  const firstSegment = pathname.split('/').filter(Boolean)[0] || ''
+  const htmlLang = isValidLocale(firstSegment) ? firstSegment : (config.language || 'en')
+
   // Resolve theme colors from preset or custom config
   const colors = resolveThemeColors(config)
   const primaryLight = lightenHex(colors.primary, 15)
@@ -68,7 +77,7 @@ export default async function RootLayout({
 
   return (
     <html
-      lang={config.language || 'en'}
+      lang={htmlLang}
       className={htmlClasses}
       data-theme={themeMode}
       style={{
@@ -82,12 +91,25 @@ export default async function RootLayout({
         '--config-text': colors.text,
       } as React.CSSProperties}
     >
+      <head>
+        {/* Preconnects — reduce DNS+TLS for critical third-party origins */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {config.logo_url && (
+          <link rel="preconnect" href={new URL(config.logo_url).origin} crossOrigin="anonymous" />
+        )}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className="min-h-screen flex flex-col antialiased">
         <CartProvider>
-          <ToastProvider>
-            {children}
-            <AnalyticsTracker enabled={featureFlags.enable_analytics} />
-          </ToastProvider>
+          <WishlistProvider>
+            <ToastProvider>
+              {children}
+              <AnalyticsTracker enabled={featureFlags.enable_analytics} />
+            </ToastProvider>
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

@@ -1,7 +1,7 @@
 /**
  * Tests for rate-limit module
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createRateLimiter } from '../rate-limit'
 
 describe('createRateLimiter', () => {

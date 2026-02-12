@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { ShoppingCart, Menu, X, User, MessageCircle, Search } from 'lucide-react'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 import { useCart } from '@/contexts/CartContext'
@@ -22,11 +23,12 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
     const [mobileOpen, setMobileOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const { itemCount, openDrawer } = useCart()
-    const { localizedHref } = useI18n()
+    const { t, localizedHref } = useI18n()
+    const router = useRouter()
 
     return (
         <>
-            <header className="glass-strong sticky top-0 z-40 border-b border-surface-3/50">
+            <header data-testid="main-header" className="glass-strong sticky top-0 z-40 border-b border-surface-3/50">
                 <div className="container-page">
                     <div className="flex items-center justify-between h-16 md:h-18">
                         {/* Logo */}
@@ -48,24 +50,26 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         </Link>
 
                         {/* Desktop search + nav */}
-                        <div className="hidden md:flex items-center gap-6 flex-1 max-w-md mx-8">
-                            <div className="relative w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                                <input
-                                    type="search"
-                                    placeholder="Buscar productos..."
-                                    className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-surface-1 border border-surface-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            const value = (e.target as HTMLInputElement).value
-                                            if (value.trim()) {
-                                                window.location.href = `${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`
+                        {featureFlags.enable_product_search && (
+                            <div className="hidden md:flex items-center gap-6 flex-1 max-w-md mx-8">
+                                <div className="relative w-full">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                    <input
+                                        type="search"
+                                        placeholder={t('product.searchPlaceholder')}
+                                        className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-surface-1 border border-surface-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const value = (e.target as HTMLInputElement).value
+                                                if (value.trim()) {
+                                                    router.push(`${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`)
+                                                }
                                             }
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Desktop nav links */}
                         <nav className="hidden md:flex items-center gap-5">
@@ -73,7 +77,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                 href={localizedHref('products')}
                                 className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
                             >
-                                Productos
+                                {t('nav.products')}
                             </Link>
                             {featureFlags.enable_whatsapp_checkout && (
                                 <a
@@ -83,7 +87,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                     className="text-sm font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
                                 >
                                     <MessageCircle className="w-4 h-4" />
-                                    Contacto
+                                    {t('footer.contact')}
                                 </a>
                             )}
                         </nav>
@@ -104,42 +108,46 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {/* Right actions */}
                         <div className="flex items-center gap-2">
                             {/* Mobile search toggle */}
-                            <button
-                                onClick={() => setSearchOpen(!searchOpen)}
-                                className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
-                                aria-label="Buscar"
-                            >
-                                <Search className="w-5 h-5 text-text-primary" />
-                            </button>
+                            {featureFlags.enable_product_search && (
+                                <button
+                                    onClick={() => setSearchOpen(!searchOpen)}
+                                    className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
+                                    aria-label={t('common.search')}
+                                >
+                                    <Search className="w-5 h-5 text-text-primary" />
+                                </button>
+                            )}
 
                             {/* Cart button */}
                             <button
                                 onClick={openDrawer}
                                 className="relative p-2 rounded-full hover:bg-surface-1 transition-colors"
-                                aria-label="Carrito de compras"
+                                aria-label={t('cart.title')}
                             >
                                 <ShoppingCart className="w-5 h-5 text-text-primary" />
                                 {itemCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center animate-pulse-badge">
+                                    <span data-testid="cart-badge" className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center animate-pulse-badge">
                                         {itemCount > 9 ? '9+' : itemCount}
                                     </span>
                                 )}
                             </button>
 
                             {/* Auth button — visible on mobile too */}
-                            <Link
-                                href={localizedHref('login')}
-                                className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
-                            >
-                                <User className="w-4 h-4" />
-                                <span className="hidden sm:inline">Ingresar</span>
-                            </Link>
+                            {featureFlags.enable_customer_accounts && (
+                                <Link
+                                    href={localizedHref('login')}
+                                    className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
+                                >
+                                    <User className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t('nav.login')}</span>
+                                </Link>
+                            )}
 
                             {/* Mobile menu toggle */}
                             <button
                                 onClick={() => setMobileOpen(!mobileOpen)}
                                 className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
-                                aria-label="Menú"
+                                aria-label={t('nav.home')}
                             >
                                 {mobileOpen ? (
                                     <X className="w-5 h-5" />
@@ -158,14 +166,14 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 type="search"
-                                placeholder="Buscar productos..."
+                                placeholder={t('product.searchPlaceholder')}
                                 autoFocus
                                 className="w-full pl-9 pr-4 py-2.5 text-sm rounded-full bg-surface-1 border border-surface-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         const value = (e.target as HTMLInputElement).value
                                         if (value.trim()) {
-                                            window.location.href = `${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`
+                                            router.push(`${localizedHref('products')}?q=${encodeURIComponent(value.trim())}`)
                                             setSearchOpen(false)
                                         }
                                     }
@@ -189,7 +197,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             className="text-base font-medium p-2 rounded-lg hover:bg-surface-1"
                             onClick={() => setMobileOpen(false)}
                         >
-                            Productos
+                            {t('nav.products')}
                         </Link>
                         {featureFlags.enable_whatsapp_checkout && (
                             <a
@@ -199,7 +207,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                 className="text-base font-medium p-2 rounded-lg hover:bg-surface-1 flex items-center gap-2"
                             >
                                 <MessageCircle className="w-4 h-4" />
-                                Contacto por WhatsApp
+                                {t('checkout.whatsapp')}
                             </a>
                         )}
 

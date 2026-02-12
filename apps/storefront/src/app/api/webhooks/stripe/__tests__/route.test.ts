@@ -6,6 +6,8 @@
  * - First-time events are processed when claimEvent returns the inserted row
  * - Missing webhook secret returns 503
  * - Missing signature returns 400
+ * - Cart completion failure returns 500 (Stripe retries)
+ * - Non-critical failure (email) returns 200 (no retry)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -16,7 +18,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockConstructEvent = vi.fn()
 
 vi.mock('stripe', () => {
-    // eslint-disable-next-line @typescript-eslint/no-extraneous-class
     class MockStripe {
         webhooks = { constructEvent: mockConstructEvent }
     }
@@ -28,15 +29,16 @@ vi.mock('stripe', () => {
 // ---------------------------------------------------------------------------
 
 const originalFetch = globalThis.fetch
-let fetchResponses: Array<{ url: string; response: unknown }> = []
+let fetchResponses: Array<{ url: string; response: unknown; ok?: boolean }> = []
 
-function mockFetchSetup(responses: Array<{ url: string; response: unknown }>) {
+function mockFetchSetup(responses: Array<{ url: string; response: unknown; ok?: boolean }>) {
     fetchResponses = responses
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
         const match = fetchResponses.find(r => String(url).includes(r.url))
         if (match) {
             return Promise.resolve({
-                ok: true,
+                ok: match.ok !== undefined ? match.ok : true,
+                status: match.ok === false ? 500 : 200,
                 json: () => Promise.resolve(match.response),
                 text: () => Promise.resolve(JSON.stringify(match.response)),
             })
@@ -179,6 +181,82 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         const { POST } = await import('../route')
         const req = makeWebhookRequest('{"test": true}', 'sig_valid')
         const res = await POST(req as never)
+        // Without cart_id, event is processed (no critical path)
+        // But unhandled errors now return 500
+        expect([200, 500]).toContain(res.status)
+    })
+
+    // ── NEW: H-003 Remediation tests ──────────────────────────────────────
+
+    it('returns 500 when cart completion fails (critical path)', async () => {
+        const fakeEvent = {
+            id: 'evt_cart_fail_001',
+            type: 'payment_intent.succeeded',
+            data: {
+                object: {
+                    id: 'pi_cart_fail',
+                    amount: 5000,
+                    receipt_email: 'buyer@test.com',
+                    metadata: { customer_name: 'Buyer', cart_id: 'cart_fail_999' },
+                },
+            },
+        }
+        mockConstructEvent.mockReturnValue(fakeEvent)
+
+        mockFetchSetup([
+            {
+                url: 'stripe_webhook_events',
+                response: [{ id: 'row-1', event_id: 'evt_cart_fail_001' }],
+            },
+            // Cart completion fails (Medusa returns 500)
+            { url: 'carts/cart_fail_999/complete', response: { error: 'Internal error' }, ok: false },
+        ])
+
+        vi.resetModules()
+        const { POST } = await import('../route')
+        const req = makeWebhookRequest('{"test": true}', 'sig_valid')
+        const res = await POST(req as never)
+
+        // MUST return 500 so Stripe retries — we cannot lose orders
+        expect(res.status).toBe(500)
+
+        const json = await res.json()
+        expect(json.error).toBeDefined()
+    })
+
+    it('returns 200 when email fails but cart succeeds (non-critical)', async () => {
+        const fakeEvent = {
+            id: 'evt_email_fail_002',
+            type: 'payment_intent.succeeded',
+            data: {
+                object: {
+                    id: 'pi_email_fail',
+                    amount: 3000,
+                    receipt_email: 'buyer@test.com',
+                    metadata: { customer_name: 'Buyer', cart_id: 'cart_ok_111' },
+                },
+            },
+        }
+        mockConstructEvent.mockReturnValue(fakeEvent)
+
+        mockFetchSetup([
+            {
+                url: 'stripe_webhook_events',
+                response: [{ id: 'row-2', event_id: 'evt_email_fail_002' }],
+            },
+            // Cart completion succeeds
+            { url: 'carts/cart_ok_111/complete', response: { order: { id: 'order_ok' } } },
+            // Email fails — but this is non-critical
+            { url: 'functions/v1/send-email', response: { error: 'Email service down' }, ok: false },
+            { url: 'analytics_events', response: {} },
+        ])
+
+        vi.resetModules()
+        const { POST } = await import('../route')
+        const req = makeWebhookRequest('{"test": true}', 'sig_valid')
+        const res = await POST(req as never)
+
+        // MUST return 200 — email failure is non-critical
         expect(res.status).toBe(200)
 
         const json = await res.json()

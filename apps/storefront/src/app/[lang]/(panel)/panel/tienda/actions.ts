@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePanel } from '@/lib/revalidate'
 import type { StoreConfig } from '@/lib/config'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { StoreConfigUpdateSchema } from '@/lib/owner-validation'
@@ -78,7 +78,7 @@ export async function saveStoreConfig(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/config] Error:', err)

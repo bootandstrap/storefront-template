@@ -117,6 +117,7 @@ export interface AppConfig {
     featureFlags: FeatureFlags
     planLimits: PlanLimits
     planExpired: boolean
+    tenantStatus: 'active' | 'paused' | 'suspended' | 'trial'
 }
 
 // ---------------------------------------------------------------------------
@@ -128,13 +129,33 @@ export interface AppConfig {
 // ---------------------------------------------------------------------------
 
 /**
+ * Detects whether we are in Next.js build/prerender phase (no runtime context).
+ * During `next build`, static pages like `/_not-found` are prerendered without
+ * a real request — TENANT_ID is unavailable and that's expected.
+ * Returns true only during the build prerender pass, NOT during runtime SSR.
+ *
+ * Next.js sets NEXT_PHASE during build:
+ * - 'phase-production-build' during `next build`
+ * - undefined during runtime
+ */
+function isBuildPhase(): boolean {
+    return process.env.NEXT_PHASE === 'phase-production-build'
+}
+
+/**
  * Returns the tenant ID from the server-only TENANT_ID env var.
- * - In production: throws if TENANT_ID is not set (hard fail to prevent data leaks).
- * - In development: warns and returns a dev placeholder if not set.
+ * - In production runtime: throws if TENANT_ID is not set (fail-closed).
+ * - In build/prerender: returns a safe sentinel (queries will match nothing).
+ * - In development: warns and returns a dev placeholder.
  */
 export function getRequiredTenantId(): string {
     const id = process.env.TENANT_ID
     if (id) return id
+
+    // Build-phase prerender (e.g. /_not-found): return sentinel — queries return empty
+    if (isBuildPhase()) {
+        return '__build_prerender__'
+    }
 
     if (process.env.NODE_ENV === 'production') {
         throw new Error('[FATAL] TENANT_ID is not set in production. All multi-tenant queries require tenant scoping.')
@@ -248,27 +269,64 @@ const FALLBACK_CONFIG: AppConfig = {
         max_custom_domains: 1,
     },
     planExpired: false,
+    tenantStatus: 'active',
 }
 
 // ---------------------------------------------------------------------------
-// In-memory TTL cache (avoids unstable_cache + cookies() conflict in Next.js 16)
+// In-memory TTL cache (uses globalThis to share across Turbopack module instances)
+// ---------------------------------------------------------------------------
+// In Next.js dev mode with Turbopack, API routes and page renders may use
+// different module instances. Module-level variables are isolated per instance.
+// globalThis ensures cache state is shared across ALL routes in the same process.
+// This is the same pattern used by Prisma, Supabase, etc. for dev-mode singletons.
 // ---------------------------------------------------------------------------
 
-let _cachedConfig: AppConfig | null = null
-let _cacheTimestamp = 0
 const CACHE_TTL_MS = 300_000 // 5 minutes
 
-export async function getConfig(): Promise<AppConfig> {
+// Shared cache on globalThis (survives module re-evaluation in dev/HMR)
+const globalForConfig = globalThis as unknown as {
+    __configCache?: AppConfig | null
+    __configCacheTimestamp?: number
+}
+
+function getCachedConfig(): AppConfig | null {
     const now = Date.now()
-    if (_cachedConfig && now - _cacheTimestamp < CACHE_TTL_MS) {
-        return _cachedConfig
+    const cached = globalForConfig.__configCache
+    const timestamp = globalForConfig.__configCacheTimestamp ?? 0
+    if (cached && now - timestamp < CACHE_TTL_MS) {
+        return cached
+    }
+    return null
+}
+
+function setCachedConfig(config: AppConfig): void {
+    globalForConfig.__configCache = config
+    globalForConfig.__configCacheTimestamp = Date.now()
+}
+
+export function clearCachedConfig(): void {
+    globalForConfig.__configCache = null
+    globalForConfig.__configCacheTimestamp = 0
+}
+
+export async function getConfig(): Promise<AppConfig> {
+    const cached = getCachedConfig()
+    if (cached) return cached
+
+    // MANDATORY: tenant_id validation — fail-closed in production runtime.
+    // During build/prerender, returns sentinel → early return with FALLBACK_CONFIG.
+    const tenantId = getRequiredTenantId()
+
+    // Build-phase prerender (e.g. /_not-found): no real tenant context, use fallback
+    if (isBuildPhase()) {
+        console.info('[config] Build-phase prerender detected — using fallback config')
+        return FALLBACK_CONFIG
     }
 
     try {
         const supabase = createAdminClient()
 
-        // MANDATORY: All queries scoped by tenant_id — no data leaks
-        const tenantId = getRequiredTenantId()
+        // All queries scoped by tenant_id — no data leaks
         const configQuery = supabase.from('config').select('*').eq('tenant_id', tenantId)
         const flagsQuery = supabase.from('feature_flags').select('*').eq('tenant_id', tenantId)
         const limitsQuery = supabase.from('plan_limits').select('*').eq('tenant_id', tenantId)
@@ -278,6 +336,13 @@ export async function getConfig(): Promise<AppConfig> {
             flagsQuery.single(),
             limitsQuery.single(),
         ])
+
+        // Query tenant status (tenants table may not be in generated types)
+        const { data: tenantData } = await supabase
+            .from('tenants')
+            .select('status')
+            .eq('id', tenantId)
+            .single() as { data: { status: string } | null }
 
         // Log any query errors (helps diagnose tenant/schema issues)
         if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
@@ -290,16 +355,18 @@ export async function getConfig(): Promise<AppConfig> {
             ? new Date(limits.plan_expires_at) < new Date()
             : false
 
-        _cachedConfig = {
+        const result: AppConfig = {
             config: configRes.data ?? FALLBACK_CONFIG.config,
             featureFlags: flagsRes.data ?? FALLBACK_CONFIG.featureFlags,
             planLimits: limits,
             planExpired,
+            tenantStatus: (tenantData?.status as AppConfig['tenantStatus']) ?? 'active',
         }
-        _cacheTimestamp = now
-        return _cachedConfig
+        setCachedConfig(result)
+        return result
     } catch (err) {
-        console.error('[config] Failed to fetch — using fallback (infra failure)', err)
+        // Only Supabase/network errors reach here — NOT missing TENANT_ID
+        console.error('[config] Supabase fetch failed — using fallback (infra failure)', err)
         return FALLBACK_CONFIG
     }
 }
@@ -310,7 +377,7 @@ export async function getConfig(): Promise<AppConfig> {
 
 export async function revalidateConfig() {
     'use server'
-    _cachedConfig = null
-    _cacheTimestamp = 0
+    clearCachedConfig()
     revalidatePath('/', 'layout')
 }
+

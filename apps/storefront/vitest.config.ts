@@ -11,6 +11,10 @@ export default defineConfig({
     },
     test: {
         environment: 'node',
+        // Deterministic execution: forks pool prevents flaky parallel failures
+        pool: 'forks',
+        testTimeout: 10_000,
+        hookTimeout: 10_000,
         globals: true,
         include: ['src/**/__tests__/**/*.test.{ts,tsx}'],
         exclude: ['node_modules', '.next', 'e2e'],

@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerAddresses } from '@/lib/medusa/auth-medusa'
+import { getConfig } from '@/lib/config'
+import { ShieldX } from 'lucide-react'
 import AddressesClient from './AddressesClient'
 
 
@@ -48,6 +50,18 @@ export default async function DireccionesPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
+    const { featureFlags } = await getConfig()
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+
+    if (!featureFlags.enable_address_management) {
+        return (
+            <div className="glass rounded-xl p-8 text-center">
+                <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
+                <p className="text-text-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
+            </div>
+        )
+    }
 
     return (
         <Suspense fallback={<AddressesSkeleton />}>

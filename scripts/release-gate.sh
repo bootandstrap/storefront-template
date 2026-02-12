@@ -57,15 +57,14 @@ echo "   Root: $ROOT_DIR"
 
 # ── P0: Security ──
 gate "RLS Policy Check" bash scripts/check-rls.sh
+gate "Audit Policy" bash scripts/check-audit-waiver.sh
 
 # ── P1: Quality ──
 gate "Storefront Lint" pnpm turbo lint --filter=storefront
 gate "Storefront Unit Tests" pnpm --filter=storefront test:run
+gate "Medusa Unit Tests" pnpm -C apps/medusa test:unit
 gate "Storefront Type Check" pnpm turbo type-check
 gate "Storefront Build" pnpm turbo build --filter=storefront
-
-# ── P2: Audit ──
-gate_warn "npm Audit" pnpm audit --audit-level=high
 
 # ── Summary ──
 echo ""

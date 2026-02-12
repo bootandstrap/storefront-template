@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/Toaster'
 import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
 import { toggleBadge } from './actions'
@@ -25,6 +26,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
     const { t } = useI18n()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const toast = useToast()
     const [error, setError] = useState<string | null>(initialError ?? null)
     const [search, setSearch] = useState('')
 
@@ -37,8 +39,10 @@ export default function BadgesClient({ products, error: initialError }: Props) {
             const result = await toggleBadge(productId, badgeId, !currentlyEnabled)
             if (result.success) {
                 router.refresh()
+                toast.success('✓')
             } else {
                 setError(result.error ?? 'Error')
+                toast.error(result.error ?? 'Error')
             }
         })
     }

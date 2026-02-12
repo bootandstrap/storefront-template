@@ -70,7 +70,7 @@ export default async function CategoryGrid({ dictionary }: CategoryGridProps) {
     if (!categories.length) return null
 
     return (
-        <section className="py-12 md:py-16">
+        <section data-testid="category-grid" className="py-12 md:py-16">
             <div className="container-page">
                 <h2 className="text-2xl md:text-3xl font-bold font-display text-text-primary mb-8 text-center">
                     {t('product.categories')}

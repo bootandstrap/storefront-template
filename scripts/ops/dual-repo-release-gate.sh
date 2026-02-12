@@ -12,12 +12,15 @@
 #   1 — One or more gates failed
 # ============================================================================
 
-set -euo pipefail
+# NOTE: no `set -e` — the gate() function handles exit codes individually.
+# `set -e` would cause the script to exit on the first gate failure,
+# preventing subsequent gates from running and hiding the full picture.
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Assumes this script lives in CAMPIFRUT/scripts/ops/
 CAMPIFRUT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-ADMIN_DIR="$(cd "$CAMPIFRUT_DIR/../bootandstrap-admin" && pwd)"
+ADMIN_DIR="$(cd "$CAMPIFRUT_DIR/../bootandstrap-admin" && pwd 2>/dev/null)" || ADMIN_DIR=""
 
 # Colors
 RED='\033[0;31m'
@@ -30,15 +33,39 @@ NC='\033[0m'
 FAILURES=0
 TOTAL=0
 
+# ── Pre-flight checks ────────────────────────────────────────
+echo ""
+echo -e "${BOLD}Pre-flight checks${NC}"
+
+if ! command -v pnpm &>/dev/null; then
+    echo -e "  ${RED}✗ pnpm not found on PATH${NC}"
+    exit 1
+fi
+echo -e "  ${GREEN}✓ pnpm$(pnpm --version 2>/dev/null | head -1) found${NC}"
+
+if [[ -n "$ADMIN_DIR" ]] && [[ -d "$ADMIN_DIR" ]]; then
+    echo -e "  ${GREEN}✓ Admin dir found: $ADMIN_DIR${NC}"
+else
+    echo -e "  ${YELLOW}⚠️  Admin dir not found — will skip admin gates${NC}"
+    ADMIN_DIR=""
+fi
+echo ""
+
+# ── Gate runner ───────────────────────────────────────────────
 gate() {
     local label="$1"
     shift
     TOTAL=$((TOTAL + 1))
     echo -e "${CYAN}▸ [$TOTAL] $label${NC}"
-    if "$@" > /dev/null 2>&1; then
+    local output
+    output=$("$@" 2>&1)
+    local exit_code=$?
+    if [[ $exit_code -eq 0 ]]; then
         echo -e "  ${GREEN}✓ PASS${NC}"
     else
-        echo -e "  ${RED}✗ FAIL${NC}"
+        echo -e "  ${RED}✗ FAIL (exit code: $exit_code)${NC}"
+        # Show last 5 lines of output for context
+        echo "$output" | tail -5 | sed 's/^/    /'
         FAILURES=$((FAILURES + 1))
     fi
 }
@@ -55,15 +82,17 @@ echo -e "   ${YELLOW}$CAMPIFRUT_DIR${NC}"
 echo ""
 
 gate "Storefront Lint"        pnpm -C "$CAMPIFRUT_DIR" turbo lint --filter=storefront
-gate "Storefront Type Check"  pnpm -C "$CAMPIFRUT_DIR" -C apps/storefront exec tsc --noEmit
+gate "Storefront Type Check"  pnpm -C "$CAMPIFRUT_DIR" turbo type-check
 gate "Storefront Unit Tests"  pnpm -C "$CAMPIFRUT_DIR" --filter=storefront test:run
 gate "Storefront Build"       pnpm -C "$CAMPIFRUT_DIR" turbo build --filter=storefront
+gate "Migration Check"        bash "$CAMPIFRUT_DIR/scripts/check-migration-order.sh"
 gate "RLS Policy Check"       bash "$CAMPIFRUT_DIR/scripts/check-rls.sh"
+gate "Audit Policy"           bash "$CAMPIFRUT_DIR/scripts/check-audit-waiver.sh"
 
 echo ""
 
 # ── SuperAdmin ─────────────────────────────────────────────────
-if [[ -d "$ADMIN_DIR" ]]; then
+if [[ -n "$ADMIN_DIR" ]]; then
     echo -e "${BOLD}🛡️  SuperAdmin Panel${NC}"
     echo -e "   ${YELLOW}$ADMIN_DIR${NC}"
     echo ""
@@ -72,8 +101,6 @@ if [[ -d "$ADMIN_DIR" ]]; then
     gate "Admin Type Check"     pnpm -C "$ADMIN_DIR" type-check
     gate "Admin Unit Tests"     pnpm -C "$ADMIN_DIR" test:run
     gate "Admin Build"          pnpm -C "$ADMIN_DIR" build
-else
-    echo -e "${YELLOW}⚠️  SuperAdmin directory not found at $ADMIN_DIR — skipping${NC}"
 fi
 
 echo ""

@@ -98,6 +98,62 @@ Campifrut-specific seed with:
 - Region, tax region, stock location, fulfillment set, categories, products, inventory levels
 - Link operations (sales channel ↔ stock location, API key) wrapped in try-catch
 
+## Owner Panel — Medusa Admin API Client (`lib/medusa/admin.ts`) ✅
+
+**Purpose**: The Owner Panel manages catalog, orders, and customers directly through the Medusa Admin API. A dedicated helper (`admin.ts`) handles authentication and provides typed functions.
+
+### Authentication Flow
+
+```
+Server Action → getAdminToken() → POST /auth/user/emailpass
+             → JWT (24h validity, cached 23h)
+             → Authorization: Bearer <token>
+             → Admin API endpoints
+```
+
+- Env vars: `MEDUSA_ADMIN_EMAIL` + `MEDUSA_ADMIN_PASSWORD`
+- Auto-retry on 401 (token refresh)
+- In-memory token cache with 23h TTL
+
+### Available Functions
+
+| Function | Endpoint | Returns |
+|----------|----------|---------|
+| `getAdminProducts(limit, offset)` | `GET /admin/products` | Paginated product list |
+| `getAdminProduct(id)` | `GET /admin/products/:id` | Single product detail |
+| `createAdminProduct(data)` | `POST /admin/products` | New product |
+| `updateAdminProduct(id, data)` | `POST /admin/products/:id` | Updated product |
+| `deleteAdminProduct(id)` | `DELETE /admin/products/:id` | — |
+| `getProductCount()` | `GET /admin/products` | Total count |
+| `getAdminCategories(limit, offset)` | `GET /admin/product-categories` | Category list |
+| `createAdminCategory(data)` | `POST /admin/product-categories` | New category |
+| `updateAdminCategory(id, data)` | `POST /admin/product-categories/:id` | Updated category |
+| `deleteAdminCategory(id)` | `DELETE /admin/product-categories/:id` | — |
+| `getAdminOrders(limit, offset)` | `GET /admin/orders` | Paginated order list |
+| `getAdminOrderDetail(id)` | `GET /admin/orders/:id` | Order with items + fulfillments |
+| `createOrderFulfillment(orderId)` | `POST /admin/orders/:id/fulfillments` | New fulfillment |
+| `cancelAdminOrder(orderId)` | `POST /admin/orders/:id/cancel` | Cancelled order |
+| `getAdminCustomers(limit, offset)` | `GET /admin/customers` | Customer list |
+| `getCustomerCount()` | `GET /admin/customers` | Total count |
+| `uploadFiles(formData)` | `POST /admin/uploads` | Uploaded file URLs |
+| `updateProductImages(id, images)` | `POST /admin/products/:id` | Updated images array |
+| `deleteProductImage(id, url)` | `POST /admin/products/:id` | Filtered images array |
+| `updateVariantPrices(prodId, varId, prices)` | `POST /admin/products/:id/variants/:vid/prices` | Updated prices |
+
+### Server Actions (8 `actions.ts` files)
+
+Each panel module has its own `actions.ts` that calls `admin.ts` helpers:
+- `panel/productos/actions.ts` — Product CRUD + image upload/delete
+- `panel/categorias/actions.ts` — Category CRUD
+- `panel/pedidos/actions.ts` — Order fulfill/cancel
+- `panel/carrusel/actions.ts` — Carousel slide CRUD (Supabase)
+- `panel/mensajes/actions.ts` — WhatsApp template CRUD (Supabase)
+- `panel/paginas/actions.ts` — CMS page CRUD (Supabase)
+- `panel/insignias/actions.ts` — Badge toggle (Medusa metadata)
+- `panel/tienda/actions.ts` — Store config save (Supabase)
+
+All mutations call `revalidatePanel()` for instant UI refresh across panel + storefront.
+
 ## Configuration (`medusa-config.ts`) ✅
 
 ```typescript

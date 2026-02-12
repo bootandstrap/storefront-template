@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { createPage, updatePage, deletePage, togglePagePublish } from './actions'
 
@@ -24,6 +25,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
     const { t } = useI18n()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const toast = useToast()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -67,8 +69,10 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
             if (result.success) {
                 resetForm()
                 router.refresh()
+                toast.success('✓')
             } else {
                 setError(result.error ?? 'Error')
+                toast.error(result.error ?? 'Error')
             }
         })
     }
@@ -77,15 +81,16 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
         if (!confirm(t('common.confirmDelete'))) return
         startTransition(async () => {
             const result = await deletePage(id)
-            if (result.success) router.refresh()
-            else setError(result.error ?? 'Error')
+            if (result.success) { router.refresh(); toast.success('✓') }
+            else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
         })
     }
 
     const handleTogglePublish = (page: CMSPage) => {
         startTransition(async () => {
             const result = await togglePagePublish(page.id, !page.published)
-            if (result.success) router.refresh()
+            if (result.success) { router.refresh(); toast.success('✓') }
+            else { toast.error(result.error ?? 'Error') }
         })
     }
 

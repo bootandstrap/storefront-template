@@ -3,12 +3,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getProduct, getProducts } from '@/lib/medusa/client'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { productJsonLD } from '@/lib/seo/jsonld'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import AddToCartButton from '@/components/products/AddToCartButton'
 import ProductCard from '@/components/products/ProductCard'
+import WishlistButton from '@/components/products/WishlistButton'
+import ProductReviews from '@/components/products/ProductReviews'
 import { Truck, ShieldCheck, Package, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -44,7 +46,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
     if (!product) notFound()
 
-    const { config } = await getConfig()
+    const { config, featureFlags } = await getConfig()
+    const tenantId = getRequiredTenantId()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
     const variant = product.variants?.[0]
@@ -103,6 +106,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
                             ) : (
                                 <div className="image-fallback">
                                     <Package className="!w-16 !h-16" strokeWidth={1} />
+                                </div>
+                            )}
+                            {/* Wishlist button */}
+                            {featureFlags.enable_wishlist && (
+                                <div className="absolute top-3 right-3 z-10">
+                                    <WishlistButton productId={product.id} />
                                 </div>
                             )}
                         </div>
@@ -198,6 +207,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
                                 <ProductCard key={p.id} product={p} />
                             ))}
                         </div>
+                    </section>
+                )}
+
+                {/* Product Reviews */}
+                {featureFlags.enable_reviews && (
+                    <section className="mt-16">
+                        <ProductReviews productId={product.id} tenantId={tenantId} />
                     </section>
                 )}
             </div>

@@ -2,10 +2,11 @@
 # ============================================
 # Campifrut v2 — Development Startup Script
 # ============================================
-# Starts all services for local development:
+# Starts ALL services for local development:
 #   • Redis via Docker
 #   • Medusa backend (native — hot-reload)
 #   • Storefront (native — hot-reload)
+#   • SuperAdmin panel (native — hot-reload)
 #
 # Usage: ./dev.sh
 # Stop:  Ctrl+C (kills all background processes)
@@ -14,6 +15,7 @@
 set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ADMIN_DIR="$(cd "$ROOT_DIR/.." && pwd)/bootandstrap-admin"
 cd "$ROOT_DIR"
 
 # Colors
@@ -42,7 +44,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # ── 1. Redis (Docker) ─────────────────────
-echo -e "\n${BLUE}[1/3]${NC} Starting Redis..."
+echo -e "\n${BLUE}[1/4]${NC} Starting Redis..."
 docker rm -f campifrut-redis-dev 2>/dev/null || true
 docker run -d --name campifrut-redis-dev -p 6379:6379 redis:7-alpine > /dev/null
 echo -e "  ${GREEN}✓${NC} Redis running on localhost:6379"
@@ -52,7 +54,7 @@ until docker exec campifrut-redis-dev redis-cli ping 2>/dev/null | grep -q PONG;
 done
 
 # ── 2. Medusa Backend ─────────────────────
-echo -e "\n${BLUE}[2/3]${NC} Starting Medusa backend..."
+echo -e "\n${BLUE}[2/4]${NC} Starting Medusa backend..."
 (
     cd "$ROOT_DIR/apps/medusa"
     export REDIS_URL=redis://localhost:6379
@@ -62,19 +64,31 @@ echo -e "\n${BLUE}[2/3]${NC} Starting Medusa backend..."
 ) &
 
 # ── 3. Next.js Storefront ─────────────────
-echo -e "\n${BLUE}[3/3]${NC} Starting Storefront..."
+echo -e "\n${BLUE}[3/4]${NC} Starting Storefront..."
 (
     cd "$ROOT_DIR/apps/storefront"
     pnpm dev 2>&1 | sed 's/^/  [storefront] /'
 ) &
 
+# ── 4. SuperAdmin Panel ───────────────────
+if [[ -d "$ADMIN_DIR" ]]; then
+    echo -e "\n${BLUE}[4/4]${NC} Starting SuperAdmin panel..."
+    (
+        cd "$ADMIN_DIR"
+        pnpm dev 2>&1 | sed 's/^/  [superadmin] /'
+    ) &
+else
+    echo -e "\n${YELLOW}[4/4]${NC} SuperAdmin directory not found at $ADMIN_DIR — skipping"
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${GREEN}🚀 Development environment starting!${NC}"
-echo -e "   Storefront:  ${BLUE}http://localhost:3000${NC}"
-echo -e "   Medusa API:  ${BLUE}http://localhost:9000${NC}"
+echo -e "   Storefront:   ${BLUE}http://localhost:3000${NC}"
+echo -e "   Medusa API:   ${BLUE}http://localhost:9000${NC}"
 echo -e "   Medusa Admin: ${BLUE}http://localhost:9000/app${NC}"
-echo -e "   Redis:       ${BLUE}localhost:6379${NC}"
+echo -e "   SuperAdmin:   ${BLUE}http://localhost:3100${NC}"
+echo -e "   Redis:        ${BLUE}localhost:6379${NC}"
 echo ""
 echo -e "   Press ${YELLOW}Ctrl+C${NC} to stop all services"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

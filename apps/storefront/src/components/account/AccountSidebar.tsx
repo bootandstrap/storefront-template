@@ -2,24 +2,33 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
+import type { FeatureFlags } from '@/lib/config'
 
 interface AccountSidebarProps {
     lang: string
     displayName: string
     email: string
+    featureFlags: FeatureFlags
 }
 
-export default function AccountSidebar({ lang, displayName, email }: AccountSidebarProps) {
+export default function AccountSidebar({ lang, displayName, email, featureFlags }: AccountSidebarProps) {
     const { t } = useI18n()
     const pathname = usePathname()
 
     const navItems = [
-        { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true },
-        { href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false },
-        { href: `/${lang}/cuenta/perfil`, label: t('nav.profile'), icon: UserCircle, exact: false },
-        { href: `/${lang}/cuenta/direcciones`, label: t('nav.addresses'), icon: MapPin, exact: false },
+        { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true, flag: true },
+        ...(featureFlags.enable_order_tracking
+            ? [{ href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false, flag: true }]
+            : []),
+        { href: `/${lang}/cuenta/perfil`, label: t('nav.profile'), icon: UserCircle, exact: false, flag: true },
+        ...(featureFlags.enable_address_management
+            ? [{ href: `/${lang}/cuenta/direcciones`, label: t('nav.addresses'), icon: MapPin, exact: false, flag: true }]
+            : []),
+        ...(featureFlags.enable_wishlist
+            ? [{ href: `/${lang}/cuenta/favoritos`, label: t('account.wishlist') || 'Favorites', icon: Heart, exact: false, flag: true }]
+            : []),
     ]
 
     function isActive(href: string, exact: boolean) {
@@ -49,8 +58,8 @@ export default function AccountSidebar({ lang, displayName, email }: AccountSide
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-3 px-4 py-3 text-sm transition-all border-b border-surface-3 last:border-b-0 ${active
-                                    ? 'bg-primary/10 text-primary font-medium border-l-2 border-l-primary'
-                                    : 'text-text-secondary hover:bg-surface-2 hover:text-primary'
+                                ? 'bg-primary/10 text-primary font-medium border-l-2 border-l-primary'
+                                : 'text-text-secondary hover:bg-surface-2 hover:text-primary'
                                 }`}
                         >
                             <item.icon className="w-4 h-4" />

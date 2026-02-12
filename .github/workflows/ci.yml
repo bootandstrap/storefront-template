@@ -39,8 +39,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm turbo lint --filter=storefront
+      - name: Lint (zero warnings)
+        run: pnpm turbo lint --filter=storefront -- --max-warnings=0
 
       - name: Type Check (shared + storefront)
         run: pnpm turbo type-check
@@ -48,8 +48,10 @@ jobs:
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
+          TENANT_ID: ci-build-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
           NEXT_PUBLIC_STORE_URL: https://placeholder.com
@@ -163,6 +165,9 @@ jobs:
           COOKIE_SECRET: ci-test-secret-32-chars-minimum!!
           JWT_SECRET: ci-test-jwt-secret-minimum-32ch!
 
+      - name: Medusa unit tests
+        run: pnpm -C apps/medusa test:unit
+
   # ── E2E Tests (Playwright) ─────────────────────
   e2e-tests:
     name: E2E Tests
@@ -207,25 +212,36 @@ jobs:
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
+          TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.TEST_MEDUSA_KEY }}
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+          MEDUSA_BACKEND_URL: http://localhost:9000
+
+      - name: Start Medusa backend
+        run: |
+          bash scripts/ci/start-medusa-stack.sh &
+          bash scripts/ci/wait-for-health.sh http://localhost:9000/health 120
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          REDIS_URL: redis://localhost:6379
+          COOKIE_SECRET: ci-test-secret-32-chars-minimum!!
+          JWT_SECRET: ci-test-jwt-secret-minimum-32ch!
           MEDUSA_BACKEND_URL: http://localhost:9000
 
       - name: Start storefront
         run: |
           cd apps/storefront
           PORT=3000 node .next/standalone/server.js &
-          # Wait for storefront to be ready
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/api/health && break
-            sleep 2
-          done
+          bash ../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
         env:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           MEDUSA_BACKEND_URL: http://localhost:9000
           REDIS_URL: redis://localhost:6379
           TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
@@ -242,6 +258,14 @@ jobs:
           name: playwright-report
           path: apps/storefront/playwright-report/
           retention-days: 14
+
+      - name: Upload CI logs (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ci-failure-logs
+          path: ci-logs/
+          retention-days: 7
 
   # ── Lighthouse CI ──────────────────────────────
   lighthouse:

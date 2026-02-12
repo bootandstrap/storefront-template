@@ -13,10 +13,9 @@ Este proyecto tiene **dos repositorios** que comparten una misma instancia de Su
 | **Template** (storefront + Medusa) | `./` (este repo) | `dominiocliente.com` | 3000 / 9000 |
 | **SuperAdmin** (panel SaaS) | `./bootandstrap-admin/` | `admin.bootandstrap.com` | 3100 |
 
-> [!IMPORTANT]
-> El SuperAdmin Panel vive temporalmente dentro de este repo en `bootandstrap-admin/`.
-> Está pendiente de separarse en su propio repositorio Git (`bootandstrap/bootandstrap-admin`)
-> e inicializar con `git init` + push al remoto. Ver sección [SuperAdmin](#superadmin-panel) abajo.
+> [!NOTE]
+> El SuperAdmin Panel ya tiene su propio repositorio Git (`bootandstrap/bootandstrap-admin`).
+> Dentro del workspace de desarrollo vive en `./bootandstrap-admin/` junto al template.
 
 ---
 
@@ -64,17 +63,21 @@ Organizada en 4 categorías:
 | Documento | Contenido |
 |-----------|-----------|
 | [`CLIENT_HANDOFF.md`](docs/operations/CLIENT_HANDOFF.md) | Checklist de entrega: verificaciones pre-deploy, training del owner, soporte por tier |
-| [`API_REFERENCE.md`](docs/operations/API_REFERENCE.md) | Custom API routes, Server Actions, Medusa endpoints, tablas de governance |
+| [`API_REFERENCE.md`](docs/operations/API_REFERENCE.md) | Custom API routes, Server Actions (storefront + Owner Panel), Medusa endpoints, tablas de governance |
+| [`DEPENDENCY_RISK_REGISTER.md`](docs/operations/DEPENDENCY_RISK_REGISTER.md) | Registro de riesgos de dependencias y mitigaciones |
+| [`SECRETS_ROTATION_RUNBOOK.md`](docs/operations/SECRETS_ROTATION_RUNBOOK.md) | Runbook de rotación de secretos (Supabase, Stripe, Medusa, Redis) |
+| [`rls-access-control.md`](docs/rls-access-control.md) | Matriz de acceso RLS por tabla — políticas efectivas |
+| [`QUALITY_GATES_2026-02-10.md`](docs/operations/QUALITY_GATES_2026-02-10.md) | Quality gates: build, tests, lint, type-check, Lighthouse scores |
 
 ---
 
 ## SuperAdmin Panel
 
-> **Estado**: ⏳ Pendiente de separación a repositorio propio
+> **Estado**: ✅ Separado en repositorio propio — [`bootandstrap/bootandstrap-admin`](https://github.com/bootandstrap/bootandstrap-admin)
 
 El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants desde un dashboard dark-theme. Solo accesible por `super_admin`.
 
-**Ubicación temporal**: `./bootandstrap-admin/`
+**Ubicación en workspace**: `./bootandstrap-admin/`
 
 **Documentación propia**:
 
@@ -83,25 +86,7 @@ El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants
 | [`bootandstrap-admin/GEMINI.md`](bootandstrap-admin/GEMINI.md) | Master guide del SuperAdmin — arquitectura, stack, features, quick start |
 | [`bootandstrap-admin/docs/ARCHITECTURE.md`](bootandstrap-admin/docs/ARCHITECTURE.md) | Data flow, auth flow, design decisions, types strategy |
 | [`bootandstrap-admin/docs/DEPLOYMENT.md`](bootandstrap-admin/docs/DEPLOYMENT.md) | Dokploy, Docker, CI/CD, resource requirements |
-
-### Pasos para separar el SuperAdmin
-
-```bash
-# 1. Desde la carpeta del admin
-cd bootandstrap-admin
-
-# 2. Inicializar git
-git init
-git add .
-git commit -m "Initial: SuperAdmin Panel standalone"
-
-# 3. Conectar al remoto
-git remote add origin git@github.com:bootandstrap/bootandstrap-admin.git
-git push -u origin main
-
-# 4. Opcional: eliminar del monorepo template
-# (solo después de confirmar que el deploy independiente funciona)
-```
+| [`bootandstrap-admin/docs/QUALITY_GATES_2026-02-10.md`](bootandstrap-admin/docs/QUALITY_GATES_2026-02-10.md) | Quality gate verification results |
 
 ### Qué controla el SuperAdmin
 
@@ -109,8 +94,9 @@ git push -u origin main
 |-----|---------|
 | Dashboard | Stats globales, distribución de tenants |
 | Tenants | CRUD de clientes, filtro por status |
-| Tenant Detail | 3 tabs: feature flags, plan limits, usage |
+| Tenant Detail | 4 tabs: feature flags, plan limits, usage, **errors** |
 | Flags | Visualización de 27 flags en 6 categorías |
+| **Errors** | **Error Inbox global + per-tenant (resolve/resolve all)** |
 
 ---
 
@@ -118,6 +104,9 @@ git push -u origin main
 
 | Script | Propósito |
 |--------|-----------|
+| [`scripts/release-gate.sh`](scripts/release-gate.sh) | **Release gate** — 7 checks (RLS, audit, lint, tests, type-check, build) |
+| [`scripts/check-rls.sh`](scripts/check-rls.sh) | Verifica políticas RLS en migraciones SQL |
+| [`scripts/check-audit-waiver.sh`](scripts/check-audit-waiver.sh) | Verifica vigencia del waiver de auditía |
 | [`scripts/provision-client.sh`](scripts/provision-client.sh) | Wizard interactivo para onboarding de clientes |
 | [`scripts/generate-env.sh`](scripts/generate-env.sh) | Generador de `.env` (para CI) |
 | [`scripts/provision-tenant.sql`](scripts/provision-tenant.sql) | SQL para crear tenant en Supabase |
@@ -130,19 +119,21 @@ git push -u origin main
 ## Modelo de Governance (3 Tiers)
 
 ```
-┌─────────────────────────────────────────────────┐
-│  Tier 1: Admin Panel (SaaS — BootandStrap)      │
-│  → Feature flags, plan limits, color presets     │
-│  → Solo accesible por super_admin                │
-├─────────────────────────────────────────────────┤
-│  Tier 2: Owner Panel (Cliente — Medusa custom)   │
-│  → Productos, pedidos, carousel, badges          │
-│  → Accesible por owner del negocio               │
-├─────────────────────────────────────────────────┤
-│  Tier 3: Template Storefront (Público — Next.js) │
-│  → Lee config + flags → renderiza condicionalmente│
-│  → Los clientes finales interactúan aquí         │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  Tier 1: Admin Panel (SaaS — BootandStrap)          │
+│  → Feature flags, plan limits, color presets         │
+│  → Solo accesible por super_admin                    │
+├─────────────────────────────────────────────────────┤
+│  Tier 2: Owner Panel (Cliente — Medusa Admin API)    │
+│  → Catálogo (productos + categorías + imágenes),     │
+│    pedidos (fulfill/cancel), clientes (read-only),   │
+│    carousel, WhatsApp, CMS, config, analytics        │
+│  → Accesible por owner del negocio                   │
+├─────────────────────────────────────────────────────┤
+│  Tier 3: Template Storefront (Público — Next.js)     │
+│  → Lee config + flags → renderiza condicionalmente   │
+│  → Los clientes finales interactúan aquí             │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -161,3 +152,6 @@ git push -u origin main
 | Entregar un proyecto a cliente | `docs/operations/CLIENT_HANDOFF.md` |
 | Consultar endpoints y actions | `docs/operations/API_REFERENCE.md` |
 | Gestionar tenants desde SaaS | `bootandstrap-admin/GEMINI.md` |
+| Ver políticas RLS por tabla | `docs/rls-access-control.md` |
+| Rotar secretos | `docs/operations/SECRETS_ROTATION_RUNBOOK.md` |
+| Verificar calidad antes de release | `scripts/release-gate.sh` |

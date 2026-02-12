@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { createClient } from '@/lib/supabase/server'
@@ -14,6 +15,28 @@ import {
 } from '@/components/ui/Skeleton'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { config } = await getConfig()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'
+  return {
+    title: config.meta_title || config.business_name || 'Online Store',
+    description:
+      config.meta_description ||
+      `Discover our products at ${config.business_name || 'our store'}. Fresh quality, fast delivery.`,
+    alternates: {
+      canonical: siteUrl,
+    },
+    openGraph: {
+      title: config.meta_title || config.business_name || 'Online Store',
+      description:
+        config.meta_description ||
+        `Shop online at ${config.business_name || 'our store'}`,
+      url: siteUrl,
+      type: 'website',
+    },
+  }
+}
 
 export default async function HomePage({
   params,
@@ -43,7 +66,7 @@ export default async function HomePage({
       {carouselSlides.length > 0 ? (
         <HeroCarousel slides={carouselSlides} />
       ) : (
-        <HeroSection config={config} featureFlags={featureFlags} dictionary={dictionary} />
+        <HeroSection config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />
       )}
 
       {/* Categories — async (Medusa API) */}
@@ -53,7 +76,7 @@ export default async function HomePage({
 
       {/* Featured Products — async (Medusa API) */}
       <Suspense fallback={<ProductGridSkeleton />}>
-        <FeaturedProducts dictionary={dictionary} />
+        <FeaturedProducts dictionary={dictionary} lang={lang} />
       </Suspense>
 
       {/* Trust Section — static, instant */}

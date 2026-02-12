@@ -1,9 +1,30 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "globalEnv": [
+        "TENANT_ID",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "NEXT_PUBLIC_MEDUSA_BACKEND_URL",
+        "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_STORE_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "STRIPE_WEBHOOK_SECRET",
+        "MEDUSA_BACKEND_URL"
+    ],
     "tasks": {
         "build": {
             "dependsOn": [
                 "^build"
+            ],
+            "env": [
+                "TENANT_ID",
+                "NEXT_PUBLIC_SUPABASE_URL",
+                "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+                "NEXT_PUBLIC_MEDUSA_BACKEND_URL",
+                "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY",
+                "NEXT_PUBLIC_STORE_URL",
+                "NEXT_PUBLIC_SITE_URL"
             ],
             "outputs": [
                 ".next/**",

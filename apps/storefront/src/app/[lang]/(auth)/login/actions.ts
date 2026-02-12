@@ -38,6 +38,22 @@ export async function loginAction(
         return { error: 'unknown_error', success: false }
     }
 
-    // Redirect to account dashboard on success
-    redirect(`/${lang}/cuenta`)
+    // Fetch user role to determine redirect destination
+    const { data: { user } } = await supabase.auth.getUser()
+    let destination = `/${lang}/cuenta`
+
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        const role = profile?.role
+        if (role === 'super_admin' || role === 'owner' || role === 'admin') {
+            destination = `/${lang}/panel`
+        }
+    }
+
+    redirect(destination)
 }

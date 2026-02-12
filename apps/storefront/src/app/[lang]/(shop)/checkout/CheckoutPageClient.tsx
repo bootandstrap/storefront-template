@@ -7,6 +7,7 @@ import CheckoutModal from '@/components/checkout/CheckoutModal'
 import { ShoppingBag, ArrowLeft, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import CartItem from '@/components/cart/CartItem'
+import PromotionInput from '@/components/checkout/PromotionInput'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 
 interface CheckoutPageClientProps {
@@ -93,6 +94,11 @@ export default function CheckoutPageClient({
                             <span className="text-text-secondary">{t('cart.subtotal')}</span>
                             <span className="font-medium">{formatPrice(total)}</span>
                         </div>
+                        {featureFlags.enable_promotions && cart?.id && (
+                            <div className="mb-2">
+                                <PromotionInput cartId={cart.id} />
+                            </div>
+                        )}
                         <div className="border-t border-surface-3 mt-4 pt-4">
                             <div className="flex justify-between text-lg font-bold mb-6">
                                 <span>{t('cart.total')}</span>

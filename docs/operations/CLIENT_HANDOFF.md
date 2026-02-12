@@ -46,13 +46,17 @@
 ### What the Owner Can Do
 | Action | Where | How |
 |--------|-------|-----|
-| Add/edit products | Medusa Admin (`/app`) | Products → Create |
-| Manage categories | Medusa Admin | Categories → Create |
-| View orders | Medusa Admin | Orders tab |
-| Edit carousel slides | Owner Panel (`/panel`) | Carousel section |
-| Manage product badges | Owner Panel | Badges section |
-| Edit WhatsApp templates | Owner Panel | Messages section |
-| View store analytics | Owner Panel | Dashboard |
+| Add/edit products | Owner Panel (`/panel/catalogo`) | Catálogo → Productos tab → Create/edit |
+| Upload product images | Owner Panel (`/panel/catalogo`) | Product form → Image dropzone |
+| Manage categories | Owner Panel (`/panel/catalogo`) | Catálogo → Categorías tab → Create/edit |
+| View/fulfill/cancel orders | Owner Panel (`/panel/pedidos`) | Pedidos → expand order → Fulfill/Cancel |
+| View customers | Owner Panel (`/panel/clientes`) | Clientes → read-only overview |
+| Edit carousel slides | Owner Panel (`/panel/carrusel`) | Carousel section |
+| Manage product badges | Owner Panel (`/panel/catalogo`) | Product → toggle badges |
+| Edit WhatsApp templates | Owner Panel (`/panel/mensajes`) | Messages section |
+| Manage CMS pages | Owner Panel (`/panel/paginas`) | Create/edit/publish pages |
+| Edit store config | Owner Panel (`/panel/tienda`) | Store identity, contact, socials |
+| View store analytics | Owner Panel (`/panel/analiticas`) | Dashboard + charts |
 
 ### What the Owner Cannot Do (Requires BootandStrap)
 - Change feature flags (enable/disable payment methods, auth, etc.)
@@ -62,13 +66,16 @@
 - Domain changes
 - Database modifications
 
-### Training Agenda (30 min)
-1. **Login** — How to access Medusa Admin + Owner Panel
-2. **Products** — Adding, editing, images, variants, badges
-3. **Orders** — Viewing, status updates, WhatsApp notifications
-4. **Carousel** — Adding/reordering slides
-5. **Messages** — Editing WhatsApp order templates
-6. **Support** — How to request changes from BootandStrap
+### Training Agenda (45 min)
+1. **Login** — How to access Owner Panel (`/panel`)
+2. **Catálogo** — Products tab (add, edit, images, variants) + Categories tab
+3. **Pedidos** — Viewing orders, fulfilling, cancelling
+4. **Clientes** — Customer overview (read-only)
+5. **Carousel** — Adding/reordering homepage slides
+6. **Mensajes** — Editing WhatsApp order templates
+7. **CMS** — Creating/editing/publishing pages
+8. **Mi Tienda** — Store config (name, contact, socials)
+9. **Support** — How to request changes from BootandStrap
 
 ---
 
@@ -84,9 +91,12 @@
 ### Common Owner Requests
 | Request | Self-Service? | BootandStrap Action |
 |---------|--------------|---------------------|
-| Add product | ✅ Yes | — |
-| Change product image | ✅ Yes | — |
-| Edit WhatsApp template | ✅ Yes | — |
+| Add product | ✅ Yes (Owner Panel) | — |
+| Change product image | ✅ Yes (Owner Panel) | — |
+| Fulfill/cancel order | ✅ Yes (Owner Panel) | — |
+| View customers | ✅ Yes (Owner Panel) | — |
+| Edit WhatsApp template | ✅ Yes (Owner Panel) | — |
+| Manage CMS pages | ✅ Yes (Owner Panel) | — |
 | Enable Google login | ❌ No | Toggle flag + Supabase OAuth |
 | Enable Stripe payments | ❌ No | Configure Stripe + toggle flag |
 | Add new language | ❌ No | Upgrade plan + toggle flag |

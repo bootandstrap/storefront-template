@@ -2,13 +2,14 @@ import Link from 'next/link'
 import { getProducts } from '@/lib/medusa/client'
 import ProductCard from '@/components/products/ProductCard'
 import type { Dictionary } from '@/lib/i18n'
-import { createTranslator } from '@/lib/i18n'
+import { createTranslator, localizedHref, type Locale } from '@/lib/i18n'
 
 interface FeaturedProductsProps {
     dictionary: Dictionary
+    lang: string
 }
 
-export default async function FeaturedProducts({ dictionary }: FeaturedProductsProps) {
+export default async function FeaturedProducts({ dictionary, lang }: FeaturedProductsProps) {
     const t = createTranslator(dictionary)
     const { products } = await getProducts({ limit: 8 })
 
@@ -30,7 +31,7 @@ export default async function FeaturedProducts({ dictionary }: FeaturedProductsP
                         {t('product.featured')}
                     </h2>
                     <Link
-                        href="/productos"
+                        href={localizedHref(lang as Locale, 'products', dictionary)}
                         className="text-sm font-medium text-primary hover:text-primary-light transition-colors hidden sm:block"
                     >
                         {t('account.viewAll')} →
@@ -42,7 +43,7 @@ export default async function FeaturedProducts({ dictionary }: FeaturedProductsP
                     ))}
                 </div>
                 <div className="mt-8 text-center sm:hidden">
-                    <Link href="/productos" className="btn btn-secondary">
+                    <Link href={localizedHref(lang as Locale, 'products', dictionary)} className="btn btn-secondary">
                         {t('common.viewProducts')}
                     </Link>
                 </div>

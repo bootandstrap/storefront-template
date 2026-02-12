@@ -5,6 +5,9 @@
  * Governance: maintenance mode, plan expiration banner, announcement bar.
  * This layout wraps all public-facing pages and customer account pages.
  * The Owner Panel (`/panel/*`) uses (panel) group with its own layout.
+ *
+ * NOTE: Tenant status check (paused/suspended) is now in [lang]/layout.tsx
+ * so ALL routes are blocked, not just (shop).
  */
 
 import { MessageCircle } from 'lucide-react'
@@ -89,7 +92,7 @@ export default async function ShopLayout({
             <main id="main-content" className="flex-1">
                 {children}
             </main>
-            <Footer config={config} dictionary={dictionary} lang={lang} />
+            <Footer config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />
             <CartDrawer />
 
             {/* WhatsApp floating CTA */}

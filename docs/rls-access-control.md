@@ -1,6 +1,6 @@
 # RLS Access Control Matrix
 
-> Aligned with effective Supabase policies as of 2026-02-10.
+> Aligned with effective Supabase policies as of 2026-02-12.
 
 ## Access Model
 
@@ -18,6 +18,7 @@
 | `stripe_webhook_events` | ✅ | ❌ | ❌ | ✅ | Idempotency store |
 | `audit_log` | ✅ | ❌ | ❌ | ✅ | Admin audit trail |
 | `analytics_events` | ✅ | ❌ | ❌ | ✅ | Server-side only |
+| `tenant_errors` | ✅ | ❌ | ❌ | ✅ | Error Inbox (service-role only) |
 
 ## Key Design Decisions
 

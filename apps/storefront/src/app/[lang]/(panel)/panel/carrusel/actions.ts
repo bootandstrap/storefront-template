@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePanel } from '@/lib/revalidate'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
@@ -73,7 +73,7 @@ export async function createSlide(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -103,7 +103,7 @@ export async function updateSlide(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -128,7 +128,7 @@ export async function deleteSlide(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -153,7 +153,7 @@ export async function reorderSlides(
 
         await Promise.all(updates)
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Reorder error:', err)

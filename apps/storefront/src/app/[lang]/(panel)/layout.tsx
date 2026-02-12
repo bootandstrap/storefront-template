@@ -55,7 +55,26 @@ export default async function PanelLayout({
             <PanelSidebar
                 lang={lang}
                 businessName={config.business_name}
-                t={t}
+                featureFlags={{
+                    enable_carousel: featureFlags.enable_carousel,
+                    enable_whatsapp_checkout: featureFlags.enable_whatsapp_checkout,
+                    enable_cms_pages: featureFlags.enable_cms_pages,
+                    enable_analytics: featureFlags.enable_analytics,
+                }}
+                labels={{
+                    dashboard: t('panel.nav.dashboard'),
+                    catalog: t('panel.nav.catalog'),
+                    orders: t('panel.nav.orders'),
+                    customers: t('panel.nav.customers'),
+                    storeConfig: t('panel.nav.storeConfig'),
+                    modules: t('panel.nav.modules'),
+                    carousel: t('panel.nav.carousel'),
+                    whatsapp: t('panel.nav.whatsapp'),
+                    pages: t('panel.nav.pages'),
+                    analytics: t('panel.nav.analytics'),
+                    ownerPanel: t('panel.nav.ownerPanel'),
+                    backToStore: t('panel.nav.backToStore'),
+                }}
             />
             <div className="flex-1 overflow-auto">
                 <div className="max-w-6xl mx-auto px-6 py-8">
@@ -65,3 +84,4 @@ export default async function PanelLayout({
         </div>
     )
 }
+

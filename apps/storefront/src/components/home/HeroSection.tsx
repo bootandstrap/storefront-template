@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, MessageCircle } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
-import { createTranslator } from '@/lib/i18n'
+import { createTranslator, localizedHref, type Locale } from '@/lib/i18n'
 
 interface HeroSectionProps {
     config: {
@@ -16,13 +16,14 @@ interface HeroSectionProps {
         enable_whatsapp_checkout?: boolean
     }
     dictionary: Dictionary
+    lang: string
 }
 
-export default function HeroSection({ config, featureFlags, dictionary }: HeroSectionProps) {
+export default function HeroSection({ config, featureFlags, dictionary, lang }: HeroSectionProps) {
     const t = createTranslator(dictionary)
 
     return (
-        <section className="hero-section relative overflow-hidden rounded-2xl min-h-[400px] md:min-h-[500px] flex items-center">
+        <section data-testid="hero-section" className="hero-section relative overflow-hidden rounded-2xl min-h-[400px] md:min-h-[500px] flex items-center">
             {/* Background */}
             {config.hero_image ? (
                 <Image
@@ -60,7 +61,7 @@ export default function HeroSection({ config, featureFlags, dictionary }: HeroSe
                     )}
                     <div className="flex flex-wrap gap-3">
                         <Link
-                            href={`/productos`}
+                            href={localizedHref(lang as Locale, 'products', dictionary)}
                             className="btn btn-primary text-base px-6 py-3"
                         >
                             {t('hero.viewProducts')}

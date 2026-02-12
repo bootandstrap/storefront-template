@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePanel } from '@/lib/revalidate'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
@@ -67,7 +67,7 @@ export async function createTemplate(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('panel')
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)
@@ -106,7 +106,7 @@ export async function updateTemplate(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('panel')
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)
@@ -131,7 +131,7 @@ export async function deleteTemplate(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('panel')
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)

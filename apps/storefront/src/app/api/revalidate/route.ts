@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { getConfig } from '@/lib/config'
 
 // ---------------------------------------------------------------------------
 // Admin revalidation endpoint
@@ -11,6 +12,15 @@ const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET
 
 export async function POST(request: NextRequest) {
     try {
+        // Feature flag gate: admin API access must be enabled
+        const { featureFlags } = await getConfig()
+        if (!featureFlags.enable_admin_api) {
+            return NextResponse.json(
+                { error: 'Admin API access is disabled for this tenant' },
+                { status: 403 }
+            )
+        }
+
         // If no secret is configured, the endpoint is disabled
         if (!REVALIDATION_SECRET) {
             return NextResponse.json(

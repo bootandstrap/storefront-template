@@ -2,9 +2,11 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit } from '@/lib/limits'
+import { logTenantError } from '@/lib/log-tenant-error'
 
 export interface RegisterState {
     error: string | null
@@ -30,6 +32,7 @@ export async function registerAction(
 
     // -----------------------------------------------------------------------
     // Governance: feature flag + plan limit (server-side enforcement)
+    // Uses admin client for count (bypasses RLS → accurate tenant-scoped count)
     // -----------------------------------------------------------------------
     const { featureFlags, planLimits } = await getConfig()
 
@@ -37,19 +40,35 @@ export async function registerAction(
         return { error: 'registration_disabled', success: false }
     }
 
-    const supabase = await createClient()
     const tenantId = getRequiredTenantId()
 
-    const { count: customerCount } = await supabase
+    // FAIL-CLOSED: if customer count query fails, block registration
+    // rather than silently allowing unlimited registrations.
+    const adminClient = createAdminClient()
+    const { count: customerCount, error: countError } = await adminClient
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'customer')
         .eq('tenant_id', tenantId)
 
+    if (countError) {
+        console.error('[register] FAIL-CLOSED: Customer count query failed:', countError.message)
+        await logTenantError({
+            source: 'registration',
+            severity: 'error',
+            message: `Customer count query failed: ${countError.message}`,
+            details: { code: countError.code },
+        })
+        return { error: 'unknown_error', success: false }
+    }
+
     const limitCheck = checkLimit(planLimits, 'max_customers', customerCount ?? 0)
     if (!limitCheck.allowed) {
         return { error: 'max_customers_reached', success: false }
     }
+
+    // Auth signup uses cookie-based client (creates user session)
+    const supabase = await createClient()
 
     // -----------------------------------------------------------------------
     // Sign up

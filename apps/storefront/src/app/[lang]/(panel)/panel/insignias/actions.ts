@@ -2,7 +2,7 @@
 
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
-import { revalidatePath } from 'next/cache'
+import { revalidatePanel } from '@/lib/revalidate'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ export async function toggleBadge(
             return { success: false, error: 'Failed to update product metadata' }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/badges] Toggle failed:', err)
@@ -118,7 +118,7 @@ export async function setBadges(
             return { success: false, error: 'Failed to update product metadata' }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/badges] Set failed:', err)

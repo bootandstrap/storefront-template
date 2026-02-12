@@ -50,6 +50,9 @@ describe('getConfig — authorization', () => {
 
     afterEach(() => {
         process.env = originalEnv
+        // Clear the in-memory config cache to prevent cross-test contamination
+        const g = globalThis as unknown as { __configCache?: unknown }
+        delete g.__configCache
     })
 
     it('uses admin client (service-role), not anon client', async () => {
@@ -80,9 +83,10 @@ describe('getConfig — authorization', () => {
         expect(mockFrom).toHaveBeenCalledWith('config')
         expect(mockFrom).toHaveBeenCalledWith('feature_flags')
         expect(mockFrom).toHaveBeenCalledWith('plan_limits')
+        expect(mockFrom).toHaveBeenCalledWith('tenants')
         expect(mockEq).toHaveBeenCalledWith('tenant_id', 'tenant-test-123')
-        // Called 3 times (once per table)
-        expect(mockEq).toHaveBeenCalledTimes(3)
+        // Called 4 times: config, feature_flags, plan_limits (by tenant_id) + tenants (by id)
+        expect(mockEq).toHaveBeenCalledTimes(4)
     })
 
     it('uses fallback only on actual errors, not on empty data', async () => {

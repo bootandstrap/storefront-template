@@ -9,6 +9,7 @@
 
 import { useState, useTransition } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
+import { useToast } from '@/components/ui/Toaster'
 import type { StoreConfig } from '@/lib/config'
 import { saveStoreConfig } from './actions'
 
@@ -23,6 +24,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     const [activeTab, setActiveTab] = useState<Tab>('general')
     const [formData, setFormData] = useState(config)
     const [isPending, startTransition] = useTransition()
+    const toast = useToast()
     const [saved, setSaved] = useState(false)
     const [_saveError, setSaveError] = useState<string | null>(null)
 
@@ -47,8 +49,10 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
             if (result.success) {
                 setSaved(true)
                 setSaveError(null)
+                toast.success('✓')
             } else {
                 setSaveError(result.error ?? 'Failed to save')
+                toast.error(result.error ?? 'Failed to save')
             }
         })
     }

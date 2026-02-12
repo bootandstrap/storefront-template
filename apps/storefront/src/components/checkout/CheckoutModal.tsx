@@ -344,18 +344,20 @@ export default function CheckoutModal({
                                     className="input w-full"
                                 />
                             </div>
-                            <div>
-                                <label className="text-sm text-text-secondary block mb-1">
-                                    {t('checkout.form.notes')}
-                                </label>
-                                <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder={t('checkout.form.notesPlaceholder')}
-                                    rows={3}
-                                    className="input w-full resize-none"
-                                />
-                            </div>
+                            {featureFlags.enable_order_notes && (
+                                <div>
+                                    <label className="text-sm text-text-secondary block mb-1">
+                                        {t('checkout.form.notes')}
+                                    </label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder={t('checkout.form.notesPlaceholder')}
+                                        rows={3}
+                                        className="input w-full resize-none"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 

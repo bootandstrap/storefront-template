@@ -48,7 +48,7 @@ export default function CartDrawer() {
     }).format(subtotal / 100)
 
     return (
-        <div className="fixed inset-0 z-50 animate-fade-in">
+        <div data-testid="cart-drawer" className="fixed inset-0 z-50 animate-fade-in">
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"

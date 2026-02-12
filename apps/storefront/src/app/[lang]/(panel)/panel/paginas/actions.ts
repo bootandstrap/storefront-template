@@ -1,10 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePanel } from '@/lib/revalidate'
 import { getConfig } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { PageInputSchema, PageUpdateSchema } from '@/lib/owner-validation'
+import { sanitizeHtml } from '@/lib/security/sanitize-html'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +50,7 @@ export async function createPage(
                 tenant_id: tenantId,
                 slug: validInput.slug,
                 title: validInput.title,
-                body: validInput.body,
+                body: sanitizeHtml(validInput.body),
                 published: validInput.published ?? false,
             })
 
@@ -61,7 +62,7 @@ export async function createPage(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -80,7 +81,13 @@ export async function updatePage(
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
 
-        const updateData: Record<string, unknown> = { ...parsed.data, updated_at: new Date().toISOString() }
+        const validData = parsed.data
+        // Sanitize body HTML before persisting (prevent stored XSS)
+        const updateData: Record<string, unknown> = {
+            ...validData,
+            ...(validData.body !== undefined ? { body: sanitizeHtml(validData.body) } : {}),
+            updated_at: new Date().toISOString(),
+        }
 
         const { error } = await supabase
             .from('cms_pages')
@@ -93,7 +100,7 @@ export async function updatePage(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -118,7 +125,7 @@ export async function deletePage(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -144,7 +151,7 @@ export async function togglePagePublish(
             return { success: false, error: error.message }
         }
 
-        revalidatePath('/', 'layout')
+        revalidatePanel('all')
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)

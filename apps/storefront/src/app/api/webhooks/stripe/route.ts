@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { logTenantError } from '@/lib/log-tenant-error'
 
 // ---------------------------------------------------------------------------
 // Stripe webhook handler — idempotent processing
@@ -114,13 +115,28 @@ export async function POST(request: NextRequest) {
                     { amount: paymentIntent.amount, metadata: paymentIntent.metadata }
                 )
 
-                // If there's a cart_id in metadata, complete the cart in Medusa
+                // ── CRITICAL PATH: cart completion ──
+                // If this fails, Stripe MUST retry (500) — we cannot lose orders.
                 const cartId = paymentIntent.metadata?.cart_id
                 if (cartId) {
-                    await completeCartInMedusa(cartId)
+                    const completed = await completeCartInMedusa(cartId)
+                    if (!completed) {
+                        console.error(`[stripe-webhook] CRITICAL: Cart ${cartId} completion failed — requesting Stripe retry`)
+                        await logTenantError({
+                            source: 'webhook',
+                            severity: 'critical',
+                            message: `Cart completion failed for cart ${cartId}`,
+                            details: { cart_id: cartId, payment_intent: paymentIntent.id },
+                        })
+                        return NextResponse.json(
+                            { error: 'Cart completion failed' },
+                            { status: 500 }
+                        )
+                    }
                 }
 
-                // Send order confirmation email
+                // ── NON-CRITICAL: email + analytics ──
+                // Failures here are logged but don't warrant Stripe retry.
                 await triggerEmail({
                     to: paymentIntent.receipt_email || paymentIntent.metadata?.email || '',
                     subject: '🎉 ¡Pedido Confirmado!',
@@ -133,7 +149,6 @@ export async function POST(request: NextRequest) {
                     },
                 })
 
-                // Log analytics event
                 await logAnalyticsEvent('checkout_complete', {
                     payment_intent_id: paymentIntent.id,
                     amount: paymentIntent.amount,
@@ -197,10 +212,12 @@ export async function POST(request: NextRequest) {
         // Event already recorded atomically by claimEvent above
         return NextResponse.json({ received: true })
     } catch (err) {
-        console.error('[stripe-webhook] Error processing event:', err)
-        // Return 200 anyway to prevent Stripe from retrying
-        // (we log the error and handle it async)
-        return NextResponse.json({ received: true, error: 'Processing error logged' })
+        console.error('[stripe-webhook] Unhandled error processing event:', err)
+        // Unhandled error in critical path → request Stripe retry
+        return NextResponse.json(
+            { error: 'Processing error' },
+            { status: 500 }
+        )
     }
 }
 
@@ -208,7 +225,7 @@ export async function POST(request: NextRequest) {
 // Helper: Complete cart in Medusa
 // ---------------------------------------------------------------------------
 
-async function completeCartInMedusa(cartId: string): Promise<void> {
+async function completeCartInMedusa(cartId: string): Promise<boolean> {
     try {
         const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 
@@ -223,13 +240,15 @@ async function completeCartInMedusa(cartId: string): Promise<void> {
         if (!res.ok) {
             const text = await res.text()
             console.error(`[stripe-webhook] Failed to complete cart ${cartId}:`, text)
-            return
+            return false
         }
 
         const data = await res.json()
         console.log(`[stripe-webhook] Cart ${cartId} completed → Order ${data.order?.id}`)
+        return true
     } catch (err) {
         console.error(`[stripe-webhook] Error completing cart ${cartId}:`, err)
+        return false
     }
 }
 

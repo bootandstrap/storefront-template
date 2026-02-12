@@ -50,6 +50,7 @@ export default function AddToCartButton({
     return (
         <form action={formAction}>
             <button
+                data-testid="add-to-cart"
                 type="submit"
                 disabled={isPending}
                 className={`btn btn-primary w-full ${className}`}

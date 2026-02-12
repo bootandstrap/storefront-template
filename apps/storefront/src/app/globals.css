@@ -21,8 +21,8 @@
 
   /* --- Text hierarchy (driven by config preset) --- */
   --color-text-primary: var(--config-text, #1a2e0a);
-  --color-text-secondary: color-mix(in srgb, var(--config-text, #1a2e0a) 70%, transparent);
-  --color-text-muted: color-mix(in srgb, var(--config-text, #1a2e0a) 45%, transparent);
+  --color-text-secondary: color-mix(in srgb, var(--config-text, #1a2e0a) 80%, transparent);
+  --color-text-muted: color-mix(in srgb, var(--config-text, #1a2e0a) 65%, transparent);
   --color-text-inverse: #ffffff;
 
   /* --- Semantic --- */
@@ -65,8 +65,8 @@
   --color-surface-2: #24401a;
   --color-surface-3: #2e5222;
   --color-text-primary: #e8f0e0;
-  --color-text-secondary: #b8ccaa;
-  --color-text-muted: #8aa078;
+  --color-text-secondary: #c5d8b8;
+  --color-text-muted: #a3b89a;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -80,8 +80,8 @@
     --color-surface-2: #24401a;
     --color-surface-3: #2e5222;
     --color-text-primary: #e8f0e0;
-    --color-text-secondary: #b8ccaa;
-    --color-text-muted: #8aa078;
+    --color-text-secondary: #c5d8b8;
+    --color-text-muted: #a3b89a;
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
     --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);

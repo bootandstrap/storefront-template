@@ -29,7 +29,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     const { t, localizedHref } = useI18n()
 
     return (
-        <Link href={`${localizedHref('products')}/${product.handle}`} className="product-card group block">
+        <Link href={`${localizedHref('products')}/${product.handle}`} data-testid="product-card" className="product-card group block">
             {/* Image */}
             <div className="product-card-image relative aspect-square">
                 {product.thumbnail ? (

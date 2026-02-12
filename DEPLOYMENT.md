@@ -64,6 +64,11 @@ Cada servicio se despliega como un **Application** independiente en Dokploy, con
 | **Build Args** | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_STORE_URL` |
 | **Memory** | 512 MB |
 
+**Runtime env (include `REVALIDATION_SECRET`):**
+```bash
+REVALIDATION_SECRET=your-shared-secret   # Must match SuperAdmin's REVALIDATION_SECRET
+```
+
 ### 2. Medusa Server
 
 | Setting | Value |
@@ -105,7 +110,14 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...     # ⚠️ SOLO server-side
 NODE_ENV=production
 PORT=3100
 HOSTNAME=0.0.0.0
+
+# Instant cache revalidation
+STOREFRONT_URL=https://campifrut.com         # Storefront reachable URL
+REVALIDATION_SECRET=your-shared-secret       # Must match storefront's REVALIDATION_SECRET
 ```
+
+> [!IMPORTANT]
+> **Instant Revalidation**: When SuperAdmin changes tenant status/flags/limits/config, it POSTs to the storefront's `/api/revalidate` to instantly clear the config cache. Both services must share the same `REVALIDATION_SECRET`. If `STOREFRONT_URL` is unreachable, mutations still succeed — cache expires by TTL (5 min).
 
 ### 5. Redis
 

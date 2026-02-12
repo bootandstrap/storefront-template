@@ -43,7 +43,7 @@ export function organizationJsonLD(config: StoreConfig): Record<string, unknown>
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: config.business_name,
-        url: process.env.NEXT_PUBLIC_SITE_URL || 'https://campifrut.com',
+        url: process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com',
         logo: config.logo_url || undefined,
         contactPoint: config.whatsapp_number
             ? {
@@ -64,7 +64,7 @@ export function breadcrumbListJsonLD(
     categoryName: string | null,
     lang: string,
 ): Record<string, unknown> {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://campifrut.com'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'
     const items: Array<Record<string, unknown>> = [
         {
             '@type': 'ListItem',

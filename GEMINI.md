@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 10 Feb 2026 (post-remediation v5).
+> **Read this first.** Master guide for AI agents and developers. Updated 12 Feb 2026 (post Production Remediation — RLS hardening, Error Inbox, release gate 7/7 PASS).
 
 ## What This Is
 
@@ -9,28 +9,33 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 | Tier | Access | Controls |
 |------|--------|----------|
 | **Admin Panel** (SaaS — BootandStrap internal) | Only BootandStrap | Feature flags, plan limits, color presets, theme mode |
-| **Owner Panel** (Client — Medusa Admin customized) | Business owner | Products, orders, carousel, product badges, WhatsApp templates |
+| **Owner Panel** (Client — embedded in storefront) | Business owner | Catalog (products + categories + images via Medusa), orders (fulfill/cancel), customers (read-only), carousel, WhatsApp templates, CMS pages, store config, analytics |
 | **Template Storefront** (Public — Next.js) | End users | Reads config + flags → renders conditionally |
 
 **First client**: Campifrut (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Production-hardened after 13-task SOTA Remediation Plan (v5). See *Verified Quality Baseline* below.
+**Current state**: Production-hardened after SOTA Remediation Plan (v10). See *Verified Quality Baseline* below.
 
-### Verified Quality Baseline (10 Feb 2026 — post-remediation v5)
+### Verified Quality Baseline (12 Feb 2026 — post-remediation)
 
 | Gate | Command | Result |
 |------|---------|--------|
-| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 181 tests, 19 files (vitest) |
-| **Unit Tests (admin)** | `pnpm test:run` | ✅ 14 tests, 2 files (vitest) |
+| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 208 tests, 20 files (vitest) |
+| **Unit Tests (admin)** | `pnpm test:run` | ✅ 22 tests, 3 files (vitest) |
+| **Release Gate** | `bash scripts/release-gate.sh` | ✅ 7/7 PASS |
 | **Build** | `pnpm build` | ✅ Storefront builds cleanly |
 | **Tenant isolation** | code audit | ✅ Server-only `TENANT_ID`, service-role config fetch |
 | **Webhook idempotency** | `stripe_webhook_events` table | ✅ Atomic `claimEvent` upsert (no race conditions) |
 | **SuperAdmin validation** | Zod schemas | ✅ All mutations validated + audit logged (including `createTenant`) |
-| **Owner Panel validation** | Zod schemas | ✅ All 5 action modules validated (carrusel, mensajes, paginas, tienda, insignias) |
+| **Owner Panel validation** | Zod schemas | ✅ All 8 action modules validated (carrusel, mensajes, paginas, tienda, insignias, productos, categorias, pedidos) |
 | **Rate limiting** | Redis + fallback | ✅ `rate-limit-redis.ts` with INCR+PEXPIRE pipeline |
 | **Dep audit** | `pnpm audit` | ⚠️ 1 moderate (esbuild, Medusa transitive, dev-only) |
 | **Lint** | `pnpm lint` | ⚠️ Pre-existing warnings (non-blocking) |
 | **Type Check** | `pnpm type-check` | ⚠️ `@campifrut/shared` needs `@types/node` |
+| **Lighthouse Performance** | Lighthouse CLI | 🔵 70 (LCP 6.5s, TBT 190ms — optimize pending) |
+| **Lighthouse Accessibility** | Lighthouse CLI | ✅ 93 → fixes applied (contrast, landmarks) |
+| **Lighthouse Best Practices** | Lighthouse CLI | ✅ 92 |
+| **Lighthouse SEO** | Lighthouse CLI | ✅ 91 → fixes applied (meta description, viewport) |
 
 **Repositories**:
 - **Template** (storefront + Medusa): [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce)
@@ -64,6 +69,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │       │ config │ feature_flags │ plan_limits   │ CDN      │
 │       │ profiles │ whatsapp_templates          │          │
 │       │ audit_log │ stripe_webhook_events      │          │
+│       │ tenant_errors                           │          │
 └──────────────────────────────────────────────────────────┘
            │                  │
            ▼                  ▼
@@ -131,7 +137,20 @@ campifrut/
 │   │   │   │   │   │   ├── login/       # Login (flag-driven providers)
 │   │   │   │   │   │   └── registro/    # Registration (gated by flags + limits)
 │   │   │   │   │   └── (panel)/         # Owner panel (auth-guarded: owner/super_admin)
-│   │   │   │   │       └── panel/       # Dashboard, config, carousel, messages, badges
+│   │   │   │   │       └── panel/       # 5 fixed + 4 flag-gated modules:
+│   │   │   │   │           ├── page.tsx          # Dashboard (stats + recent orders)
+│   │   │   │   │           ├── loading.tsx       # ✅ Generic panel loading skeleton
+│   │   │   │   │           ├── catalogo/         # ✅ Unified catalog (products + categories tabs)
+│   │   │   │   │           ├── pedidos/          # ✅ Order management (list, fulfill, cancel)
+│   │   │   │   │           ├── clientes/         # ✅ Customer overview (read-only)
+│   │   │   │   │           ├── tienda/           # Store config
+│   │   │   │   │           ├── productos/        # ✅ Product CRUD + image upload (Medusa Admin API)
+│   │   │   │   │           ├── categorias/       # ✅ Category CRUD (Medusa Admin API)
+│   │   │   │   │           ├── carrusel/         # Carousel management (flag-gated)
+│   │   │   │   │           ├── mensajes/         # WhatsApp templates (flag-gated)
+│   │   │   │   │           ├── insignias/        # Product badges (via catalogo redirect)
+│   │   │   │   │           ├── paginas/          # CMS pages (flag-gated)
+│   │   │   │   │           └── analiticas/       # Analytics (flag-gated)
 │   │   │   │   ├── api/webhooks/stripe/  # ✅ Idempotent Stripe webhook (dedup via stripe_webhook_events)
 │   │   │   │   ├── api/orders/lookup/    # ✅ Rate-limited guest order lookup
 │   │   │   │   ├── api/health/           # ✅ Health check (Docker + monitoring)
@@ -153,13 +172,14 @@ campifrut/
 │   │   │       │   ├── locale.ts    # Locale resolution (URL → cookie → Accept-Language → config)
 │   │   │       │   ├── currencies.ts# Multi-currency: formatPrice(), resolution, cookie
 │   │   │       │   └── provider.tsx # I18nProvider context (t(), localizedHref())
-│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (340+ keys each)
+│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (485+ keys each)
 │   │   │       ├── supabase/    # Browser + Server + Admin (service-role) clients
 │   │   │       │   ├── server.ts     # SSR client (cookies-based)
 │   │   │       │   ├── browser.ts    # Client-side client
 │   │   │       │   └── admin.ts      # ✅ Service-role client (bypasses RLS for config)
-│   │   │       ├── medusa/      # Typed API fetcher (retry + graceful degradation)
-│   │   │       │   ├── client.ts    # Base fetcher + types (MedusaAddress, MedusaOrderItem, etc.)
+│   │   │       ├── medusa/      # Typed API fetchers
+│   │   │       │   ├── client.ts    # Store API fetcher + types (MedusaAddress, MedusaOrderItem, etc.)
+│   │   │       │   ├── admin.ts     # ✅ Admin API fetcher (JWT auth, 23h cache, products/categories/orders/customers/images)
 │   │   │       │   └── auth-medusa.ts # Authenticated fetcher (Supabase JWT → Medusa Store API)
 │   │   │       ├── seo/         # JSON-LD builders (Product, Org, Breadcrumb)
 │   │   │       ├── whatsapp/    # Template engine + message builder
@@ -181,7 +201,7 @@ campifrut/
 │       └── medusa-config.ts     # ✅ Configured with both providers
 │
 ├── packages/shared/             # @campifrut/shared types + constants
-├── supabase/migrations/         # ✅ SQL migrations (stripe_webhook_events, audit_log)
+├── supabase/migrations/         # ✅ SQL migrations (stripe_webhook_events, audit_log, tenant_errors)
 ├── docs/                        # Architecture, flows, guides, operations, plans
 ├── scripts/                     # release-gate.sh, check-rls.sh
 ├── docker-compose.yml
@@ -210,18 +230,18 @@ layout.tsx → getConfig() blocks (required for theme CSS vars)
 
 ### Caching & Rendering Strategy
 
-> **Important**: `unstable_cache` was removed from `config.ts` because it conflicts with `cookies()` in Next.js 16. Config now uses an **in-memory TTL cache** (5 min). All pages that call Medusa/Supabase use `force-dynamic` to render on-demand at runtime.
+> **Important**: `unstable_cache` was removed from `config.ts` because it conflicts with `cookies()` in Next.js 16. Config now uses a **`globalThis`-based in-memory TTL cache** (5 min) shared across all module instances (API routes, layouts, pages). This avoids Turbopack's module isolation issue in dev mode. All pages that call Medusa/Supabase use `force-dynamic` to render on-demand at runtime.
 
 | Data | Strategy | Details |
 |------|----------|---------|
-| Config + flags + limits | **In-memory TTL cache** | 5 min TTL, `revalidateConfig()` to bust |
+| Config + flags + limits | **globalThis in-memory TTL** | 5 min TTL, `revalidateConfig()` to bust, cross-module shared |
 | Product list | `force-dynamic` | Rendered on-demand, no build-time prerender |
 | Product detail | `force-dynamic` | Rendered on-demand, no build-time prerender |
 | Categories | Fetched at request time | Via Medusa API |
 | Cart | No cache (real-time) | Direct API calls |
 | Homepage | `force-dynamic` | Streams via Suspense at runtime |
 
-On-demand revalidation: `revalidateConfig()` Server Action clears in-memory cache + calls `revalidatePath('/', 'layout')`.
+On-demand revalidation: `revalidateConfig()` clears `globalThis.__configCache` + calls `revalidatePath('/', 'layout')`. SuperAdmin triggers this remotely via POST `/api/revalidate` after tenant mutations.
 
 ### Error Resilience
 
@@ -231,7 +251,7 @@ Supabase down   → App shows hardcoded fallback config
 WhatsApp        → Always works (client-side wa.me redirect)
 ```
 
-Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` component with retry.
+Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` component with retry. `logTenantError()` sends errors to `tenant_errors` table for SuperAdmin's Error Inbox.
 
 ### SEO Structured Data
 
@@ -347,14 +367,17 @@ Each method is registered in `src/lib/payment-methods.ts` with id, flag, label, 
 
 ## Key Patterns
 
-### Config Fetching (In-Memory TTL Cache, 5 min)
+### Config Fetching (globalThis TTL Cache, 5 min)
 ```ts
 // lib/config.ts — fetches config + flags + limits from Supabase
-// Uses in-memory TTL cache to avoid unstable_cache + cookies() conflict
+// Uses globalThis-based TTL cache (shared across all module instances in Turbopack)
 const { config, featureFlags, planLimits } = await getConfig()
 
-// Invalidate cache on demand
-await revalidateConfig() // clears memory cache + revalidatePath('/', 'layout')
+// Invalidate cache on demand (called by /api/revalidate endpoint)
+await revalidateConfig() // clears globalThis.__configCache + revalidatePath('/', 'layout')
+
+// SuperAdmin triggers revalidation remotely:
+// POST /api/revalidate { secret: REVALIDATION_SECRET }
 ```
 
 ### Dynamic Theming (Preset + Custom)
@@ -398,6 +421,33 @@ See `supabase-auth/` and `supabase-storage/` as examples.
 // localized slug rewriting (e.g. /en/account → /en/cuenta),
 // role-based route protection (owner/super_admin for /panel/*)
 ```
+
+### Medusa Admin API (JWT Auth)
+
+The Owner Panel calls the Medusa Admin API for catalog, order, and customer management. Auth flow:
+
+1. Server-side `getAdminToken()` calls `POST /auth/user/emailpass` with `MEDUSA_ADMIN_EMAIL` / `MEDUSA_ADMIN_PASSWORD`
+2. Returns a JWT valid for 24h — cached in-memory for 23h
+3. All admin requests use `Authorization: Bearer <token>` header
+4. Automatic retry on 401 (token refresh)
+
+```ts
+// lib/medusa/admin.ts — authenticated Admin API calls
+const token = await getAdminToken()
+const res = await fetch(`${MEDUSA_BACKEND_URL}/admin/products`, {
+  headers: { 'Authorization': `Bearer ${token}` },
+})
+```
+
+**Admin API surface** (all in `lib/medusa/admin.ts`):
+- **Products**: `createAdminProduct`, `updateAdminProduct`, `deleteAdminProduct`, `getAdminProduct`
+- **Categories**: `createAdminCategory`, `updateAdminCategory`, `deleteAdminCategory`
+- **Orders**: `getAdminOrders`, `getAdminOrderDetail`, `createOrderFulfillment`, `cancelAdminOrder`
+- **Customers**: `getAdminCustomers`, `getCustomerCount`
+- **Images**: `uploadFiles`, `updateProductImages`, `deleteProductImage`
+- **Prices**: `updateVariantPrices`
+
+Owner Panel server actions (8 `actions.ts` files) call `admin.ts` helpers → mutations trigger `revalidatePanel()` for instant UI refresh across panel + storefront.
 
 ### i18n System (Dictionary-Based)
 
@@ -476,10 +526,23 @@ cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
 # → Storefront:   http://localhost:3000
 # → Medusa API:   http://localhost:9000
 # → Medusa Admin: http://localhost:9000/app
+# → SuperAdmin:   http://localhost:3100
 # → Redis:        localhost:6379
 ```
 
-`dev.sh` handles: Redis in Docker → symlinks `.env` → starts Medusa & Storefront in parallel.
+`dev.sh` handles: Redis in Docker → symlinks `.env` → starts Medusa, Storefront & SuperAdmin in parallel.
+
+> **Note**: `dev.sh` auto-detects the `bootandstrap-admin` directory at `../bootandstrap-admin` and starts it as step 4/4. If the directory is missing, it skips this step gracefully. The SuperAdmin panel requires its own `.env.local` with Supabase credentials (same project, same keys).
+
+### Development Credentials
+
+| # | Panel | URL | Email | Password | Role |
+|---|-------|-----|-------|----------|------|
+| 1 | **Medusa Admin** | `localhost:9000/app` | `admin@medusajs.com` | `supersecret` | Medusa admin (product/order mgmt) |
+| 2 | **SuperAdmin + Storefront** | `localhost:3100` / `localhost:3000` | `admin@campifrut.com` | `Admin1234!` | `super_admin` (SaaS control plane + Owner Panel) |
+| 3 | **Storefront** | `localhost:3000` | `test@campifrut.com` | `Admin1234!` | `customer` (test buyer) |
+
+> **Note**: User #1 is a Medusa-native user (created by `medusa db seed`). Users #2 and #3 are Supabase Auth users managed from the [Supabase Dashboard](https://supabase.com/dashboard/project/fopjqjoxwelmrrfowbmv/auth/users). After login, `super_admin`/`owner` roles redirect to `/panel` (Owner Panel), `customer` role redirects to `/cuenta` (Customer Dashboard).
 
 ### Manual Start (alternative)
 
@@ -487,6 +550,7 @@ cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
 docker compose up redis -d
 cd apps/medusa && pnpm dev &
 cd apps/storefront && pnpm dev &
+cd ../bootandstrap-admin && pnpm dev &  # SuperAdmin on :3100
 ```
 
 ### Build
@@ -513,7 +577,7 @@ Domains via Dokploy:
 
 ## Implementation Progress
 
-> Updated 10 Feb 2026 after completing the 13-task SOTA Production Remediation Plan v5.
+> Updated 12 Feb 2026 after completing Production Remediation (RLS hardening, Error Inbox, release gate 7/7 PASS).
 
 | Phase | Status | What |
 |-------|--------|------|
@@ -522,7 +586,7 @@ Domains via Dokploy:
 | 3. Payments & Orders | ✅ | Stripe (idempotent webhooks), account dashboard, order tracking |
 | 4. Polish & Hardening | ✅ | CMS, analytics, error boundaries, toast system |
 | 5. Production Deploy | ✅ | Docker, Dokploy, Redis, CI with tests, release gate |
-| 6. i18n + Route Restructuring | ✅ | `[lang]/` routing, 5 dictionaries (340+ keys), i18n system, proxy |
+| 6. i18n + Route Restructuring | ✅ | `[lang]/` routing, 5 dictionaries (485+ keys), i18n system, proxy |
 | 7. Customer Panel Polish | ✅ | Dashboard, orders, addresses CRUD, avatar upload |
 | 8A. Multi-Tenant Foundation | ✅ | Server-only `TENANT_ID`, service-role config fetch |
 | 8B. Governance Enforcement | ✅ | Zod-validated SuperAdmin mutations + audit trail |
@@ -549,7 +613,42 @@ All 13 tasks executed and verified. Builds on v4. Key outcomes:
 | **RLS docs** | [rls-access-control.md](docs/rls-access-control.md) — complete access matrix |
 | **DB migrations** | `stripe_webhook_events` + `audit_log` tables applied |
 
-See [remediation plan v5](docs/plans/2026-02-10-sota-production-remediation-plan-v5.md) for full details.
+See [remediation plan v10](docs/plans/2026-02-10-sota-production-remediation-plan-v10-dual-repo.md) for full details.
+
+### Production Remediation (12 Feb 2026)
+
+| Area | Improvement |
+|------|-----------|
+| **RLS hardening** | Tenant-scoped policies replacing `USING (true)` on all governance tables |
+| **Webhook hardening** | Status tracking (claimed/processed_ok/processed_failed), proper HTTP codes, retry tests |
+| **Registration hardening** | `max_customers` fail-closed enforcement with admin client + tenant-scoped count |
+| **Credential cleanup** | Removed `'supersecret'` fallback, mandatory env validation, CREDENTIALS.md |
+| **Error Inbox** | `tenant_errors` table + `logTenantError()`. SuperAdmin: global dashboard + per-tenant tab |
+| **Release gate** | `release-gate.sh` 7/7 PASSED (RLS, audit, lint, tests, type-check, build) |
+| **RLS assessment** | Supabase security advisors audit — 80+ Medusa tables no RLS (expected), governance tables secured |
+
+### SOTA Remediation v10 — Refactoring & Docs (Completed)
+
+| Area | Improvement |
+|------|-----------|
+| **SuperAdmin responsive** | Sidebar refactored: 30+ inline styles → CSS classes, mobile drawer at ≤768px |
+| **Lighthouse a11y** | Color contrast fixed (WCAG AA), preconnect hints, viewport meta |
+| **Lighthouse SEO** | Homepage `generateMetadata()` with meta description fallback |
+| **Documentation** | Both repos GEMINI.md bumped to v10, quality gates updated |
+
+### v11 — Owner Panel Completion (11 Feb 2026)
+
+| Area | Improvement |
+|------|-----------|
+| **Phase 0: UX Redesign** | WhatsApp template UX (live preview, variable bar, presets), old route redirects (`productos/categorias/insignias → catalogo`), `revalidatePanel()` helper |
+| **Phase 1: Orders** | `getAdminOrders`, `getAdminOrderDetail`, `createOrderFulfillment`, `cancelAdminOrder` in `admin.ts`. Orders page with inline detail expansion, fulfill/cancel actions |
+| **Phase 2: Customers** | `getAdminCustomers`, `getCustomerCount` in `admin.ts`. Read-only customer overview page |
+| **Phase 3: Image upload** | `uploadFiles`, `updateProductImages`, `deleteProductImage` in `admin.ts`. Image dropzone in CatalogClient with type/size validation (5MB, JPEG/PNG/WebP/GIF) |
+| **Phase 4: Stability** | `retry.ts` (exponential backoff + jitter), `loading.tsx` (panel skeleton), toast feedback on all 9 panel clients (~30 mutation handlers) |
+| **Medusa Admin API auth** | Rewrote `admin.ts`: JWT via `/auth/user/emailpass`, 23h cache, auto-retry on 401 |
+| **Sidebar** | 5 fixed items (Dashboard, Catálogo, Pedidos, Clientes, Mi Tienda) + 4 flag-gated modules (Carousel, WhatsApp, CMS, Analytics) |
+| **i18n** | All 5 dictionaries updated with `panel.orders.*` (23 keys) + `panel.customers.*` (8 keys) |
+| **Documentation** | All 3 GEMINI.md + DOCS_GUIDE + API_REFERENCE updated to reflect actual project state |
 
 ---
 
@@ -595,7 +694,5 @@ Key findings during build verification:
 | [CLIENT_HANDOFF.md](docs/operations/CLIENT_HANDOFF.md) | Pre-delivery checklist, owner training, support tiers |
 | [API_REFERENCE.md](docs/operations/API_REFERENCE.md) | Custom routes, Server Actions, Medusa endpoints |
 | [rls-access-control.md](docs/rls-access-control.md) | RLS access control matrix (all tables) |
-| [Remediation Plan v4](docs/plans/2026-02-10-sota-production-remediation-plan-v4.md) | 12-task production hardening (completed) |
-| [Remediation Plan v5](docs/plans/2026-02-10-sota-production-remediation-plan-v5.md) | 13-task production hardening (completed) |
-| [Remediation Plan v6](docs/plans/2026-02-10-sota-production-remediation-plan-v6.md) | 11-task next-wave hardening (planned) |
+| [Remediation Plan v10](docs/plans/2026-02-10-sota-production-remediation-plan-v10-dual-repo.md) | Final production hardening plan (v10, completed) |
 

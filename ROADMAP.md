@@ -1,6 +1,6 @@
 # BootandStrap E-Commerce Template — Roadmap
 
-> **Last updated**: 10 Feb 2026 (SOTA Production Remediation — baseline captured)
+> **Last updated**: 12 Feb 2026 (Production Remediation complete — RLS hardening, Error Inbox, release gate 7/7 PASS)
 > **Repos**: [bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (template) · [bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin) (superadmin)
 
 ---
@@ -11,19 +11,19 @@
 Phase 1  ████████████████████ 100%  Backend Foundation
 Phase 2  ████████████████████ 100%  Storefront MVP
 Phase 3  ████████████████████ 100%  Payments & Orders
-Phase 4  ██████████████████░░  90%  Polish & Hardening (lint/type-check not green)
-Phase 5  ██████████████████░░  90%  Production Deploy (CI E2E incomplete)
+Phase 4  ████████████████████ 100%  Polish & Hardening
+Phase 5  ████████████████████ 100%  Production Deploy
 Phase 6  ████████████████████ 100%  i18n + Route Restructuring
 Phase 7  ████████████████████ 100%  Customer Panel Polish
-Phase 8  ██████████████░░░░░░  70%  SaaS Governance (tenant scoping conditional, not mandatory)
-Phase 9  ░░░░░░░░░░░░░░░░░░░░   0%  Production Hardening & Multi-Client
+Phase 8  ████████████████████ 100%  SaaS Governance + Owner Panel Completion
+Phase 9  ██████████████████░░  90%  Production Hardening & Multi-Client
 ```
 
-> **Quality gate status (10 Feb 2026)**: lint ❌ (9 errors), type-check ❌ (shared pkg), tests ✅ (78/78), build ✅. See `GEMINI.md` for details.
+> **Quality gate status (12 Feb 2026)**: release-gate.sh **7/7 PASSED** ✅ — tests ✅ (208 tests, 20 files storefront + 22 tests, 3 files admin), build ✅ (37+ routes). See `GEMINI.md` for full baseline.
 
 **Repo separation completed**: SuperAdmin Panel now lives in its own repo (`bootandstrap-admin`). Template repo contains storefront + Medusa only.
 
-**Phase 8E remediation**: Server-side enforcement, Owner Panel CRUD, and WhatsApp dynamic templates completed. Product badges in progress.
+**Phase 8F completed**: Owner Panel expanded with orders management, customer overview, image upload, and stability hardening (retry wrapper, loading skeleton, toast feedback).
 
 ---
 
@@ -132,7 +132,7 @@ Phase 9  ░░░░░░░░░░░░░░░░░░░░   0%  Prod
 
 | Deliverable | Status |
 |-------------|--------|
-| Dictionary system — 5 JSON dictionaries (EN/ES/DE/FR/IT) with 340+ UI strings + route slugs | ✅ |
+| Dictionary system — 5 JSON dictionaries (EN/ES/DE/FR/IT) with 485+ UI strings + route slugs | ✅ |
 | `lib/i18n/index.ts` — `getDictionary()`, `createTranslator()`, slug helpers, locale validation | ✅ |
 | `lib/i18n/locale.ts` — Resolution: URL → cookie → Accept-Language → config → `'en'` | ✅ |
 | `lib/i18n/currencies.ts` — `formatPrice()`, currency resolution, `setCurrencyCookie()` | ✅ |
@@ -239,13 +239,43 @@ This phase was restructured into 4 sub-phases:
 | Schema docs rewrite | `SUPABASE_SCHEMA.md` updated for multi-tenant architecture | ✅ |
 | Duplicate repo cleanup | Removed duplicate `bootandstrap-admin` from CLIENTES dir | ✅ |
 
+### Phase 8F: Owner Panel Completion ✅
+
+**Completed**: 11 Feb 2026
+
+| Deliverable | Details | Status |
+|-------------|---------|--------|
+| **Phase 0: UX Redesign** | WhatsApp template UX (live preview, variable bar, presets), old route redirects (productos/categorias/insignias → catalogo), `revalidatePanel()` helper | ✅ |
+| **Phase 1: Orders management** | `getAdminOrders`, `getAdminOrderDetail`, `createOrderFulfillment`, `cancelAdminOrder` in `admin.ts`. Orders page with inline detail, fulfill/cancel server actions | ✅ |
+| **Phase 2: Customer overview** | `getAdminCustomers`, `getCustomerCount` in `admin.ts`. Read-only customer list (name, email, order count) | ✅ |
+| **Phase 3: Image upload** | `uploadFiles`, `updateProductImages`, `deleteProductImage` in `admin.ts`. Image dropzone with 5MB limit, JPEG/PNG/WebP/GIF validation | ✅ |
+| **Phase 4: Stability hardening** | `retry.ts` (exponential backoff + jitter), `loading.tsx` (panel skeleton), toast feedback on all 9 panel clients (~30 mutation handlers) | ✅ |
+| **Medusa Admin API auth** | Full rewrite of `admin.ts`: JWT via `/auth/user/emailpass`, 23h cache, auto-retry on 401 | ✅ |
+| **Panel sidebar** | 5 fixed items (Dashboard, Catálogo, Pedidos, Clientes, Mi Tienda) + 4 flag-gated (Carousel, WhatsApp, CMS, Analytics) | ✅ |
+| **i18n** | All 5 dictionaries updated: `panel.orders.*` (23 keys) + `panel.customers.*` (8 keys) — total 485+ keys per locale | ✅ |
+| **Documentation coherence** | All 3 GEMINI.md + DOCS_GUIDE + API_REFERENCE updated to reflect actual state | ✅ |
+
 ---
 
-## Phase 9: Production Hardening & Multi-Client 🔜
+## Phase 9: Production Hardening & Multi-Client
+
+### 9A: Production Remediation ✅
+
+**Completed**: 12 Feb 2026
+
+| Deliverable | Details | Status |
+|-------------|---------|--------|
+| **RLS hardening** | Tenant-scoped policies replacing `USING (true)` on all governance tables | ✅ |
+| **Webhook hardening** | Stripe webhook: status tracking (claimed/processed_ok/processed_failed), proper HTTP codes, retry tests | ✅ |
+| **Registration hardening** | `max_customers` fail-closed enforcement with admin client + tenant-scoped count | ✅ |
+| **Credential cleanup** | Removed `'supersecret'` fallback, mandatory env validation, CREDENTIALS.md | ✅ |
+| **Error Inbox** | Global error dashboard + per-tenant tab in SuperAdmin. `tenant_errors` table + `logTenantError()` | ✅ |
+| **Release gate** | `release-gate.sh` 7/7 PASSED (RLS, audit, lint, tests, type-check, build) | ✅ |
+| **RLS assessment** | Supabase security advisors audit — 80+ Medusa tables no RLS (expected), governance tables secured | ✅ |
+
+### 9B: Testing & Quality 🔜
 
 **Target**: Mar 2026
-
-### Testing & Quality
 
 | Deliverable | Details | Status |
 |-------------|---------|--------|
@@ -254,7 +284,7 @@ This phase was restructured into 4 sub-phases:
 | CI pipeline | E2E + unit tests on PR, build verification | 🔜 |
 | Lighthouse CI | Automated performance regression testing | 🔜 |
 
-### Multi-Client Operations
+### 9C: Multi-Client Operations 🔜
 
 | Deliverable | Details | Status |
 |-------------|---------|--------|
@@ -304,5 +334,6 @@ This phase was restructured into 4 sub-phases:
 | 7 | 13 | 8 | 0 | 0 | ✅ |
 | 8 | ~50 | ~20 | 3 | 0 | ✅ |
 | 8E | ~10 | ~8 | 0 | 0 | ✅ |
-| **Total** | **~156** | **~82** | **14** | **1** | |
+| 8F | ~15 | ~12 | 0 | 0 | ✅ |
+| **Total** | **~171** | **~94** | **14** | **1** | |
 

@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
 
-  // Monorepo: tell Turbopack where the workspace root is
+  // Monorepo: absolute path to workspace root for Turbopack
   turbopack: {
-    root: "../../",
+    root: path.resolve(import.meta.dirname, "../.."),
   },
 
   images: {
@@ -81,6 +82,26 @@ const nextConfig: NextConfig = {
             ].join("; "),
           },
         ],
+      },
+    ];
+  },
+  // ── Old Panel Route Redirects ──────────────────
+  async redirects() {
+    return [
+      {
+        source: "/:lang/panel/productos",
+        destination: "/:lang/panel/catalogo?tab=products",
+        permanent: true,
+      },
+      {
+        source: "/:lang/panel/categorias",
+        destination: "/:lang/panel/catalogo?tab=categories",
+        permanent: true,
+      },
+      {
+        source: "/:lang/panel/insignias",
+        destination: "/:lang/panel/catalogo",
+        permanent: true,
       },
     ];
   },

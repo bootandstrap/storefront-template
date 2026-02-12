@@ -16,7 +16,7 @@
   },
   "pnpm": {
     "overrides": {
-      "zod-validation-error>zod": "3.25.76"
+      "zod": "3.25.76"
     }
   }
 }

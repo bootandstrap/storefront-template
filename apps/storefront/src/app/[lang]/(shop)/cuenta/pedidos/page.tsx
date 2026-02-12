@@ -3,9 +3,10 @@ import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerOrders } from '@/lib/medusa/auth-medusa'
 import { formatPrice } from '@/lib/i18n/currencies'
+import { getConfig } from '@/lib/config'
 import {
     Clock, CheckCircle2, XCircle, Truck, Loader2,
-    Package, Eye, ChevronLeft, ChevronRight
+    Package, Eye, ChevronLeft, ChevronRight, ShieldX
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -180,6 +181,16 @@ export default async function PedidosPage({
     const page = Math.max(1, parseInt(sp.page || '1', 10))
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+    const { featureFlags } = await getConfig()
+
+    if (!featureFlags.enable_order_tracking) {
+        return (
+            <div className="glass rounded-xl p-8 text-center">
+                <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
+                <p className="text-text-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">

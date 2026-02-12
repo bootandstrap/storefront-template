@@ -38,11 +38,18 @@ for file in "$MIGRATION_DIR"/*.sql; do
     if [ -n "$policies" ]; then
         echo "$policies" | while IFS= read -r pname; do
             if [ -n "$pname" ] && ! grep -q "DROP POLICY IF EXISTS \"$pname\"" "$file" 2>/dev/null; then
-                echo "  ⚠️  $bname: \"$pname\" — no DROP IF EXISTS"
+                echo "  ❌ $bname: \"$pname\" — no DROP IF EXISTS (BLOCKING)"
+                # Signal failure via temp file (subshell can't modify parent EXIT_CODE)
+                echo 1 > /tmp/_migration_check_fail
             fi
         done
     fi
 done
+# Read subshell result
+if [ -f /tmp/_migration_check_fail ]; then
+    EXIT_CODE=1
+    rm -f /tmp/_migration_check_fail
+fi
 echo "  ✅ Policy check complete"
 echo ""
 

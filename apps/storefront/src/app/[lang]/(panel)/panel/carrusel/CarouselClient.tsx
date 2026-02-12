@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/Toaster'
 import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
 import { createSlide, updateSlide, deleteSlide } from './actions'
@@ -30,6 +31,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
     const { t } = useI18n()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const toast = useToast()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -72,8 +74,10 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
             if (result.success) {
                 resetForm()
                 router.refresh()
+                toast.success('✓')
             } else {
                 setError(result.error ?? 'Error')
+                toast.error(result.error ?? 'Error')
             }
         })
     }
@@ -82,8 +86,8 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
         if (!confirm(t('common.confirmDelete'))) return
         startTransition(async () => {
             const result = await deleteSlide(id)
-            if (result.success) router.refresh()
-            else setError(result.error ?? 'Error')
+            if (result.success) { router.refresh(); toast.success('✓') }
+            else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
         })
     }
 

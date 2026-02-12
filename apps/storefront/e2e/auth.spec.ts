@@ -1,22 +1,22 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Authentication', () => {
-    test('login page renders', async ({ page }) => {
+    test('login page renders form', async ({ page }) => {
         await page.goto('/es/login')
-        // Should show login form or auth UI
-        const form = page.locator('form, [data-testid="login-form"]')
-        await expect(form).toBeVisible({ timeout: 10_000 })
+        const form = page.locator('[data-testid="login-form"], form')
+        await expect(form.first()).toBeVisible({ timeout: 10_000 })
     })
 
-    test('login page has email/password fields when email auth enabled', async ({ page }) => {
+    test('login page has auth fields', async ({ page }) => {
         await page.goto('/es/login')
-        const emailInput = page.locator('input[type="email"], input[name="email"]')
-        const _passwordInput = page.locator('input[type="password"], input[name="password"]')
+        // At least one auth method MUST be visible — email OR OAuth
+        const _emailInput = page.locator('input[type="email"], input[name="email"]')
+        const _oauthButton = page.locator('button:has-text("Google"), [data-testid="google-auth"]')
 
-        // At least one auth method should be visible
-        const emailVisible = await emailInput.isVisible().catch(() => false)
-        const googleVisible = await page.locator('button:has-text("Google")').isVisible().catch(() => false)
-        expect(emailVisible || googleVisible).toBeTruthy()
+        const authElement = page.locator(
+            'input[type="email"], input[name="email"], button:has-text("Google"), [data-testid="google-auth"]'
+        )
+        await expect(authElement.first()).toBeVisible({ timeout: 10_000 })
     })
 
     test('registration page renders when enabled', async ({ page }) => {

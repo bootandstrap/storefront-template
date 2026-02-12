@@ -2,7 +2,7 @@
 
 > Tables managed by Supabase in the `public` schema. Medusa tables also live in `public` (no separate schema). Do NOT modify Medusa-managed tables manually.
 >
-> **Last updated**: 10 Feb 2026 — reflects `20260210_stripe_webhook_events` and `20260210_audit_log` migrations.
+> **Last updated**: 12 Feb 2026 — reflects `20260212_tenant_errors` migration (Error Inbox), plus `stripe_webhook_events` and `audit_log`.
 
 ## Tables
 
@@ -250,6 +250,22 @@ SuperAdmin audit trail. Records every mutation for compliance and debugging.
 
 RLS: Enabled, no policies = service-role access only.
 
+### `tenant_errors`
+Error Inbox for per-tenant error tracking. Logged by storefront via `logTenantError()`, viewed/resolved from SuperAdmin.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | Default `gen_random_uuid()` |
+| `tenant_id` | UUID NOT NULL | FK → `tenants(id)` |
+| `source` | TEXT NOT NULL | e.g. `config`, `medusa`, `stripe`, `auth` |
+| `severity` | TEXT NOT NULL | `'info'`, `'warning'`, `'error'`, `'critical'` |
+| `message` | TEXT NOT NULL | Human-readable error description |
+| `details` | JSONB | Stack trace, context, metadata |
+| `resolved` | BOOLEAN | Default `false` |
+| `created_at` | TIMESTAMPTZ | Default `now()` |
+
+RLS: Enabled, no policies = service-role access only.
+
 ## RLS Policies
 
 | Table | SELECT | INSERT | UPDATE | DELETE |
@@ -265,6 +281,7 @@ RLS: Enabled, no policies = service-role access only.
 | `analytics_events` | super_admin/owner (tenant) | Public (anon) | — | super_admin |
 | `stripe_webhook_events` | — (service-role only) | — (service-role only) | — | — |
 | `audit_log` | — (service-role only) | — (service-role only) | — | — |
+| `tenant_errors` | — (service-role only) | — (service-role only) | — (service-role only) | — |
 
 ## Indexes
 
@@ -280,6 +297,7 @@ RLS: Enabled, no policies = service-role access only.
 | `idx_stripe_webhook_events_event_id` | `stripe_webhook_events` | `event_id` |
 | `idx_audit_log_created_at` | `audit_log` | `created_at DESC` |
 | `idx_audit_log_tenant_id` | `audit_log` | `tenant_id` |
+| `idx_tenant_errors_tenant_id` | `tenant_errors` | `tenant_id` |
 
 ## Unique Constraints
 

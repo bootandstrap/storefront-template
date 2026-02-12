@@ -2,16 +2,18 @@
 # ============================================================================
 # check-rls.sh — Static analysis for overly permissive RLS policies
 # ============================================================================
-# Scans SQL migration files for USING (true) patterns on governance tables.
-# This prevents regressions where a new migration accidentally opens up
-# SELECT/INSERT/UPDATE/DELETE to all users without tenant scoping.
+# Scans SQL migration files for CREATE POLICY ... USING (true) patterns
+# on governance tables. Only considers the LATEST migration per table
+# (determined by filename sort order, since migrations are date-prefixed).
 #
-# PORTABILITY: Uses grep -Ei (POSIX ERE) instead of grep -P (GNU PCRE).
-# Falls back to ripgrep (rg) if available.
+# If a later migration DROPs and re-creates a policy, only the final
+# CREATE POLICY is evaluated — earlier superseded policies are ignored.
+#
+# PORTABILITY: Uses grep -Ei (POSIX ERE). Falls back to ripgrep (rg) if available.
 #
 # EXIT CODES:
 #   0 — No permissive policies found (or no governance tables affected)
-#   1 — Found permissive USING (true) on governance tables
+#   1 — Found permissive CREATE POLICY ... USING (true) on governance tables
 #   2 — Fail-closed: no compatible grep/rg found
 # ============================================================================
 
@@ -21,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 MIGRATIONS_DIR="$ROOT_DIR/supabase/migrations"
 
-# Governance tables that MUST NOT have USING (true)
+# Governance tables that MUST NOT have USING (true) in SELECT policies
 GOVERNANCE_TABLES=(
     "config"
     "feature_flags"
@@ -50,7 +52,7 @@ if [[ ! -d "$MIGRATIONS_DIR" ]]; then
     exit 0
 fi
 
-# Check for SQL files
+# Check for SQL files (sorted by name = chronological order)
 shopt -s nullglob
 SQL_FILES=("$MIGRATIONS_DIR"/*.sql)
 shopt -u nullglob
@@ -60,57 +62,79 @@ if [[ ${#SQL_FILES[@]} -eq 0 ]]; then
     exit 0
 fi
 
-# Determine search tool (prefer rg, fallback to grep -E)
-SEARCH_CMD=""
-if command -v rg &>/dev/null; then
-    SEARCH_CMD="rg"
-elif command -v grep &>/dev/null; then
-    SEARCH_CMD="grep"
-else
-    echo -e "${RED}❌ FAIL-CLOSED: Neither 'rg' nor 'grep' found. Cannot verify RLS policies.${NC}"
-    exit 2
-fi
-
 VIOLATIONS=0
 
 for table in "${GOVERNANCE_TABLES[@]}"; do
-    # Pattern: ON <table> ... USING (true)
-    # Using ERE regex (grep -E) instead of PCRE (grep -P) for macOS/BSD portability
-    PATTERN="ON[[:space:]]+${table}[[:space:]]"
-    USING_PATTERN="USING[[:space:]]*\([[:space:]]*true[[:space:]]*\)"
+    # ──────────────────────────────────────────────────────────────────
+    # Strategy: find the LATEST migration that creates a SELECT policy
+    # for this table. Only check THAT file for USING (true).
+    # ──────────────────────────────────────────────────────────────────
 
-    FOUND_FILES=""
+    # Pattern: CREATE POLICY ... ON <table> FOR SELECT
+    # We look for files that create SELECT policies for this table
+    CREATE_SELECT_PATTERN="CREATE[[:space:]]+POLICY.*ON[[:space:]]+${table}[[:space:]]"
+    USING_TRUE_PATTERN="USING[[:space:]]*\([[:space:]]*true[[:space:]]*\)"
 
-    if [[ "$SEARCH_CMD" == "rg" ]]; then
-        # ripgrep: search for both patterns in the same file, case-insensitive
-        FOUND_FILES=$(rg -li "$PATTERN" "${SQL_FILES[@]}" 2>/dev/null | while read -r f; do
-            if rg -qi "$USING_PATTERN" "$f" 2>/dev/null; then
-                echo "$f"
-            fi
-        done || true)
-    else
-        # grep -E: POSIX ERE, case-insensitive, list files
-        for f in "${SQL_FILES[@]}"; do
-            if grep -Eiq "$PATTERN" "$f" 2>/dev/null && grep -Eiq "$USING_PATTERN" "$f" 2>/dev/null; then
-                FOUND_FILES="$FOUND_FILES $f"
-            fi
-        done
+    # Find the LATEST file (reverse chronological) that creates a policy on this table
+    LATEST_FILE=""
+    for (( i=${#SQL_FILES[@]}-1; i>=0; i-- )); do
+        f="${SQL_FILES[$i]}"
+        if grep -Eiq "$CREATE_SELECT_PATTERN" "$f" 2>/dev/null; then
+            LATEST_FILE="$f"
+            break
+        fi
+    done
+
+    if [[ -z "$LATEST_FILE" ]]; then
+        # No migration creates a policy for this table — skip
+        continue
     fi
 
-    if [[ -n "$FOUND_FILES" ]]; then
-        for f in $FOUND_FILES; do
-            echo -e "${RED}❌ VIOLATION: Table '${table}' has USING (true) in $(basename "$f")${NC}"
-            # Show offending lines
-            if [[ "$SEARCH_CMD" == "rg" ]]; then
-                rg -in "$USING_PATTERN" "$f" 2>/dev/null | while read -r line; do
-                    echo "   → $line"
-                done
-            else
-                grep -Ein "$USING_PATTERN" "$f" 2>/dev/null | while read -r line; do
-                    echo "   → $line"
-                done
+    # Check if the latest file has CREATE POLICY ... USING (true) for this table
+    # Filter: only non-comment lines (skip lines starting with --)
+    HAS_VIOLATION=false
+
+    while IFS= read -r line; do
+        # Skip SQL comment lines
+        stripped="${line#"${line%%[! ]*}"}"  # trim leading whitespace
+        if [[ "$stripped" == --* ]]; then
+            continue
+        fi
+        # Check if this line contains both the table CREATE POLICY and USING (true)
+        if echo "$line" | grep -Eiq "$USING_TRUE_PATTERN" 2>/dev/null; then
+            # Verify it's actually a CREATE POLICY for this table (could be multi-line)
+            HAS_VIOLATION=true
+        fi
+    done < <(grep -Ei "ON[[:space:]]+${table}[[:space:]]|$USING_TRUE_PATTERN" "$LATEST_FILE" 2>/dev/null || true)
+
+    # More precise check: find actual CREATE POLICY ... ON <table> ... USING (true)
+    # by extracting the policy blocks
+    HAS_VIOLATION=false
+
+    # Get all CREATE POLICY lines for this table, then check if any have USING (true)
+    # on the same or next line
+    POLICY_LINES=$(grep -Ein "CREATE[[:space:]]+POLICY" "$LATEST_FILE" 2>/dev/null | grep -i "$table" || true)
+
+    if [[ -n "$POLICY_LINES" ]]; then
+        while IFS=: read -r linenum _rest; do
+            # Check this line and the next few lines for USING (true)
+            CONTEXT=$(sed -n "${linenum},$((linenum + 5))p" "$LATEST_FILE" 2>/dev/null || true)
+            if echo "$CONTEXT" | grep -Eiq "$USING_TRUE_PATTERN" 2>/dev/null; then
+                # But skip if it's an INSERT WITH CHECK (analytics_events exception)
+                if echo "$CONTEXT" | grep -Eiq "FOR[[:space:]]+INSERT" 2>/dev/null; then
+                    # INSERT WITH CHECK (true) is allowed for analytics_events
+                    if [[ "$table" == "analytics_events" ]]; then
+                        continue
+                    fi
+                fi
+                HAS_VIOLATION=true
+                echo -e "${RED}❌ VIOLATION: Table '${table}' has permissive policy in $(basename "$LATEST_FILE"):${linenum}${NC}"
+                echo "   → $(echo "$CONTEXT" | head -3 | sed 's/^/   /')"
             fi
-        done
+        done <<< "$POLICY_LINES"
+    fi
+
+    if $HAS_VIOLATION; then
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 done
@@ -118,9 +142,9 @@ done
 echo ""
 
 if [[ $VIOLATIONS -gt 0 ]]; then
-    echo -e "${RED}🚫 Found $VIOLATIONS governance table(s) with USING (true) — cross-tenant leak risk!${NC}"
+    echo -e "${RED}🚫 Found $VIOLATIONS governance table(s) with permissive policies — cross-tenant leak risk!${NC}"
     echo ""
-    echo "FIX: Replace USING (true) with tenant-scoped policies:"
+    echo "FIX: Replace with tenant-scoped policies:"
     echo "  USING (EXISTS ("
     echo "    SELECT 1 FROM profiles"
     echo "    WHERE profiles.id = auth.uid()"

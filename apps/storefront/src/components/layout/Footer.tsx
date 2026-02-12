@@ -2,21 +2,22 @@ import Link from 'next/link'
 import { CreditCard, Banknote, MessageCircle, Shield, Phone, Mail, MapPin } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
-import type { StoreConfig } from '@/lib/config'
+import type { StoreConfig, FeatureFlags } from '@/lib/config'
 
 interface FooterProps {
     config: StoreConfig
+    featureFlags: FeatureFlags
     dictionary: Dictionary
     lang: string
 }
 
-export default function Footer({ config, dictionary, lang }: FooterProps) {
+export default function Footer({ config, featureFlags, dictionary, lang }: FooterProps) {
     const t = createTranslator(dictionary)
     const year = new Date().getFullYear()
     const businessName = config.business_name || 'Store'
 
     return (
-        <footer className="bg-surface-1 border-t border-surface-3">
+        <footer data-testid="main-footer" className="bg-surface-1 border-t border-surface-3">
             <div className="container-page py-12 md:py-16">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
                     {/* Brand */}
@@ -31,7 +32,7 @@ export default function Footer({ config, dictionary, lang }: FooterProps) {
                         )}
 
                         {/* Social links */}
-                        {(config.social_instagram || config.social_facebook || config.social_tiktok) && (
+                        {featureFlags.enable_social_links && (config.social_instagram || config.social_facebook || config.social_tiktok) && (
                             <div className="mt-4">
                                 <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                                     {t('footer.followUs')}

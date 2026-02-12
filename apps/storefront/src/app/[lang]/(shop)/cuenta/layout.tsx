@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getConfig } from '@/lib/config'
 import AccountSidebar from '@/components/account/AccountSidebar'
 
 export const dynamic = 'force-dynamic'
@@ -12,6 +13,13 @@ export default async function CuentaLayout({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
+    const { featureFlags } = await getConfig()
+
+    // Gate: customer accounts must be enabled
+    if (!featureFlags.enable_customer_accounts) {
+        redirect(`/${lang}`)
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -30,6 +38,7 @@ export default async function CuentaLayout({
                     lang={lang}
                     displayName={displayName}
                     email={email}
+                    featureFlags={featureFlags}
                 />
 
                 {/* Content */}

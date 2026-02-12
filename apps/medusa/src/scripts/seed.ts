@@ -30,11 +30,11 @@ import { ApiKey } from "../../.medusa/types/query-entry-points";
 // ─────────────────────────────────────────────────────────────
 // Template Configuration — override via env vars per client
 // ─────────────────────────────────────────────────────────────
-const STORE_NAME = process.env.STORE_NAME || "Campifrut";
+const STORE_NAME = process.env.STORE_NAME || "My Store";
 const STORE_CURRENCY = process.env.STORE_CURRENCY || "eur";
 const STORE_COUNTRY = process.env.STORE_COUNTRY || "es";
 const STORE_REGION_NAME = process.env.STORE_REGION_NAME || "España";
-const WAREHOUSE_NAME = process.env.WAREHOUSE_NAME || "Almacén Campifrut";
+const WAREHOUSE_NAME = process.env.WAREHOUSE_NAME || "Main Warehouse";
 const WAREHOUSE_CITY = process.env.WAREHOUSE_CITY || "Valencia";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "product-images";
@@ -406,7 +406,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
     categoryResult.find((c) => c.name === name)!.id;
 
   // ── Products ───────────────────────────────────────────────
-  logger.info("Seeding Campifrut products...");
+  logger.info("Seeding demo products...");
   const existingProducts = await productModuleService.listProducts(
     {},
     { take: 1 }
