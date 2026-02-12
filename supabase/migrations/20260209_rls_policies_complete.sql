@@ -13,11 +13,13 @@ ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 
 -- Read: anyone (storefront needs flags for conditional rendering)
 DROP POLICY IF EXISTS "feature_flags_read_all" ON feature_flags;
+DROP POLICY IF EXISTS "feature_flags_select" ON feature_flags;
 CREATE POLICY "feature_flags_select" ON feature_flags
     FOR SELECT USING (true);
 
 -- Write: super_admin or owner of the tenant
 DROP POLICY IF EXISTS "feature_flags_write_admin" ON feature_flags;
+DROP POLICY IF EXISTS "feature_flags_update_admin" ON feature_flags;
 CREATE POLICY "feature_flags_update_admin" ON feature_flags
     FOR UPDATE USING (
         EXISTS (
@@ -31,6 +33,7 @@ CREATE POLICY "feature_flags_update_admin" ON feature_flags
     );
 
 -- Insert: only super_admin (tenant provisioning)
+DROP POLICY IF EXISTS "feature_flags_insert_super_admin" ON feature_flags;
 CREATE POLICY "feature_flags_insert_super_admin" ON feature_flags
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -41,6 +44,7 @@ CREATE POLICY "feature_flags_insert_super_admin" ON feature_flags
     );
 
 -- Delete: only super_admin (tenant deprovisioning)
+DROP POLICY IF EXISTS "feature_flags_delete_super_admin" ON feature_flags;
 CREATE POLICY "feature_flags_delete_super_admin" ON feature_flags
     FOR DELETE USING (
         EXISTS (
@@ -57,11 +61,13 @@ ALTER TABLE plan_limits ENABLE ROW LEVEL SECURITY;
 
 -- Read: anyone (storefront checks limits for enforcement)
 DROP POLICY IF EXISTS "plan_limits_read_all" ON plan_limits;
+DROP POLICY IF EXISTS "plan_limits_select" ON plan_limits;
 CREATE POLICY "plan_limits_select" ON plan_limits
     FOR SELECT USING (true);
 
 -- Write: only super_admin (plan management is SaaS-level)
 DROP POLICY IF EXISTS "plan_limits_write_admin" ON plan_limits;
+DROP POLICY IF EXISTS "plan_limits_update_super_admin" ON plan_limits;
 CREATE POLICY "plan_limits_update_super_admin" ON plan_limits
     FOR UPDATE USING (
         EXISTS (
@@ -71,6 +77,7 @@ CREATE POLICY "plan_limits_update_super_admin" ON plan_limits
         )
     );
 
+DROP POLICY IF EXISTS "plan_limits_insert_super_admin" ON plan_limits;
 CREATE POLICY "plan_limits_insert_super_admin" ON plan_limits
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -80,6 +87,7 @@ CREATE POLICY "plan_limits_insert_super_admin" ON plan_limits
         )
     );
 
+DROP POLICY IF EXISTS "plan_limits_delete_super_admin" ON plan_limits;
 CREATE POLICY "plan_limits_delete_super_admin" ON plan_limits
     FOR DELETE USING (
         EXISTS (
@@ -95,10 +103,12 @@ CREATE POLICY "plan_limits_delete_super_admin" ON plan_limits
 ALTER TABLE whatsapp_templates ENABLE ROW LEVEL SECURITY;
 
 -- Read: anyone in same tenant (storefront uses templates for order messages)
+DROP POLICY IF EXISTS "whatsapp_templates_select" ON whatsapp_templates;
 CREATE POLICY "whatsapp_templates_select" ON whatsapp_templates
     FOR SELECT USING (true);
 
 -- Write: super_admin or owner of tenant
+DROP POLICY IF EXISTS "whatsapp_templates_insert_admin" ON whatsapp_templates;
 CREATE POLICY "whatsapp_templates_insert_admin" ON whatsapp_templates
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -111,6 +121,7 @@ CREATE POLICY "whatsapp_templates_insert_admin" ON whatsapp_templates
         )
     );
 
+DROP POLICY IF EXISTS "whatsapp_templates_update_admin" ON whatsapp_templates;
 CREATE POLICY "whatsapp_templates_update_admin" ON whatsapp_templates
     FOR UPDATE USING (
         EXISTS (
@@ -123,6 +134,7 @@ CREATE POLICY "whatsapp_templates_update_admin" ON whatsapp_templates
         )
     );
 
+DROP POLICY IF EXISTS "whatsapp_templates_delete_admin" ON whatsapp_templates;
 CREATE POLICY "whatsapp_templates_delete_admin" ON whatsapp_templates
     FOR DELETE USING (
         EXISTS (
@@ -141,10 +153,12 @@ CREATE POLICY "whatsapp_templates_delete_admin" ON whatsapp_templates
 ALTER TABLE cms_pages ENABLE ROW LEVEL SECURITY;
 
 -- Read: anyone (public pages)
+DROP POLICY IF EXISTS "cms_pages_select" ON cms_pages;
 CREATE POLICY "cms_pages_select" ON cms_pages
     FOR SELECT USING (true);
 
 -- Write: super_admin or owner of tenant
+DROP POLICY IF EXISTS "cms_pages_insert_admin" ON cms_pages;
 CREATE POLICY "cms_pages_insert_admin" ON cms_pages
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -157,6 +171,7 @@ CREATE POLICY "cms_pages_insert_admin" ON cms_pages
         )
     );
 
+DROP POLICY IF EXISTS "cms_pages_update_admin" ON cms_pages;
 CREATE POLICY "cms_pages_update_admin" ON cms_pages
     FOR UPDATE USING (
         EXISTS (
@@ -169,6 +184,7 @@ CREATE POLICY "cms_pages_update_admin" ON cms_pages
         )
     );
 
+DROP POLICY IF EXISTS "cms_pages_delete_admin" ON cms_pages;
 CREATE POLICY "cms_pages_delete_admin" ON cms_pages
     FOR DELETE USING (
         EXISTS (
@@ -187,10 +203,12 @@ CREATE POLICY "cms_pages_delete_admin" ON cms_pages
 ALTER TABLE carousel_slides ENABLE ROW LEVEL SECURITY;
 
 -- Read: anyone (storefront displays carousel)
+DROP POLICY IF EXISTS "carousel_slides_select" ON carousel_slides;
 CREATE POLICY "carousel_slides_select" ON carousel_slides
     FOR SELECT USING (true);
 
 -- Write: super_admin or owner of tenant
+DROP POLICY IF EXISTS "carousel_slides_insert_admin" ON carousel_slides;
 CREATE POLICY "carousel_slides_insert_admin" ON carousel_slides
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -203,6 +221,7 @@ CREATE POLICY "carousel_slides_insert_admin" ON carousel_slides
         )
     );
 
+DROP POLICY IF EXISTS "carousel_slides_update_admin" ON carousel_slides;
 CREATE POLICY "carousel_slides_update_admin" ON carousel_slides
     FOR UPDATE USING (
         EXISTS (
@@ -215,6 +234,7 @@ CREATE POLICY "carousel_slides_update_admin" ON carousel_slides
         )
     );
 
+DROP POLICY IF EXISTS "carousel_slides_delete_admin" ON carousel_slides;
 CREATE POLICY "carousel_slides_delete_admin" ON carousel_slides
     FOR DELETE USING (
         EXISTS (
@@ -233,6 +253,7 @@ CREATE POLICY "carousel_slides_delete_admin" ON carousel_slides
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
 -- Read: super_admin or owner of tenant (sensitive data)
+DROP POLICY IF EXISTS "analytics_events_select_admin" ON analytics_events;
 CREATE POLICY "analytics_events_select_admin" ON analytics_events
     FOR SELECT USING (
         EXISTS (
@@ -246,10 +267,12 @@ CREATE POLICY "analytics_events_select_admin" ON analytics_events
     );
 
 -- Insert: anyone (client-side analytics tracker uses anon key)
+DROP POLICY IF EXISTS "analytics_events_insert" ON analytics_events;
 CREATE POLICY "analytics_events_insert" ON analytics_events
     FOR INSERT WITH CHECK (true);
 
 -- No update/delete from client — only super_admin
+DROP POLICY IF EXISTS "analytics_events_delete_super_admin" ON analytics_events;
 CREATE POLICY "analytics_events_delete_super_admin" ON analytics_events
     FOR DELETE USING (
         EXISTS (

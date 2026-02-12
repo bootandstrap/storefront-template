@@ -98,6 +98,7 @@ export default async function RootLayout({
         {config.logo_url && (
           <link rel="preconnect" href={new URL(config.logo_url).origin} crossOrigin="anonymous" />
         )}
+        {/* eslint-disable-next-line @next/next/google-font-preconnect -- preconnect already above */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

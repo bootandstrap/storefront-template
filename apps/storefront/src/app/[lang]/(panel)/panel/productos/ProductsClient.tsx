@@ -341,6 +341,7 @@ export default function ProductsClient({
                             {/* Thumbnail */}
                             <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center">
                                 {product.thumbnail ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         src={product.thumbnail}
                                         alt={product.title}

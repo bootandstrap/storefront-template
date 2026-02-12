@@ -8,26 +8,16 @@
  * Rate-limited: 5 attempts per IP per 15 minutes.
  */
 
-import { createRateLimiter } from '@/lib/security/rate-limit'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { getClientIp } from '@/lib/security/get-client-ip'
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUBLISHABLE_KEY =
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
-// Rate limiter: 5 lookups per IP per 15 minutes
-const lookupLimiter = createRateLimiter({ limit: 5, windowMs: 15 * 60 * 1000 })
-
-/**
- * Extract client IP from request headers (x-forwarded-for or fallback).
- */
-function getClientIp(request: Request): string {
-    const forwarded = request.headers.get('x-forwarded-for')
-    if (forwarded) {
-        return forwarded.split(',')[0].trim()
-    }
-    return request.headers.get('x-real-ip') || '0.0.0.0'
-}
+// Rate limiter: 5 lookups per IP per 15 minutes (distributed when Redis available)
+const lookupLimiter = createSmartRateLimiter({ limit: 5, windowMs: 15 * 60 * 1000, name: 'order-lookup' })
 
 export async function POST(request: Request): Promise<Response> {
     // Rate limit check
@@ -49,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
 
     // Rate limit with compound key (ip:email) — prevents cross-email enumeration
     const rateLimitKey = `${clientIp}:${email || 'unknown'}`
-    if (lookupLimiter.isLimited(rateLimitKey)) {
+    if (await lookupLimiter.isLimited(rateLimitKey)) {
         return Response.json(
             { error: 'Too many lookup attempts. Please try again later.' },
             { status: 429 }

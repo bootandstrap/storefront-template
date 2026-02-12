@@ -1,16 +1,17 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { isPanelRole } from '@/lib/panel-access-policy'
-import { createRateLimiter, API_RATE_LIMIT, PAGE_RATE_LIMIT } from '@/lib/security/rate-limit'
+import { API_RATE_LIMIT, PAGE_RATE_LIMIT } from '@/lib/security/rate-limit'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 
 // ---------------------------------------------------------------------------
-// Rate limiters (extracted to lib/security/rate-limit.ts)
+// Rate limiters — auto-selects Redis (distributed) or in-memory (single node)
 // ---------------------------------------------------------------------------
 
-const apiLimiter = createRateLimiter(API_RATE_LIMIT)
-const pageLimiter = createRateLimiter(PAGE_RATE_LIMIT)
+const apiLimiter = createSmartRateLimiter({ ...API_RATE_LIMIT, name: 'proxy-api' })
+const pageLimiter = createSmartRateLimiter({ ...PAGE_RATE_LIMIT, name: 'proxy-page' })
 
-function isRateLimited(ip: string, isApi: boolean): boolean {
+async function isRateLimited(ip: string, isApi: boolean): Promise<boolean> {
     const key = `${ip}:${isApi ? 'api' : 'page'}`
     return isApi ? apiLimiter.isLimited(key) : pageLimiter.isLimited(key)
 }
@@ -143,12 +144,10 @@ export async function proxy(request: NextRequest) {
     }
 
     // ── Rate limiting ──────────────────────────
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-        || request.headers.get('x-real-ip')
-        || '127.0.0.1'
+    const ip = (await import('@/lib/security/get-client-ip')).getClientIp(request)
     const isApi = path.startsWith('/api/')
 
-    if (isRateLimited(ip, isApi)) {
+    if (await isRateLimited(ip, isApi)) {
         return NextResponse.json(
             { error: 'Too many requests' },
             {

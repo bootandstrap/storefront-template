@@ -34,6 +34,7 @@ DROP POLICY IF EXISTS "config_select" ON config;
 DROP POLICY IF EXISTS "config_select_all" ON config;
 DROP POLICY IF EXISTS "config_read_all" ON config;
 
+DROP POLICY IF EXISTS "config_select_tenant" ON config;
 CREATE POLICY "config_select_tenant" ON config
     FOR SELECT USING (
         EXISTS (
@@ -51,6 +52,7 @@ CREATE POLICY "config_select_tenant" ON config
 -- ============================================================================
 DROP POLICY IF EXISTS "feature_flags_select" ON feature_flags;
 
+DROP POLICY IF EXISTS "feature_flags_select_tenant" ON feature_flags;
 CREATE POLICY "feature_flags_select_tenant" ON feature_flags
     FOR SELECT USING (
         EXISTS (
@@ -68,6 +70,7 @@ CREATE POLICY "feature_flags_select_tenant" ON feature_flags
 -- ============================================================================
 DROP POLICY IF EXISTS "plan_limits_select" ON plan_limits;
 
+DROP POLICY IF EXISTS "plan_limits_select_tenant" ON plan_limits;
 CREATE POLICY "plan_limits_select_tenant" ON plan_limits
     FOR SELECT USING (
         EXISTS (
@@ -85,6 +88,7 @@ CREATE POLICY "plan_limits_select_tenant" ON plan_limits
 -- ============================================================================
 DROP POLICY IF EXISTS "whatsapp_templates_select" ON whatsapp_templates;
 
+DROP POLICY IF EXISTS "whatsapp_templates_select_tenant" ON whatsapp_templates;
 CREATE POLICY "whatsapp_templates_select_tenant" ON whatsapp_templates
     FOR SELECT USING (
         EXISTS (
@@ -102,6 +106,7 @@ CREATE POLICY "whatsapp_templates_select_tenant" ON whatsapp_templates
 -- ============================================================================
 DROP POLICY IF EXISTS "cms_pages_select" ON cms_pages;
 
+DROP POLICY IF EXISTS "cms_pages_select_tenant" ON cms_pages;
 CREATE POLICY "cms_pages_select_tenant" ON cms_pages
     FOR SELECT USING (
         EXISTS (
@@ -119,6 +124,7 @@ CREATE POLICY "cms_pages_select_tenant" ON cms_pages
 -- ============================================================================
 DROP POLICY IF EXISTS "carousel_slides_select" ON carousel_slides;
 
+DROP POLICY IF EXISTS "carousel_slides_select_tenant" ON carousel_slides;
 CREATE POLICY "carousel_slides_select_tenant" ON carousel_slides
     FOR SELECT USING (
         EXISTS (
@@ -140,6 +146,7 @@ CREATE POLICY "carousel_slides_select_tenant" ON carousel_slides
 -- ============================================================================
 DROP POLICY IF EXISTS "analytics_events_insert" ON analytics_events;
 
+DROP POLICY IF EXISTS "analytics_events_insert_with_tenant" ON analytics_events;
 CREATE POLICY "analytics_events_insert_with_tenant" ON analytics_events
     FOR INSERT WITH CHECK (tenant_id IS NOT NULL);
 

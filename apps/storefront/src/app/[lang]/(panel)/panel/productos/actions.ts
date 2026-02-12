@@ -1,5 +1,6 @@
 'use server'
 
+import { requirePanelAuth } from '@/lib/panel-auth'
 import { revalidatePanel } from '@/lib/revalidate'
 import {
     createAdminProduct,
@@ -26,6 +27,7 @@ export async function createProduct(data: {
     categoryId?: string
     status: 'draft' | 'published'
 }): Promise<ActionResult> {
+    await requirePanelAuth()
     if (!data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -69,6 +71,7 @@ export async function updateProduct(
         variantId?: string
     }
 ): Promise<ActionResult> {
+    await requirePanelAuth()
     if (data.title !== undefined && !data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -103,6 +106,7 @@ export async function updateProduct(
 }
 
 export async function removeProduct(id: string): Promise<ActionResult> {
+    await requirePanelAuth()
     const result = await deleteAdminProduct(id)
     if (result.error) {
         return { success: false, error: result.error }
@@ -124,6 +128,7 @@ export async function uploadProductImage(
     productId: string,
     formData: FormData
 ): Promise<ActionResult> {
+    await requirePanelAuth()
     const file = formData.get('file') as File | null
     if (!file) {
         return { success: false, error: 'No file provided' }
@@ -167,6 +172,7 @@ export async function removeProductImage(
     productId: string,
     imageUrl: string
 ): Promise<ActionResult> {
+    await requirePanelAuth()
     const result = await deleteProductImage(productId, imageUrl)
     if (result.error) {
         return { success: false, error: result.error }

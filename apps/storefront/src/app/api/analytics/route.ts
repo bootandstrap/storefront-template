@@ -10,7 +10,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getClientIp } from '@/lib/security/get-client-ip'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -29,32 +31,11 @@ const ALLOWED_EVENTS = new Set([
 ])
 
 const MAX_PROPERTIES_SIZE = 4096 // bytes
-const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
-const RATE_LIMIT_MAX = 60 // max events per IP per window
-
-// Simple in-memory rate limiter (per process)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-function isRateLimited(ip: string): boolean {
-    const now = Date.now()
-    const entry = rateLimitMap.get(ip)
-
-    if (!entry || now > entry.resetAt) {
-        rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-        return false
-    }
-
-    entry.count++
-    return entry.count > RATE_LIMIT_MAX
-}
-
-// Clean up stale entries periodically
-setInterval(() => {
-    const now = Date.now()
-    for (const [ip, entry] of rateLimitMap.entries()) {
-        if (now > entry.resetAt) rateLimitMap.delete(ip)
-    }
-}, 5 * 60_000)
+const analyticsLimiter = createSmartRateLimiter({
+    limit: 60,
+    windowMs: 60_000,
+    name: 'api-analytics',
+})
 
 // ---------------------------------------------------------------------------
 // POST /api/analytics
@@ -63,11 +44,9 @@ setInterval(() => {
 export async function POST(request: NextRequest) {
     try {
         // Rate limit by IP
-        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-            || request.headers.get('x-real-ip')
-            || 'unknown'
+        const ip = getClientIp(request)
 
-        if (isRateLimited(ip)) {
+        if (await analyticsLimiter.isLimited(ip)) {
             return NextResponse.json(
                 { error: 'rate_limited' },
                 { status: 429 }
@@ -105,27 +84,37 @@ export async function POST(request: NextRequest) {
         // Server-side tenant_id injection (trusted)
         const tenantId = process.env.TENANT_ID
         if (!tenantId) {
-            // No tenant configured — silently drop
-            return NextResponse.json({ ok: true })
+            return NextResponse.json(
+                { error: 'analytics_unavailable' },
+                { status: 503 }
+            )
         }
 
-        // Use service role for server-side insert (bypasses RLS)
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        )
+        // Use service-role client for trusted insert.
+        const supabase = createAdminClient()
 
-        await supabase.from('analytics_events').insert({
+        const { error: insertError } = await supabase.from('analytics_events').insert({
             event_type,
             properties: properties || {},
             page_url: typeof page_url === 'string' ? page_url.slice(0, 2048) : null,
             referrer: typeof referrer === 'string' ? referrer.slice(0, 2048) : null,
             tenant_id: tenantId,
-        })
+        } as never)
+
+        if (insertError) {
+            console.error('[analytics] insert failed:', insertError.message)
+            return NextResponse.json(
+                { error: 'analytics_insert_failed' },
+                { status: 500 }
+            )
+        }
 
         return NextResponse.json({ ok: true })
-    } catch {
-        // Silent fail — never block analytics callers
-        return NextResponse.json({ ok: true })
+    } catch (err) {
+        console.error('[analytics] request failed:', err)
+        return NextResponse.json(
+            { error: 'analytics_unavailable' },
+            { status: 503 }
+        )
     }
 }

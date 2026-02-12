@@ -1,5 +1,6 @@
 'use server'
 
+import { requirePanelAuth } from '@/lib/panel-auth'
 import { revalidatePanel } from '@/lib/revalidate'
 import {
     createAdminCategory,
@@ -26,6 +27,7 @@ export async function createCategory(data: {
     name: string
     description?: string
 }): Promise<ActionResult> {
+    await requirePanelAuth()
     if (!data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -52,6 +54,7 @@ export async function editCategory(
     id: string,
     data: { name?: string; description?: string }
 ): Promise<ActionResult> {
+    await requirePanelAuth()
     if (data.name !== undefined && !data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -76,6 +79,7 @@ export async function editCategory(
 }
 
 export async function removeCategory(id: string): Promise<ActionResult> {
+    await requirePanelAuth()
     const result = await deleteAdminCategory(id)
     if (result.error) {
         return { success: false, error: result.error }

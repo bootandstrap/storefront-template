@@ -444,6 +444,7 @@ export default function CatalogClient({
                                         {/* Thumbnail */}
                                         <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center">
                                             {product.thumbnail ? (
+                                                /* eslint-disable-next-line @next/next/no-img-element */
                                                 <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
                                             ) : (
                                                 <Package className="w-10 h-10 text-text-muted/40" />
@@ -621,6 +622,7 @@ export default function CatalogClient({
                                             <div className="flex flex-wrap gap-2 mb-3">
                                                 {editingProduct.images.map(img => (
                                                     <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-surface-3">
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img src={img.url} alt="" className="w-full h-full object-cover" />
                                                         <button
                                                             type="button"

@@ -81,10 +81,10 @@ echo -e "${BOLD}📦 CAMPIFRUT (Template + Medusa)${NC}"
 echo -e "   ${YELLOW}$CAMPIFRUT_DIR${NC}"
 echo ""
 
-gate "Storefront Lint"        pnpm -C "$CAMPIFRUT_DIR" turbo lint --filter=storefront
-gate "Storefront Type Check"  pnpm -C "$CAMPIFRUT_DIR" turbo type-check
+gate "Storefront Lint"        pnpm -C "$CAMPIFRUT_DIR" exec turbo lint --filter=storefront
+gate "Storefront Type Check"  pnpm -C "$CAMPIFRUT_DIR" exec turbo type-check
 gate "Storefront Unit Tests"  pnpm -C "$CAMPIFRUT_DIR" --filter=storefront test:run
-gate "Storefront Build"       pnpm -C "$CAMPIFRUT_DIR" turbo build --filter=storefront
+gate "Storefront Build"       pnpm -C "$CAMPIFRUT_DIR" exec turbo build --filter=storefront
 gate "Migration Check"        bash "$CAMPIFRUT_DIR/scripts/check-migration-order.sh"
 gate "RLS Policy Check"       bash "$CAMPIFRUT_DIR/scripts/check-rls.sh"
 gate "Audit Policy"           bash "$CAMPIFRUT_DIR/scripts/check-audit-waiver.sh"

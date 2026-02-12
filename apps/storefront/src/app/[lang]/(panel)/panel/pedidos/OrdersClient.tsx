@@ -111,7 +111,7 @@ function formatDate(dateStr: string): string {
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'canceled'
 
-export default function OrdersClient({ orders, totalCount, lang, labels }: Props) {
+export default function OrdersClient({ orders, totalCount, lang: _lang, labels }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
@@ -282,6 +282,7 @@ export default function OrdersClient({ orders, totalCount, lang, labels }: Props
                                                 {(order.items ?? []).map(item => (
                                                     <div key={item.id} className="flex items-center gap-3 py-2">
                                                         {item.thumbnail ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
                                                             <img
                                                                 src={item.thumbnail}
                                                                 alt={item.title}
