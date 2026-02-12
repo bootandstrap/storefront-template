@@ -15,7 +15,8 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { createTemplate, updateTemplate, deleteTemplate } from './actions'
-import { Plus, Eye, Code, Trash2, Pencil, MessageCircle, ChevronDown, Copy, Check } from 'lucide-react'
+import { renderWhatsAppPreviewParts } from './preview-render'
+import { Plus, Eye, Code, Trash2, Pencil, MessageCircle, Copy, Check } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,16 +49,6 @@ const TEMPLATE_VARIABLES = [
     { key: 'order_id', emoji: '🔢', label: 'Nº Pedido' },
     { key: 'items', emoji: '📦', label: 'Artículos' },
 ] as const
-
-// Sample data for the live preview
-const SAMPLE_DATA: Record<string, string> = {
-    store_name: 'Mi Tienda',
-    customer_name: 'María García',
-    customer_phone: '+34 612 345 678',
-    total: '45,90 €',
-    order_id: '#1042',
-    items: '• Naranjas de Valencia x2 — 32,90 €\n• Limones Ecológicos x1 — 12,90 €',
-}
 
 // Template presets
 const TEMPLATE_PRESETS = [
@@ -154,16 +145,6 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
             const pos = start + tag.length
             textarea.setSelectionRange(pos, pos)
         })
-    }
-
-    const renderPreview = (template: string) => {
-        let rendered = template
-        for (const [key, value] of Object.entries(SAMPLE_DATA)) {
-            rendered = rendered.replaceAll(`{{${key}}}`, value)
-        }
-        // Bold text: *text* → <strong>text</strong>
-        rendered = rendered.replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
-        return rendered
     }
 
     const handleSubmit = () => {
@@ -349,11 +330,16 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                                     <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
                                         {body ? (
                                             <div
-                                                className="text-sm text-gray-800 whitespace-pre-wrap break-words [&>strong]:font-bold"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: renderPreview(body)
-                                                }}
-                                            />
+                                                className="text-sm text-gray-800 whitespace-pre-wrap break-words"
+                                            >
+                                                {renderWhatsAppPreviewParts(body).map((part, idx) =>
+                                                    part.bold ? (
+                                                        <strong key={`${idx}-${part.text}`}>{part.text}</strong>
+                                                    ) : (
+                                                        <span key={`${idx}-${part.text}`}>{part.text}</span>
+                                                    )
+                                                )}
+                                            </div>
                                         ) : (
                                             <p className="text-sm text-gray-400 italic">
                                                 {t('panel.messages.previewEmpty')}
@@ -454,11 +440,16 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                                 <div className="max-w-[70%] ml-auto">
                                     <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
                                         <div
-                                            className="text-sm text-gray-800 whitespace-pre-wrap break-words [&>strong]:font-bold"
-                                            dangerouslySetInnerHTML={{
-                                                __html: renderPreview(tmpl.template)
-                                            }}
-                                        />
+                                            className="text-sm text-gray-800 whitespace-pre-wrap break-words"
+                                        >
+                                            {renderWhatsAppPreviewParts(tmpl.template).map((part, idx) =>
+                                                part.bold ? (
+                                                    <strong key={`${idx}-${part.text}`}>{part.text}</strong>
+                                                ) : (
+                                                    <span key={`${idx}-${part.text}`}>{part.text}</span>
+                                                )
+                                            )}
+                                        </div>
                                         <div className="text-right mt-1">
                                             <span className="text-[10px] text-gray-500">14:32 ✓✓</span>
                                         </div>
