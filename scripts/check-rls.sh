@@ -139,6 +139,54 @@ for table in "${GOVERNANCE_TABLES[@]}"; do
     fi
 done
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Special check: analytics_events INSERT policy must NOT be WITH CHECK (true)
+# ─────────────────────────────────────────────────────────────────────────────
+ANALYTICS_INSERT_FILE=""
+for (( i=${#SQL_FILES[@]}-1; i>=0; i-- )); do
+    f="${SQL_FILES[$i]}"
+    if grep -Eiq "CREATE[[:space:]]+POLICY" "$f" 2>/dev/null \
+        && grep -Eiq "ON[[:space:]]+analytics_events" "$f" 2>/dev/null \
+        && grep -Eiq "FOR[[:space:]]+INSERT" "$f" 2>/dev/null; then
+        ANALYTICS_INSERT_FILE="$f"
+        break
+    fi
+done
+
+if [[ -n "$ANALYTICS_INSERT_FILE" ]]; then
+    if awk '
+        BEGIN {
+            in_policy=0
+            is_analytics=0
+            is_insert=0
+            permissive=0
+            violation=0
+        }
+        {
+            line=tolower($0)
+            if (line ~ /create[[:space:]]+policy/) {
+                in_policy=1
+                is_analytics=0
+                is_insert=0
+                permissive=0
+            }
+            if (in_policy == 1) {
+                if (line ~ /on[[:space:]]+analytics_events/) is_analytics=1
+                if (line ~ /for[[:space:]]+insert/) is_insert=1
+                if (line ~ /with[[:space:]]+check[[:space:]]*\\([[:space:]]*true[[:space:]]*\\)/) permissive=1
+                if (line ~ /;/) {
+                    if (is_analytics == 1 && is_insert == 1 && permissive == 1) violation=1
+                    in_policy=0
+                }
+            }
+        }
+        END { exit violation ? 0 : 1 }
+    ' "$ANALYTICS_INSERT_FILE"; then
+        echo -e "${RED}❌ VIOLATION: analytics_events INSERT policy is permissive in $(basename "$ANALYTICS_INSERT_FILE")${NC}"
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+fi
+
 echo ""
 
 if [[ $VIOLATIONS -gt 0 ]]; then
