@@ -5,10 +5,12 @@
  * delegates to ProductsClient for interactive CRUD.
  */
 
-import { getConfig } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import ProductsClient from './ProductsClient'
 
 export const dynamic = 'force-dynamic'
@@ -26,12 +28,14 @@ export default async function ProductsManagerPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config, planLimits } = await getConfig()
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const { config, planLimits } = await getConfigForTenant(tenantId)
 
-    // Fetch products and categories in parallel
+    // Fetch products and categories in parallel (all scoped to auth tenant)
     const [productsData, categoriesData] = await Promise.all([
-        getAdminProductsFull({ limit: 50 }),
-        getAdminCategories({ limit: 50 }),
+        getAdminProductsFull({ limit: 50 }, scope),
+        getAdminCategories({ limit: 50 }, scope),
     ])
 
     const limitCheck = checkLimit(planLimits, 'max_products', productsData.count)

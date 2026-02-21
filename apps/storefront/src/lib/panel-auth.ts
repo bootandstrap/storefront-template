@@ -4,7 +4,7 @@
  * Shared authentication check for all Owner Panel server actions.
  * Verifies the user is authenticated and has an authorized role.
  * Returns tenantId resolved from the user's profile (DB-based — never from ENV
- * alone for tenant-bound roles like owner/admin).
+ * alone for tenant-bound roles like owner).
  */
 
 import { createClient } from '@/lib/supabase/server'
@@ -44,7 +44,7 @@ export async function requirePanelAuth(): Promise<PanelAuthResult> {
     // -----------------------------------------------------------------------
     // Tenant resolution rules:
     // - super_admin: use ENV tenant if set (for SaaS-level operations)
-    // - owner / admin: MUST have tenant_id in their profile — hard fail otherwise
+    // - owner: MUST have tenant_id in their profile — hard fail otherwise
     // -----------------------------------------------------------------------
     let tenantId: string
 

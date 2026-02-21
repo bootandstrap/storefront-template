@@ -1,10 +1,10 @@
-# Campifrut v2 — Architecture Overview
+# E-Commerce Template v2 — Architecture Overview
 
 > **Purpose**: Single source of truth for how the system works. Read `GEMINI.md` at the project root for the master guide.
 
 ## System Overview
 
-Campifrut v2 is a **SOTA SaaS-managed e-commerce template** combining:
+E-Commerce Template v2 is a **SOTA SaaS-managed e-commerce template** combining:
 - **Next.js 16** (App Router) as the storefront — SSR, Streaming, ISR
 - **Medusa.js v2** as the headless e-commerce engine (catalog, cart, checkout, orders, inventory)
 - **Supabase Cloud** as the auth, config, governance, storage, and analytics layer

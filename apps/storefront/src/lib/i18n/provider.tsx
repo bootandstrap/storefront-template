@@ -44,8 +44,8 @@ export function I18nProvider({ locale, dictionary, children }: I18nProviderProps
     const localizedHref = useCallback(
         (routeName: RouteName, ...rest: string[]) => {
             const slug = dictionary[`routes.${routeName}`] ?? CANONICAL_ROUTES[routeName]
-            const parts = ['', locale, slug, ...rest].filter(Boolean)
-            return parts.join('/') || `/${locale}`
+            const parts = [locale, slug, ...rest].filter(Boolean)
+            return `/${parts.join('/')}`
         },
         [locale, dictionary]
     )

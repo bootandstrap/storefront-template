@@ -19,11 +19,13 @@
     "@stripe/stripe-js": "^5.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
+    "framer-motion": "^12.34.0",
     "ioredis": "^5.9.2",
     "lucide-react": "^0.474.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "server-only": "^0.0.1",
     "stripe": "^17.5.0",
     "zod": "^4.3.6"

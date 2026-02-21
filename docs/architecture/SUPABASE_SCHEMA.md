@@ -9,19 +9,31 @@
 ### `tenants`
 Multi-tenant root table. Each client deployment gets one row.
 
-> **Note**: This table may not exist in all deployments. If absent, `tenant_id` is used as a plain UUID column (no FK) on other tables. This is the convention for the first client deployment (Campifrut).
+> **Note**: This table may not exist in all deployments. If absent, `tenant_id` is used as a plain UUID column (no FK) on other tables. This is the convention for the first client deployment (E-Commerce Template).
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | Default `gen_random_uuid()` |
-| `slug` | TEXT UNIQUE NOT NULL | e.g. `'campifrut'` |
+| `slug` | TEXT UNIQUE NOT NULL | e.g. `'ecommerce-template'` |
 | `name` | TEXT NOT NULL | Display name |
-| `domain` | TEXT | e.g. `'campifrut.com'` |
+| `domain` | TEXT | e.g. `'example.com'` |
 | `status` | TEXT | `'active'`, `'paused'`, `'suspended'`, `'trial'` |
 | `created_at` | TIMESTAMPTZ | Default `now()` |
 | `updated_at` | TIMESTAMPTZ | Default `now()` |
 
 RLS: Only `super_admin` has full access.
+
+### `tenant_medusa_scope`
+Explicit mapping between app tenant and Medusa operational scope.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `tenant_id` | UUID PK | Tenant UUID (one row per tenant) |
+| `medusa_sales_channel_id` | TEXT NOT NULL | Medusa sales channel id used for scoped admin calls |
+| `created_at` | TIMESTAMPTZ | Default `now()` |
+| `updated_at` | TIMESTAMPTZ | Default `now()` |
+
+RLS: Enabled, no read access for anon/authenticated (service-role only).
 
 ### `profiles`
 Extends `auth.users` with application-specific data.

@@ -8,4 +8,11 @@ Sentry.init({
 
     // Only send errors in production
     enabled: process.env.NODE_ENV === "production",
+
+    // Tag every event with tenant_id
+    initialScope: {
+        tags: {
+            tenant_id: process.env.TENANT_ID || "unknown",
+        },
+    },
 })

@@ -11,11 +11,11 @@ Este proyecto tiene **dos repositorios** que comparten una misma instancia de Su
 | Repositorio | Ruta actual | Deploy | Puerto |
 |------------|-------------|--------|--------|
 | **Template** (storefront + Medusa) | `./` (este repo) | `dominiocliente.com` | 3000 / 9000 |
-| **SuperAdmin** (panel SaaS) | `./bootandstrap-admin/` | `admin.bootandstrap.com` | 3100 |
+| **SuperAdmin** (panel SaaS) | `../BOOTANDSTRAP_WEB/` (integrado en web corporativa) | `admin.bootandstrap.com` | — |
 
 > [!NOTE]
-> El SuperAdmin Panel ya tiene su propio repositorio Git (`bootandstrap/bootandstrap-admin`).
-> Dentro del workspace de desarrollo vive en `./bootandstrap-admin/` junto al template.
+> El SuperAdmin Panel está ahora integrado en la web corporativa (`BOOTANDSTRAP_WEB/`).
+> En el workspace de desarrollo vive en `../BOOTANDSTRAP_WEB/` junto al template.
 
 ---
 
@@ -73,20 +73,17 @@ Organizada en 4 categorías:
 
 ## SuperAdmin Panel
 
-> **Estado**: ✅ Separado en repositorio propio — [`bootandstrap/bootandstrap-admin`](https://github.com/bootandstrap/bootandstrap-admin)
+> **Estado**: ✅ Integrado en web corporativa — [`BOOTANDSTRAP_WEB/`](../BOOTANDSTRAP_WEB)
 
-El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants desde un dashboard dark-theme. Solo accesible por `super_admin`.
+El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants desde un dashboard dark-theme. Solo accesible por `admin`/`staff`.
 
-**Ubicación en workspace**: `./bootandstrap-admin/`
+**Ubicación en workspace**: `../BOOTANDSTRAP_WEB/src/app/app/*`
 
 **Documentación propia**:
 
 | Documento | Contenido |
 |-----------|-----------|
-| [`bootandstrap-admin/GEMINI.md`](bootandstrap-admin/GEMINI.md) | Master guide del SuperAdmin — arquitectura, stack, features, quick start |
-| [`bootandstrap-admin/docs/ARCHITECTURE.md`](bootandstrap-admin/docs/ARCHITECTURE.md) | Data flow, auth flow, design decisions, types strategy |
-| [`bootandstrap-admin/docs/DEPLOYMENT.md`](bootandstrap-admin/docs/DEPLOYMENT.md) | Dokploy, Docker, CI/CD, resource requirements |
-| [`bootandstrap-admin/docs/QUALITY_GATES_2026-02-10.md`](bootandstrap-admin/docs/QUALITY_GATES_2026-02-10.md) | Quality gate verification results |
+| [`BOOTANDSTRAP_WEB/GEMINI.md`](../BOOTANDSTRAP_WEB/GEMINI.md) | Master guide — arquitectura, stack, features, admin panel |
 
 ### Qué controla el SuperAdmin
 
@@ -95,7 +92,7 @@ El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants
 | Dashboard | Stats globales, distribución de tenants |
 | Tenants | CRUD de clientes, filtro por status |
 | Tenant Detail | 4 tabs: feature flags, plan limits, usage, **errors** |
-| Flags | Visualización de 27 flags en 6 categorías |
+| Flags | Visualización de 37 flags en 8 categorías |
 | **Errors** | **Error Inbox global + per-tenant (resolve/resolve all)** |
 
 ---
@@ -151,7 +148,7 @@ El SuperAdmin Panel es la **app de control SaaS** que gestiona todos los tenants
 | Agregar un auth provider | `docs/flows/AUTH_FLOW.md` |
 | Entregar un proyecto a cliente | `docs/operations/CLIENT_HANDOFF.md` |
 | Consultar endpoints y actions | `docs/operations/API_REFERENCE.md` |
-| Gestionar tenants desde SaaS | `bootandstrap-admin/GEMINI.md` |
+| Gestionar tenants desde SaaS | `../BOOTANDSTRAP_WEB/GEMINI.md` |
 | Ver políticas RLS por tabla | `docs/rls-access-control.md` |
 | Rotar secretos | `docs/operations/SECRETS_ROTATION_RUNBOOK.md` |
 | Verificar calidad antes de release | `scripts/release-gate.sh` |

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** llevar `CAMPIFRUT` + `bootandstrap-admin` a una baseline de producción SOTA, corrigiendo riesgos críticos de seguridad/multi-tenant, eliminando falsos verdes de CI, y cerrando incoherencias frontend (visuales, funcionales e i18n) en ambas webs.
+**Goal:** llevar `ecommerce-template` + `bootandstrap-admin` a una baseline de producción SOTA, corrigiendo riesgos críticos de seguridad/multi-tenant, eliminando falsos verdes de CI, y cerrando incoherencias frontend (visuales, funcionales e i18n) en ambas webs.
 
 **Architecture:** ejecutar en 5 olas: (1) estabilidad de gates y builds determinísticos, (2) hardening de seguridad RLS real, (3) coherencia frontend/i18n/SEO, (4) escalabilidad UX del SuperAdmin, (5) contratos y operación dual-repo.
 
@@ -13,7 +13,7 @@
 ## Baseline técnico verificado (2026-02-10)
 
 - `bootandstrap-admin`: `pnpm lint && pnpm type-check && pnpm test:run && pnpm build` -> PASS.
-- `CAMPIFRUT`: `pnpm lint && pnpm type-check && pnpm test:run && pnpm build` -> PASS global, pero con deuda real.
+- `ecommerce-template`: `pnpm lint && pnpm type-check && pnpm test:run && pnpm build` -> PASS global, pero con deuda real.
 - `apps/medusa build`: devuelve `exit 0` pero imprime `TypeError ... tsconfig-paths` cuando `NODE_ENV` no es `production` (falso verde).
 - `scripts/ops/dual-repo-release-gate.sh`: falla con `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL ... EACCES` por invocación de `pnpm -C ... turbo ...`.
 - `scripts/check-migration-order.sh`: falla por 30+ policies no idempotentes.
@@ -312,7 +312,7 @@ git commit -m "frontend: make superadmin layout responsive and reduce inline sty
 ### Task 10: Contrato de esquema compartido entre repos (evitar drift)
 
 **Files:**
-- Create: `CAMPIFRUT/packages/shared/src/supabase-contract.ts`
+- Create: `ecommerce-template/packages/shared/src/supabase-contract.ts`
 - Modify: `bootandstrap-admin/src/lib/validation.ts`
 - Create: `bootandstrap-admin/src/lib/__tests__/supabase-contract-compat.test.ts`
 - Modify: `docs/architecture/SUPABASE_SCHEMA.md`
@@ -327,13 +327,13 @@ git commit -m "frontend: make superadmin layout responsive and reduce inline sty
 Run:
 ```bash
 pnpm -C bootandstrap-admin test:run
-pnpm -C CAMPIFRUT turbo type-check
+pnpm -C ecommerce-template turbo type-check
 ```
 Expected: PASS y drift detectado automáticamente.
 
 **Step 5: Commit**
 ```bash
-git add CAMPIFRUT/packages/shared/src/supabase-contract.ts bootandstrap-admin/src/lib/validation.ts bootandstrap-admin/src/lib/__tests__/supabase-contract-compat.test.ts docs/architecture/SUPABASE_SCHEMA.md
+git add ecommerce-template/packages/shared/src/supabase-contract.ts bootandstrap-admin/src/lib/validation.ts bootandstrap-admin/src/lib/__tests__/supabase-contract-compat.test.ts docs/architecture/SUPABASE_SCHEMA.md
 git commit -m "architecture: enforce cross-repo supabase schema contract"
 ```
 
@@ -405,7 +405,7 @@ git commit -m "docs: publish v10 dual-repo production baseline and remove stale 
 1. `bash scripts/ops/dual-repo-release-gate.sh` ejecuta sin `EACCES` y falla solo por deuda real.
 2. `bash scripts/check-migration-order.sh && bash scripts/check-rls.sh` PASS.
 3. `NODE_ENV=production pnpm -C apps/medusa build` sin stack trace crítico.
-4. `pnpm -C CAMPIFRUT lint && pnpm -C CAMPIFRUT type-check && pnpm -C CAMPIFRUT test:run && pnpm -C CAMPIFRUT build` PASS.
+4. `pnpm -C ecommerce-template lint && pnpm -C ecommerce-template type-check && pnpm -C ecommerce-template test:run && pnpm -C ecommerce-template build` PASS.
 5. `pnpm -C bootandstrap-admin lint && pnpm -C bootandstrap-admin type-check && pnpm -C bootandstrap-admin test:run && pnpm -C bootandstrap-admin build` PASS.
 6. Navegación i18n consistente (links + rewrites + sitemap/robots + html lang) validada por tests.
 7. SuperAdmin usable en móvil y escritorio sin degradación funcional.

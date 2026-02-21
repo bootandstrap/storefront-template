@@ -8,7 +8,7 @@
  */
 
 import { useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { Package, Plus, Search, X, Layers, ChevronDown, ChevronUp, Upload, Trash2, ImageIcon } from 'lucide-react'
 import { createProduct, updateProduct, removeProduct, uploadProductImage, removeProductImage } from '../productos/actions'
@@ -62,6 +62,8 @@ interface CatalogLabels {
     create: string
     delete: string
     edit: string
+    previous: string
+    next: string
     maxReached: string
     images: string
     dropzone: string
@@ -81,6 +83,11 @@ interface Props {
     categoryCount: number
     maxCategories: number
     canAddCategory: boolean
+    currentPage: number
+    pageSize: number
+    initialSearch: string
+    initialStatus: 'all' | 'published' | 'draft'
+    initialTab: 'productos' | 'categorias'
     defaultCurrency: string
     labels: CatalogLabels
 }
@@ -99,23 +106,28 @@ export default function CatalogClient({
     categoryCount,
     maxCategories,
     canAddCategory,
+    currentPage,
+    pageSize,
+    initialSearch,
+    initialStatus,
+    initialTab,
     defaultCurrency,
     labels,
 }: Props) {
     const router = useRouter()
+    const pathname = usePathname()
     const searchParams = useSearchParams()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
 
-    // Tab state (from URL or default)
-    const initialTab = searchParams.get('tab') === 'categorias' ? 'categorias' : 'productos'
+    // Tab state (server-driven initial value)
     const [activeTab, setActiveTab] = useState<'productos' | 'categorias'>(initialTab)
 
     // -------------------------------------------------------------------------
     // Product state
     // -------------------------------------------------------------------------
-    const [search, setSearch] = useState('')
-    const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
+    const [search, setSearch] = useState(initialSearch)
+    const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>(initialStatus)
     const [showProductForm, setShowProductForm] = useState(false)
     const [editingProduct, setEditingProduct] = useState<AdminProductFull | null>(null)
     const [productError, setProductError] = useState<string | null>(null)
@@ -136,6 +148,32 @@ export default function CatalogClient({
     const [categoryError, setCategoryError] = useState<string | null>(null)
     const [catName, setCatName] = useState('')
     const [catDescription, setCatDescription] = useState('')
+
+    const totalPages = Math.max(1, Math.ceil(productCount / pageSize))
+    const canGoPrev = currentPage > 1
+    const canGoNext = currentPage < totalPages
+
+    const updateQuery = (updates: Record<string, string | undefined>) => {
+        const next = new URLSearchParams(searchParams.toString())
+        for (const [key, value] of Object.entries(updates)) {
+            if (!value) {
+                next.delete(key)
+            } else {
+                next.set(key, value)
+            }
+        }
+        const query = next.toString()
+        router.push(query ? `${pathname}?${query}` : pathname)
+    }
+
+    const applyProductSearch = () => {
+        const q = search.trim()
+        updateQuery({
+            q: q || undefined,
+            page: '1',
+            tab: 'productos',
+        })
+    }
 
     // -------------------------------------------------------------------------
     // Product helpers
@@ -272,11 +310,7 @@ export default function CatalogClient({
         e.target.value = '' // reset for re-upload
     }
 
-    const filtered = products.filter(p => {
-        const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase())
-        const matchesStatus = statusFilter === 'all' || p.status === statusFilter
-        return matchesSearch && matchesStatus
-    })
+    const filtered = products
 
     // -------------------------------------------------------------------------
     // Category helpers
@@ -351,7 +385,10 @@ export default function CatalogClient({
             {/* Tabs */}
             <div className="flex gap-1 rounded-xl border border-surface-3 overflow-hidden w-fit">
                 <button
-                    onClick={() => setActiveTab('productos')}
+                    onClick={() => {
+                        setActiveTab('productos')
+                        updateQuery({ tab: 'productos' })
+                    }}
                     className={`px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'productos'
                         ? 'bg-primary text-white'
                         : 'text-text-secondary hover:bg-surface-1'
@@ -362,7 +399,10 @@ export default function CatalogClient({
                     <span className="text-xs opacity-70">({productCount})</span>
                 </button>
                 <button
-                    onClick={() => setActiveTab('categorias')}
+                    onClick={() => {
+                        setActiveTab('categorias')
+                        updateQuery({ tab: 'categorias' })
+                    }}
                     className={`px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'categorias'
                         ? 'bg-primary text-white'
                         : 'text-text-secondary hover:bg-surface-1'
@@ -404,6 +444,9 @@ export default function CatalogClient({
                                 placeholder={labels.searchPlaceholder}
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') applyProductSearch()
+                                }}
                                 className={`${inputClass} pl-10`}
                             />
                         </div>
@@ -411,7 +454,14 @@ export default function CatalogClient({
                             {(['all', 'published', 'draft'] as const).map(s => (
                                 <button
                                     key={s}
-                                    onClick={() => setStatusFilter(s)}
+                                    onClick={() => {
+                                        setStatusFilter(s)
+                                        updateQuery({
+                                            status: s === 'all' ? undefined : s,
+                                            page: '1',
+                                            tab: 'productos',
+                                        })
+                                    }}
                                     className={`px-3 py-2 text-sm font-medium transition-colors ${statusFilter === s
                                         ? 'bg-primary text-white'
                                         : 'text-text-secondary hover:bg-surface-1'
@@ -548,6 +598,29 @@ export default function CatalogClient({
                                     </div>
                                 )
                             })}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {productCount > pageSize && (
+                        <div className="flex items-center justify-between pt-2">
+                            <button
+                                onClick={() => updateQuery({ page: String(currentPage - 1), tab: 'productos' })}
+                                disabled={!canGoPrev}
+                                className="btn btn-ghost disabled:opacity-50"
+                            >
+                                {labels.previous}
+                            </button>
+                            <p className="text-sm text-text-muted">
+                                {currentPage} / {totalPages}
+                            </p>
+                            <button
+                                onClick={() => updateQuery({ page: String(currentPage + 1), tab: 'productos' })}
+                                disabled={!canGoNext}
+                                className="btn btn-ghost disabled:opacity-50"
+                            >
+                                {labels.next}
+                            </button>
                         </div>
                     )}
 

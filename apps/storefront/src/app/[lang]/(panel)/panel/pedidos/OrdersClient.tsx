@@ -11,7 +11,7 @@
  */
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import {
     Package, Search, ChevronDown, ChevronUp, MapPin, CreditCard,
@@ -49,11 +49,17 @@ interface OrderLabels {
     fulfilled: string
     notFulfilled: string
     back: string
+    previous: string
+    next: string
 }
 
 interface Props {
     orders: AdminOrderFull[]
     totalCount: number
+    currentPage: number
+    pageSize: number
+    initialSearch: string
+    initialStatus: StatusFilter
     lang: string
     labels: OrderLabels
 }
@@ -111,26 +117,54 @@ function formatDate(dateStr: string): string {
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'canceled'
 
-export default function OrdersClient({ orders, totalCount, lang: _lang, labels }: Props) {
+export default function OrdersClient({
+    orders,
+    totalCount,
+    currentPage,
+    pageSize,
+    initialSearch,
+    initialStatus,
+    lang: _lang,
+    labels,
+}: Props) {
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
 
-    const [filter, setFilter] = useState<StatusFilter>('all')
-    const [search, setSearch] = useState('')
+    const [filter, setFilter] = useState<StatusFilter>(initialStatus)
+    const [search, setSearch] = useState(initialSearch)
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+    const canGoPrev = currentPage > 1
+    const canGoNext = currentPage < totalPages
 
-    // Client-side filtering
-    const filtered = orders.filter(order => {
-        const matchesFilter = filter === 'all' || order.status === filter
-        const matchesSearch = !search || (
-            `#${order.display_id}`.includes(search) ||
-            (order.customer?.email?.toLowerCase() ?? '').includes(search.toLowerCase()) ||
-            (`${order.customer?.first_name ?? ''} ${order.customer?.last_name ?? ''}`).toLowerCase().includes(search.toLowerCase())
-        )
-        return matchesFilter && matchesSearch
-    })
+    const updateQuery = (updates: Record<string, string | undefined>) => {
+        const next = new URLSearchParams(searchParams.toString())
+        for (const [key, value] of Object.entries(updates)) {
+            if (!value) {
+                next.delete(key)
+            } else {
+                next.set(key, value)
+            }
+        }
+        const query = next.toString()
+        router.push(query ? `${pathname}?${query}` : pathname)
+    }
+
+    const applySearch = () => {
+        const q = search.trim()
+        updateQuery({
+            q: q || undefined,
+            page: '1',
+        })
+    }
+
+    const goToPage = (page: number) => {
+        updateQuery({ page: String(page) })
+    }
 
     const handleFulfill = (orderId: string) => {
         if (!confirm(labels.fulfillConfirm)) return
@@ -195,7 +229,13 @@ export default function OrdersClient({ orders, totalCount, lang: _lang, labels }
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
-                            onClick={() => setFilter(tab.key)}
+                            onClick={() => {
+                                setFilter(tab.key)
+                                updateQuery({
+                                    status: tab.key === 'all' ? undefined : tab.key,
+                                    page: '1',
+                                })
+                            }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === tab.key
                                 ? 'bg-white dark:bg-surface-2 shadow-sm text-primary'
                                 : `text-text-muted hover:text-text-secondary ${tab.color}`
@@ -211,6 +251,9 @@ export default function OrdersClient({ orders, totalCount, lang: _lang, labels }
                     <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') applySearch()
+                        }}
                         placeholder={labels.searchPlaceholder}
                         className="pl-9 pr-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all w-full sm:w-64"
                     />
@@ -218,14 +261,14 @@ export default function OrdersClient({ orders, totalCount, lang: _lang, labels }
             </div>
 
             {/* Orders list */}
-            {filtered.length === 0 ? (
+            {orders.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
                     <div className="text-5xl mb-4">📦</div>
                     <p className="text-text-muted text-lg">{labels.noOrders}</p>
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {filtered.map(order => {
+                    {orders.map(order => {
                         const isExpanded = expandedId === order.id
                         const customerName = [order.customer?.first_name, order.customer?.last_name].filter(Boolean).join(' ') || order.email || '—'
 
@@ -430,6 +473,29 @@ export default function OrdersClient({ orders, totalCount, lang: _lang, labels }
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalCount > pageSize && (
+                <div className="flex items-center justify-between pt-2">
+                    <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={!canGoPrev}
+                        className="btn btn-ghost disabled:opacity-50"
+                    >
+                        {labels.previous}
+                    </button>
+                    <p className="text-sm text-text-muted">
+                        {currentPage} / {totalPages}
+                    </p>
+                    <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={!canGoNext}
+                        className="btn btn-ghost disabled:opacity-50"
+                    >
+                        {labels.next}
+                    </button>
                 </div>
             )}
         </>

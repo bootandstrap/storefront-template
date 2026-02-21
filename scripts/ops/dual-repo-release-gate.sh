@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# dual-repo-release-gate.sh — Unified quality gate for CAMPIFRUT + SuperAdmin
+# dual-repo-release-gate.sh — Unified quality gate for ecommerce-template + SuperAdmin
 # ============================================================================
 # Runs all verification commands for both repositories in sequence.
 # Designed for pre-release validation.
@@ -18,9 +18,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Assumes this script lives in CAMPIFRUT/scripts/ops/
-CAMPIFRUT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-ADMIN_DIR="$(cd "$CAMPIFRUT_DIR/../bootandstrap-admin" && pwd 2>/dev/null)" || ADMIN_DIR=""
+# Assumes this script lives in ecommerce-template/scripts/ops/
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ADMIN_DIR="$(cd "$TEMPLATE_DIR/../BOOTANDSTRAP_WEB" && pwd 2>/dev/null)" || ADMIN_DIR=""
 
 # Colors
 RED='\033[0;31m'
@@ -76,18 +76,18 @@ echo -e "${BOLD}  Dual-Repo Production Release Gate${NC}"
 echo -e "${BOLD}════════════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# ── CAMPIFRUT ──────────────────────────────────────────────────
-echo -e "${BOLD}📦 CAMPIFRUT (Template + Medusa)${NC}"
-echo -e "   ${YELLOW}$CAMPIFRUT_DIR${NC}"
+# ── ecommerce-template ──────────────────────────────────────────────────
+echo -e "${BOLD}📦 ecommerce-template (Template + Medusa)${NC}"
+echo -e "   ${YELLOW}$TEMPLATE_DIR${NC}"
 echo ""
 
-gate "Storefront Lint"        pnpm -C "$CAMPIFRUT_DIR" exec turbo lint --filter=storefront
-gate "Storefront Type Check"  pnpm -C "$CAMPIFRUT_DIR" exec turbo type-check
-gate "Storefront Unit Tests"  pnpm -C "$CAMPIFRUT_DIR" --filter=storefront test:run
-gate "Storefront Build"       pnpm -C "$CAMPIFRUT_DIR" exec turbo build --filter=storefront
-gate "Migration Check"        bash "$CAMPIFRUT_DIR/scripts/check-migration-order.sh"
-gate "RLS Policy Check"       bash "$CAMPIFRUT_DIR/scripts/check-rls.sh"
-gate "Audit Policy"           bash "$CAMPIFRUT_DIR/scripts/check-audit-waiver.sh"
+gate "Storefront Lint"        pnpm -C "$TEMPLATE_DIR" exec turbo lint --filter=storefront
+gate "Storefront Type Check"  pnpm -C "$TEMPLATE_DIR" exec turbo type-check
+gate "Storefront Unit Tests"  pnpm -C "$TEMPLATE_DIR" --filter=storefront test:run
+gate "Storefront Build"       pnpm -C "$TEMPLATE_DIR" exec turbo build --filter=storefront
+gate "Migration Check"        bash "$TEMPLATE_DIR/scripts/check-migration-order.sh"
+gate "RLS Policy Check"       bash "$TEMPLATE_DIR/scripts/check-rls.sh"
+gate "Audit Policy"           bash "$TEMPLATE_DIR/scripts/check-audit-waiver.sh"
 
 echo ""
 

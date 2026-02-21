@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 12 Feb 2026 (post Production Remediation — RLS hardening, Error Inbox, release gate 7/7 PASS).
+> **Read this first.** Master guide for AI agents and developers. Updated 20 Feb 2026 (Production Readiness Remediation: tenant-scoped limits, chat anti-abuse, fail-closed webhook, analytics funnel, 5 production contracts).
 
 ## What This Is
 
@@ -12,26 +12,27 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 | **Owner Panel** (Client — embedded in storefront) | Business owner | Catalog (products + categories + images via Medusa), orders (fulfill/cancel), customers (read-only), carousel, WhatsApp templates, CMS pages, store config, analytics |
 | **Template Storefront** (Public — Next.js) | End users | Reads config + flags → renders conditionally |
 
-**First client**: Campifrut (fruit delivery) — but every design choice must be template-agnostic.
+**First client**: E-Commerce Template (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Production-hardened after SOTA Remediation Plan (v10). See *Verified Quality Baseline* below.
+**Current state**: Production-hardened after SOTA Remediation Plan (v10) + SOTA UI Audit (13 Feb 2026) + Deep Dive Sprints A–D (15 Feb 2026) + Production Readiness Remediation (20 Feb 2026). See *Verified Quality Baseline* below.
 
-### Verified Quality Baseline (12 Feb 2026 — post-remediation)
+### Verified Quality Baseline (20 Feb 2026 — post Production Readiness Remediation)
 
 | Gate | Command | Result |
 |------|---------|--------|
-| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 208 tests, 20 files (vitest) |
+| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 312 tests, 37 files (vitest) — includes 5 production contract suites |
 | **Unit Tests (admin)** | `pnpm test:run` | ✅ 22 tests, 3 files (vitest) |
 | **Release Gate** | `bash scripts/release-gate.sh` | ✅ 7/7 PASS |
 | **Build** | `pnpm build` | ✅ Storefront builds cleanly |
-| **Tenant isolation** | code audit | ✅ Server-only `TENANT_ID`, service-role config fetch |
-| **Webhook idempotency** | `stripe_webhook_events` table | ✅ Atomic `claimEvent` upsert (no race conditions) |
+| **Tenant isolation** | code audit | ✅ Server-only `TENANT_ID`, service-role config fetch, `sales_channel_id` scoped queries |
+| **Webhook idempotency** | `stripe_webhook_events` table | ✅ Atomic `claimEvent` upsert — **fail-closed** on DB error (forces Stripe retry) |
+| **Production contracts** | 5 test suites | ✅ Checkout multi-method, Chat anti-abuse, Owner Lite gating, Webhook idempotency, Revalidation governance |
 | **SuperAdmin validation** | Zod schemas | ✅ All mutations validated + audit logged (including `createTenant`) |
 | **Owner Panel validation** | Zod schemas | ✅ All 8 action modules validated (carrusel, mensajes, paginas, tienda, insignias, productos, categorias, pedidos) |
 | **Rate limiting** | Redis + fallback | ✅ `rate-limit-redis.ts` with INCR+PEXPIRE pipeline |
 | **Dep audit** | `pnpm audit` | ⚠️ 1 moderate (esbuild, Medusa transitive, dev-only) |
 | **Lint** | `pnpm lint` | ⚠️ Pre-existing warnings (non-blocking) |
-| **Type Check** | `pnpm type-check` | ⚠️ `@campifrut/shared` needs `@types/node` |
+| **Type Check** | `pnpm type-check` | ⚠️ `@ecommerce-template/shared` needs `@types/node` |
 | **Lighthouse Performance** | Lighthouse CLI | 🔵 70 (LCP 6.5s, TBT 190ms — optimize pending) |
 | **Lighthouse Accessibility** | Lighthouse CLI | ✅ 93 → fixes applied (contrast, landmarks) |
 | **Lighthouse Best Practices** | Lighthouse CLI | ✅ 92 |
@@ -39,7 +40,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **Repositories**:
 - **Template** (storefront + Medusa): [bootandstrap/bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce)
-- **SuperAdmin** (SaaS control plane): [bootandstrap/bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin)
+- **SuperAdmin** (SaaS control plane, integrated into corporate website): [BOOTANDSTRAP_WEB](../BOOTANDSTRAP_WEB)
 
 ---
 
@@ -66,8 +67,8 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │                   Supabase Cloud                          │
 │                                                           │
 │  Auth │ PostgreSQL (public schema only)       │ Storage   │
-│       │ config │ feature_flags │ plan_limits   │ CDN      │
-│       │ profiles │ whatsapp_templates          │          │
+│       │ config │ feature_flags │ plan_limits   │          │
+│       │ plan_presets │ profiles │ whatsapp_templates │     │
 │       │ audit_log │ stripe_webhook_events      │          │
 │       │ tenant_errors                           │          │
 └──────────────────────────────────────────────────────────┘
@@ -80,7 +81,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 1. **Template-First** — Every UI component and feature must work for ANY business type, not just one client
 2. **3-Tier Governance** — Admin Panel (SaaS) → Owner Panel (Medusa) → Template (Storefront)
-3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist). `tenant_id` is a plain UUID column (no FK to a `tenants` table) for multi-tenant scoping
+3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist). `tenant_id` is a UUID column scoped to the `tenants` table for multi-tenant governance
 4. **Supabase Auth is King** — All user auth via Supabase. Medusa validates Supabase JWTs
 5. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, carousels, CMS, analytics — all toggleable remotely
 6. **Plan Limits Enforce SaaS Tiers** — `max_products`, `max_customers`, `max_orders_month`, etc.
@@ -111,7 +112,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 ## Project Structure
 
 ```
-campifrut/
+ecommerce-template/
 ├── apps/
 │   ├── storefront/              # Next.js 16 (App Router)
 │   │   ├── src/
@@ -137,7 +138,7 @@ campifrut/
 │   │   │   │   │   │   ├── login/       # Login (flag-driven providers)
 │   │   │   │   │   │   └── registro/    # Registration (gated by flags + limits)
 │   │   │   │   │   └── (panel)/         # Owner panel (auth-guarded: owner/super_admin)
-│   │   │   │   │       └── panel/       # 5 fixed + 4 flag-gated modules:
+│   │   │   │   │       └── panel/       # 5 fixed + 5 flag-gated modules:
 │   │   │   │   │           ├── page.tsx          # Dashboard (stats + recent orders)
 │   │   │   │   │           ├── loading.tsx       # ✅ Generic panel loading skeleton
 │   │   │   │   │           ├── catalogo/         # ✅ Unified catalog (products + categories tabs)
@@ -150,7 +151,9 @@ campifrut/
 │   │   │   │   │           ├── mensajes/         # WhatsApp templates (flag-gated)
 │   │   │   │   │           ├── insignias/        # Product badges (via catalogo redirect)
 │   │   │   │   │           ├── paginas/          # CMS pages (flag-gated)
-│   │   │   │   │           └── analiticas/       # Analytics (flag-gated)
+│   │   │   │   │           ├── analiticas/       # Analytics (flag-gated)
+│   │   │   │   │           ├── chatbot/          # ChatbotPRO config (flag-gated)
+│   │   │   │   │           └── devoluciones/     # Return requests (flag-gated)
 │   │   │   │   ├── api/webhooks/stripe/  # ✅ Idempotent Stripe webhook (dedup via stripe_webhook_events)
 │   │   │   │   ├── api/orders/lookup/    # ✅ Rate-limited guest order lookup
 │   │   │   │   ├── api/health/           # ✅ Health check (Docker + monitoring)
@@ -163,16 +166,17 @@ campifrut/
 │   │   │   │   ├── checkout/    # Multi-step CheckoutModal, Stripe/Bank/COD/WhatsApp flows
 │   │   │   │   ├── cart/        # CartDrawer, CartItem
 │   │   │   │   ├── account/     # AddressCard, AddressModal, AvatarUpload, ReorderButton
-│   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary
-│   │   │   │   └── home/        # HeroSection, CategoryGrid, FeaturedProducts, TrustSection
+│   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary, ScrollReveal
+│   │   │   │   └── home/        # HeroSection, CategoryGrid, FeaturedProducts, TrustSection, HeroCarousel
 │   │   │   ├── contexts/        # CartContext (with drawer state)
 │   │   │   └── lib/
 │   │   │       ├── i18n/        # ✅ Dictionary-based i18n system
 │   │   │       │   ├── index.ts     # getDictionary(), createTranslator(), slug helpers
 │   │   │       │   ├── locale.ts    # Locale resolution (URL → cookie → Accept-Language → config)
 │   │   │       │   ├── currencies.ts# Multi-currency: formatPrice(), resolution, cookie
+│   │   │       │   ├── error-strings.ts # ✅ Lightweight i18n fallback for error pages (5 locales)
 │   │   │       │   └── provider.tsx # I18nProvider context (t(), localizedHref())
-│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (485+ keys each)
+│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (620+ keys each)
 │   │   │       ├── supabase/    # Browser + Server + Admin (service-role) clients
 │   │   │       │   ├── server.ts     # SSR client (cookies-based)
 │   │   │       │   ├── browser.ts    # Client-side client
@@ -183,9 +187,10 @@ campifrut/
 │   │   │       │   └── auth-medusa.ts # Authenticated fetcher (Supabase JWT → Medusa Store API)
 │   │   │       ├── seo/         # JSON-LD builders (Product, Org, Breadcrumb)
 │   │   │       ├── whatsapp/    # Template engine + message builder
-│   │   │       ├── config.ts    # ✅ getConfig() — service-role admin client, in-memory TTL cache (5 min)
+│   │   │       ├── config.ts    # ✅ getConfig() — service-role admin client, in-memory TTL cache (5 min), _degraded flag, trialDaysRemaining
 │   │   │       ├── features.ts  # isFeatureEnabled(flag)
 │   │   │       ├── limits.ts    # checkLimit(resource, count)
+│   │   │       ├── analytics-server.ts # ✅ Server-side emitServerEvent() for checkout + webhook flows
 │   │   │       └── payment-methods.ts  # Dynamic payment method registry
 │   │   └── proxy.ts             # Next.js 16 proxy (auth + locale slugs + role protection)
 │   │
@@ -197,10 +202,10 @@ campifrut/
 │       │   ├── api/             # Custom API routes
 │       │   ├── workflows/       # Custom workflows (WhatsApp checkout)
 │       │   ├── subscribers/     # Event handlers (order.placed, etc.)
-│       │   └── scripts/seed.ts  # ✅ Campifrut seed (13 products, 5 categories)
+│       │   └── scripts/seed.ts  # ✅ E-Commerce Template seed (13 products, 5 categories)
 │       └── medusa-config.ts     # ✅ Configured with both providers
 │
-├── packages/shared/             # @campifrut/shared types + constants
+├── packages/shared/             # @ecommerce-template/shared types + constants
 ├── supabase/migrations/         # ✅ SQL migrations (stripe_webhook_events, audit_log, tenant_errors)
 ├── docs/                        # Architecture, flows, guides, operations, plans
 ├── scripts/                     # release-gate.sh, check-rls.sh
@@ -221,11 +226,14 @@ Every page streams independent sections. Users never see a blank screen:
 layout.tsx → getConfig() blocks (required for theme CSS vars)
   └── page.tsx
         ├── <HeroSection />         — instant (from cached config)
-        ├── <Suspense fallback={<CategoryGridSkeleton/>}>
+        ├── <ScrollReveal>
+        │   <Suspense fallback={<CategoryGridSkeleton/>}>
         │     <CategoryGrid />      — async (Medusa categories)
-        ├── <Suspense fallback={<ProductGridSkeleton/>}>
+        ├── <ScrollReveal delay={100}>
+        │   <Suspense fallback={<ProductGridSkeleton/>}>
         │     <FeaturedProducts />   — async (Medusa products)
-        └── <TrustSection />         — static, instant
+        └── <ScrollReveal delay={200}>
+              <TrustSection />      — static, instant, card-lift hover
 ```
 
 ### Caching & Rendering Strategy
@@ -247,11 +255,15 @@ On-demand revalidation: `revalidateConfig()` clears `globalThis.__configCache` +
 
 ```
 Medusa API down → Products show fallback empty state / error boundary with retry
-Supabase down   → App shows hardcoded fallback config
+Supabase down   → App shows hardcoded fallback config + amber degraded banner
 WhatsApp        → Always works (client-side wa.me redirect)
 ```
 
-Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` component with retry. `logTenantError()` sends errors to `tenant_errors` table for SuperAdmin's Error Inbox.
+Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` component with retry and i18n `labels` prop. Error pages use `error-strings.ts` for lightweight 5-locale fallback (no context dependency). `logTenantError()` sends errors to `tenant_errors` table for SuperAdmin's Error Inbox.
+
+**Degraded mode**: When Supabase is unreachable, `getConfig()` returns `FALLBACK_CONFIG` with `_degraded: true`. Layout shows an amber warning banner in production: *"Configuración en modo degradado"*.
+
+**Trial enforcement**: When `tenantStatus === 'trial'`, `getConfig()` computes `trialDaysRemaining` from `plan_limits.plan_expires_at`. Layout shows a blue countdown banner. When trial expires, tenant is auto-paused.
 
 ### SEO Structured Data
 
@@ -262,7 +274,7 @@ Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` 
 
 ### Toast Notification System
 
-Portal-based `<Toaster>` with auto-dismiss, stacking, and slide animations:
+Portal-based `<Toaster>` positioned **top-right** (z-index 70) with auto-dismiss, stacking, and slide animations. Moved from bottom-right to prevent overlap with cart footer buttons:
 ```tsx
 const { success, error } = useToast()
 success('Añadido al carrito')
@@ -296,6 +308,15 @@ Every UI feature checks a flag before rendering. To disable a feature for a clie
 | `enable_multi_language` | Multi-language support (language selector in header) |
 | `enable_multi_currency` | Multi-currency support (currency selector in header) |
 | `enable_admin_api` | External admin API access |
+| `enable_newsletter` | Newsletter subscription |
+| `enable_product_comparisons` | Product comparison page |
+| `enable_chatbot` | ChatbotPRO AI assistant |
+| `enable_self_service_returns` | Customer-initiated return requests |
+| `enable_owner_panel` | Owner Panel access |
+| `enable_product_badges` | Badge display on product cards |
+| `enable_cookie_consent` | Cookie consent banner |
+| `owner_lite_enabled` | Simplified Owner Panel (hides advanced modules) |
+| `owner_advanced_modules_enabled` | Advanced panel modules (carousel, WhatsApp, CMS, analytics, chatbot, returns) |
 
 ### Plan Limits (`plan_limits` table)
 
@@ -305,7 +326,7 @@ Enforce SaaS tier restrictions at the application level:
 |-------|---------|----------------|
 | `max_products` | 100 | Medusa admin product creation |
 | `max_customers` | 100 | Registration endpoint |
-| `max_orders_month` | 500 | Checkout flow |
+| `max_orders_month` | 500 | Checkout flow (tenant-scoped via `sales_channel_id`) |
 | `max_categories` | 20 | Category creation |
 | `max_images_per_product` | 10 | Image upload |
 | `max_cms_pages` | 10 | CMS page creation |
@@ -500,10 +521,33 @@ default_currency TEXT DEFAULT 'usd'      -- Fallback currency
 | **Glassmorphism** | `.glass` / `.glass-strong` utilities — frosted header, cards, modals |
 | **Product cards** | `.product-card` — hover lift + shadow + border glow + badge support |
 | **Image fallbacks** | Template-agnostic gradient + SVG icon when product has no image |
-| **Buttons** | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-whatsapp` |
+| **Buttons** | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-whatsapp`, `.btn-danger` |
+| **Form inputs** | `.input` — consistent styling for text inputs, selects |
 | **Skeletons** | Shimmer animation via CSS `@keyframes`, reusable `<Skeleton>` component |
-| **Micro-animations** | Cart badge pulse, scroll-reveal stagger, button ripple |
+| **Micro-animations** | Cart badge pulse, scroll-reveal stagger (`ScrollReveal` component), button ripple, `card-lift` hover, `count-bump` quantity change |
+| **Section dividers** | `.section-divider` — gradient `<hr>` between homepage sections |
+| **Touch targets** | `.touch-target` — WCAG 2.5.5 minimum 44px enforcer |
+| **Safe area** | `.safe-area-bottom` — iOS notch/toolbar padding (CheckoutModal, WhatsApp CTA) |
+| **Accessibility** | `prefers-reduced-motion` media query disables all animations |
 | **Product badges** | `product.metadata.badges[]` — managed by Owner Panel, rendered by template |
+
+### Z-Index Layering System
+
+The storefront uses a well-defined z-index hierarchy to prevent overlay conflicts:
+
+| Layer | z-index | Element | Notes |
+|-------|---------|---------|-------|
+| **WhatsApp Float** | 40 | `.whatsapp-float` | Hidden via `body.drawer-open` class |
+| **Cart Drawer** | 50 | `CartDrawer` | Adds `drawer-open` to `<body>` on open |
+| **Checkout Modal** | 60 | `CheckoutModal` | Adds `drawer-open` to `<body>` on open |
+| **Toast** | 70 | `Toaster` | Always visible, top-right position |
+
+The `body.drawer-open` CSS class is managed by `CartDrawer`, `CheckoutModal`, and `Header` (mobile menu). When active, it hides the WhatsApp float CTA to prevent overlap.
+
+```css
+/* globals.css */
+body.drawer-open .whatsapp-float { display: none; }
+```
 
 ---
 
@@ -532,15 +576,15 @@ cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
 
 `dev.sh` handles: Redis in Docker → symlinks `.env` → starts Medusa, Storefront & SuperAdmin in parallel.
 
-> **Note**: `dev.sh` auto-detects the `bootandstrap-admin` directory at `../bootandstrap-admin` and starts it as step 4/4. If the directory is missing, it skips this step gracefully. The SuperAdmin panel requires its own `.env.local` with Supabase credentials (same project, same keys).
+> **Note**: The SuperAdmin panel is now integrated into the corporate website (`BOOTANDSTRAP_WEB`). Start it separately with `cd ../BOOTANDSTRAP_WEB && pnpm dev`.
 
 ### Development Credentials
 
 | # | Panel | URL | Email | Password | Role |
 |---|-------|-----|-------|----------|------|
 | 1 | **Medusa Admin** | `localhost:9000/app` | `admin@medusajs.com` | `supersecret` | Medusa admin (product/order mgmt) |
-| 2 | **SuperAdmin + Storefront** | `localhost:3100` / `localhost:3000` | `admin@campifrut.com` | `Admin1234!` | `super_admin` (SaaS control plane + Owner Panel) |
-| 3 | **Storefront** | `localhost:3000` | `test@campifrut.com` | `Admin1234!` | `customer` (test buyer) |
+| 2 | **SuperAdmin + Storefront** | `localhost:3100` / `localhost:3000` | `admin@example.com` | `Admin1234!` | `super_admin` (SaaS control plane + Owner Panel) |
+| 3 | **Storefront** | `localhost:3000` | `test@example.com` | `Admin1234!` | `customer` (test buyer) |
 
 > **Note**: User #1 is a Medusa-native user (created by `medusa db seed`). Users #2 and #3 are Supabase Auth users managed from the [Supabase Dashboard](https://supabase.com/dashboard/project/fopjqjoxwelmrrfowbmv/auth/users). After login, `super_admin`/`owner` roles redirect to `/panel` (Owner Panel), `customer` role redirects to `/cuenta` (Customer Dashboard).
 
@@ -550,7 +594,7 @@ cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
 docker compose up redis -d
 cd apps/medusa && pnpm dev &
 cd apps/storefront && pnpm dev &
-cd ../bootandstrap-admin && pnpm dev &  # SuperAdmin on :3100
+cd ../BOOTANDSTRAP_WEB && pnpm dev &  # SuperAdmin (integrated in corporate site)
 ```
 
 ### Build
@@ -570,14 +614,14 @@ git push main → Dokploy webhook → Docker Compose build → Health checks →
 ```
 
 Domains via Dokploy:
-- `campifrut.com` → storefront:3000
-- `api.campifrut.com` → medusa-server:9000
+- `example.com` → storefront:3000
+- `api.example.com` → medusa-server:9000
 
 ---
 
 ## Implementation Progress
 
-> Updated 12 Feb 2026 after completing Production Remediation (RLS hardening, Error Inbox, release gate 7/7 PASS).
+> Updated 13 Feb 2026 after completing SOTA UI Audit (i18n completeness, micro-interactions, accessibility polish).
 
 | Phase | Status | What |
 |-------|--------|------|
@@ -615,6 +659,22 @@ All 13 tasks executed and verified. Builds on v4. Key outcomes:
 
 See [remediation plan v10](docs/plans/2026-02-10-sota-production-remediation-plan-v10-dual-repo.md) for full details.
 
+### Production Readiness Remediation (20 Feb 2026)
+
+Addressed all findings from the integral production readiness report:
+
+| Finding | Fix | Contract Test |
+|---------|-----|---------------|
+| **C1**: `max_orders_month` not tenant-scoped | Added `sales_channel_id` filter via `getTenantMedusaScope()` | `production-contract-checkout.test.ts` |
+| **C2**: Chat API lacks server-side rate-limit | 10 req/min rate-limit + visitor quota server-side + fail-closed | `production-contract-chat.test.ts` |
+| **C3**: Duplicate migration file | Deleted `apps/storefront/src/supabase/migrations/` (canonical is `supabase/migrations/`) | `production-contract-revalidation.test.ts` |
+| **C4**: Analytics funnel hardcoded to 0 | Real data from `analytics_events` + `order_placed` emitted in all 4 checkout paths | `production-contract-checkout.test.ts` |
+| **H1**: `devoluciones` not using central guard | Now uses `shouldAllowPanelRoute('devoluciones')` | `production-contract-owner-lite.test.ts` |
+| **H2**: Webhook idempotency fail-open | `claimEvent` returns `false` on failure → Stripe retries | `production-contract-webhook.test.ts` |
+| **H3**: Schema ownership cutoff too permissive | Cutoff moved from `20260215` to `20260208` | `production-contract-revalidation.test.ts` |
+
+New files: `src/lib/analytics-server.ts` (server-side event emitter), 5 production contract test suites (78 tests).
+
 ### Production Remediation (12 Feb 2026)
 
 | Area | Improvement |
@@ -649,6 +709,18 @@ See [remediation plan v10](docs/plans/2026-02-10-sota-production-remediation-pla
 | **Sidebar** | 5 fixed items (Dashboard, Catálogo, Pedidos, Clientes, Mi Tienda) + 4 flag-gated modules (Carousel, WhatsApp, CMS, Analytics) |
 | **i18n** | All 5 dictionaries updated with `panel.orders.*` (23 keys) + `panel.customers.*` (8 keys) |
 | **Documentation** | All 3 GEMINI.md + DOCS_GUIDE + API_REFERENCE updated to reflect actual project state |
+
+### v12 — SOTA UI Audit (13 Feb 2026)
+
+| Area | Improvement |
+|------|-----------|
+| **Design System** | Added `.input`, `.btn-danger`, `.card-lift`, `.animate-count-bump`, `.section-divider`, `.touch-target`, `.safe-area-bottom`, `prefers-reduced-motion` to `globals.css` |
+| **Component Fixes** | CartItem: Package icon (template-agnostic), 36px touch targets, count-bump animation. CategoryGrid: localized links. Header: nav.menu aria-label. CheckoutModal: safe-area-bottom. Product detail: localized breadcrumbs |
+| **i18n Completeness** | Error pages rewritten with `error-strings.ts` (5-locale fallback). ErrorBoundary: i18n `labels` prop. HeroCarousel: i18n aria-labels. 8 new keys × 5 locales (490+ total keys per locale) |
+| **Micro-interactions** | New `ScrollReveal` component (IntersectionObserver, respects `prefers-reduced-motion`). Homepage sections wrapped with staggered entrance animations. TrustSection card-lift hover. CartItem quantity bump |
+| **Responsive Polish** | HeroSection Image `sizes="100vw"`. CheckoutModal safe-area. CartItem 36px WCAG touch targets |
+| **Locale Fixes** | `formatPrice` in CartItem, carrito page, CheckoutModal — all fixed from hardcoded locale to i18n context |
+| **Build** | ✅ Clean build verified (exit code 0, 155 pages, 39 feature flags) |
 
 ---
 
@@ -694,5 +766,7 @@ Key findings during build verification:
 | [CLIENT_HANDOFF.md](docs/operations/CLIENT_HANDOFF.md) | Pre-delivery checklist, owner training, support tiers |
 | [API_REFERENCE.md](docs/operations/API_REFERENCE.md) | Custom routes, Server Actions, Medusa endpoints |
 | [rls-access-control.md](docs/rls-access-control.md) | RLS access control matrix (all tables) |
+| [production-contracts.md](docs/production-contracts.md) | Production contracts per module + checkout flows |
+| [flag-limit-enforcement-catalog.md](docs/flag-limit-enforcement-catalog.md) | Feature flag + plan limit enforcement audit |
 | [Remediation Plan v10](docs/plans/2026-02-10-sota-production-remediation-plan-v10-dual-repo.md) | Final production hardening plan (v10, completed) |
 

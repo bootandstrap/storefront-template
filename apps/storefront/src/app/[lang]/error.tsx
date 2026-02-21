@@ -1,14 +1,20 @@
 'use client'
 
 import { RefreshCw } from 'lucide-react'
+import { getErrorStrings } from '@/lib/i18n/error-strings'
+import { useParams } from 'next/navigation'
 
-export default function GlobalError({
+export default function LangError({
     error,
     reset,
 }: {
     error: Error & { digest?: string }
     reset: () => void
 }) {
+    const params = useParams()
+    const locale = typeof params?.lang === 'string' ? params.lang : undefined
+    const strings = getErrorStrings(locale)
+
     return (
         <div className="min-h-screen flex items-center justify-center px-4">
             <div className="text-center max-w-md">
@@ -16,10 +22,10 @@ export default function GlobalError({
                     <span className="text-3xl">⚠️</span>
                 </div>
                 <h1 className="text-2xl font-bold font-display text-text-primary mb-3">
-                    Algo salió mal
+                    {strings.title}
                 </h1>
                 <p className="text-text-muted mb-6">
-                    Hubo un error inesperado. Por favor intenta de nuevo.
+                    {strings.description}
                 </p>
                 {error.digest && (
                     <p className="text-xs text-text-muted mb-4 font-mono">
@@ -28,7 +34,7 @@ export default function GlobalError({
                 )}
                 <button onClick={reset} className="btn btn-primary">
                     <RefreshCw className="w-4 h-4" />
-                    Reintentar
+                    {strings.retry}
                 </button>
             </div>
         </div>

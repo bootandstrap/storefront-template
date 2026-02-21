@@ -1,19 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
 
 // ---------------------------------------------------------------------------
 // Internal revalidation endpoint (infrastructure — NOT a commercial API)
 // POST /api/revalidate
 // Body: { path?: string, secret: string }
-// Protected by REVALIDATION_SECRET only — no feature flag gate.
+//
+// Protection layers:
+//   1. REVALIDATION_SECRET (mandatory — shared between SuperAdmin and storefront)
+//   2. REVALIDATION_ALLOWED_IPS (optional — comma-separated allowlist)
+//   3. Rate limiting (30 req/min per IP)
 // ---------------------------------------------------------------------------
 
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET
+const ALLOWED_IPS_RAW = process.env.REVALIDATION_ALLOWED_IPS
+
+/** Parse allowed IPs once at startup */
+const ALLOWED_IPS: string[] | null = ALLOWED_IPS_RAW
+    ? ALLOWED_IPS_RAW.split(',').map(ip => ip.trim()).filter(Boolean)
+    : null
 
 export async function POST(request: NextRequest) {
     try {
+        // ── Rate limiting (30 req/min per IP) ──────────────────
+        const clientIP = getClientIP(request)
+        const rateCheck = checkRateLimit(`revalidate:${clientIP}`, 30, 60_000)
 
-        // If no secret is configured, the endpoint is disabled
+        if (!rateCheck.allowed) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded', retryAfterMs: rateCheck.retryAfterMs },
+                {
+                    status: 429,
+                    headers: {
+                        'Retry-After': String(Math.ceil((rateCheck.retryAfterMs ?? 0) / 1000)),
+                    },
+                }
+            )
+        }
+
+        // ── IP allowlist check ─────────────────────────────────
+        if (ALLOWED_IPS && !ALLOWED_IPS.includes(clientIP)) {
+            console.warn(`[revalidate] Rejected request from ${clientIP} — not in allowlist`)
+            return NextResponse.json(
+                { error: 'Forbidden — IP not in allowlist' },
+                { status: 403 }
+            )
+        }
+
+        // ── Secret validation ──────────────────────────────────
         if (!REVALIDATION_SECRET) {
             return NextResponse.json(
                 { error: 'Revalidation endpoint not configured — set REVALIDATION_SECRET' },
@@ -24,7 +59,6 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const { secret, path } = body as { secret?: string; path?: string }
 
-        // Validate secret token
         if (secret !== REVALIDATION_SECRET) {
             return NextResponse.json(
                 { error: 'Invalid revalidation secret' },
@@ -32,7 +66,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Revalidate specific path or entire layout
+        // ── Revalidate ─────────────────────────────────────────
         if (path) {
             revalidatePath(path)
         } else {

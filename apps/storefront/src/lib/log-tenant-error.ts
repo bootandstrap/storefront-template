@@ -32,8 +32,9 @@ export async function logTenantError({
         }
 
         // Dynamic import to avoid circular dependencies and module evaluation issues
-        const { createAdminClient } = await import('@/lib/supabase/admin')
-        const supabase = createAdminClient()
+        // Uses governance client — tenant_errors lives in the central hub
+        const { createGovernanceClient } = await import('@/lib/supabase/governance')
+        const supabase = createGovernanceClient()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase.from('tenant_errors') as any).insert({

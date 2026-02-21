@@ -2,7 +2,11 @@
 
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { revalidatePanel } from '@/lib/revalidate'
+import { getConfigForTenant } from '@/lib/config'
+import { checkLimit } from '@/lib/limits'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
+    getCategoryCount,
     createAdminCategory,
     updateAdminCategory,
     deleteAdminCategory,
@@ -27,9 +31,19 @@ export async function createCategory(data: {
     name: string
     description?: string
 }): Promise<ActionResult> {
-    await requirePanelAuth()
+    const { tenantId } = await requirePanelAuth()
     if (!data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
+    }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    const [{ planLimits }, categoryCount] = await Promise.all([
+        getConfigForTenant(tenantId),
+        getCategoryCount(scope),
+    ])
+    const limitCheck = checkLimit(planLimits, 'max_categories', categoryCount)
+    if (!limitCheck.allowed) {
+        return { success: false, error: 'Límite de categorías alcanzado' }
     }
 
     const input: CreateCategoryInput = {
@@ -40,7 +54,7 @@ export async function createCategory(data: {
         is_internal: false,
     }
 
-    const result = await createAdminCategory(input)
+    const result = await createAdminCategory(input, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }
@@ -54,10 +68,12 @@ export async function editCategory(
     id: string,
     data: { name?: string; description?: string }
 ): Promise<ActionResult> {
-    await requirePanelAuth()
+    const { tenantId } = await requirePanelAuth()
     if (data.name !== undefined && !data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
+
+    const scope = await getTenantMedusaScope(tenantId)
 
     const updateData: Partial<CreateCategoryInput> = {}
     if (data.name !== undefined) {
@@ -68,7 +84,7 @@ export async function editCategory(
         updateData.description = data.description.trim() || undefined
     }
 
-    const result = await updateAdminCategory(id, updateData)
+    const result = await updateAdminCategory(id, updateData, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }
@@ -79,8 +95,9 @@ export async function editCategory(
 }
 
 export async function removeCategory(id: string): Promise<ActionResult> {
-    await requirePanelAuth()
-    const result = await deleteAdminCategory(id)
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const result = await deleteAdminCategory(id, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }

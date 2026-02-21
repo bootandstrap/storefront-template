@@ -4,8 +4,10 @@ import { headers } from 'next/headers'
 import { getConfig } from '@/lib/config'
 import { isValidLocale } from '@/lib/i18n'
 import { resolveThemeColors, lightenHex } from '@/lib/theme/presets'
+import { createClient } from '@/lib/supabase/server'
 import { CartProvider } from '@/contexts/CartContext'
 import { WishlistProvider } from '@/contexts/WishlistContext'
+import { CompareProvider } from '@/contexts/CompareContext'
 import { ToastProvider } from '@/components/ui/Toaster'
 import AnalyticsTracker from '@/components/ui/AnalyticsTracker'
 import './globals.css'
@@ -54,6 +56,11 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const { config, featureFlags } = await getConfig()
+
+  // Auth check for wishlist sync
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isAuthenticated = !!user
 
   // Dynamically resolve locale from URL path (/{lang}/...)
   const headersList = await headers()
@@ -105,11 +112,13 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col antialiased">
         <CartProvider>
-          <WishlistProvider>
-            <ToastProvider>
-              {children}
-              <AnalyticsTracker enabled={featureFlags.enable_analytics} />
-            </ToastProvider>
+          <WishlistProvider isAuthenticated={isAuthenticated}>
+            <CompareProvider>
+              <ToastProvider>
+                {children}
+                <AnalyticsTracker enabled={featureFlags.enable_analytics} />
+              </ToastProvider>
+            </CompareProvider>
           </WishlistProvider>
         </CartProvider>
       </body>

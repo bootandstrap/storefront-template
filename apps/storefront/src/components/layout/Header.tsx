@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -17,14 +17,32 @@ interface HeaderProps {
     activeLanguages: string[]
     activeCurrencies: string[]
     currentCurrency: string
+    maxLanguages?: number
+    maxCurrencies?: number
+    isAuthenticated?: boolean
 }
 
-export default function Header({ config, featureFlags, activeLanguages, activeCurrencies, currentCurrency }: HeaderProps) {
+export default function Header({ config, featureFlags, activeLanguages, activeCurrencies, currentCurrency, maxLanguages, maxCurrencies, isAuthenticated = false }: HeaderProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const { itemCount, openDrawer } = useCart()
     const { t, localizedHref } = useI18n()
     const router = useRouter()
+
+    // Manage body scroll and classes when mobile menu is open
+    useEffect(() => {
+        if (mobileOpen) {
+            document.body.style.overflow = 'hidden'
+            document.body.classList.add('drawer-open')
+        } else {
+            document.body.style.overflow = ''
+            document.body.classList.remove('drawer-open')
+        }
+        return () => {
+            document.body.style.overflow = ''
+            document.body.classList.remove('drawer-open')
+        }
+    }, [mobileOpen])
 
     return (
         <>
@@ -79,7 +97,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             >
                                 {t('nav.products')}
                             </Link>
-                            {featureFlags.enable_whatsapp_checkout && (
+                            {featureFlags.enable_whatsapp_contact && (
                                 <a
                                     href={`https://wa.me/${config.whatsapp_number}`}
                                     target="_blank"
@@ -95,12 +113,13 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {/* Language & Currency selectors — desktop */}
                         <div className="hidden md:flex items-center gap-1">
                             {featureFlags.enable_multi_language && (
-                                <LanguageSelector activeLanguages={activeLanguages} />
+                                <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />
                             )}
                             {featureFlags.enable_multi_currency && (
                                 <CurrencySelector
                                     activeCurrencies={activeCurrencies}
                                     currentCurrency={currentCurrency}
+                                    maxCurrencies={maxCurrencies}
                                 />
                             )}
                         </div>
@@ -132,14 +151,16 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                 )}
                             </button>
 
-                            {/* Auth button — visible on mobile too */}
+                            {/* Auth button — session-aware */}
                             {featureFlags.enable_customer_accounts && (
                                 <Link
-                                    href={localizedHref('login')}
+                                    href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
                                     className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
                                 >
                                     <User className="w-4 h-4" />
-                                    <span className="hidden sm:inline">{t('nav.login')}</span>
+                                    <span className="hidden sm:inline">
+                                        {isAuthenticated ? t('nav.account') : t('nav.login')}
+                                    </span>
                                 </Link>
                             )}
 
@@ -147,7 +168,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             <button
                                 onClick={() => setMobileOpen(!mobileOpen)}
                                 className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
-                                aria-label={t('nav.home')}
+                                aria-label={t('nav.menu')}
                             >
                                 {mobileOpen ? (
                                     <X className="w-5 h-5" />
@@ -199,7 +220,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         >
                             {t('nav.products')}
                         </Link>
-                        {featureFlags.enable_whatsapp_checkout && (
+                        {featureFlags.enable_whatsapp_contact && (
                             <a
                                 href={`https://wa.me/${config.whatsapp_number}`}
                                 target="_blank"
@@ -215,12 +236,13 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {(featureFlags.enable_multi_language || featureFlags.enable_multi_currency) && (
                             <div className="border-t border-surface-3/50 pt-4 mt-2 flex items-center gap-2">
                                 {featureFlags.enable_multi_language && (
-                                    <LanguageSelector activeLanguages={activeLanguages} />
+                                    <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />
                                 )}
                                 {featureFlags.enable_multi_currency && (
                                     <CurrencySelector
                                         activeCurrencies={activeCurrencies}
                                         currentCurrency={currentCurrency}
+                                        maxCurrencies={maxCurrencies}
                                     />
                                 )}
                             </div>

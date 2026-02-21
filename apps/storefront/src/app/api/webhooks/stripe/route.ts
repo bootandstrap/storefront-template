@@ -10,15 +10,26 @@ const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 
 /**
+ * Result of attempting to claim a Stripe event for idempotent processing.
+ * - 'claimed': This process successfully inserted the row and owns the event.
+ * - 'duplicate': The event was already claimed by another process (safe to skip).
+ * - 'unavailable': The idempotency backend is unreachable (must trigger Stripe retry).
+ */
+type ClaimResult = 'claimed' | 'duplicate' | 'unavailable'
+
+/**
  * Atomically claim a Stripe event for processing.
  * Uses PostgREST upsert with `resolution=ignore-duplicates` (= INSERT … ON CONFLICT DO NOTHING).
- * Returns `true` if this process successfully claimed the event (inserted the row).
- * Returns `false` if the event was already claimed by another process.
+ * Returns a discriminated result so the caller can distinguish between
+ * safe-to-skip duplicates and infrastructure failures that need retry.
  */
-async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
+async function claimEvent(eventId: string, eventType: string): Promise<ClaimResult> {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) return true // No dedup possible — process anyway
+    if (!supabaseUrl || !serviceKey) {
+        console.warn('[stripe-webhook] Dedup config missing — returning unavailable for Stripe retry')
+        return 'unavailable'
+    }
 
     const tenantId = process.env.TENANT_ID || null
 
@@ -41,11 +52,11 @@ async function claimEvent(eventId: string, eventType: string): Promise<boolean> 
         const rows = await res.json()
         // If the response body has a row, we inserted it → we own it.
         // If empty array → row already existed → duplicate.
-        return Array.isArray(rows) && rows.length > 0
+        return (Array.isArray(rows) && rows.length > 0) ? 'claimed' : 'duplicate'
     } catch (err) {
         console.error('[stripe-webhook] claimEvent error:', err)
-        // On failure, process anyway (better than dropping events)
-        return true
+        // Fail-closed: return unavailable so Stripe retries rather than silently dropping
+        return 'unavailable'
     }
 }
 
@@ -99,10 +110,17 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Atomic idempotency: claim-or-skip ──
-    const claimed = await claimEvent(event.id, event.type)
-    if (!claimed) {
-        console.log(`[stripe-webhook] Duplicate event ${event.id} — skipping`)
+    const claimResult = await claimEvent(event.id, event.type)
+    if (claimResult === 'duplicate') {
+        console.log(`[stripe-webhook] Event ${event.id} is a duplicate — skipping`)
         return NextResponse.json({ received: true, duplicate: true })
+    }
+    if (claimResult === 'unavailable') {
+        console.warn(`[stripe-webhook] Idempotency backend unavailable for event ${event.id} — requesting Stripe retry`)
+        return NextResponse.json(
+            { error: 'Idempotency backend unavailable' },
+            { status: 503 }
+        )
     }
 
     // Process events
@@ -153,6 +171,14 @@ export async function POST(request: NextRequest) {
                     payment_intent_id: paymentIntent.id,
                     amount: paymentIntent.amount,
                     cart_id: cartId,
+                })
+
+                // Emit order_placed for consistent funnel tracking
+                await logAnalyticsEvent('order_placed', {
+                    payment_intent_id: paymentIntent.id,
+                    amount: paymentIntent.amount,
+                    cart_id: cartId,
+                    payment_method: 'stripe',
                 })
 
                 break

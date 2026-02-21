@@ -1,7 +1,7 @@
 # Production Readiness Report v8 — Post-Remediation
 
 **Date**: 2026-02-10  
-**Scope**: CAMPIFRUT (template + storefront + Medusa) + bootandstrap-admin (SuperAdmin)
+**Scope**: ecommerce-template (template + storefront + Medusa) + bootandstrap-admin (SuperAdmin)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Gate | Repo | Command | Result |
 |------|------|---------|--------|
-| Storefront Unit Tests | CAMPIFRUT | `pnpm test:run` | ✅ **206 tests**, 20 files (vitest) |
-| Medusa Unit Tests | CAMPIFRUT | `pnpm -C apps/medusa test:unit` | ✅ **24 tests**, 3 files (jest) |
+| Storefront Unit Tests | ecommerce-template | `pnpm test:run` | ✅ **206 tests**, 20 files (vitest) |
+| Medusa Unit Tests | ecommerce-template | `pnpm -C apps/medusa test:unit` | ✅ **24 tests**, 3 files (jest) |
 | Admin Unit Tests | bootandstrap-admin | `pnpm test:run` | ✅ **22 tests**, 3 files (vitest) |
-| E2E Test Listing | CAMPIFRUT | `npx playwright test --list` | ✅ 23 tests listed |
+| E2E Test Listing | ecommerce-template | `npx playwright test --list` | ✅ 23 tests listed |
 
 ## Security Hardening
 
@@ -30,8 +30,8 @@
 |------|--------|
 | `release-gate.sh` | ✅ Fail-closed (audit waiver + Medusa unit tests) |
 | `dual-repo-release-gate.sh` | ✅ No output suppression, all gates enforced |
-| CI (CAMPIFRUT) | ✅ Health-gated E2E + artifact upload on failure |
-| CI (admin) | ✅ Node 20 + pnpm 9 aligned with CAMPIFRUT |
+| CI (ecommerce-template) | ✅ Health-gated E2E + artifact upload on failure |
+| CI (admin) | ✅ Node 20 + pnpm 9 aligned with ecommerce-template |
 
 ## E2E Test Quality
 
@@ -47,4 +47,4 @@
 |-------|----------|--------|
 | `esbuild` GHSA-67mh-4wv8-2f99 | Moderate | ⚠️ Dev-only, Medusa transitive — waivered in risk register |
 | Pre-existing lint warnings | Low | ⚠️ Non-blocking |
-| `@campifrut/shared` needs `@types/node` | Low | ⚠️ Type-check warning |
+| `@ecommerce-template/shared` needs `@types/node` | Low | ⚠️ Type-check warning |

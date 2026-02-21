@@ -174,6 +174,7 @@ body {
       background: rgba(15, 26, 10, 0.7);
       border-color: rgba(139, 195, 74, 0.15);
     }
+
     & .glass-strong {
       background: rgba(15, 26, 10, 0.85);
       border-color: rgba(139, 195, 74, 0.2);
@@ -285,6 +286,55 @@ body {
 
 .btn-accent:hover {
   background: var(--color-accent-light);
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+/* ========================================================================
+   Form Inputs
+   ======================================================================== */
+
+.input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--color-surface-3);
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.dark .input {
+  background: var(--color-surface-1);
+  border-color: var(--color-surface-3);
+}
+
+[data-theme="auto"] {
+  @media (prefers-color-scheme: dark) {
+    & .input {
+      background: var(--color-surface-1);
+      border-color: var(--color-surface-3);
+    }
+  }
 }
 
 /* ========================================================================
@@ -473,7 +523,7 @@ body {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 50;
+  z-index: 40;
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
@@ -483,12 +533,18 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
-  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s, opacity 0.2s var(--ease-smooth);
 }
 
 .whatsapp-float:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 30px rgba(37, 211, 102, 0.5);
+}
+
+/* Hide WhatsApp float when a drawer or modal is open */
+body.drawer-open .whatsapp-float {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ========================================================================
@@ -617,12 +673,10 @@ body {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    135deg,
-    var(--color-surface-1) 0%,
-    var(--color-surface-2) 50%,
-    var(--color-surface-1) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--color-surface-1) 0%,
+      var(--color-surface-2) 50%,
+      var(--color-surface-1) 100%);
 }
 
 .image-fallback svg {
@@ -641,6 +695,7 @@ body {
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -659,11 +714,120 @@ body {
 }
 
 /* Stagger delays for grid children */
-.stagger-1 { transition-delay: 0.05s; }
-.stagger-2 { transition-delay: 0.1s; }
-.stagger-3 { transition-delay: 0.15s; }
-.stagger-4 { transition-delay: 0.2s; }
-.stagger-5 { transition-delay: 0.25s; }
-.stagger-6 { transition-delay: 0.3s; }
-.stagger-7 { transition-delay: 0.35s; }
-.stagger-8 { transition-delay: 0.4s; }
+.stagger-1 {
+  transition-delay: 0.05s;
+}
+
+.stagger-2 {
+  transition-delay: 0.1s;
+}
+
+.stagger-3 {
+  transition-delay: 0.15s;
+}
+
+.stagger-4 {
+  transition-delay: 0.2s;
+}
+
+.stagger-5 {
+  transition-delay: 0.25s;
+}
+
+.stagger-6 {
+  transition-delay: 0.3s;
+}
+
+.stagger-7 {
+  transition-delay: 0.35s;
+}
+
+.stagger-8 {
+  transition-delay: 0.4s;
+}
+
+/* ========================================================================
+   Card Lift — Hover elevation for interactive cards
+   ======================================================================== */
+
+.card-lift {
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ========================================================================
+   Count Bump — Quantity change animation
+   ======================================================================== */
+
+@keyframes count-bump {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-count-bump {
+  animation: count-bump 0.2s var(--ease-spring);
+}
+
+/* ========================================================================
+   Section Divider — Soft visual rhythm between homepage sections
+   ======================================================================== */
+
+.section-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-surface-3), transparent);
+  margin: 0 auto;
+  max-width: 60%;
+}
+
+/* ========================================================================
+   Touch Target — WCAG 2.5.5 minimum 44px
+   ======================================================================== */
+
+.touch-target {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* ========================================================================
+   iOS Safe Area Support
+   ======================================================================== */
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .whatsapp-float {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ========================================================================
+   Accessibility — Reduced Motion
+   ======================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

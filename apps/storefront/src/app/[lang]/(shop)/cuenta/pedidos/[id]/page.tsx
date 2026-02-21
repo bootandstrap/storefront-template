@@ -3,10 +3,14 @@ import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthOrder } from '@/lib/medusa/auth-medusa'
 import { formatPrice } from '@/lib/i18n/currencies'
+import { getConfig } from '@/lib/config'
+import { createClient } from '@/lib/supabase/server'
+import ReturnRequestForm from '@/components/returns/ReturnRequestForm'
+import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import {
     ArrowLeft, Clock, CheckCircle2, Package,
     Truck, XCircle, MapPin, CreditCard, ShoppingBag,
-    ArrowRight
+    ArrowRight, RotateCcw
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -269,6 +273,80 @@ async function OrderDetail({
                     </div>
                 </div>
             )}
+
+            {/* Self-service return request */}
+            {await (async () => {
+                const { featureFlags } = await getConfig()
+                if (!featureFlags.enable_self_service_returns) return null
+
+                const canReturn = order.status === 'completed' || order.status === 'delivered'
+                if (!canReturn) return null
+
+                // Check for existing return request
+                const supabase = await createClient()
+                const { data: existingReturn } = await supabase
+                    .from('return_requests')
+                    .select('id, status')
+                    .eq('order_id', order.id)
+                    .limit(1)
+
+                if (existingReturn && existingReturn.length > 0) {
+                    const ret = existingReturn[0]
+                    return (
+                        <div className="glass rounded-xl p-6">
+                            <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+                                <RotateCcw className="w-4 h-4 text-primary" />
+                                {t('returns.existingRequest')}
+                            </h2>
+                            <ReturnStatusBadge
+                                status={ret.status as 'pending' | 'approved' | 'rejected' | 'completed'}
+                                labels={{
+                                    pending: t('returns.status.pending'),
+                                    approved: t('returns.status.approved'),
+                                    rejected: t('returns.status.rejected'),
+                                    completed: t('returns.status.completed'),
+                                }}
+                            />
+                        </div>
+                    )
+                }
+
+                // Show return form
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const orderItems = (order.items || []).map((item: any) => ({
+                    id: String(item.id || ''),
+                    title: String(item.title || item.product_title || ''),
+                    quantity: Number(item.quantity || 1),
+                    variant_title: item.variant_title ? String(item.variant_title) : undefined,
+                    thumbnail: item.thumbnail ? String(item.thumbnail) : undefined,
+                }))
+
+                return (
+                    <ReturnRequestForm
+                        orderId={order.id}
+                        items={orderItems}
+                        lang={lang}
+                        dict={{
+                            title: t('returns.title'),
+                            reason: t('returns.reason'),
+                            reasons: {
+                                defective: t('returns.reasons.defective'),
+                                wrong_item: t('returns.reasons.wrong_item'),
+                                changed_mind: t('returns.reasons.changed_mind'),
+                                other: t('returns.reasons.other'),
+                            },
+                            description: t('returns.description'),
+                            descriptionPlaceholder: t('returns.descriptionPlaceholder'),
+                            selectItems: t('returns.selectItems'),
+                            submit: t('returns.submit'),
+                            submitting: t('returns.submitting'),
+                            success: t('returns.success'),
+                            error: t('returns.error'),
+                            duplicate: t('returns.duplicate'),
+                        }}
+                    />
+                )
+            })()}
 
             {/* View products link */}
             <Link

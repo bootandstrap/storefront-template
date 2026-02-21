@@ -1,11 +1,11 @@
 # Production Readiness Report — Dual-Repo Baseline v9
 
 **Date**: 2026-02-10  
-**Repos**: `CAMPIFRUT` (template + Medusa) · `bootandstrap-admin` (SuperAdmin)
+**Repos**: `ecommerce-template` (template + Medusa) · `bootandstrap-admin` (SuperAdmin)
 
 ---
 
-## CAMPIFRUT Quality Gates
+## ecommerce-template Quality Gates
 
 | Gate | Command | Result | Notes |
 |------|---------|--------|-------|
@@ -32,7 +32,7 @@
 2. **Coverage gate broken**: `@vitest/coverage-v8` not in storefront devDeps → **Task 4**
 3. **4 lint warnings**: unused vars in test files → **Task 9**
 4. **30 non-idempotent RLS policies**: `CREATE POLICY` without `DROP IF EXISTS` → **Task 10**
-5. **Client hardcodes**: `campifrut.com` fallback in `jsonld.ts`, `sitemap.ts`, `robots.ts` → **Task 11**
+5. **Client hardcodes**: `example.com` fallback in `jsonld.ts`, `sitemap.ts`, `robots.ts` → **Task 11**
 6. **Audit log swallows errors**: `auditLog()` doesn't check `.insert()` result `{ error }` → **Task 7**
 7. **turbopack.root warning**: admin `next.config.ts` missing `turbopack.root` → **Task 8**
 8. **Release gate EACCES risk**: `set -e` + gate function can produce confusing errors → **Task 2**

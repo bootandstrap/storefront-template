@@ -50,7 +50,7 @@ export async function loginAction(
             .single()
 
         const role = profile?.role
-        if (role === 'super_admin' || role === 'owner' || role === 'admin') {
+        if (role === 'super_admin' || role === 'owner') {
             destination = `/${lang}/panel`
         }
     }

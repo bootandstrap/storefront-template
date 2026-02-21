@@ -1,7 +1,8 @@
 # Template Usage Guide — Deploying for a New Client
 
 > **Audience**: BootandStrap superadmin / developer
-> **Last updated**: 9 Feb 2026
+> **Last updated**: 14 Feb 2026
+> **Model**: Multitenant — each client gets a `tenant_id` in the shared Supabase instance
 
 This guide walks through deploying a new instance of the BootandStrap e-commerce template for a client. The entire process can be completed in under 2 hours.
 
@@ -57,14 +58,18 @@ Migrations are stored as Supabase migration records. The key tables created are:
 
 | Table | Purpose |
 |-------|---------|
-| `config` | Store branding, hero content, delivery info, meta |
-| `feature_flags` | 18 toggleable feature flags |
-| `plan_limits` | SaaS tier enforcement (products, customers, orders) |
-| `profiles` | User profiles with role + medusa_customer_id |
-| `whatsapp_templates` | Editable WhatsApp message templates |
-| `cms_pages` | Dynamic content pages |
-| `carousel_slides` | Homepage hero carousel |
+| `tenants` | Tenant registry (id, name, slug, domain, status, plan) |
+| `config` | Store branding, hero content, delivery, socials, Medusa creds (per `tenant_id`) |
+| `feature_flags` | 34+ toggleable feature flags (per `tenant_id`) |
+| `plan_limits` | SaaS tier enforcement — products, customers, orders (per `tenant_id`) |
+| `profiles` | User profiles with `role` + `tenant_id` + `medusa_customer_id` |
+| `whatsapp_templates` | Editable WhatsApp message templates (per `tenant_id`) |
+| `cms_pages` | Dynamic content pages (per `tenant_id`) |
+| `carousel_slides` | Homepage hero carousel (per `tenant_id`) |
 | `analytics_events` | Page views and conversion tracking |
+| `tenant_errors` | Error Inbox — per-tenant error log |
+| `stripe_webhook_events` | Idempotent webhook deduplication |
+| `audit_log` | Mutation audit trail for admin operations |
 
 ### Configure Auth Providers
 
@@ -134,27 +139,20 @@ cd apps/medusa && pnpm dev
 All branding is controlled via the `config` table in Supabase. Update these values:
 
 ```sql
+-- ⚠️ All queries must be scoped by tenant_id.
+-- Replace <TENANT_ID> with the tenant's UUID from the `tenants` table.
 UPDATE config SET
-  store_name = 'Client Store Name',
-  store_description = 'Short description for SEO',
+  business_name = 'Client Store Name',
+  business_description = 'Short description for SEO',
   language = 'es',               -- Default locale
-  timezone = 'Europe/Madrid',
-  currency = 'EUR',
   
   -- Hero section
   hero_title = 'Welcome to Our Store',
   hero_subtitle = 'Fresh products delivered to your door',
-  hero_cta_text = 'Shop Now',
-  hero_cta_link = '/productos',
-  hero_image_url = 'https://xxx.supabase.co/storage/v1/object/public/...',
   
   -- Contact
   whatsapp_number = '+34612345678',
-  email = 'hello@clientdomain.com',
-  
-  -- Social
-  instagram_url = 'https://instagram.com/client',
-  facebook_url = 'https://facebook.com/client',
+  store_email = 'hello@clientdomain.com',
   
   -- Theme (pick a preset or use 'custom')
   color_preset = 'nature',       -- nature | ocean | sunset | berry | monochrome | custom
@@ -164,7 +162,7 @@ UPDATE config SET
   active_languages = '{es}',     -- Which locales are available
   active_currencies = '{eur}',   -- Which currencies are available
   default_currency = 'eur'
-WHERE id = 1;
+WHERE tenant_id = '<TENANT_ID>';
 ```
 
 ### Color Presets
@@ -196,8 +194,11 @@ UPDATE feature_flags SET
   enable_google_auth = false,       -- Email-only auth
   enable_carousel = true,
   enable_multi_language = false,    -- Single language
-  enable_multi_currency = false     -- Single currency
-WHERE id = 1;
+  enable_multi_currency = false,    -- Single currency
+  enable_owner_panel = true,        -- Give owner self-service
+  owner_lite_enabled = true,        -- Essential panel modules
+  owner_advanced_modules_enabled = false  -- Advanced modules off
+WHERE tenant_id = '<TENANT_ID>';
 ```
 
 ---
@@ -220,14 +221,14 @@ UPDATE plan_limits SET
   max_languages = 1,
   max_currencies = 1,
   storage_limit_mb = 250
-WHERE id = 1;
+WHERE tenant_id = '<TENANT_ID>';
 ```
 
 ---
 
 ## Step 8: Seed Products (Optional)
 
-If migrating from the Campifrut seed, replace with client products:
+If migrating from the E-Commerce Template seed, replace with client products:
 
 ```bash
 # Option A: Use Medusa Admin UI (recommended for clients)
@@ -257,6 +258,8 @@ psql $DATABASE_URL < scripts/provision-tenant.sql
 ```
 
 See [CLIENT_HANDOFF.md](../operations/CLIENT_HANDOFF.md) for the full handoff checklist.
+
+> **Note**: The SuperAdmin panel at BOOTANDSTRAP_WEB (`/app/tenants/new`) provides automated tenant provisioning with plan presets, which handles Steps 2–7 automatically.
 
 ---
 
@@ -324,7 +327,7 @@ After deployment, the client manages their store via:
 | Manage carousel | Owner Panel (when Phase 8 is complete) |
 | Edit CMS pages | Owner Panel (when Phase 8 is complete) |
 
-Until the Owner Panel is built (Phase 8), configuration changes require direct Supabase access by BootandStrap.
+Until the Owner Panel is enabled (`enable_owner_panel = true` in feature flags), configuration changes require direct Supabase access by BootandStrap.
 
 ---
 

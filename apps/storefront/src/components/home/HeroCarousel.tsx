@@ -24,13 +24,19 @@ export interface CarouselSlide {
 
 interface HeroCarouselProps {
     slides: CarouselSlide[]
+    labels?: {
+        carouselLabel?: string
+        previousSlide?: string
+        nextSlide?: string
+        goToSlide?: string
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function HeroCarousel({ slides }: HeroCarouselProps) {
+export default function HeroCarousel({ slides, labels }: HeroCarouselProps) {
     const [current, setCurrent] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -73,7 +79,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
             onKeyDown={handleKeyDown}
             tabIndex={0}
             role="region"
-            aria-label="Carrusel de ofertas"
+            aria-label={labels?.carouselLabel || 'Offers carousel'}
             aria-roledescription="carousel"
         >
             {/* Slides */}
@@ -84,7 +90,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                         }`}
                     role="group"
                     aria-roledescription="slide"
-                    aria-label={`Slide ${i + 1} de ${total}`}
+                    aria-label={`${labels?.goToSlide || 'Go to slide'} ${i + 1}`}
                     aria-hidden={i !== current}
                 >
                     {/* Background */}
@@ -140,14 +146,14 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                     <button
                         onClick={prev}
                         className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-colors"
-                        aria-label="Slide anterior"
+                        aria-label={labels?.previousSlide || 'Previous slide'}
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                         onClick={next}
                         className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-colors"
-                        aria-label="Siguiente slide"
+                        aria-label={labels?.nextSlide || 'Next slide'}
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>
@@ -165,7 +171,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                                 ? 'bg-white w-8'
                                 : 'bg-white/40 hover:bg-white/60'
                                 }`}
-                            aria-label={`Ir al slide ${i + 1}`}
+                            aria-label={`${labels?.goToSlide || 'Go to slide'} ${i + 1}`}
                             aria-current={i === current ? 'true' : undefined}
                         />
                     ))}

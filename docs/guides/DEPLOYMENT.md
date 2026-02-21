@@ -5,7 +5,7 @@
 
 ## Overview
 
-Campifrut runs as Docker containers on a **Contabo VPS** managed by **Dokploy**:
+E-Commerce Template runs as Docker containers on a **Contabo VPS** managed by **Dokploy**:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -74,7 +74,7 @@ See `.env.example` at project root. Critical production vars:
 | `STRIPE_SECRET_KEY` | medusa | Stripe secret key |
 | `NEXT_PUBLIC_SUPABASE_URL` | storefront | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | storefront | Publishable anon key |
-| `NEXT_PUBLIC_MEDUSA_BACKEND_URL` | storefront | `https://api.campifrut.com` |
+| `NEXT_PUBLIC_MEDUSA_BACKEND_URL` | storefront | `https://api.example.com` |
 
 ## Dokploy Configuration
 
@@ -82,8 +82,8 @@ See `.env.example` at project root. Critical production vars:
 2. **Set build method**: Docker Compose
 3. **Upload `.env`** via Dokploy secrets panel
 4. **Configure domains**:
-   - `campifrut.com` → storefront:3000
-   - `api.campifrut.com` → medusa-server:9000
+   - `example.com` → storefront:3000
+   - `api.example.com` → medusa-server:9000
 5. **Enable SSL** via Dokploy (auto Let's Encrypt)
 6. **Set deploy hooks** — auto-deploy on push to `main`
 

@@ -11,12 +11,16 @@ interface ProductGridProps {
     products: MedusaProduct[]
     categories: MedusaCategory[]
     totalCount: number
+    badgesEnabled?: boolean
+    compareEnabled?: boolean
 }
 
 export default function ProductGrid({
     products,
     categories,
     totalCount,
+    badgesEnabled = true,
+    compareEnabled = false,
 }: ProductGridProps) {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -164,7 +168,7 @@ export default function ProductGrid({
             {products.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {products.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard key={product.id} product={product} badgesEnabled={badgesEnabled} compareEnabled={compareEnabled} />
                     ))}
                 </div>
             ) : (

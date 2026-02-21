@@ -5,10 +5,11 @@
  * and recent orders from Medusa Admin API.
  */
 
-import { getConfig, getRequiredTenantId } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
     getProductCount,
     getCategoryCount,
@@ -18,6 +19,7 @@ import {
 import StatCard from '@/components/panel/StatCard'
 import UsageMeter from '@/components/panel/UsageMeter'
 import { Package, ShoppingCart, Users, FolderTree } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,18 +36,20 @@ export default async function PanelDashboard({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { planLimits } = await getConfig()
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const { planLimits } = await getConfigForTenant(tenantId)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Fetch counts in parallel
+    // Fetch counts in parallel (all scoped to auth tenant)
     const [productCount, categoryCount, ordersThisMonth, recentOrders, customerCountRes] =
         await Promise.all([
-            getProductCount(),
-            getCategoryCount(),
-            getOrdersThisMonth(),
-            getRecentOrders(5),
-            (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', getRequiredTenantId()).eq('role', 'customer'),
+            getProductCount(scope),
+            getCategoryCount(scope),
+            getOrdersThisMonth(scope),
+            getRecentOrders(5, scope),
+            (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
         ])
 
     const customerCount = customerCountRes.count ?? 0
@@ -56,6 +60,10 @@ export default async function PanelDashboard({
         { label: t('panel.usage.categories'), result: checkLimit(planLimits, 'max_categories', categoryCount) },
         { label: t('panel.usage.ordersMonth'), result: checkLimit(planLimits, 'max_orders_month', ordersThisMonth) },
         { label: t('panel.usage.customers'), result: checkLimit(planLimits, 'max_customers', customerCount) },
+        { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', 1) },
+        { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0) },
+        { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0) },
+        { label: t('panel.usage.customDomains'), result: checkLimit(planLimits, 'max_custom_domains', 0) },
     ]
 
     return (

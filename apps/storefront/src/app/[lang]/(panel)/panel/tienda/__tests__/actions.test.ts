@@ -33,7 +33,7 @@ describe('StoreConfigUpdateSchema', () => {
             created_at: '2026-01-01',
             updated_at: '2026-02-01',
             sentry_dsn: 'https://sentry.io/whatever',
-            business_name: 'Campifrut',
+            business_name: 'My Store',
             theme_mode: 'light',
         })
         expect(result.success).toBe(true)

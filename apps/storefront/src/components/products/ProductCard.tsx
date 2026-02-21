@@ -6,9 +6,12 @@ import { Package } from 'lucide-react'
 import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
+import CompareButton from './CompareButton'
 
 interface ProductCardProps {
     product: MedusaProduct
+    badgesEnabled?: boolean
+    compareEnabled?: boolean
 }
 
 // Badge type → CSS class mapping
@@ -21,11 +24,11 @@ const BADGE_CLASSES: Record<string, string> = {
     'sold out': 'product-badge product-badge-soldout',
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false }: ProductCardProps) {
     const variant = product.variants?.[0]
     const resolved = getPrice(variant)
     const category = product.categories?.[0]
-    const badges: string[] = (product.metadata?.badges as string[]) || []
+    const badges: string[] = badgesEnabled ? ((product.metadata?.badges as string[]) || []) : []
     const { t, localizedHref } = useI18n()
 
     return (
@@ -46,7 +49,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </div>
                 )}
 
-                {/* Product badges from metadata (Owner Panel managed) */}
+                {/* Product badges from metadata (Owner Panel managed) — gated by enable_product_badges */}
                 {badges.length > 0 && (
                     <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                         {badges.map((badge) => (
@@ -65,6 +68,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <span className="absolute bottom-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-sm text-text-secondary">
                         {category.name}
                     </span>
+                )}
+
+                {/* Compare button */}
+                {compareEnabled && (
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CompareButton productId={product.id} />
+                    </div>
                 )}
             </div>
 

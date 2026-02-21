@@ -6,6 +6,7 @@
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminOrders } from '@/lib/medusa/admin'
+import { parsePanelListQuery } from '@/lib/panel-list-query'
 import OrdersClient from './OrdersClient'
 
 export const dynamic = 'force-dynamic'
@@ -19,20 +20,37 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function OrdersPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ lang: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { lang } = await params
+    const rawSearchParams = await searchParams
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    const { orders, count } = await getAdminOrders({ limit: 50 })
+    const query = parsePanelListQuery(rawSearchParams, {
+        defaultLimit: 20,
+        allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
+    })
+
+    const { orders, count } = await getAdminOrders({
+        limit: query.limit,
+        offset: query.offset,
+        q: query.q,
+        status: query.status,
+    })
 
     return (
         <div className="space-y-6">
             <OrdersClient
                 orders={orders}
                 totalCount={count}
+                currentPage={query.page}
+                pageSize={query.limit}
+                initialSearch={query.q ?? ''}
+                initialStatus={(query.status as 'all' | 'pending' | 'completed' | 'canceled' | undefined) ?? 'all'}
                 lang={lang}
                 labels={{
                     title: t('panel.orders.title'),
@@ -59,6 +77,8 @@ export default async function OrdersPage({
                     fulfilled: t('panel.orders.fulfilled'),
                     notFulfilled: t('panel.orders.notFulfilled'),
                     back: t('common.back'),
+                    previous: t('pagination.previous'),
+                    next: t('pagination.next'),
                 }}
             />
         </div>

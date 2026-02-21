@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getProducts, getCategories } from '@/lib/medusa/client'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { getConfig } from '@/lib/config'
 import ProductGrid from '@/components/products/ProductGrid'
 import { ProductGridSkeleton } from '@/components/ui/Skeleton'
 
@@ -17,6 +18,7 @@ export default async function ProductosPage({
     const sp = await searchParams
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+    const { featureFlags } = await getConfig()
 
     const categories = await getCategories()
     const { products, count } = await getProducts({
@@ -39,6 +41,8 @@ export default async function ProductosPage({
                     products={products}
                     categories={categories}
                     totalCount={count}
+                    badgesEnabled={featureFlags.enable_product_badges}
+                    compareEnabled={featureFlags.enable_product_comparisons}
                 />
             </Suspense>
         </div>

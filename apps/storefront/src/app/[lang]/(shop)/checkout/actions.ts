@@ -4,6 +4,8 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit } from '@/lib/limits'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { emitServerEvent } from '@/lib/analytics-server'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -97,29 +99,35 @@ async function validateMinOrderAmount(
         }
         return { allowed: true }
     } catch {
-        // Don't block checkout if validation fails
-        return { allowed: true }
+        // Fail-closed: block checkout if we can't validate limits
+        return { allowed: false, error: 'Service temporarily unavailable. Please try again.' }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Monthly order limit validation (server-side enforcement)
+// Monthly order limit validation (server-side enforcement, tenant-scoped)
 // ---------------------------------------------------------------------------
 
 async function validateMaxOrdersMonth(): Promise<{ allowed: boolean; error?: string }> {
     try {
         const { planLimits } = await getConfig()
-        const supabase = await createClient()
+        const limit = planLimits.max_orders_month
+        if (!limit || limit <= 0) return { allowed: true }
 
-        // Count orders from this month using analytics_events or a direct count
+        // Resolve tenant scope to get the sales_channel_id for this tenant
+        const tenantId = getRequiredTenantId()
+        const { getTenantMedusaScope } = await import('@/lib/medusa/tenant-scope')
+        const scope = await getTenantMedusaScope(tenantId)
+
+        // Count real Medusa orders from this month, scoped to THIS tenant's sales channel
+        const supabase = createAdminClient()
         const now = new Date()
         const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
         const { count } = await supabase
-            .from('analytics_events')
+            .from('order')
             .select('*', { count: 'exact', head: true })
-            .eq('tenant_id', getRequiredTenantId())
-            .eq('event_type', 'order_placed')
+            .eq('sales_channel_id', scope.medusaSalesChannelId)
             .gte('created_at', firstOfMonth)
 
         const limitCheck = checkLimit(planLimits, 'max_orders_month', count ?? 0)
@@ -128,8 +136,8 @@ async function validateMaxOrdersMonth(): Promise<{ allowed: boolean; error?: str
         }
         return { allowed: true }
     } catch {
-        // Don't block checkout if validation fails
-        return { allowed: true }
+        // Fail-closed: block checkout if we can't validate limits
+        return { allowed: false, error: 'Service temporarily unavailable. Please try again.' }
     }
 }
 
@@ -286,7 +294,17 @@ export async function submitBankTransferOrder(
         })
 
         // Complete the cart to create the order
-        return await completeCart(cartId)
+        const result = await completeCart(cartId)
+
+        // Emit order_placed event for analytics funnel
+        if (result.order) {
+            emitServerEvent('order_placed', {
+                order_id: result.order.id,
+                payment_method: 'bank_transfer',
+            }).catch(() => { })
+        }
+
+        return result
     } catch (err) {
         console.error('[checkout] submitBankTransferOrder failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
@@ -336,9 +354,80 @@ export async function submitCODOrder(
             }),
         })
 
-        return await completeCart(cartId)
+        const result = await completeCart(cartId)
+
+        // Emit order_placed event for analytics funnel
+        if (result.order) {
+            emitServerEvent('order_placed', {
+                order_id: result.order.id,
+                payment_method: 'cash_on_delivery',
+            }).catch(() => { })
+        }
+
+        return result
     } catch (err) {
         console.error('[checkout] submitCODOrder failed:', err)
+        return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
+    }
+}
+
+/**
+ * Create a pending order for WhatsApp checkout.
+ * The order is created BEFORE opening WhatsApp, ensuring traceability.
+ */
+export async function submitWhatsAppOrder(
+    cartId: string,
+    customerInfo: {
+        name: string
+        email: string
+        phone?: string
+        address?: string
+        notes?: string
+    }
+): Promise<{ order: OrderResult | null; error?: string }> {
+    try {
+        // Validate minimum order amount
+        const minCheck = await validateMinOrderAmount(cartId)
+        if (!minCheck.allowed) return { order: null, error: minCheck.error }
+
+        // Validate monthly order limit
+        const orderLimitCheck = await validateMaxOrdersMonth()
+        if (!orderLimitCheck.allowed) return { order: null, error: orderLimitCheck.error }
+
+        const { featureFlags } = await getConfig()
+
+        if (!isFeatureEnabled(featureFlags, 'enable_whatsapp_checkout')) {
+            return { order: null, error: 'WhatsApp checkout is not enabled' }
+        }
+
+        // Update cart with customer info
+        await medusaAdmin(`/store/carts/${cartId}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                email: customerInfo.email,
+                metadata: {
+                    payment_method: 'whatsapp',
+                    customer_name: customerInfo.name,
+                    customer_phone: customerInfo.phone,
+                    delivery_address: customerInfo.address,
+                    notes: customerInfo.notes,
+                },
+            }),
+        })
+
+        const result = await completeCart(cartId)
+
+        // Emit order_placed event for analytics funnel
+        if (result.order) {
+            emitServerEvent('order_placed', {
+                order_id: result.order.id,
+                payment_method: 'whatsapp',
+            }).catch(() => { })
+        }
+
+        return result
+    } catch (err) {
+        console.error('[checkout] submitWhatsAppOrder failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

@@ -160,7 +160,7 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         expect(json.duplicate).toBeUndefined()
     })
 
-    it('processes event when Supabase is unavailable (fail-open)', async () => {
+    it('returns 503 when Supabase is unavailable (fail-safe: forces Stripe retry)', async () => {
         const fakeEvent = {
             id: 'evt_fallback_789',
             type: 'payment_intent.succeeded',
@@ -174,16 +174,44 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
-        // claimEvent: fetch throws → fail-open → process anyway
+        // claimEvent: fetch throws → 'unavailable' → 503 for Stripe retry
         globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
         vi.resetModules()
         const { POST } = await import('../route')
         const req = makeWebhookRequest('{"test": true}', 'sig_valid')
         const res = await POST(req as never)
-        // Without cart_id, event is processed (no critical path)
-        // But unhandled errors now return 500
-        expect([200, 500]).toContain(res.status)
+        // MUST return 503 so Stripe retries — we cannot risk silently dropping orders
+        expect(res.status).toBe(503)
+        const json = await res.json()
+        expect(json.error).toBeDefined()
+    })
+
+    it('returns 503 when Supabase config is missing (fail-safe: forces Stripe retry)', async () => {
+        delete process.env.NEXT_PUBLIC_SUPABASE_URL
+        delete process.env.SUPABASE_SERVICE_ROLE_KEY
+
+        const fakeEvent = {
+            id: 'evt_no_config_001',
+            type: 'payment_intent.succeeded',
+            data: {
+                object: {
+                    id: 'pi_no_config',
+                    amount: 1000,
+                    metadata: {},
+                },
+            },
+        }
+        mockConstructEvent.mockReturnValue(fakeEvent)
+
+        vi.resetModules()
+        const { POST } = await import('../route')
+        const req = makeWebhookRequest('{"test": true}', 'sig_valid')
+        const res = await POST(req as never)
+        // Config missing → 'unavailable' → 503
+        expect(res.status).toBe(503)
+        const json = await res.json()
+        expect(json.error).toBeDefined()
     })
 
     // ── NEW: H-003 Remediation tests ──────────────────────────────────────

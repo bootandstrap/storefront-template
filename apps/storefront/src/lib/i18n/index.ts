@@ -104,6 +104,7 @@ export const CANONICAL_ROUTES = {
     panel: 'panel',
     order: 'pedido',
     checkout: 'checkout',
+    compare: 'comparar',
 } as const
 
 export type RouteName = keyof typeof CANONICAL_ROUTES
@@ -127,8 +128,8 @@ export function localizedHref(
     ...rest: string[]
 ): string {
     const slug = getLocalizedSlug(routeName, dictionary)
-    const parts = ['', locale, slug, ...rest].filter(Boolean)
-    return parts.join('/') || `/${locale}`
+    const parts = [locale, slug, ...rest].filter(Boolean)
+    return `/${parts.join('/')}`
 }
 
 /**

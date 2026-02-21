@@ -16,6 +16,10 @@ type LimitableResource =
     | 'max_file_upload_mb'
     | 'max_email_sends_month'
     | 'max_custom_domains'
+    | 'max_chatbot_messages_month'
+    | 'max_badges'
+    | 'max_newsletter_subscribers'
+    | 'max_api_calls_day'
 
 export interface LimitCheckResult {
     allowed: boolean

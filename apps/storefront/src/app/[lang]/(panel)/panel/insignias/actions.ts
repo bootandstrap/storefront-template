@@ -2,6 +2,7 @@
 
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { revalidatePanel } from '@/lib/revalidate'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
 
@@ -21,8 +22,9 @@ export async function getProductsWithBadges(): Promise<{
     error?: string
 }> {
     try {
-        await requirePanelAuth()
-        const { products } = await getAdminProducts({ limit: 100 })
+        const { tenantId } = await requirePanelAuth()
+        const scope = await getTenantMedusaScope(tenantId)
+        const { products } = await getAdminProducts({ limit: 100 }, scope)
 
         return {
             products: products.map((p) => ({
@@ -53,14 +55,16 @@ export async function toggleBadge(
     enabled: boolean
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await requirePanelAuth()
+        const { tenantId } = await requirePanelAuth()
         const parsed = ToggleBadgeSchema.safeParse({ productId, badgeId, enabled })
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
 
+        const scope = await getTenantMedusaScope(tenantId)
+
         // Get current product metadata via admin API
-        const currentRes = await getAdminProducts({ limit: 100 })
+        const currentRes = await getAdminProducts({ limit: 100 }, scope)
         const product = currentRes.products.find((p) => p.id === productId)
 
         const currentBadges: string[] = Array.isArray(product?.metadata?.badges)
@@ -77,7 +81,7 @@ export async function toggleBadge(
         const success = await updateProductMetadata(productId, {
             ...(product?.metadata ?? {}),
             badges: newBadges,
-        })
+        }, scope)
 
         if (!success) {
             return { success: false, error: 'Failed to update product metadata' }
@@ -100,19 +104,20 @@ export async function setBadges(
     badges: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await requirePanelAuth()
+        const { tenantId } = await requirePanelAuth()
         const parsed = SetBadgesSchema.safeParse({ productId, badges })
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
 
-        const { products } = await getAdminProducts({ limit: 100 })
+        const scope = await getTenantMedusaScope(tenantId)
+        const { products } = await getAdminProducts({ limit: 100 }, scope)
         const product = products.find((p) => p.id === productId)
 
         const success = await updateProductMetadata(productId, {
             ...(product?.metadata ?? {}),
             badges,
-        })
+        }, scope)
 
         if (!success) {
             return { success: false, error: 'Failed to update product metadata' }

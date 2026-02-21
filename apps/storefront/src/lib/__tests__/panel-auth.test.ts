@@ -57,23 +57,15 @@ describe('requirePanelAuth', () => {
         expect(result.tenantId).toBe('profile-tenant-456')
     })
 
-    it('returns profile tenant_id for admin role', async () => {
+    it('throws when role is admin', async () => {
         mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
         mockSingle.mockResolvedValue({ data: { role: 'admin', tenant_id: 'admin-tenant-789' } })
-        const result = await requirePanelAuth()
-        expect(result.role).toBe('admin')
-        expect(result.tenantId).toBe('admin-tenant-789')
+        await expect(requirePanelAuth()).rejects.toThrow('Insufficient permissions')
     })
 
     it('throws when owner has no tenant_id in profile', async () => {
         mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
         mockSingle.mockResolvedValue({ data: { role: 'owner', tenant_id: null } })
-        await expect(requirePanelAuth()).rejects.toThrow('requires a tenant_id')
-    })
-
-    it('throws when admin has no tenant_id in profile', async () => {
-        mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-        mockSingle.mockResolvedValue({ data: { role: 'admin', tenant_id: null } })
         await expect(requirePanelAuth()).rejects.toThrow('requires a tenant_id')
     })
 

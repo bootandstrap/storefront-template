@@ -9,6 +9,7 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_online_payments: false,
         enable_cash_on_delivery: false,
         enable_bank_transfer: false,
+        enable_whatsapp_contact: true,
         enable_user_registration: true,
         enable_guest_checkout: true,
         require_auth_to_order: false,
@@ -31,6 +32,15 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_owner_panel: true,
         enable_customer_accounts: true,
         enable_order_tracking: true,
+        owner_lite_enabled: true,
+        owner_advanced_modules_enabled: false,
+        enable_newsletter: false,
+        enable_product_comparisons: false,
+        enable_product_badges: true,
+        enable_chatbot: false,
+        enable_related_products: true,
+        enable_cookie_consent: true,
+        enable_self_service_returns: false,
         ...overrides,
     }
 }
@@ -81,7 +91,7 @@ describe('getEnabledMethods', () => {
             'whatsapp',
             'card',
             'cod',
-            'bank',
+            'bank_transfer',
         ])
     })
 
@@ -114,7 +124,7 @@ describe('getEnabledMethods', () => {
         const methods = getEnabledMethods(flags)
         expect(methods).toHaveLength(2)
         expect(methods[0].id).toBe('whatsapp')
-        expect(methods[1].id).toBe('bank')
+        expect(methods[1].id).toBe('bank_transfer')
     })
 
     it('cod and bank have secondary variant', () => {

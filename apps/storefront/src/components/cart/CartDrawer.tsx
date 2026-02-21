@@ -2,16 +2,28 @@
 
 import { useEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { X, ShoppingBag, MessageCircle, Loader2 } from 'lucide-react'
+import { X, ShoppingBag, MessageCircle, CreditCard, Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useI18n } from '@/lib/i18n/provider'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
+import { getEnabledMethods } from '@/lib/payment-methods'
 import CartItem from './CartItem'
+import type { StoreConfig, FeatureFlags } from '@/lib/config'
 
-export default function CartDrawer() {
+interface CartDrawerProps {
+    config: StoreConfig
+    featureFlags: FeatureFlags
+}
+
+export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
     const { cart, cartId, drawerOpen, closeDrawer, setCart, itemCount } = useCart()
     const { t, locale, localizedHref } = useI18n()
     const [isLoading, startTransition] = useTransition()
+
+    // Compute which payment methods are available based on feature flags
+    const enabledMethods = getEnabledMethods(featureFlags)
+    const hasWhatsAppCheckout = enabledMethods.some(m => m.id === 'whatsapp')
+    const hasAnyCheckoutMethod = enabledMethods.length > 0
 
     // Load cart data when drawer opens
     useEffect(() => {
@@ -27,11 +39,14 @@ export default function CartDrawer() {
     useEffect(() => {
         if (drawerOpen) {
             document.body.style.overflow = 'hidden'
+            document.body.classList.add('drawer-open')
         } else {
             document.body.style.overflow = ''
+            document.body.classList.remove('drawer-open')
         }
         return () => {
             document.body.style.overflow = ''
+            document.body.classList.remove('drawer-open')
         }
     }, [drawerOpen])
 
@@ -101,28 +116,48 @@ export default function CartDrawer() {
                     )}
                 </div>
 
-                {/* Footer */}
+                {/* Footer — flag-gated buttons */}
                 {items.length > 0 && (
                     <div className="border-t border-surface-3 p-4 space-y-3">
                         <div className="flex justify-between text-sm">
                             <span className="text-text-secondary">{t('cart.subtotal')}</span>
                             <span className="font-bold text-text-primary">{formattedSubtotal}</span>
                         </div>
-                        <Link
-                            href={localizedHref('cart')}
-                            onClick={closeDrawer}
-                            className="btn btn-primary w-full text-center"
-                        >
-                            {t('cart.drawer.viewFullCart')}
-                        </Link>
-                        <Link
-                            href={localizedHref('checkout')}
-                            onClick={closeDrawer}
-                            className="btn btn-whatsapp w-full text-center"
-                        >
-                            <MessageCircle className="w-4 h-4" />
-                            {t('cart.drawer.orderWhatsApp')}
-                        </Link>
+
+                        {/* Checkout button — only if at least one payment method is enabled */}
+                        {hasAnyCheckoutMethod && (
+                            <Link
+                                href={localizedHref('checkout')}
+                                onClick={closeDrawer}
+                                className="btn btn-primary w-full text-center"
+                            >
+                                <CreditCard className="w-4 h-4" />
+                                {t('cart.drawer.viewFullCart')}
+                            </Link>
+                        )}
+
+                        {/* WhatsApp order button — only when enable_whatsapp_checkout flag is ON */}
+                        {hasWhatsAppCheckout && config.whatsapp_number && (
+                            <Link
+                                href={localizedHref('checkout')}
+                                onClick={closeDrawer}
+                                className="btn btn-whatsapp w-full text-center"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                {t('cart.drawer.orderWhatsApp')}
+                            </Link>
+                        )}
+
+                        {/* If no methods at all, show View Cart only */}
+                        {!hasAnyCheckoutMethod && (
+                            <Link
+                                href={localizedHref('cart')}
+                                onClick={closeDrawer}
+                                className="btn btn-primary w-full text-center"
+                            >
+                                {t('cart.drawer.viewFullCart')}
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>

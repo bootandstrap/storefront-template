@@ -1,6 +1,6 @@
-# Stack Reference — Campifrut v2 (SOTA)
+# Stack Reference — E-Commerce Template v2 (SOTA)
 
-> **Purpose**: Quick reference for every technology in the Campifrut v2 stack + SOTA patterns. Updated Feb 2026.
+> **Purpose**: Quick reference for every technology in the E-Commerce Template v2 stack + SOTA patterns. Updated Feb 2026.
 
 ---
 

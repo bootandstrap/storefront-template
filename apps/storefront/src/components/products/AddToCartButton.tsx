@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { addToCartAction } from '@/app/[lang]/(shop)/cart/actions'
+import { trackEvent } from '@/lib/analytics'
 
 interface AddToCartButtonProps {
     variantId: string
@@ -32,6 +33,7 @@ export default function AddToCartButton({
                 if (result.cartId) setCartId(result.cartId)
                 openDrawer()
                 success(`${productTitle} ${t('product.addedToCart')}`)
+                trackEvent('add_to_cart', { variant_id: variantId, product_title: productTitle })
                 return { success: true, message: 'Added' }
             }
             error(t('product.addToCartError'))

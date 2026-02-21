@@ -1,5 +1,5 @@
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createGovernanceClient } from '@/lib/supabase/governance'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,6 +62,8 @@ export interface FeatureFlags {
     enable_online_payments: boolean
     enable_cash_on_delivery: boolean
     enable_bank_transfer: boolean
+    // WhatsApp Contact (separate from checkout)
+    enable_whatsapp_contact: boolean
     // Auth
     enable_user_registration: boolean
     enable_guest_checkout: boolean
@@ -74,6 +76,9 @@ export interface FeatureFlags {
     enable_carousel: boolean
     enable_cms_pages: boolean
     enable_product_search: boolean
+    enable_related_products: boolean
+    enable_product_comparisons: boolean
+    enable_product_badges: boolean
     // Advanced
     enable_analytics: boolean
     enable_promotions: boolean
@@ -84,11 +89,17 @@ export interface FeatureFlags {
     enable_social_links: boolean
     enable_order_notes: boolean
     enable_address_management: boolean
+    enable_newsletter: boolean
     // System
     enable_maintenance_mode: boolean
     enable_owner_panel: boolean
     enable_customer_accounts: boolean
     enable_order_tracking: boolean
+    enable_cookie_consent: boolean
+    enable_chatbot: boolean
+    enable_self_service_returns: boolean
+    owner_lite_enabled: boolean
+    owner_advanced_modules_enabled: boolean
 }
 
 export interface PlanLimits {
@@ -105,11 +116,14 @@ export interface PlanLimits {
     plan_expires_at: string | null
     max_languages: number
     max_currencies: number
-    // New Phase 8A limits
     max_whatsapp_templates: number
     max_file_upload_mb: number
     max_email_sends_month: number
     max_custom_domains: number
+    max_chatbot_messages_month: number
+    max_badges: number
+    max_newsletter_subscribers: number
+    max_api_calls_day: number
 }
 
 export interface AppConfig {
@@ -118,6 +132,10 @@ export interface AppConfig {
     planLimits: PlanLimits
     planExpired: boolean
     tenantStatus: 'active' | 'paused' | 'suspended' | 'trial'
+    /** True when config was loaded from hardcoded fallback (Supabase unreachable) */
+    _degraded?: boolean
+    /** Days remaining in trial (only set when tenantStatus === 'trial') */
+    trialDaysRemaining?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +244,7 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_online_payments: false,
         enable_cash_on_delivery: true,
         enable_bank_transfer: false,
+        enable_whatsapp_contact: true,
         enable_user_registration: true,
         enable_guest_checkout: true,
         require_auth_to_order: false,
@@ -236,6 +255,9 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_carousel: true,
         enable_cms_pages: false,
         enable_product_search: true,
+        enable_related_products: true,
+        enable_product_comparisons: false,
+        enable_product_badges: true,
         enable_analytics: false,
         enable_promotions: false,
         enable_multi_language: false,
@@ -244,10 +266,16 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_social_links: true,
         enable_order_notes: true,
         enable_address_management: true,
+        enable_newsletter: false,
         enable_maintenance_mode: false,
         enable_owner_panel: true,
         enable_customer_accounts: true,
         enable_order_tracking: true,
+        enable_cookie_consent: true,
+        enable_chatbot: false,
+        enable_self_service_returns: false,
+        owner_lite_enabled: true,
+        owner_advanced_modules_enabled: false,
     },
     planLimits: {
         max_products: 100,
@@ -267,9 +295,14 @@ const FALLBACK_CONFIG: AppConfig = {
         max_file_upload_mb: 5,
         max_email_sends_month: 500,
         max_custom_domains: 1,
+        max_chatbot_messages_month: 200,
+        max_badges: 3,
+        max_newsletter_subscribers: 100,
+        max_api_calls_day: 100,
     },
     planExpired: false,
     tenantStatus: 'active',
+    _degraded: true,
 }
 
 // ---------------------------------------------------------------------------
@@ -309,6 +342,46 @@ export function clearCachedConfig(): void {
     globalForConfig.__configCacheTimestamp = 0
 }
 
+/**
+ * Fire-and-forget alert when degraded mode is activated.
+ * Reports to tenant_errors table for SuperAdmin Error Inbox visibility,
+ * and emits a structured JSON log for Dokploy/APM ingestion.
+ */
+function reportDegradedMode(tenantId: string, message: string): void {
+    // Structured JSON log for Dokploy
+    console.error(JSON.stringify({
+        level: 'error',
+        service: 'storefront',
+        timestamp: new Date().toISOString(),
+        tenant_id: tenantId,
+        severity: 'critical',
+        error: message,
+        action: 'degraded_mode_activated',
+    }))
+
+    // Fire-and-forget to tenant_errors table via raw REST (avoids generated type issues)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (supabaseUrl && serviceKey) {
+        fetch(`${supabaseUrl}/rest/v1/tenant_errors`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+                'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({
+                tenant_id: tenantId,
+                error_type: 'config_degraded_mode',
+                severity: 'critical',
+                message,
+                metadata: { timestamp: new Date().toISOString() },
+            }),
+        }).catch(() => { /* truly fire-and-forget */ })
+    }
+}
+
 export async function getConfig(): Promise<AppConfig> {
     const cached = getCachedConfig()
     if (cached) return cached
@@ -324,7 +397,7 @@ export async function getConfig(): Promise<AppConfig> {
     }
 
     try {
-        const supabase = createAdminClient()
+        const supabase = createGovernanceClient()
 
         // All queries scoped by tenant_id — no data leaks
         const configQuery = supabase.from('config').select('*').eq('tenant_id', tenantId)
@@ -355,18 +428,89 @@ export async function getConfig(): Promise<AppConfig> {
             ? new Date(limits.plan_expires_at) < new Date()
             : false
 
+        const tenantStatus = (tenantData?.status as AppConfig['tenantStatus']) ?? 'active'
+
+        // Compute trial days remaining
+        let trialDaysRemaining: number | undefined
+        if (tenantStatus === 'trial' && limits.plan_expires_at) {
+            const msLeft = new Date(limits.plan_expires_at).getTime() - Date.now()
+            trialDaysRemaining = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
+        }
+
+        // Auto-enforce: if plan expired AND status is trial → treat as paused
+        const effectiveStatus = (planExpired && tenantStatus === 'trial') ? 'paused' : tenantStatus
+
         const result: AppConfig = {
             config: configRes.data ?? FALLBACK_CONFIG.config,
-            featureFlags: flagsRes.data ?? FALLBACK_CONFIG.featureFlags,
+            featureFlags: {
+                ...FALLBACK_CONFIG.featureFlags,
+                ...(flagsRes.data ?? {}),
+            },
             planLimits: limits,
             planExpired,
-            tenantStatus: (tenantData?.status as AppConfig['tenantStatus']) ?? 'active',
+            tenantStatus: effectiveStatus,
+            _degraded: false,
+            trialDaysRemaining,
         }
         setCachedConfig(result)
         return result
     } catch (err) {
-        // Only Supabase/network errors reach here — NOT missing TENANT_ID
-        console.error('[config] Supabase fetch failed — using fallback (infra failure)', err)
+        // Structured alerting for degraded mode — INFORME §4.3
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        reportDegradedMode(tenantId, `Config fetch failed — degraded mode activated: ${errorMessage}`)
+        return FALLBACK_CONFIG
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Auth-scoped config fetch (for owner panel actions)
+// ---------------------------------------------------------------------------
+// Uses explicit tenant ID from requirePanelAuth() instead of env TENANT_ID.
+// This ensures plan limits are always enforced against the authenticated tenant.
+// ---------------------------------------------------------------------------
+
+export async function getConfigForTenant(tenantId: string): Promise<AppConfig> {
+    if (!tenantId) {
+        throw new Error('[config] getConfigForTenant requires a valid tenantId')
+    }
+
+    try {
+        const supabase = createGovernanceClient()
+
+        const [configRes, flagsRes, limitsRes] = await Promise.all([
+            supabase.from('config').select('*').eq('tenant_id', tenantId).single(),
+            supabase.from('feature_flags').select('*').eq('tenant_id', tenantId).single(),
+            supabase.from('plan_limits').select('*').eq('tenant_id', tenantId).single(),
+        ])
+
+        const { data: tenantData } = await supabase
+            .from('tenants')
+            .select('status')
+            .eq('id', tenantId)
+            .single() as { data: { status: string } | null }
+
+        if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
+        if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
+        if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+
+        const limits = limitsRes.data ?? FALLBACK_CONFIG.planLimits
+        const planExpired = limits.plan_expires_at
+            ? new Date(limits.plan_expires_at) < new Date()
+            : false
+
+        return {
+            config: configRes.data ?? FALLBACK_CONFIG.config,
+            featureFlags: {
+                ...FALLBACK_CONFIG.featureFlags,
+                ...(flagsRes.data ?? {}),
+            },
+            planLimits: limits,
+            planExpired,
+            tenantStatus: (tenantData?.status as AppConfig['tenantStatus']) ?? 'active',
+        }
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        reportDegradedMode(tenantId, `getConfigForTenant failed: ${errorMessage}`)
         return FALLBACK_CONFIG
     }
 }
@@ -380,4 +524,3 @@ export async function revalidateConfig() {
     clearCachedConfig()
     revalidatePath('/', 'layout')
 }
-

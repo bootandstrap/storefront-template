@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Minus, Plus, Trash2, Loader2 } from 'lucide-react'
+import { Minus, Plus, Trash2, Loader2, Package } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
@@ -25,7 +25,7 @@ export default function CartItem({ item }: CartItemProps) {
     const currency = item.variant?.prices?.[0]?.currency_code || 'COP'
 
     function formatPrice(amount: number) {
-        return new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: currency.toUpperCase(),
             minimumFractionDigits: 0,
@@ -73,7 +73,9 @@ export default function CartItem({ item }: CartItemProps) {
                         className="object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg">🍎</div>
+                    <div className="image-fallback w-full h-full flex items-center justify-center">
+                        <Package className="w-6 h-6 text-text-muted" strokeWidth={1.5} />
+                    </div>
                 )}
             </div>
 
@@ -92,7 +94,7 @@ export default function CartItem({ item }: CartItemProps) {
                             else handleUpdate(item.quantity - 1, 'dec')
                         }}
                         disabled={isPending}
-                        className="w-7 h-7 rounded-lg border border-surface-3 flex items-center justify-center hover:bg-surface-1 transition-colors text-text-secondary"
+                        className="w-9 h-9 rounded-lg border border-surface-3 flex items-center justify-center hover:bg-surface-1 transition-colors text-text-secondary touch-target"
                     >
                         {pendingAction === 'dec' ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -100,11 +102,11 @@ export default function CartItem({ item }: CartItemProps) {
                             <Minus className="w-3 h-3" />
                         )}
                     </button>
-                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <span key={item.quantity} className="text-sm font-medium w-6 text-center animate-count-bump">{item.quantity}</span>
                     <button
                         onClick={() => handleUpdate(item.quantity + 1, 'inc')}
                         disabled={isPending}
-                        className="w-7 h-7 rounded-lg border border-surface-3 flex items-center justify-center hover:bg-surface-1 transition-colors text-text-secondary"
+                        className="w-9 h-9 rounded-lg border border-surface-3 flex items-center justify-center hover:bg-surface-1 transition-colors text-text-secondary touch-target"
                     >
                         {pendingAction === 'inc' ? (
                             <Loader2 className="w-3 h-3 animate-spin" />

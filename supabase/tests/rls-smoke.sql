@@ -11,6 +11,7 @@
 -- Expected results:
 --   - anon: cannot read any governance tables
 --   - customer of tenant_a: cannot read tenant_b's data
+--   - admin of tenant_a: cannot read governance tables (owner-panel hardening)
 --   - owner of tenant_a: can read tenant_a's data, cannot read tenant_b's
 --   - super_admin: can read all tenants
 -- ============================================================================
@@ -59,6 +60,11 @@ SELECT 'cms_pages: anon should see 0 rows' AS test,
 -- SET LOCAL role TO authenticated;
 -- SET LOCAL request.jwt.claims TO '{"sub":"<tenant_a_owner_uuid>"}';
 -- SELECT count(*) FROM config;  -- Expected: 1 (own tenant only)
+
+-- As admin of tenant_a, query config — should see 0 rows:
+-- SET LOCAL role TO authenticated;
+-- SET LOCAL request.jwt.claims TO '{"sub":"<tenant_a_admin_uuid>"}';
+-- SELECT count(*) FROM config;  -- Expected: 0
 
 -- ── 4. Verify super_admin can read all ───────────────────
 

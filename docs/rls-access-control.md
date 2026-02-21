@@ -1,6 +1,6 @@
 # RLS Access Control Matrix
 
-> Aligned with effective Supabase policies as of 2026-02-12.
+> Aligned with effective Supabase policies as of 2026-02-15.
 
 ## Access Model
 
@@ -10,6 +10,7 @@
 | `config` | ✅ | ✅ (own tenant) | ❌ | ✅ | Storefront uses admin client |
 | `feature_flags` | ✅ | ✅ (own tenant) | ❌ | ✅ | Storefront uses admin client |
 | `plan_limits` | ✅ | ✅ (own tenant) | ❌ | ✅ | Storefront uses admin client |
+| `plan_presets` | ✅ | ❌ | ❌ | ✅ | SuperAdmin only (tier definitions) |
 | `profiles` | ✅ | ✅ (own row) | ✅ (own row) | ✅ | User self-management |
 | `whatsapp_templates` | ✅ | ✅ (own tenant) | ❌ | ✅ | Read by storefront |
 | `carousel_slides` | ✅ | ✅ (own tenant) | ❌ | ✅ | Read by storefront |

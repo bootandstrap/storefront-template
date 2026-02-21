@@ -80,21 +80,19 @@ describe('getLocalizedSlug', () => {
 })
 
 describe('localizedHref', () => {
-    it('builds correct localized URL', () => {
+    it('builds correct localized URL with leading slash', () => {
         const dict: Dictionary = { 'routes.products': 'products' }
-        // filter(Boolean) removes the leading '' so no leading slash
-        expect(localizedHref('en', 'products', dict)).toBe('en/products')
+        expect(localizedHref('en', 'products', dict)).toBe('/en/products')
     })
 
     it('appends rest segments', () => {
         const dict: Dictionary = { 'routes.account': 'account' }
-        expect(localizedHref('en', 'account', dict, 'orders')).toBe('en/account/orders')
+        expect(localizedHref('en', 'account', dict, 'orders')).toBe('/en/account/orders')
     })
 
-    it('returns locale string for home route', () => {
+    it('returns locale-only path for home route', () => {
         const dict: Dictionary = { 'routes.home': '' }
-        // Home route: parts = ['', 'es', ''].filter(Boolean) → ['es'] → 'es'
-        expect(localizedHref('es', 'home', dict)).toBe('es')
+        expect(localizedHref('es', 'home', dict)).toBe('/es')
     })
 })
 

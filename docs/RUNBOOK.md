@@ -1,4 +1,4 @@
-# Operational Runbook — CAMPIFRUT Storefront
+# Operational Runbook — ecommerce-template Storefront
 
 ## Health Endpoints
 
@@ -32,8 +32,8 @@
 
 **Steps**:
 1. Check Medusa container: `docker ps | grep medusa`
-2. Check logs: `docker logs campifrut-medusa-1 --tail 100`
-3. Check Redis: `docker exec campifrut-redis-1 redis-cli ping`
+2. Check logs: `docker logs ecommerce-template-medusa-1 --tail 100`
+3. Check Redis: `docker exec ecommerce-template-redis-1 redis-cli ping`
 4. Restart: `docker compose restart medusa`
 
 ### 2. Supabase Connection Issues
@@ -51,7 +51,7 @@
 
 **Steps**:
 1. Check container: `docker ps | grep storefront`
-2. Check build logs: `docker logs campifrut-storefront-1 --tail 200`
+2. Check build logs: `docker logs ecommerce-template-storefront-1 --tail 200`
 3. Verify env: all required vars in `.env` (see `.env.example`)
 4. Rebuild: `docker compose build storefront && docker compose up -d storefront`
 
@@ -72,7 +72,7 @@
 
 **Steps**:
 1. Check DB connections: Supabase dashboard → Database → Connections
-2. Check Redis memory: `docker exec campifrut-redis-1 redis-cli info memory`
+2. Check Redis memory: `docker exec ecommerce-template-redis-1 redis-cli info memory`
 3. Review recent deployments for regressions
 
 ---

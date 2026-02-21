@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Corregir todos los hallazgos P1/P2/P3 de seguridad e integridad en `CAMPIFRUT` + `bootandstrap-admin` con cobertura de pruebas y gates de release.
+**Goal:** Corregir todos los hallazgos P1/P2/P3 de seguridad e integridad en `ecommerce-template` + `bootandstrap-admin` con cobertura de pruebas y gates de release.
 
 **Architecture:** Aplicar remediación por capas: primero seguridad de rendering (XSS), luego consistencia transaccional de provisionamiento, después políticas RLS/migration safety, hardening HTTP en admin, y finalmente validación estricta de dominio. Cada capa se implementa con TDD y verificación incremental para evitar regresiones funcionales.
 
@@ -25,7 +25,7 @@
   - `codex/dual-repo-hardening-2026-02-12`
 - Node/pnpm instalados.
 - Workspace con ambos repos:
-  - `/Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT`
+  - `/Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template`
   - `/Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin`
 
 ---
@@ -44,7 +44,7 @@
 
 **Step 2: Ejecutar test para confirmar fallo inicial**
 
-Run: `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT --filter=storefront test:run -- preview-render`
+Run: `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template --filter=storefront test:run -- preview-render`
 Expected: FAIL mostrando que el payload llega al HTML de preview.
 
 **Step 3: Implementar rendering seguro**
@@ -57,18 +57,18 @@ Expected: FAIL mostrando que el payload llega al HTML de preview.
 **Step 4: Re-ejecutar test y lint**
 
 Run:
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT --filter=storefront test:run -- preview-render`
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT --filter=storefront lint`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template --filter=storefront test:run -- preview-render`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template --filter=storefront lint`
 Expected: PASS en ambos.
 
 **Step 5: Commit**
 
 ```bash
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT add \
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template add \
   apps/storefront/src/app/[lang]/(panel)/panel/mensajes/MessagesClient.tsx \
   apps/storefront/src/app/[lang]/(panel)/panel/mensajes/__tests__/preview-render.test.tsx \
   apps/storefront/src/lib/security/sanitize-html.ts
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT commit -m "fix(storefront): harden template preview against XSS"
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template commit -m "fix(storefront): harden template preview against XSS"
 ```
 
 ---
@@ -141,8 +141,8 @@ git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admi
 **Step 3: Ejecutar checks de migraciones/RLS**
 
 Run:
-- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/scripts/check-migration-order.sh`
-- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/scripts/check-rls.sh`
+- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/scripts/check-migration-order.sh`
+- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/scripts/check-rls.sh`
 Expected: PASS.
 
 **Step 4: (Opcional recomendado) test de contrato API analytics**
@@ -152,12 +152,12 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT add \
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template add \
   supabase/migrations/20260212_analytics_events_insert_service_role_finalize.sql \
   scripts/check-rls.sh \
   docs/operations/RUNBOOK.md \
   apps/storefront/src/app/api/analytics/__tests__/route.test.ts
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT commit -m "fix(rls): finalize analytics insert policy to service_role only"
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template commit -m "fix(rls): finalize analytics insert policy to service_role only"
 ```
 
 ---
@@ -254,11 +254,11 @@ git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admi
 
 **Step 1: Ejecutar checks completos repo por repo**
 
-Run CAMPIFRUT:
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT lint`
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT type-check`
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT test:run`
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT build`
+Run ecommerce-template:
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template lint`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template type-check`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template test:run`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template build`
 
 Run Admin:
 - `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin lint`
@@ -271,23 +271,23 @@ Expected: PASS global.
 **Step 2: Ejecutar release gate unificado**
 
 Run:
-- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/scripts/ops/dual-repo-release-gate.sh`
+- `bash /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/scripts/ops/dual-repo-release-gate.sh`
 Expected: `ALL GATES PASSED`.
 
 **Step 3: Validar audit + waivers vigentes**
 
 Run:
-- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT audit --prod --audit-level moderate`
+- `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template audit --prod --audit-level moderate`
 - `pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin audit --prod --audit-level moderate`
 Expected: sin findings no-waived moderados/altos.
 
 **Step 4: Commit final de ajustes de gate/docs (si aplica)**
 
 ```bash
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT add \
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template add \
   scripts/ops/dual-repo-release-gate.sh \
   docs/operations/DEPENDENCY_RISK_REGISTER.md
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT commit -m "chore(release): tighten dual-repo hardening verification"
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template commit -m "chore(release): tighten dual-repo hardening verification"
 ```
 
 ---

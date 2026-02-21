@@ -6,7 +6,7 @@ import { getProduct, getProducts } from '@/lib/medusa/client'
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { productJsonLD } from '@/lib/seo/jsonld'
-import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { getDictionary, createTranslator, localizedHref, type Locale } from '@/lib/i18n'
 import AddToCartButton from '@/components/products/AddToCartButton'
 import ProductCard from '@/components/products/ProductCard'
 import WishlistButton from '@/components/products/WishlistButton'
@@ -72,14 +72,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <div className="container-page py-8">
                 {/* Breadcrumbs */}
                 <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-text-muted mb-6">
-                    <Link href="/" className="hover:text-primary transition-colors">{t('nav.home')}</Link>
+                    <Link href={localizedHref(lang as Locale, 'home', dictionary)} className="hover:text-primary transition-colors">{t('nav.home')}</Link>
                     <ChevronRight className="w-3.5 h-3.5" />
-                    <Link href="/productos" className="hover:text-primary transition-colors">{t('nav.products')}</Link>
+                    <Link href={localizedHref(lang as Locale, 'products', dictionary)} className="hover:text-primary transition-colors">{t('nav.products')}</Link>
                     {product.categories?.[0] && (
                         <>
                             <ChevronRight className="w-3.5 h-3.5" />
                             <Link
-                                href={`/productos?category=${product.categories[0].handle}`}
+                                href={`${localizedHref(lang as Locale, 'products', dictionary)}?category=${product.categories[0].handle}`}
                                 className="hover:text-primary transition-colors"
                             >
                                 {product.categories[0].name}
@@ -196,15 +196,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Related products */}
-                {relatedProducts.length > 0 && (
+                {/* Related products — gated by feature flag */}
+                {featureFlags.enable_related_products && relatedProducts.length > 0 && (
                     <section className="mt-16">
                         <h2 className="text-2xl font-bold font-display text-text-primary mb-6">
                             {t('product.relatedProducts')}
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             {relatedProducts.map((p) => (
-                                <ProductCard key={p.id} product={p} />
+                                <ProductCard key={p.id} product={p} badgesEnabled={featureFlags.enable_product_badges} />
                             ))}
                         </div>
                     </section>

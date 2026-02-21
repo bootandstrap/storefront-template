@@ -24,9 +24,10 @@ const SUPPORTED_CURRENCIES: CurrencyInfo[] = [
 interface CurrencySelectorProps {
     activeCurrencies: string[]
     currentCurrency: string
+    maxCurrencies?: number
 }
 
-export default function CurrencySelector({ activeCurrencies, currentCurrency }: CurrencySelectorProps) {
+export default function CurrencySelector({ activeCurrencies, currentCurrency, maxCurrencies }: CurrencySelectorProps) {
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [isPending, startTransition] = useTransition()
@@ -43,10 +44,13 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency }: 
         return () => document.removeEventListener('mousedown', handleClick)
     }, [open])
 
-    // Filter to only active + valid currencies
-    const currencies = SUPPORTED_CURRENCIES.filter((c) =>
+    // Filter to only active + valid currencies, capped by plan limit
+    let currencies = SUPPORTED_CURRENCIES.filter((c) =>
         activeCurrencies.includes(c.code)
     )
+    if (maxCurrencies && maxCurrencies > 0) {
+        currencies = currencies.slice(0, maxCurrencies)
+    }
 
     // Don't render if only 1 currency
     if (currencies.length <= 1) return null

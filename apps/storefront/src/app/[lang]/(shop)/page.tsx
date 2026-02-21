@@ -9,6 +9,7 @@ import HeroCarousel from '@/components/home/HeroCarousel'
 import CategoryGrid from '@/components/home/CategoryGrid'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 import TrustSection from '@/components/home/TrustSection'
+import ScrollReveal from '@/components/ui/ScrollReveal'
 import {
   CategoryGridSkeleton,
   ProductGridSkeleton,
@@ -70,17 +71,27 @@ export default async function HomePage({
       )}
 
       {/* Categories — async (Medusa API) */}
-      <Suspense fallback={<CategoryGridSkeleton />}>
-        <CategoryGrid dictionary={dictionary} />
-      </Suspense>
+      <ScrollReveal>
+        <Suspense fallback={<CategoryGridSkeleton />}>
+          <CategoryGrid dictionary={dictionary} lang={lang} />
+        </Suspense>
+      </ScrollReveal>
+
+      <hr className="section-divider" />
 
       {/* Featured Products — async (Medusa API) */}
-      <Suspense fallback={<ProductGridSkeleton />}>
-        <FeaturedProducts dictionary={dictionary} lang={lang} />
-      </Suspense>
+      <ScrollReveal delay={100}>
+        <Suspense fallback={<ProductGridSkeleton />}>
+          <FeaturedProducts dictionary={dictionary} lang={lang} />
+        </Suspense>
+      </ScrollReveal>
+
+      <hr className="section-divider" />
 
       {/* Trust Section — static, instant */}
-      <TrustSection dictionary={dictionary} />
+      <ScrollReveal delay={200}>
+        <TrustSection dictionary={dictionary} />
+      </ScrollReveal>
     </div>
   )
 }

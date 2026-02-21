@@ -60,6 +60,14 @@ jobs:
       - name: Check migration consistency
         run: bash scripts/check-migration-order.sh
 
+      - name: Check schema ownership
+        run: |
+          SCRIPT="../scripts/check-schema-ownership.sh"
+          if [[ -f "$SCRIPT" ]]; then
+            bash "$SCRIPT" data-plane
+          else
+            echo "⚠️ Schema ownership script not in workspace — skipping"
+          fi
   # ── RLS Static Analysis ──────────────────────────
   rls-check:
     name: RLS Policy Check

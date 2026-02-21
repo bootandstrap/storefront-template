@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** llevar `CAMPIFRUT` + `bootandstrap-admin` a estado SOTA real de produccion: aislamiento multi-tenant verificable, seguridad fuerte, CI confiable y release reproducible.
+**Goal:** llevar `ecommerce-template` + `bootandstrap-admin` a estado SOTA real de produccion: aislamiento multi-tenant verificable, seguridad fuerte, CI confiable y release reproducible.
 
 **Architecture:** ejecutar en olas con orden estricto: (1) verdad y baseline, (2) aislamiento de datos y autorizacion, (3) hardening de plataforma/CI, (4) pruebas y operacion, (5) cierre documental + gates de release. Cada ola debe terminar con evidencias ejecutables.
 
@@ -22,10 +22,10 @@
 
 Run:
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT lint || true
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT type-check || true
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT test:run
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT build
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template lint || true
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template type-check || true
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template test:run
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template build
 ```
 
 **Step 2: Corregir narrativa de estado**
@@ -34,8 +34,8 @@ pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT build
 
 **Step 3: Commit**
 ```bash
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT add GEMINI.md ROADMAP.md docs/architecture/ARCHITECTURE.md docs/architecture/SUPABASE_SCHEMA.md
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT commit -m "docs: align project status with verified quality baseline"
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template add GEMINI.md ROADMAP.md docs/architecture/ARCHITECTURE.md docs/architecture/SUPABASE_SCHEMA.md
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template commit -m "docs: align project status with verified quality baseline"
 ```
 
 ### Task 2: Aislamiento multi-tenant obligatorio en lecturas storefront
@@ -71,13 +71,13 @@ Create:
 
 Run:
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/apps/storefront test:run
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/apps/storefront test:run
 ```
 
 **Step 5: Commit**
 ```bash
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT add apps/storefront/src/lib/config.ts apps/storefront/src/app/[lang]/(shop)/page.tsx apps/storefront/src/app/[lang]/(shop)/paginas/[slug]/page.tsx apps/storefront/src/app/[lang]/(shop)/checkout/actions.ts apps/storefront/src/app/[lang]/(auth)/registro/page.tsx apps/storefront/src/app/[lang]/(auth)/registro/actions.ts apps/storefront/src/app/[lang]/(panel)/panel/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/analiticas/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/carrusel/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/mensajes/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/paginas/page.tsx apps/storefront/src/lib/__tests__/tenant-isolation-config.test.ts apps/storefront/src/lib/__tests__/tenant-isolation-content.test.ts
-git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT commit -m "fix(multitenant): enforce tenant_id scoping across storefront reads"
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template add apps/storefront/src/lib/config.ts apps/storefront/src/app/[lang]/(shop)/page.tsx apps/storefront/src/app/[lang]/(shop)/paginas/[slug]/page.tsx apps/storefront/src/app/[lang]/(shop)/checkout/actions.ts apps/storefront/src/app/[lang]/(auth)/registro/page.tsx apps/storefront/src/app/[lang]/(auth)/registro/actions.ts apps/storefront/src/app/[lang]/(panel)/panel/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/analiticas/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/carrusel/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/mensajes/page.tsx apps/storefront/src/app/[lang]/(panel)/panel/paginas/page.tsx apps/storefront/src/lib/__tests__/tenant-isolation-config.test.ts apps/storefront/src/lib/__tests__/tenant-isolation-content.test.ts
+git -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template commit -m "fix(multitenant): enforce tenant_id scoping across storefront reads"
 ```
 
 ### Task 3: Aislamiento multi-tenant en Owner Panel writes
@@ -108,7 +108,7 @@ Create:
 
 Run:
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/apps/storefront test:run
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/apps/storefront test:run
 ```
 
 ### Task 4: Hardening de RLS y schema de Supabase (reproducible)
@@ -197,8 +197,8 @@ pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-adm
 
 **Step 5: Verificar**
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT lint
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT type-check
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template lint
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template type-check
 ```
 
 ### Task 7: Seguridad de secretos y defaults inseguros
@@ -223,7 +223,7 @@ pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT type-c
 
 **Step 4: Verificacion**
 ```bash
-rg -n --hidden --files-with-matches "supersecret|campifrut-revalidate-2026" /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin || true
+rg -n --hidden --files-with-matches "supersecret|ecommerce-template-revalidate-2026" /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin || true
 ```
 
 ### Task 8: CI real (no falso verde)
@@ -236,7 +236,7 @@ rg -n --hidden --files-with-matches "supersecret|campifrut-revalidate-2026" /Use
 - Modify: `/Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin/package.json`
 
 **Step 1: E2E job levantando app real**
-- En CI de `CAMPIFRUT`, arrancar `storefront + medusa + redis` (no solo redis).
+- En CI de `ecommerce-template`, arrancar `storefront + medusa + redis` (no solo redis).
 
 **Step 2: Ajustar `playwright.config.ts`**
 - `webServer` en CI opcional segun variable, con comando determinista.
@@ -263,8 +263,8 @@ rg -n --hidden --files-with-matches "supersecret|campifrut-revalidate-2026" /Use
 
 **Step 3: Verificar compose**
 ```bash
-docker compose -f /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/docker-compose.dev.yml config
-docker compose -f /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/docker-compose.yml config
+docker compose -f /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/docker-compose.dev.yml config
+docker compose -f /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/docker-compose.yml config
 ```
 
 ### Task 10: Contratos de datos analytics consistentes
@@ -301,8 +301,8 @@ docker compose -f /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIF
 
 **Step 3: Verificar**
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/apps/storefront test:run
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/apps/storefront exec playwright test
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/apps/storefront test:run
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template/apps/storefront exec playwright test
 ```
 
 ### Task 12: Observabilidad y operacion SRE minima
@@ -340,10 +340,10 @@ pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT/apps/s
 
 **Step 2: Comando unico de release**
 ```bash
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT lint
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT type-check
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT test:run
-pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/CAMPIFRUT build
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template lint
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template type-check
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template test:run
+pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/ecommerce-template build
 pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin lint
 pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin type-check
 pnpm -C /Users/webnorka/DESARROLLO/BOOTANDSTRAP/PLANTILLA+ADMIN/bootandstrap-admin build

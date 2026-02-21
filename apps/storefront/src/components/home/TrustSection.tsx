@@ -47,7 +47,7 @@ export default function TrustSection({ dictionary }: TrustSectionProps) {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {trustItems.map((item) => (
-                    <div key={item.title} className="text-center p-4 md:p-6 rounded-xl bg-surface-1 hover:bg-surface-2 transition-all duration-200">
+                    <div key={item.title} className="text-center p-4 md:p-6 rounded-xl bg-surface-1 hover:bg-surface-2 card-lift">
                         <div className={`w-12 h-12 mx-auto mb-4 rounded-full ${item.bgColor} flex items-center justify-center`}>
                             <item.icon className={`w-6 h-6 ${item.color}`} />
                         </div>

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfig } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { TemplateInputSchema, TemplateUpdateSchema } from '@/lib/owner-validation'
@@ -31,7 +31,7 @@ export async function createTemplate(
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
         const validInput = parsed.data
-        const { planLimits } = await getConfig()
+        const { planLimits } = await getConfigForTenant(tenantId)
 
         const { count } = await supabase
             .from('whatsapp_templates')

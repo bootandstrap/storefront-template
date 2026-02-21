@@ -10,7 +10,7 @@ import CartItem from '@/components/cart/CartItem'
 
 export default function CarritoPage() {
     const { cart, cartId, setCart, itemCount } = useCart()
-    const { t, localizedHref } = useI18n()
+    const { t, localizedHref, locale } = useI18n()
     const [isLoading, startTransition] = useTransition()
 
     useEffect(() => {
@@ -24,10 +24,10 @@ export default function CarritoPage() {
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'USD'
+    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
 
     const formatPrice = (amount: number) =>
-        new Intl.NumberFormat('en-US', {
+        new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: currency.toUpperCase(),
             minimumFractionDigits: 0,

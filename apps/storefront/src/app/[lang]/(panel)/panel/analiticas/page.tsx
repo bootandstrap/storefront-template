@@ -10,6 +10,8 @@
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
+import { getPanelFallbackRoute, shouldAllowPanelRoute } from '@/lib/panel-route-guards'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +31,10 @@ export default async function AnalyticsPage({
     const { featureFlags } = await getConfig()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+
+    if (!shouldAllowPanelRoute('analiticas', featureFlags)) {
+        redirect(getPanelFallbackRoute(lang))
+    }
 
     if (!featureFlags.enable_analytics) {
         return (
@@ -56,7 +62,7 @@ export default async function AnalyticsPage({
     const sevenDaysAgo = new Date(new Date().getTime() - cutoffMs).toISOString()
 
     const tenantId = getRequiredTenantId()
-    const [pageViewsRes, topProductsRes, _funnelRes] = await Promise.all([
+    const [pageViewsRes, topProductsRes, funnelRes] = await Promise.all([
         supabase
             .from('analytics_events')
             .select('*', { count: 'exact', head: true })
@@ -72,7 +78,7 @@ export default async function AnalyticsPage({
             .limit(50),
         supabase
             .from('analytics_events')
-            .select('event_type', { count: 'exact' })
+            .select('event_type')
             .eq('tenant_id', tenantId)
             .in('event_type', ['page_view', 'product_view', 'add_to_cart', 'checkout_start', 'order_placed'])
             .gte('created_at', sevenDaysAgo),
@@ -81,13 +87,19 @@ export default async function AnalyticsPage({
     const pageViews7d = pageViewsRes.count ?? 0
     const productViews = topProductsRes.data?.length ?? 0
 
-    // Funnel data (simplified)
+    // Build funnel counts from real analytics data
+    const funnelData = funnelRes.data ?? []
+    const funnelCounts: Record<string, number> = {}
+    for (const row of funnelData) {
+        funnelCounts[row.event_type] = (funnelCounts[row.event_type] ?? 0) + 1
+    }
+
     const funnelSteps = [
-        { label: t('panel.analytics.pageViews'), count: pageViews7d, emoji: '👁️' },
-        { label: t('panel.analytics.productViews'), count: productViews, emoji: '🛍️' },
-        { label: t('panel.analytics.addToCart'), count: 0, emoji: '🛒' },
-        { label: t('panel.analytics.checkoutStart'), count: 0, emoji: '💳' },
-        { label: t('panel.analytics.orderPlaced'), count: 0, emoji: '✅' },
+        { label: t('panel.analytics.pageViews'), count: funnelCounts['page_view'] ?? pageViews7d, emoji: '👁️' },
+        { label: t('panel.analytics.productViews'), count: funnelCounts['product_view'] ?? productViews, emoji: '🛍️' },
+        { label: t('panel.analytics.addToCart'), count: funnelCounts['add_to_cart'] ?? 0, emoji: '🛒' },
+        { label: t('panel.analytics.checkoutStart'), count: funnelCounts['checkout_start'] ?? 0, emoji: '💳' },
+        { label: t('panel.analytics.orderPlaced'), count: funnelCounts['order_placed'] ?? 0, emoji: '✅' },
     ]
 
     return (

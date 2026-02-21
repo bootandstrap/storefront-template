@@ -51,7 +51,7 @@ export default async function PanelLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-surface-0">
+        <div className="min-h-screen bg-surface-0 md:flex">
             <PanelSidebar
                 lang={lang}
                 businessName={config.business_name}
@@ -60,6 +60,10 @@ export default async function PanelLayout({
                     enable_whatsapp_checkout: featureFlags.enable_whatsapp_checkout,
                     enable_cms_pages: featureFlags.enable_cms_pages,
                     enable_analytics: featureFlags.enable_analytics,
+                    enable_chatbot: featureFlags.enable_chatbot,
+                    enable_self_service_returns: featureFlags.enable_self_service_returns,
+                    owner_lite_enabled: featureFlags.owner_lite_enabled,
+                    owner_advanced_modules_enabled: featureFlags.owner_advanced_modules_enabled,
                 }}
                 labels={{
                     dashboard: t('panel.nav.dashboard'),
@@ -72,16 +76,18 @@ export default async function PanelLayout({
                     whatsapp: t('panel.nav.whatsapp'),
                     pages: t('panel.nav.pages'),
                     analytics: t('panel.nav.analytics'),
+                    badges: t('panel.nav.badges'),
+                    chatbot: t('panel.nav.chatbot'),
+                    returns: t('panel.nav.returns'),
                     ownerPanel: t('panel.nav.ownerPanel'),
                     backToStore: t('panel.nav.backToStore'),
                 }}
             />
             <div className="flex-1 overflow-auto">
-                <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
                     {children}
                 </div>
             </div>
         </div>
     )
 }
-

@@ -8,6 +8,7 @@ const mockFlags: FeatureFlags = {
     enable_online_payments: false,
     enable_cash_on_delivery: true,
     enable_bank_transfer: false,
+    enable_whatsapp_contact: true,
     enable_user_registration: true,
     enable_guest_checkout: true,
     require_auth_to_order: false,
@@ -30,6 +31,15 @@ const mockFlags: FeatureFlags = {
     enable_owner_panel: true,
     enable_customer_accounts: true,
     enable_order_tracking: true,
+    enable_cookie_consent: true,
+    enable_chatbot: false,
+    enable_self_service_returns: false,
+    enable_related_products: true,
+    enable_product_comparisons: false,
+    enable_product_badges: true,
+    enable_newsletter: false,
+    owner_lite_enabled: true,
+    owner_advanced_modules_enabled: false,
 }
 
 describe('isFeatureEnabled', () => {

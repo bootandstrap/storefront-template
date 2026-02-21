@@ -1,6 +1,6 @@
 # Medusa Customizations
 
-> Custom modules, subscribers, workflows, and API routes for the Campifrut template.
+> Custom modules, subscribers, workflows, and API routes for the E-Commerce Template template.
 
 ## Custom Modules
 
@@ -89,7 +89,7 @@ Key types used by the authenticated fetcher:
 
 ## Seed Script (`src/scripts/seed.ts`) ✅
 
-Campifrut-specific seed with:
+E-Commerce Template-specific seed with:
 - 5 categories: Cítricos, Frutas Tropicales, Frutas de Temporada, Cajas Surtidas, Productos Artesanales
 - 13 products with Spanish descriptions, weight-based variants, EUR pricing
 - Template-configurable via env vars (`STORE_NAME`, `STORE_CURRENCY`, `STORE_COUNTRY`)

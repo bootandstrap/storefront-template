@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getProducts } from '@/lib/medusa/client'
+import { getConfig } from '@/lib/config'
 import ProductCard from '@/components/products/ProductCard'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator, localizedHref, type Locale } from '@/lib/i18n'
@@ -12,6 +13,7 @@ interface FeaturedProductsProps {
 export default async function FeaturedProducts({ dictionary, lang }: FeaturedProductsProps) {
     const t = createTranslator(dictionary)
     const { products } = await getProducts({ limit: 8 })
+    const { featureFlags } = await getConfig()
 
     if (!products.length) {
         return (
@@ -39,7 +41,7 @@ export default async function FeaturedProducts({ dictionary, lang }: FeaturedPro
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {products.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard key={product.id} product={product} badgesEnabled={featureFlags.enable_product_badges} />
                     ))}
                 </div>
                 <div className="mt-8 text-center sm:hidden">

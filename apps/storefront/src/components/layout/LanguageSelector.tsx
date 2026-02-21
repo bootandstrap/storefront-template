@@ -8,9 +8,10 @@ import { LOCALE_LABELS, type Locale } from '@/lib/i18n'
 
 interface LanguageSelectorProps {
     activeLanguages: string[]
+    maxLanguages?: number
 }
 
-export default function LanguageSelector({ activeLanguages }: LanguageSelectorProps) {
+export default function LanguageSelector({ activeLanguages, maxLanguages }: LanguageSelectorProps) {
     const { locale } = useI18n()
     const router = useRouter()
     const pathname = usePathname()
@@ -28,10 +29,13 @@ export default function LanguageSelector({ activeLanguages }: LanguageSelectorPr
         return () => document.removeEventListener('mousedown', handleClick)
     }, [open])
 
-    // Filter to only active + valid locales
-    const locales = activeLanguages.filter(
+    // Filter to only active + valid locales, capped by plan limit
+    let locales = activeLanguages.filter(
         (l): l is Locale => l in LOCALE_LABELS
     )
+    if (maxLanguages && maxLanguages > 0) {
+        locales = locales.slice(0, maxLanguages)
+    }
 
     // Don't render if only 1 language
     if (locales.length <= 1) return null

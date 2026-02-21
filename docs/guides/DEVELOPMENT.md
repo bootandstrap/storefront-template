@@ -13,8 +13,8 @@
 
 ```bash
 # 1. Clone and install
-git clone <repo> campifrut
-cd campifrut
+git clone <repo> ecommerce-template
+cd ecommerce-template
 pnpm install
 
 # 2. Set up environment
@@ -39,7 +39,7 @@ This starts:
 
 ### What `dev.sh` does
 
-1. Starts Redis in Docker (`campifrut-redis-dev`)
+1. Starts Redis in Docker (`ecommerce-redis-dev`)
 2. Symlinks root `.env` → `apps/storefront/.env.local`
 3. Starts Medusa backend (`pnpm dev`) with IPv4 DNS resolution
 4. Starts Storefront (`pnpm dev`)
@@ -48,7 +48,7 @@ This starts:
 ## Project Structure
 
 ```
-campifrut/
+ecommerce-template/
 ├── GEMINI.md                    # ← Master guide (read first)
 ├── dev.sh                       # ← One-command dev startup
 ├── apps/
@@ -101,10 +101,10 @@ campifrut/
 │       │   ├── api/             # Custom API routes
 │       │   ├── workflows/       # WhatsApp checkout workflow
 │       │   ├── subscribers/     # Event handlers
-│       │   └── scripts/seed.ts  # ✅ Campifrut seed (idempotent, 13 products)
+│       │   └── scripts/seed.ts  # ✅ E-Commerce Template seed (idempotent, 13 products)
 │       └── medusa-config.ts     # ✅ Both providers configured
 │
-├── packages/shared/             # @campifrut/shared types + constants
+├── packages/shared/             # @ecommerce-template/shared types + constants
 ├── docs/                        # Documentation
 ├── docker-compose.yml
 ├── turbo.json
@@ -119,7 +119,7 @@ campifrut/
 | `pnpm build` | Build all apps |
 | `cd apps/medusa && npx medusa db:migrate` | Run Medusa migrations |
 | `cd apps/medusa && npx medusa exec ./src/scripts/seed.ts` | Seed product catalog (idempotent — safe to re-run) |
-| `cd apps/medusa && npx medusa user -e admin@campifrut.com -p password` | Create admin user |
+| `cd apps/medusa && npx medusa user -e admin@example.com -p password` | Create admin user |
 
 ## Environment Variables
 

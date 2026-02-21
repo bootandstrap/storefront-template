@@ -13,7 +13,7 @@ interface HeroSectionProps {
         whatsapp_number?: string | null
     }
     featureFlags: {
-        enable_whatsapp_checkout?: boolean
+        enable_whatsapp_contact?: boolean
     }
     dictionary: Dictionary
     lang: string
@@ -31,6 +31,7 @@ export default function HeroSection({ config, featureFlags, dictionary, lang }: 
                     alt={config.hero_title || config.business_name || ''}
                     fill
                     priority
+                    sizes="100vw"
                     className="object-cover"
                 />
             ) : (
@@ -68,7 +69,7 @@ export default function HeroSection({ config, featureFlags, dictionary, lang }: 
                             <ArrowRight className="w-4 h-4 ml-1" />
                         </Link>
 
-                        {featureFlags.enable_whatsapp_checkout && config.whatsapp_number && (
+                        {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
                             <a
                                 href={`https://wa.me/${config.whatsapp_number}`}
                                 target="_blank"

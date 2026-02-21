@@ -4,10 +4,12 @@
  * Server component fetches categories + plan limits.
  */
 
-import { getConfig } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCategories } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import CategoriesClient from './CategoriesClient'
 
 export const dynamic = 'force-dynamic'
@@ -25,9 +27,11 @@ export default async function CategoriesManagerPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { planLimits } = await getConfig()
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const { planLimits } = await getConfigForTenant(tenantId)
 
-    const categoriesData = await getAdminCategories({ limit: 50 })
+    const categoriesData = await getAdminCategories({ limit: 50 }, scope)
     const limitCheck = checkLimit(planLimits, 'max_categories', categoriesData.count)
 
     const dictionary = await getDictionary(lang as Locale)

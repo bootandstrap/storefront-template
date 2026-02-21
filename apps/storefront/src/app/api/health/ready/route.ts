@@ -1,13 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
 
 // ---------------------------------------------------------------------------
 // GET /api/health/ready — Readiness probe (Docker / Kubernetes / load balancer)
 // ---------------------------------------------------------------------------
+// Protected by optional HEALTH_CHECK_TOKEN for production environments.
+// Rate limited to 60 requests/min per IP.
 // Uses Supabase service-role key (bypasses RLS) so the probe works reliably
 // without a user session context. Also pings Medusa /health.
 // ---------------------------------------------------------------------------
 
 export const dynamic = 'force-dynamic'
+
+const HEALTH_CHECK_TOKEN = process.env.HEALTH_CHECK_TOKEN
 
 type CheckStatus = 'ok' | 'degraded' | 'down'
 
@@ -17,7 +22,38 @@ interface DependencyCheck {
     error?: string
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    // ── Rate limiting (60 req/min per IP) ──────────────────
+    const clientIP = getClientIP(request)
+    const rateCheck = checkRateLimit(`health:${clientIP}`, 60, 60_000)
+
+    if (!rateCheck.allowed) {
+        return NextResponse.json(
+            { error: 'Rate limit exceeded', retryAfterMs: rateCheck.retryAfterMs },
+            {
+                status: 429,
+                headers: {
+                    'Retry-After': String(Math.ceil((rateCheck.retryAfterMs ?? 0) / 1000)),
+                    'X-RateLimit-Remaining': '0',
+                },
+            }
+        )
+    }
+
+    // ── Token auth (if HEALTH_CHECK_TOKEN is configured) ───
+    if (HEALTH_CHECK_TOKEN) {
+        const token = request.headers.get('x-health-token') ||
+            request.nextUrl.searchParams.get('token')
+
+        if (token !== HEALTH_CHECK_TOKEN) {
+            return NextResponse.json(
+                { error: 'Unauthorized — provide X-Health-Token header' },
+                { status: 403 }
+            )
+        }
+    }
+
+    // ── Dependency checks ──────────────────────────────────
     const checks: Record<string, DependencyCheck> = {}
 
     // ── Supabase (service-role — bypasses RLS) ──
@@ -92,7 +128,10 @@ export async function GET() {
         },
         {
             status: httpStatus,
-            headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+                'X-RateLimit-Remaining': String(rateCheck.remaining),
+            },
         }
     )
 }

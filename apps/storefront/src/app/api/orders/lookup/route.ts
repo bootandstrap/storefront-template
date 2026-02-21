@@ -10,6 +10,7 @@
 
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 import { getClientIp } from '@/lib/security/get-client-ip'
+import { getConfig } from '@/lib/config'
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
@@ -20,6 +21,15 @@ const PUBLISHABLE_KEY =
 const lookupLimiter = createSmartRateLimiter({ limit: 5, windowMs: 15 * 60 * 1000, name: 'order-lookup' })
 
 export async function POST(request: Request): Promise<Response> {
+    // Governance: guest order lookup gated by order tracking feature flag
+    const { featureFlags } = await getConfig()
+    if (!featureFlags.enable_order_tracking) {
+        return Response.json(
+            { error: 'Order tracking is disabled for this tenant' },
+            { status: 403 }
+        )
+    }
+
     // Rate limit check
     const clientIp = getClientIp(request)
 

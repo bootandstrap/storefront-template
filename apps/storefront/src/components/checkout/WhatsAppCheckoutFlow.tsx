@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { MessageCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { MessageCircle, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 import type { StoreConfig } from '@/lib/config'
 import type { MedusaLineItem } from '@/lib/medusa/client'
 import { useI18n } from '@/lib/i18n/provider'
 import { buildWhatsAppMessage, buildWhatsAppURL, type WhatsAppTemplateRow } from '@/lib/whatsapp/buildMessage'
-import { fetchDefaultWhatsAppTemplate } from '@/app/[lang]/(shop)/checkout/actions'
+import { fetchDefaultWhatsAppTemplate, submitWhatsAppOrder } from '@/app/[lang]/(shop)/checkout/actions'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -15,11 +15,13 @@ import { fetchDefaultWhatsAppTemplate } from '@/app/[lang]/(shop)/checkout/actio
 interface WhatsAppCheckoutFlowProps {
     config: StoreConfig
     items: MedusaLineItem[]
+    cartId: string
     customerName?: string
+    customerEmail?: string
     customerPhone?: string
     deliveryAddress?: string
     notes?: string
-    onComplete: () => void
+    onComplete: (order?: { id: string; display_id: number }) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -29,7 +31,9 @@ interface WhatsAppCheckoutFlowProps {
 export default function WhatsAppCheckoutFlow({
     config,
     items,
+    cartId,
     customerName,
+    customerEmail,
     customerPhone,
     deliveryAddress,
     notes,
@@ -38,33 +42,60 @@ export default function WhatsAppCheckoutFlow({
     const { t } = useI18n()
     const [template, setTemplate] = useState<WhatsAppTemplateRow | null>(null)
     const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Fetch template from Supabase on mount
-    useEffect(() => {
-        let cancelled = false
+    useState(() => {
         async function load() {
             try {
                 const tmpl = await fetchDefaultWhatsAppTemplate()
-                if (!cancelled) setTemplate(tmpl)
+                setTemplate(tmpl)
             } catch {
                 // Will fall back to hardcoded template
             } finally {
-                if (!cancelled) setLoading(false)
+                setLoading(false)
             }
         }
         load()
-        return () => { cancelled = true }
-    }, [])
+    })
 
-    const handleSend = useCallback(() => {
-        const message = buildWhatsAppMessage(
-            { items, customerName, customerPhone, deliveryAddress, notes, config },
-            template
-        )
-        const url = buildWhatsAppURL(config.whatsapp_number, message)
-        window.open(url, '_blank')
-        onComplete()
-    }, [items, customerName, customerPhone, deliveryAddress, notes, config, template, onComplete])
+    const handleSend = useCallback(async () => {
+        if (submitting) return
+        setSubmitting(true)
+        setError(null)
+
+        try {
+            // 1. Create order in backend FIRST (traceability)
+            const result = await submitWhatsAppOrder(cartId, {
+                name: customerName || '',
+                email: customerEmail || '',
+                phone: customerPhone,
+                address: deliveryAddress,
+                notes,
+            })
+
+            if (result.error) {
+                setError(result.error)
+                setSubmitting(false)
+                return
+            }
+
+            // 2. Build WhatsApp message and open wa.me
+            const message = buildWhatsAppMessage(
+                { items, customerName, customerPhone, deliveryAddress, notes, config },
+                template
+            )
+            const url = buildWhatsAppURL(config.whatsapp_number, message)
+            window.open(url, '_blank')
+
+            // 3. Notify parent with the created order
+            onComplete(result.order ? { id: result.order.id, display_id: result.order.display_id } : undefined)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error creating order')
+            setSubmitting(false)
+        }
+    }, [cartId, customerName, customerEmail, customerPhone, deliveryAddress, notes, items, config, template, onComplete, submitting])
 
     if (loading) {
         return (
@@ -93,6 +124,13 @@ export default function WhatsAppCheckoutFlow({
                 </div>
             )}
 
+            {error && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-red-400">{error}</p>
+                </div>
+            )}
+
             <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
                 <p className="text-xs text-green-300">
                     📱 {t('checkout.whatsapp.reviewNote')}
@@ -101,12 +139,22 @@ export default function WhatsAppCheckoutFlow({
 
             <button
                 onClick={handleSend}
-                className="btn btn-whatsapp w-full py-3 text-base"
+                disabled={submitting}
+                className="btn btn-whatsapp w-full py-3 text-base disabled:opacity-60"
                 type="button"
             >
-                <MessageCircle className="w-5 h-5" />
-                {t('checkout.whatsapp.sendButton')}
-                <ArrowRight className="w-4 h-4" />
+                {submitting ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        {t('common.loading')}
+                    </>
+                ) : (
+                    <>
+                        <MessageCircle className="w-5 h-5" />
+                        {t('checkout.whatsapp.sendButton')}
+                        <ArrowRight className="w-4 h-4" />
+                    </>
+                )}
             </button>
         </div>
     )

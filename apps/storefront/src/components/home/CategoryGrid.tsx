@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { getCategories } from '@/lib/medusa/client'
 import type { Dictionary } from '@/lib/i18n'
-import { createTranslator } from '@/lib/i18n'
+import { createTranslator, localizedHref, type Locale } from '@/lib/i18n'
 
 // Template-agnostic category → icon mapping
 // Covers common e-commerce category types across different businesses
@@ -61,9 +61,10 @@ function getCategoryIcon(handle: string | undefined): LucideIcon {
 
 interface CategoryGridProps {
     dictionary: Dictionary
+    lang: string
 }
 
-export default async function CategoryGrid({ dictionary }: CategoryGridProps) {
+export default async function CategoryGrid({ dictionary, lang }: CategoryGridProps) {
     const t = createTranslator(dictionary)
     const categories = await getCategories()
 
@@ -81,8 +82,8 @@ export default async function CategoryGrid({ dictionary }: CategoryGridProps) {
                         return (
                             <Link
                                 key={cat.id}
-                                href={`/productos?category=${cat.handle}`}
-                                className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-surface-1 transition-all duration-200"
+                                href={`${localizedHref(lang as Locale, 'products', dictionary)}?category=${cat.handle}`}
+                                className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-surface-1 card-lift"
                             >
                                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-all duration-300">
                                     <Icon className="w-7 h-7 md:w-8 md:h-8 text-primary" strokeWidth={1.5} />

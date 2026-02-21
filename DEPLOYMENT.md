@@ -8,22 +8,20 @@
 
 ```
 ~/DESARROLLO/BOOTANDSTRAP/
-├── bootandstrap-admin/              ← Repo: bootandstrap/bootandstrap-admin
-│   ├── src/
+├── BOOTANDSTRAP_WEB/                   ← Web corporativa + SuperAdmin Panel
+│   ├── src/app/app/              ← Admin panel routes
 │   ├── Dockerfile
-│   ├── package.json
 │   └── ...
 └── CLIENTES/
-    └── CAMPIFRUT/                   ← Repo: bootandstrap/bootandstrap-ecommerce  
+    └── ecommerce-template/                   ← Repo: bootandstrap/bootandstrap-ecommerce  
         ├── apps/storefront/
         ├── apps/medusa/
-        ├── docker-compose.yml       ← Referencia admin como ../../bootandstrap-admin
-        ├── docker-compose.dev.yml
+        ├── docker-compose.yml
         └── ...
 ```
 
 > [!IMPORTANT]
-> Ambos repos son **hermanos** bajo `BOOTANDSTRAP/`. El docker-compose referencia el admin con la path relativa `../../bootandstrap-admin`.
+> El SuperAdmin Panel está integrado en `BOOTANDSTRAP_WEB` (web corporativa). Ambos repos comparten la misma instancia de Supabase.
 
 ---
 
@@ -40,7 +38,7 @@
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐                         │
 │  │  SuperAdmin  │  │    Redis     │                         │
-│  │  :3100       │  │    :6379     │                         │
+│  │  (bns-web)   │  │    :6379     │                         │
 │  └──────────────┘  └──────────────┘                         │
 └──────────┬──────────────────┬────────────────────────────────┘
            ▼                  ▼
@@ -60,7 +58,7 @@ Cada servicio se despliega como un **Application** independiente en Dokploy, con
 | **Source** | GitHub: `bootandstrap/bootandstrap-ecommerce` |
 | **Build** | Dockerfile: `apps/storefront/Dockerfile` |
 | **Port** | 3000 |
-| **Domain** | `campifrut.com` → `:3000` |
+| **Domain** | `example.com` → `:3000` |
 | **Build Args** | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_STORE_URL` |
 | **Memory** | 512 MB |
 
@@ -76,7 +74,7 @@ REVALIDATION_SECRET=your-shared-secret   # Must match SuperAdmin's REVALIDATION_
 | **Source** | GitHub: `bootandstrap/bootandstrap-ecommerce` |
 | **Build** | Dockerfile: `apps/medusa/Dockerfile` |
 | **Port** | 9000 |
-| **Domain** | `api.campifrut.com` → `:9000` |
+| **Domain** | `api.example.com` → `:9000` |
 | **Env** | `MEDUSA_WORKER_MODE=server` + DB/Redis URLs |
 | **Memory** | 1 GB |
 
@@ -90,14 +88,14 @@ REVALIDATION_SECRET=your-shared-secret   # Must match SuperAdmin's REVALIDATION_
 | **Env** | `MEDUSA_WORKER_MODE=worker`, `DISABLE_MEDUSA_ADMIN=true` |
 | **Memory** | 512 MB |
 
-### 4. SuperAdmin Panel
+### 4. SuperAdmin Panel (BOOTANDSTRAP_WEB)
 
 | Setting | Value |
 |---------|-------|
-| **Source** | GitHub: `bootandstrap/bootandstrap-admin` |
+| **Source** | GitHub: `bootandstrap/bootandstrap-web` |
 | **Build** | Dockerfile (root) |
-| **Port** | 3100 |
-| **Domain** | `admin.bootandstrap.com` → `:3100` |
+| **Port** | 3000 |
+| **Domain** | `admin.bootandstrap.com` |
 | **Build Args** | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | **Memory** | 256 MB |
 
@@ -108,12 +106,15 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...     # ⚠️ SOLO server-side
 NODE_ENV=production
-PORT=3100
-HOSTNAME=0.0.0.0
 
 # Instant cache revalidation
-STOREFRONT_URL=https://campifrut.com         # Storefront reachable URL
+STOREFRONT_URL=https://example.com         # Storefront reachable URL
 REVALIDATION_SECRET=your-shared-secret       # Must match storefront's REVALIDATION_SECRET
+
+# Medusa per-tenant creds stored in Supabase config table
+# Optional: Dokploy auto-deployment
+DOKPLOY_API_URL=http://your-vps-ip:3000
+DOKPLOY_API_TOKEN=your-dokploy-token
 ```
 
 > [!IMPORTANT]
@@ -133,7 +134,7 @@ REVALIDATION_SECRET=your-shared-secret       # Must match storefront's REVALIDAT
 
 Configura en GitHub → Settings → Webhooks:
 - **Template repo** → Dokploy webhook URL → Events: `push` on `main`
-- **Admin repo** → Dokploy webhook URL → Events: `push` on `main`
+- **BOOTANDSTRAP_WEB repo** → Dokploy webhook URL → Events: `push` on `main`
 
 ---
 
@@ -141,17 +142,17 @@ Configura en GitHub → Settings → Webhooks:
 
 ```bash
 # En el VPS, estructura requerida:
-mkdir -p /opt/bootandstrap/CLIENTES
+mkdir -p /opt/bootandstrap
 cd /opt/bootandstrap
 
-git clone git@github.com:bootandstrap/bootandstrap-admin.git
-git clone git@github.com:bootandstrap/bootandstrap-ecommerce.git CLIENTES/CAMPIFRUT
+git clone git@github.com:bootandstrap/bootandstrap-web.git BOOTANDSTRAP_WEB
+git clone git@github.com:bootandstrap/bootandstrap-ecommerce.git ecommerce-template
 
 # Configurar y levantar
-cp CLIENTES/CAMPIFRUT/.env.example CLIENTES/CAMPIFRUT/.env
+cp ecommerce-template/.env.example ecommerce-template/.env
 # Edita .env con credenciales reales
 
-cd CLIENTES/CAMPIFRUT
+cd ecommerce-template
 docker compose up -d --build
 ```
 
@@ -161,7 +162,7 @@ docker compose up -d --build
 
 ```bash
 # Desde el repo template:
-cd ~/DESARROLLO/BOOTANDSTRAP/CLIENTES/CAMPIFRUT
+cd ~/DESARROLLO/BOOTANDSTRAP/CLIENTES/ecommerce-template
 docker compose -f docker-compose.dev.yml up
 
 # Servicios (todos con hot-reload):
@@ -178,10 +179,10 @@ O sin Docker:
 
 ```bash
 # Terminal 1: Template
-cd ~/DESARROLLO/BOOTANDSTRAP/CLIENTES/CAMPIFRUT && ./dev.sh
+cd ~/DESARROLLO/BOOTANDSTRAP/CLIENTES/ecommerce-template && ./dev.sh
 
-# Terminal 2: Admin
-cd ~/DESARROLLO/BOOTANDSTRAP/bootandstrap-admin && pnpm dev
+# Terminal 2: Admin (web corporativa)
+cd ~/DESARROLLO/BOOTANDSTRAP/BOOTANDSTRAP_WEB && pnpm dev
 ```
 
 ---
@@ -190,9 +191,9 @@ cd ~/DESARROLLO/BOOTANDSTRAP/bootandstrap-admin && pnpm dev
 
 | Dominio | Servicio | Notas |
 |---------|----------|-------|
-| `campifrut.com` | Storefront :3000 | SSL via Let's Encrypt |
-| `api.campifrut.com` | Medusa :9000 | CORS configurado |
-| `admin.bootandstrap.com` | SuperAdmin :3100 | No indexado |
+| `example.com` | Storefront :3000 | SSL via Let's Encrypt |
+| `api.example.com` | Medusa :9000 | CORS configurado |
+| `admin.bootandstrap.com` | SuperAdmin (BOOTANDSTRAP_WEB) | No indexado |
 
 ---
 

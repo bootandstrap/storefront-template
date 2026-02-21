@@ -8,6 +8,8 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
+import { getPanelFallbackRoute, shouldAllowPanelRoute } from '@/lib/panel-route-guards'
+import { redirect } from 'next/navigation'
 import MessagesClient from './MessagesClient'
 
 export const dynamic = 'force-dynamic'
@@ -24,8 +26,12 @@ export default async function WhatsAppTemplatesPage({
 }: {
     params: Promise<{ lang: string }>
 }) {
-    await params
-    const { planLimits } = await getConfig()
+    const { lang } = await params
+    const { planLimits, featureFlags } = await getConfig()
+
+    if (!shouldAllowPanelRoute('mensajes', featureFlags)) {
+        redirect(getPanelFallbackRoute(lang))
+    }
 
     const supabase = await createClient()
     const { data: templates } = await supabase

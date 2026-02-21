@@ -132,6 +132,10 @@ describe('Limit Enforcement Scenarios', () => {
         max_file_upload_mb: 2,
         max_email_sends_month: 100,
         max_custom_domains: 0,
+        max_chatbot_messages_month: 200,
+        max_badges: 3,
+        max_newsletter_subscribers: 100,
+        max_api_calls_day: 100,
     }
 
     const proPlan = {

@@ -9,6 +9,7 @@
  *   MEDUSA_ADMIN_EMAIL      — admin user email (default: admin@medusajs.com)
  *   MEDUSA_ADMIN_PASSWORD   — admin user password
  */
+import { getTenantMedusaScope, type TenantMedusaScope } from './tenant-scope'
 
 const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const MEDUSA_ADMIN_EMAIL = process.env.MEDUSA_ADMIN_EMAIL || 'admin@medusajs.com'
@@ -72,17 +73,92 @@ interface MedusaAdminResponse<T> {
     error: string | null
 }
 
+export interface AdminListParams {
+    limit?: number
+    offset?: number
+    q?: string
+    status?: string
+}
+
+export function normalizeAdminListParams(params?: AdminListParams): {
+    limit: number
+    offset: number
+    q: string | undefined
+    status: string | undefined
+} {
+    const rawLimit = params?.limit ?? 20
+    const rawOffset = params?.offset ?? 0
+    const q = params?.q?.trim() || undefined
+    const status = params?.status?.trim() || undefined
+    const limit = Math.min(100, Math.max(1, Number.isFinite(rawLimit) ? Math.floor(rawLimit) : 20))
+    const offset = Math.max(0, Number.isFinite(rawOffset) ? Math.floor(rawOffset) : 0)
+
+    return { limit, offset, q, status }
+}
+
+function assertScope(scope: TenantMedusaScope | null | undefined): TenantMedusaScope {
+    if (!scope || !scope.tenantId) {
+        throw new Error('Medusa tenant scope is required')
+    }
+    return scope
+}
+
+async function resolveScope(scope?: TenantMedusaScope): Promise<TenantMedusaScope> {
+    if (!scope) {
+        throw new Error('TENANT_SCOPE_REQUIRED: Medusa admin operations require explicit tenant scope. Pass scope from requirePanelAuth().')
+    }
+    return assertScope(scope)
+}
+
+export function buildScopedAdminHeaders(scopeInput: TenantMedusaScope): Record<string, string> {
+    const scope = assertScope(scopeInput)
+    const headers: Record<string, string> = {
+        'x-tenant-id': scope.tenantId,
+    }
+    // Only add sales-channel header when scope is configured (non-passthrough)
+    if (scope.medusaSalesChannelId) {
+        headers['x-medusa-sales-channel-id'] = scope.medusaSalesChannelId
+    }
+    return headers
+}
+
+export function buildScopedAdminPath(path: string, scopeInput: TenantMedusaScope): string {
+    const scope = assertScope(scopeInput)
+
+    // Skip scoping when in passthrough mode (empty sales channel)
+    if (!scope.medusaSalesChannelId) return path
+
+    // Keep query augmentation conservative: products collection is known to be sales-channel aware.
+    if (!path.startsWith('/admin/products?')) {
+        return path
+    }
+
+    const [basePath, query = ''] = path.split('?')
+    const queryParams = new URLSearchParams(query)
+    if (!queryParams.get('sales_channel_id')) {
+        queryParams.set('sales_channel_id', scope.medusaSalesChannelId)
+    }
+    return `${basePath}?${queryParams.toString()}`
+}
+
 async function adminFetch<T>(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    scope?: TenantMedusaScope
 ): Promise<MedusaAdminResponse<T>> {
     try {
+        const tenantScope = await resolveScope(scope)
         const token = await getAdminToken()
-        const res = await fetch(`${MEDUSA_BACKEND_URL}${path}`, {
+        const method = (options.method ?? 'GET').toUpperCase()
+        const scopedPath = method === 'GET' ? buildScopedAdminPath(path, tenantScope) : path
+        const scopeHeaders = buildScopedAdminHeaders(tenantScope)
+
+        const res = await fetch(`${MEDUSA_BACKEND_URL}${scopedPath}`, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                ...scopeHeaders,
                 ...options.headers,
             },
             cache: 'no-store',
@@ -93,11 +169,12 @@ async function adminFetch<T>(
             gMedusa.__medusaAdminToken = null
             gMedusa.__medusaTokenExpiry = 0
             const freshToken = await getAdminToken()
-            const retryRes = await fetch(`${MEDUSA_BACKEND_URL}${path}`, {
+            const retryRes = await fetch(`${MEDUSA_BACKEND_URL}${scopedPath}`, {
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${freshToken}`,
+                    ...scopeHeaders,
                     ...options.headers,
                 },
                 cache: 'no-store',
@@ -129,8 +206,8 @@ async function adminFetch<T>(
 // Product count
 // ---------------------------------------------------------------------------
 
-export async function getProductCount(): Promise<number> {
-    const res = await adminFetch<{ count: number }>('/admin/products?limit=0&fields=id')
+export async function getProductCount(scope: TenantMedusaScope): Promise<number> {
+    const res = await adminFetch<{ count: number }>('/admin/products?limit=0&fields=id', {}, scope)
     return res.data?.count ?? 0
 }
 
@@ -138,8 +215,8 @@ export async function getProductCount(): Promise<number> {
 // Category count
 // ---------------------------------------------------------------------------
 
-export async function getCategoryCount(): Promise<number> {
-    const res = await adminFetch<{ count: number }>('/admin/product-categories?limit=0&fields=id')
+export async function getCategoryCount(scope: TenantMedusaScope): Promise<number> {
+    const res = await adminFetch<{ count: number }>('/admin/product-categories?limit=0&fields=id', {}, scope)
     return res.data?.count ?? 0
 }
 
@@ -147,11 +224,13 @@ export async function getCategoryCount(): Promise<number> {
 // Orders count (current month)
 // ---------------------------------------------------------------------------
 
-export async function getOrdersThisMonth(): Promise<number> {
+export async function getOrdersThisMonth(scope: TenantMedusaScope): Promise<number> {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
     const res = await adminFetch<{ count: number }>(
-        `/admin/orders?limit=0&fields=id&created_at[gte]=${startOfMonth}`
+        `/admin/orders?limit=0&fields=id&created_at[gte]=${startOfMonth}`,
+        {},
+        scope
     )
     return res.data?.count ?? 0
 }
@@ -217,12 +296,16 @@ export interface AdminOrderFull extends AdminOrder {
         currency_code: string
     }[]
     updated_at: string
+    sales_channel_id?: string | null
     metadata: Record<string, unknown> | null
 }
 
-export async function getRecentOrders(limit = 5): Promise<AdminOrder[]> {
+export async function getRecentOrders(limit = 5, scope?: TenantMedusaScope): Promise<AdminOrder[]> {
+    const normalizedLimit = Math.min(100, Math.max(1, Math.floor(limit)))
     const res = await adminFetch<{ orders: AdminOrder[] }>(
-        `/admin/orders?limit=${limit}&order=-created_at&fields=*customer`
+        `/admin/orders?limit=${normalizedLimit}&order=-created_at&fields=*customer`,
+        {},
+        scope
     )
     return res.data?.orders ?? []
 }
@@ -232,35 +315,73 @@ export async function getAdminOrders(params?: {
     offset?: number
     status?: string
     q?: string
-}): Promise<{ orders: AdminOrderFull[]; count: number }> {
+}, scope?: TenantMedusaScope): Promise<{ orders: AdminOrderFull[]; count: number }> {
+    const normalized = normalizeAdminListParams({
+        limit: params?.limit,
+        offset: params?.offset,
+        status: params?.status,
+        q: params?.q,
+    })
+
     const searchParams = new URLSearchParams()
-    searchParams.set('limit', String(params?.limit ?? 20))
-    searchParams.set('offset', String(params?.offset ?? 0))
+    searchParams.set('limit', String(normalized.limit))
+    searchParams.set('offset', String(normalized.offset))
     searchParams.set('order', '-created_at')
-    searchParams.set('fields', '*customer,*items,*shipping_address,*fulfillments,*payments')
-    if (params?.status && params.status !== 'all') {
-        searchParams.set('status', params.status)
+    searchParams.set('fields', '*customer,*items,*shipping_address,*fulfillments,*payments,sales_channel_id,metadata')
+    if (normalized.status && normalized.status !== 'all') {
+        searchParams.set('status', normalized.status)
     }
-    if (params?.q) {
-        searchParams.set('q', params.q)
+    if (normalized.q) {
+        searchParams.set('q', normalized.q)
     }
 
     const res = await adminFetch<{ orders: AdminOrderFull[]; count: number }>(
-        `/admin/orders?${searchParams.toString()}`
+        `/admin/orders?${searchParams.toString()}`,
+        {},
+        scope
     )
     return { orders: res.data?.orders ?? [], count: res.data?.count ?? 0 }
 }
 
-export async function getAdminOrderDetail(id: string): Promise<AdminOrderFull | null> {
+export async function getAdminOrderDetail(
+    id: string,
+    scope?: TenantMedusaScope
+): Promise<AdminOrderFull | null> {
     const res = await adminFetch<{ order: AdminOrderFull }>(
-        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,*fulfillments,*payments`
+        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,*fulfillments,*payments,sales_channel_id,metadata`,
+        {},
+        scope
     )
     return res.data?.order ?? null
 }
 
+export function orderBelongsToScope(
+    order: Pick<AdminOrderFull, 'sales_channel_id' | 'metadata'> | null | undefined,
+    scopeInput: TenantMedusaScope
+): boolean {
+    if (!order) return false
+    const scope = assertScope(scopeInput)
+
+    if (typeof order.sales_channel_id === 'string' && order.sales_channel_id.length > 0) {
+        return order.sales_channel_id === scope.medusaSalesChannelId
+    }
+
+    const metadata = order.metadata as Record<string, unknown> | null
+    const metadataTenantId = typeof metadata?.tenant_id === 'string'
+        ? metadata.tenant_id.trim()
+        : ''
+    if (metadataTenantId.length > 0) {
+        return metadataTenantId === scope.tenantId
+    }
+
+    // Fail closed when order lacks tenant ownership signals.
+    return false
+}
+
 export async function createOrderFulfillment(
     orderId: string,
-    itemIds?: string[]
+    itemIds?: string[],
+    scope?: TenantMedusaScope
 ): Promise<{ error: string | null }> {
     const body: Record<string, unknown> = {}
     if (itemIds?.length) {
@@ -269,16 +390,17 @@ export async function createOrderFulfillment(
     const res = await adminFetch(`/admin/orders/${orderId}/fulfillments`, {
         method: 'POST',
         body: JSON.stringify(body),
-    })
+    }, scope)
     return { error: res.error }
 }
 
 export async function cancelAdminOrder(
-    orderId: string
+    orderId: string,
+    scope?: TenantMedusaScope
 ): Promise<{ error: string | null }> {
     const res = await adminFetch(`/admin/orders/${orderId}/cancel`, {
         method: 'POST',
-    })
+    }, scope)
     return { error: res.error }
 }
 
@@ -301,23 +423,31 @@ export async function getAdminCustomers(params?: {
     limit?: number
     offset?: number
     q?: string
-}): Promise<{ customers: AdminCustomer[]; count: number }> {
+}, scope?: TenantMedusaScope): Promise<{ customers: AdminCustomer[]; count: number }> {
+    const normalized = normalizeAdminListParams({
+        limit: params?.limit,
+        offset: params?.offset,
+        q: params?.q,
+    })
+
     const searchParams = new URLSearchParams()
-    searchParams.set('limit', String(params?.limit ?? 20))
-    searchParams.set('offset', String(params?.offset ?? 0))
+    searchParams.set('limit', String(normalized.limit))
+    searchParams.set('offset', String(normalized.offset))
     searchParams.set('order', '-created_at')
-    if (params?.q) {
-        searchParams.set('q', params.q)
+    if (normalized.q) {
+        searchParams.set('q', normalized.q)
     }
 
     const res = await adminFetch<{ customers: AdminCustomer[]; count: number }>(
-        `/admin/customers?${searchParams.toString()}`
+        `/admin/customers?${searchParams.toString()}`,
+        {},
+        scope
     )
     return { customers: res.data?.customers ?? [], count: res.data?.count ?? 0 }
 }
 
-export async function getCustomerCount(): Promise<number> {
-    const res = await adminFetch<{ count: number }>('/admin/customers?limit=0&fields=id')
+export async function getCustomerCount(scope: TenantMedusaScope): Promise<number> {
+    const res = await adminFetch<{ count: number }>('/admin/customers?limit=0&fields=id', {}, scope)
     return res.data?.count ?? 0
 }
 
@@ -327,12 +457,13 @@ export async function getCustomerCount(): Promise<number> {
 
 export async function updateProductMetadata(
     productId: string,
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown>,
+    scope?: TenantMedusaScope
 ): Promise<boolean> {
     const res = await adminFetch(`/admin/products/${productId}`, {
         method: 'POST',
         body: JSON.stringify({ metadata }),
-    })
+    }, scope)
     return res.error === null
 }
 
@@ -352,13 +483,15 @@ export interface AdminProductSummary {
 export async function getAdminProducts(params?: {
     limit?: number
     offset?: number
-}): Promise<{ products: AdminProductSummary[]; count: number }> {
-    const limit = params?.limit ?? 50
-    const offset = params?.offset ?? 0
+}, scope?: TenantMedusaScope): Promise<{ products: AdminProductSummary[]; count: number }> {
+    const normalized = normalizeAdminListParams({
+        limit: params?.limit ?? 50,
+        offset: params?.offset,
+    })
     const res = await adminFetch<{
         products: AdminProductSummary[]
         count: number
-    }>(`/admin/products?limit=${limit}&offset=${offset}&fields=id,title,handle,thumbnail,status,metadata&order=title`)
+    }>(`/admin/products?limit=${normalized.limit}&offset=${normalized.offset}&fields=id,title,handle,thumbnail,status,metadata&order=title`, {}, scope)
 
     return {
         products: res.data?.products ?? [],
@@ -397,24 +530,30 @@ export async function getAdminProductsFull(params?: {
     offset?: number
     status?: string
     q?: string
-}): Promise<{ products: AdminProductFull[]; count: number }> {
-    const limit = params?.limit ?? 20
-    const offset = params?.offset ?? 0
+}, scope?: TenantMedusaScope): Promise<{ products: AdminProductFull[]; count: number }> {
+    const normalized = normalizeAdminListParams({
+        limit: params?.limit,
+        offset: params?.offset,
+        status: params?.status,
+        q: params?.q,
+    })
     const searchParams = new URLSearchParams({
-        limit: String(limit),
-        offset: String(offset),
+        limit: String(normalized.limit),
+        offset: String(normalized.offset),
         order: '-created_at',
     })
-    if (params?.status && params.status !== 'all') {
-        searchParams.set('status', params.status)
+    if (normalized.status && normalized.status !== 'all') {
+        searchParams.set('status', normalized.status)
     }
-    if (params?.q) {
-        searchParams.set('q', params.q)
+    if (normalized.q) {
+        searchParams.set('q', normalized.q)
     }
     searchParams.set('fields', 'id,title,handle,description,subtitle,thumbnail,status,created_at,updated_at,metadata,*categories,*variants,*variants.prices,*images')
 
     const res = await adminFetch<{ products: AdminProductFull[]; count: number }>(
-        `/admin/products?${searchParams.toString()}`
+        `/admin/products?${searchParams.toString()}`,
+        {},
+        scope
     )
     return {
         products: res.data?.products ?? [],
@@ -422,9 +561,11 @@ export async function getAdminProductsFull(params?: {
     }
 }
 
-export async function getAdminProduct(id: string): Promise<AdminProductFull | null> {
+export async function getAdminProduct(id: string, scope?: TenantMedusaScope): Promise<AdminProductFull | null> {
     const res = await adminFetch<{ product: AdminProductFull }>(
-        `/admin/products/${id}?fields=id,title,handle,description,subtitle,thumbnail,status,created_at,updated_at,metadata,*categories,*variants,*variants.prices,*images`
+        `/admin/products/${id}?fields=id,title,handle,description,subtitle,thumbnail,status,created_at,updated_at,metadata,*categories,*variants,*variants.prices,*images`,
+        {},
+        scope
     )
     return res.data?.product ?? null
 }
@@ -442,28 +583,30 @@ export interface CreateProductInput {
 }
 
 export async function createAdminProduct(
-    data: CreateProductInput
+    data: CreateProductInput,
+    scope?: TenantMedusaScope
 ): Promise<{ product: AdminProductFull | null; error: string | null }> {
     const res = await adminFetch<{ product: AdminProductFull }>('/admin/products', {
         method: 'POST',
         body: JSON.stringify(data),
-    })
+    }, scope)
     return { product: res.data?.product ?? null, error: res.error }
 }
 
 export async function updateAdminProduct(
     id: string,
-    data: Partial<CreateProductInput>
+    data: Partial<CreateProductInput>,
+    scope?: TenantMedusaScope
 ): Promise<{ product: AdminProductFull | null; error: string | null }> {
     const res = await adminFetch<{ product: AdminProductFull }>(`/admin/products/${id}`, {
         method: 'POST',
         body: JSON.stringify(data),
-    })
+    }, scope)
     return { product: res.data?.product ?? null, error: res.error }
 }
 
-export async function deleteAdminProduct(id: string): Promise<{ error: string | null }> {
-    const res = await adminFetch(`/admin/products/${id}`, { method: 'DELETE' })
+export async function deleteAdminProduct(id: string, scope?: TenantMedusaScope): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/products/${id}`, { method: 'DELETE' }, scope)
     return { error: res.error }
 }
 
@@ -512,12 +655,13 @@ export async function uploadFiles(
  */
 export async function updateProductImages(
     productId: string,
-    images: { url: string }[]
+    images: { url: string }[],
+    scope?: TenantMedusaScope
 ): Promise<{ error: string | null }> {
     const res = await adminFetch(`/admin/products/${productId}`, {
         method: 'POST',
         body: JSON.stringify({ images }),
-    })
+    }, scope)
     return { error: res.error }
 }
 
@@ -527,16 +671,17 @@ export async function updateProductImages(
  */
 export async function deleteProductImage(
     productId: string,
-    imageUrl: string
+    imageUrl: string,
+    scope?: TenantMedusaScope
 ): Promise<{ error: string | null }> {
-    const product = await getAdminProduct(productId)
+    const product = await getAdminProduct(productId, scope)
     if (!product) return { error: 'Product not found' }
 
     const updatedImages = (product.images ?? [])
         .filter(img => img.url !== imageUrl)
         .map(img => ({ url: img.url }))
 
-    return updateProductImages(productId, updatedImages)
+    return updateProductImages(productId, updatedImages, scope)
 }
 
 // ---------------------------------------------------------------------------
@@ -546,12 +691,13 @@ export async function deleteProductImage(
 export async function updateVariantPrices(
     productId: string,
     variantId: string,
-    prices: { amount: number; currency_code: string }[]
+    prices: { amount: number; currency_code: string }[],
+    scope?: TenantMedusaScope
 ): Promise<{ error: string | null }> {
     const res = await adminFetch(`/admin/products/${productId}/variants/${variantId}`, {
         method: 'POST',
         body: JSON.stringify({ prices }),
-    })
+    }, scope)
     return { error: res.error }
 }
 
@@ -576,11 +722,15 @@ export interface AdminCategory {
 export async function getAdminCategories(params?: {
     limit?: number
     offset?: number
-}): Promise<{ product_categories: AdminCategory[]; count: number }> {
-    const limit = params?.limit ?? 50
-    const offset = params?.offset ?? 0
+}, scope?: TenantMedusaScope): Promise<{ product_categories: AdminCategory[]; count: number }> {
+    const normalized = normalizeAdminListParams({
+        limit: params?.limit ?? 50,
+        offset: params?.offset,
+    })
     const res = await adminFetch<{ product_categories: AdminCategory[]; count: number }>(
-        `/admin/product-categories?limit=${limit}&offset=${offset}&fields=id,name,handle,description,is_active,is_internal,rank,parent_category,category_children,created_at,updated_at&order=name`
+        `/admin/product-categories?limit=${normalized.limit}&offset=${normalized.offset}&fields=id,name,handle,description,is_active,is_internal,rank,parent_category,category_children,created_at,updated_at&order=name`,
+        {},
+        scope
     )
     return {
         product_categories: res.data?.product_categories ?? [],
@@ -597,27 +747,29 @@ export interface CreateCategoryInput {
 }
 
 export async function createAdminCategory(
-    data: CreateCategoryInput
+    data: CreateCategoryInput,
+    scope?: TenantMedusaScope
 ): Promise<{ category: AdminCategory | null; error: string | null }> {
     const res = await adminFetch<{ product_category: AdminCategory }>('/admin/product-categories', {
         method: 'POST',
         body: JSON.stringify(data),
-    })
+    }, scope)
     return { category: res.data?.product_category ?? null, error: res.error }
 }
 
 export async function updateAdminCategory(
     id: string,
-    data: Partial<CreateCategoryInput>
+    data: Partial<CreateCategoryInput>,
+    scope?: TenantMedusaScope
 ): Promise<{ category: AdminCategory | null; error: string | null }> {
     const res = await adminFetch<{ product_category: AdminCategory }>(`/admin/product-categories/${id}`, {
         method: 'POST',
         body: JSON.stringify(data),
-    })
+    }, scope)
     return { category: res.data?.product_category ?? null, error: res.error }
 }
 
-export async function deleteAdminCategory(id: string): Promise<{ error: string | null }> {
-    const res = await adminFetch(`/admin/product-categories/${id}`, { method: 'DELETE' })
+export async function deleteAdminCategory(id: string, scope?: TenantMedusaScope): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/product-categories/${id}`, { method: 'DELETE' }, scope)
     return { error: res.error }
 }

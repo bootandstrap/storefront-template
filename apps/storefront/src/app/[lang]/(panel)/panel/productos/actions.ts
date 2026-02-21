@@ -2,7 +2,11 @@
 
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { revalidatePanel } from '@/lib/revalidate'
+import { getConfigForTenant } from '@/lib/config'
+import { checkLimit } from '@/lib/limits'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
+    getProductCount,
     createAdminProduct,
     updateAdminProduct,
     deleteAdminProduct,
@@ -27,12 +31,22 @@ export async function createProduct(data: {
     categoryId?: string
     status: 'draft' | 'published'
 }): Promise<ActionResult> {
-    await requirePanelAuth()
+    const { tenantId } = await requirePanelAuth()
     if (!data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
     if (data.price < 0) {
         return { success: false, error: 'El precio no puede ser negativo' }
+    }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    const [{ planLimits }, productCount] = await Promise.all([
+        getConfigForTenant(tenantId),
+        getProductCount(scope),
+    ])
+    const limitCheck = checkLimit(planLimits, 'max_products', productCount)
+    if (!limitCheck.allowed) {
+        return { success: false, error: 'Límite de productos alcanzado' }
     }
 
     const input: CreateProductInput = {
@@ -49,7 +63,7 @@ export async function createProduct(data: {
         ],
     }
 
-    const result = await createAdminProduct(input)
+    const result = await createAdminProduct(input, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }
@@ -71,10 +85,12 @@ export async function updateProduct(
         variantId?: string
     }
 ): Promise<ActionResult> {
-    await requirePanelAuth()
+    const { tenantId } = await requirePanelAuth()
     if (data.title !== undefined && !data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
+
+    const scope = await getTenantMedusaScope(tenantId)
 
     // Update product fields
     const updateData: Partial<CreateProductInput> = {}
@@ -85,7 +101,7 @@ export async function updateProduct(
         updateData.categories = data.categoryId ? [{ id: data.categoryId }] : []
     }
 
-    const result = await updateAdminProduct(id, updateData)
+    const result = await updateAdminProduct(id, updateData, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }
@@ -94,7 +110,7 @@ export async function updateProduct(
     if (data.price !== undefined && data.variantId && data.currency) {
         const priceResult = await updateVariantPrices(id, data.variantId, [
             { amount: Math.round(data.price * 100), currency_code: data.currency },
-        ])
+        ], scope)
         if (priceResult.error) {
             return { success: false, error: priceResult.error }
         }
@@ -106,8 +122,9 @@ export async function updateProduct(
 }
 
 export async function removeProduct(id: string): Promise<ActionResult> {
-    await requirePanelAuth()
-    const result = await deleteAdminProduct(id)
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const result = await deleteAdminProduct(id, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }
@@ -121,14 +138,13 @@ export async function removeProduct(id: string): Promise<ActionResult> {
 // Product Images
 // ---------------------------------------------------------------------------
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export async function uploadProductImage(
     productId: string,
     formData: FormData
 ): Promise<ActionResult> {
-    await requirePanelAuth()
+    const { tenantId } = await requirePanelAuth()
     const file = formData.get('file') as File | null
     if (!file) {
         return { success: false, error: 'No file provided' }
@@ -138,28 +154,38 @@ export async function uploadProductImage(
         return { success: false, error: 'Only JPEG, PNG, WebP, and GIF images are allowed' }
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-        return { success: false, error: 'Image must be under 5 MB' }
+    const scope = await getTenantMedusaScope(tenantId)
+
+    // Dynamic file size limit from plan (scoped to auth tenant)
+    const { planLimits } = await getConfigForTenant(tenantId)
+    const maxFileSizeBytes = (planLimits.max_file_upload_mb ?? 5) * 1024 * 1024
+    if (file.size > maxFileSizeBytes) {
+        return { success: false, error: `El archivo excede el límite de ${planLimits.max_file_upload_mb ?? 5} MB` }
     }
 
-    // 1. Upload to Medusa storage
+    // Check current image count against plan limit
+    const product = await getAdminProduct(productId, scope)
+    if (!product) {
+        return { success: false, error: 'Product not found' }
+    }
+
+    const existingImages = (product.images ?? []).map(img => ({ url: img.url }))
+    const imageLimit = checkLimit(planLimits, 'max_images_per_product', existingImages.length)
+    if (!imageLimit.allowed) {
+        return { success: false, error: `Límite de imágenes alcanzado (${imageLimit.limit} por producto)` }
+    }
+
+    // Upload to Medusa storage
     const uploadResult = await uploadFiles([file])
     if (uploadResult.error || uploadResult.files.length === 0) {
         return { success: false, error: uploadResult.error ?? 'Upload failed' }
     }
 
-    // 2. Get current product images
-    const product = await getAdminProduct(productId)
-    if (!product) {
-        return { success: false, error: 'Product not found' }
-    }
-
-    // 3. Append uploaded image(s) to product
-    const existingImages = (product.images ?? []).map(img => ({ url: img.url }))
+    // Append uploaded image(s) to product
     const newImages = uploadResult.files.map(f => ({ url: f.url }))
     const allImages = [...existingImages, ...newImages]
 
-    const updateResult = await updateProductImages(productId, allImages)
+    const updateResult = await updateProductImages(productId, allImages, scope)
     if (updateResult.error) {
         return { success: false, error: updateResult.error }
     }
@@ -172,8 +198,9 @@ export async function removeProductImage(
     productId: string,
     imageUrl: string
 ): Promise<ActionResult> {
-    await requirePanelAuth()
-    const result = await deleteProductImage(productId, imageUrl)
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const result = await deleteProductImage(productId, imageUrl, scope)
     if (result.error) {
         return { success: false, error: result.error }
     }

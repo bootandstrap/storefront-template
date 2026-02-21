@@ -1,7 +1,7 @@
 /**
  * Config Fetch Authorization Tests
  *
- * Verifies that getConfig() uses the service-role admin client (not anon)
+ * Verifies that getConfig() uses the governance client (service-role)
  * and always scopes queries by tenant_id.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -17,8 +17,8 @@ const mockFrom = vi.fn(() => ({ select: mockSelect }))
 
 const mockAdminClient = { from: mockFrom }
 
-vi.mock('@/lib/supabase/admin', () => ({
-    createAdminClient: vi.fn(() => mockAdminClient),
+vi.mock('@/lib/supabase/governance', () => ({
+    createGovernanceClient: vi.fn(() => mockAdminClient),
 }))
 
 // Mock 'server-only' (no-op in test environment)
@@ -55,7 +55,7 @@ describe('getConfig — authorization', () => {
         delete g.__configCache
     })
 
-    it('uses admin client (service-role), not anon client', async () => {
+    it('uses governance client (service-role), not anon client', async () => {
         // Setup: return valid config data
         mockSingle.mockResolvedValue({
             data: { id: '1', tenant_id: 'tenant-test-123', business_name: 'Test' },
@@ -65,9 +65,9 @@ describe('getConfig — authorization', () => {
         const { getConfig } = await import('../config')
         await getConfig()
 
-        // Verify createAdminClient was used
-        const { createAdminClient } = await import('../supabase/admin')
-        expect(createAdminClient).toHaveBeenCalled()
+        // Verify createGovernanceClient was used
+        const { createGovernanceClient } = await import('../supabase/governance')
+        expect(createGovernanceClient).toHaveBeenCalled()
     })
 
     it('always scopes queries by tenant_id', async () => {
@@ -113,9 +113,9 @@ describe('getConfig — authorization', () => {
         vi.resetModules()
 
         // Re-mock with actual validation
-        vi.doMock('@/lib/supabase/admin', () => ({
-            createAdminClient: vi.fn(() => {
-                throw new Error('[admin-client] NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required')
+        vi.doMock('@/lib/supabase/governance', () => ({
+            createGovernanceClient: vi.fn(() => {
+                throw new Error('[governance-client] GOVERNANCE_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL required')
             }),
         }))
 

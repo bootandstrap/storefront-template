@@ -1,6 +1,6 @@
 # BootandStrap E-Commerce Template — Roadmap
 
-> **Last updated**: 12 Feb 2026 (Production Remediation complete — RLS hardening, Error Inbox, release gate 7/7 PASS)
+> **Last updated**: 15 Feb 2026 (Sprint D complete — ChatbotPRO governance, Sentry integration, cross-repo flag sync)
 > **Repos**: [bootandstrap-ecommerce](https://github.com/bootandstrap/bootandstrap-ecommerce) (template) · [bootandstrap-admin](https://github.com/bootandstrap/bootandstrap-admin) (superadmin)
 
 ---
@@ -16,10 +16,10 @@ Phase 5  ████████████████████ 100%  Prod
 Phase 6  ████████████████████ 100%  i18n + Route Restructuring
 Phase 7  ████████████████████ 100%  Customer Panel Polish
 Phase 8  ████████████████████ 100%  SaaS Governance + Owner Panel Completion
-Phase 9  ██████████████████░░  90%  Production Hardening & Multi-Client
+Phase 9  ███████████████████░  95%  Production Hardening & Multi-Client
 ```
 
-> **Quality gate status (12 Feb 2026)**: release-gate.sh **7/7 PASSED** ✅ — tests ✅ (208 tests, 20 files storefront + 22 tests, 3 files admin), build ✅ (37+ routes). See `GEMINI.md` for full baseline.
+> **Quality gate status (15 Feb 2026)**: release-gate.sh **7/7 PASSED** ✅ — tests ✅ (248 tests, 32 files storefront + 22 tests, 3 files admin), build ✅ (155 pages, 37 feature flags). See `GEMINI.md` for full baseline.
 
 **Repo separation completed**: SuperAdmin Panel now lives in its own repo (`bootandstrap-admin`). Template repo contains storefront + Medusa only.
 
@@ -37,7 +37,7 @@ Phase 9  ██████████████████░░  90%  Prod
 | 2 | Medusa ↔ Supabase DB connection verified | ✅ |
 | 3 | Supabase Auth Provider (Medusa custom module) | ✅ |
 | 4 | Supabase Storage Provider (Medusa custom module) | ✅ |
-| 5 | Campifrut Seed Script (13 products, 5 categories) | ✅ |
+| 5 | E-Commerce Template Seed Script (13 products, 5 categories) | ✅ |
 | 1b | Feature flags migration (4 new columns) + `whatsapp_templates` table | ✅ |
 
 **Key deliverables**: 2 custom Medusa modules, 9 Supabase migrations, seed script with 13 products.
@@ -215,9 +215,9 @@ This phase was restructured into 4 sub-phases:
 | Auth | Email/password + `super_admin` role gate | ✅ |
 | Global Dashboard | 4 stat cards + recent tenants table | ✅ |
 | Tenant List | TenantCard grid + status filter bar | ✅ |
-| Tenant Detail | 3-tab editor (flags / limits / usage) + status control | ✅ |
+| Tenant Detail | 6-tab editor (info / flags / limits / config / usage / errors) + status control | ✅ |
 | Create Tenant | Form with auto-slug + plan selector | ✅ |
-| Feature Flag Visualization | 27 flags, 6 categories, dependency/conflict graph | ✅ |
+| Feature Flag Visualization | 37 flags, 8 categories, dependency/conflict graph | ✅ |
 | Plan presets | Starter / Pro / Enterprise defaults | ✅ |
 | Dockerfile | Standalone multi-stage build | ✅ |
 
@@ -304,20 +304,31 @@ This phase was restructured into 4 sub-phases:
 
 ---
 
-## Future Ideas (Post-Phase 9)
+## Implemented Features (Previously in Future Ideas)
+
+The following features were tracked as future ideas but are now fully implemented:
+
+| Feature | Sprint | Notes |
+|---------|--------|-------|
+| Product reviews | Sprint A | Flag `enable_reviews`, ReviewForm + API + moderation panel |
+| Wishlist | Sprint A | Flag `enable_wishlist`, WishlistProvider + Supabase sync |
+| Promotions / discount codes | Sprint A | Flag `enable_promotions`, promo engine + checkout integration |
+| Product comparisons | Sprint B | Flag `enable_product_comparisons`, CompareContext + `/comparar` page |
+| AI Chatbot (ChatbotPRO) | Sprint B | Flag `enable_chatbot`, 3-tier system (Visitor/Customer/Premium) |
+| Self-service returns | Sprint C | Flag `enable_self_service_returns`, `/api/returns` + Owner Panel |
+| Newsletter signup | Sprint A | Flag `enable_newsletter`, `/api/newsletter` route |
+
+## Future Ideas (Post-Sprint C)
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Product reviews | Medium | Flag `enable_reviews` exists, needs UI + Medusa module |
-| Wishlist | Low | Flag `enable_wishlist` exists, needs UI + localStorage/DB |
-| Promotions / discount codes | High | Flag `enable_promotions` exists, Medusa has native support |
 | Push notifications | Low | Order status updates via web push |
-| Inventory alerts | Medium | Low stock notifications for owner |
 | AI product recommendations | Low | "Customers also bought" based on order history |
 | Multi-store support | High | Single admin managing multiple storefronts |
 | Marketplace mode | Low | Multiple vendors per storefront |
 | Subscription products | Medium | Recurring orders (e.g., weekly fruit box) |
 | Loyalty program | Low | Points system per purchase |
+| Inventory alerts | Medium | Low stock notifications for owner |
 
 ---
 

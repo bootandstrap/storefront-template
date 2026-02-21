@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfig } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { SlideInputSchema, SlideUpdateSchema } from '@/lib/owner-validation'
@@ -35,7 +35,7 @@ export async function createSlide(
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
         const validInput = parsed.data
-        const { planLimits } = await getConfig()
+        const { planLimits } = await getConfigForTenant(tenantId)
 
         // Count existing slides for this tenant
         const { count } = await supabase

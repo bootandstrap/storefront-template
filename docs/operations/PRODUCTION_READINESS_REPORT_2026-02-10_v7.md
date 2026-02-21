@@ -1,4 +1,4 @@
-# CAMPIFRUT Production Readiness Report — v7→v8 Baseline
+# ecommerce-template Production Readiness Report — v7→v8 Baseline
 
 **Date:** 2026-02-10 21:06 CET  
 **SHA:** `31011b58` (main, clean)  

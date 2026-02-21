@@ -59,12 +59,11 @@
 | View store analytics | Owner Panel (`/panel/analiticas`) | Dashboard + charts |
 
 ### What the Owner Cannot Do (Requires BootandStrap)
-- Change feature flags (enable/disable payment methods, auth, etc.)
+- Change feature flags (enable/disable payment methods, auth providers, etc.)
 - Modify plan limits (max products, orders, etc.)
-- Change color presets or theme mode
-- Add new languages or currencies
 - Domain changes
 - Database modifications
+- Infrastructure changes (SSL, DNS, backups)
 
 ### Training Agenda (45 min)
 1. **Login** — How to access Owner Panel (`/panel`)

@@ -19,7 +19,7 @@ services:
       args:
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        - NEXT_PUBLIC_STORE_URL=${NEXT_PUBLIC_STORE_URL:-https://campifrut.com}
+        - NEXT_PUBLIC_STORE_URL=${NEXT_PUBLIC_STORE_URL:-https://example.com}
     ports:
       - "3000:3000"
     env_file: .env
@@ -46,14 +46,14 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - campifrut
+      - ecommerce-template
 
-  # ── SuperAdmin Panel ─────────────────────────
-  # Deployed as a separate service from its own repo.
-  # Default image: build locally with `docker build -t bootandstrap-admin ../bootandstrap-admin`
-  # Or pull from registry: ADMIN_IMAGE=registry/bootandstrap-admin:latest
+  # ── SuperAdmin Panel (BOOTANDSTRAP_WEB) ─────────────────────────
+  # Deployed as a separate service from the corporate website repo.
+  # Default image: build locally with `docker build -t bootandstrap-web ../BOOTANDSTRAP_WEB`
+  # Or pull from registry: ADMIN_IMAGE=registry/bootandstrap-web:latest
   admin:
-    image: ${ADMIN_IMAGE:-bootandstrap-admin:latest}
+    image: ${ADMIN_IMAGE:-bootandstrap-web:latest}
     ports:
       - "3100:3100"
     environment:
@@ -78,7 +78,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - campifrut
+      - ecommerce-template
 
   # ── Medusa API Server ────────────────────────
   medusa-server:
@@ -113,7 +113,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - campifrut
+      - ecommerce-template
 
   # ── Medusa Background Worker ─────────────────
   medusa-worker:
@@ -141,7 +141,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - campifrut
+      - ecommerce-template
 
   # ── Redis (Events, Cache, Sessions) ──────────
   redis:
@@ -166,10 +166,10 @@ services:
         max-size: "5m"
         max-file: "2"
     networks:
-      - campifrut
+      - ecommerce-template
 
 networks:
-  campifrut:
+  ecommerce-template:
     driver: bridge
 
 volumes:

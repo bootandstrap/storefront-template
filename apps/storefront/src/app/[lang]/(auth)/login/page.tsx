@@ -19,6 +19,10 @@ export default async function LoginPage({
     const t = createTranslator(dictionary)
     const businessName = config.business_name || 'Store'
 
+    const emailEnabled = isFeatureEnabled(featureFlags, 'enable_email_auth')
+    const googleEnabled = isFeatureEnabled(featureFlags, 'enable_google_auth')
+    const registrationEnabled = isFeatureEnabled(featureFlags, 'enable_user_registration')
+
     return (
         <div className="min-h-[80vh] flex items-center justify-center py-12 px-4">
             <div className="w-full max-w-md">
@@ -39,24 +43,33 @@ export default async function LoginPage({
                         </div>
                     )}
 
+                    {/* No auth methods available */}
+                    {!emailEnabled && !googleEnabled && (
+                        <div className="text-center py-6">
+                            <div className="text-4xl mb-3">🔒</div>
+                            <p className="text-sm text-text-muted">
+                                {t('auth.noMethodsAvailable')}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Email/Password form (client component) */}
-                    {isFeatureEnabled(featureFlags, 'enable_email_auth') && (
+                    {emailEnabled && (
                         <LoginForm
                             lang={lang}
-                            showGoogleAuth={isFeatureEnabled(featureFlags, 'enable_google_auth')}
-                            showRegistration={isFeatureEnabled(featureFlags, 'enable_user_registration')}
+                            showGoogleAuth={googleEnabled}
+                            showRegistration={registrationEnabled}
                         />
                     )}
 
                     {/* Google-only (no email auth) */}
-                    {!isFeatureEnabled(featureFlags, 'enable_email_auth') &&
-                        isFeatureEnabled(featureFlags, 'enable_google_auth') && (
-                            <LoginForm
-                                lang={lang}
-                                showGoogleAuth={true}
-                                showRegistration={isFeatureEnabled(featureFlags, 'enable_user_registration')}
-                            />
-                        )}
+                    {!emailEnabled && googleEnabled && (
+                        <LoginForm
+                            lang={lang}
+                            showGoogleAuth={true}
+                            showRegistration={registrationEnabled}
+                        />
+                    )}
                 </div>
             </div>
         </div>

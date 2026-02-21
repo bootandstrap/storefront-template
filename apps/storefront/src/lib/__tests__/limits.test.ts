@@ -20,6 +20,10 @@ const mockLimits: PlanLimits = {
     max_file_upload_mb: 5,
     max_email_sends_month: 500,
     max_custom_domains: 1,
+    max_chatbot_messages_month: 200,
+    max_badges: 3,
+    max_newsletter_subscribers: 100,
+    max_api_calls_day: 100,
 }
 
 describe('checkLimit', () => {

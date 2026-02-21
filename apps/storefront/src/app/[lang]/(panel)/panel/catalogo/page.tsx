@@ -5,10 +5,13 @@
  * a tabbed CatalogClient with products (+ inline badges) and categories.
  */
 
-import { getConfig } from '@/lib/config'
+import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories, getAdminProducts } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
+import { parsePanelListQuery } from '@/lib/panel-list-query'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import CatalogClient from './CatalogClient'
 
 export const dynamic = 'force-dynamic'
@@ -22,19 +25,34 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function CatalogPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ lang: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { lang } = await params
-    const { config, planLimits } = await getConfig()
+    const rawSearchParams = await searchParams
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const { config, planLimits } = await getConfigForTenant(tenantId)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+    const query = parsePanelListQuery(rawSearchParams, {
+        defaultLimit: 12,
+        allowedStatuses: ['all', 'published', 'draft'],
+        allowedTabs: ['productos', 'categorias'],
+    })
 
     // Fetch products (full), categories, and products with badge data in parallel
     const [productsData, categoriesData, badgeProductsData] = await Promise.all([
-        getAdminProductsFull({ limit: 50 }),
-        getAdminCategories({ limit: 50 }),
-        getAdminProducts({ limit: 100 }),
+        getAdminProductsFull({
+            limit: query.limit,
+            offset: query.offset,
+            q: query.q,
+            status: query.status,
+        }, scope),
+        getAdminCategories({ limit: 50 }, scope),
+        getAdminProducts({ limit: 100 }, scope),
     ])
 
     const productLimitCheck = checkLimit(planLimits, 'max_products', productsData.count)
@@ -85,6 +103,8 @@ export default async function CatalogPage({
         create: t('common.create'),
         delete: t('common.delete'),
         edit: t('common.edit'),
+        previous: t('pagination.previous'),
+        next: t('pagination.next'),
         maxReached: t('limits.maxReached'),
         // Image labels
         images: t('panel.products.images'),
@@ -112,6 +132,11 @@ export default async function CatalogPage({
                 categoryCount={categoriesData.count}
                 maxCategories={planLimits.max_categories}
                 canAddCategory={categoryLimitCheck.allowed}
+                currentPage={query.page}
+                pageSize={query.limit}
+                initialSearch={query.q ?? ''}
+                initialStatus={(query.status as 'all' | 'published' | 'draft' | undefined) ?? 'all'}
+                initialTab={(query.tab as 'productos' | 'categorias' | undefined) ?? 'productos'}
                 defaultCurrency={config.default_currency || 'usd'}
                 labels={labels}
             />

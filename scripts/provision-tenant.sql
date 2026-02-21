@@ -8,20 +8,24 @@
 --   __DOMAIN__        → e.g., 'freshmarket.com' (or NULL)
 --
 -- Column names aligned with:
---   - TenantRow in bootandstrap-admin/src/lib/tenants.ts
+--   - TenantRow in BOOTANDSTRAP_WEB/src/lib/governance/tenants.ts
 --   - StoreConfig in apps/storefront/src/lib/config.ts
---   - PLAN_LIMIT_PRESETS in bootandstrap-admin/src/lib/plan-presets.ts
+--   - PLAN_LIMIT_PRESETS in BOOTANDSTRAP_WEB/src/lib/governance/plan-presets.ts
+--   - FLAG_PRESETS in BOOTANDSTRAP_WEB/src/lib/governance/plan-presets.ts
+--
+-- Last updated: 2026-02-14 (Fase 5 — 38 flags, 19 limits)
 -- ───────────────────────────────────────────────────────────
 
 BEGIN;
 
 -- 1. Create tenant record
 INSERT INTO tenants (
-    slug, name, status, domain, created_at, updated_at
+    slug, name, status, plan_tier, domain, created_at, updated_at
 ) VALUES (
     '__TENANT_SLUG__',
     '__TENANT_NAME__',
     'active',
+    '__PLAN_TIER__',
     '__DOMAIN__',
     NOW(),
     NOW()
@@ -38,10 +42,11 @@ INSERT INTO config (
     active_languages,
     active_currencies,
     default_currency,
-    whatsapp_phone,
+    whatsapp_number,
     social_instagram,
     social_facebook,
-    created_at
+    created_at,
+    updated_at
 )
 SELECT
     id,
@@ -50,27 +55,32 @@ SELECT
     'nature',
     'light',
     '{es}',
-    '{usd}',
-    'usd',
+    '{eur}',
+    'EUR',
     '',
     '',
     '',
+    NOW(),
     NOW()
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
--- 3. Create feature flags (starter defaults — customize later or use Admin Panel)
+-- 3. Create feature flags (all 38 flags — defaults shown are for starter)
+--    For pro/enterprise, adjust manually or use the SuperAdmin Panel
 INSERT INTO feature_flags (
     tenant_id,
+    -- Payment & checkout
     enable_whatsapp_checkout,
     enable_online_payments,
     enable_cash_on_delivery,
     enable_bank_transfer,
-    enable_user_registration,
     enable_guest_checkout,
     require_auth_to_order,
+    -- Auth
+    enable_user_registration,
     enable_google_auth,
     enable_email_auth,
+    -- Commerce features
     enable_reviews,
     enable_wishlist,
     enable_carousel,
@@ -78,49 +88,82 @@ INSERT INTO feature_flags (
     enable_product_search,
     enable_analytics,
     enable_promotions,
-    enable_multi_language,
-    enable_multi_currency,
-    enable_admin_api,
+    enable_related_products,
+    enable_product_comparisons,
+    enable_product_badges,
+    -- Communication
+    enable_whatsapp_contact,
     enable_social_links,
     enable_order_notes,
+    enable_newsletter,
+    enable_live_chat,
+    enable_chatbot,
+    -- i18n
+    enable_multi_language,
+    enable_multi_currency,
+    -- Platform
+    enable_admin_api,
     enable_address_management,
-    enable_maintenance_mode,
     enable_owner_panel,
     enable_customer_accounts,
-    enable_order_tracking
+    enable_order_tracking,
+    enable_cookie_consent,
+    enable_stock_notifications,
+    enable_maintenance_mode,
+    -- Rollout
+    owner_lite_enabled,
+    owner_advanced_modules_enabled
 )
 SELECT
     id,
-    true,   -- whatsapp
-    false,  -- online payments (enable after Stripe setup)
-    false,  -- cash on delivery
-    false,  -- bank transfer
-    false,  -- registration (starter: disabled)
-    true,   -- guest checkout
-    false,  -- require auth
-    false,  -- google auth (enable after OAuth setup)
-    true,   -- email auth
+    -- Payment & checkout
+    true,   -- whatsapp_checkout
+    false,  -- online_payments
+    false,  -- cash_on_delivery
+    false,  -- bank_transfer
+    true,   -- guest_checkout
+    false,  -- require_auth_to_order
+    -- Auth
+    false,  -- user_registration (starter: disabled)
+    false,  -- google_auth
+    true,   -- email_auth
+    -- Commerce features
     false,  -- reviews
     false,  -- wishlist
     true,   -- carousel
-    false,  -- cms pages
-    true,   -- product search
+    false,  -- cms_pages
+    true,   -- product_search
     false,  -- analytics
     false,  -- promotions
-    false,  -- multi language
-    false,  -- multi currency
-    false,  -- admin api
-    false,  -- social links (starter: disabled)
-    false,  -- order notes (starter: disabled)
-    false,  -- address management (starter: disabled)
-    false,  -- maintenance mode
-    false,  -- owner panel (starter: disabled)
-    false,  -- customer accounts (starter: disabled)
-    false   -- order tracking (starter: disabled)
+    true,   -- related_products
+    false,  -- product_comparisons
+    true,   -- product_badges
+    -- Communication
+    true,   -- whatsapp_contact
+    false,  -- social_links
+    false,  -- order_notes
+    false,  -- newsletter
+    false,  -- live_chat
+    false,  -- chatbot
+    -- i18n
+    false,  -- multi_language
+    false,  -- multi_currency
+    -- Platform
+    false,  -- admin_api
+    false,  -- address_management
+    false,  -- owner_panel
+    false,  -- customer_accounts
+    false,  -- order_tracking
+    true,   -- cookie_consent
+    false,  -- stock_notifications
+    false,  -- maintenance_mode
+    -- Rollout
+    false,  -- owner_lite_enabled
+    false   -- owner_advanced_modules_enabled
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
--- 4. Create plan limits (values match PLAN_LIMIT_PRESETS in plan-presets.ts)
+-- 4. Create plan limits (all 19 limit fields)
 INSERT INTO plan_limits (
     tenant_id,
     plan_name,
@@ -138,41 +181,34 @@ INSERT INTO plan_limits (
     max_file_upload_mb,
     max_email_sends_month,
     max_custom_domains,
-    storage_limit_mb
+    storage_limit_mb,
+    max_badges,
+    max_newsletter_subscribers,
+    max_api_calls_day,
+    max_chatbot_messages_month
 )
 SELECT
     id,
     '__PLAN_TIER__',
-    -- max_products
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 25 WHEN 'pro' THEN 100 WHEN 'enterprise' THEN 1000 END,
-    -- max_customers
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
-    -- max_orders_month
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
-    -- max_categories
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 5 WHEN 'pro' THEN 20 WHEN 'enterprise' THEN 100 END,
-    -- max_images_per_product
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 20 END,
-    -- max_cms_pages
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 50 END,
-    -- max_carousel_slides
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 20 END,
-    -- max_admin_users
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 10 END,
-    -- max_languages
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 5 END,
-    -- max_currencies
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 1 WHEN 'pro' THEN 3 WHEN 'enterprise' THEN 5 END,
-    -- max_whatsapp_templates
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 50 END,
-    -- max_file_upload_mb
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 2 WHEN 'pro' THEN 5 WHEN 'enterprise' THEN 10 END,
-    -- max_email_sends_month
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END,
-    -- max_custom_domains
     CASE '__PLAN_TIER__' WHEN 'starter' THEN 0 WHEN 'pro' THEN 1 WHEN 'enterprise' THEN 5 END,
-    -- storage_limit_mb
-    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 2000 END
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 2000 END,
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 3 WHEN 'pro' THEN 10 WHEN 'enterprise' THEN 50 END,
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 1000 WHEN 'enterprise' THEN 10000 END,
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 100 WHEN 'pro' THEN 1000 WHEN 'enterprise' THEN 10000 END,
+    CASE '__PLAN_TIER__' WHEN 'starter' THEN 0 WHEN 'pro' THEN 500 WHEN 'enterprise' THEN 5000 END
 FROM tenants WHERE slug = '__TENANT_SLUG__'
 ON CONFLICT (tenant_id) DO NOTHING;
 
@@ -202,6 +238,6 @@ ON CONFLICT DO NOTHING;
 COMMIT;
 
 -- Verify
-SELECT t.slug, t.name, t.status
+SELECT t.slug, t.name, t.status, t.plan_tier
 FROM tenants t
 WHERE t.slug = '__TENANT_SLUG__';

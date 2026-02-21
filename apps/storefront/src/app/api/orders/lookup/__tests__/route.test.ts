@@ -12,24 +12,43 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ---------------------------------------------------------------------------
-// Mock rate limiter
+// Mock getConfig (feature flag gate)
 // ---------------------------------------------------------------------------
 
-let rateLimitResponse = false
-vi.mock('@/lib/security/rate-limit', () => ({
-    createRateLimiter: vi.fn(() => ({
-        isLimited: vi.fn(() => rateLimitResponse),
-        reset: vi.fn(),
-        resetAll: vi.fn(),
+const mockGetConfig = vi.fn()
+vi.mock('@/lib/config', () => ({
+    getConfig: (...args: unknown[]) => mockGetConfig(...args),
+}))
+
+// ---------------------------------------------------------------------------
+// Mock rate limiter (rate-limit-factory, not rate-limit)
+// ---------------------------------------------------------------------------
+
+const mockIsLimited = vi.fn().mockResolvedValue(false)
+vi.mock('@/lib/security/rate-limit-factory', () => ({
+    createSmartRateLimiter: vi.fn(() => ({
+        isLimited: mockIsLimited,
     })),
+}))
+
+// Mock getClientIp
+vi.mock('@/lib/security/get-client-ip', () => ({
+    getClientIp: vi.fn(() => '127.0.0.1'),
 }))
 
 // We mock global fetch for the medusa server call
 const originalFetch = globalThis.fetch
 
+const defaultConfig = {
+    featureFlags: { enable_order_tracking: true },
+    planLimits: {},
+    config: {},
+}
+
 beforeEach(() => {
     vi.clearAllMocks()
-    rateLimitResponse = false
+    mockGetConfig.mockResolvedValue(defaultConfig)
+    mockIsLimited.mockResolvedValue(false)
     // Mock MEDUSA_BACKEND_URL
     process.env.MEDUSA_BACKEND_URL = 'http://localhost:9000'
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = 'pk_test'
@@ -176,23 +195,30 @@ describe('POST /api/orders/lookup', () => {
     })
 
     it('returns 429 when rate limited', async () => {
-        rateLimitResponse = true
+        mockIsLimited.mockResolvedValue(true)
 
         vi.resetModules()
-        // Re-mock with rate limit enabled
-        vi.doMock('@/lib/security/rate-limit', () => ({
-            createRateLimiter: vi.fn(() => ({
-                isLimited: vi.fn(() => true),
-                reset: vi.fn(),
-                resetAll: vi.fn(),
-            })),
-        }))
-
         const { POST } = await import('../route')
         const req = makeRequest({ email: 'test@example.com', display_id: '123' }, '1.2.3.4')
         const res = await POST(req)
         expect(res.status).toBe(429)
         const json = await res.json()
         expect(json.error).toContain('Too many')
+    })
+
+    it('returns 403 when enable_order_tracking is disabled', async () => {
+        mockGetConfig.mockResolvedValue({
+            featureFlags: { enable_order_tracking: false },
+            planLimits: {},
+            config: {},
+        })
+
+        vi.resetModules()
+        const { POST } = await import('../route')
+        const req = makeRequest({ email: 'test@example.com', display_id: '123' })
+        const res = await POST(req)
+        expect(res.status).toBe(403)
+        const json = await res.json()
+        expect(json.error).toContain('tracking')
     })
 })

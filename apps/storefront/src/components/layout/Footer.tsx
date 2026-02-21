@@ -3,6 +3,7 @@ import { CreditCard, Banknote, MessageCircle, Shield, Phone, Mail, MapPin } from
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import NewsletterSignup from '@/components/newsletter/NewsletterSignup'
 
 interface FooterProps {
     config: StoreConfig
@@ -31,7 +32,7 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                             </p>
                         )}
 
-                        {/* Social links */}
+                        {/* Social links — gated by enable_social_links */}
                         {featureFlags.enable_social_links && (config.social_instagram || config.social_facebook || config.social_tiktok) && (
                             <div className="mt-4">
                                 <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
@@ -74,11 +75,14 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                                     {t('nav.cart')}
                                 </Link>
                             </li>
-                            <li>
-                                <Link href={`/${lang}/cuenta`} className="text-sm text-text-muted hover:text-primary transition-colors">
-                                    {t('nav.account')}
-                                </Link>
-                            </li>
+                            {/* Account link — only when customer accounts are enabled */}
+                            {featureFlags.enable_customer_accounts && (
+                                <li>
+                                    <Link href={`/${lang}/cuenta`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                        {t('nav.account')}
+                                    </Link>
+                                </li>
+                            )}
                             <li>
                                 <Link href={`/${lang}/pedido`} className="text-sm text-text-muted hover:text-primary transition-colors">
                                     {t('order.lookup')}
@@ -112,7 +116,8 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                             {t('footer.contact')}
                         </h4>
                         <ul className="space-y-3">
-                            {config.whatsapp_number && (
+                            {/* WhatsApp contact — gated by enable_whatsapp_contact */}
+                            {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
                                 <li>
                                     <a
                                         href={`https://wa.me/${config.whatsapp_number}`}
@@ -146,16 +151,29 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                     </div>
                 </div>
 
-                {/* Payment badges + copyright */}
+                {/* Newsletter signup — gated by enable_newsletter */}
+                {featureFlags.enable_newsletter && (
+                    <div className="mt-10 pt-8 border-t border-surface-3">
+                        <NewsletterSignup />
+                    </div>
+                )}
+
+                {/* Payment badges — only show icons for enabled payment methods */}
                 <div className="mt-10 pt-8 border-t border-surface-3">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        {/* Payment methods */}
+                        {/* Payment methods — flag-gated badges */}
                         <div className="flex items-center gap-3 text-text-muted">
                             <span className="text-xs font-medium">{t('footer.securePurchase')}:</span>
                             <div className="flex items-center gap-2">
-                                <CreditCard className="w-6 h-6" />
-                                <Banknote className="w-6 h-6" />
-                                <MessageCircle className="w-5 h-5" />
+                                {featureFlags.enable_online_payments && (
+                                    <CreditCard className="w-6 h-6" />
+                                )}
+                                {featureFlags.enable_cash_on_delivery && (
+                                    <Banknote className="w-6 h-6" />
+                                )}
+                                {featureFlags.enable_whatsapp_checkout && (
+                                    <MessageCircle className="w-5 h-5" />
+                                )}
                                 <Shield className="w-5 h-5" />
                             </div>
                         </div>

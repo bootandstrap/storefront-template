@@ -58,7 +58,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
         variant: 'secondary',
     },
     {
-        id: 'bank',
+        id: 'bank_transfer',
         flag: 'enable_bank_transfer',
         label: 'Transferencia bancaria',
         description: 'Transfiere a nuestra cuenta y adjunta comprobante',

@@ -1,5 +1,5 @@
 // ============================================
-// Campifrut v2 — Shared Types & Constants
+// E-Commerce Template — Shared Types & Constants
 // ============================================
 
 export * from "./types";

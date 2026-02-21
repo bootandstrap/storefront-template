@@ -3,7 +3,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
-import { isPaymentMethodAvailable, initializePaymentSession, getStripeClientSecret, submitBankTransferOrder, submitCODOrder } from '@/app/[lang]/(shop)/checkout/actions'
+import { isPaymentMethodAvailable, initializePaymentSession, getStripeClientSecret, submitBankTransferOrder, submitCODOrder, submitWhatsAppOrder } from '@/app/[lang]/(shop)/checkout/actions'
+import { trackEvent } from '@/lib/analytics'
 import StripeCheckoutFlow from '@/components/checkout/StripeCheckoutFlow'
 import WhatsAppCheckoutFlow from '@/components/checkout/WhatsAppCheckoutFlow'
 import BankTransferFlow from '@/components/checkout/BankTransferFlow'
@@ -80,7 +81,7 @@ export default function CheckoutModal({
     const total = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
     const formatPrice = (amount: number) =>
-        new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
+        new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: currency.toUpperCase(),
             minimumFractionDigits: 0,
@@ -103,15 +104,22 @@ export default function CheckoutModal({
         if (isOpen) loadMethods()
     }, [isOpen, featureFlags])
 
-    // Reset on close
+    // Reset on close / add body class for overlay management
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
+            document.body.classList.add('drawer-open')
+            trackEvent('checkout_start', { item_count: cart?.items?.length ?? 0 })
+        } else {
+            document.body.classList.remove('drawer-open')
             setStep('info')
             setSelectedMethod(null)
             setClientSecret(null)
             setOrderResult(null)
             setError(null)
             setStripeLoading(false)
+        }
+        return () => {
+            document.body.classList.remove('drawer-open')
         }
     }, [isOpen])
 
@@ -199,9 +207,10 @@ export default function CheckoutModal({
         setStep('confirmation')
     }, [cart?.id, name, email, phone, address, notes])
 
-    const handleWhatsAppComplete = useCallback(() => {
-        onClose()
-    }, [onClose])
+    const handleWhatsAppComplete = useCallback((order?: { id: string; display_id: number }) => {
+        if (order) setOrderResult(order)
+        setStep('confirmation')
+    }, [])
 
     // ---------------------------------------------------------------------------
     // Validation
@@ -227,7 +236,7 @@ export default function CheckoutModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -235,7 +244,7 @@ export default function CheckoutModal({
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface-0 border border-surface-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up">
+            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface-0 border border-surface-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom">
                 {/* Header */}
                 <div className="sticky top-0 bg-surface-0/80 backdrop-blur-xl border-b border-surface-3 p-4 z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -456,11 +465,14 @@ export default function CheckoutModal({
                             )}
 
                             {/* WhatsApp */}
-                            {selectedMethod === 'whatsapp' && (
+                            {selectedMethod === 'whatsapp' && cart?.id && (
                                 <WhatsAppCheckoutFlow
                                     config={config}
                                     items={items}
+                                    cartId={cart.id}
                                     customerName={name}
+                                    customerEmail={email}
+                                    customerPhone={phone}
                                     deliveryAddress={address}
                                     notes={notes}
                                     onComplete={handleWhatsAppComplete}
@@ -509,7 +521,9 @@ export default function CheckoutModal({
                                         ? t('checkout.confirmation.bankMsg')
                                         : selectedMethod === 'cod'
                                             ? t('checkout.confirmation.codMsg')
-                                            : t('checkout.confirmation.genericMsg')}
+                                            : selectedMethod === 'whatsapp'
+                                                ? t('checkout.confirmation.whatsappMsg')
+                                                : t('checkout.confirmation.genericMsg')}
                             </p>
                             <button
                                 onClick={onClose}

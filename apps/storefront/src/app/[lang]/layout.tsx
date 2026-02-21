@@ -10,7 +10,7 @@
  */
 
 import { redirect } from 'next/navigation'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, AlertTriangle, Clock } from 'lucide-react'
 import { getDictionary, isValidLocale, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import { getPreferredLocale } from '@/lib/i18n/locale'
@@ -31,18 +31,17 @@ export default async function LangLayout({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config, tenantStatus } = await getConfig()
+    const appConfig = await getConfig()
+    const { config, tenantStatus, _degraded, trialDaysRemaining } = appConfig
 
     // Validate locale
     if (!isValidLocale(lang)) {
-        // Invalid locale → redirect to preferred locale
         const preferred = await getPreferredLocale(config.language)
         redirect(`/${preferred}`)
     }
 
     // -----------------------------------------------------------------------
     // Governance: tenant status (paused / suspended) — blocks ALL routes
-    // Owners manage the store from SuperAdmin panel (:3100), not here.
     // -----------------------------------------------------------------------
     if (tenantStatus === 'paused' || tenantStatus === 'suspended') {
         const locale = lang as Locale
@@ -83,6 +82,27 @@ export default async function LangLayout({
 
     return (
         <I18nProvider locale={locale} dictionary={dictionary}>
+            {/* Degraded config banner — Supabase unreachable */}
+            {_degraded && process.env.NODE_ENV === 'production' && (
+                <div className="bg-amber-500 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>Configuración en modo degradado — datos de respaldo activos. Contacta al administrador.</span>
+                </div>
+            )}
+
+            {/* Trial countdown banner */}
+            {tenantStatus === 'trial' && trialDaysRemaining !== undefined && (
+                <div className="bg-blue-600 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                        Trial — {trialDaysRemaining === 0
+                            ? 'último día'
+                            : `${trialDaysRemaining} día${trialDaysRemaining !== 1 ? 's' : ''} restante${trialDaysRemaining !== 1 ? 's' : ''}`
+                        }
+                    </span>
+                </div>
+            )}
+
             {children}
         </I18nProvider>
     )

@@ -8,6 +8,7 @@ import { ShoppingBag, ArrowLeft, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import CartItem from '@/components/cart/CartItem'
 import PromotionInput from '@/components/checkout/PromotionInput'
+import { getEnabledMethods } from '@/lib/payment-methods'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 
 interface CheckoutPageClientProps {
@@ -30,6 +31,9 @@ export default function CheckoutPageClient({
     const { cart, itemCount } = useCart()
     const { t, localizedHref, locale } = useI18n()
     const [modalOpen, setModalOpen] = useState(false)
+
+    // Check if any payment method is enabled
+    const hasAnyMethod = getEnabledMethods(featureFlags).length > 0
 
     const items = cart?.items ?? []
     const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
@@ -104,16 +108,26 @@ export default function CheckoutPageClient({
                                 <span>{t('cart.total')}</span>
                                 <span className="text-primary">{formatPrice(total)}</span>
                             </div>
-                            <button
-                                onClick={() => setModalOpen(true)}
-                                className="btn btn-primary w-full py-3 text-base"
-                            >
-                                <CreditCard className="w-5 h-5" />
-                                {t('checkout.proceedPayment')}
-                            </button>
-                            <p className="text-xs text-text-muted text-center mt-3">
-                                {t('checkout.chooseMethod')}
-                            </p>
+                            {hasAnyMethod ? (
+                                <>
+                                    <button
+                                        onClick={() => setModalOpen(true)}
+                                        className="btn btn-primary w-full py-3 text-base"
+                                    >
+                                        <CreditCard className="w-5 h-5" />
+                                        {t('checkout.proceedPayment')}
+                                    </button>
+                                    <p className="text-xs text-text-muted text-center mt-3">
+                                        {t('checkout.chooseMethod')}
+                                    </p>
+                                </>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-sm text-text-muted">
+                                        {t('checkout.noMethods')}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

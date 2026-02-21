@@ -20,6 +20,7 @@ const EXPECTED_FEATURE_FLAGS: (keyof FeatureFlags)[] = [
     'enable_online_payments',
     'enable_cash_on_delivery',
     'enable_bank_transfer',
+    'enable_whatsapp_contact',
     // Auth
     'enable_user_registration',
     'enable_guest_checkout',
@@ -32,6 +33,9 @@ const EXPECTED_FEATURE_FLAGS: (keyof FeatureFlags)[] = [
     'enable_carousel',
     'enable_cms_pages',
     'enable_product_search',
+    'enable_related_products',
+    'enable_product_comparisons',
+    'enable_product_badges',
     // Advanced
     'enable_analytics',
     'enable_promotions',
@@ -42,11 +46,17 @@ const EXPECTED_FEATURE_FLAGS: (keyof FeatureFlags)[] = [
     'enable_social_links',
     'enable_order_notes',
     'enable_address_management',
+    'enable_newsletter',
     // System
     'enable_maintenance_mode',
     'enable_owner_panel',
     'enable_customer_accounts',
     'enable_order_tracking',
+    'enable_cookie_consent',
+    'enable_chatbot',
+    'enable_self_service_returns',
+    'owner_lite_enabled',
+    'owner_advanced_modules_enabled',
 ]
 
 const EXPECTED_PLAN_LIMITS: (keyof PlanLimits)[] = [
@@ -67,6 +77,10 @@ const EXPECTED_PLAN_LIMITS: (keyof PlanLimits)[] = [
     'max_file_upload_mb',
     'max_email_sends_month',
     'max_custom_domains',
+    'max_chatbot_messages_month',
+    'max_badges',
+    'max_newsletter_subscribers',
+    'max_api_calls_day',
 ]
 
 // ---------------------------------------------------------------------------
@@ -79,7 +93,7 @@ describe('Config Schema Alignment', () => {
             // Create a dummy object to count interface keys at runtime
             const _dummy: FeatureFlags = {} as FeatureFlags
             // We verify by checking EXPECTED array length matches the interface
-            expect(EXPECTED_FEATURE_FLAGS.length).toBe(26)
+            expect(EXPECTED_FEATURE_FLAGS.length).toBe(36)
         })
 
         it('every expected flag key is a valid FeatureFlags property', () => {
@@ -90,6 +104,7 @@ describe('Config Schema Alignment', () => {
                 enable_online_payments: true,
                 enable_cash_on_delivery: true,
                 enable_bank_transfer: true,
+                enable_whatsapp_contact: true,
                 enable_user_registration: true,
                 enable_guest_checkout: true,
                 require_auth_to_order: true,
@@ -100,6 +115,9 @@ describe('Config Schema Alignment', () => {
                 enable_carousel: true,
                 enable_cms_pages: true,
                 enable_product_search: true,
+                enable_related_products: true,
+                enable_product_comparisons: true,
+                enable_product_badges: true,
                 enable_analytics: true,
                 enable_promotions: true,
                 enable_multi_language: true,
@@ -108,10 +126,16 @@ describe('Config Schema Alignment', () => {
                 enable_social_links: true,
                 enable_order_notes: true,
                 enable_address_management: true,
+                enable_newsletter: true,
                 enable_maintenance_mode: true,
                 enable_owner_panel: true,
                 enable_customer_accounts: true,
                 enable_order_tracking: true,
+                enable_cookie_consent: true,
+                enable_chatbot: true,
+                enable_self_service_returns: true,
+                owner_lite_enabled: true,
+                owner_advanced_modules_enabled: false,
             }
 
             const keys = Object.keys(dummyFlags)
@@ -132,7 +156,7 @@ describe('Config Schema Alignment', () => {
 
     describe('PlanLimits interface', () => {
         it('has exactly the expected number of limit keys', () => {
-            expect(EXPECTED_PLAN_LIMITS.length).toBe(17)
+            expect(EXPECTED_PLAN_LIMITS.length).toBe(21)
         })
 
         it('every expected limit key is a valid PlanLimits property', () => {
@@ -154,6 +178,10 @@ describe('Config Schema Alignment', () => {
                 max_file_upload_mb: 5,
                 max_email_sends_month: 500,
                 max_custom_domains: 1,
+                max_chatbot_messages_month: 200,
+                max_badges: 3,
+                max_newsletter_subscribers: 100,
+                max_api_calls_day: 100,
             }
 
             const keys = Object.keys(dummyLimits)

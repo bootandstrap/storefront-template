@@ -9,7 +9,8 @@
  * - Customer count badge
  */
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, Users, Mail, ShoppingBag, Calendar } from 'lucide-react'
 
 interface Customer {
@@ -25,6 +26,9 @@ interface Customer {
 interface CustomersClientProps {
     customers: Customer[]
     totalCount: number
+    currentPage: number
+    pageSize: number
+    initialSearch: string
     lang: string
     labels: {
         title: string
@@ -37,25 +41,48 @@ interface CustomersClientProps {
         totalSpent: string
         joinedDate: string
         total: string
+        previous: string
+        next: string
     }
 }
 
 export default function CustomersClient({
     customers,
     totalCount,
+    currentPage,
+    pageSize,
+    initialSearch,
     lang,
     labels,
 }: CustomersClientProps) {
-    const [search, setSearch] = useState('')
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const [search, setSearch] = useState(initialSearch)
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+    const canGoPrev = currentPage > 1
+    const canGoNext = currentPage < totalPages
 
-    const filtered = useMemo(() => {
-        if (!search.trim()) return customers
-        const q = search.toLowerCase()
-        return customers.filter(c => {
-            const name = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase()
-            return name.includes(q) || c.email.toLowerCase().includes(q)
+    const updateQuery = (updates: Record<string, string | undefined>) => {
+        const next = new URLSearchParams(searchParams.toString())
+        for (const [key, value] of Object.entries(updates)) {
+            if (!value) {
+                next.delete(key)
+            } else {
+                next.set(key, value)
+            }
+        }
+        const query = next.toString()
+        router.push(query ? `${pathname}?${query}` : pathname)
+    }
+
+    const applySearch = () => {
+        const q = search.trim()
+        updateQuery({
+            q: q || undefined,
+            page: '1',
         })
-    }, [customers, search])
+    }
 
     const formatDate = (iso: string) => {
         try {
@@ -92,6 +119,9 @@ export default function CustomersClient({
                     type="text"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') applySearch()
+                    }}
                     placeholder={labels.searchPlaceholder}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-3
                                bg-surface-0 text-sm text-text-primary placeholder:text-text-muted
@@ -101,7 +131,7 @@ export default function CustomersClient({
             </div>
 
             {/* Customer list */}
-            {filtered.length === 0 ? (
+            {customers.length === 0 ? (
                 <div className="text-center py-16 text-text-muted">
                     <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p className="text-lg font-medium">{labels.noCustomers}</p>
@@ -117,7 +147,7 @@ export default function CustomersClient({
                     </div>
 
                     {/* Rows */}
-                    {filtered.map(customer => {
+                    {customers.map(customer => {
                         const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || '—'
                         const initials = name !== '—'
                             ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -160,6 +190,29 @@ export default function CustomersClient({
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalCount > pageSize && (
+                <div className="flex items-center justify-between pt-2">
+                    <button
+                        onClick={() => updateQuery({ page: String(currentPage - 1) })}
+                        disabled={!canGoPrev}
+                        className="btn btn-ghost disabled:opacity-50"
+                    >
+                        {labels.previous}
+                    </button>
+                    <p className="text-sm text-text-muted">
+                        {currentPage} / {totalPages}
+                    </p>
+                    <button
+                        onClick={() => updateQuery({ page: String(currentPage + 1) })}
+                        disabled={!canGoNext}
+                        className="btn btn-ghost disabled:opacity-50"
+                    >
+                        {labels.next}
+                    </button>
                 </div>
             )}
         </>
