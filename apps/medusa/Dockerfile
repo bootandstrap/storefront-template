@@ -1,11 +1,14 @@
 # ============================================
-# Campifrut Medusa Backend — Multi-stage Dockerfile
+# Medusa Backend — Multi-stage Dockerfile
 # ============================================
 # Builds Medusa v2 with custom modules (supabase-auth, supabase-storage).
+# Uses bookworm-slim for fast native dependency builds.
 
 # ── Stage 1: Dependencies ────────────────────
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat python3 make g++
+FROM node:20-bookworm-slim AS deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY package.json ./
@@ -13,7 +16,7 @@ COPY package-lock.json* ./
 RUN npm install
 
 # ── Stage 2: Builder ─────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,13 +25,13 @@ COPY . .
 RUN npx medusa build
 
 # ── Stage 3: Runner ──────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 medusa
-RUN adduser --system --uid 1001 medusa
+RUN groupadd --system --gid 1001 medusa
+RUN useradd --system --uid 1001 --gid medusa medusa
 
 # Copy built server
 COPY --from=builder /app/.medusa/server ./
