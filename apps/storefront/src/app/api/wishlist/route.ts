@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getConfig } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
+
+// ---------------------------------------------------------------------------
+// Shared guard — rejects if wishlist feature flag is disabled
+// ---------------------------------------------------------------------------
+async function assertWishlistEnabled() {
+    const { featureFlags } = await getConfig()
+    return isFeatureEnabled(featureFlags, 'enable_wishlist')
+}
 
 // ── GET /api/wishlist — fetch user's wishlisted product IDs ──────
 export async function GET() {
+    if (!(await assertWishlistEnabled())) {
+        return NextResponse.json({ items: [] })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -28,6 +42,13 @@ export async function GET() {
 
 // ── POST /api/wishlist — add product to wishlist ─────────────────
 export async function POST(req: NextRequest) {
+    if (!(await assertWishlistEnabled())) {
+        return NextResponse.json(
+            { error: 'Wishlist is not enabled' },
+            { status: 403 }
+        )
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -68,6 +89,13 @@ export async function POST(req: NextRequest) {
 
 // ── DELETE /api/wishlist — remove product from wishlist ───────────
 export async function DELETE(req: NextRequest) {
+    if (!(await assertWishlistEnabled())) {
+        return NextResponse.json(
+            { error: 'Wishlist is not enabled' },
+            { status: 403 }
+        )
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

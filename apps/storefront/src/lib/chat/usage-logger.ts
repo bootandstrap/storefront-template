@@ -56,7 +56,7 @@ export async function logChatRequest({
         if (userId) {
             const supabase = createAdminClient()
             const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
-            await (supabase as any).rpc('increment_chat_usage', {
+            await (supabase as unknown as { rpc: (fn: string, params: Record<string, string>) => Promise<unknown> }).rpc('increment_chat_usage', {
                 p_tenant_id: tenantId,
                 p_user_id: userId,
                 p_month: currentMonth

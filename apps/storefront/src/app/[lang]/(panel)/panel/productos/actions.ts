@@ -15,6 +15,7 @@ import {
     updateProductImages,
     deleteProductImage,
     getAdminProduct,
+    updateVariantInventory,
     type CreateProductInput,
 } from '@/lib/medusa/admin'
 
@@ -30,6 +31,7 @@ export async function createProduct(data: {
     currency: string
     categoryId?: string
     status: 'draft' | 'published'
+    stockQuantity?: number
 }): Promise<ActionResult> {
     const { tenantId } = await requirePanelAuth()
     if (!data.title.trim()) {
@@ -40,7 +42,7 @@ export async function createProduct(data: {
     }
 
     const scope = await getTenantMedusaScope(tenantId)
-    const [{ planLimits }, productCount] = await Promise.all([
+    const [{ planLimits, config: storeConfig }, productCount] = await Promise.all([
         getConfigForTenant(tenantId),
         getProductCount(scope),
     ])
@@ -48,6 +50,8 @@ export async function createProduct(data: {
     if (!limitCheck.allowed) {
         return { success: false, error: 'Límite de productos alcanzado' }
     }
+
+    const manageInventory = storeConfig.stock_mode === 'managed'
 
     const input: CreateProductInput = {
         title: data.title.trim(),
@@ -58,7 +62,8 @@ export async function createProduct(data: {
             {
                 title: 'Default',
                 prices: [{ amount: Math.round(data.price * 100), currency_code: data.currency }],
-                manage_inventory: false,
+                manage_inventory: manageInventory,
+                ...(manageInventory ? { inventory_quantity: data.stockQuantity ?? 0 } : {}),
             },
         ],
     }
@@ -201,6 +206,34 @@ export async function removeProductImage(
     const { tenantId } = await requirePanelAuth()
     const scope = await getTenantMedusaScope(tenantId)
     const result = await deleteProductImage(productId, imageUrl, scope)
+    if (result.error) {
+        return { success: false, error: result.error }
+    }
+
+    revalidatePanel('all')
+    return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// Stock / Inventory
+// ---------------------------------------------------------------------------
+
+export async function updateProductStock(
+    productId: string,
+    variantId: string,
+    quantity: number
+): Promise<ActionResult> {
+    const { tenantId } = await requirePanelAuth()
+    if (typeof quantity !== 'number' || quantity < 0) {
+        return { success: false, error: 'La cantidad debe ser un número positivo' }
+    }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    const result = await updateVariantInventory(productId, variantId, {
+        manage_inventory: true,
+        inventory_quantity: Math.round(quantity),
+    }, scope)
+
     if (result.error) {
         return { success: false, error: result.error }
     }

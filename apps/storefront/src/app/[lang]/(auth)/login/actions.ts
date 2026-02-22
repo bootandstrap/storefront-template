@@ -22,7 +22,7 @@ export async function loginAction(
 
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     })
@@ -38,18 +38,19 @@ export async function loginAction(
         return { error: 'unknown_error', success: false }
     }
 
-    // Fetch user role to determine redirect destination
-    const { data: { user } } = await supabase.auth.getUser()
+    // Use user from signIn response directly (avoids cookie timing issues)
+    const user = data.user
     let destination = `/${lang}/cuenta`
 
     if (user) {
+        // Check profiles table for role
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single()
 
-        const role = profile?.role
+        const role = profile?.role || user.user_metadata?.role
         if (role === 'super_admin' || role === 'owner') {
             destination = `/${lang}/panel`
         }

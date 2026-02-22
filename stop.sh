@@ -12,6 +12,7 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REDIS_CONTAINER_NAME="ecommerce-redis-dev"
 DEV_REDIS_PID_FILE="$ROOT_DIR/.dev-redis.pid"
+STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -48,7 +49,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 STOPPED=0
 
 # ── Stop known service ports ─────────────────
-for PORT in 3000 3100 9000; do
+for PORT in "$STOREFRONT_PORT" 9000; do
     PORT_PIDS="$(lsof -ti :"$PORT" 2>/dev/null || true)"
     if [[ -n "$PORT_PIDS" ]]; then
         while IFS= read -r pid; do

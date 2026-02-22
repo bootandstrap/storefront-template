@@ -33,18 +33,21 @@ export default function CookieConsentBanner() {
     const [visible, setVisible] = useState(false)
 
     useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | undefined
         try {
             const saved = localStorage.getItem(CONSENT_KEY)
             if (saved) {
-                setState(JSON.parse(saved).state || 'accepted')
+                const parsed = JSON.parse(saved)
+                // Defer state update to avoid synchronous setState in effect body
+                timer = setTimeout(() => setState(parsed.state || 'accepted'), 0)
             } else {
                 // Delay appearance for better UX
-                const timer = setTimeout(() => setVisible(true), 1500)
-                return () => clearTimeout(timer)
+                timer = setTimeout(() => setVisible(true), 1500)
             }
         } catch {
-            setVisible(true)
+            timer = setTimeout(() => setVisible(true), 0)
         }
+        return () => { if (timer) clearTimeout(timer) }
     }, [])
 
     const saveConsent = useCallback((newState: ConsentState, newPrefs: ConsentPrefs) => {

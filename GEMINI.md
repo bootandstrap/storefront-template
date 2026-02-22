@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 20 Feb 2026 (Production Readiness Remediation: tenant-scoped limits, chat anti-abuse, fail-closed webhook, analytics funnel, 5 production contracts).
+> **Read this first.** Master guide for AI agents and developers. Updated 21 Feb 2026 (Feature Gate UX, owner panel access architecture, Medusa scope graceful degradation).
 
 ## What This Is
 
@@ -14,7 +14,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **First client**: E-Commerce Template (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Production-hardened after SOTA Remediation Plan (v10) + SOTA UI Audit (13 Feb 2026) + Deep Dive Sprints A–D (15 Feb 2026) + Production Readiness Remediation (20 Feb 2026). See *Verified Quality Baseline* below.
+**Current state**: Production-hardened after SOTA Remediation Plan (v10) + SOTA UI Audit (13 Feb 2026) + Deep Dive Sprints A–D (15 Feb 2026) + Production Readiness Remediation (20 Feb 2026) + Feature Gate UX + Owner Panel Access Fix (21 Feb 2026). See *Verified Quality Baseline* below.
 
 ### Verified Quality Baseline (20 Feb 2026 — post Production Readiness Remediation)
 
@@ -70,7 +70,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 │       │ config │ feature_flags │ plan_limits   │          │
 │       │ plan_presets │ profiles │ whatsapp_templates │     │
 │       │ audit_log │ stripe_webhook_events      │          │
-│       │ tenant_errors                           │          │
+│       │ tenant_errors │ module_flag_map          │          │
 └──────────────────────────────────────────────────────────┘
            │                  │
            ▼                  ▼
@@ -83,13 +83,14 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 2. **3-Tier Governance** — Admin Panel (SaaS) → Owner Panel (Medusa) → Template (Storefront)
 3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist). `tenant_id` is a UUID column scoped to the `tenants` table for multi-tenant governance
 4. **Supabase Auth is King** — All user auth via Supabase. Medusa validates Supabase JWTs
-5. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, carousels, CMS, analytics — all toggleable remotely
+5. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, carousels, CMS, analytics — all toggleable remotely. Flags can be auto-activated by module purchases via `module_flag_map`
 6. **Plan Limits Enforce SaaS Tiers** — `max_products`, `max_customers`, `max_orders_month`, etc.
 7. **Dynamic Theming** — Color presets + theme mode from `config` → CSS vars → zero-redeploy brand changes
 8. **Server-Side Truth** — Prices, discounts, orders validated server-side by Medusa
 9. **Streaming-First** — Suspense boundaries for non-blocking page rendering
 10. **Error Resilience** — Error boundaries at every route, graceful degradation when APIs are down
 11. **i18n-Native** — Dictionary-based translations, `[lang]/` URL routing, localized slugs, multi-currency — all flag-driven
+12. **Module Governance** — 13 modules mapped to flags/limits via `module_flag_map`. Purchases auto-activate features; cancellations reconcile
 
 ---
 
@@ -166,7 +167,7 @@ ecommerce-template/
 │   │   │   │   ├── checkout/    # Multi-step CheckoutModal, Stripe/Bank/COD/WhatsApp flows
 │   │   │   │   ├── cart/        # CartDrawer, CartItem
 │   │   │   │   ├── account/     # AddressCard, AddressModal, AvatarUpload, ReorderButton
-│   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary, ScrollReveal
+│   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary, ScrollReveal, FeatureGate
 │   │   │   │   └── home/        # HeroSection, CategoryGrid, FeaturedProducts, TrustSection, HeroCarousel
 │   │   │   ├── contexts/        # CartContext (with drawer state)
 │   │   │   └── lib/
@@ -183,14 +184,17 @@ ecommerce-template/
 │   │   │       │   └── admin.ts      # ✅ Service-role client (bypasses RLS for config)
 │   │   │       ├── medusa/      # Typed API fetchers
 │   │   │       │   ├── client.ts    # Store API fetcher + types (MedusaAddress, MedusaOrderItem, etc.)
-│   │   │       │   ├── admin.ts     # ✅ Admin API fetcher (JWT auth, 23h cache, products/categories/orders/customers/images)
+│   │   │       │   ├── admin.ts     # ✅ Admin API fetcher (JWT auth, 23h cache, null-scope safe)
+│   │   │       │   ├── tenant-scope.ts # ✅ getTenantMedusaScope() — returns null when table missing (graceful)
 │   │   │       │   └── auth-medusa.ts # Authenticated fetcher (Supabase JWT → Medusa Store API)
 │   │   │       ├── seo/         # JSON-LD builders (Product, Org, Breadcrumb)
 │   │   │       ├── whatsapp/    # Template engine + message builder
 │   │   │       ├── config.ts    # ✅ getConfig() — service-role admin client, in-memory TTL cache (5 min), _degraded flag, trialDaysRemaining
 │   │   │       ├── features.ts  # isFeatureEnabled(flag)
+│   │   │       ├── feature-gate-config.ts # ✅ Flag → module → BSWEB slug mapping (11 flags, 5 locales)
 │   │   │       ├── limits.ts    # checkLimit(resource, count)
 │   │   │       ├── analytics-server.ts # ✅ Server-side emitServerEvent() for checkout + webhook flows
+│   │   │       ├── panel-auth.ts   # ✅ requirePanelAuth() — role + tenant scope guard
 │   │   │       └── payment-methods.ts  # Dynamic payment method registry
 │   │   └── proxy.ts             # Next.js 16 proxy (auth + locale slugs + role protection)
 │   │
@@ -254,14 +258,17 @@ On-demand revalidation: `revalidateConfig()` clears `globalThis.__configCache` +
 ### Error Resilience
 
 ```
-Medusa API down → Products show fallback empty state / error boundary with retry
-Supabase down   → App shows hardcoded fallback config + amber degraded banner
-WhatsApp        → Always works (client-side wa.me redirect)
+Medusa API down    → Products show fallback empty state / error boundary with retry
+Medusa scope miss  → Panel shows amber banner + zero stats (graceful degradation)
+Supabase down      → App shows hardcoded fallback config + amber degraded banner
+WhatsApp           → Always works (client-side wa.me redirect)
 ```
 
 Every route segment has `error.tsx` + `loading.tsx`. Reusable `<ErrorBoundary>` component with retry and i18n `labels` prop. Error pages use `error-strings.ts` for lightweight 5-locale fallback (no context dependency). `logTenantError()` sends errors to `tenant_errors` table for SuperAdmin's Error Inbox.
 
 **Degraded mode**: When Supabase is unreachable, `getConfig()` returns `FALLBACK_CONFIG` with `_degraded: true`. Layout shows an amber warning banner in production: *"Configuración en modo degradado"*.
+
+**Medusa scope degradation**: `getTenantMedusaScope()` returns `null` (never throws) when the `tenant_medusa_scope` table is missing or has no mapping. All `admin.ts` functions accept `null` scope and return 0/empty. Panel dashboard shows amber Medusa disconnected banner.
 
 **Trial enforcement**: When `tenantStatus === 'trial'`, `getConfig()` computes `trialDaysRemaining` from `plan_limits.plan_expires_at`. Layout shows a blue countdown banner. When trial expires, tenant is auto-paused.
 
@@ -312,11 +319,25 @@ Every UI feature checks a flag before rendering. To disable a feature for a clie
 | `enable_product_comparisons` | Product comparison page |
 | `enable_chatbot` | ChatbotPRO AI assistant |
 | `enable_self_service_returns` | Customer-initiated return requests |
-| `enable_owner_panel` | Owner Panel access |
+| `enable_owner_panel` | **System flag** — Owner Panel always accessible by role (owner/super_admin). Not toggleable. |
 | `enable_product_badges` | Badge display on product cards |
 | `enable_cookie_consent` | Cookie consent banner |
 | `owner_lite_enabled` | Simplified Owner Panel (hides advanced modules) |
 | `owner_advanced_modules_enabled` | Advanced panel modules (carousel, WhatsApp, CMS, analytics, chatbot, returns) |
+
+> **Module → Flag Auto-Activation**: Flags marked with `enable_*` can be automatically enabled/disabled when the corresponding module is purchased or cancelled. The mapping is defined in the `module_flag_map` table. See `BOOTANDSTRAP_WEB/MODULOS.md` for the full module catalog (13 modules, 22 flag mappings).
+>
+> Flag origins are tracked per-tenant: **module** (auto-activated by purchase), **plan** (included in tier preset), **admin** (manual toggle), **blocked** (requires module purchase), **system** (internal control).
+
+#### Feature Gate UX (Blocked Module Upsell)
+
+When a flag-gated panel page is disabled, instead of silently redirecting, the `<FeatureGate>` component renders a branded upsell screen:
+
+- Shows module icon, i18n title/description, and CTA linking to `bootandstrap.com/{lang}/modulos/{slug}`
+- **Owner-only**: includes reassuring note that customers never see this screen
+- Config in `src/lib/feature-gate-config.ts` maps 11 flags → modules → BSWEB slugs (5 locales)
+- Applied to 7 panel pages: analíticas, chatbot, carrusel, CMS, WhatsApp, devoluciones, insignias
+- Coverage enforced by `src/lib/__tests__/feature-gate-config.test.ts` (9 tests)
 
 ### Plan Limits (`plan_limits` table)
 
@@ -324,17 +345,20 @@ Enforce SaaS tier restrictions at the application level:
 
 | Limit | Default | Enforced Where |
 |-------|---------|----------------|
-| `max_products` | 100 | Medusa admin product creation |
-| `max_customers` | 100 | Registration endpoint |
-| `max_orders_month` | 500 | Checkout flow (tenant-scoped via `sales_channel_id`) |
-| `max_categories` | 20 | Category creation |
-| `max_images_per_product` | 10 | Image upload |
-| `max_cms_pages` | 10 | CMS page creation |
-| `max_carousel_slides` | 10 | Carousel management |
-| `max_admin_users` | 3 | Admin user creation |
-| `max_languages` | 1 | Language selector options |
-| `max_currencies` | 1 | Currency selector options |
-| `storage_limit_mb` | 500 | Storage upload |
+| `max_products` | 100 | `productos/actions.ts` — server-side product creation |
+| `max_customers` | 100 | `registro/actions.ts` — registration endpoint |
+| `max_orders_month` | 500 | `checkout/actions.ts` — `validateMaxOrdersMonth()`, fail-closed |
+| `max_categories` | 20 | `categorias/actions.ts` — category creation |
+| `max_images_per_product` | 10 | `productos/actions.ts` — image upload |
+| `max_cms_pages` | 10 | `paginas/actions.ts` — CMS page creation |
+| `max_carousel_slides` | 10 | `carrusel/actions.ts` — carousel slide creation |
+| `max_whatsapp_templates` | 5 | `mensajes/actions.ts` — WhatsApp template creation |
+| `max_badges` | 5 | `insignias/actions.ts` — toggleBadge/setBadges |
+| `max_newsletter_subscribers` | 100 | `api/newsletter/route.ts` — fail-closed |
+| `max_admin_users` | 3 | Supabase-managed (no action exists) |
+| `max_languages` | 1 | Config-driven, not user-mutable |
+| `max_currencies` | 1 | Config-driven, not user-mutable |
+| `storage_limit_mb` | 500 | Deferred (requires Supabase Storage tracking) |
 
 ### Dynamic Payment Methods
 
@@ -345,6 +369,23 @@ Payment/order methods are **entirely feature-flag driven**. The `PaymentMethodSe
 - **3+ methods** → default button + "Otras formas de pago" dropdown
 
 Each method is registered in `src/lib/payment-methods.ts` with id, flag, label, icon, component, and priority.
+
+### RBAC Model
+
+Four roles govern access across the storefront and panels:
+
+| Role | Access Path | Auth Check | Description |
+|------|------------|------------|-------------|
+| `super_admin` | `/app` (SuperAdmin panel) + `/panel` | `requireAdmin()` → validates `profiles.role` | SaaS operator — full tenant management, flag/limit control |
+| `owner` | `/panel` (Owner Panel) | `requirePanelAuth()` → validates role + tenant scope | Business owner — catalog, orders, config for their tenant only |
+| `customer` | `/cuenta` (Customer area) | `requireAuth()` → validates Supabase session | End user — orders, addresses, profile, wishlist |
+| `anon` | Public storefront | — | Unauthenticated — browse, add to cart, guest checkout |
+
+**Key enforcement rules:**
+- Middleware (proxy.ts) is a **UX gate** only — never the final authorization check
+- All sensitive mutations validate role **server-side** via `requireAdmin()`/`requirePanelAuth()`/`requireAuth()`
+- Owner Panel actions are **double-scoped**: role check + `tenant_id` filter on every query
+- `super_admin` can access Owner Panel (inherits `owner` privileges)
 
 ---
 

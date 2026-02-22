@@ -3,15 +3,34 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
-import { isPaymentMethodAvailable, initializePaymentSession, getStripeClientSecret, submitBankTransferOrder, submitCODOrder, submitWhatsAppOrder } from '@/app/[lang]/(shop)/checkout/actions'
+import {
+    isPaymentMethodAvailable,
+    initializePaymentSession,
+    getStripeClientSecret,
+    submitBankTransferOrder,
+    submitCODOrder,
+    submitWhatsAppOrder,
+    setCartAddress,
+    getShippingOptions,
+    setShippingMethod,
+    getCartTotals,
+    type CheckoutAddress,
+    type ShippingOption,
+    type CartTotals,
+} from '@/app/[lang]/(shop)/checkout/actions'
 import { trackEvent } from '@/lib/analytics'
-import StripeCheckoutFlow from '@/components/checkout/StripeCheckoutFlow'
-import WhatsAppCheckoutFlow from '@/components/checkout/WhatsAppCheckoutFlow'
-import BankTransferFlow from '@/components/checkout/BankTransferFlow'
-import CashOnDeliveryFlow from '@/components/checkout/CashOnDeliveryFlow'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
-import { X, ArrowLeft, ArrowRight, ShoppingBag, User, MapPin, CreditCard, CheckCircle, Loader2 } from 'lucide-react'
+import { X, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+
+// Step components
+import CheckoutInfoStep from './steps/CheckoutInfoStep'
+import CheckoutAddressStep from './steps/CheckoutAddressStep'
+import CheckoutShippingStep from './steps/CheckoutShippingStep'
+import CheckoutMethodStep from './steps/CheckoutMethodStep'
+import CheckoutPaymentStep from './steps/CheckoutPaymentStep'
+import CheckoutConfirmationStep from './steps/CheckoutConfirmationStep'
+import CheckoutOrderSummary from './steps/CheckoutOrderSummary'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,9 +50,9 @@ interface CheckoutModalProps {
     onClose: () => void
 }
 
-type CheckoutStep = 'info' | 'address' | 'method' | 'payment' | 'confirmation'
+type CheckoutStep = 'info' | 'address' | 'shipping' | 'method' | 'payment' | 'confirmation'
 
-const STEP_ORDER: CheckoutStep[] = ['info', 'address', 'method', 'payment', 'confirmation']
+const ALL_STEPS: CheckoutStep[] = ['info', 'address', 'shipping', 'method', 'payment', 'confirmation']
 
 // ---------------------------------------------------------------------------
 // Component
@@ -46,26 +65,39 @@ export default function CheckoutModal({
     isOpen,
     onClose,
 }: CheckoutModalProps) {
-    const { cart } = useCart()
+    const { cart, resetCart } = useCart()
     const { t, locale } = useI18n()
 
     // Step navigation
     const [step, setStep] = useState<CheckoutStep>('info')
-    const stepIndex = STEP_ORDER.indexOf(step)
 
     // Customer info
-    const [name, setName] = useState('')
+    const [firstName, setFirstName] = useState('')
+    const [lastName, setLastName] = useState('')
     const [email, setEmail] = useState('')
     const [phone, setPhone] = useState('')
 
-    // Address
-    const [address, setAddress] = useState('')
+    // Structured address
+    const [street, setStreet] = useState('')
+    const [street2, setStreet2] = useState('')
+    const [city, setCity] = useState('')
+    const [postalCode, setPostalCode] = useState('')
+    const [countryCode, setCountryCode] = useState('ES')
     const [notes, setNotes] = useState('')
+    const [addressLoading, setAddressLoading] = useState(false)
+
+    // Shipping options
+    const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
+    const [selectedShipping, setSelectedShipping] = useState<string | null>(null)
+    const [shippingLoading, setShippingLoading] = useState(false)
 
     // Payment method
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
     const [availableMethods, setAvailableMethods] = useState<PaymentMethod[]>([])
     const [loadingMethods, setLoadingMethods] = useState(true)
+
+    // Medusa-computed cart totals
+    const [cartTotals, setCartTotals] = useState<CartTotals | null>(null)
 
     // Stripe state
     const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -75,15 +107,21 @@ export default function CheckoutModal({
     const [orderResult, setOrderResult] = useState<{ id: string; display_id: number } | null>(null)
     const [error, setError] = useState<string | null>(null)
 
+    // Dynamic steps: skip 'shipping' if no shipping options available
+    const activeSteps = shippingOptions.length > 0
+        ? ALL_STEPS
+        : ALL_STEPS.filter((s) => s !== 'shipping')
+    const stepIndex = activeSteps.indexOf(step)
+
     // Items & formatting
     const items = cart?.items ?? []
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
-    const total = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+    const displayCurrency = cartTotals?.currency_code || items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
+    const displayTotal = cartTotals?.total ?? items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(locale, {
             style: 'currency',
-            currency: currency.toUpperCase(),
+            currency: displayCurrency.toUpperCase(),
             minimumFractionDigits: 0,
         }).format(amount / 100)
 
@@ -129,12 +167,77 @@ export default function CheckoutModal({
 
     function goNext() {
         const nextIdx = stepIndex + 1
-        if (nextIdx < STEP_ORDER.length) setStep(STEP_ORDER[nextIdx])
+        if (nextIdx < activeSteps.length) setStep(activeSteps[nextIdx])
     }
 
     function goBack() {
         const prevIdx = stepIndex - 1
-        if (prevIdx >= 0) setStep(STEP_ORDER[prevIdx])
+        if (prevIdx >= 0) setStep(activeSteps[prevIdx])
+    }
+
+    // When entering address → save to Medusa + load shipping options
+    async function handleAddressContinue() {
+        if (!cart?.id) return
+        setAddressLoading(true)
+        setError(null)
+
+        const addr: CheckoutAddress = {
+            first_name: firstName,
+            last_name: lastName,
+            address_1: street,
+            address_2: street2 || undefined,
+            city,
+            postal_code: postalCode,
+            country_code: countryCode,
+            phone: phone || undefined,
+        }
+
+        try {
+            // 1. Save address on Medusa cart
+            const addrRes = await setCartAddress(cart.id, addr)
+            if (!addrRes.success) {
+                setError(addrRes.error ?? t('checkout.errors.addressSave'))
+                setAddressLoading(false)
+                return
+            }
+
+            // 2. Try to load shipping options (graceful fallback)
+            const shipRes = await getShippingOptions(cart.id)
+            setShippingOptions(shipRes.options)
+
+            // 3. If only one shipping option, auto-select it
+            if (shipRes.options.length === 1) {
+                setSelectedShipping(shipRes.options[0].id)
+                await setShippingMethod(cart.id, shipRes.options[0].id)
+            }
+
+            // 4. Fetch Medusa-computed totals
+            const totalsRes = await getCartTotals(cart.id)
+            if (totalsRes.totals) setCartTotals(totalsRes.totals)
+        } catch {
+            setError(t('checkout.errors.addressSave'))
+        } finally {
+            setAddressLoading(false)
+        }
+
+        goNext()
+    }
+
+    // When selecting a shipping option
+    async function handleShippingContinue() {
+        if (!cart?.id || !selectedShipping) return
+        setShippingLoading(true)
+        setError(null)
+        try {
+            await setShippingMethod(cart.id, selectedShipping)
+            const totalsRes = await getCartTotals(cart.id)
+            if (totalsRes.totals) setCartTotals(totalsRes.totals)
+        } catch {
+            setError(t('checkout.errors.shippingSave'))
+        } finally {
+            setShippingLoading(false)
+        }
+        goNext()
     }
 
     // When entering payment step with Stripe, init session
@@ -177,40 +280,44 @@ export default function CheckoutModal({
         // Show confirmation with a generic success message
         setOrderResult({ id: 'stripe-pending', display_id: 0 })
         setStep('confirmation')
-    }, [])
+        resetCart()
+    }, [resetCart])
 
     const handleBankTransferConfirm = useCallback(async () => {
         if (!cart?.id) return
         const res = await submitBankTransferOrder(cart.id, {
-            name,
+            name: `${firstName} ${lastName}`.trim(),
             email,
             phone,
-            address,
+            address: street,
             notes,
         })
         if (res.error) throw new Error(res.error)
         if (res.order) setOrderResult({ id: res.order.id, display_id: res.order.display_id })
         setStep('confirmation')
-    }, [cart?.id, name, email, phone, address, notes])
+        resetCart()
+    }, [cart?.id, firstName, lastName, email, phone, street, notes, resetCart])
 
     const handleCODConfirm = useCallback(async () => {
         if (!cart?.id) return
         const res = await submitCODOrder(cart.id, {
-            name,
+            name: `${firstName} ${lastName}`.trim(),
             email,
             phone,
-            address,
+            address: street,
             notes,
         })
         if (res.error) throw new Error(res.error)
         if (res.order) setOrderResult({ id: res.order.id, display_id: res.order.display_id })
         setStep('confirmation')
-    }, [cart?.id, name, email, phone, address, notes])
+        resetCart()
+    }, [cart?.id, firstName, lastName, email, phone, street, notes, resetCart])
 
     const handleWhatsAppComplete = useCallback((order?: { id: string; display_id: number }) => {
         if (order) setOrderResult(order)
         setStep('confirmation')
-    }, [])
+        resetCart()
+    }, [resetCart])
 
     // ---------------------------------------------------------------------------
     // Validation
@@ -219,9 +326,11 @@ export default function CheckoutModal({
     function canContinue(): boolean {
         switch (step) {
             case 'info':
-                return name.trim().length > 0
+                return firstName.trim().length > 0 && lastName.trim().length > 0
             case 'address':
-                return true // Address optional for some methods
+                return street.trim().length > 0 && city.trim().length > 0 && postalCode.trim().length > 0
+            case 'shipping':
+                return selectedShipping !== null
             case 'method':
                 return selectedMethod !== null
             default:
@@ -234,6 +343,8 @@ export default function CheckoutModal({
     // ---------------------------------------------------------------------------
 
     if (!isOpen) return null
+
+    const customerName = `${firstName} ${lastName}`.trim()
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
@@ -274,7 +385,7 @@ export default function CheckoutModal({
                     {/* Step indicator */}
                     {step !== 'confirmation' && (
                         <div className="flex gap-1">
-                            {STEP_ORDER.slice(0, -1).map((s, i) => (
+                            {activeSteps.slice(0, -1).map((s: CheckoutStep, i: number) => (
                                 <div
                                     key={s}
                                     className={`h-1 flex-1 rounded-full transition-colors ${i <= stepIndex ? 'bg-primary' : 'bg-surface-3'
@@ -287,270 +398,104 @@ export default function CheckoutModal({
 
                 {/* Body */}
                 <div className="p-5">
-                    {/* Step: Customer Info */}
                     {step === 'info' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4">
-                                <User className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">{t('checkout.steps.info')}</h3>
-                            </div>
-                            <div>
-                                <label className="text-sm text-text-secondary block mb-1">
-                                    {t('checkout.form.name')} *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder={t('checkout.form.namePlaceholder')}
-                                    className="input w-full"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-text-secondary block mb-1">
-                                    {t('checkout.form.email')}
-                                </label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="tu@email.com"
-                                    className="input w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-text-secondary block mb-1">
-                                    {t('checkout.form.phone')}
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    placeholder="+57 300 123 4567"
-                                    className="input w-full"
-                                />
-                            </div>
-                        </div>
+                        <CheckoutInfoStep
+                            firstName={firstName}
+                            lastName={lastName}
+                            email={email}
+                            phone={phone}
+                            onFirstNameChange={setFirstName}
+                            onLastNameChange={setLastName}
+                            onEmailChange={setEmail}
+                            onPhoneChange={setPhone}
+                            t={t}
+                        />
                     )}
 
-                    {/* Step: Address */}
                     {step === 'address' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4">
-                                <MapPin className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">{t('checkout.steps.address')}</h3>
-                            </div>
-                            <div>
-                                <label className="text-sm text-text-secondary block mb-1">
-                                    {t('checkout.form.address')}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder={t('checkout.form.addressPlaceholder')}
-                                    className="input w-full"
-                                />
-                            </div>
-                            {featureFlags.enable_order_notes && (
-                                <div>
-                                    <label className="text-sm text-text-secondary block mb-1">
-                                        {t('checkout.form.notes')}
-                                    </label>
-                                    <textarea
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder={t('checkout.form.notesPlaceholder')}
-                                        rows={3}
-                                        className="input w-full resize-none"
-                                    />
-                                </div>
-                            )}
-                        </div>
+                        <CheckoutAddressStep
+                            street={street}
+                            street2={street2}
+                            city={city}
+                            postalCode={postalCode}
+                            countryCode={countryCode}
+                            notes={notes}
+                            addressLoading={addressLoading}
+                            featureFlags={featureFlags}
+                            onStreetChange={setStreet}
+                            onStreet2Change={setStreet2}
+                            onCityChange={setCity}
+                            onPostalCodeChange={setPostalCode}
+                            onCountryCodeChange={setCountryCode}
+                            onNotesChange={setNotes}
+                            t={t}
+                        />
                     )}
 
-                    {/* Step: Payment Method Selection */}
+                    {step === 'shipping' && (
+                        <CheckoutShippingStep
+                            shippingOptions={shippingOptions}
+                            selectedShipping={selectedShipping}
+                            shippingLoading={shippingLoading}
+                            onSelectShipping={setSelectedShipping}
+                            formatPrice={formatPrice}
+                            t={t}
+                        />
+                    )}
+
                     {step === 'method' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4">
-                                <CreditCard className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">{t('checkout.steps.method')}</h3>
-                            </div>
-
-                            {loadingMethods ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
-                                    <span className="ml-2 text-sm text-text-muted">
-                                        {t('checkout.loadingMethods')}
-                                    </span>
-                                </div>
-                            ) : availableMethods.length === 0 ? (
-                                <div className="text-center py-8 text-text-muted">
-                                    <p className="text-sm">
-                                        {t('checkout.noMethods')}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {availableMethods.map((method) => {
-                                        const Icon = method.icon
-                                        const isSelected = selectedMethod === method.id
-                                        return (
-                                            <button
-                                                key={method.id}
-                                                onClick={() => setSelectedMethod(method.id)}
-                                                type="button"
-                                                className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${isSelected
-                                                    ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
-                                                    : 'border-surface-3 bg-white/3 hover:bg-white/5 hover:border-surface-2'
-                                                    }`}
-                                            >
-                                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary/20' : 'bg-surface-1'
-                                                    }`}>
-                                                    <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-text-muted'
-                                                        }`} />
-                                                </div>
-                                                <div className="text-left flex-1">
-                                                    <p className="text-sm font-medium text-text-primary">
-                                                        {method.label}
-                                                    </p>
-                                                    <p className="text-xs text-text-muted">
-                                                        {method.description}
-                                                    </p>
-                                                </div>
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
-                                                    ? 'border-primary bg-primary'
-                                                    : 'border-surface-3'
-                                                    }`}>
-                                                    {isSelected && (
-                                                        <div className="w-2 h-2 rounded-full bg-white" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                        <CheckoutMethodStep
+                            availableMethods={availableMethods}
+                            selectedMethod={selectedMethod}
+                            loadingMethods={loadingMethods}
+                            onSelectMethod={setSelectedMethod}
+                            t={t}
+                        />
                     )}
 
-                    {/* Step: Payment (method-specific UI) */}
                     {step === 'payment' && (
-                        <div className="animate-fade-in">
-                            {stripeLoading && (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
-                                    <span className="ml-2 text-sm text-text-muted">
-                                        {t('checkout.initPayment')}
-                                    </span>
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
-                                    <p className="text-sm text-red-400">{error}</p>
-                                </div>
-                            )}
-
-                            {/* Stripe */}
-                            {selectedMethod === 'card' && clientSecret && !stripeLoading && (
-                                <StripeCheckoutFlow
-                                    clientSecret={clientSecret}
-                                    config={config}
-                                    onSuccess={handleStripeSuccess}
-                                    onError={(msg) => setError(msg)}
-                                    totalFormatted={formatPrice(total)}
-                                />
-                            )}
-
-                            {/* WhatsApp */}
-                            {selectedMethod === 'whatsapp' && cart?.id && (
-                                <WhatsAppCheckoutFlow
-                                    config={config}
-                                    items={items}
-                                    cartId={cart.id}
-                                    customerName={name}
-                                    customerEmail={email}
-                                    customerPhone={phone}
-                                    deliveryAddress={address}
-                                    notes={notes}
-                                    onComplete={handleWhatsAppComplete}
-                                />
-                            )}
-
-                            {/* Bank Transfer */}
-                            {selectedMethod === 'bank_transfer' && (
-                                <BankTransferFlow
-                                    bankDetails={bankDetails ?? {}}
-                                    totalFormatted={formatPrice(total)}
-                                    onConfirm={handleBankTransferConfirm}
-                                />
-                            )}
-
-                            {/* Cash on Delivery */}
-                            {selectedMethod === 'cod' && (
-                                <CashOnDeliveryFlow
-                                    deliveryAddress={address}
-                                    totalFormatted={formatPrice(total)}
-                                    onConfirm={handleCODConfirm}
-                                />
-                            )}
-                        </div>
+                        <CheckoutPaymentStep
+                            selectedMethod={selectedMethod}
+                            clientSecret={clientSecret}
+                            stripeLoading={stripeLoading}
+                            error={error}
+                            config={config}
+                            cartId={cart?.id}
+                            items={items}
+                            customerName={customerName}
+                            customerEmail={email}
+                            customerPhone={phone}
+                            deliveryAddress={street}
+                            notes={notes}
+                            bankDetails={bankDetails}
+                            totalFormatted={formatPrice(displayTotal)}
+                            onStripeSuccess={handleStripeSuccess}
+                            onError={(msg) => setError(msg)}
+                            onWhatsAppComplete={handleWhatsAppComplete}
+                            onBankTransferConfirm={handleBankTransferConfirm}
+                            onCODConfirm={handleCODConfirm}
+                            t={t}
+                        />
                     )}
 
-                    {/* Step: Confirmation */}
                     {step === 'confirmation' && (
-                        <div className="text-center py-6 animate-fade-in">
-                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-bold text-text-primary mb-2">
-                                {t('checkout.confirmation.title')}
-                            </h3>
-                            {orderResult && orderResult.display_id > 0 && (
-                                <p className="text-sm text-text-secondary mb-4">
-                                    {t('checkout.confirmation.orderNumber')}{' '}
-                                    <span className="font-bold text-primary">
-                                        #{orderResult.display_id}
-                                    </span>
-                                </p>
-                            )}
-                            <p className="text-sm text-text-muted mb-6">
-                                {selectedMethod === 'card'
-                                    ? t('checkout.confirmation.cardMsg')
-                                    : selectedMethod === 'bank_transfer'
-                                        ? t('checkout.confirmation.bankMsg')
-                                        : selectedMethod === 'cod'
-                                            ? t('checkout.confirmation.codMsg')
-                                            : selectedMethod === 'whatsapp'
-                                                ? t('checkout.confirmation.whatsappMsg')
-                                                : t('checkout.confirmation.genericMsg')}
-                            </p>
-                            <button
-                                onClick={onClose}
-                                className="btn btn-primary px-8 py-2"
-                                type="button"
-                            >
-                                {t('common.close')}
-                            </button>
-                        </div>
+                        <CheckoutConfirmationStep
+                            orderResult={orderResult}
+                            selectedMethod={selectedMethod}
+                            onClose={onClose}
+                            t={t}
+                        />
                     )}
 
                     {/* Order summary (always shown except confirmation) */}
                     {step !== 'confirmation' && (
-                        <div className="mt-6 pt-4 border-t border-surface-3">
-                            <div className="flex items-center gap-2 mb-2">
-                                <ShoppingBag className="w-4 h-4 text-text-muted" />
-                                <span className="text-xs text-text-muted">
-                                    {t('checkout.itemCount', { count: String(items.length) })}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-text-secondary">{t('cart.total')}</span>
-                                <span className="text-lg font-bold text-primary">
-                                    {formatPrice(total)}
-                                </span>
-                            </div>
-                        </div>
+                        <CheckoutOrderSummary
+                            items={items}
+                            cartTotals={cartTotals}
+                            displayTotal={displayTotal}
+                            formatPrice={formatPrice}
+                            t={t}
+                        />
                     )}
                 </div>
 
@@ -558,13 +503,24 @@ export default function CheckoutModal({
                 {step !== 'payment' && step !== 'confirmation' && (
                     <div className="sticky bottom-0 bg-surface-0/80 backdrop-blur-xl border-t border-surface-3 p-4">
                         <button
-                            onClick={step === 'method' ? handleMethodContinue : goNext}
-                            disabled={!canContinue()}
+                            onClick={
+                                step === 'address' ? handleAddressContinue
+                                    : step === 'shipping' ? handleShippingContinue
+                                        : step === 'method' ? handleMethodContinue
+                                            : goNext
+                            }
+                            disabled={!canContinue() || addressLoading || shippingLoading}
                             className="btn btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                             type="button"
                         >
-                            {t('checkout.continue')}
-                            <ArrowRight className="w-4 h-4" />
+                            {(addressLoading || shippingLoading) ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <>
+                                    {t('checkout.continue')}
+                                    <ArrowRight className="w-4 h-4" />
+                                </>
+                            )}
                         </button>
                     </div>
                 )}

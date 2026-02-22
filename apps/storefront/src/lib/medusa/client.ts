@@ -141,7 +141,7 @@ export async function getProducts(params?: {
     if (params?.order) searchParams.set('order', params.order)
     if (params?.q) searchParams.set('q', params.q)
     params?.category_id?.forEach((id) => searchParams.append('category_id[]', id))
-    searchParams.set('fields', '+categories,+images,+variants.prices,+variants.options')
+    searchParams.set('fields', '+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity')
 
     const qs = searchParams.toString()
     return medusaFetch<ProductListResponse>(`/store/products${qs ? `?${qs}` : ''}`)
@@ -150,7 +150,7 @@ export async function getProducts(params?: {
 export async function getProduct(handle: string): Promise<MedusaProduct | null> {
     try {
         const res = await medusaFetch<{ products: MedusaProduct[] }>(
-            `/store/products?handle=${handle}&fields=+categories,+images,+variants.prices,+variants.options`
+            `/store/products?handle=${handle}&fields=+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity`
         )
         return res.products[0] ?? null
     } catch {
@@ -400,4 +400,43 @@ export async function deleteAddress(addressId: string): Promise<void> {
         `/store/customers/me/addresses/${addressId}`,
         { method: 'DELETE' }
     )
+}
+
+// ---------------------------------------------------------------------------
+// Returns (Medusa Store API)
+// ---------------------------------------------------------------------------
+
+export interface StoreReturn {
+    id: string
+    order_id: string
+    status: string
+    refund_amount: number
+    created_at: string
+    items: {
+        id: string
+        item_id: string
+        quantity: number
+        reason_id: string | null
+        note: string | null
+    }[]
+}
+
+export async function createStoreReturn(
+    orderId: string,
+    items: { item_id: string; quantity: number; reason_id?: string; note?: string }[]
+): Promise<StoreReturn> {
+    const res = await medusaFetch<{ return: StoreReturn }>('/store/returns', {
+        method: 'POST',
+        body: JSON.stringify({
+            order_id: orderId,
+            items,
+        }),
+    })
+    return res.return
+}
+
+export async function getStoreReturns(orderId?: string): Promise<StoreReturn[]> {
+    const query = orderId ? `?order_id=${orderId}` : ''
+    const res = await medusaFetch<{ returns: StoreReturn[] }>(`/store/returns${query}`)
+    return res.returns ?? []
 }

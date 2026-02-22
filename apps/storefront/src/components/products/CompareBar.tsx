@@ -19,12 +19,11 @@ export default function CompareBarWrapper({ lang }: { lang: string }) {
 
     // Fetch minimal product info for selected items
     useEffect(() => {
-        if (items.length === 0) {
-            setProducts([])
-            return
-        }
-
         const fetchAll = async () => {
+            if (items.length === 0) {
+                setProducts([])
+                return
+            }
             const results: ProductMini[] = []
             for (const id of items) {
                 try {

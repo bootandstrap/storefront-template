@@ -25,6 +25,10 @@ const ALLOWED_CONFIG_FIELDS: (keyof StoreConfig)[] = [
     'custom_css',
     'language', 'timezone',
     'active_languages', 'active_currencies', 'default_currency',
+    // Inventory & Stock (Phase 1.7)
+    'stock_mode', 'low_stock_threshold',
+    // Shipping & Tax (Phase 1.9)
+    'free_shipping_threshold', 'tax_display_mode',
 ]
 
 // ---------------------------------------------------------------------------

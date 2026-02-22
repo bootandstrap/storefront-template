@@ -6,7 +6,6 @@
 #   • Redis (existing local, Docker, or local redis-server)
 #   • Medusa backend (native — hot-reload)
 #   • Storefront (native — hot-reload)
-#   • SuperAdmin panel (optional, sibling repo)
 #
 # Usage: ./dev.sh
 # Stop:  Ctrl+C
@@ -15,9 +14,9 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ADMIN_DIR="$(cd "$ROOT_DIR/.." && pwd)/bootandstrap-admin"
 REDIS_CONTAINER_NAME="ecommerce-redis-dev"
 DEV_REDIS_PID_FILE="$ROOT_DIR/.dev-redis.pid"
+STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
 cd "$ROOT_DIR"
 
 # Colors
@@ -141,7 +140,7 @@ else
 fi
 
 # ── 1. Redis ───────────────────────────────
-echo -e "\n${BLUE}[1/4]${NC} Ensuring Redis on localhost:6379..."
+echo -e "\n${BLUE}[1/3]${NC} Ensuring Redis on localhost:6379..."
 
 if is_port_open 6379; then
     REDIS_READY=1
@@ -188,28 +187,19 @@ else
 fi
 
 # ── 2. Medusa Backend ─────────────────────
-echo -e "\n${BLUE}[2/4]${NC} Starting Medusa backend..."
+echo -e "\n${BLUE}[2/3]${NC} Starting Medusa backend..."
 start_service "medusa" "$ROOT_DIR/apps/medusa" "REDIS_URL='$DEV_REDIS_URL' NODE_OPTIONS='--dns-result-order=ipv4first' pnpm dev"
 
 # ── 3. Next.js Storefront ─────────────────
-echo -e "\n${BLUE}[3/4]${NC} Starting Storefront..."
-start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev"
-
-# ── 4. SuperAdmin Panel ───────────────────
-if [[ -d "$ADMIN_DIR" ]]; then
-    echo -e "\n${BLUE}[4/4]${NC} Starting SuperAdmin panel..."
-    start_service "superadmin" "$ADMIN_DIR" "pnpm dev"
-else
-    echo -e "\n${YELLOW}[4/4]${NC} SuperAdmin directory not found at $ADMIN_DIR — skipping"
-fi
+echo -e "\n${BLUE}[3/3]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."
+start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev --port '$STOREFRONT_PORT'"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${GREEN}🚀 Development environment starting!${NC}"
-echo -e "   Storefront:   ${BLUE}http://localhost:3000${NC}"
+echo -e "   Storefront:   ${BLUE}http://localhost:${STOREFRONT_PORT}${NC}"
 echo -e "   Medusa API:   ${BLUE}http://localhost:9000${NC}"
 echo -e "   Medusa Admin: ${BLUE}http://localhost:9000/app${NC}"
-echo -e "   SuperAdmin:   ${BLUE}http://localhost:3100${NC}"
 if [[ "$REDIS_READY" -eq 1 ]]; then
     echo -e "   Redis:        ${BLUE}localhost:6379${NC}"
 else

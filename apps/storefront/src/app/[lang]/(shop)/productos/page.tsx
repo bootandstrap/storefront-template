@@ -7,18 +7,23 @@ import { ProductGridSkeleton } from '@/components/ui/Skeleton'
 
 export const dynamic = 'force-dynamic'
 
+const PRODUCTS_PER_PAGE = 12
+
 export default async function ProductosPage({
     params,
     searchParams,
 }: {
     params: Promise<{ lang: string }>
-    searchParams: Promise<{ category?: string; sort?: string; q?: string }>
+    searchParams: Promise<{ category?: string; sort?: string; q?: string; page?: string }>
 }) {
     const { lang } = await params
     const sp = await searchParams
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
     const { featureFlags } = await getConfig()
+
+    const currentPage = Math.max(1, parseInt(sp.page || '1', 10) || 1)
+    const offset = (currentPage - 1) * PRODUCTS_PER_PAGE
 
     const categories = await getCategories()
     const { products, count } = await getProducts({
@@ -27,8 +32,11 @@ export default async function ProductosPage({
             : undefined,
         order: sp.sort || undefined,
         q: sp.q || undefined,
-        limit: 50,
+        limit: PRODUCTS_PER_PAGE,
+        offset,
     })
+
+    const totalPages = Math.ceil(count / PRODUCTS_PER_PAGE)
 
     return (
         <div className="container-page py-8">
@@ -43,8 +51,11 @@ export default async function ProductosPage({
                     totalCount={count}
                     badgesEnabled={featureFlags.enable_product_badges}
                     compareEnabled={featureFlags.enable_product_comparisons}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
                 />
             </Suspense>
         </div>
     )
 }
+

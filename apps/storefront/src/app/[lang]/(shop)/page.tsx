@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getConfig()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
   return {
     title: config.meta_title || config.business_name || 'Online Store',
     description:

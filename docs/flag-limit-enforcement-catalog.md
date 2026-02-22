@@ -1,7 +1,7 @@
 # Flag & Limit Enforcement Catalog
 
 > **Purpose**: Documents which flags and limits are actively enforced server-side, which are UI-only, and which lack enforcement entirely.
-> **Updated**: 2026-02-20 (Post Production Readiness Remediation)
+> **Updated**: 2026-02-21 (Post Fase 2 SaaS Governance)
 
 ---
 
@@ -112,12 +112,14 @@ These limits have `checkLimit()` calls in **server actions or server components*
 | `max_cms_pages` | `paginas/actions.ts`, `paginas/page.tsx` |
 | `max_carousel_slides` | `carrusel/actions.ts`, `carrusel/page.tsx` |
 | `max_whatsapp_templates` | `mensajes/actions.ts`, `mensajes/page.tsx` |
+| `max_badges` | `insignias/actions.ts` (`toggleBadge` + `setBadges`) |
+| `max_newsletter_subscribers` | `api/newsletter/route.ts` — fail-closed |
 | `max_chatbot_messages_month` | `/api/chat` route (`checkChatQuota()`) — **fail-closed + 10 req/min rate-limit** (C2 fix, 20 Feb 2026) |
 | `max_admin_users` | Panel dashboard display (hardcoded count=1) |
 | `storage_limit_mb` | Panel dashboard display (hardcoded count=0) |
 | `max_email_sends_month` | Panel dashboard display (hardcoded count=0) |
 
-### Display-Only (6 limits)
+### Display-Only (4 limits)
 
 These appear in the panel dashboard `UsageMeter` but have **no server-side block**:
 
@@ -127,8 +129,6 @@ These appear in the panel dashboard `UsageMeter` but have **no server-side block
 | `storage_limit_mb` | Display shows `0/500`; no enforcement on uploads |
 | `max_email_sends_month` | Display shows `0/500`; no enforcement on Resend calls |
 | `max_custom_domains` | Display shows `0/1`; no domain provisioning logic exists |
-| `max_badges` | In `LimitableResource` type; no `checkLimit()` calls |
-| `max_newsletter_subscribers` | In `LimitableResource` type; no `checkLimit()` calls |
 
 ### No Enforcement At All (6 limits)
 

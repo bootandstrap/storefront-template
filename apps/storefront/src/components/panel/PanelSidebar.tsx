@@ -25,6 +25,7 @@ import {
     BadgeCheck,
     Bot,
     RotateCcw,
+    Truck,
     X,
 } from 'lucide-react'
 import {
@@ -57,6 +58,7 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
         orders: <ShoppingBag className="w-5 h-5" />,
         customers: <Users className="w-5 h-5" />,
         storeConfig: <Store className="w-5 h-5" />,
+        shipping: <Truck className="w-5 h-5" />,
         carousel: <ImageIcon className="w-5 h-5" />,
         whatsapp: <MessageCircle className="w-5 h-5" />,
         pages: <FileText className="w-5 h-5" />,

@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
-import { Search, X, SlidersHorizontal } from 'lucide-react'
+import { Search, X, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { MedusaProduct, MedusaCategory } from '@/lib/medusa/client'
 import { useI18n } from '@/lib/i18n/provider'
 import ProductCard from './ProductCard'
@@ -13,6 +13,9 @@ interface ProductGridProps {
     totalCount: number
     badgesEnabled?: boolean
     compareEnabled?: boolean
+    quickAddEnabled?: boolean
+    currentPage?: number
+    totalPages?: number
 }
 
 export default function ProductGrid({
@@ -21,6 +24,9 @@ export default function ProductGrid({
     totalCount,
     badgesEnabled = true,
     compareEnabled = false,
+    quickAddEnabled = false,
+    currentPage = 1,
+    totalPages = 1,
 }: ProductGridProps) {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -168,7 +174,7 @@ export default function ProductGrid({
             {products.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {products.map((product) => (
-                        <ProductCard key={product.id} product={product} badgesEnabled={badgesEnabled} compareEnabled={compareEnabled} />
+                        <ProductCard key={product.id} product={product} badgesEnabled={badgesEnabled} compareEnabled={compareEnabled} quickAddEnabled={quickAddEnabled} />
                     ))}
                 </div>
             ) : (
@@ -181,6 +187,53 @@ export default function ProductGrid({
                         {t('product.noResultsHint')}
                     </p>
                 </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-10">
+                    <button
+                        onClick={() => updateParams({ page: String(currentPage - 1) })}
+                        disabled={currentPage <= 1}
+                        className="p-2 rounded-xl border border-surface-3 transition-all hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label={t('product.prevPage') || 'Previous page'}
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                        .reduce<(number | 'dots')[]>((acc, p, idx, arr) => {
+                            if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('dots')
+                            acc.push(p)
+                            return acc
+                        }, [])
+                        .map((item, idx) =>
+                            item === 'dots' ? (
+                                <span key={`dots-${idx}`} className="px-1 text-text-muted">…</span>
+                            ) : (
+                                <button
+                                    key={item}
+                                    onClick={() => updateParams({ page: String(item) })}
+                                    className={`w-9 h-9 text-sm rounded-xl border transition-all ${currentPage === item
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'border-surface-3 hover:border-primary text-text-secondary'
+                                        }`}
+                                >
+                                    {item}
+                                </button>
+                            )
+                        )}
+
+                    <button
+                        onClick={() => updateParams({ page: String(currentPage + 1) })}
+                        disabled={currentPage >= totalPages}
+                        className="p-2 rounded-xl border border-surface-3 transition-all hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label={t('product.nextPage') || 'Next page'}
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </nav>
             )}
         </div>
     )

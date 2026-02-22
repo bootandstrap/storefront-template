@@ -2,7 +2,7 @@
 
 import { useEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { ShoppingBag, ArrowLeft, MessageCircle, Loader2 } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, Loader2, ArrowRight } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { useI18n } from '@/lib/i18n/provider'
@@ -104,10 +104,10 @@ export default function CarritoPage() {
                         <div className="mt-6 space-y-3">
                             <Link
                                 href={localizedHref('checkout')}
-                                className="btn btn-whatsapp w-full text-center"
+                                className="btn btn-primary w-full text-center flex items-center justify-center gap-2"
                             >
-                                <MessageCircle className="w-4 h-4" />
-                                {t('checkout.whatsapp')}
+                                {t('cart.proceedToCheckout') || t('checkout.proceed') || 'Proceed to Checkout'}
+                                <ArrowRight className="w-4 h-4" />
                             </Link>
                             <Link
                                 href={localizedHref('products')}

@@ -33,6 +33,10 @@ module.exports = defineConfig({
     },
   },
   modules: [
+    // Product Reviews module (custom — stored in Medusa's own PostgreSQL)
+    {
+      resolve: "./src/modules/product-reviews",
+    },
     // Supabase Auth Provider
     {
       resolve: "@medusajs/medusa/auth",
@@ -95,6 +99,19 @@ module.exports = defineConfig({
         },
       ]
       : []),
+    // Manual Fulfillment Provider (admin marks orders as shipped)
+    // Required for shipping options, regions, and the checkout shipping step
+    {
+      resolve: "@medusajs/medusa/fulfillment",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/fulfillment-manual",
+            id: "manual",
+          },
+        ],
+      },
+    },
   ],
 })
 

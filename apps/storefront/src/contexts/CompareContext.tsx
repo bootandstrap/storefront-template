@@ -19,15 +19,18 @@ const CompareContext = createContext<CompareContextType | null>(null)
 export function CompareProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<string[]>([])
 
-    // Hydrate from localStorage
+    // Hydrate from localStorage (async to avoid synchronous setState in effect)
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored) {
-                const parsed = JSON.parse(stored)
-                if (Array.isArray(parsed)) setItems(parsed.slice(0, MAX_ITEMS))
-            }
-        } catch { /* ignore */ }
+        const hydrate = () => {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY)
+                if (stored) {
+                    const parsed = JSON.parse(stored)
+                    if (Array.isArray(parsed)) setItems(parsed.slice(0, MAX_ITEMS))
+                }
+            } catch { /* ignore */ }
+        }
+        hydrate()
     }, [])
 
     // Persist to localStorage

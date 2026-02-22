@@ -8,8 +8,7 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
-import { getPanelFallbackRoute, shouldAllowPanelRoute } from '@/lib/panel-route-guards'
-import { redirect } from 'next/navigation'
+import FeatureGate from '@/components/ui/FeatureGate'
 import CarouselClient from './CarouselClient'
 
 export const dynamic = 'force-dynamic'
@@ -29,8 +28,8 @@ export default async function CarouselManagerPage({
     const { lang } = await params
     const { planLimits, featureFlags } = await getConfig()
 
-    if (!shouldAllowPanelRoute('carrusel', featureFlags)) {
-        redirect(getPanelFallbackRoute(lang))
+    if (!featureFlags.enable_carousel) {
+        return <FeatureGate flag="enable_carousel" lang={lang} />
     }
 
     const supabase = await createClient()

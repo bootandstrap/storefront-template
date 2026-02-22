@@ -23,6 +23,7 @@ import CookieConsentBanner from '@/components/consent/CookieConsentBanner'
 import CompareBarWrapper from '@/components/products/CompareBar'
 import { createClient } from '@/lib/supabase/server'
 import type { ChatTier } from '@/lib/chat/client-config'
+import Script from 'next/script'
 
 export default async function ShopLayout({
     children,
@@ -157,6 +158,26 @@ export default async function ShopLayout({
             {/* Cookie Consent Banner — gated by enable_cookie_consent */}
             {featureFlags.enable_cookie_consent && (
                 <CookieConsentBanner />
+            )}
+
+            {/* Google Analytics 4 — reads ID from config (already cached) */}
+            {featureFlags.enable_analytics && config.google_analytics_id && /^[A-Za-z0-9_-]+$/.test(config.google_analytics_id) && (
+                <>
+                    <Script
+                        src={`https://www.googletagmanager.com/gtag/js?id=${config.google_analytics_id}`}
+                        strategy="afterInteractive"
+                    />
+                    <Script id="gtag-init" strategy="afterInteractive">
+                        {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${config.google_analytics_id}');`}
+                    </Script>
+                </>
+            )}
+
+            {/* Facebook Pixel — reads ID from config (already cached) */}
+            {featureFlags.enable_analytics && config.facebook_pixel_id && /^[0-9]+$/.test(config.facebook_pixel_id) && (
+                <Script id="fb-pixel" strategy="afterInteractive">
+                    {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${config.facebook_pixel_id}');fbq('track','PageView');`}
+                </Script>
             )}
         </>
     )

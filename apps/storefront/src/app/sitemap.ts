@@ -4,7 +4,7 @@ import { getConfig } from '@/lib/config'
 import { getActiveLocales, CANONICAL_ROUTES } from '@/lib/i18n'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
     const { config } = await getConfig()
     const activeLocales = getActiveLocales(config)
 

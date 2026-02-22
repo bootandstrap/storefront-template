@@ -10,8 +10,7 @@
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
-import { getPanelFallbackRoute, shouldAllowPanelRoute } from '@/lib/panel-route-guards'
-import { redirect } from 'next/navigation'
+import FeatureGate from '@/components/ui/FeatureGate'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,27 +31,8 @@ export default async function AnalyticsPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    if (!shouldAllowPanelRoute('analiticas', featureFlags)) {
-        redirect(getPanelFallbackRoute(lang))
-    }
-
     if (!featureFlags.enable_analytics) {
-        return (
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
-                        {t('panel.analytics.title')}
-                    </h1>
-                </div>
-                <div className="glass rounded-2xl p-12 text-center">
-                    <div className="text-4xl mb-3">📊</div>
-                    <p className="text-text-muted">{t('panel.analytics.disabled')}</p>
-                    <p className="text-xs text-text-muted mt-2">
-                        {t('panel.analytics.enableHint')}
-                    </p>
-                </div>
-            </div>
-        )
+        return <FeatureGate flag="enable_analytics" lang={lang} />
     }
 
     // Compute cutoff date outside of render-time constraints

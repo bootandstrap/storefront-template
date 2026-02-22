@@ -2,16 +2,22 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Package } from 'lucide-react'
+import { Package, ShoppingCart, Loader2, Check } from 'lucide-react'
+import { useState, useTransition } from 'react'
 import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
+import { useCart } from '@/contexts/CartContext'
+import { useToast } from '@/components/ui/Toaster'
+import { addToCartAction } from '@/app/[lang]/(shop)/cart/actions'
+import { trackEvent } from '@/lib/analytics'
 import CompareButton from './CompareButton'
 
 interface ProductCardProps {
     product: MedusaProduct
     badgesEnabled?: boolean
     compareEnabled?: boolean
+    quickAddEnabled?: boolean
 }
 
 // Badge type → CSS class mapping
@@ -24,12 +30,47 @@ const BADGE_CLASSES: Record<string, string> = {
     'sold out': 'product-badge product-badge-soldout',
 }
 
-export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false }: ProductCardProps) {
+export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false, quickAddEnabled = false }: ProductCardProps) {
     const variant = product.variants?.[0]
     const resolved = getPrice(variant)
     const category = product.categories?.[0]
     const badges: string[] = badgesEnabled ? ((product.metadata?.badges as string[]) || []) : []
     const { t, localizedHref } = useI18n()
+    const { cartId, setCart, setCartId, openDrawer } = useCart()
+    const { success, error } = useToast()
+    const [isPending, startTransition] = useTransition()
+    const [justAdded, setJustAdded] = useState(false)
+
+    const canQuickAdd = quickAddEnabled && variant && (variant.inventory_quantity ?? 1) > 0
+
+    function handleQuickAdd(e: React.MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!variant || isPending) return
+
+        startTransition(async () => {
+            try {
+                const result = await addToCartAction(cartId, variant.id)
+                if (result.cart) {
+                    setCart(result.cart)
+                    if (result.cartId) setCartId(result.cartId)
+                    setJustAdded(true)
+                    setTimeout(() => setJustAdded(false), 2000)
+                    success(`${product.title} ${t('product.addedToCart')}`, {
+                        action: {
+                            label: t('cart.view') || 'Ver carrito',
+                            onClick: openDrawer,
+                        },
+                    })
+                    trackEvent('add_to_cart', { variant_id: variant.id, product_title: product.title, source: 'quick_add' })
+                } else {
+                    error(t('product.addToCartError'))
+                }
+            } catch {
+                error(t('product.addToCartError'))
+            }
+        })
+    }
 
     return (
         <Link href={`${localizedHref('products')}/${product.handle}`} data-testid="product-card" className="product-card group block">
@@ -75,6 +116,30 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <CompareButton productId={product.id} />
                     </div>
+                )}
+
+                {/* Quick-Add button overlay */}
+                {canQuickAdd && (
+                    <button
+                        onClick={handleQuickAdd}
+                        disabled={isPending}
+                        className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-primary text-white shadow-lg flex items-center justify-center
+                            opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100
+                            translate-y-2 group-hover:translate-y-0
+                            transition-all duration-200 ease-out
+                            hover:bg-primary-light hover:scale-110 active:scale-95
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            touch-target"
+                        aria-label={t('product.addToCart')}
+                    >
+                        {isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : justAdded ? (
+                            <Check className="w-4 h-4" />
+                        ) : (
+                            <ShoppingCart className="w-4 h-4" />
+                        )}
+                    </button>
                 )}
             </div>
 

@@ -134,6 +134,13 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.next({ request })
     const path = request.nextUrl.pathname
 
+    // ── Request tracing ───────────────────────
+    // Generate or forward a unique request ID for cross-service correlation
+    const requestId = request.headers.get('x-request-id') || crypto.randomUUID()
+    response.headers.set('x-request-id', requestId)
+    // Make available to downstream server components / API routes via request header
+    request.headers.set('x-request-id', requestId)
+
     // Skip static files / Next internals
     if (
         path.startsWith('/_next') ||

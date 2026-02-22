@@ -15,6 +15,7 @@ export interface PanelSidebarLabels {
     orders: string
     customers: string
     storeConfig: string
+    shipping: string
     modules: string
     carousel: string
     whatsapp: string
@@ -46,6 +47,7 @@ const ESSENTIAL_MODULES = [
     { key: 'orders', segment: 'pedidos' },
     { key: 'customers', segment: 'clientes' },
     { key: 'storeConfig', segment: 'tienda' },
+    { key: 'shipping', segment: 'envios' },
 ] as const
 
 const ADVANCED_MODULES: AdvancedModuleDef[] = [

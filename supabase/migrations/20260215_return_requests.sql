@@ -35,26 +35,26 @@ CREATE INDEX IF NOT EXISTS idx_return_requests_status
 ALTER TABLE public.return_requests ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing (potentially insecure) policies, then recreate
-DROP POLICY IF EXISTS return_requests_select_own ON public.return_requests;
-DROP POLICY IF EXISTS return_requests_insert_own ON public.return_requests;
-DROP POLICY IF EXISTS return_requests_select_admin ON public.return_requests;
-DROP POLICY IF EXISTS return_requests_update_admin ON public.return_requests;
+DROP POLICY IF EXISTS "return_requests_select_own" ON public.return_requests;
+DROP POLICY IF EXISTS "return_requests_insert_own" ON public.return_requests;
+DROP POLICY IF EXISTS "return_requests_select_admin" ON public.return_requests;
+DROP POLICY IF EXISTS "return_requests_update_admin" ON public.return_requests;
 
 -- Customers can view their own return requests
-CREATE POLICY return_requests_select_own ON public.return_requests
+CREATE POLICY "return_requests_select_own" ON public.return_requests
     FOR SELECT USING (
         auth.uid() = customer_id
     );
 
 -- Customers can create new return requests
-CREATE POLICY return_requests_insert_own ON public.return_requests
+CREATE POLICY "return_requests_insert_own" ON public.return_requests
     FOR INSERT WITH CHECK (
         auth.uid() = customer_id
     );
 
 -- C5 FIX: Admins can view return requests ONLY within their tenant
 -- Previously missing: profiles.tenant_id = return_requests.tenant_id
-CREATE POLICY return_requests_select_admin ON public.return_requests
+CREATE POLICY "return_requests_select_admin" ON public.return_requests
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -65,7 +65,7 @@ CREATE POLICY return_requests_select_admin ON public.return_requests
     );
 
 -- Admins can update return requests (status, admin_notes) within their tenant
-CREATE POLICY return_requests_update_admin ON public.return_requests
+CREATE POLICY "return_requests_update_admin" ON public.return_requests
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM public.profiles

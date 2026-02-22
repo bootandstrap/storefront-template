@@ -26,6 +26,7 @@ interface CartContextValue {
     closeDrawer: () => void
     setCart: (cart: MedusaCart) => void
     setCartId: (id: string) => void
+    resetCart: () => void
     optimisticItems: MedusaLineItem[]
     addOptimisticItem: (item: MedusaLineItem) => void
 }
@@ -93,6 +94,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(CART_ID_KEY, id)
     }, [])
 
+    const resetCart = useCallback(() => {
+        localStorage.removeItem(CART_ID_KEY)
+        setCartIdState(null)
+        setCart(null)
+    }, [])
+
     const itemCount = optimisticItems.reduce((sum, item) => sum + item.quantity, 0)
 
     const openDrawer = useCallback(() => setDrawerOpen(true), [])
@@ -110,6 +117,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 closeDrawer,
                 setCart,
                 setCartId,
+                resetCart,
                 optimisticItems,
                 addOptimisticItem,
             }}

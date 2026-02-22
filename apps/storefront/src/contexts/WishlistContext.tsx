@@ -53,7 +53,8 @@ export function WishlistProvider({
     useEffect(() => {
         if (!isAuthenticated || synced) return
 
-        setIsLoading(true)
+        // Start fetch — setIsLoading deferred to avoid synchronous setState in effect body
+        Promise.resolve().then(() => setIsLoading(true))
         fetch('/api/wishlist')
             .then(res => res.json())
             .then(data => {

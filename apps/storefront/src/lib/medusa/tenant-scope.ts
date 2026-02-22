@@ -33,21 +33,34 @@ export function assertTenantMedusaScopeRow(
     }
 }
 
-export async function getTenantMedusaScope(tenantId: string): Promise<TenantMedusaScope> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('tenant_medusa_scope')
-        .select('tenant_id, medusa_sales_channel_id')
-        .eq('tenant_id', tenantId)
-        .maybeSingle()
+/**
+ * Resolves Medusa scope for a tenant.
+ * Returns null if the table doesn't exist or no mapping is found
+ * — callers should degrade gracefully (show empty state, not crash).
+ */
+export async function getTenantMedusaScope(tenantId: string): Promise<TenantMedusaScope | null> {
+    try {
+        const supabase = createAdminClient()
+        const { data, error } = await supabase
+            .from('tenant_medusa_scope')
+            .select('tenant_id, medusa_sales_channel_id')
+            .eq('tenant_id', tenantId)
+            .maybeSingle()
 
-    if (error) {
-        throw new Error(`TENANT_SCOPE_UNRESOLVED: Failed to resolve Medusa scope for tenant ${tenantId}: ${error.message}`)
+        if (error) {
+            console.warn(`[tenant-scope] Failed to resolve Medusa scope for tenant ${tenantId}: ${error.message}`)
+            return null
+        }
+
+        if (!data) {
+            console.warn(`[tenant-scope] No scope mapping found for tenant ${tenantId}`)
+            return null
+        }
+
+        return assertTenantMedusaScopeRow(tenantId, data as TenantMedusaScopeRow)
+    } catch (e) {
+        console.warn(`[tenant-scope] Error resolving scope:`, e)
+        return null
     }
-
-    if (!data) {
-        throw new Error(`TENANT_SCOPE_UNRESOLVED: No scope mapping found for tenant ${tenantId}. Create a row in tenant_medusa_scope.`)
-    }
-
-    return assertTenantMedusaScopeRow(tenantId, data as TenantMedusaScopeRow)
 }
+

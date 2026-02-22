@@ -13,23 +13,14 @@ CREATE TABLE IF NOT EXISTS product_wishlists (
 ALTER TABLE product_wishlists ENABLE ROW LEVEL SECURITY;
 
 -- Users can manage their own wishlist
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can read own wishlist' AND tablename = 'product_wishlists') THEN
-    CREATE POLICY "Users can read own wishlist" ON product_wishlists FOR SELECT USING (auth.uid() = user_id);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Users can read own wishlist" ON product_wishlists;
+CREATE POLICY "Users can read own wishlist" ON product_wishlists FOR SELECT USING (auth.uid() = user_id);
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can add to own wishlist' AND tablename = 'product_wishlists') THEN
-    CREATE POLICY "Users can add to own wishlist" ON product_wishlists FOR INSERT WITH CHECK (auth.uid() = user_id);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Users can add to own wishlist" ON product_wishlists;
+CREATE POLICY "Users can add to own wishlist" ON product_wishlists FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can remove from own wishlist' AND tablename = 'product_wishlists') THEN
-    CREATE POLICY "Users can remove from own wishlist" ON product_wishlists FOR DELETE USING (auth.uid() = user_id);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Users can remove from own wishlist" ON product_wishlists;
+CREATE POLICY "Users can remove from own wishlist" ON product_wishlists FOR DELETE USING (auth.uid() = user_id);
 
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_product_wishlists_user ON product_wishlists(user_id);

@@ -55,6 +55,15 @@
 3. Verify env: all required vars in `.env` (see `.env.example`)
 4. Rebuild: `docker compose build storefront && docker compose up -d storefront`
 
+### 4. High Latency
+
+**Detection**: Health check `latency_ms` > 1000ms.
+
+**Steps**:
+1. Check DB connections: Supabase dashboard → Database → Connections
+2. Check Redis memory: `docker exec ecommerce-template-redis-1 redis-cli info memory`
+3. Review recent deployments for regressions
+
 ### 5. Medusa Crashes with `reading 'def'` Error
 
 **Symptoms**: Medusa fails to start, logs show `Cannot read properties of undefined (reading 'def')` during API route registration.
@@ -66,14 +75,53 @@
 3. Run `pnpm install` to resolve
 4. Restart: `./dev.sh`
 
-### 4. High Latency
+### 6. Credential Rotation
 
-**Detection**: Health check `latency_ms` > 1000ms.
+**When**: Secret exposed, scheduled rotation, or compliance requirement.
 
-**Steps**:
-1. Check DB connections: Supabase dashboard → Database → Connections
-2. Check Redis memory: `docker exec ecommerce-template-redis-1 redis-cli info memory`
-3. Review recent deployments for regressions
+#### Supabase Keys
+
+1. Generate new keys in Supabase Dashboard → Project Settings → API
+2. Update `.env`: `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+3. Redeploy all services: `docker compose up -d --build`
+4. Verify: `curl http://localhost:3000/api/health?deep=1`
+
+#### Stripe Keys
+
+1. Roll keys in Stripe Dashboard → Developers → API keys
+2. Update `.env`: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+3. Update webhook secret: `STRIPE_WEBHOOK_SECRET`
+4. Redeploy storefront
+5. Verify: test checkout flow with test card
+
+#### JWT / Cookie Secrets (Medusa)
+
+1. Generate new secrets: `openssl rand -base64 32`
+2. Update `.env`: `JWT_SECRET`, `COOKIE_SECRET`
+3. Redeploy Medusa (all existing sessions invalidated)
+4. Verify: admin login + storefront auth flow
+
+#### Revalidation Secret
+
+1. Generate: `openssl rand -base64 32`
+2. Update `.env`: `REVALIDATION_SECRET`
+3. Update SuperAdmin config to match
+4. Verify: `curl -X POST http://localhost:3000/api/revalidate -d '{"secret":"new-secret"}'`
+
+### 7. Return/Refund Operations
+
+**Managed via Medusa native returns API.**
+
+#### Customer initiates return:
+- `POST /api/returns` with `order_id` + `items[]` (gated by `enable_self_service_returns` flag)
+
+#### Owner processes return:
+1. View returns in Owner Panel → Devoluciones (or Medusa Admin → Orders → Returns)
+2. "Receive" return → Medusa adjusts inventory + processes refund automatically
+3. "Cancel" return → Return request dismissed
+
+#### Manual refund (no return):
+- Process via Stripe Dashboard → Payments → Select payment → Issue refund
 
 ---
 
@@ -113,7 +161,7 @@ docker logs storefront | jq 'select(.request_id == "req-123")'
 
 1. ✅ All env vars set (no `PLACEHOLDER_` values)
 2. ✅ `pnpm lint` → warnings only (non-blocking)
-3. ✅ `pnpm test:run` → all pass (181 storefront tests, 14 admin tests)
+3. ✅ `pnpm test:run` → all pass (328 storefront tests, 24 medusa tests)
 4. ✅ `pnpm build` → clean build
 5. ✅ `docker compose config --quiet` → valid
 6. ✅ Health check responds: `curl http://localhost:3000/api/health/live`

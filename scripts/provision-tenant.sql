@@ -96,7 +96,7 @@ INSERT INTO feature_flags (
     enable_social_links,
     enable_order_notes,
     enable_newsletter,
-    enable_live_chat,
+
     enable_chatbot,
     -- i18n
     enable_multi_language,
@@ -108,7 +108,7 @@ INSERT INTO feature_flags (
     enable_customer_accounts,
     enable_order_tracking,
     enable_cookie_consent,
-    enable_stock_notifications,
+
     enable_maintenance_mode,
     -- Rollout
     owner_lite_enabled,
@@ -143,7 +143,7 @@ SELECT
     false,  -- social_links
     false,  -- order_notes
     false,  -- newsletter
-    false,  -- live_chat
+
     false,  -- chatbot
     -- i18n
     false,  -- multi_language
@@ -155,7 +155,7 @@ SELECT
     false,  -- customer_accounts
     false,  -- order_tracking
     true,   -- cookie_consent
-    false,  -- stock_notifications
+
     false,  -- maintenance_mode
     -- Rollout
     false,  -- owner_lite_enabled

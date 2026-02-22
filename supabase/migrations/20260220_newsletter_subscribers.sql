@@ -13,13 +13,10 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
 ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
 -- Admin-only read access
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read newsletter subscribers' AND tablename = 'newsletter_subscribers') THEN
-    CREATE POLICY "Admins can read newsletter subscribers" ON newsletter_subscribers FOR SELECT
-    USING (EXISTS (
-      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'
-    ));
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Admins can read newsletter subscribers" ON newsletter_subscribers;
+CREATE POLICY "Admins can read newsletter subscribers" ON newsletter_subscribers FOR SELECT
+USING (EXISTS (
+  SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'
+));
 
 CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);

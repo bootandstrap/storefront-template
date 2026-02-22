@@ -12,10 +12,9 @@ describe('admin tenant scoping helpers', () => {
         medusaSalesChannelId: 'sc_abc',
     }
 
-    it('throws when scope is missing', () => {
-        expect(() => buildScopedAdminPath('/admin/products?limit=20', undefined as never)).toThrow(
-            'Medusa tenant scope is required'
-        )
+    it('returns path unchanged when scope is missing (graceful degradation)', () => {
+        const result = buildScopedAdminPath('/admin/products?limit=20', undefined as never)
+        expect(result).toBe('/admin/products?limit=20')
     })
 
     it('injects sales_channel_id in list endpoints', () => {

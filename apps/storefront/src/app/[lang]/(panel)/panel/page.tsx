@@ -1,10 +1,3 @@
-/**
- * Owner Panel Dashboard
- *
- * Displays: 4 stat cards, usage meters for plan limits,
- * and recent orders from Medusa Admin API.
- */
-
 import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { checkLimit } from '@/lib/limits'
@@ -37,22 +30,40 @@ export default async function PanelDashboard({
 }) {
     const { lang } = await params
     const { tenantId } = await requirePanelAuth()
-    const scope = await getTenantMedusaScope(tenantId)
     const { planLimits } = await getConfigForTenant(tenantId)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Fetch counts in parallel (all scoped to auth tenant)
-    const [productCount, categoryCount, ordersThisMonth, recentOrders, customerCountRes] =
-        await Promise.all([
+    // Try to resolve Medusa scope — gracefully degrade if unavailable
+    let productCount = 0
+    let categoryCount = 0
+    let ordersThisMonth = 0
+    let recentOrders: Awaited<ReturnType<typeof getRecentOrders>> = []
+    let customerCount = 0
+    let medusaDegraded = false
+
+    try {
+        const scope = await getTenantMedusaScope(tenantId)
+        const [pc, cc, otm, ro, customerCountRes] = await Promise.all([
             getProductCount(scope),
             getCategoryCount(scope),
             getOrdersThisMonth(scope),
             getRecentOrders(5, scope),
             (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
         ])
-
-    const customerCount = customerCountRes.count ?? 0
+        productCount = pc
+        categoryCount = cc
+        ordersThisMonth = otm
+        recentOrders = ro
+        customerCount = customerCountRes.count ?? 0
+    } catch {
+        medusaDegraded = true
+        // Still try to get customer count from Supabase directly
+        try {
+            const res = await (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer')
+            customerCount = res.count ?? 0
+        } catch { /* ignore */ }
+    }
 
     // Usage meter data
     const usageMeters = [
@@ -68,6 +79,13 @@ export default async function PanelDashboard({
 
     return (
         <div className="space-y-8">
+            {/* Medusa degraded banner */}
+            {medusaDegraded && (
+                <div className="rounded-xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700">
+                    ⚠️ Medusa no está conectado — las estadísticas de productos, pedidos y categorías no están disponibles.
+                </div>
+            )}
+
             {/* Page header */}
             <div>
                 <h1 className="text-2xl font-bold font-display text-text-primary">

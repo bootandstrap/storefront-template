@@ -32,7 +32,7 @@ export default async function LangLayout({
 }) {
     const { lang } = await params
     const appConfig = await getConfig()
-    const { config, tenantStatus, _degraded, trialDaysRemaining } = appConfig
+    const { config, tenantStatus, _degraded, maintenanceDaysRemaining } = appConfig
 
     // Validate locale
     if (!isValidLocale(lang)) {
@@ -90,14 +90,14 @@ export default async function LangLayout({
                 </div>
             )}
 
-            {/* Trial countdown banner */}
-            {tenantStatus === 'trial' && trialDaysRemaining !== undefined && (
+            {/* Free maintenance month countdown banner */}
+            {tenantStatus === 'maintenance_free' && maintenanceDaysRemaining !== undefined && (
                 <div className="bg-blue-600 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
                     <Clock className="w-4 h-4 flex-shrink-0" />
                     <span>
-                        Trial — {trialDaysRemaining === 0
+                        Mantenimiento gratuito — {maintenanceDaysRemaining === 0
                             ? 'último día'
-                            : `${trialDaysRemaining} día${trialDaysRemaining !== 1 ? 's' : ''} restante${trialDaysRemaining !== 1 ? 's' : ''}`
+                            : `${maintenanceDaysRemaining} día${maintenanceDaysRemaining !== 1 ? 's' : ''} restante${maintenanceDaysRemaining !== 1 ? 's' : ''}`
                         }
                     </span>
                 </div>

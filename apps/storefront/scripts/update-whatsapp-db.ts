@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck — standalone script, not part of Next.js build
 import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'

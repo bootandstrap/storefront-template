@@ -31,8 +31,12 @@ export default function AddToCartButton({
             if (result.cart) {
                 setCart(result.cart)
                 if (result.cartId) setCartId(result.cartId)
-                openDrawer()
-                success(`${productTitle} ${t('product.addedToCart')}`)
+                success(`${productTitle} ${t('product.addedToCart')}`, {
+                    action: {
+                        label: t('cart.view') || 'Ver carrito',
+                        onClick: openDrawer,
+                    },
+                })
                 trackEvent('add_to_cart', { variant_id: variantId, product_title: productTitle })
                 return { success: true, message: 'Added' }
             }

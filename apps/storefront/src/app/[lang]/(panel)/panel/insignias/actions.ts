@@ -5,6 +5,8 @@ import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { revalidatePanel } from '@/lib/revalidate'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
+import { getConfigForTenant } from '@/lib/config'
+import { checkLimit } from '@/lib/limits'
 
 // ---------------------------------------------------------------------------
 // Fetch products with their current badges
@@ -73,6 +75,12 @@ export async function toggleBadge(
 
         let newBadges: string[]
         if (enabled) {
+            // Enforce max_badges limit
+            const { planLimits } = await getConfigForTenant(tenantId)
+            const limitCheck = checkLimit(planLimits, 'max_badges', currentBadges.length)
+            if (!limitCheck.allowed) {
+                return { success: false, error: 'Badge limit reached for this product' }
+            }
             newBadges = [...new Set([...currentBadges, badgeId])]
         } else {
             newBadges = currentBadges.filter((b) => b !== badgeId)
@@ -111,6 +119,14 @@ export async function setBadges(
         }
 
         const scope = await getTenantMedusaScope(tenantId)
+
+        // Enforce max_badges limit
+        const { planLimits } = await getConfigForTenant(tenantId)
+        const limitCheck = checkLimit(planLimits, 'max_badges', badges.length)
+        if (!limitCheck.allowed) {
+            return { success: false, error: 'Badge limit reached' }
+        }
+
         const { products } = await getAdminProducts({ limit: 100 }, scope)
         const product = products.find((p) => p.id === productId)
 

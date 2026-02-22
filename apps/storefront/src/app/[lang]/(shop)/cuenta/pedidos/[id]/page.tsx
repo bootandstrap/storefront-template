@@ -4,7 +4,6 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthOrder } from '@/lib/medusa/auth-medusa'
 import { formatPrice } from '@/lib/i18n/currencies'
 import { getConfig } from '@/lib/config'
-import { createClient } from '@/lib/supabase/server'
 import ReturnRequestForm from '@/components/returns/ReturnRequestForm'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import {
@@ -282,16 +281,22 @@ async function OrderDetail({
                 const canReturn = order.status === 'completed' || order.status === 'delivered'
                 if (!canReturn) return null
 
-                // Check for existing return request
-                const supabase = await createClient()
-                const { data: existingReturn } = await supabase
-                    .from('return_requests')
-                    .select('id, status')
-                    .eq('order_id', order.id)
-                    .limit(1)
+                // Check for existing return via Medusa Store API
+                const { getStoreReturns } = await import('@/lib/medusa/client')
+                let existingReturns: Awaited<ReturnType<typeof getStoreReturns>> = []
+                try {
+                    existingReturns = await getStoreReturns(order.id)
+                } catch {
+                    // Medusa returns API may not be available
+                }
 
-                if (existingReturn && existingReturn.length > 0) {
-                    const ret = existingReturn[0]
+                if (existingReturns.length > 0) {
+                    const ret = existingReturns[0]
+                    const statusMap: Record<string, 'pending' | 'approved' | 'rejected' | 'completed'> = {
+                        requested: 'pending',
+                        received: 'completed',
+                        canceled: 'rejected',
+                    }
                     return (
                         <div className="glass rounded-xl p-6">
                             <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
@@ -299,7 +304,7 @@ async function OrderDetail({
                                 {t('returns.existingRequest')}
                             </h2>
                             <ReturnStatusBadge
-                                status={ret.status as 'pending' | 'approved' | 'rejected' | 'completed'}
+                                status={statusMap[ret.status] || 'pending'}
                                 labels={{
                                     pending: t('returns.status.pending'),
                                     approved: t('returns.status.approved'),

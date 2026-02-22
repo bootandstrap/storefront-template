@@ -44,7 +44,7 @@ export function getPrice(variant: MedusaVariant | undefined | null): ResolvedPri
 export function formatPrice(
     amount: number,
     currency: string,
-    locale: string = 'es-ES'
+    locale: string = 'en'
 ): string {
     return new Intl.NumberFormat(locale, {
         style: 'currency',
@@ -60,7 +60,7 @@ export function formatPrice(
  */
 export function getFormattedPrice(
     variant: MedusaVariant | undefined | null,
-    locale: string = 'es-ES'
+    locale: string = 'en'
 ): string | null {
     const resolved = getPrice(variant)
     if (!resolved) return null

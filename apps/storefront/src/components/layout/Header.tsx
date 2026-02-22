@@ -232,6 +232,18 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             </a>
                         )}
 
+                        {/* Auth link — mobile */}
+                        {featureFlags.enable_customer_accounts && (
+                            <Link
+                                href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
+                                className="text-base font-medium p-2 rounded-lg hover:bg-surface-1 flex items-center gap-2 text-primary"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <User className="w-4 h-4" />
+                                {isAuthenticated ? t('nav.account') : t('nav.login')}
+                            </Link>
+                        )}
+
                         {/* Mobile language & currency selectors */}
                         {(featureFlags.enable_multi_language || featureFlags.enable_multi_currency) && (
                             <div className="border-t border-surface-3/50 pt-4 mt-2 flex items-center gap-2">

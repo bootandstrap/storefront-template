@@ -8,8 +8,7 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
-import { getPanelFallbackRoute, shouldAllowPanelRoute } from '@/lib/panel-route-guards'
-import { redirect } from 'next/navigation'
+import FeatureGate from '@/components/ui/FeatureGate'
 import MessagesClient from './MessagesClient'
 
 export const dynamic = 'force-dynamic'
@@ -29,8 +28,8 @@ export default async function WhatsAppTemplatesPage({
     const { lang } = await params
     const { planLimits, featureFlags } = await getConfig()
 
-    if (!shouldAllowPanelRoute('mensajes', featureFlags)) {
-        redirect(getPanelFallbackRoute(lang))
+    if (!featureFlags.enable_whatsapp_checkout) {
+        return <FeatureGate flag="enable_whatsapp_checkout" lang={lang} />
     }
 
     const supabase = await createClient()

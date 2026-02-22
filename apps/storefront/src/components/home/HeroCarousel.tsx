@@ -102,6 +102,7 @@ export default function HeroCarousel({ slides, labels }: HeroCarouselProps) {
                             sizes="100vw"
                             className="object-cover"
                             priority={i === 0}
+                            loading={i === 0 ? undefined : 'lazy'}
                         />
                     ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-light" />

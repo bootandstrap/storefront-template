@@ -7,6 +7,7 @@ import {
     createOrderFulfillment,
     getAdminOrderDetail,
     orderBelongsToScope,
+    createAdminRefund,
 } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 
@@ -54,6 +55,37 @@ export async function cancelOrder(
         return { success: true }
     } catch (err) {
         console.error('[panel/orders] Cancel error:', err)
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+    }
+}
+
+export async function refundOrder(
+    orderId: string,
+    paymentId: string,
+    amount: number
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (!paymentId || typeof amount !== 'number' || amount <= 0) {
+            return { success: false, error: 'Invalid refund parameters' }
+        }
+
+        const { tenantId } = await requirePanelAuth()
+        const scope = await getTenantMedusaScope(tenantId)
+
+        // Verify order belongs to tenant
+        const order = await getAdminOrderDetail(orderId, scope)
+        if (!orderBelongsToScope(order, scope)) {
+            return { success: false, error: 'Order does not belong to current tenant scope' }
+        }
+
+        const result = await createAdminRefund(paymentId, amount, scope)
+        if (result.error) {
+            return { success: false, error: result.error }
+        }
+        revalidatePanel('panel')
+        return { success: true }
+    } catch (err) {
+        console.error('[panel/orders] Refund error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

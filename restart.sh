@@ -11,6 +11,7 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
 cd "$ROOT_DIR"
 
 # Colors
@@ -39,7 +40,7 @@ echo -e "  ${GREEN}✓${NC} Caches cleared"
 # ── 3. Verify ports ────────────────────────
 echo -e "\n${BLUE}[3/4]${NC} Verifying ports..."
 ALL_FREE=true
-for PORT in 3000 3100 9000 6379; do
+for PORT in "$STOREFRONT_PORT" 9000 6379; do
     if lsof -ti :"$PORT" >/dev/null 2>&1; then
         echo -e "  ${YELLOW}⚠${NC} Port $PORT is still in use"
         ALL_FREE=false
@@ -56,4 +57,4 @@ fi
 echo -e "\n${BLUE}[4/4]${NC} Starting dev environment..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-exec "$ROOT_DIR/dev.sh"
+exec STOREFRONT_PORT="$STOREFRONT_PORT" "$ROOT_DIR/dev.sh"

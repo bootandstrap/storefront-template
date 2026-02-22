@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
                         customer_name: paymentIntent.metadata?.customer_name,
                         order_id: paymentIntent.metadata?.cart_id,
                         total: (paymentIntent.amount / 100).toFixed(2),
-                        store_url: process.env.NEXT_PUBLIC_STORE_URL || '',
+                        store_url: process.env.NEXT_PUBLIC_SITE_URL || '',
                     },
                 })
 

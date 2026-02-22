@@ -92,15 +92,20 @@ ALTER TABLE public.chat_tier_config ENABLE ROW LEVEL SECURITY;
 
 -- Service role has full access (admin client only)
 -- These are accessed via createAdminClient() which uses service_role key
-CREATE POLICY chat_settings_service ON public.chat_settings
+DROP POLICY IF EXISTS "chat_settings_service" ON public.chat_settings;
+CREATE POLICY "chat_settings_service" ON public.chat_settings
     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY chat_usage_service ON public.chat_usage
+DROP POLICY IF EXISTS "chat_usage_service" ON public.chat_usage;
+CREATE POLICY "chat_usage_service" ON public.chat_usage
     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY chat_logs_service ON public.chat_logs
+DROP POLICY IF EXISTS "chat_logs_service" ON public.chat_logs;
+CREATE POLICY "chat_logs_service" ON public.chat_logs
     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY chat_daily_stats_service ON public.chat_daily_stats
+DROP POLICY IF EXISTS "chat_daily_stats_service" ON public.chat_daily_stats;
+CREATE POLICY "chat_daily_stats_service" ON public.chat_daily_stats
     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY chat_tier_config_service ON public.chat_tier_config
+DROP POLICY IF EXISTS "chat_tier_config_service" ON public.chat_tier_config;
+CREATE POLICY "chat_tier_config_service" ON public.chat_tier_config
     FOR ALL USING (true) WITH CHECK (true);
 
 -- RPC: increment_chat_usage (upsert pattern, called from usage-logger.ts)

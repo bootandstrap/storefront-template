@@ -114,6 +114,12 @@ export const StoreConfigUpdateSchema = z.object({
     active_languages: z.array(z.string().max(5)).max(10).optional(),
     active_currencies: z.array(z.string().max(5)).max(10).optional(),
     default_currency: z.string().max(5).optional(),
+    // Inventory & Stock (Phase 1.7)
+    stock_mode: z.enum(['always_in_stock', 'managed']).optional(),
+    low_stock_threshold: z.number().int().min(1).max(1000).optional(),
+    // Shipping & Tax (Phase 1.9)
+    free_shipping_threshold: z.number().min(0).max(999999).optional(),
+    tax_display_mode: z.enum(['tax_included', 'tax_excluded']).optional(),
 }).passthrough()  // Allow extra keys — actions.ts filters to ALLOWED_CONFIG_FIELDS before DB write
 
 // ---------------------------------------------------------------------------

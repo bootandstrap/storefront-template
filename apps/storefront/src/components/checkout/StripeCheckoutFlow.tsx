@@ -51,6 +51,7 @@ interface StripePaymentFormProps {
     onSuccess: (paymentIntentId: string) => void
     onError: (message: string) => void
     totalFormatted: string
+    locale: string
     translations: {
         paymentSuccess: string
         orderConfirmed: string
@@ -70,6 +71,7 @@ function StripePaymentForm({
     onSuccess,
     onError,
     totalFormatted,
+    locale,
     translations: t,
 }: StripePaymentFormProps) {
     const stripe = useStripe()
@@ -89,7 +91,7 @@ function StripePaymentForm({
             const { error, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: `${window.location.origin}/checkout/confirmation`,
+                    return_url: `${window.location.origin}/${locale}/checkout/confirmation`,
                 },
                 redirect: 'if_required',
             })
@@ -276,6 +278,7 @@ export default function StripeCheckoutFlow({
                 onSuccess={onSuccess}
                 onError={onError}
                 totalFormatted={totalFormatted}
+                locale={locale}
                 translations={translations}
             />
         </Elements>

@@ -178,6 +178,16 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                             </div>
                         </div>
 
+                        {/* Owner access — discrete link when customer login is hidden */}
+                        {!featureFlags.enable_customer_accounts && (
+                            <Link
+                                href={`/${lang}/login`}
+                                className="text-xs text-text-muted/50 hover:text-text-muted transition-colors"
+                            >
+                                {t('footer.ownerAccess')}
+                            </Link>
+                        )}
+
                         {/* Copyright */}
                         <p className="text-xs text-text-muted">
                             © {year} {businessName}. {t('footer.rights')}.

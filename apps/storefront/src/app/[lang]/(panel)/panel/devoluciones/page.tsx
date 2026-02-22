@@ -1,12 +1,20 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { shouldAllowPanelRoute, getPanelFallbackRoute } from '@/lib/panel-route-guards'
+import FeatureGate from '@/components/ui/FeatureGate'
+import { getAdminReturns, type AdminReturn } from '@/lib/medusa/admin'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import { RotateCcw, PackageX } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
+
+function formatReturnStatus(status: string): 'pending' | 'approved' | 'rejected' | 'completed' {
+    switch (status) {
+        case 'requested': return 'pending'
+        case 'received': return 'completed'
+        case 'canceled': return 'rejected'
+        default: return 'pending'
+    }
+}
 
 export default async function PanelReturnsPage({
     params,
@@ -18,28 +26,23 @@ export default async function PanelReturnsPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    if (!shouldAllowPanelRoute('devoluciones', featureFlags)) {
-        redirect(getPanelFallbackRoute(lang))
+    if (!featureFlags.enable_self_service_returns) {
+        return <FeatureGate flag="enable_self_service_returns" lang={lang} />
     }
 
-    const supabase = await createClient()
-    const { data: returns } = await supabase
-        .from('return_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
+    let returns: AdminReturn[] = []
+    try {
+        const result = await getAdminReturns({ limit: 50 })
+        returns = result.returns
+    } catch {
+        // Medusa may not have returns module — show empty state
+    }
 
     const statusLabels = {
         pending: t('returns.status.pending'),
         approved: t('returns.status.approved'),
         rejected: t('returns.status.rejected'),
         completed: t('returns.status.completed'),
-    }
-
-    const reasonLabels: Record<string, string> = {
-        defective: t('returns.reasons.defective'),
-        wrong_item: t('returns.reasons.wrong_item'),
-        changed_mind: t('returns.reasons.changed_mind'),
-        other: t('returns.reasons.other'),
     }
 
     return (
@@ -52,7 +55,7 @@ export default async function PanelReturnsPage({
                 <p className="text-sm text-text-muted mt-1">{t('panel.returns.subtitle')}</p>
             </div>
 
-            {(!returns || returns.length === 0) ? (
+            {returns.length === 0 ? (
                 <div className="glass rounded-xl p-12 text-center">
                     <PackageX className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
                     <p className="text-sm text-text-muted">{t('panel.returns.noRequests')}</p>
@@ -67,7 +70,7 @@ export default async function PanelReturnsPage({
                                         {t('panel.returns.order')}
                                     </th>
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.reason')}
+                                        {t('panel.returns.items')}
                                     </th>
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                                         {t('panel.returns.date')}
@@ -81,10 +84,10 @@ export default async function PanelReturnsPage({
                                 {returns.map((ret) => (
                                     <tr key={ret.id} className="hover:bg-surface-1/50 transition-colors">
                                         <td className="px-4 py-3 text-text-primary font-medium">
-                                            {ret.order_id?.slice(-8) || '—'}
+                                            #{ret.order?.display_id || ret.order_id?.slice(-8) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-text-secondary">
-                                            {reasonLabels[ret.reason] || ret.reason}
+                                            {ret.items?.length || 0} item{(ret.items?.length || 0) !== 1 ? 's' : ''}
                                         </td>
                                         <td className="px-4 py-3 text-text-muted">
                                             {new Date(ret.created_at).toLocaleDateString(
@@ -94,7 +97,7 @@ export default async function PanelReturnsPage({
                                         </td>
                                         <td className="px-4 py-3">
                                             <ReturnStatusBadge
-                                                status={ret.status as 'pending' | 'approved' | 'rejected' | 'completed'}
+                                                status={formatReturnStatus(ret.status)}
                                                 labels={statusLabels}
                                             />
                                         </td>

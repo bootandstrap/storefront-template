@@ -25,6 +25,7 @@ vi.mock('@/lib/medusa/admin', () => ({
     updateProductImages: vi.fn(),
     deleteProductImage: vi.fn(),
     getAdminProduct: vi.fn(),
+    updateVariantInventory: vi.fn(),
 }))
 
 vi.mock('@/lib/medusa/tenant-scope', () => ({
@@ -68,7 +69,10 @@ describe('createProduct server-side limits', () => {
             role: 'owner',
             tenantId: 'tenant-1',
         })
-        mockGetConfig.mockResolvedValue({ planLimits: basePlanLimits })
+        mockGetConfig.mockResolvedValue({
+            planLimits: basePlanLimits,
+            config: { stock_mode: 'always_in_stock', low_stock_threshold: 5 },
+        })
         mockCreateAdminProduct.mockResolvedValue({ product: { id: 'p1' }, error: null })
     })
 

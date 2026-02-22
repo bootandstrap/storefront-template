@@ -54,6 +54,12 @@ export interface StoreConfig {
     facebook_pixel_id: string | null
     sentry_dsn: string | null
     custom_css: string | null
+    // Inventory & Stock (Phase 1.7)
+    stock_mode: 'always_in_stock' | 'managed'
+    low_stock_threshold: number
+    // Shipping & Tax (Phase 1.9)
+    free_shipping_threshold: number
+    tax_display_mode: 'tax_included' | 'tax_excluded'
 }
 
 export interface FeatureFlags {
@@ -131,11 +137,11 @@ export interface AppConfig {
     featureFlags: FeatureFlags
     planLimits: PlanLimits
     planExpired: boolean
-    tenantStatus: 'active' | 'paused' | 'suspended' | 'trial'
+    tenantStatus: 'active' | 'paused' | 'suspended' | 'maintenance_free'
     /** True when config was loaded from hardcoded fallback (Supabase unreachable) */
     _degraded?: boolean
-    /** Days remaining in trial (only set when tenantStatus === 'trial') */
-    trialDaysRemaining?: number
+    /** Days remaining in free maintenance month (only set when tenantStatus === 'maintenance_free') */
+    maintenanceDaysRemaining?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -238,6 +244,12 @@ const FALLBACK_CONFIG: AppConfig = {
         facebook_pixel_id: null,
         sentry_dsn: null,
         custom_css: null,
+        // Inventory & Stock (Phase 1.7)
+        stock_mode: 'always_in_stock',
+        low_stock_threshold: 5,
+        // Shipping & Tax (Phase 1.9)
+        free_shipping_threshold: 0,
+        tax_display_mode: 'tax_included',
     },
     featureFlags: {
         enable_whatsapp_checkout: true,
@@ -430,15 +442,15 @@ export async function getConfig(): Promise<AppConfig> {
 
         const tenantStatus = (tenantData?.status as AppConfig['tenantStatus']) ?? 'active'
 
-        // Compute trial days remaining
-        let trialDaysRemaining: number | undefined
-        if (tenantStatus === 'trial' && limits.plan_expires_at) {
+        // Compute free maintenance days remaining
+        let maintenanceDaysRemaining: number | undefined
+        if (tenantStatus === 'maintenance_free' && limits.plan_expires_at) {
             const msLeft = new Date(limits.plan_expires_at).getTime() - Date.now()
-            trialDaysRemaining = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
+            maintenanceDaysRemaining = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
         }
 
-        // Auto-enforce: if plan expired AND status is trial → treat as paused
-        const effectiveStatus = (planExpired && tenantStatus === 'trial') ? 'paused' : tenantStatus
+        // Auto-enforce: if plan expired AND status is maintenance_free → treat as paused
+        const effectiveStatus = (planExpired && tenantStatus === 'maintenance_free') ? 'paused' : tenantStatus
 
         const result: AppConfig = {
             config: configRes.data ?? FALLBACK_CONFIG.config,
@@ -450,7 +462,7 @@ export async function getConfig(): Promise<AppConfig> {
             planExpired,
             tenantStatus: effectiveStatus,
             _degraded: false,
-            trialDaysRemaining,
+            maintenanceDaysRemaining,
         }
         setCachedConfig(result)
         return result

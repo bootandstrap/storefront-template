@@ -3,7 +3,7 @@
  *
  * Auth guard: owner or super_admin only.
  * Includes: PanelSidebar + content area.
- * Feature-gated: only accessible when enable_owner_panel flag is on.
+ * Panel access is ALWAYS available by role — never gated by feature flags.
  */
 
 import { redirect } from 'next/navigation'
@@ -24,11 +24,6 @@ export default async function PanelLayout({
     const { config, featureFlags } = await getConfig()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-
-    // Feature gate: enable_owner_panel
-    if (!featureFlags.enable_owner_panel) {
-        redirect(`/${lang}`)
-    }
 
     // Auth guard: check for owner or super_admin role
     const supabase = await createClient()
@@ -71,6 +66,7 @@ export default async function PanelLayout({
                     orders: t('panel.nav.orders'),
                     customers: t('panel.nav.customers'),
                     storeConfig: t('panel.nav.storeConfig'),
+                    shipping: t('panel.nav.shipping'),
                     modules: t('panel.nav.modules'),
                     carousel: t('panel.nav.carousel'),
                     whatsapp: t('panel.nav.whatsapp'),

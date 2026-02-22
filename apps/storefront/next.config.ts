@@ -26,14 +26,16 @@ const nextConfig: NextConfig = {
         port: "9000",
       },
     ],
-    formats: ["image/webp"],
+    formats: ["image/avif", "image/webp"],
   },
 
   experimental: {
     staleTimes: {
-      dynamic: 30,
+      dynamic: 60,
       static: 180,
     },
+    optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
+    cssChunking: 'strict',
   },
 
   // ── Security Headers ─────────────────────────
@@ -70,11 +72,11 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.supabase.co http://localhost:9000",
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:*",
+              "img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://www.facebook.com",
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com",
               "frame-src https://js.stripe.com https://hooks.stripe.com",
               "object-src 'none'",
               "base-uri 'self'",

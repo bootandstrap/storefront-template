@@ -37,6 +37,7 @@ function baseLabels() {
         orders: 'Orders',
         customers: 'Customers',
         storeConfig: 'Store',
+        shipping: 'Shipping',
         modules: 'Modules',
         carousel: 'Carousel',
         whatsapp: 'WhatsApp',
@@ -58,7 +59,7 @@ describe('panel-modules', () => {
             featureFlags: baseFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(5)
+        expect(nav.essentialItems).toHaveLength(6)
         expect(nav.moduleItems.length).toBeGreaterThan(0)
     })
 
@@ -69,7 +70,7 @@ describe('panel-modules', () => {
             featureFlags: liteFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(5)
+        expect(nav.essentialItems).toHaveLength(6)
         expect(nav.moduleItems).toHaveLength(0)
     })
 

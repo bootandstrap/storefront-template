@@ -19,7 +19,7 @@ Phase 8  ████████████████████ 100%  SaaS
 Phase 9  ███████████████████░  95%  Production Hardening & Multi-Client
 ```
 
-> **Quality gate status (15 Feb 2026)**: release-gate.sh **7/7 PASSED** ✅ — tests ✅ (248 tests, 32 files storefront + 22 tests, 3 files admin), build ✅ (155 pages, 37 feature flags). See `GEMINI.md` for full baseline.
+> **Quality gate status (21 Feb 2026)**: Audit remediation Phase 10 in progress — lint → green, migration idempotency → green, env unified.
 
 **Repo separation completed**: SuperAdmin Panel now lives in its own repo (`bootandstrap-admin`). Template repo contains storefront + Medusa only.
 

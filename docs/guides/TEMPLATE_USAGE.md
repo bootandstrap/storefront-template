@@ -86,7 +86,7 @@ Migrations are stored as Supabase migration records. The key tables created are:
 Copy the template and fill in client-specific values:
 
 ```bash
-cp .env.template .env
+cp .env.example .env
 ```
 
 ### Required Variables
@@ -357,6 +357,6 @@ Until the Owner Panel is enabled (`enable_owner_panel = true` in feature flags),
 | Auth not working | Check Supabase project URL and anon key |
 | Stripe webhook fails | Verify `STRIPE_WEBHOOK_SECRET` matches Stripe dashboard |
 | Theme not applying | Check `config.color_preset` value in Supabase |
-| Build fails in CI | Ensure `.env.template` has all required variables |
+| Build fails in CI | Ensure `.env.example` has all required variables |
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for more debugging tips.

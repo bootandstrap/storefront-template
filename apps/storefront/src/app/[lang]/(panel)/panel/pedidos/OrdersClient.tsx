@@ -15,9 +15,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import {
     Package, Search, ChevronDown, ChevronUp, MapPin, CreditCard,
-    CheckCircle, XCircle, Clock, Truck, ShoppingBag, AlertCircle
+    CheckCircle, XCircle, Clock, Truck, ShoppingBag, AlertCircle, RotateCcw
 } from 'lucide-react'
-import { fulfillOrder, cancelOrder } from './actions'
+import { fulfillOrder, cancelOrder, refundOrder } from './actions'
 import type { AdminOrderFull } from '@/lib/medusa/admin'
 
 // ---------------------------------------------------------------------------
@@ -44,6 +44,11 @@ interface OrderLabels {
     cancel: string
     fulfillConfirm: string
     cancelConfirm: string
+    refund: string
+    refundConfirm: string
+    refundAmount: string
+    refundHint: string
+    refundSuccess: string
     shippingAddress: string
     payment: string
     fulfilled: string
@@ -137,6 +142,8 @@ export default function OrdersClient({
     const [search, setSearch] = useState(initialSearch)
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [refundingId, setRefundingId] = useState<string | null>(null)
+    const [refundAmount, setRefundAmount] = useState('')
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
     const canGoPrev = currentPage > 1
     const canGoNext = currentPage < totalPages
@@ -187,6 +194,31 @@ export default function OrdersClient({
             if (result.success) {
                 router.refresh()
                 toast.success('✓')
+            } else {
+                setError(result.error ?? 'Error')
+                toast.error(result.error ?? 'Error')
+            }
+        })
+    }
+
+    const handleRefund = (orderId: string, paymentId: string, maxAmount: number, currency: string) => {
+        const amountCents = Math.round(parseFloat(refundAmount) * 100)
+        if (isNaN(amountCents) || amountCents <= 0) {
+            toast.error('Invalid amount')
+            return
+        }
+        if (amountCents > maxAmount) {
+            toast.error(`Max: ${formatPrice(maxAmount, currency)}`)
+            return
+        }
+        if (!confirm(labels.refundConfirm)) return
+        startTransition(async () => {
+            const result = await refundOrder(orderId, paymentId, amountCents)
+            if (result.success) {
+                router.refresh()
+                toast.success(labels.refundSuccess)
+                setRefundingId(null)
+                setRefundAmount('')
             } else {
                 setError(result.error ?? 'Error')
                 toast.error(result.error ?? 'Error')
@@ -465,6 +497,58 @@ export default function OrdersClient({
                                                         <XCircle className="w-4 h-4" />
                                                         {isPending ? '...' : labels.cancel}
                                                     </button>
+                                                )}
+
+                                                {/* Refund button — only for completed/captured orders */}
+                                                {order.payment_status === 'captured' && order.payments?.length > 0 && (
+                                                    refundingId === order.id ? (
+                                                        <div className="flex items-center gap-2 bg-surface-1 rounded-xl px-4 py-2">
+                                                            <label className="text-sm text-text-secondary whitespace-nowrap">
+                                                                {labels.refundAmount} ({order.currency_code.toUpperCase()}):
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                min="0.01"
+                                                                step="0.01"
+                                                                max={order.payments[0].amount / 100}
+                                                                value={refundAmount}
+                                                                onChange={e => setRefundAmount(e.target.value)}
+                                                                placeholder={String(order.payments[0].amount / 100)}
+                                                                className="w-24 px-3 py-1.5 rounded-lg border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                                            />
+                                                            <button
+                                                                onClick={() => handleRefund(
+                                                                    order.id,
+                                                                    order.payments[0].id,
+                                                                    order.payments[0].amount,
+                                                                    order.currency_code
+                                                                )}
+                                                                disabled={isPending}
+                                                                className="btn btn-primary text-sm py-1.5"
+                                                            >
+                                                                {isPending ? '...' : labels.refund}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setRefundingId(null); setRefundAmount('') }}
+                                                                disabled={isPending}
+                                                                className="btn btn-ghost text-sm py-1.5"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setRefundingId(order.id)
+                                                                setRefundAmount(String(order.payments[0].amount / 100))
+                                                            }}
+                                                            disabled={isPending}
+                                                            className="btn btn-ghost text-amber-600 hover:bg-amber-50 inline-flex items-center gap-2 text-sm"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                            {labels.refund}
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         )}

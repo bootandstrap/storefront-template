@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Star, Send, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
-import { createClient } from '@/lib/supabase/client'
+import { getPublicMedusaUrl } from '@/lib/medusa/url'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,7 +19,7 @@ interface Review {
 
 interface ProductReviewsProps {
     productId: string
-    tenantId?: string
+    tenantId?: string // kept for backward compatibility, but no longer used
 }
 
 // ---------------------------------------------------------------------------
@@ -62,12 +62,13 @@ function StarRating({
 }
 
 // ---------------------------------------------------------------------------
-// Product Reviews Component
+// Product Reviews Component — backed by Medusa API
 // ---------------------------------------------------------------------------
 
-export default function ProductReviews({ productId, tenantId }: ProductReviewsProps) {
+export default function ProductReviews({ productId }: ProductReviewsProps) {
     const { t } = useI18n()
     const [reviews, setReviews] = useState<Review[]>([])
+    const [avgRating, setAvgRating] = useState(0)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [showForm, setShowForm] = useState(false)
@@ -77,61 +78,72 @@ export default function ProductReviews({ productId, tenantId }: ProductReviewsPr
     const [rating, setRating] = useState(5)
     const [comment, setComment] = useState('')
     const [success, setSuccess] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    // Derived
-    const avgRating = reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        : 0
+    const medusaUrl = getPublicMedusaUrl()
+    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
-    // Load reviews
+    // Load reviews from Medusa Store API
     const loadReviews = useCallback(async () => {
         try {
-            const supabase = createClient()
-            const { data } = await supabase
-                .from('product_reviews')
-                .select('*')
-                .eq('product_id', productId)
-                .order('created_at', { ascending: false })
-                .limit(50)
-            setReviews(data || [])
+            const res = await fetch(`${medusaUrl}/store/reviews/${productId}`, {
+                headers: {
+                    ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+                },
+            })
+            if (res.ok) {
+                const data = await res.json()
+                setReviews(data.reviews || [])
+                setAvgRating(data.avg_rating || 0)
+            }
         } catch {
             // Silently fail — reviews are non-critical
         } finally {
             setLoading(false)
         }
-    }, [productId])
+    }, [productId, medusaUrl, publishableKey])
 
     useEffect(() => { loadReviews() }, [loadReviews])
 
-    // Submit review
+    // Submit review to Medusa Store API
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!authorName.trim() || !rating) return
 
         setSubmitting(true)
+        setError(null)
+
         try {
-            const supabase = createClient()
-            const { error } = await supabase
-                .from('product_reviews')
-                .insert({
+            const res = await fetch(`${medusaUrl}/store/reviews`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+                },
+                body: JSON.stringify({
                     product_id: productId,
                     author_name: authorName.trim(),
                     rating,
-                    comment: comment.trim() || null,
-                    ...(tenantId && { tenant_id: tenantId }),
-                })
+                    comment: comment.trim() || undefined,
+                }),
+            })
 
-            if (error) throw error
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.message || 'Error submitting review')
+            }
 
             setAuthorName('')
             setRating(5)
             setComment('')
             setShowForm(false)
             setSuccess(true)
-            setTimeout(() => setSuccess(false), 3000)
+            setTimeout(() => setSuccess(false), 5000)
+            // Note: new review is "pending" so it won't appear immediately.
+            // We still reload to give a fresh view.
             await loadReviews()
-        } catch {
-            // Toast error would go here
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error submitting review')
         } finally {
             setSubmitting(false)
         }
@@ -173,10 +185,17 @@ export default function ProductReviews({ productId, tenantId }: ProductReviewsPr
                 </button>
             </div>
 
-            {/* Success message */}
+            {/* Success message — note that reviews need owner approval */}
             {success && (
                 <div className="px-4 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm">
-                    {t('reviews.thankYou') || 'Thank you for your review!'}
+                    {t('reviews.thankYouPending') || 'Thank you for your review! It will be visible once approved.'}
+                </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+                <div className="px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                    {error}
                 </div>
             )}
 

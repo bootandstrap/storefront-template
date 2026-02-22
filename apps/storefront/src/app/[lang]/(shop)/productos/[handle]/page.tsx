@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getProduct, getProducts } from '@/lib/medusa/client'
@@ -7,11 +6,10 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { productJsonLD } from '@/lib/seo/jsonld'
 import { getDictionary, createTranslator, localizedHref, type Locale } from '@/lib/i18n'
-import AddToCartButton from '@/components/products/AddToCartButton'
+import ProductDetailClient from '@/components/products/ProductDetailClient'
 import ProductCard from '@/components/products/ProductCard'
-import WishlistButton from '@/components/products/WishlistButton'
 import ProductReviews from '@/components/products/ProductReviews'
-import { Truck, ShieldCheck, Package, ChevronRight } from 'lucide-react'
+import { Truck, ShieldCheck, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,8 +48,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
     const tenantId = getRequiredTenantId()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-    const variant = product.variants?.[0]
-    const resolved = getPrice(variant)
     const jsonLd = productJsonLD(product, config)
 
     // Fetch related products
@@ -90,109 +86,22 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     <span className="text-text-primary font-medium truncate">{product.title}</span>
                 </nav>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    {/* Image gallery */}
-                    <div className="space-y-4">
-                        <div className="relative aspect-square rounded-2xl overflow-hidden bg-surface-1">
-                            {product.thumbnail ? (
-                                <Image
-                                    src={product.thumbnail}
-                                    alt={product.title}
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 50vw"
-                                    className="object-cover"
-                                    priority
-                                />
-                            ) : (
-                                <div className="image-fallback">
-                                    <Package className="!w-16 !h-16" strokeWidth={1} />
-                                </div>
-                            )}
-                            {/* Wishlist button */}
-                            {featureFlags.enable_wishlist && (
-                                <div className="absolute top-3 right-3 z-10">
-                                    <WishlistButton productId={product.id} />
-                                </div>
-                            )}
-                        </div>
-                        {product.images.length > 1 && (
-                            <div className="grid grid-cols-4 gap-2">
-                                {product.images.slice(0, 4).map((img) => (
-                                    <div
-                                        key={img.id}
-                                        className="relative aspect-square rounded-xl overflow-hidden bg-surface-1 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                                    >
-                                        <Image
-                                            src={img.url}
-                                            alt={product.title}
-                                            fill
-                                            sizes="(max-width: 768px) 25vw, 12vw"
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                {/* Product detail — interactive client component */}
+                <ProductDetailClient
+                    product={product}
+                    wishlistEnabled={!!featureFlags.enable_wishlist}
+                    lowStockThreshold={config.low_stock_threshold ?? 5}
+                />
+
+                {/* Delivery info */}
+                <div className="mt-8 border-t border-surface-3 pt-6 flex flex-wrap gap-6">
+                    <div className="flex items-center gap-3 text-sm text-text-secondary">
+                        <Truck className="w-5 h-5 text-primary shrink-0" />
+                        <span>{t('product.deliveryAvailable')}</span>
                     </div>
-
-                    {/* Product info */}
-                    <div className="flex flex-col">
-                        {/* Category badge */}
-                        {product.categories?.[0] && (
-                            <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full w-fit mb-3">
-                                {product.categories[0].name}
-                            </span>
-                        )}
-
-                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary mb-2">
-                            {product.title}
-                        </h1>
-
-                        {product.subtitle && (
-                            <p className="text-text-muted mb-4">{product.subtitle}</p>
-                        )}
-
-                        {/* Price — using shared utility */}
-                        {resolved && (
-                            <p className="text-3xl font-bold text-primary mb-6">
-                                {formatPrice(resolved.amount, resolved.currency)}
-                            </p>
-                        )}
-
-                        {/* Variant info */}
-                        {product.variants && product.variants.length > 1 && (
-                            <p className="text-sm text-text-secondary mb-4">
-                                {t('product.variants', { count: String(product.variants.length) })}
-                            </p>
-                        )}
-
-                        {/* Description */}
-                        {product.description && (
-                            <div className="prose prose-sm text-text-secondary mb-6 max-w-none">
-                                <p>{product.description}</p>
-                            </div>
-                        )}
-
-                        {/* Add to cart */}
-                        {variant && (
-                            <AddToCartButton
-                                variantId={variant.id}
-                                productTitle={product.title}
-                                className="mb-6"
-                            />
-                        )}
-
-                        {/* Delivery info */}
-                        <div className="border-t border-surface-3 pt-6 space-y-3">
-                            <div className="flex items-center gap-3 text-sm text-text-secondary">
-                                <Truck className="w-5 h-5 text-primary shrink-0" />
-                                <span>{t('product.deliveryAvailable')}</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-text-secondary">
-                                <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
-                                <span>{t('product.qualityGuarantee')}</span>
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-3 text-sm text-text-secondary">
+                        <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+                        <span>{t('product.qualityGuarantee')}</span>
                     </div>
                 </div>
 

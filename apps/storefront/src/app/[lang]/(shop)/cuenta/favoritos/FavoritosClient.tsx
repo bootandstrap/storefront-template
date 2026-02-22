@@ -58,12 +58,10 @@ export default function FavoritosClient() {
         if (wishlistLoading) return
 
         if (items.length === 0) {
-            setProducts([])
-            setLoading(false)
-            return
+            // Defer to avoid synchronous setState in effect body
+            const t = setTimeout(() => { setProducts([]); setLoading(false) }, 0)
+            return () => clearTimeout(t)
         }
-
-        setLoading(true)
 
         // Fetch each product by ID from Medusa Store API
         const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''
@@ -75,21 +73,27 @@ export default function FavoritosClient() {
         params.set('fields', '+variants.prices')
         params.set('limit', String(items.length))
 
+        // Use a microtask to avoid synchronous setState in effect body
+        const controller = new AbortController()
         fetch(`${MEDUSA_URL}/store/products?${params.toString()}`, {
             headers: {
                 'Content-Type': 'application/json',
                 ...(API_KEY ? { 'x-publishable-api-key': API_KEY } : {}),
             },
+            signal: controller.signal,
         })
             .then(res => res.json())
             .then(data => {
                 setProducts(data.products || [])
             })
             .catch(err => {
-                console.error('[wishlist] Failed to fetch products:', err)
-                setProducts([])
+                if (!controller.signal.aborted) {
+                    console.error('[wishlist] Failed to fetch products:', err)
+                    setProducts([])
+                }
             })
             .finally(() => setLoading(false))
+        return () => controller.abort()
     }, [items, wishlistLoading])
 
     // ── Loading skeleton ──────────────────────────────────────
