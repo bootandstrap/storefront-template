@@ -8,8 +8,9 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+COPY package-lock.json* ./
+RUN npm install
 
 # ── Stage 2: Builder ─────────────────────────
 FROM node:20-alpine AS builder
@@ -34,7 +35,7 @@ COPY --from=builder /app/.medusa/server ./
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 
 # Install production dependencies in the runner
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 USER medusa
 
