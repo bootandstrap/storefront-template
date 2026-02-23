@@ -1,0 +1,108 @@
+'use server'
+
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { revalidatePanel } from '@/lib/revalidate'
+import { getConfigForTenant } from '@/lib/config'
+import { checkLimit } from '@/lib/limits'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import {
+    getCategoryCount,
+    createAdminCategory,
+    updateAdminCategory,
+    deleteAdminCategory,
+    type CreateCategoryInput,
+} from '@/lib/medusa/admin'
+
+interface ActionResult {
+    success: boolean
+    error?: string
+}
+
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+}
+
+export async function createCategory(data: {
+    name: string
+    description?: string
+}): Promise<ActionResult> {
+    const { tenantId } = await requirePanelAuth()
+    if (!data.name.trim()) {
+        return { success: false, error: 'El nombre es obligatorio' }
+    }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    const [{ planLimits }, categoryCount] = await Promise.all([
+        getConfigForTenant(tenantId),
+        getCategoryCount(scope),
+    ])
+    const limitCheck = checkLimit(planLimits, 'max_categories', categoryCount)
+    if (!limitCheck.allowed) {
+        return { success: false, error: 'Límite de categorías alcanzado' }
+    }
+
+    const input: CreateCategoryInput = {
+        name: data.name.trim(),
+        handle: slugify(data.name),
+        description: data.description?.trim() || undefined,
+        is_active: true,
+        is_internal: false,
+    }
+
+    const result = await createAdminCategory(input, scope)
+    if (result.error) {
+        return { success: false, error: result.error }
+    }
+
+    revalidatePanel('all')
+
+    return { success: true }
+}
+
+export async function editCategory(
+    id: string,
+    data: { name?: string; description?: string }
+): Promise<ActionResult> {
+    const { tenantId } = await requirePanelAuth()
+    if (data.name !== undefined && !data.name.trim()) {
+        return { success: false, error: 'El nombre es obligatorio' }
+    }
+
+    const scope = await getTenantMedusaScope(tenantId)
+
+    const updateData: Partial<CreateCategoryInput> = {}
+    if (data.name !== undefined) {
+        updateData.name = data.name.trim()
+        updateData.handle = slugify(data.name)
+    }
+    if (data.description !== undefined) {
+        updateData.description = data.description.trim() || undefined
+    }
+
+    const result = await updateAdminCategory(id, updateData, scope)
+    if (result.error) {
+        return { success: false, error: result.error }
+    }
+
+    revalidatePanel('all')
+
+    return { success: true }
+}
+
+export async function removeCategory(id: string): Promise<ActionResult> {
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+    const result = await deleteAdminCategory(id, scope)
+    if (result.error) {
+        return { success: false, error: result.error }
+    }
+
+    revalidatePanel('all')
+
+    return { success: true }
+}
