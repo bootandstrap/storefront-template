@@ -68,3 +68,20 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"applicationId": "${{ vars.DOKPLOY_APP_ID }}"}'
           echo "✅ Dokploy redeploy triggered"
+
+      - name: Post-deploy health check
+        if: ${{ vars.DOKPLOY_APP_ID != '' && vars.STORE_DOMAIN != '' }}
+        run: |
+          echo "⏳ Waiting for container startup..."
+          for i in 1 2 3 4; do
+            sleep 30
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://${{ vars.STORE_DOMAIN }}/api/health" 2>/dev/null || echo "000")
+            echo "  Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "✅ Storefront healthy"
+              exit 0
+            fi
+          done
+          echo "⚠️ Storefront not responding after 120s — check Dokploy logs"
+          exit 1
