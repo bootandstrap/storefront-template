@@ -21,13 +21,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN groupadd --system --gid 1001 medusa && \
-    useradd --system --uid 1001 --gid medusa medusa
+    useradd --system --uid 1001 --gid medusa -m medusa && \
+    mkdir -p /home/medusa/.config/medusa && \
+    chown -R medusa:medusa /home/medusa
 
 # Copy the built server output (includes package.json, compiled src, medusa-config.js)
-COPY --from=builder /app/.medusa/server ./
+COPY --from=builder --chown=medusa:medusa /app/.medusa/server ./
 
 # Install production dependencies for the server output
-RUN npm install --production
+RUN npm install --production && chown -R medusa:medusa /app
 
 USER medusa
 
