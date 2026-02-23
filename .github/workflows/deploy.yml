@@ -61,7 +61,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to Dokploy
-        if: vars.DOKPLOY_APP_ID != ''
+        if: ${{ vars.DOKPLOY_APP_ID != '' }}
         run: |
           curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/application.redeploy" \
             -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
