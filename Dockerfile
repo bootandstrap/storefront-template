@@ -2,7 +2,6 @@
 # Storefront — Multi-stage Dockerfile
 # ============================================
 # Uses Next.js standalone output for minimal image size.
-# Bookworm-slim for fast builds with pre-compiled binaries.
 
 # ── Stage 1: Dependencies ────────────────────
 FROM node:20-bookworm-slim AS deps
@@ -45,10 +44,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs
 RUN useradd --system --uid 1001 --gid nodejs nextjs
 
-# Copy standalone output
+# Copy standalone output — Next.js nests under app/ in standalone output
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/static ./app/.next/static
+COPY --from=builder /app/public ./app/public
 
 USER nextjs
 
@@ -56,4 +55,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# server.js is at app/server.js in the standalone output
+CMD ["node", "app/server.js"]
