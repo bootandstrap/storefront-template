@@ -1,6 +1,6 @@
 import type { PlanLimits } from '@/lib/config'
 
-type LimitableResource =
+export type LimitableResource =
     | 'max_products'
     | 'max_customers'
     | 'max_orders_month'

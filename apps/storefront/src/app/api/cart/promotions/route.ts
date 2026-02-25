@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireFlag, policyErrorResponse, PolicyError } from '@/lib/policy-engine'
 
 // ---------------------------------------------------------------------------
 // POST /api/cart/promotions — Apply a promo code to a cart
 // DELETE /api/cart/promotions — Remove a promo code from a cart
 // Proxies to Medusa Store API: POST /store/carts/:id/promotions
+// P0-5: Server-side enforcement of enable_promotions flag
 // ---------------------------------------------------------------------------
 
 const MEDUSA_BACKEND_URL =
@@ -20,6 +22,8 @@ function medusaHeaders(): HeadersInit {
 
 export async function POST(request: NextRequest) {
     try {
+        // P0-5: Enforce feature flag server-side
+        await requireFlag('enable_promotions')
         const { cartId, code } = await request.json()
 
         if (!cartId || !code) {
@@ -51,6 +55,7 @@ export async function POST(request: NextRequest) {
         const data = await res.json()
         return NextResponse.json({ cart: data.cart })
     } catch (err) {
+        if (err instanceof PolicyError) return policyErrorResponse(err)
         console.error('[promotions] Error applying code:', err)
         return NextResponse.json(
             { error: 'Failed to apply promotion code' },
@@ -61,6 +66,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
+        // P0-5: Enforce feature flag server-side
+        await requireFlag('enable_promotions')
         const { cartId, code } = await request.json()
 
         if (!cartId || !code) {
@@ -92,6 +99,7 @@ export async function DELETE(request: NextRequest) {
         const data = await res.json()
         return NextResponse.json({ cart: data.cart })
     } catch (err) {
+        if (err instanceof PolicyError) return policyErrorResponse(err)
         console.error('[promotions] Error removing code:', err)
         return NextResponse.json(
             { error: 'Failed to remove promotion code' },
