@@ -495,6 +495,9 @@ export default function CheckoutModal({
                             displayTotal={displayTotal}
                             formatPrice={formatPrice}
                             t={t}
+                            freeShippingThreshold={config.free_shipping_threshold}
+                            currency={displayCurrency}
+                            locale={locale}
                         />
                     )}
                 </div>

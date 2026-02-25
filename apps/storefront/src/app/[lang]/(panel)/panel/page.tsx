@@ -40,28 +40,37 @@ export default async function PanelDashboard({
     let ordersThisMonth = 0
     let recentOrders: Awaited<ReturnType<typeof getRecentOrders>> = []
     let customerCount = 0
+    let adminCount = 0
     let medusaDegraded = false
 
     try {
         const scope = await getTenantMedusaScope(tenantId)
-        const [pc, cc, otm, ro, customerCountRes] = await Promise.all([
+        const supabase = await createClient()
+        const [pc, cc, otm, ro, customerCountRes, adminCountRes] = await Promise.all([
             getProductCount(scope),
             getCategoryCount(scope),
             getOrdersThisMonth(scope),
             getRecentOrders(5, scope),
-            (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
+            supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
+            supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('role', ['owner', 'super_admin']),
         ])
         productCount = pc
         categoryCount = cc
         ordersThisMonth = otm
         recentOrders = ro
         customerCount = customerCountRes.count ?? 0
+        adminCount = adminCountRes.count ?? 0
     } catch {
         medusaDegraded = true
         // Still try to get customer count from Supabase directly
         try {
-            const res = await (await createClient()).from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer')
-            customerCount = res.count ?? 0
+            const supabase = await createClient()
+            const [custRes, adminRes] = await Promise.all([
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('role', ['owner', 'super_admin']),
+            ])
+            customerCount = custRes.count ?? 0
+            adminCount = adminRes.count ?? 0
         } catch { /* ignore */ }
     }
 
@@ -71,10 +80,10 @@ export default async function PanelDashboard({
         { label: t('panel.usage.categories'), result: checkLimit(planLimits, 'max_categories', categoryCount) },
         { label: t('panel.usage.ordersMonth'), result: checkLimit(planLimits, 'max_orders_month', ordersThisMonth) },
         { label: t('panel.usage.customers'), result: checkLimit(planLimits, 'max_customers', customerCount) },
-        { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', 1) },
-        { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0) },
-        { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0) },
-        { label: t('panel.usage.customDomains'), result: checkLimit(planLimits, 'max_custom_domains', 0) },
+        { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', adminCount) },
+        { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0) }, // TODO: Supabase Storage tracking
+        { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0) }, // TODO: email counter
+        { label: t('panel.usage.customDomains'), result: checkLimit(planLimits, 'max_custom_domains', 0) }, // infra-level (Dokploy)
     ]
 
     return (

@@ -218,7 +218,7 @@ This phase was restructured into 4 sub-phases:
 | Tenant Detail | 6-tab editor (info / flags / limits / config / usage / errors) + status control | ✅ |
 | Create Tenant | Form with auto-slug + plan selector | ✅ |
 | Feature Flag Visualization | 37 flags, 8 categories, dependency/conflict graph | ✅ |
-| Plan presets | Starter / Pro / Enterprise defaults | ✅ |
+| Config presets | Internal SuperAdmin quick-config tool | ✅ |
 | Dockerfile | Standalone multi-stage build | ✅ |
 
 **Repo separation**: SuperAdmin moved from `apps/superadmin/` into its own repo (`bootandstrap-admin`). Governance types inlined locally. Zero workspace dependencies.

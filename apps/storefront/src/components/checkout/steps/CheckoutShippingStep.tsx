@@ -34,6 +34,10 @@ export default function CheckoutShippingStep({
                 <div className="space-y-2">
                     {shippingOptions.map((opt) => {
                         const isSelected = selectedShipping === opt.id
+                        const nameLC = opt.name.toLowerCase()
+                        const deliveryHint = nameLC.includes('express')
+                            ? t('checkout.shipping.estimateExpress') || '24h'
+                            : t('checkout.shipping.estimateStandard') || '2-3 days'
                         return (
                             <button
                                 key={opt.id}
@@ -44,7 +48,12 @@ export default function CheckoutShippingStep({
                                     : 'border-surface-3 bg-white/3 hover:bg-white/5'
                                     }`}
                             >
-                                <span className="text-sm font-medium text-text-primary">{opt.name}</span>
+                                <div>
+                                    <span className="text-sm font-medium text-text-primary">{opt.name}</span>
+                                    <span className="block text-[11px] text-text-muted mt-0.5">
+                                        {deliveryHint}
+                                    </span>
+                                </div>
                                 <span className="text-sm font-bold text-primary">
                                     {opt.amount > 0 ? formatPrice(opt.amount) : t('checkout.freeShipping') || 'Gratis'}
                                 </span>

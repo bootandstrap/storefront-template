@@ -7,6 +7,7 @@ import CheckoutModal from '@/components/checkout/CheckoutModal'
 import { ShoppingBag, ArrowLeft, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import CartItem from '@/components/cart/CartItem'
+import FreeShippingBanner from '@/components/cart/FreeShippingBanner'
 import PromotionInput from '@/components/checkout/PromotionInput'
 import { getEnabledMethods } from '@/lib/payment-methods'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
@@ -101,6 +102,18 @@ export default function CheckoutPageClient({
                         {featureFlags.enable_promotions && cart?.id && (
                             <div className="mb-2">
                                 <PromotionInput cartId={cart.id} />
+                            </div>
+                        )}
+                        {/* Free shipping progress */}
+                        {config.free_shipping_threshold > 0 && (
+                            <div className="mb-2">
+                                <FreeShippingBanner
+                                    subtotal={total}
+                                    threshold={config.free_shipping_threshold}
+                                    currency={currency}
+                                    locale={locale}
+                                    t={t}
+                                />
                             </div>
                         )}
                         <div className="border-t border-surface-3 mt-4 pt-4">

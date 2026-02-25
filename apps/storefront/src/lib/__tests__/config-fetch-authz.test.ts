@@ -128,6 +128,6 @@ describe('getConfig — authorization', () => {
         const result = await getConfig()
 
         // Should fall back gracefully (infra failure = use fallback)
-        expect(result.config.business_name).toBe('Mi Tienda')
+        expect(result.config.business_name).toBe('My Store')
     })
 })

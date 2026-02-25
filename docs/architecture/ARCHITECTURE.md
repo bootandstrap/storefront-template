@@ -48,7 +48,7 @@ Everything is remotely governed via **feature flags** and **plan limits** in Sup
 1. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist)
 2. **Supabase Auth is King** — All user auth via Supabase. Medusa validates Supabase JWTs via custom provider
 3. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, CMS, analytics — all toggleable remotely
-4. **Plan Limits Enforce SaaS Tiers** — `max_products`, `max_customers`, `max_orders_month`, etc.
+4. **Plan Limits Enforce Module Governance** — `max_products`, `max_customers`, `max_orders_month`, etc.
 5. **Dynamic Theming** — Colors from `config` → CSS vars → zero-redeploy brand changes
 6. **Server-Side Truth** — Prices, discounts, orders validated server-side by Medusa
 7. **Streaming-First** — Suspense boundaries for non-blocking page rendering

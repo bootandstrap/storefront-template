@@ -23,7 +23,7 @@ These tables are created and managed via the SuperAdmin panel. Schema changes or
 | `tenants` | SuperAdmin | SuperAdmin | Tenant registry. Source of truth for `status`. |
 | `config` | SuperAdmin, Owner Panel | Storefront | Per-tenant store config. `default_currency` (not `currency`). |
 | `feature_flags` (per-tenant) | SuperAdmin | Storefront, Owner Panel | 34+ boolean columns scoped by `tenant_id`. |
-| `plan_limits` | SuperAdmin | Storefront, Owner Panel | 21 limit fields per plan tier. |
+| `plan_limits` | SuperAdmin | Storefront, Owner Panel | 21 limit fields per tenant, module-driven. |
 | `profiles` | Supabase Auth, SuperAdmin | SuperAdmin, Storefront | `tenant_id` + `role` (`customer`, `owner`, `super_admin`). |
 | `audit_log` | SuperAdmin | SuperAdmin | Write-only mutation trail. |
 | `tenant_errors` | Storefront | SuperAdmin | Error Inbox. |
@@ -63,7 +63,7 @@ Medusa manages its own tables (`product`, `cart`, `order`, etc.) in the same `pu
 
 1. Add SQL migration to `BOOTANDSTRAP_WEB/supabase/migrations/`
 2. Apply via Supabase MCP or SQL editor
-3. Update `plan-presets.ts` if new columns affect plan defaults
+3. Update `plan-presets.ts` (internal config tool) if new columns affect defaults
 
 ### For Storefront Tables
 
@@ -83,7 +83,7 @@ Medusa manages its own tables (`product`, `cart`, `order`, etc.) in the same `pu
 Before releasing schema changes:
 
 - [ ] New columns have default values (safe for existing tenants)
-- [ ] `plan-presets.ts` updated if new flags/limits added
+- [ ] `plan-presets.ts` updated if new flags/limits added (internal config tool)
 - [ ] `validation.ts` schemas updated if new config fields
 - [ ] `config.ts` types updated in `StoreConfig` / `FeatureFlags` / `PlanLimits`
 - [ ] Backfill migration for existing tenants if needed

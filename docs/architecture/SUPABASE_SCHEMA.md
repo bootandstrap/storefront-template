@@ -150,7 +150,7 @@ Per-tenant feature toggles. All features remotely toggleable.
 RLS: public read, service_role-only write. Tenant-isolated via `tenant_id`.
 
 ### `plan_limits`
-Per-tenant SaaS tier enforcement.
+Per-tenant module governance enforcement.
 
 | Column | Type | Default |
 |--------|------|---------|

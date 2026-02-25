@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, useCallback } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { useToast } from '@/components/ui/Toaster'
 import { listShippingOptions, updateShippingPrice, updateShippingName } from './actions'
@@ -26,20 +26,23 @@ export default function ShippingClient() {
     const [editAmount, setEditAmount] = useState('')
     const [isPending, startTransition] = useTransition()
 
-    useEffect(() => {
-        loadOptions()
+    const loadOptions = useCallback(async () => {
+        setLoading(true)
+        try {
+            const result = await listShippingOptions()
+            if (result.error) {
+                setError(result.error)
+            } else {
+                setOptions(result.options as ShippingOption[])
+            }
+        } finally {
+            setLoading(false)
+        }
     }, [])
 
-    async function loadOptions() {
-        setLoading(true)
-        const result = await listShippingOptions()
-        if (result.error) {
-            setError(result.error)
-        } else {
-            setOptions(result.options as ShippingOption[])
-        }
-        setLoading(false)
-    }
+    useEffect(() => {
+        loadOptions()
+    }, [loadOptions])
 
     function startEdit(option: ShippingOption) {
         setEditingId(option.id)

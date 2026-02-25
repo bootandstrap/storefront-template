@@ -1,0 +1,199 @@
+{
+    "name": "food",
+    "description": "Food & beverage store with artisan products",
+    "categories": [
+        "Bread & Pastries",
+        "Preserves & Spreads",
+        "Beverages"
+    ],
+    "products": [
+        {
+            "title": "Sourdough Bread Loaf",
+            "category": "Bread & Pastries",
+            "description": "Artisan sourdough bread made with organic flour and natural fermentation. Crispy crust, soft interior. No preservatives.",
+            "handle": "sourdough-bread",
+            "weight": 800,
+            "options": [
+                {
+                    "title": "Size",
+                    "values": [
+                        "Regular",
+                        "Large"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Regular (500g)",
+                    "sku": "BREAD-500",
+                    "options": {
+                        "Size": "Regular"
+                    },
+                    "price": 590
+                },
+                {
+                    "title": "Large (1kg)",
+                    "sku": "BREAD-1KG",
+                    "options": {
+                        "Size": "Large"
+                    },
+                    "price": 890
+                }
+            ]
+        },
+        {
+            "title": "Croissant Box",
+            "category": "Bread & Pastries",
+            "description": "Flaky butter croissants baked fresh daily. Made with French-style laminated dough and premium butter.",
+            "handle": "croissant-box",
+            "weight": 400,
+            "options": [
+                {
+                    "title": "Quantity",
+                    "values": [
+                        "4 pcs",
+                        "8 pcs",
+                        "12 pcs"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "4 Croissants",
+                    "sku": "CROI-4",
+                    "options": {
+                        "Quantity": "4 pcs"
+                    },
+                    "price": 790
+                },
+                {
+                    "title": "8 Croissants",
+                    "sku": "CROI-8",
+                    "options": {
+                        "Quantity": "8 pcs"
+                    },
+                    "price": 1390
+                },
+                {
+                    "title": "12 Croissants",
+                    "sku": "CROI-12",
+                    "options": {
+                        "Quantity": "12 pcs"
+                    },
+                    "price": 1890
+                }
+            ]
+        },
+        {
+            "title": "Organic Honey",
+            "category": "Preserves & Spreads",
+            "description": "Raw organic wildflower honey from local beekeepers. Unfiltered, unpasteurized. Rich floral aroma.",
+            "handle": "organic-honey",
+            "weight": 500,
+            "options": [
+                {
+                    "title": "Size",
+                    "values": [
+                        "250g",
+                        "500g",
+                        "1kg"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Jar 250g",
+                    "sku": "HONEY-250",
+                    "options": {
+                        "Size": "250g"
+                    },
+                    "price": 890
+                },
+                {
+                    "title": "Jar 500g",
+                    "sku": "HONEY-500",
+                    "options": {
+                        "Size": "500g"
+                    },
+                    "price": 1490
+                },
+                {
+                    "title": "Jar 1kg",
+                    "sku": "HONEY-1KG",
+                    "options": {
+                        "Size": "1kg"
+                    },
+                    "price": 2490
+                }
+            ]
+        },
+        {
+            "title": "Artisan Fruit Jam Set",
+            "category": "Preserves & Spreads",
+            "description": "Handmade fruit jam trio: strawberry, apricot, and blueberry. Made with 70% fruit, low sugar. No artificial pectin.",
+            "handle": "artisan-jam-set",
+            "weight": 750,
+            "options": [
+                {
+                    "title": "Type",
+                    "values": [
+                        "Classic Trio",
+                        "Berry Selection"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Classic Trio (3×250g)",
+                    "sku": "JAM-CLASSIC",
+                    "options": {
+                        "Type": "Classic Trio"
+                    },
+                    "price": 1890
+                },
+                {
+                    "title": "Berry Selection (3×250g)",
+                    "sku": "JAM-BERRY",
+                    "options": {
+                        "Type": "Berry Selection"
+                    },
+                    "price": 2090
+                }
+            ]
+        },
+        {
+            "title": "Cold Brew Coffee",
+            "category": "Beverages",
+            "description": "Slow-brewed cold coffee from single-origin Colombian beans. Smooth, naturally sweet, low acidity. Ready to drink.",
+            "handle": "cold-brew-coffee",
+            "weight": 350,
+            "options": [
+                {
+                    "title": "Pack",
+                    "values": [
+                        "3 bottles",
+                        "6 bottles"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "3 Pack (3×250ml)",
+                    "sku": "COLD-3",
+                    "options": {
+                        "Pack": "3 bottles"
+                    },
+                    "price": 1190
+                },
+                {
+                    "title": "6 Pack (6×250ml)",
+                    "sku": "COLD-6",
+                    "options": {
+                        "Pack": "6 bottles"
+                    },
+                    "price": 1990
+                }
+            ]
+        }
+    ]
+}

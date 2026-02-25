@@ -23,8 +23,9 @@ echo ""
 read -rp "Client name (e.g., 'Fresh Market'): " CLIENT_NAME
 read -rp "Client slug (e.g., 'fresh-market'): " CLIENT_SLUG
 read -rp "Client domain (e.g., 'freshmarket.com'): " CLIENT_DOMAIN
-read -rp "Plan tier (starter/pro/enterprise) [starter]: " PLAN_TIER
-PLAN_TIER="${PLAN_TIER:-starter}"
+read -rp "Owner email (e.g., 'owner@example.com'): " OWNER_EMAIL
+read -rp "Seed profile (blank/retail/food/services) [blank]: " SEED_PROFILE
+SEED_PROFILE="${SEED_PROFILE:-blank}"
 
 echo ""
 echo "── Supabase Config ──"
@@ -47,7 +48,8 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Client:  ${CLIENT_NAME} (${CLIENT_SLUG})"
 echo "  Domain:  ${CLIENT_DOMAIN}"
-echo "  Plan:    ${PLAN_TIER}"
+echo "  Owner:   ${OWNER_EMAIL}"
+echo "  Profile: ${SEED_PROFILE}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 read -rp "Proceed? (y/N): " CONFIRM
 [[ "$CONFIRM" =~ ^[Yy] ]] || { echo "Aborted."; exit 1; }
@@ -98,7 +100,7 @@ echo "✓ Generated .env file: ${ENV_FILE}"
 SQL_OUT="${ROOT_DIR}/scripts/.provision-${CLIENT_SLUG}.sql"
 sed -e "s/__TENANT_SLUG__/${CLIENT_SLUG}/g" \
     -e "s/__TENANT_NAME__/${CLIENT_NAME}/g" \
-    -e "s/__PLAN_TIER__/${PLAN_TIER}/g" \
+    -e "s/__OWNER_EMAIL__/${OWNER_EMAIL}/g" \
     -e "s/__DOMAIN__/${CLIENT_DOMAIN}/g" \
     "${SCRIPT_DIR}/provision-tenant.sql" > "$SQL_OUT"
 echo "✓ Generated SQL script: ${SQL_OUT}"
@@ -120,7 +122,7 @@ echo "     cp ${ENV_FILE} apps/storefront/.env.local"
 echo "     cp ${ENV_FILE} apps/medusa/.env"
 echo ""
 echo "  3. Seed Medusa products:"
-echo "     cd apps/medusa && npx medusa db:migrate && npx medusa exec ./src/scripts/seed.ts"
+echo "     cd apps/medusa && npx medusa db:migrate && SEED_PROFILE=${SEED_PROFILE} npx medusa exec ./src/scripts/seed.ts"
 echo ""
 echo "  4. For Dokploy deployment:"
 echo "     - Set all env vars from ${ENV_FILE} in Dokploy"

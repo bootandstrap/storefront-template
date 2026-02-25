@@ -231,6 +231,46 @@ export async function POST(request: NextRequest) {
                 break
             }
 
+            case 'checkout.session.expired': {
+                const session = event.data.object as Stripe.Checkout.Session
+                console.log(
+                    `[stripe-webhook] Checkout session ${session.id} expired`,
+                    { metadata: session.metadata }
+                )
+
+                await logAnalyticsEvent('checkout_abandoned', {
+                    session_id: session.id,
+                    cart_id: session.metadata?.cart_id,
+                    reason: 'session_expired',
+                })
+
+                break
+            }
+
+            case 'checkout.session.completed': {
+                const session = event.data.object as Stripe.Checkout.Session
+                console.log(
+                    `[stripe-webhook] Checkout session ${session.id} completed`,
+                    { payment_status: session.payment_status, metadata: session.metadata }
+                )
+
+                // Safety net: if payment_intent.succeeded didn't fire yet, complete cart here
+                if (session.payment_status === 'paid') {
+                    const cartId = session.metadata?.cart_id
+                    if (cartId) {
+                        await completeCartInMedusa(cartId)
+                    }
+                }
+
+                await logAnalyticsEvent('checkout_session_completed', {
+                    session_id: session.id,
+                    payment_status: session.payment_status,
+                    cart_id: session.metadata?.cart_id,
+                })
+
+                break
+            }
+
             default:
                 console.log(`[stripe-webhook] Unhandled event type: ${event.type}`)
         }

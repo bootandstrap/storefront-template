@@ -24,7 +24,7 @@
 | **User Profiles** | Supabase | `public` | Role, name, avatar, medusa_customer_id |
 | **Store Config** | Supabase | `public` | Colors, branding, hero content |
 | **Feature Flags** | Supabase | `public` | Payment methods, auth providers, all features |
-| **Plan Limits** | Supabase | `public` | SaaS tier enforcement |
+| **Plan Limits** | Supabase | `public` | Module governance enforcement |
 | **WhatsApp Templates** | Supabase | `public` | Editable message templates |
 | **CMS Pages** | Supabase | `public` | Dynamic content pages |
 | **Carousel / Hero** | Supabase | `public` | Homepage slides |

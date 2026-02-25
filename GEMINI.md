@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 21 Feb 2026 (Feature Gate UX, owner panel access architecture, Medusa scope graceful degradation).
+> **Read this first.** Master guide for AI agents and developers. Updated 22 Feb 2026 (Sprint 4 + Phase 6: Testing & UX).
 
 ## What This Is
 
@@ -14,22 +14,22 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 
 **First client**: E-Commerce Template (fruit delivery) — but every design choice must be template-agnostic.
 
-**Current state**: Production-hardened after SOTA Remediation Plan (v10) + SOTA UI Audit (13 Feb 2026) + Deep Dive Sprints A–D (15 Feb 2026) + Production Readiness Remediation (20 Feb 2026) + Feature Gate UX + Owner Panel Access Fix (21 Feb 2026). See *Verified Quality Baseline* below.
+**Current state**: Production-hardened after SOTA Remediation Plan (v10) + SOTA UI Audit (13 Feb 2026) + Deep Dive Sprints A–D (15 Feb 2026) + Production Readiness Remediation (20 Feb 2026) + Feature Gate UX + Owner Panel Access Fix (21 Feb 2026) + Customer Project Tracker (22 Feb 2026) + Phase 6: Testing & UX (22 Feb 2026). See *Verified Quality Baseline* below.
 
-### Verified Quality Baseline (20 Feb 2026 — post Production Readiness Remediation)
+### Verified Quality Baseline (22 Feb 2026 — post Phase 6: Testing & UX)
 
 | Gate | Command | Result |
 |------|---------|--------|
-| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 312 tests, 37 files (vitest) — includes 5 production contract suites |
+| **Unit Tests (storefront)** | `pnpm test:run` | ✅ 364 tests, 40 files (vitest) — includes 5 production contract suites + FreeShippingBanner + rate-limit-tenant |
 | **Unit Tests (admin)** | `pnpm test:run` | ✅ 22 tests, 3 files (vitest) |
-| **Release Gate** | `bash scripts/release-gate.sh` | ✅ 7/7 PASS |
+| **Release Gate** | `bash scripts/release-gate.sh` | ✅ 8/8 PASS (includes coverage threshold) |
 | **Build** | `pnpm build` | ✅ Storefront builds cleanly |
 | **Tenant isolation** | code audit | ✅ Server-only `TENANT_ID`, service-role config fetch, `sales_channel_id` scoped queries |
 | **Webhook idempotency** | `stripe_webhook_events` table | ✅ Atomic `claimEvent` upsert — **fail-closed** on DB error (forces Stripe retry) |
 | **Production contracts** | 5 test suites | ✅ Checkout multi-method, Chat anti-abuse, Owner Lite gating, Webhook idempotency, Revalidation governance |
 | **SuperAdmin validation** | Zod schemas | ✅ All mutations validated + audit logged (including `createTenant`) |
 | **Owner Panel validation** | Zod schemas | ✅ All 8 action modules validated (carrusel, mensajes, paginas, tienda, insignias, productos, categorias, pedidos) |
-| **Rate limiting** | Redis + fallback | ✅ `rate-limit-redis.ts` with INCR+PEXPIRE pipeline |
+| **Rate limiting** | Redis + fallback | ✅ `rate-limit-redis.ts` (INCR+PEXPIRE pipeline) + `rate-limit-tenant.ts` (per-tenant + IP scoped, 5 tiers) |
 | **Dep audit** | `pnpm audit` | ⚠️ 1 moderate (esbuild, Medusa transitive, dev-only) |
 | **Lint** | `pnpm lint` | ⚠️ Pre-existing warnings (non-blocking) |
 | **Type Check** | `pnpm type-check` | ⚠️ `@ecommerce-template/shared` needs `@types/node` |
@@ -84,7 +84,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 3. **Single PostgreSQL** — All tables in Supabase `public` schema (Medusa + storefront coexist). `tenant_id` is a UUID column scoped to the `tenants` table for multi-tenant governance
 4. **Supabase Auth is King** — All user auth via Supabase. Medusa validates Supabase JWTs
 5. **Feature Flags Drive Everything** — Payment methods, auth providers, registration, carousels, CMS, analytics — all toggleable remotely. Flags can be auto-activated by module purchases via `module_flag_map`
-6. **Plan Limits Enforce SaaS Tiers** — `max_products`, `max_customers`, `max_orders_month`, etc.
+6. **Plan Limits Enforce Module Governance** — `max_products`, `max_customers`, `max_orders_month`, etc.
 7. **Dynamic Theming** — Color presets + theme mode from `config` → CSS vars → zero-redeploy brand changes
 8. **Server-Side Truth** — Prices, discounts, orders validated server-side by Medusa
 9. **Streaming-First** — Suspense boundaries for non-blocking page rendering
@@ -132,7 +132,8 @@ ecommerce-template/
 │   │   │   │   │   │   │   ├── page.tsx          # Dashboard (real stats + recent orders)
 │   │   │   │   │   │   │   ├── pedidos/          # Order list (paginated) + detail
 │   │   │   │   │   │   │   ├── direcciones/      # Address CRUD (modal + server actions)
-│   │   │   │   │   │   │   └── perfil/           # Profile editing + avatar upload
+│   │   │   │   │   │   │   ├── perfil/           # Profile editing + avatar upload
+│   │   │   │   │   │   │   └── mi-proyecto/      # Customer project timeline (read-only)
 │   │   │   │   │   │   ├── pedido/      # Guest order lookup
 │   │   │   │   │   │   └── paginas/     # CMS pages
 │   │   │   │   │   ├── (auth)/          # Auth routes
@@ -164,9 +165,9 @@ ecommerce-template/
 │   │   │   ├── components/
 │   │   │   │   ├── layout/      # Header, Footer, LanguageSelector, CurrencySelector
 │   │   │   │   ├── products/    # ProductCard, ProductGrid, AddToCartButton
-│   │   │   │   ├── checkout/    # Multi-step CheckoutModal, Stripe/Bank/COD/WhatsApp flows
-│   │   │   │   ├── cart/        # CartDrawer, CartItem
-│   │   │   │   ├── account/     # AddressCard, AddressModal, AvatarUpload, ReorderButton
+│   │   │   │   ├── checkout/    # Multi-step CheckoutModal, Stripe/Bank/COD/WhatsApp flows, CheckoutShippingStep (delivery estimates)
+│   │   │   │   ├── cart/        # CartDrawer, CartItem, FreeShippingBanner
+│   │   │   │   ├── account/     # AddressCard, AddressModal, AvatarUpload, ReorderButton, ProjectTimeline
 │   │   │   │   ├── ui/          # Toaster, Skeleton, ErrorBoundary, ScrollReveal, FeatureGate
 │   │   │   │   └── home/        # HeroSection, CategoryGrid, FeaturedProducts, TrustSection, HeroCarousel
 │   │   │   ├── contexts/        # CartContext (with drawer state)
@@ -177,7 +178,7 @@ ecommerce-template/
 │   │   │       │   ├── currencies.ts# Multi-currency: formatPrice(), resolution, cookie
 │   │   │       │   ├── error-strings.ts # ✅ Lightweight i18n fallback for error pages (5 locales)
 │   │   │       │   └── provider.tsx # I18nProvider context (t(), localizedHref())
-│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (620+ keys each)
+│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json (625+ keys each)
 │   │   │       ├── supabase/    # Browser + Server + Admin (service-role) clients
 │   │   │       │   ├── server.ts     # SSR client (cookies-based)
 │   │   │       │   ├── browser.ts    # Client-side client
@@ -195,7 +196,12 @@ ecommerce-template/
 │   │   │       ├── limits.ts    # checkLimit(resource, count)
 │   │   │       ├── analytics-server.ts # ✅ Server-side emitServerEvent() for checkout + webhook flows
 │   │   │       ├── panel-auth.ts   # ✅ requirePanelAuth() — role + tenant scope guard
-│   │   │       └── payment-methods.ts  # Dynamic payment method registry
+│   │   │       ├── payment-methods.ts  # Dynamic payment method registry
+│   │   │       └── security/    # Rate limiting + abuse prevention
+│   │   │           ├── rate-limit.ts          # In-memory rate limiter
+│   │   │           ├── rate-limit-redis.ts    # Redis-backed distributed rate limiter
+│   │   │           ├── rate-limit-factory.ts  # Auto-selects Redis or memory
+│   │   │           └── rate-limit-tenant.ts   # ✅ Per-tenant+IP scoped (5 tiers: storefront/cart/checkout/auth/api)
 │   │   └── proxy.ts             # Next.js 16 proxy (auth + locale slugs + role protection)
 │   │
 │   └── medusa/                  # Medusa.js v2
@@ -212,7 +218,8 @@ ecommerce-template/
 ├── packages/shared/             # @ecommerce-template/shared types + constants
 ├── supabase/migrations/         # ✅ SQL migrations (stripe_webhook_events, audit_log, tenant_errors)
 ├── docs/                        # Architecture, flows, guides, operations, plans
-├── scripts/                     # release-gate.sh, check-rls.sh
+├── .github/workflows/ci.yml     # ✅ CI pipeline (lint, tests, coverage, build, E2E, Lighthouse)
+├── scripts/                     # release-gate.sh (8 gates incl. coverage), check-rls.sh
 ├── docker-compose.yml
 ├── turbo.json
 └── pnpm-workspace.yaml
@@ -327,7 +334,7 @@ Every UI feature checks a flag before rendering. To disable a feature for a clie
 
 > **Module → Flag Auto-Activation**: Flags marked with `enable_*` can be automatically enabled/disabled when the corresponding module is purchased or cancelled. The mapping is defined in the `module_flag_map` table. See `BOOTANDSTRAP_WEB/MODULOS.md` for the full module catalog (13 modules, 22 flag mappings).
 >
-> Flag origins are tracked per-tenant: **module** (auto-activated by purchase), **plan** (included in tier preset), **admin** (manual toggle), **blocked** (requires module purchase), **system** (internal control).
+> Flag origins are tracked per-tenant: **module** (auto-activated by purchase), **preset** (applied via SuperAdmin quick-config tool), **admin** (manual toggle), **blocked** (requires module purchase), **system** (internal control).
 
 #### Feature Gate UX (Blocked Module Upsell)
 
@@ -341,7 +348,7 @@ When a flag-gated panel page is disabled, instead of silently redirecting, the `
 
 ### Plan Limits (`plan_limits` table)
 
-Enforce SaaS tier restrictions at the application level:
+Enforce module-based restrictions at the application level:
 
 | Limit | Default | Enforced Where |
 |-------|---------|----------------|
@@ -648,15 +655,38 @@ pnpm turbo build --filter=storefront
 # Build warnings about fallback config are expected when Supabase is offline
 ```
 
-## Deployment (Dokploy on Contabo VPS)
+## Deployment (GHCR + Dokploy on Contabo VPS)
+
+### Architecture
+
+- **Shared Medusa image**: `ghcr.io/bootandstrap/medusa:latest` — ONE image, all tenants share it.
+- **Per-tenant storefront**: `ghcr.io/bootandstrap/store-{slug}:latest` — each tenant has its own repo (`bootandstrap/store-{slug}`).
+- **Dokploy** orchestrates containers using Docker provider (not Git).
+- **GH Actions** builds images on push to `main` and pushes to GHCR.
+
+### Developer workflow
 
 ```bash
-git push main → Dokploy webhook → Docker Compose build → Health checks → Rolling update
+git push origin main
+# → GH Actions builds Docker image (~3-4 min)
+# → Pushes to ghcr.io/bootandstrap/store-{slug}:latest
+# → GH Actions calls Dokploy redeploy API
+# → Dokploy pulls new image and restarts container
 ```
 
-Domains via Dokploy:
-- `example.com` → storefront:3000
-- `api.example.com` → medusa-server:9000
+### CI/CD Pipelines
+
+| Pipeline | Repo | Trigger | Image |
+|----------|------|---------|-------|
+| `docker-publish.yml` | `bootandstrap-ecommerce` | Push to `main` (medusa changes) | `ghcr.io/bootandstrap/medusa:latest` |
+| `deploy.yml` | `store-{slug}` (per tenant) | Push to `main` | `ghcr.io/bootandstrap/store-{slug}:latest` |
+
+### Domains (per tenant)
+
+- `{slug}.bootandstrap.com` → storefront:3000 (HTTPS, Let's Encrypt)
+- `medusa-{slug}.bootandstrap.com` → medusa:9000 (HTTPS, Let's Encrypt)
+
+> **Important**: All GHCR packages must be set to **PUBLIC** for Dokploy to pull without authentication.
 
 ---
 
@@ -676,8 +706,9 @@ Domains via Dokploy:
 | 8A. Multi-Tenant Foundation | ✅ | Server-only `TENANT_ID`, service-role config fetch |
 | 8B. Governance Enforcement | ✅ | Zod-validated SuperAdmin mutations + audit trail |
 | 8C. Owner Panel | ✅ | `tenants` table created, all actions Zod-validated + tenant-scoped + plan-limited |
-| 8D. SuperAdmin Panel | ✅ | Tenant CRUD, flag toggles, plan presets — **separated to own repo** |
+| 8D. SuperAdmin Panel | ✅ | Tenant CRUD, flag toggles, config presets — **separated to own repo** |
 | 9. Production Hardening (v5) | ✅ | 181 storefront + 14 admin tests, Redis rate limiter, atomic webhook dedup, RLS audit |
+| **10. Customer Project Tracker** | ✅ | `project_phases` table, auto-create trigger, SuperAdmin phase management, customer timeline at `/cuenta/mi-proyecto`, i18n (5 locales) |
 
 ### SOTA Remediation Plan v5 (Completed)
 

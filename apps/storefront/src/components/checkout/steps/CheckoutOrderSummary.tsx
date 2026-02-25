@@ -1,6 +1,7 @@
 'use client'
 
 import { ShoppingBag } from 'lucide-react'
+import FreeShippingBanner from '@/components/cart/FreeShippingBanner'
 import type { CartTotals } from '@/app/[lang]/(shop)/checkout/actions'
 
 interface CheckoutOrderSummaryProps {
@@ -8,7 +9,13 @@ interface CheckoutOrderSummaryProps {
     cartTotals: CartTotals | null
     displayTotal: number
     formatPrice: (amount: number) => string
-    t: (key: string) => string
+    t: (key: string, vars?: Record<string, string>) => string
+    /** Free shipping threshold in cents (0 = disabled) */
+    freeShippingThreshold?: number
+    /** Currency code */
+    currency?: string
+    /** Locale */
+    locale?: string
 }
 
 export default function CheckoutOrderSummary({
@@ -17,6 +24,9 @@ export default function CheckoutOrderSummary({
     displayTotal,
     formatPrice,
     t,
+    freeShippingThreshold = 0,
+    currency = 'EUR',
+    locale = 'en',
 }: CheckoutOrderSummaryProps) {
     return (
         <div className="mt-6 pt-4 border-t border-surface-3">
@@ -36,6 +46,12 @@ export default function CheckoutOrderSummary({
                         <div className="flex justify-between text-sm text-text-secondary">
                             <span>{t('checkout.shipping') || 'Envío'}</span>
                             <span>{formatPrice(cartTotals.shipping_total)}</span>
+                        </div>
+                    )}
+                    {cartTotals.shipping_total === 0 && freeShippingThreshold > 0 && cartTotals.subtotal >= freeShippingThreshold && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-text-secondary">{t('checkout.shipping') || 'Envío'}</span>
+                            <span className="text-green-600 font-medium">{t('cart.freeShipping.unlocked')}</span>
                         </div>
                     )}
                     {cartTotals.tax_total > 0 && (

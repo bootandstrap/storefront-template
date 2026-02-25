@@ -1,0 +1,130 @@
+{
+    "name": "services",
+    "description": "Service-based business with consultation packages",
+    "categories": [
+        "Consultations",
+        "Packages"
+    ],
+    "products": [
+        {
+            "title": "Initial Consultation",
+            "category": "Consultations",
+            "description": "One-on-one initial consultation session. We'll review your needs, goals, and create a tailored plan for your project.",
+            "handle": "initial-consultation",
+            "weight": 0,
+            "options": [
+                {
+                    "title": "Duration",
+                    "values": [
+                        "30 min",
+                        "60 min"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "30 minutes",
+                    "sku": "CONSULT-30",
+                    "options": {
+                        "Duration": "30 min"
+                    },
+                    "price": 4900
+                },
+                {
+                    "title": "60 minutes",
+                    "sku": "CONSULT-60",
+                    "options": {
+                        "Duration": "60 min"
+                    },
+                    "price": 8900
+                }
+            ]
+        },
+        {
+            "title": "Monthly Retainer",
+            "category": "Packages",
+            "description": "Ongoing monthly support package. Includes dedicated hours, priority communication, and regular progress reports.",
+            "handle": "monthly-retainer",
+            "weight": 0,
+            "options": [
+                {
+                    "title": "Plan",
+                    "values": [
+                        "Basic (10h)",
+                        "Standard (20h)",
+                        "Premium (40h)"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Basic (10h/month)",
+                    "sku": "RET-BASIC",
+                    "options": {
+                        "Plan": "Basic (10h)"
+                    },
+                    "price": 99000
+                },
+                {
+                    "title": "Standard (20h/month)",
+                    "sku": "RET-STD",
+                    "options": {
+                        "Plan": "Standard (20h)"
+                    },
+                    "price": 179000
+                },
+                {
+                    "title": "Premium (40h/month)",
+                    "sku": "RET-PREM",
+                    "options": {
+                        "Plan": "Premium (40h)"
+                    },
+                    "price": 299000
+                }
+            ]
+        },
+        {
+            "title": "Project Package",
+            "category": "Packages",
+            "description": "Complete project delivery package. Includes discovery, execution, and handoff. Timeline and deliverables agreed upfront.",
+            "handle": "project-package",
+            "weight": 0,
+            "options": [
+                {
+                    "title": "Scope",
+                    "values": [
+                        "Small",
+                        "Medium",
+                        "Large"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Small Project",
+                    "sku": "PROJ-S",
+                    "options": {
+                        "Scope": "Small"
+                    },
+                    "price": 150000
+                },
+                {
+                    "title": "Medium Project",
+                    "sku": "PROJ-M",
+                    "options": {
+                        "Scope": "Medium"
+                    },
+                    "price": 350000
+                },
+                {
+                    "title": "Large Project",
+                    "sku": "PROJ-L",
+                    "options": {
+                        "Scope": "Large"
+                    },
+                    "price": 750000
+                }
+            ]
+        }
+    ]
+}

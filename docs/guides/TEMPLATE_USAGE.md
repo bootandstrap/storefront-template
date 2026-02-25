@@ -61,7 +61,7 @@ Migrations are stored as Supabase migration records. The key tables created are:
 | `tenants` | Tenant registry (id, name, slug, domain, status, plan) |
 | `config` | Store branding, hero content, delivery, socials, Medusa creds (per `tenant_id`) |
 | `feature_flags` | 34+ toggleable feature flags (per `tenant_id`) |
-| `plan_limits` | SaaS tier enforcement — products, customers, orders (per `tenant_id`) |
+| `plan_limits` | Module governance enforcement — products, customers, orders (per `tenant_id`) |
 | `profiles` | User profiles with `role` + `tenant_id` + `medusa_customer_id` |
 | `whatsapp_templates` | Editable WhatsApp message templates (per `tenant_id`) |
 | `cms_pages` | Dynamic content pages (per `tenant_id`) |
@@ -205,7 +205,7 @@ WHERE tenant_id = '<TENANT_ID>';
 
 ## Step 7: Set Plan Limits
 
-Control resource usage based on the client's SaaS tier:
+Control resource usage based on the client's active modules:
 
 ```sql
 -- Example: Starter plan
@@ -259,7 +259,7 @@ psql $DATABASE_URL < scripts/provision-tenant.sql
 
 See [CLIENT_HANDOFF.md](../operations/CLIENT_HANDOFF.md) for the full handoff checklist.
 
-> **Note**: The SuperAdmin panel at BOOTANDSTRAP_WEB (`/app/tenants/new`) provides automated tenant provisioning with plan presets, which handles Steps 2–7 automatically.
+> **Note**: The SuperAdmin panel at BOOTANDSTRAP_WEB (`/app/tenants/new`) provides automated tenant provisioning with config presets, which handles Steps 2–7 automatically.
 
 ---
 
@@ -331,7 +331,7 @@ Until the Owner Panel is enabled (`enable_owner_panel = true` in feature flags),
 
 ---
 
-## SaaS Plan Tiers (Recommended)
+## Module Governance (Recommended)
 
 | Feature | Starter | Growth | Pro |
 |---------|---------|--------|-----|

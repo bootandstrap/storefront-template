@@ -60,10 +60,10 @@ export default function CheckoutMethodStep({
                                 </div>
                                 <div className="text-left flex-1">
                                     <p className="text-sm font-medium text-text-primary">
-                                        {method.label}
+                                        {t(method.labelKey) !== method.labelKey ? t(method.labelKey) : method.label}
                                     </p>
                                     <p className="text-xs text-text-muted">
-                                        {method.description}
+                                        {t(method.descriptionKey) !== method.descriptionKey ? t(method.descriptionKey) : method.description}
                                     </p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected

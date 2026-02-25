@@ -63,6 +63,7 @@ gate "Audit Policy" bash scripts/check-audit-waiver.sh
 gate "Storefront Lint" pnpm turbo lint --filter=storefront
 gate "Storefront Unit Tests" pnpm --filter=storefront test:run
 gate "Medusa Unit Tests" pnpm -C apps/medusa test:unit
+gate_warn "Coverage Threshold (70%)" pnpm --filter=storefront test:run -- --coverage --coverage.thresholds.lines=70
 gate "Storefront Type Check" pnpm turbo type-check
 gate "Storefront Build" pnpm turbo build --filter=storefront
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut, Kanban } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import type { FeatureFlags } from '@/lib/config'
 
@@ -19,6 +19,7 @@ export default function AccountSidebar({ lang, displayName, email, featureFlags 
 
     const navItems = [
         { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true, flag: true },
+        { href: `/${lang}/cuenta/mi-proyecto`, label: t('account.myProject') || 'Mi Proyecto', icon: Kanban, exact: false, flag: true },
         ...(featureFlags.enable_order_tracking
             ? [{ href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false, flag: true }]
             : []),

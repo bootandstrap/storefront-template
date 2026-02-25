@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/provider'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { getEnabledMethods } from '@/lib/payment-methods'
 import CartItem from './CartItem'
+import FreeShippingBanner from './FreeShippingBanner'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
 
 interface CartDrawerProps {
@@ -123,6 +124,15 @@ export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
                             <span className="text-text-secondary">{t('cart.subtotal')}</span>
                             <span className="font-bold text-text-primary">{formattedSubtotal}</span>
                         </div>
+
+                        {/* Free shipping progress */}
+                        <FreeShippingBanner
+                            subtotal={subtotal}
+                            threshold={config.free_shipping_threshold}
+                            currency={currency}
+                            locale={locale}
+                            t={t}
+                        />
 
                         {/* Checkout button — only if at least one payment method is enabled */}
                         {hasAnyCheckoutMethod && (

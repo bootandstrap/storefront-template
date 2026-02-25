@@ -1,0 +1,428 @@
+{
+    "name": "restaurant",
+    "description": "Italian restaurant with delivery & takeaway (Swiss market)",
+    "categories": [
+        "Antipasti",
+        "Pasta",
+        "Pizza",
+        "Dolci",
+        "Bevande"
+    ],
+    "products": [
+        {
+            "title": "Bruschetta Classica",
+            "category": "Antipasti",
+            "description": "Knuspriges Ciabatta mit frischen Tomaten, Basilikum, Knoblauch und nativem Olivenöl extra. Serviert als 4 Stück.",
+            "handle": "bruschetta-classica",
+            "weight": 300,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "4 Stück",
+                        "8 Stück"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "4 Stück",
+                    "sku": "BRUSCH-4",
+                    "options": {
+                        "Portion": "4 Stück"
+                    },
+                    "price": 890
+                },
+                {
+                    "title": "8 Stück",
+                    "sku": "BRUSCH-8",
+                    "options": {
+                        "Portion": "8 Stück"
+                    },
+                    "price": 1490
+                }
+            ]
+        },
+        {
+            "title": "Caprese Salat",
+            "category": "Antipasti",
+            "description": "Frischer Büffelmozzarella mit Tomaten, Basilikum und Balsamico-Reduktion. Italienische DOP-Qualität.",
+            "handle": "caprese-salat",
+            "weight": 350,
+            "options": [
+                {
+                    "title": "Grösse",
+                    "values": [
+                        "Normal",
+                        "Gross"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal",
+                    "sku": "CAPRE-N",
+                    "options": {
+                        "Grösse": "Normal"
+                    },
+                    "price": 1290
+                },
+                {
+                    "title": "Gross",
+                    "sku": "CAPRE-G",
+                    "options": {
+                        "Grösse": "Gross"
+                    },
+                    "price": 1690
+                }
+            ]
+        },
+        {
+            "title": "Carpaccio di Manzo",
+            "category": "Antipasti",
+            "description": "Hauchdünn geschnittenes Rindfleisch mit Rucola, Parmesan und Trüffelöl. Schweizer Rindfleisch.",
+            "handle": "carpaccio-manzo",
+            "weight": 200,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "Standard"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Standard",
+                    "sku": "CARP-STD",
+                    "options": {
+                        "Portion": "Standard"
+                    },
+                    "price": 1890
+                }
+            ]
+        },
+        {
+            "title": "Spaghetti Carbonara",
+            "category": "Pasta",
+            "description": "Original-Rezept mit Guanciale, Pecorino Romano, Eigelb und schwarzem Pfeffer. Keine Sahne.",
+            "handle": "spaghetti-carbonara",
+            "weight": 400,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "Normal",
+                        "Gross"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal",
+                    "sku": "CARB-N",
+                    "options": {
+                        "Portion": "Normal"
+                    },
+                    "price": 1890
+                },
+                {
+                    "title": "Gross",
+                    "sku": "CARB-G",
+                    "options": {
+                        "Portion": "Gross"
+                    },
+                    "price": 2390
+                }
+            ]
+        },
+        {
+            "title": "Penne al Pesto Genovese",
+            "category": "Pasta",
+            "description": "Frisches Basilikum-Pesto mit Pinienkernen, Parmesan und nativem Olivenöl. Handgemachte Penne.",
+            "handle": "penne-pesto",
+            "weight": 380,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "Normal",
+                        "Gross"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal",
+                    "sku": "PESTO-N",
+                    "options": {
+                        "Portion": "Normal"
+                    },
+                    "price": 1690
+                },
+                {
+                    "title": "Gross",
+                    "sku": "PESTO-G",
+                    "options": {
+                        "Portion": "Gross"
+                    },
+                    "price": 2190
+                }
+            ]
+        },
+        {
+            "title": "Tagliatelle al Tartufo",
+            "category": "Pasta",
+            "description": "Frische Eiernudeln mit schwarzem Trüffel, Butter und Parmesan. Premium-Trüffel aus dem Piemont.",
+            "handle": "tagliatelle-tartufo",
+            "weight": 350,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "Normal"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal",
+                    "sku": "TRUF-N",
+                    "options": {
+                        "Portion": "Normal"
+                    },
+                    "price": 2890
+                }
+            ]
+        },
+        {
+            "title": "Pizza Margherita",
+            "category": "Pizza",
+            "description": "San Marzano Tomaten, Fior di Latte, frisches Basilikum. 48h Teig-Ruhezeit. Im Holzofen gebacken.",
+            "handle": "pizza-margherita",
+            "weight": 450,
+            "options": [
+                {
+                    "title": "Grösse",
+                    "values": [
+                        "Normal (30cm)",
+                        "Famiglia (45cm)"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal (30cm)",
+                    "sku": "MARG-30",
+                    "options": {
+                        "Grösse": "Normal (30cm)"
+                    },
+                    "price": 1690
+                },
+                {
+                    "title": "Famiglia (45cm)",
+                    "sku": "MARG-45",
+                    "options": {
+                        "Grösse": "Famiglia (45cm)"
+                    },
+                    "price": 2890
+                }
+            ]
+        },
+        {
+            "title": "Pizza Diavola",
+            "category": "Pizza",
+            "description": "Scharfe Salami, Jalapeños, Mozzarella und Tomatensosse. Für Liebhaber von Schärfe.",
+            "handle": "pizza-diavola",
+            "weight": 480,
+            "options": [
+                {
+                    "title": "Grösse",
+                    "values": [
+                        "Normal (30cm)",
+                        "Famiglia (45cm)"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal (30cm)",
+                    "sku": "DIAV-30",
+                    "options": {
+                        "Grösse": "Normal (30cm)"
+                    },
+                    "price": 1990
+                },
+                {
+                    "title": "Famiglia (45cm)",
+                    "sku": "DIAV-45",
+                    "options": {
+                        "Grösse": "Famiglia (45cm)"
+                    },
+                    "price": 3290
+                }
+            ]
+        },
+        {
+            "title": "Pizza Quattro Formaggi",
+            "category": "Pizza",
+            "description": "Mozzarella, Gorgonzola, Fontina und Parmesan. Ohne Tomatensosse, mit Honig-Drizzle.",
+            "handle": "pizza-quattro-formaggi",
+            "weight": 500,
+            "options": [
+                {
+                    "title": "Grösse",
+                    "values": [
+                        "Normal (30cm)"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Normal (30cm)",
+                    "sku": "QFROM-30",
+                    "options": {
+                        "Grösse": "Normal (30cm)"
+                    },
+                    "price": 2290
+                }
+            ]
+        },
+        {
+            "title": "Tiramisù",
+            "category": "Dolci",
+            "description": "Hausgemachtes Tiramisù mit Mascarpone, Espresso und Amaretto. Tagesfrisch zubereitet.",
+            "handle": "tiramisu",
+            "weight": 250,
+            "options": [
+                {
+                    "title": "Portion",
+                    "values": [
+                        "1 Person",
+                        "4 Personen"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "1 Person",
+                    "sku": "TIRA-1",
+                    "options": {
+                        "Portion": "1 Person"
+                    },
+                    "price": 890
+                },
+                {
+                    "title": "4 Personen",
+                    "sku": "TIRA-4",
+                    "options": {
+                        "Portion": "4 Personen"
+                    },
+                    "price": 2890
+                }
+            ]
+        },
+        {
+            "title": "Panna Cotta",
+            "category": "Dolci",
+            "description": "Cremige Vanille-Panna-Cotta mit Waldbeeren-Coulis. Bourbon-Vanille aus Madagaskar.",
+            "handle": "panna-cotta",
+            "weight": 200,
+            "options": [
+                {
+                    "title": "Topping",
+                    "values": [
+                        "Waldbeeren",
+                        "Karamell"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Waldbeeren",
+                    "sku": "PANNA-BERRY",
+                    "options": {
+                        "Topping": "Waldbeeren"
+                    },
+                    "price": 790
+                },
+                {
+                    "title": "Karamell",
+                    "sku": "PANNA-CARM",
+                    "options": {
+                        "Topping": "Karamell"
+                    },
+                    "price": 790
+                }
+            ]
+        },
+        {
+            "title": "Hauswein Rosso (Flasche)",
+            "category": "Bevande",
+            "description": "Primitivo di Manduria IGT. Vollmundig, fruchtig, mit Noten von dunklen Beeren. 14% Vol.",
+            "handle": "hauswein-rosso",
+            "weight": 1200,
+            "options": [
+                {
+                    "title": "Menge",
+                    "values": [
+                        "Glas (0.2L)",
+                        "Flasche (0.75L)"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Glas (0.2L)",
+                    "sku": "VINO-GL",
+                    "options": {
+                        "Menge": "Glas (0.2L)"
+                    },
+                    "price": 690
+                },
+                {
+                    "title": "Flasche (0.75L)",
+                    "sku": "VINO-FL",
+                    "options": {
+                        "Menge": "Flasche (0.75L)"
+                    },
+                    "price": 3490
+                }
+            ]
+        },
+        {
+            "title": "Limonata Fatta in Casa",
+            "category": "Bevande",
+            "description": "Hausgemachte Limonade mit sizilianischen Zitronen und frischer Minze. Erfrischend und natürlich.",
+            "handle": "limonata-casa",
+            "weight": 500,
+            "options": [
+                {
+                    "title": "Grösse",
+                    "values": [
+                        "0.3L",
+                        "1L Karaffe"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "0.3L",
+                    "sku": "LIMO-03",
+                    "options": {
+                        "Grösse": "0.3L"
+                    },
+                    "price": 490
+                },
+                {
+                    "title": "1L Karaffe",
+                    "sku": "LIMO-1L",
+                    "options": {
+                        "Grösse": "1L Karaffe"
+                    },
+                    "price": 1290
+                }
+            ]
+        }
+    ]
+}

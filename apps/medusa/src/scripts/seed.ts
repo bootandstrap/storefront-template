@@ -1,4 +1,6 @@
 import { CreateInventoryLevelInput, ExecArgs } from "@medusajs/framework/types";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 import {
   ContainerRegistrationKeys,
   Modules,
@@ -33,11 +35,74 @@ import { ApiKey } from "../../.medusa/types/query-entry-points";
 const STORE_NAME = process.env.STORE_NAME || "My Store";
 const STORE_CURRENCY = process.env.STORE_CURRENCY || "eur";
 const STORE_COUNTRY = process.env.STORE_COUNTRY || "es";
-const STORE_REGION_NAME = process.env.STORE_REGION_NAME || "España";
+const STORE_REGION_NAME = process.env.STORE_REGION_NAME || "Europe";
 const WAREHOUSE_NAME = process.env.WAREHOUSE_NAME || "Main Warehouse";
-const WAREHOUSE_CITY = process.env.WAREHOUSE_CITY || "Valencia";
+const WAREHOUSE_CITY = process.env.WAREHOUSE_CITY || "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "product-images";
+
+// Shipping config — set by wizard via region preset
+const SHIPPING_STANDARD_LABEL = process.env.SHIPPING_STANDARD_LABEL || "Standard Shipping";
+const SHIPPING_EXPRESS_LABEL = process.env.SHIPPING_EXPRESS_LABEL || "Express Shipping 24h";
+const SHIPPING_STANDARD_PRICE = parseInt(process.env.SHIPPING_STANDARD_PRICE || "495", 10);
+const SHIPPING_EXPRESS_PRICE = parseInt(process.env.SHIPPING_EXPRESS_PRICE || "895", 10);
+
+// Additional currencies from region preset (JSON array, e.g., '["eur","usd"]')
+const STORE_CURRENCIES: string[] = (() => {
+  try {
+    const raw = process.env.STORE_CURRENCIES;
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore parse errors */ }
+  return [STORE_CURRENCY];
+})();
+
+// Set to "false" to skip demo products — creates only infrastructure
+// (region, tax, shipping, warehouse). Use for real client onboarding.
+const SEED_DEMO_PRODUCTS = process.env.SEED_DEMO_PRODUCTS !== "false";
+
+// Seed profile: "default" (fruit demo), "blank", "retail", "food", "services"
+// Set SEED_PROFILE to load categories/products from a JSON profile file.
+const SEED_PROFILE = process.env.SEED_PROFILE || "default";
+
+// ---------------------------------------------------------------------------
+// Profile loader
+// ---------------------------------------------------------------------------
+interface SeedProfileVariant {
+  title: string;
+  sku: string;
+  options: Record<string, string>;
+  price: number;
+}
+
+interface SeedProfileProduct {
+  title: string;
+  category: string;
+  description: string;
+  handle: string;
+  weight: number;
+  options: { title: string; values: string[] }[];
+  variants: SeedProfileVariant[];
+}
+
+interface SeedProfile {
+  name: string;
+  description: string;
+  categories: string[];
+  products: SeedProfileProduct[];
+}
+
+function loadSeedProfile(profileName: string): SeedProfile | null {
+  if (profileName === "default") return null; // Use hardcoded fruit data
+
+  const profilePath = join(__dirname, "seed-profiles", `${profileName}.json`);
+  if (!existsSync(profilePath)) {
+    console.warn(`[seed] Profile "${profileName}" not found at ${profilePath} — falling back to default`);
+    return null;
+  }
+
+  const raw = readFileSync(profilePath, "utf-8");
+  return JSON.parse(raw) as SeedProfile;
+}
 
 /**
  * Helper: build a Supabase Storage public URL for a product image.
@@ -124,12 +189,20 @@ export default async function seedDemoData({ container }: ExecArgs) {
     defaultSalesChannel = salesChannelResult;
   }
 
+  // Register all supported currencies
+  const currenciesForStore = STORE_CURRENCIES.map(code => ({
+    currency_code: code,
+    is_default: code === STORE_CURRENCY,
+  }));
+  // Ensure default currency is included
+  if (!currenciesForStore.some(c => c.currency_code === STORE_CURRENCY)) {
+    currenciesForStore.unshift({ currency_code: STORE_CURRENCY, is_default: true });
+  }
+
   await updateStoreCurrencies(container).run({
     input: {
       store_id: store.id,
-      supported_currencies: [
-        { currency_code: STORE_CURRENCY, is_default: true },
-      ],
+      supported_currencies: currenciesForStore,
     },
   });
 
@@ -163,7 +236,10 @@ export default async function seedDemoData({ container }: ExecArgs) {
             name: STORE_REGION_NAME,
             currency_code: STORE_CURRENCY,
             countries: [STORE_COUNTRY],
-            payment_providers: ["pp_system_default"],
+            payment_providers: [
+              "pp_system_default",
+              ...(process.env.STRIPE_API_KEY ? ["pp_stripe_stripe"] : []),
+            ],
           },
         ],
       },
@@ -285,19 +361,19 @@ export default async function seedDemoData({ container }: ExecArgs) {
     await createShippingOptionsWorkflow(container).run({
       input: [
         {
-          name: "Envío Estándar",
+          name: SHIPPING_STANDARD_LABEL,
           price_type: "flat",
           provider_id: "manual_manual",
           service_zone_id: fulfillmentSet.service_zones[0].id,
           shipping_profile_id: shippingProfile.id,
           type: {
-            label: "Estándar",
-            description: "Entrega en 2-3 días laborables.",
+            label: "Standard",
+            description: SHIPPING_STANDARD_LABEL,
             code: "standard",
           },
           prices: [
-            { currency_code: STORE_CURRENCY, amount: 495 },
-            { region_id: region.id, amount: 495 },
+            { currency_code: STORE_CURRENCY, amount: SHIPPING_STANDARD_PRICE },
+            { region_id: region.id, amount: SHIPPING_STANDARD_PRICE },
           ],
           rules: [
             { attribute: "enabled_in_store", value: "true", operator: "eq" },
@@ -305,19 +381,19 @@ export default async function seedDemoData({ container }: ExecArgs) {
           ],
         },
         {
-          name: "Envío Express 24h",
+          name: SHIPPING_EXPRESS_LABEL,
           price_type: "flat",
           provider_id: "manual_manual",
           service_zone_id: fulfillmentSet.service_zones[0].id,
           shipping_profile_id: shippingProfile.id,
           type: {
             label: "Express",
-            description: "Entrega en 24 horas.",
+            description: SHIPPING_EXPRESS_LABEL,
             code: "express",
           },
           prices: [
-            { currency_code: STORE_CURRENCY, amount: 895 },
-            { region_id: region.id, amount: 895 },
+            { currency_code: STORE_CURRENCY, amount: SHIPPING_EXPRESS_PRICE },
+            { region_id: region.id, amount: SHIPPING_EXPRESS_PRICE },
           ],
           rules: [
             { attribute: "enabled_in_store", value: "true", operator: "eq" },
@@ -367,8 +443,106 @@ export default async function seedDemoData({ container }: ExecArgs) {
   } catch { /* link may already exist */ }
   logger.info("✅ API key configured.");
 
+  // ══════════════════════════════════════════════════════════════
+  // Demo Products (skipped when SEED_DEMO_PRODUCTS=false)
+  // For real client onboarding, skip this — owner adds products
+  // from the panel using the Medusa Admin API.
+  // ══════════════════════════════════════════════════════════════
+  if (!SEED_DEMO_PRODUCTS) {
+    logger.info("⏭️  SEED_DEMO_PRODUCTS=false — skipping demo products.");
+    logger.info(`🎉 ${STORE_NAME} infrastructure seed complete! Ready for client setup.`);
+    return;
+  }
+
+  // ── Profile-based seeding ──────────────────────────────────
+  const profile = loadSeedProfile(SEED_PROFILE);
+  if (profile) {
+    if (profile.products.length === 0) {
+      logger.info(`⏭️  Profile "${profile.name}": ${profile.description} — no products to seed.`);
+      logger.info(`🎉 ${STORE_NAME} infrastructure seed complete! Ready for client setup.`);
+      return;
+    }
+
+    // Create profile categories
+    logger.info(`Seeding profile "${profile.name}" categories...`);
+    const productModuleService = container.resolve(Modules.PRODUCT);
+    const existingCats = await productModuleService.listProductCategories(
+      { name: profile.categories },
+      { take: profile.categories.length }
+    );
+    let profileCats: { id: string; name: string }[] = existingCats as any;
+    const catsToCreate = profile.categories.filter(
+      (name) => !existingCats.find((c) => c.name === name)
+    );
+    if (catsToCreate.length) {
+      const { result: newCats } = await createProductCategoriesWorkflow(container).run({
+        input: { product_categories: catsToCreate.map((name) => ({ name, is_active: true })) },
+      });
+      profileCats = [...existingCats, ...newCats] as any;
+    }
+    logger.info(`✅ ${profile.categories.length} categories ready.`);
+
+    // Create profile products
+    logger.info(`Seeding profile "${profile.name}" products...`);
+    const existingProducts = await productModuleService.listProducts({}, { take: 1 });
+    if (existingProducts.length > 0) {
+      logger.info(`✅ Products already exist, skipping profile products.`);
+    } else {
+      const profileCatId = (name: string) => profileCats.find((c) => c.name === name)!.id;
+      await createProductsWorkflow(container).run({
+        input: {
+          products: profile.products.map((p) => ({
+            title: p.title,
+            category_ids: [profileCatId(p.category)],
+            description: p.description,
+            handle: p.handle,
+            weight: p.weight,
+            status: ProductStatus.PUBLISHED,
+            shipping_profile_id: shippingProfile.id,
+            options: p.options,
+            variants: p.variants.map((v) => ({
+              title: v.title,
+              sku: v.sku,
+              options: v.options,
+              prices: [{ amount: v.price, currency_code: STORE_CURRENCY }],
+            })),
+            sales_channels: [{ id: defaultSalesChannel[0].id }],
+          })),
+        },
+      });
+      logger.info(`✅ ${profile.products.length} products created.`);
+    }
+
+    // Set inventory levels for profile products
+    logger.info("Setting inventory levels...");
+    try {
+      const { data: inventoryItems } = await query.graph({
+        entity: "inventory_item",
+        fields: ["id"],
+      });
+      const inventoryLevels: CreateInventoryLevelInput[] = inventoryItems.map(
+        (item) => ({
+          location_id: stockLocation.id,
+          stocked_quantity: 100000,
+          inventory_item_id: item.id,
+        })
+      );
+      if (inventoryLevels.length) {
+        await createInventoryLevelsWorkflow(container).run({
+          input: { inventory_levels: inventoryLevels },
+        });
+      }
+      logger.info("✅ Inventory levels set.");
+    } catch (e: any) {
+      logger.info(`✅ Inventory levels already exist or skipped: ${e.message}`);
+    }
+
+    logger.info(`🎉 ${STORE_NAME} seed complete with profile "${profile.name}"!`);
+    return;
+  }
+
   // ── Product Categories ─────────────────────────────────────
-  logger.info("Seeding product categories...");
+  logger.info("Seeding demo product categories...");
   const productModuleService = container.resolve(Modules.PRODUCT);
   const categoryNames = ["Cítricos", "Frutas Tropicales", "Frutas de Temporada", "Cajas Surtidas", "Productos Artesanales"];
   const existingCategories = await productModuleService.listProductCategories(
@@ -864,5 +1038,5 @@ export default async function seedDemoData({ container }: ExecArgs) {
   } catch (e: any) {
     logger.info(`✅ Inventory levels already exist or skipped: ${e.message}`);
   }
-  logger.info(`🎉 ${STORE_NAME} seed complete!`);
+  logger.info(`🎉 ${STORE_NAME} seed complete (infrastructure + demo products)!`);
 }

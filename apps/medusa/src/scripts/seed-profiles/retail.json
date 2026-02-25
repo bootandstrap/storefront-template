@@ -1,0 +1,208 @@
+{
+    "name": "retail",
+    "description": "Generic retail store with clothing & accessories",
+    "categories": [
+        "T-Shirts",
+        "Accessories",
+        "Bags"
+    ],
+    "products": [
+        {
+            "title": "Classic Cotton T-Shirt",
+            "category": "T-Shirts",
+            "description": "Premium 100% organic cotton t-shirt. Pre-washed for softness, durable stitching. Available in multiple sizes.",
+            "handle": "classic-cotton-tshirt",
+            "weight": 250,
+            "options": [
+                {
+                    "title": "Size",
+                    "values": [
+                        "S",
+                        "M",
+                        "L",
+                        "XL"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "S",
+                    "sku": "TEE-S",
+                    "options": {
+                        "Size": "S"
+                    },
+                    "price": 2490
+                },
+                {
+                    "title": "M",
+                    "sku": "TEE-M",
+                    "options": {
+                        "Size": "M"
+                    },
+                    "price": 2490
+                },
+                {
+                    "title": "L",
+                    "sku": "TEE-L",
+                    "options": {
+                        "Size": "L"
+                    },
+                    "price": 2490
+                },
+                {
+                    "title": "XL",
+                    "sku": "TEE-XL",
+                    "options": {
+                        "Size": "XL"
+                    },
+                    "price": 2690
+                }
+            ]
+        },
+        {
+            "title": "Leather Wallet",
+            "category": "Accessories",
+            "description": "Handcrafted genuine leather wallet with RFID protection. 8 card slots, 2 bill compartments, coin pocket.",
+            "handle": "leather-wallet",
+            "weight": 120,
+            "options": [
+                {
+                    "title": "Color",
+                    "values": [
+                        "Brown",
+                        "Black"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Brown",
+                    "sku": "WAL-BRN",
+                    "options": {
+                        "Color": "Brown"
+                    },
+                    "price": 4990
+                },
+                {
+                    "title": "Black",
+                    "sku": "WAL-BLK",
+                    "options": {
+                        "Color": "Black"
+                    },
+                    "price": 4990
+                }
+            ]
+        },
+        {
+            "title": "Canvas Tote Bag",
+            "category": "Bags",
+            "description": "Durable canvas tote bag with reinforced handles. Perfect for everyday use or shopping. Machine washable.",
+            "handle": "canvas-tote-bag",
+            "weight": 400,
+            "options": [
+                {
+                    "title": "Style",
+                    "values": [
+                        "Natural",
+                        "Black",
+                        "Navy"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Natural",
+                    "sku": "TOTE-NAT",
+                    "options": {
+                        "Style": "Natural"
+                    },
+                    "price": 1990
+                },
+                {
+                    "title": "Black",
+                    "sku": "TOTE-BLK",
+                    "options": {
+                        "Style": "Black"
+                    },
+                    "price": 1990
+                },
+                {
+                    "title": "Navy",
+                    "sku": "TOTE-NVY",
+                    "options": {
+                        "Style": "Navy"
+                    },
+                    "price": 1990
+                }
+            ]
+        },
+        {
+            "title": "Stainless Steel Watch",
+            "category": "Accessories",
+            "description": "Minimalist stainless steel watch with sapphire crystal glass. Japanese quartz movement. Water resistant 5 ATM.",
+            "handle": "stainless-steel-watch",
+            "weight": 85,
+            "options": [
+                {
+                    "title": "Dial",
+                    "values": [
+                        "White",
+                        "Black"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "White Dial",
+                    "sku": "WATCH-WHT",
+                    "options": {
+                        "Dial": "White"
+                    },
+                    "price": 12900
+                },
+                {
+                    "title": "Black Dial",
+                    "sku": "WATCH-BLK",
+                    "options": {
+                        "Dial": "Black"
+                    },
+                    "price": 12900
+                }
+            ]
+        },
+        {
+            "title": "Weekend Duffle Bag",
+            "category": "Bags",
+            "description": "Spacious duffle bag made from recycled materials. Padded shoulder strap, shoe compartment, waterproof bottom.",
+            "handle": "weekend-duffle-bag",
+            "weight": 900,
+            "options": [
+                {
+                    "title": "Size",
+                    "values": [
+                        "Medium",
+                        "Large"
+                    ]
+                }
+            ],
+            "variants": [
+                {
+                    "title": "Medium (30L)",
+                    "sku": "DUF-M",
+                    "options": {
+                        "Size": "Medium"
+                    },
+                    "price": 6990
+                },
+                {
+                    "title": "Large (50L)",
+                    "sku": "DUF-L",
+                    "options": {
+                        "Size": "Large"
+                    },
+                    "price": 8990
+                }
+            ]
+        }
+    ]
+}
