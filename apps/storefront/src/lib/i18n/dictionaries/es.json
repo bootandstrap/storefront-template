@@ -425,6 +425,7 @@
     "panel.usage.storage": "Almacenamiento (MB)",
     "panel.usage.emailsMonth": "Emails (mes)",
     "panel.usage.customDomains": "Dominios personalizados",
+    "panel.usage.trafficDay": "Capacidad tráfico/día",
     "panel.usage.planInfo": "Plan actual: {{plan}}",
     "panel.config.title": "Configuración de tienda",
     "panel.config.subtitle": "Gestiona los ajustes de tu tienda",

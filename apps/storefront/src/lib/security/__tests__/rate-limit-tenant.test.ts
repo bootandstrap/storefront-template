@@ -4,14 +4,16 @@
  * Verifies: tier configuration, key construction, exported constants.
  * Note: The actual rate limiting logic is tested in rate-limit.test.ts.
  * This suite tests the tenant-scoping layer.
+ *
+ * Architecture: Anti-abuse (per IP, 4 tiers) + Traffic capacity (per tenant, sellable).
  */
 import { describe, it, expect } from 'vitest'
 import { RATE_LIMIT_TIERS } from '../rate-limit-tenant'
 
-describe('RATE_LIMIT_TIERS', () => {
-    it('defines all 5 expected tiers', () => {
+describe('RATE_LIMIT_TIERS (anti-abuse, per IP)', () => {
+    it('defines 4 anti-abuse tiers', () => {
         const tiers = Object.keys(RATE_LIMIT_TIERS)
-        expect(tiers).toEqual(['storefront', 'cart', 'checkout', 'auth', 'api'])
+        expect(tiers).toEqual(['storefront', 'cart', 'checkout', 'auth'])
     })
 
     it('storefront tier: 120 req/min', () => {
@@ -32,11 +34,6 @@ describe('RATE_LIMIT_TIERS', () => {
     it('auth tier: 10 req/min', () => {
         expect(RATE_LIMIT_TIERS.auth.limit).toBe(10)
         expect(RATE_LIMIT_TIERS.auth.windowMs).toBe(60_000)
-    })
-
-    it('api tier: 100 req/day', () => {
-        expect(RATE_LIMIT_TIERS.api.limit).toBe(100)
-        expect(RATE_LIMIT_TIERS.api.windowMs).toBe(86_400_000) // 24h
     })
 
     it('each tier has a unique name prefix', () => {
@@ -63,5 +60,9 @@ describe('RATE_LIMIT_TIERS', () => {
         expect(RATE_LIMIT_TIERS.storefront.limit).toBeGreaterThan(RATE_LIMIT_TIERS.cart.limit)
         expect(RATE_LIMIT_TIERS.cart.limit).toBeGreaterThan(RATE_LIMIT_TIERS.checkout.limit)
         expect(RATE_LIMIT_TIERS.checkout.limit).toBeGreaterThan(RATE_LIMIT_TIERS.auth.limit)
+    })
+
+    it('no "api" tier exists (replaced by checkTrafficCapacity)', () => {
+        expect(RATE_LIMIT_TIERS).not.toHaveProperty('api')
     })
 })

@@ -425,6 +425,7 @@
     "panel.usage.storage": "Storage (MB)",
     "panel.usage.emailsMonth": "Emails (month)",
     "panel.usage.customDomains": "Custom Domains",
+    "panel.usage.trafficDay": "Daily Traffic Capacity",
     "panel.usage.planInfo": "Current plan: {{plan}}",
     "panel.config.title": "Store configuration",
     "panel.config.subtitle": "Manage your store settings",

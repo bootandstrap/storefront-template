@@ -129,7 +129,7 @@ export interface PlanLimits {
     max_chatbot_messages_month: number
     max_badges: number
     max_newsletter_subscribers: number
-    max_api_calls_day: number
+    max_requests_day: number
 }
 
 export interface AppConfig {
@@ -310,7 +310,7 @@ const FALLBACK_CONFIG: AppConfig = {
         max_chatbot_messages_month: 200,
         max_badges: 3,
         max_newsletter_subscribers: 100,
-        max_api_calls_day: 100,
+        max_requests_day: 5000,
     },
     planExpired: false,
     tenantStatus: 'active',

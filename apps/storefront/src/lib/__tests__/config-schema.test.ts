@@ -80,7 +80,7 @@ const EXPECTED_PLAN_LIMITS: (keyof PlanLimits)[] = [
     'max_chatbot_messages_month',
     'max_badges',
     'max_newsletter_subscribers',
-    'max_api_calls_day',
+    'max_requests_day',
 ]
 
 // ---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ describe('Config Schema Alignment', () => {
                 max_chatbot_messages_month: 200,
                 max_badges: 3,
                 max_newsletter_subscribers: 100,
-                max_api_calls_day: 100,
+                max_requests_day: 5000,
             }
 
             const keys = Object.keys(dummyLimits)

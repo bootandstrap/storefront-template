@@ -23,7 +23,7 @@ const mockLimits: PlanLimits = {
     max_chatbot_messages_month: 200,
     max_badges: 3,
     max_newsletter_subscribers: 100,
-    max_api_calls_day: 100,
+    max_requests_day: 5000,
 }
 
 describe('checkLimit', () => {

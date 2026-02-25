@@ -19,7 +19,7 @@ type LimitableResource =
     | 'max_chatbot_messages_month'
     | 'max_badges'
     | 'max_newsletter_subscribers'
-    | 'max_api_calls_day'
+    | 'max_requests_day'
 
 export interface LimitCheckResult {
     allowed: boolean

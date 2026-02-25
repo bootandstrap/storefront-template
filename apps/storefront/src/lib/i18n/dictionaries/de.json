@@ -539,6 +539,7 @@
   "panel.usage.adminUsers": "Admin-Benutzer",
   "panel.usage.categories": "Categories",
   "panel.usage.customDomains": "Eigene Domains",
+  "panel.usage.trafficDay": "Tägliche Verkehrskapazität",
   "panel.usage.customers": "Customers",
   "panel.usage.emailsMonth": "E-Mails (Monat)",
   "panel.usage.ordersMonth": "Orders (month)",

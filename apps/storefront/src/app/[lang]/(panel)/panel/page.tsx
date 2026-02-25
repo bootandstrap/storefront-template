@@ -81,9 +81,9 @@ export default async function PanelDashboard({
         { label: t('panel.usage.ordersMonth'), result: checkLimit(planLimits, 'max_orders_month', ordersThisMonth) },
         { label: t('panel.usage.customers'), result: checkLimit(planLimits, 'max_customers', customerCount) },
         { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', adminCount) },
+        { label: t('panel.usage.trafficDay'), result: checkLimit(planLimits, 'max_requests_day', 0) }, // TODO: daily request counter
         { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0) }, // TODO: Supabase Storage tracking
         { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0) }, // TODO: email counter
-        { label: t('panel.usage.customDomains'), result: checkLimit(planLimits, 'max_custom_domains', 0) }, // infra-level (Dokploy)
     ]
 
     return (
