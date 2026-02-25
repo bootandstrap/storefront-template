@@ -1,6 +1,6 @@
 # SOTA SaaS E-Commerce Template
 
-> **Read this first.** Master guide for AI agents and developers. Updated 22 Feb 2026 (Sprint 4 + Phase 6: Testing & UX).
+> **Read this first.** Master guide for AI agents and developers. Updated 25 Feb 2026 (Module Restructure + Phase 6: Testing & UX).
 
 ## What This Is
 
@@ -90,7 +90,7 @@ A **reusable, SaaS-managed e-commerce template** built by BootandStrap. This is 
 9. **Streaming-First** — Suspense boundaries for non-blocking page rendering
 10. **Error Resilience** — Error boundaries at every route, graceful degradation when APIs are down
 11. **i18n-Native** — Dictionary-based translations, `[lang]/` URL routing, localized slugs, multi-currency — all flag-driven
-12. **Module Governance** — 13 modules mapped to flags/limits via `module_flag_map`. Purchases auto-activate features; cancellations reconcile
+12. **Module Governance** — 8 active modules mapped to flags/limits via `module_flag_map`. Purchases auto-activate features; cancellations reconcile
 
 ---
 
@@ -331,8 +331,11 @@ Every UI feature checks a flag before rendering. To disable a feature for a clie
 | `enable_cookie_consent` | Cookie consent banner |
 | `owner_lite_enabled` | Simplified Owner Panel (hides advanced modules) |
 | `owner_advanced_modules_enabled` | Advanced panel modules (carousel, WhatsApp, CMS, analytics, chatbot, returns) |
+| `enable_crm_segmentation` | CRM customer segmentation (Pro tier) |
+| `enable_crm_export` | CRM contact export to CSV (Pro tier) |
+| `enable_crm_notes` | CRM contact notes and history (Pro tier) |
 
-> **Module → Flag Auto-Activation**: Flags marked with `enable_*` can be automatically enabled/disabled when the corresponding module is purchased or cancelled. The mapping is defined in the `module_flag_map` table. See `BOOTANDSTRAP_WEB/MODULOS.md` for the full module catalog (13 modules, 22 flag mappings).
+> **Module → Flag Auto-Activation**: Flags marked with `enable_*` can be automatically enabled/disabled when the corresponding module is purchased or cancelled. The mapping is defined in the `module_flag_map` table. See `BOOTANDSTRAP_WEB/MODULOS.md` for the full module catalog (8 active modules, tiered flag unlocking).
 >
 > Flag origins are tracked per-tenant: **module** (auto-activated by purchase), **preset** (applied via SuperAdmin quick-config tool), **admin** (manual toggle), **blocked** (requires module purchase), **system** (internal control).
 
@@ -366,6 +369,11 @@ Enforce module-based restrictions at the application level:
 | `max_languages` | 1 | Config-driven, not user-mutable |
 | `max_currencies` | 1 | Config-driven, not user-mutable |
 | `storage_limit_mb` | 500 | Deferred (requires Supabase Storage tracking) |
+| `max_reviews_per_product` | 0 | Ecommerce module tier-gated |
+| `max_wishlist_items` | 0 | Ecommerce module tier-gated |
+| `max_promotions_active` | 0 | Ecommerce module tier-gated |
+| `max_payment_methods` | 1 | Sales Channels module tier-gated |
+| `max_crm_contacts` | 0 | CRM module tier-gated |
 
 ### Dynamic Payment Methods
 
