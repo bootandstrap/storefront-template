@@ -20,6 +20,11 @@ type LimitableResource =
     | 'max_badges'
     | 'max_newsletter_subscribers'
     | 'max_requests_day'
+    | 'max_reviews_per_product'
+    | 'max_wishlist_items'
+    | 'max_promotions_active'
+    | 'max_payment_methods'
+    | 'max_crm_contacts'
 
 export interface LimitCheckResult {
     allowed: boolean

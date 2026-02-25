@@ -106,6 +106,10 @@ export interface FeatureFlags {
     enable_self_service_returns: boolean
     owner_lite_enabled: boolean
     owner_advanced_modules_enabled: boolean
+    // CRM
+    enable_crm: boolean
+    enable_crm_segmentation: boolean
+    enable_crm_export: boolean
 }
 
 export interface PlanLimits {
@@ -130,6 +134,11 @@ export interface PlanLimits {
     max_badges: number
     max_newsletter_subscribers: number
     max_requests_day: number
+    max_reviews_per_product: number
+    max_wishlist_items: number
+    max_promotions_active: number
+    max_payment_methods: number
+    max_crm_contacts: number
 }
 
 export interface AppConfig {
@@ -288,6 +297,9 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_self_service_returns: false,
         owner_lite_enabled: true,
         owner_advanced_modules_enabled: false,
+        enable_crm: false,
+        enable_crm_segmentation: false,
+        enable_crm_export: false,
     },
     planLimits: {
         max_products: 100,
@@ -311,6 +323,11 @@ const FALLBACK_CONFIG: AppConfig = {
         max_badges: 3,
         max_newsletter_subscribers: 100,
         max_requests_day: 5000,
+        max_reviews_per_product: 0,
+        max_wishlist_items: 0,
+        max_promotions_active: 0,
+        max_payment_methods: 1,
+        max_crm_contacts: 0,
     },
     planExpired: false,
     tenantStatus: 'active',

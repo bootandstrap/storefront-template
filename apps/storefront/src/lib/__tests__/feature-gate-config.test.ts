@@ -77,7 +77,7 @@ describe('Feature Gate Config', () => {
         it('falls back to English slug when locale slug is missing', () => {
             // Test with a hypothetical entry that only has 'en' slug
             const url = getModuleInfoUrl('enable_chatbot', 'en')
-            expect(url).toContain('/modulos/whatsapp-bot')
+            expect(url).toContain('/modulos/ai-chatbot')
         })
     })
 
