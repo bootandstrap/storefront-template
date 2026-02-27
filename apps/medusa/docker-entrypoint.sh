@@ -8,9 +8,11 @@ else
 fi
 
 # Create admin user on first boot (idempotent — Medusa CLI skips if user exists)
+# NOTE: Do NOT use --invite — it creates a separate invite flow that prevents
+# direct emailpass login. Without --invite, the CLI creates the user + auth identity together.
 if [ -n "$MEDUSA_ADMIN_EMAIL" ] && [ -n "$MEDUSA_ADMIN_PASSWORD" ]; then
     echo "[medusa-entrypoint] Creating admin user: $MEDUSA_ADMIN_EMAIL"
-    if npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD" --invite 2>/dev/null; then
+    if npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD" 2>/dev/null; then
         echo "[medusa-entrypoint] ✅ Admin user created (or already exists)"
     else
         echo "[medusa-entrypoint] ⚠️ Admin user creation returned non-zero (may already exist — OK)"
