@@ -51,14 +51,21 @@ export default async function HomePage({
   // Fetch carousel slides if feature is enabled
   let carouselSlides: import('@/components/home/HeroCarousel').CarouselSlide[] = []
   if (isFeatureEnabled(featureFlags, 'enable_carousel')) {
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from('carousel_slides')
-      .select('*')
-      .eq('tenant_id', getRequiredTenantId())
-      .eq('active', true)
-      .order('sort_order', { ascending: true })
-    carouselSlides = data ?? []
+    try {
+      const supabase = await createClient()
+      const { data, error } = await supabase
+        .from('carousel_slides')
+        .select('*')
+        .eq('tenant_id', getRequiredTenantId())
+        .eq('active', true)
+        .order('sort_order', { ascending: true })
+      if (error) {
+        console.warn('[homepage] carousel_slides query error:', error.message)
+      }
+      carouselSlides = data ?? []
+    } catch (err) {
+      console.warn('[homepage] carousel_slides fetch failed:', err)
+    }
   }
 
   return (
