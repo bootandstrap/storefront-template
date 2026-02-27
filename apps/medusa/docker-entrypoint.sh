@@ -1,7 +1,11 @@
 #!/bin/sh
-set -e
 
 echo "[medusa-entrypoint] Running migrations..."
-npx medusa db:migrate
-echo "[medusa-entrypoint] Migrations complete. Starting Medusa..."
+if npx medusa db:migrate; then
+    echo "[medusa-entrypoint] ✅ Migrations complete"
+else
+    echo "[medusa-entrypoint] ⚠️ Migration failed (exit $?) — starting anyway for debugging"
+fi
+
+echo "[medusa-entrypoint] Starting Medusa..."
 exec npx medusa start
