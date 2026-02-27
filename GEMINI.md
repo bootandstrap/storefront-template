@@ -696,6 +696,8 @@ git push origin main
 
 > **Important**: All GHCR packages must be set to **PUBLIC** for Dokploy to pull without authentication.
 
+> **Critical (2026-02-27)**: Dokploy's Docker provider **overrides the Dockerfile CMD** with its own entrypoint. The `docker-entrypoint.sh` in this repo is for **local development only** (`docker-compose`). In production, Medusa boot logic (migrations + admin user creation + start) is set via the Dokploy `command` field by `BOOTANDSTRAP_WEB/src/lib/governance/dokploy.ts`. Never rely on `docker-entrypoint.sh` for production behavior.
+
 ---
 
 ## Implementation Progress
