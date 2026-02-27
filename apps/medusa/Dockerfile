@@ -31,10 +31,14 @@ COPY --from=builder --chown=medusa:medusa /app/.medusa/server ./
 # Install production dependencies for the server output
 RUN npm install --production && chown -R medusa:medusa /app
 
+# Copy entrypoint script (runs db:migrate before starting — idempotent, scalable)
+COPY --chown=medusa:medusa docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER medusa
 
 EXPOSE 9000
 ENV PORT=9000
 
-# Medusa v2 uses "medusa start" to boot the production server
-CMD ["npx", "medusa", "start"]
+# Auto-migrate + start via entrypoint (no SSH/external commands needed)
+CMD ["/app/docker-entrypoint.sh"]
