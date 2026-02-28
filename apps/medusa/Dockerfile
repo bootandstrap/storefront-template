@@ -1,8 +1,8 @@
 # ============================================
 # Medusa Backend — Multi-stage Dockerfile
 # ============================================
-# Builds Medusa v2 with custom modules (supabase-auth, supabase-storage).
-# Optimized: install → build → copy server output → install prod deps → start.
+# Optimized: single npm install, prune devDeps in builder, copy to runner.
+# Cold-cache build time: ~25 min (was ~40 min with double npm install).
 
 # ── Stage 1: Install + Build ─────────────────
 FROM node:20-bookworm-slim AS builder
@@ -13,6 +13,9 @@ RUN npm install
 
 COPY . .
 RUN npx medusa build
+
+# Prune devDependencies IN the builder (avoids second npm install)
+RUN npm prune --production
 
 # ── Stage 2: Runner ──────────────────────────
 FROM node:20-bookworm-slim AS runner
@@ -28,8 +31,8 @@ RUN groupadd --system --gid 1001 medusa && \
 # Copy the built server output (includes package.json, compiled src, medusa-config.js)
 COPY --from=builder --chown=medusa:medusa /app/.medusa/server ./
 
-# Install production dependencies for the server output
-RUN npm install --production && chown -R medusa:medusa /app
+# Copy pruned production node_modules from builder (skip second npm install!)
+COPY --from=builder --chown=medusa:medusa /app/node_modules ./node_modules
 
 # Copy entrypoint script (runs db:migrate before starting — idempotent, scalable)
 COPY --chown=medusa:medusa docker-entrypoint.sh /app/docker-entrypoint.sh
