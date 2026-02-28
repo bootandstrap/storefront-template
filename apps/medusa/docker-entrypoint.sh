@@ -1,5 +1,6 @@
 #!/bin/sh
-
+# Medusa boot script — baked into Docker image at /app/docker-entrypoint.sh
+# Handles: db:migrate → admin user creation → medusa start
 echo "[medusa-entrypoint] Running migrations..."
 if npx medusa db:migrate; then
     echo "[medusa-entrypoint] ✅ Migrations complete"
