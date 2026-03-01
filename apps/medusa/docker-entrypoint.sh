@@ -11,13 +11,18 @@ fi
 # Create admin user on first boot (idempotent — Medusa CLI skips if user exists)
 # NOTE: Do NOT use --invite — it creates a separate invite flow that prevents
 # direct emailpass login. Without --invite, the CLI creates the user + auth identity together.
+# NOTE: stderr is NOT suppressed — container logs must show why creation failed.
 if [ -n "$MEDUSA_ADMIN_EMAIL" ] && [ -n "$MEDUSA_ADMIN_PASSWORD" ]; then
     echo "[medusa-entrypoint] Creating admin user: $MEDUSA_ADMIN_EMAIL"
-    if npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD" 2>/dev/null; then
+    if npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"; then
         echo "[medusa-entrypoint] ✅ Admin user created (or already exists)"
     else
-        echo "[medusa-entrypoint] ⚠️ Admin user creation returned non-zero (may already exist — OK)"
+        EXIT_CODE=$?
+        echo "[medusa-entrypoint] ⚠️ Admin user creation failed (exit=$EXIT_CODE) — check stderr above"
+        echo "[medusa-entrypoint] ℹ️ If user already exists with different password, the pre-flight cleanup in job-queue.ts should have removed it"
     fi
+else
+    echo "[medusa-entrypoint] ⚠️ MEDUSA_ADMIN_EMAIL or MEDUSA_ADMIN_PASSWORD not set — skipping admin user creation"
 fi
 
 echo "[medusa-entrypoint] Starting Medusa..."
