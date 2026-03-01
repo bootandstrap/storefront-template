@@ -63,10 +63,11 @@ jobs:
       - name: Deploy to Dokploy
         if: ${{ vars.DOKPLOY_APP_ID != '' }}
         run: |
-          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/application.redeploy" \
+          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/trpc/application.redeploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"applicationId": "${{ vars.DOKPLOY_APP_ID }}"}'
+            -d '{"json": {"applicationId": "${{ vars.DOKPLOY_APP_ID }}"}}'
           echo "✅ Dokploy redeploy triggered"
 
       - name: Post-deploy health check
