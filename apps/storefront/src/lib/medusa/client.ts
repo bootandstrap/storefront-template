@@ -266,6 +266,7 @@ export interface MedusaOrderItem {
     thumbnail: string | null
     variant_title: string | null
     variant_sku: string | null
+    variant_id: string | null
     quantity: number
     unit_price: number
     total: number

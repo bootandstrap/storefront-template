@@ -9,6 +9,8 @@ import { getDictionary, createTranslator, localizedHref, type Locale } from '@/l
 import ProductDetailClient from '@/components/products/ProductDetailClient'
 import ProductCard from '@/components/products/ProductCard'
 import ProductReviews from '@/components/products/ProductReviews'
+import ProductViewTracker from '@/components/products/ProductViewTracker'
+import RecentlyViewed from '@/components/products/RecentlyViewed'
 import { Truck, ShieldCheck, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -125,6 +127,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
                         <ProductReviews productId={product.id} tenantId={tenantId} />
                     </section>
                 )}
+
+                {/* Recently Viewed — client-only, localStorage-based */}
+                <section className="mt-16">
+                    <RecentlyViewed currentHandle={product.handle!} />
+                </section>
+
+                {/* Track this product view — thin client wrapper */}
+                <ProductViewTracker
+                    handle={product.handle!}
+                    title={product.title}
+                    thumbnail={product.thumbnail}
+                />
             </div>
         </>
     )

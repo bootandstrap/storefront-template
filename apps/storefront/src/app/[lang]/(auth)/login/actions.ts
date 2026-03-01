@@ -2,6 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { resolvePostLoginDestination } from '@/lib/auth-routing'
+import { reconcileLegacyOwnerRole } from '@/lib/legacy-owner-auth'
 
 export interface LoginState {
     error: string | null
@@ -15,6 +17,7 @@ export async function loginAction(
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const lang = formData.get('lang') as string || 'es'
+    const requestedRedirect = formData.get('redirect') as string | null
 
     if (!email || !password) {
         return { error: 'Email and password are required', success: false }
@@ -40,21 +43,33 @@ export async function loginAction(
 
     // Use user from signIn response directly (avoids cookie timing issues)
     const user = data.user
-    let destination = `/${lang}/cuenta`
+    let role: string | null = user?.user_metadata?.role ?? null
+    let profileTenantId: string | null = null
 
     if (user) {
         // Check profiles table for role
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, tenant_id')
             .eq('id', user.id)
             .single()
 
-        const role = profile?.role || user.user_metadata?.role
-        if (role === 'super_admin' || role === 'owner') {
-            destination = `/${lang}/panel`
-        }
+        profileTenantId = (profile?.tenant_id as string | null) ?? null
+        role = profile?.role || role
+
+        role = await reconcileLegacyOwnerRole({
+            userId: user.id,
+            userEmail: user.email,
+            currentRole: role,
+            profileTenantId,
+        })
     }
+
+    const destination = resolvePostLoginDestination({
+        lang,
+        role,
+        requestedRedirect,
+    })
 
     redirect(destination)
 }

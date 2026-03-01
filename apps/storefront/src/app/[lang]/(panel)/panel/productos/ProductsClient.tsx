@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
-import { Package, Plus, Search, X } from 'lucide-react'
-import { createProduct, updateProduct, removeProduct } from './actions'
+import { Package, Plus, Search, X, Download, CheckSquare, Square, Trash2 } from 'lucide-react'
+import { createProduct, updateProduct, removeProduct, bulkUpdateStatus, bulkDeleteProducts, exportProductsCsv } from './actions'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 
 interface ProductLabels {
@@ -31,6 +31,13 @@ interface ProductLabels {
     delete: string
     edit: string
     maxReached: string
+    selectAll: string
+    deselectAll: string
+    bulkPublish: string
+    bulkDraft: string
+    bulkDelete: string
+    exportCsv: string
+    selected: string
 }
 
 interface Props {
@@ -65,6 +72,9 @@ export default function ProductsClient({
     const [editingProduct, setEditingProduct] = useState<AdminProductFull | null>(null)
     const [error, setError] = useState<string | null>(null)
 
+    // Bulk selection
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
     // Form fields
     const [formTitle, setFormTitle] = useState('')
     const [formDescription, setFormDescription] = useState('')
@@ -81,6 +91,64 @@ export default function ProductsClient({
         setEditingProduct(null)
         setShowForm(false)
         setError(null)
+    }
+
+    // Bulk helpers
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+    const selectAll = () => setSelectedIds(new Set(filtered.map(p => p.id)))
+    const deselectAll = () => setSelectedIds(new Set())
+    const hasSelection = selectedIds.size > 0
+
+    const handleBulkStatus = (status: 'published' | 'draft') => {
+        startTransition(async () => {
+            const result = await bulkUpdateStatus([...selectedIds], status)
+            if (result.success) {
+                toast.success(`${result.updated} updated`)
+                deselectAll()
+                router.refresh()
+            } else {
+                toast.error(result.error ?? 'Error')
+            }
+        })
+    }
+
+    const handleBulkDelete = () => {
+        if (!confirm(`${labels.bulkDelete} (${selectedIds.size})?`)) return
+        startTransition(async () => {
+            const result = await bulkDeleteProducts([...selectedIds])
+            if (result.success) {
+                toast.success(`${result.deleted} deleted`)
+                deselectAll()
+                router.refresh()
+            } else {
+                toast.error(result.error ?? 'Error')
+            }
+        })
+    }
+
+    const handleExportCsv = () => {
+        startTransition(async () => {
+            const result = await exportProductsCsv()
+            if (result.csv) {
+                const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `products-${Date.now()}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+                toast.success('CSV exported')
+            } else {
+                toast.error(result.error ?? 'Export failed')
+            }
+        })
     }
 
     const openEdit = (product: AdminProductFull) => {
@@ -192,6 +260,44 @@ export default function ProductsClient({
                 </button>
             </div>
 
+            {/* Bulk action bar */}
+            {hasSelection && (
+                <div className="glass-strong rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap animate-fade-in">
+                    <span className="text-sm font-medium text-text-primary">
+                        {selectedIds.size} {labels.selected}
+                    </span>
+                    <div className="flex gap-2 ml-auto">
+                        <button
+                            onClick={() => handleBulkStatus('published')}
+                            disabled={isPending}
+                            className="btn btn-ghost text-xs text-green-600"
+                        >
+                            🟢 {labels.bulkPublish}
+                        </button>
+                        <button
+                            onClick={() => handleBulkStatus('draft')}
+                            disabled={isPending}
+                            className="btn btn-ghost text-xs text-yellow-600"
+                        >
+                            📝 {labels.bulkDraft}
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isPending}
+                            className="btn btn-ghost text-xs text-red-500"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" /> {labels.bulkDelete}
+                        </button>
+                        <button
+                            onClick={deselectAll}
+                            className="btn btn-ghost text-xs"
+                        >
+                            <X className="w-3.5 h-3.5" /> {labels.deselectAll}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Counter + limit */}
             <p className="text-xs text-text-muted">
                 {productCount} / {maxProducts} {labels.products}
@@ -224,6 +330,13 @@ export default function ProductsClient({
                         </button>
                     ))}
                 </div>
+                {/* Select-all + Export */}
+                <button onClick={selectAll} className="btn btn-ghost text-xs" title={labels.selectAll}>
+                    <CheckSquare className="w-4 h-4" />
+                </button>
+                <button onClick={handleExportCsv} disabled={isPending} className="btn btn-ghost text-xs" title={labels.exportCsv}>
+                    <Download className="w-4 h-4" />
+                </button>
             </div>
 
             {error && (
@@ -337,9 +450,19 @@ export default function ProductsClient({
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filtered.map(product => (
-                        <div key={product.id} className="glass rounded-2xl overflow-hidden group hover:shadow-lg transition-shadow">
+                        <div key={product.id} className={`glass rounded-2xl overflow-hidden group hover:shadow-lg transition-shadow ${selectedIds.has(product.id) ? 'ring-2 ring-primary' : ''}`}>
                             {/* Thumbnail */}
                             <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center">
+                                {/* Selection checkbox */}
+                                <button
+                                    onClick={() => toggleSelect(product.id)}
+                                    className="absolute top-2 left-2 z-10 p-1 rounded-md bg-surface-0/80 backdrop-blur-sm"
+                                >
+                                    {selectedIds.has(product.id)
+                                        ? <CheckSquare className="w-4 h-4 text-primary" />
+                                        : <Square className="w-4 h-4 text-text-muted" />
+                                    }
+                                </button>
                                 {product.thumbnail ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img

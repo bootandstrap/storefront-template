@@ -4,6 +4,7 @@
  * Auth guard: owner or super_admin only.
  * Includes: PanelSidebar + content area.
  * Panel access is ALWAYS available by role — never gated by feature flags.
+ * OnboardingWizard shows on first access when config.onboarding_completed is false.
  */
 
 import { redirect } from 'next/navigation'
@@ -12,6 +13,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { isPanelRole } from '@/lib/panel-access-policy'
 import PanelSidebar from '@/components/panel/PanelSidebar'
+import PanelOnboarding from '@/components/panel/PanelOnboarding'
 
 export default async function PanelLayout({
     children,
@@ -44,6 +46,9 @@ export default async function PanelLayout({
         // Not authorized for panel — redirect to customer account
         redirect(`/${lang}/cuenta`)
     }
+
+    // Determine store URL for onboarding wizard
+    const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `/${lang}`
 
     return (
         <div className="min-h-screen bg-surface-0 md:flex">
@@ -83,9 +88,18 @@ export default async function PanelLayout({
             />
             <div className="flex-1 overflow-auto">
                 <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
+                    {/* OnboardingWizard — shows once on first panel access */}
+                    {!config.onboarding_completed && (
+                        <PanelOnboarding
+                            storeName={config.business_name}
+                            storeUrl={storeUrl}
+                            locale={lang}
+                        />
+                    )}
                     {children}
                 </div>
             </div>
         </div>
     )
 }
+

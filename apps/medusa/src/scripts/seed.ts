@@ -238,7 +238,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
             countries: [STORE_COUNTRY],
             payment_providers: [
               "pp_system_default",
-              ...(process.env.STRIPE_API_KEY ? ["pp_stripe_stripe"] : []),
+              ...(process.env.STRIPE_SECRET_KEY ? ["pp_stripe_stripe"] : []),
             ],
           },
         ],

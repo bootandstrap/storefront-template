@@ -68,6 +68,13 @@ export default async function ProductsManagerPage({
         delete: t('common.delete'),
         edit: t('common.edit'),
         maxReached: t('limits.maxReached'),
+        selectAll: t('panel.products.selectAll'),
+        deselectAll: t('panel.products.deselectAll'),
+        bulkPublish: t('panel.products.bulkPublish'),
+        bulkDraft: t('panel.products.bulkDraft'),
+        bulkDelete: t('panel.products.bulkDelete'),
+        exportCsv: t('panel.products.exportCsv'),
+        selected: t('panel.products.selected'),
     }
 
     return (

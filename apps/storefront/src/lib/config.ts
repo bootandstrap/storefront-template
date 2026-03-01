@@ -60,6 +60,8 @@ export interface StoreConfig {
     // Shipping & Tax (Phase 1.9)
     free_shipping_threshold: number
     tax_display_mode: 'tax_included' | 'tax_excluded'
+    // Onboarding
+    onboarding_completed: boolean
 }
 
 export interface FeatureFlags {
@@ -110,6 +112,11 @@ export interface FeatureFlags {
     enable_crm: boolean
     enable_crm_segmentation: boolean
     enable_crm_export: boolean
+    // Email Marketing
+    enable_email_notifications: boolean
+    enable_abandoned_cart_emails: boolean
+    enable_email_campaigns: boolean
+    enable_email_templates: boolean
 }
 
 export interface PlanLimits {
@@ -259,6 +266,8 @@ const FALLBACK_CONFIG: AppConfig = {
         // Shipping & Tax (Phase 1.9)
         free_shipping_threshold: 0,
         tax_display_mode: 'tax_included',
+        // Onboarding
+        onboarding_completed: false,
     },
     featureFlags: {
         enable_whatsapp_checkout: true,
@@ -300,6 +309,10 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_crm: false,
         enable_crm_segmentation: false,
         enable_crm_export: false,
+        enable_email_notifications: false,
+        enable_abandoned_cart_emails: false,
+        enable_email_campaigns: false,
+        enable_email_templates: false,
     },
     planLimits: {
         max_products: 100,
@@ -402,10 +415,10 @@ function reportDegradedMode(tenantId: string, message: string): void {
             },
             body: JSON.stringify({
                 tenant_id: tenantId,
-                error_type: 'config_degraded_mode',
+                source: 'config_degraded_mode',
                 severity: 'critical',
                 message,
-                metadata: { timestamp: new Date().toISOString() },
+                details: { timestamp: new Date().toISOString() },
             }),
         }).catch(() => { /* truly fire-and-forget */ })
     }

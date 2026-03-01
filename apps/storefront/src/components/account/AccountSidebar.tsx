@@ -11,14 +11,24 @@ interface AccountSidebarProps {
     displayName: string
     email: string
     featureFlags: FeatureFlags
+    canAccessOwnerPanel?: boolean
 }
 
-export default function AccountSidebar({ lang, displayName, email, featureFlags }: AccountSidebarProps) {
+export default function AccountSidebar({
+    lang,
+    displayName,
+    email,
+    featureFlags,
+    canAccessOwnerPanel = false,
+}: AccountSidebarProps) {
     const { t } = useI18n()
     const pathname = usePathname()
 
     const navItems = [
         { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true, flag: true },
+        ...(canAccessOwnerPanel
+            ? [{ href: `/${lang}/panel`, label: t('panel.nav.ownerPanel'), icon: LayoutDashboard, exact: false, flag: true }]
+            : []),
         { href: `/${lang}/cuenta/mi-proyecto`, label: t('account.myProject') || 'Mi Proyecto', icon: Kanban, exact: false, flag: true },
         ...(featureFlags.enable_order_tracking
             ? [{ href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false, flag: true }]

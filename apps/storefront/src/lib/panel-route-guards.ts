@@ -43,6 +43,7 @@ const ADVANCED_ROUTES = new Set([
     'insignias',
     'chatbot',
     'devoluciones',
+    'crm',
 ])
 
 /**
@@ -62,6 +63,7 @@ export type PanelRouteKey =
     | 'insignias'
     | 'chatbot'
     | 'devoluciones'
+    | 'crm'
 
 export function getPanelFallbackRoute(lang: string): string {
     return `/${lang}/panel`

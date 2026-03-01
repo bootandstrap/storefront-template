@@ -10,7 +10,7 @@ export default async function LoginPage({
     searchParams,
 }: {
     params: Promise<{ lang: string }>
-    searchParams: Promise<{ error?: string; forgot?: string }>
+    searchParams: Promise<{ error?: string; forgot?: string; redirect?: string }>
 }) {
     const { lang } = await params
     const sp = await searchParams
@@ -59,6 +59,7 @@ export default async function LoginPage({
                             lang={lang}
                             showGoogleAuth={googleEnabled}
                             showRegistration={registrationEnabled}
+                            redirectTo={sp.redirect}
                         />
                     )}
 
@@ -68,6 +69,7 @@ export default async function LoginPage({
                             lang={lang}
                             showGoogleAuth={true}
                             showRegistration={registrationEnabled}
+                            redirectTo={sp.redirect}
                         />
                     )}
                 </div>

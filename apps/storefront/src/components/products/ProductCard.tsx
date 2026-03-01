@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Package, ShoppingCart, Loader2, Check } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { Package, ShoppingCart, Loader2, Check, Eye } from 'lucide-react'
+import { useState, useTransition, lazy, Suspense } from 'react'
 import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
@@ -13,11 +13,15 @@ import { addToCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { trackEvent } from '@/lib/analytics'
 import CompareButton from './CompareButton'
 
+// Lazily load QuickView modal to keep initial bundle lean
+const ProductQuickView = lazy(() => import('./ProductQuickView'))
+
 interface ProductCardProps {
     product: MedusaProduct
     badgesEnabled?: boolean
     compareEnabled?: boolean
     quickAddEnabled?: boolean
+    quickViewEnabled?: boolean
 }
 
 // Badge type → CSS class mapping
@@ -30,7 +34,7 @@ const BADGE_CLASSES: Record<string, string> = {
     'sold out': 'product-badge product-badge-soldout',
 }
 
-export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false, quickAddEnabled = false }: ProductCardProps) {
+export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false, quickAddEnabled = false, quickViewEnabled = true }: ProductCardProps) {
     const variant = product.variants?.[0]
     const resolved = getPrice(variant)
     const category = product.categories?.[0]
@@ -40,6 +44,7 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
     const { success, error } = useToast()
     const [isPending, startTransition] = useTransition()
     const [justAdded, setJustAdded] = useState(false)
+    const [quickViewOpen, setQuickViewOpen] = useState(false)
 
     const canQuickAdd = quickAddEnabled && variant && (variant.inventory_quantity ?? 1) > 0
 
@@ -118,6 +123,25 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                     </div>
                 )}
 
+                {/* QuickView button overlay */}
+                {quickViewEnabled && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setQuickViewOpen(true)
+                        }}
+                        className="absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity
+                            w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm
+                            flex items-center justify-center hover:bg-white hover:scale-110
+                            transition-all duration-200"
+                        style={{ right: compareEnabled ? '2.75rem' : '0.75rem' }}
+                        aria-label={t('product.quickView')}
+                    >
+                        <Eye className="w-4 h-4 text-text-primary" />
+                    </button>
+                )}
+
                 {/* Quick-Add button overlay */}
                 {canQuickAdd && (
                     <button
@@ -159,6 +183,17 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                     </p>
                 )}
             </div>
+
+            {/* QuickView Modal — lazy loaded */}
+            {quickViewOpen && (
+                <Suspense fallback={null}>
+                    <ProductQuickView
+                        product={product}
+                        isOpen={quickViewOpen}
+                        onClose={() => setQuickViewOpen(false)}
+                    />
+                </Suspense>
+            )}
         </Link>
     )
 }

@@ -846,3 +846,346 @@ body.drawer-open .whatsapp-float {
     scroll-behavior: auto !important;
   }
 }
+
+/* ========================================================================
+   Image Zoom — Hover lens + fullscreen gallery
+   ======================================================================== */
+
+.image-zoom-container {
+  position: relative;
+  overflow: hidden;
+  cursor: zoom-in;
+  border-radius: var(--radius-card);
+}
+
+.image-zoom-base {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: opacity 0.2s;
+}
+
+.image-zoom-lens {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  opacity: 1;
+}
+
+.image-zoom-hint {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 5;
+  padding: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-zoom-container:hover .image-zoom-hint {
+  opacity: 1;
+}
+
+/* Touch devices — no hover lens */
+@media (hover: none) {
+  .image-zoom-lens {
+    display: none;
+  }
+
+  .image-zoom-hint {
+    opacity: 1;
+  }
+}
+
+/* Fullscreen overlay */
+.image-zoom-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.2s var(--ease-smooth);
+}
+
+.image-zoom-fullscreen-image {
+  position: relative;
+  width: 90vw;
+  height: 80vh;
+  max-width: 1200px;
+}
+
+.image-zoom-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 110;
+  padding: 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.image-zoom-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.image-zoom-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 110;
+  padding: 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.image-zoom-nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.image-zoom-nav-prev {
+  left: 1rem;
+}
+
+.image-zoom-nav-next {
+  right: 1rem;
+}
+
+.image-zoom-dots {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 110;
+}
+
+.image-zoom-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.image-zoom-dot.active {
+  background: white;
+  transform: scale(1.3);
+}
+
+/* ========================================================================
+   Scrollbar Hide — for horizontal scroll sections (recently viewed)
+   ======================================================================== */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========================================================================
+   Quick View Modal
+   ======================================================================== */
+
+.quick-view-trigger {
+  padding: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.quick-view-trigger:hover {
+  background: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.quick-view-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fade-in 0.15s;
+}
+
+.quick-view-modal {
+  position: relative;
+  background: var(--color-surface-0);
+  border-radius: 1.5rem;
+  max-width: 48rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-float);
+}
+
+.quick-view-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  padding: 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.quick-view-close:hover {
+  background: var(--color-surface-3);
+}
+
+.quick-view-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .quick-view-content {
+    grid-template-columns: 1fr 1fr;
+    padding: 2rem;
+  }
+}
+
+.quick-view-image {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--color-surface-1);
+}
+
+.quick-view-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ========================================================================
+   Mega Menu — Category dropdown
+   ======================================================================== */
+
+.mega-menu-container {
+  position: relative;
+}
+
+.mega-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-button);
+  transition: color 0.2s, background 0.2s;
+}
+
+.mega-menu-trigger:hover {
+  color: var(--color-primary);
+  background: var(--color-surface-1);
+}
+
+.mega-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  min-width: 20rem;
+  max-width: 40rem;
+  background: var(--color-surface-0);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
+  border: 1px solid var(--color-surface-2);
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.mega-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1.5rem;
+}
+
+.mega-menu-category {
+  display: block;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.mega-menu-category:hover {
+  color: var(--color-primary);
+}
+
+.mega-menu-subcategories {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mega-menu-subcategory {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.mega-menu-subcategory:hover {
+  color: var(--color-primary);
+}
+
+/* ========================================================================
+   Price Range Filter
+   ======================================================================== */
+
+.price-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.price-range-inputs .input {
+  max-width: 6rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  text-align: center;
+}

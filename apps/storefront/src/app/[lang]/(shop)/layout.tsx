@@ -12,6 +12,7 @@
 
 import { MessageCircle } from 'lucide-react'
 import { getConfig } from '@/lib/config'
+import { getCategories } from '@/lib/medusa/client'
 import { getCurrency } from '@/lib/i18n/currencies'
 import { getDictionary, type Locale } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
@@ -37,6 +38,10 @@ export default async function ShopLayout({
     const currentCurrency = await getCurrency(config.default_currency)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+
+    // Fetch categories for MegaMenu (top-level only)
+    const allCategories = await getCategories()
+    const rootCategories = allCategories.filter(c => !c.parent_category)
 
     // ── Resolve auth + chat tier (visitor / customer / premium) ──
     let chatTier: ChatTier = 'visitor'
@@ -119,6 +124,7 @@ export default async function ShopLayout({
                 maxLanguages={planLimits.max_languages}
                 maxCurrencies={planLimits.max_currencies}
                 isAuthenticated={isAuthenticated}
+                categories={rootCategories}
             />
             <main id="main-content" className="flex-1">
                 {children}

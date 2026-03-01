@@ -10,6 +10,7 @@ interface LoginFormProps {
     lang: string
     showGoogleAuth: boolean
     showRegistration: boolean
+    redirectTo?: string
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -22,6 +23,7 @@ export default function LoginForm({
     lang,
     showGoogleAuth,
     showRegistration,
+    redirectTo,
 }: LoginFormProps) {
     const { t } = useI18n()
 
@@ -35,6 +37,7 @@ export default function LoginForm({
         <>
             <form action={formAction} className="space-y-4">
                 <input type="hidden" name="lang" value={lang} />
+                <input type="hidden" name="redirect" value={redirectTo ?? ''} />
 
                 {errorMessage && (
                     <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-500">

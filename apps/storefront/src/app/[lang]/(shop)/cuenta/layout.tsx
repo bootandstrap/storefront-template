@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
 import AccountSidebar from '@/components/account/AccountSidebar'
+import { isPanelRole } from '@/lib/panel-access-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,15 @@ export default async function CuentaLayout({
         redirect(`/${lang}/login`)
     }
 
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
     const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
     const email = user.email || ''
+    const canAccessOwnerPanel = isPanelRole(profile?.role || user.user_metadata?.role)
 
     return (
         <div className="container-page py-8">
@@ -39,6 +47,7 @@ export default async function CuentaLayout({
                     displayName={displayName}
                     email={email}
                     featureFlags={featureFlags}
+                    canAccessOwnerPanel={canAccessOwnerPanel}
                 />
 
                 {/* Content */}

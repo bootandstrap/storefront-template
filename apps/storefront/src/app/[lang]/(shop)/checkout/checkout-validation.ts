@@ -89,10 +89,12 @@ export async function validateMaxOrdersMonth(): Promise<{ allowed: boolean; erro
             .select('*', { count: 'exact', head: true })
             .gte('created_at', firstOfMonth)
 
-        // Scope to tenant's sales channel when available
-        if (scope?.medusaSalesChannelId) {
-            query = query.eq('sales_channel_id', scope.medusaSalesChannelId)
+        // MANDATORY: scope to tenant's sales channel — fail-closed
+        if (!scope?.medusaSalesChannelId) {
+            console.error('[checkout-validation] No sales_channel_id resolved — blocking checkout (fail-closed)')
+            return { allowed: false, error: 'Service temporarily unavailable. Please try again.' }
         }
+        query = query.eq('sales_channel_id', scope.medusaSalesChannelId)
 
         const { count } = await query
 

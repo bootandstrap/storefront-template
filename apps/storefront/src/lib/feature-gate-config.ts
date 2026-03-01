@@ -199,6 +199,55 @@ export const FEATURE_GATE_MAP: Record<string, FeatureGateEntry> = {
             it: 'crm',
         },
     },
+    // ── Email Marketing ──
+    enable_email_notifications: {
+        moduleKey: 'email_marketing',
+        moduleNameKey: 'featureGate.modules.emailMarketing',
+        icon: '📧',
+        bswSlug: {
+            es: 'email-marketing',
+            en: 'email-marketing',
+            de: 'email-marketing',
+            fr: 'email-marketing',
+            it: 'email-marketing',
+        },
+    },
+    enable_abandoned_cart_emails: {
+        moduleKey: 'email_marketing',
+        moduleNameKey: 'featureGate.modules.emailMarketing',
+        icon: '🛒',
+        bswSlug: {
+            es: 'email-marketing',
+            en: 'email-marketing',
+            de: 'email-marketing',
+            fr: 'email-marketing',
+            it: 'email-marketing',
+        },
+    },
+    enable_email_campaigns: {
+        moduleKey: 'email_marketing',
+        moduleNameKey: 'featureGate.modules.emailMarketing',
+        icon: '📮',
+        bswSlug: {
+            es: 'email-marketing',
+            en: 'email-marketing',
+            de: 'email-marketing',
+            fr: 'email-marketing',
+            it: 'email-marketing',
+        },
+    },
+    enable_email_templates: {
+        moduleKey: 'email_marketing',
+        moduleNameKey: 'featureGate.modules.emailMarketing',
+        icon: '🎨',
+        bswSlug: {
+            es: 'email-marketing',
+            en: 'email-marketing',
+            de: 'email-marketing',
+            fr: 'email-marketing',
+            it: 'email-marketing',
+        },
+    },
 }
 
 /**
@@ -228,4 +277,5 @@ export const PANEL_GATED_FLAGS = [
     'enable_self_service_returns',
     'enable_product_badges',
     'enable_crm',
+    'enable_email_notifications',
 ] as const

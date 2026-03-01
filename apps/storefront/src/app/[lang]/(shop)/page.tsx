@@ -10,6 +10,7 @@ import CategoryGrid from '@/components/home/CategoryGrid'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 import TrustSection from '@/components/home/TrustSection'
 import ScrollReveal from '@/components/ui/ScrollReveal'
+import { organizationJsonLD, websiteJsonLD } from '@/lib/seo/jsonld'
 import {
   CategoryGridSkeleton,
   ProductGridSkeleton,
@@ -69,36 +70,48 @@ export default async function HomePage({
   }
 
   return (
-    <div className="container-page py-6 space-y-4 md:space-y-8">
-      {/* Hero — carousel if enabled and has slides, otherwise static hero */}
-      {carouselSlides.length > 0 ? (
-        <HeroCarousel slides={carouselSlides} />
-      ) : (
-        <HeroSection config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />
-      )}
+    <>
+      {/* Structured Data — Organization + WebSite with SearchAction */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLD(config)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLD(config)) }}
+      />
 
-      {/* Categories — async (Medusa API) */}
-      <ScrollReveal>
-        <Suspense fallback={<CategoryGridSkeleton />}>
-          <CategoryGrid dictionary={dictionary} lang={lang} />
-        </Suspense>
-      </ScrollReveal>
+      <div id="main-content" className="container-page py-6 space-y-4 md:space-y-8">
+        {/* Hero — carousel if enabled and has slides, otherwise static hero */}
+        {carouselSlides.length > 0 ? (
+          <HeroCarousel slides={carouselSlides} />
+        ) : (
+          <HeroSection config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />
+        )}
 
-      <hr className="section-divider" />
+        {/* Categories — async (Medusa API) */}
+        <ScrollReveal>
+          <Suspense fallback={<CategoryGridSkeleton />}>
+            <CategoryGrid dictionary={dictionary} lang={lang} />
+          </Suspense>
+        </ScrollReveal>
 
-      {/* Featured Products — async (Medusa API) */}
-      <ScrollReveal delay={100}>
-        <Suspense fallback={<ProductGridSkeleton />}>
-          <FeaturedProducts dictionary={dictionary} lang={lang} />
-        </Suspense>
-      </ScrollReveal>
+        <hr className="section-divider" />
 
-      <hr className="section-divider" />
+        {/* Featured Products — async (Medusa API) */}
+        <ScrollReveal delay={100}>
+          <Suspense fallback={<ProductGridSkeleton />}>
+            <FeaturedProducts dictionary={dictionary} lang={lang} />
+          </Suspense>
+        </ScrollReveal>
 
-      {/* Trust Section — static, instant */}
-      <ScrollReveal delay={200}>
-        <TrustSection dictionary={dictionary} />
-      </ScrollReveal>
-    </div>
+        <hr className="section-divider" />
+
+        {/* Trust Section — static, instant */}
+        <ScrollReveal delay={200}>
+          <TrustSection dictionary={dictionary} />
+        </ScrollReveal>
+      </div>
+    </>
   )
 }

@@ -102,3 +102,25 @@ export function breadcrumbListJsonLD(
         itemListElement: items,
     }
 }
+
+/**
+ * WebSite JSON-LD for homepage — enables Google Sitelinks Search Box
+ */
+export function websiteJsonLD(config: StoreConfig): Record<string, unknown> {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: config.business_name,
+        url: siteUrl,
+        potentialAction: {
+            '@type': 'SearchAction',
+            target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${siteUrl}/{locale}/productos?q={search_term_string}`,
+            },
+            'query-input': 'required name=search_term_string',
+        },
+    }
+}

@@ -15,8 +15,10 @@ import {
     updateProductImages,
     deleteProductImage,
     getAdminProduct,
+    getAdminProductsFull,
     updateVariantInventory,
     type CreateProductInput,
+    type AdminProductFull,
 } from '@/lib/medusa/admin'
 
 interface ActionResult {
@@ -240,4 +242,86 @@ export async function updateProductStock(
 
     revalidatePanel('all')
     return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// Bulk Actions
+// ---------------------------------------------------------------------------
+
+export async function bulkUpdateStatus(
+    ids: string[],
+    status: 'published' | 'draft'
+): Promise<ActionResult & { updated: number }> {
+    const { tenantId } = await requirePanelAuth()
+    if (!ids.length) return { success: false, error: 'No products selected', updated: 0 }
+    if (ids.length > 100) return { success: false, error: 'Maximum 100 products per batch', updated: 0 }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    let updated = 0
+    const errors: string[] = []
+
+    for (const id of ids) {
+        const result = await updateAdminProduct(id, { status }, scope)
+        if (result.error) errors.push(`${id}: ${result.error}`)
+        else updated++
+    }
+
+    revalidatePanel('all')
+    return {
+        success: errors.length === 0,
+        updated,
+        error: errors.length ? `${errors.length} failed: ${errors[0]}` : undefined,
+    }
+}
+
+export async function bulkDeleteProducts(
+    ids: string[]
+): Promise<ActionResult & { deleted: number }> {
+    const { tenantId } = await requirePanelAuth()
+    if (!ids.length) return { success: false, error: 'No products selected', deleted: 0 }
+    if (ids.length > 50) return { success: false, error: 'Maximum 50 products per batch delete', deleted: 0 }
+
+    const scope = await getTenantMedusaScope(tenantId)
+    let deleted = 0
+    const errors: string[] = []
+
+    for (const id of ids) {
+        const result = await deleteAdminProduct(id, scope)
+        if (result.error) errors.push(`${id}: ${result.error}`)
+        else deleted++
+    }
+
+    revalidatePanel('all')
+    return {
+        success: errors.length === 0,
+        deleted,
+        error: errors.length ? `${errors.length} failed: ${errors[0]}` : undefined,
+    }
+}
+
+export async function exportProductsCsv(): Promise<{ success: boolean; csv?: string; error?: string }> {
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+
+    const result = await getAdminProductsFull({ limit: 1000 }, scope)
+    if (!result.products) {
+        return { success: false, error: 'Failed to fetch products' }
+    }
+
+    const products = result.products
+    const header = 'title,description,status,price,currency,category'
+    const rows = products.map((p: AdminProductFull) => {
+        const price = p.variants?.[0]?.prices?.[0]
+        const cat = p.categories?.[0]?.name ?? ''
+        return [
+            `"${(p.title || '').replace(/"/g, '""')}"`,
+            `"${(p.description || '').replace(/"/g, '""')}"`,
+            p.status,
+            price ? String(price.amount / 100) : '0',
+            price?.currency_code ?? 'eur',
+            `"${cat.replace(/"/g, '""')}"`,
+        ].join(',')
+    })
+
+    return { success: true, csv: [header, ...rows].join('\n') }
 }

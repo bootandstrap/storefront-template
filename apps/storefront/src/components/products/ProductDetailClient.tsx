@@ -8,6 +8,7 @@ import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
 import AddToCartButton from './AddToCartButton'
 import WishlistButton from './WishlistButton'
+import ImageZoom from './ImageZoom'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,13 +111,14 @@ export default function ProductDetailClient({
                 {/* Main image */}
                 <div className="relative aspect-square rounded-2xl overflow-hidden bg-surface-1">
                     {allImages[selectedImageIndex]?.url ? (
-                        <Image
+                        <ImageZoom
                             src={allImages[selectedImageIndex].url}
                             alt={product.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover transition-opacity duration-300"
-                            priority
+                            width={800}
+                            height={800}
+                            className="w-full h-full"
+                            images={allImages.map(img => ({ url: img.url, alt: product.title }))}
+                            imageIndex={selectedImageIndex}
                         />
                     ) : (
                         <div className="image-fallback">

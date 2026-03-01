@@ -75,15 +75,24 @@ export default async function PanelDashboard({
     }
 
     // Usage meter data
-    const usageMeters = [
+    // Real metrics — backed by Medusa admin API and Supabase queries
+    const realMeters = [
         { label: t('panel.usage.products'), result: checkLimit(planLimits, 'max_products', productCount) },
         { label: t('panel.usage.categories'), result: checkLimit(planLimits, 'max_categories', categoryCount) },
         { label: t('panel.usage.ordersMonth'), result: checkLimit(planLimits, 'max_orders_month', ordersThisMonth) },
         { label: t('panel.usage.customers'), result: checkLimit(planLimits, 'max_customers', customerCount) },
         { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', adminCount) },
-        { label: t('panel.usage.trafficDay'), result: checkLimit(planLimits, 'max_requests_day', 0) }, // TODO: daily request counter
-        { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0) }, // TODO: Supabase Storage tracking
-        { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0) }, // TODO: email counter
+    ]
+
+    // Pending metrics — data sources not yet available in storefront
+    // These show the limit but mark current usage as "not tracked yet"
+    // TODO: daily traffic → query analytics_daily_summary.page_views (needs analytics module active + table deployed)
+    // TODO: storage → query Supabase Storage bucket usage for tenant (needs storage instrumentation)
+    // TODO: emails → query email_sends counter table (needs transactional email tracking)
+    const pendingMeters = [
+        { label: t('panel.usage.trafficDay'), result: checkLimit(planLimits, 'max_requests_day', 0), pending: true },
+        { label: t('panel.usage.storage'), result: checkLimit(planLimits, 'storage_limit_mb', 0), pending: true },
+        { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', 0), pending: true },
     ]
 
     return (
@@ -135,7 +144,7 @@ export default async function PanelDashboard({
                     {t('panel.usage.title')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {usageMeters.map((meter) => (
+                    {realMeters.map((meter) => (
                         <UsageMeter
                             key={meter.label}
                             label={meter.label}
@@ -143,6 +152,17 @@ export default async function PanelDashboard({
                         />
                     ))}
                 </div>
+                {pendingMeters.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 opacity-60">
+                        {pendingMeters.map((meter) => (
+                            <UsageMeter
+                                key={meter.label}
+                                label={`${meter.label} (${t('panel.usage.comingSoon') || 'Próximamente'})`}
+                                result={meter.result}
+                            />
+                        ))}
+                    </div>
+                )}
                 <p className="text-xs text-text-muted mt-3">
                     {t('panel.usage.planInfo', { plan: planLimits.plan_name })}
                 </p>

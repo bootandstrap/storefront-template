@@ -11,11 +11,12 @@
 
 import { redirect } from 'next/navigation'
 import { MessageCircle, AlertTriangle, Clock } from 'lucide-react'
-import { getDictionary, isValidLocale, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
+import { getDictionary, isValidLocale, SUPPORTED_LOCALES, getActiveLocales, type Locale } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import { getPreferredLocale } from '@/lib/i18n/locale'
 import { I18nProvider } from '@/lib/i18n/provider'
 import { getConfig } from '@/lib/config'
+import SkipNav from '@/components/ui/SkipNav'
 
 export async function generateStaticParams() {
     return SUPPORTED_LOCALES.map((locale) => ({ lang: locale }))
@@ -79,9 +80,33 @@ export default async function LangLayout({
 
     const locale = lang as Locale
     const dictionary = await getDictionary(locale)
+    const activeLocales = getActiveLocales(config)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
 
     return (
         <I18nProvider locale={locale} dictionary={dictionary}>
+            {/* hreflang tags for multi-language SEO */}
+            {activeLocales.length > 1 && (
+                <>
+                    {activeLocales.map((alt) => (
+                        <link
+                            key={alt}
+                            rel="alternate"
+                            hrefLang={alt}
+                            href={`${siteUrl}/${alt}`}
+                        />
+                    ))}
+                    <link
+                        rel="alternate"
+                        hrefLang="x-default"
+                        href={`${siteUrl}/${config.language || 'en'}`}
+                    />
+                </>
+            )}
+
+            {/* Accessibility — skip to main content link */}
+            <SkipNav />
+
             {/* Degraded config banner — Supabase unreachable */}
             {_degraded && process.env.NODE_ENV === 'production' && (
                 <div className="bg-amber-500 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">

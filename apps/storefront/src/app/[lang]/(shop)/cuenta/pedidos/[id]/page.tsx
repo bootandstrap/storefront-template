@@ -6,10 +6,11 @@ import { formatPrice } from '@/lib/i18n/currencies'
 import { getConfig } from '@/lib/config'
 import ReturnRequestForm from '@/components/returns/ReturnRequestForm'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
+import ReorderButton from '@/components/account/ReorderButton'
 import {
     ArrowLeft, Clock, CheckCircle2, Package,
-    Truck, XCircle, MapPin, CreditCard, ShoppingBag,
-    ArrowRight, RotateCcw
+    Truck, XCircle, MapPin, CreditCard,
+    RotateCcw
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -353,15 +354,19 @@ async function OrderDetail({
                 )
             })()}
 
-            {/* View products link */}
-            <Link
-                href={`/${lang}/productos`}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium btn btn-primary"
-            >
-                <ShoppingBag className="w-4 h-4" />
-                {t('order.reorder')}
-                <ArrowRight className="w-4 h-4" />
-            </Link>
+            {/* Reorder button — adds all items back to cart */}
+            {order.items && order.items.length > 0 && (
+                <ReorderButton
+                    items={order.items
+                        .filter(item => item.variant_id != null)
+                        .map(item => ({
+                            variantId: item.variant_id!,
+                            quantity: item.quantity,
+                            title: item.title,
+                        }))}
+                    lang={lang}
+                />
+            )}
         </div>
     )
 }

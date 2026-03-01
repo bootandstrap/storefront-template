@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useI18n } from '@/lib/i18n/provider'
 import LanguageSelector from './LanguageSelector'
 import CurrencySelector from './CurrencySelector'
+import MegaMenu from './MegaMenu'
 
 interface HeaderProps {
     config: StoreConfig
@@ -20,9 +21,11 @@ interface HeaderProps {
     maxLanguages?: number
     maxCurrencies?: number
     isAuthenticated?: boolean
+    /** Product categories for MegaMenu dropdown */
+    categories?: { id: string; name: string; handle: string; description?: string | null; category_children?: { id: string; name: string; handle: string }[] }[]
 }
 
-export default function Header({ config, featureFlags, activeLanguages, activeCurrencies, currentCurrency, maxLanguages, maxCurrencies, isAuthenticated = false }: HeaderProps) {
+export default function Header({ config, featureFlags, activeLanguages, activeCurrencies, currentCurrency, maxLanguages, maxCurrencies, isAuthenticated = false, categories = [] }: HeaderProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const { itemCount, openDrawer } = useCart()
@@ -91,12 +94,16 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
 
                         {/* Desktop nav links */}
                         <nav className="hidden md:flex items-center gap-5">
-                            <Link
-                                href={localizedHref('products')}
-                                className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
-                            >
-                                {t('nav.products')}
-                            </Link>
+                            {categories.length > 0 ? (
+                                <MegaMenu categories={categories} label={t('nav.products')} />
+                            ) : (
+                                <Link
+                                    href={localizedHref('products')}
+                                    className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
+                                >
+                                    {t('nav.products')}
+                                </Link>
+                            )}
                             {featureFlags.enable_whatsapp_contact && (
                                 <a
                                     href={`https://wa.me/${config.whatsapp_number}`}
