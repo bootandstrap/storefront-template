@@ -5,6 +5,7 @@ export interface PanelFeatureFlags {
     enable_analytics?: boolean
     enable_chatbot?: boolean
     enable_self_service_returns?: boolean
+    enable_crm?: boolean
     owner_lite_enabled?: boolean
     owner_advanced_modules_enabled?: boolean
 }
@@ -24,6 +25,7 @@ export interface PanelSidebarLabels {
     badges: string
     chatbot: string
     returns: string
+    crm: string
     ownerPanel: string
     backToStore: string
 }
@@ -36,7 +38,7 @@ export interface PanelNavItem {
 }
 
 interface AdvancedModuleDef {
-    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns'
+    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns' | 'crm'
     segment: string
     featureKey?: keyof PanelFeatureFlags
 }
@@ -58,6 +60,7 @@ const ADVANCED_MODULES: AdvancedModuleDef[] = [
     { key: 'badges', segment: 'insignias' },
     { key: 'chatbot', segment: 'chatbot', featureKey: 'enable_chatbot' },
     { key: 'returns', segment: 'devoluciones', featureKey: 'enable_self_service_returns' },
+    { key: 'crm', segment: 'crm', featureKey: 'enable_crm' },
 ]
 
 export const OWNER_LITE_MODE_DEFAULT = false

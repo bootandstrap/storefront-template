@@ -57,6 +57,7 @@ export default async function PanelLayout({
                     enable_analytics: featureFlags.enable_analytics,
                     enable_chatbot: featureFlags.enable_chatbot,
                     enable_self_service_returns: featureFlags.enable_self_service_returns,
+                    enable_crm: featureFlags.enable_crm,
                     owner_lite_enabled: featureFlags.owner_lite_enabled,
                     owner_advanced_modules_enabled: featureFlags.owner_advanced_modules_enabled,
                 }}
@@ -75,6 +76,7 @@ export default async function PanelLayout({
                     badges: t('panel.nav.badges'),
                     chatbot: t('panel.nav.chatbot'),
                     returns: t('panel.nav.returns'),
+                    crm: t('panel.nav.crm'),
                     ownerPanel: t('panel.nav.ownerPanel'),
                     backToStore: t('panel.nav.backToStore'),
                 }}

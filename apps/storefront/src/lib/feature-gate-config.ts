@@ -227,4 +227,5 @@ export const PANEL_GATED_FLAGS = [
     'enable_whatsapp_checkout',
     'enable_self_service_returns',
     'enable_product_badges',
+    'enable_crm',
 ] as const
