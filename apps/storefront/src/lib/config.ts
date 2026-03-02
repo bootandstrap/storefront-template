@@ -1,9 +1,17 @@
 import { revalidatePath } from 'next/cache'
-import { createGovernanceClient } from '@/lib/supabase/governance'
+import { createGovernanceClient, getGovernanceMode } from '@/lib/supabase/governance'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+/** Response shape from get_tenant_governance() SECURITY DEFINER RPC */
+interface GovernanceRpcResult {
+    config: StoreConfig | null
+    feature_flags: Record<string, boolean> | null
+    plan_limits: PlanLimits | null
+    tenant_status: string | null
+}
 
 export interface StoreConfig {
     id: string
@@ -209,12 +217,22 @@ export function getRequiredTenantId(): string {
 // ---------------------------------------------------------------------------
 // Hardcoded fallback (when Supabase is unreachable)
 // ---------------------------------------------------------------------------
+// SECURITY: Fallback uses RESTRICTIVE defaults (fail-closed posture).
+// During a Supabase outage, we degrade to maintenance mode — no features
+// are granted that the tenant hasn't paid for. This prevents:
+// - Unpaid feature access during outages
+// - Commerce transactions without proper config
+// - Data inconsistencies during degraded mode
+//
+// Only `enable_maintenance_mode: true` is set — all other flags are false.
+// The store will show a maintenance banner until config is restored.
+// ---------------------------------------------------------------------------
 
 const FALLBACK_CONFIG: AppConfig = {
     config: {
         id: 'fallback',
         tenant_id: null,
-        business_name: 'My Store',
+        business_name: 'Store',
         whatsapp_number: '',
         default_country_prefix: '1',
         primary_color: '#2D5016',
@@ -237,7 +255,6 @@ const FALLBACK_CONFIG: AppConfig = {
         active_languages: ['en'],
         active_currencies: ['usd'],
         default_currency: 'usd',
-        // New columns
         store_email: null,
         store_phone: null,
         store_address: null,
@@ -260,51 +277,50 @@ const FALLBACK_CONFIG: AppConfig = {
         facebook_pixel_id: null,
         sentry_dsn: null,
         custom_css: null,
-        // Inventory & Stock (Phase 1.7)
         stock_mode: 'always_in_stock',
         low_stock_threshold: 5,
-        // Shipping & Tax (Phase 1.9)
         free_shipping_threshold: 0,
         tax_display_mode: 'tax_included',
-        // Onboarding
         onboarding_completed: false,
     },
     featureFlags: {
-        enable_whatsapp_checkout: true,
+        // RESTRICTIVE DEFAULTS — all optional features OFF during degradation
+        enable_whatsapp_checkout: false,
         enable_online_payments: false,
-        enable_cash_on_delivery: true,
+        enable_cash_on_delivery: false,
         enable_bank_transfer: false,
-        enable_whatsapp_contact: true,
-        enable_user_registration: true,
-        enable_guest_checkout: true,
+        enable_whatsapp_contact: false,
+        enable_user_registration: false,
+        enable_guest_checkout: false,
         require_auth_to_order: false,
-        enable_google_auth: true,
-        enable_email_auth: true,
+        enable_google_auth: false,
+        enable_email_auth: false,
         enable_reviews: false,
         enable_wishlist: false,
-        enable_carousel: true,
+        enable_carousel: false,
         enable_cms_pages: false,
-        enable_product_search: true,
-        enable_related_products: true,
+        enable_product_search: false,
+        enable_related_products: false,
         enable_product_comparisons: false,
-        enable_product_badges: true,
+        enable_product_badges: false,
         enable_analytics: false,
         enable_promotions: false,
         enable_multi_language: false,
         enable_multi_currency: false,
         enable_admin_api: false,
-        enable_social_links: true,
-        enable_order_notes: true,
-        enable_address_management: true,
+        enable_social_links: false,
+        enable_order_notes: false,
+        enable_address_management: false,
         enable_newsletter: false,
-        enable_maintenance_mode: false,
-        enable_owner_panel: true,
-        enable_customer_accounts: true,
-        enable_order_tracking: true,
-        enable_cookie_consent: true,
+        // ONLY maintenance mode enabled — safest posture during outage
+        enable_maintenance_mode: true,
+        enable_owner_panel: false,
+        enable_customer_accounts: false,
+        enable_order_tracking: false,
+        enable_cookie_consent: false,
         enable_chatbot: false,
         enable_self_service_returns: false,
-        owner_lite_enabled: true,
+        owner_lite_enabled: false,
         owner_advanced_modules_enabled: false,
         enable_crm: false,
         enable_crm_segmentation: false,
@@ -315,31 +331,32 @@ const FALLBACK_CONFIG: AppConfig = {
         enable_email_templates: false,
     },
     planLimits: {
-        max_products: 100,
-        max_customers: 100,
-        max_orders_month: 500,
-        max_categories: 20,
-        max_images_per_product: 10,
-        max_cms_pages: 10,
-        max_carousel_slides: 10,
-        max_admin_users: 3,
-        storage_limit_mb: 500,
-        plan_name: 'base',
+        // MINIMUM VALUES — no capacity granted during degradation
+        max_products: 0,
+        max_customers: 0,
+        max_orders_month: 0,
+        max_categories: 0,
+        max_images_per_product: 0,
+        max_cms_pages: 0,
+        max_carousel_slides: 0,
+        max_admin_users: 0,
+        storage_limit_mb: 0,
+        plan_name: 'degraded',
         plan_expires_at: null,
         max_languages: 1,
         max_currencies: 1,
-        max_whatsapp_templates: 5,
-        max_file_upload_mb: 5,
-        max_email_sends_month: 500,
-        max_custom_domains: 1,
-        max_chatbot_messages_month: 200,
-        max_badges: 3,
-        max_newsletter_subscribers: 100,
-        max_requests_day: 5000,
+        max_whatsapp_templates: 0,
+        max_file_upload_mb: 0,
+        max_email_sends_month: 0,
+        max_custom_domains: 0,
+        max_chatbot_messages_month: 0,
+        max_badges: 0,
+        max_newsletter_subscribers: 0,
+        max_requests_day: 0,
         max_reviews_per_product: 0,
         max_wishlist_items: 0,
         max_promotions_active: 0,
-        max_payment_methods: 1,
+        max_payment_methods: 0,
         max_crm_contacts: 0,
     },
     planExpired: false,
@@ -440,37 +457,63 @@ export async function getConfig(): Promise<AppConfig> {
 
     try {
         const supabase = createGovernanceClient()
+        const mode = getGovernanceMode()
 
-        // All queries scoped by tenant_id — no data leaks
-        const configQuery = supabase.from('config').select('*').eq('tenant_id', tenantId)
-        const flagsQuery = supabase.from('feature_flags').select('*').eq('tenant_id', tenantId)
-        const limitsQuery = supabase.from('plan_limits').select('*').eq('tenant_id', tenantId)
+        let configData: StoreConfig | null = null
+        let flagsData: Record<string, boolean> | null = null
+        let limitsData: PlanLimits | null = null
+        let tenantStatusRaw: string | null = null
 
-        const [configRes, flagsRes, limitsRes] = await Promise.all([
-            configQuery.single(),
-            flagsQuery.single(),
-            limitsQuery.single(),
-        ])
+        if (mode === 'rpc') {
+            // Phase 4.1: Single RPC call via anon key (no service_role needed)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data, error } = await (supabase.rpc as any)('get_tenant_governance', {
+                p_tenant_id: tenantId,
+            }) as { data: GovernanceRpcResult | null; error: { message: string } | null }
 
-        // Query tenant status (tenants table may not be in generated types)
-        const { data: tenantData } = await supabase
-            .from('tenants')
-            .select('status')
-            .eq('id', tenantId)
-            .single() as { data: { status: string } | null }
+            if (error) {
+                console.warn('[config] get_tenant_governance RPC error:', error.message)
+            } else if (data) {
+                configData = data.config ?? null
+                flagsData = data.feature_flags ?? null
+                limitsData = data.plan_limits ?? null
+                tenantStatusRaw = data.tenant_status ?? null
+            }
+        } else {
+            // Legacy: direct table queries via service_role key
+            const configQuery = supabase.from('config').select('*').eq('tenant_id', tenantId)
+            const flagsQuery = supabase.from('feature_flags').select('*').eq('tenant_id', tenantId)
+            const limitsQuery = supabase.from('plan_limits').select('*').eq('tenant_id', tenantId)
 
-        // Log any query errors (helps diagnose tenant/schema issues)
-        if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
-        if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
-        if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+            const [configRes, flagsRes, limitsRes] = await Promise.all([
+                configQuery.single(),
+                flagsQuery.single(),
+                limitsQuery.single(),
+            ])
+
+            const { data: tenantData } = await supabase
+                .from('tenants')
+                .select('status')
+                .eq('id', tenantId)
+                .single() as { data: { status: string } | null }
+
+            if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
+            if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
+            if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+
+            configData = configRes.data ?? null
+            flagsData = flagsRes.data ?? null
+            limitsData = limitsRes.data ?? null
+            tenantStatusRaw = tenantData?.status ?? null
+        }
 
         // Check plan expiration
-        const limits = limitsRes.data ?? FALLBACK_CONFIG.planLimits
+        const limits = (limitsData as PlanLimits) ?? FALLBACK_CONFIG.planLimits
         const planExpired = limits.plan_expires_at
             ? new Date(limits.plan_expires_at) < new Date()
             : false
 
-        const tenantStatus = (tenantData?.status as AppConfig['tenantStatus']) ?? 'active'
+        const tenantStatus = (tenantStatusRaw as AppConfig['tenantStatus']) ?? 'active'
 
         // Compute free maintenance days remaining
         let maintenanceDaysRemaining: number | undefined
@@ -483,10 +526,10 @@ export async function getConfig(): Promise<AppConfig> {
         const effectiveStatus = (planExpired && tenantStatus === 'maintenance_free') ? 'paused' : tenantStatus
 
         const result: AppConfig = {
-            config: configRes.data ?? FALLBACK_CONFIG.config,
+            config: (configData as StoreConfig) ?? FALLBACK_CONFIG.config,
             featureFlags: {
                 ...FALLBACK_CONFIG.featureFlags,
-                ...(flagsRes.data ?? {}),
+                ...(flagsData ?? {}),
             },
             planLimits: limits,
             planExpired,
@@ -518,37 +561,66 @@ export async function getConfigForTenant(tenantId: string): Promise<AppConfig> {
 
     try {
         const supabase = createGovernanceClient()
+        const mode = getGovernanceMode()
 
-        const [configRes, flagsRes, limitsRes] = await Promise.all([
-            supabase.from('config').select('*').eq('tenant_id', tenantId).single(),
-            supabase.from('feature_flags').select('*').eq('tenant_id', tenantId).single(),
-            supabase.from('plan_limits').select('*').eq('tenant_id', tenantId).single(),
-        ])
+        let configData: StoreConfig | null = null
+        let flagsData: Record<string, boolean> | null = null
+        let limitsData: PlanLimits | null = null
+        let tenantStatusRaw: string | null = null
 
-        const { data: tenantData } = await supabase
-            .from('tenants')
-            .select('status')
-            .eq('id', tenantId)
-            .single() as { data: { status: string } | null }
+        if (mode === 'rpc') {
+            // Phase 4.1: Single RPC call via anon key
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data, error } = await (supabase.rpc as any)('get_tenant_governance', {
+                p_tenant_id: tenantId,
+            }) as { data: GovernanceRpcResult | null; error: { message: string } | null }
 
-        if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
-        if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
-        if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+            if (error) {
+                console.warn('[config] get_tenant_governance RPC error:', error.message)
+            } else if (data) {
+                configData = data.config ?? null
+                flagsData = data.feature_flags ?? null
+                limitsData = data.plan_limits ?? null
+                tenantStatusRaw = data.tenant_status ?? null
+            }
+        } else {
+            // Legacy: direct table queries
+            const [configRes, flagsRes, limitsRes] = await Promise.all([
+                supabase.from('config').select('*').eq('tenant_id', tenantId).single(),
+                supabase.from('feature_flags').select('*').eq('tenant_id', tenantId).single(),
+                supabase.from('plan_limits').select('*').eq('tenant_id', tenantId).single(),
+            ])
 
-        const limits = limitsRes.data ?? FALLBACK_CONFIG.planLimits
+            const { data: tenantData } = await supabase
+                .from('tenants')
+                .select('status')
+                .eq('id', tenantId)
+                .single() as { data: { status: string } | null }
+
+            if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
+            if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
+            if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+
+            configData = configRes.data ?? null
+            flagsData = flagsRes.data ?? null
+            limitsData = limitsRes.data ?? null
+            tenantStatusRaw = tenantData?.status ?? null
+        }
+
+        const limits = (limitsData as PlanLimits) ?? FALLBACK_CONFIG.planLimits
         const planExpired = limits.plan_expires_at
             ? new Date(limits.plan_expires_at) < new Date()
             : false
 
         return {
-            config: configRes.data ?? FALLBACK_CONFIG.config,
+            config: (configData as StoreConfig) ?? FALLBACK_CONFIG.config,
             featureFlags: {
                 ...FALLBACK_CONFIG.featureFlags,
-                ...(flagsRes.data ?? {}),
+                ...(flagsData ?? {}),
             },
             planLimits: limits,
             planExpired,
-            tenantStatus: (tenantData?.status as AppConfig['tenantStatus']) ?? 'active',
+            tenantStatus: (tenantStatusRaw as AppConfig['tenantStatus']) ?? 'active',
         }
     } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err)

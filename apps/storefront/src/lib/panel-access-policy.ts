@@ -11,7 +11,7 @@
  */
 
 /** Roles permitted to access the Owner Panel */
-export const PANEL_ALLOWED_ROLES = ['owner', 'super_admin'] as const
+export const PANEL_ALLOWED_ROLES = ['owner'] as const
 
 export type PanelRole = (typeof PANEL_ALLOWED_ROLES)[number]
 

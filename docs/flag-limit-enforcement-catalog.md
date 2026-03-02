@@ -1,7 +1,7 @@
 # Flag & Limit Enforcement Catalog
 
 > **Purpose**: Documents which flags and limits are actively enforced server-side, which are UI-only, and which lack enforcement entirely.
-> **Updated**: 2026-02-21 (Post Fase 2 SaaS Governance)
+> **Updated**: 2026-03-02 (Post Mega Plan Phase 2 — cross-verified against source code)
 
 ---
 
@@ -38,8 +38,8 @@
 | Flag | Enforcement | Where |
 |------|-------------|-------|
 | `enable_user_registration` | ✅ Server-enforced | `registro/actions.ts` + `registro/page.tsx` |
-| `enable_guest_checkout` | 🟡 UI-gated | `CheckoutModal` conditional |
-| `require_auth_to_order` | 🟡 UI-gated | CheckoutModal auth check (proxy delegates to page) |
+| `enable_guest_checkout` | ✅ Server-enforced | `checkout/page.tsx` RSC — redirects to login if disabled (server component, not client) |
+| `require_auth_to_order` | ✅ Server-enforced | `checkout/page.tsx` RSC — redirects to login if enabled (server component, not client) |
 | `enable_google_auth` | 🟡 UI-gated | Login page shows/hides Google button |
 | `enable_email_auth` | 🟡 UI-gated | Login page shows/hides email form |
 
@@ -61,7 +61,7 @@
 |------|-------------|-------|
 | `enable_product_badges` | 🟡 UI-gated | ProductCard + ProductGrid |
 | `enable_analytics` | 🟡 UI-gated | Panel layout sidebar + analiticas page check |
-| `enable_promotions` | ⚠️ No enforcement | Defined in FeatureFlags; promotion engine runs unconditionally |
+| `enable_promotions` | ✅ Server-enforced | `cart/promotions/route.ts` via `requireFlag('enable_promotions')` (P0-5 fix) |
 | `enable_multi_language` | 🟡 UI-gated | Header language selector |
 | `enable_multi_currency` | 🟡 UI-gated | Header currency selector |
 
@@ -69,7 +69,7 @@
 
 | Flag | Enforcement | Where |
 |------|-------------|-------|
-| `enable_admin_api` | ⚠️ No enforcement | Defined but no gate on `/api/admin` routes |
+| `enable_admin_api` | 🟡 UI-gated | Maps to `automation` module; no `/api/admin` routes exist in storefront. Panel feature visibility controlled via `SubscriptionClient.tsx` |
 | `enable_social_links` | 🟡 UI-gated | Footer social icons |
 | `enable_order_notes` | 🟡 UI-gated | CheckoutModal notes field |
 | `enable_address_management` | 🟡 UI-gated | AccountSidebar addresses link |
@@ -78,7 +78,7 @@
 
 | Flag | Enforcement | Where |
 |------|-------------|-------|
-| `enable_newsletter` | 🟡 UI-gated | Footer newsletter form |
+| `enable_newsletter` | ✅ Server-enforced | `/api/newsletter/route.ts` via `isFeatureEnabled()` + `max_newsletter_subscribers` limit (fail-closed) |
 | `enable_maintenance_mode` | ✅ Server-enforced | `(shop)/layout.tsx` blocks entire store |
 | `enable_owner_panel` | ✅ Server-enforced | `(panel)/layout.tsx` redirects if off |
 | `enable_customer_accounts` | ✅ Server-enforced | `cuenta/layout.tsx` redirects if off |
@@ -115,9 +115,9 @@ These limits have `checkLimit()` calls in **server actions or server components*
 | `max_badges` | `insignias/actions.ts` (`toggleBadge` + `setBadges`) |
 | `max_newsletter_subscribers` | `api/newsletter/route.ts` — fail-closed |
 | `max_chatbot_messages_month` | `/api/chat` route (`checkChatQuota()`) — **fail-closed + 10 req/min rate-limit** (C2 fix, 20 Feb 2026) |
-| `max_admin_users` | Panel dashboard display (hardcoded count=1) |
-| `storage_limit_mb` | Panel dashboard display (hardcoded count=0) |
-| `max_email_sends_month` | Panel dashboard display (hardcoded count=0) |
+| `max_file_upload_mb` | `productos/actions.ts` (individual file size check at upload, line 168) |
+| `max_email_sends_month` | `email-automations.ts` (capped in `processAbandonedCarts` + `processReviewRequests`) |
+| `max_api_calls_day` | `rate-limit-tenant.ts` `checkTrafficCapacity()` → enforced in cart, checkout, orders API routes |
 
 ### Display-Only (4 limits)
 
@@ -125,9 +125,8 @@ These appear in the panel dashboard `UsageMeter` but have **no server-side block
 
 | Limit | Status |
 |-------|--------|
-| `max_admin_users` | Display shows `1/3`; no enforcement on user creation |
-| `storage_limit_mb` | Display shows `0/500`; no enforcement on uploads |
-| `max_email_sends_month` | Display shows `0/500`; no enforcement on Resend calls |
+| `max_admin_users` | Display shows real count from profiles; no enforcement on user creation |
+| `storage_limit_mb` | Display shows Medusa storage estimate; no aggregate enforcement at upload |
 | `max_custom_domains` | Display shows `0/1`; no domain provisioning logic exists |
 
 ### No Enforcement At All (6 limits)
@@ -136,11 +135,8 @@ These exist in `PlanLimits` type and DB but have **no UI display** and **no serv
 
 | Limit | Status |
 |-------|--------|
-| `max_languages` | Config `active_languages` is not validated against this |
-| `max_currencies` | Config `active_currencies` is not validated against this |
-| `max_file_upload_mb` | Individual file size not checked against this |
-| `max_custom_domains` | No domain provisioning infrastructure |
-| `max_api_calls_day` | In `LimitableResource` type; no rate-limiting integration |
+| `max_languages` | ✅ Now enforced: `tenants.ts` `updateTenantConfig()` validates count (2026-02-21) |
+| `max_currencies` | ✅ Now enforced: `tenants.ts` `updateTenantConfig()` validates count (2026-02-21) |
 | `plan_name` | Metadata field (not a numeric limit) |
 | `plan_expires_at` | Metadata field (enforced separately via trial logic) |
 
@@ -148,9 +144,11 @@ These exist in `PlanLimits` type and DB but have **no UI display** and **no serv
 
 ## Recommendations
 
-1. **`enable_promotions`**: Add server-side check in promotion application flow
-2. **`enable_admin_api`**: Gate `/api/admin` routes with this flag check
-3. **`enable_guest_checkout`** / **`require_auth_to_order`**: Consider server-side enforcement in checkout actions
-4. **`max_admin_users`**: Count real admin profiles and enforce at user invitation
-5. **`storage_limit_mb`**: Sum tenant storage usage and enforce at upload
-6. **`max_api_calls_day`**: Integrate with rate limiter using per-tenant quota
+1. ~~**`enable_promotions`**: Add server-side check~~ ✅ Done (P0-5, requireFlag)
+2. ~~**`enable_admin_api`**: Gate `/api/admin` routes~~ ✅ Resolved (no admin API routes exist; UI-gated)
+3. ~~**`enable_guest_checkout`** / **`require_auth_to_order`**: Server enforcement~~ ✅ Done — RSC `checkout/page.tsx` redirects to login
+4. **`max_admin_users`**: Enforce at user invitation (currently display-only)
+5. **`storage_limit_mb`**: Enforce aggregate at upload time (currently display-only, per-file enforced)
+6. ~~**`max_api_calls_day`**: Integrate with rate limiter~~ ✅ Done — `checkTrafficCapacity` in cart/checkout/orders routes
+7. ~~**`max_file_upload_mb`**: Enforce at upload~~ ✅ Done — `productos/actions.ts:168`
+8. ~~**`max_email_sends_month`**: Enforce in email sends~~ ✅ Done — `email-automations.ts:57`

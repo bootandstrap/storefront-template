@@ -4,13 +4,14 @@
  * PanelOnboarding — Wrapper for OnboardingWizard in the panel layout.
  *
  * Renders the full-screen OnboardingWizard overlay.
- * On completion, calls `/api/panel/onboarding-complete` to persist the flag,
- * then dismisses the overlay and refreshes the page.
+ * On completion, sends all wizard data to `/api/panel/onboarding-complete`
+ * to persist business info, contact details, and payment preferences.
+ * Then dismisses the overlay and refreshes the page.
  */
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import OnboardingWizard from './OnboardingWizard'
+import OnboardingWizard, { type OnboardingData } from './OnboardingWizard'
 import { useI18n } from '@/lib/i18n/provider'
 
 interface PanelOnboardingProps {
@@ -29,16 +30,17 @@ export default function PanelOnboarding({
     const router = useRouter()
     const { t } = useI18n()
 
-    const handleComplete = useCallback(async () => {
+    const handleComplete = useCallback(async (data: OnboardingData) => {
         setError(null)
         try {
             const res = await fetch('/api/panel/onboarding-complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
             })
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}))
-                throw new Error(typeof data.error === 'string' ? data.error : 'Failed to save onboarding state')
+                const resData = await res.json().catch(() => ({}))
+                throw new Error(typeof resData.error === 'string' ? resData.error : 'Failed to save onboarding state')
             }
             setDismissed(true)
             router.refresh()

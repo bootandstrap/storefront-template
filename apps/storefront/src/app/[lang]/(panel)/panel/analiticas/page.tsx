@@ -104,7 +104,11 @@ export default async function AnalyticsPage({
                     <p className="text-sm text-text-muted mt-1">{t('panel.analytics.productViews7d')}</p>
                 </div>
                 <div className="glass rounded-2xl p-5 text-center">
-                    <p className="text-3xl font-bold font-display text-text-primary">—</p>
+                    <p className="text-3xl font-bold font-display text-text-primary">
+                        {pageViews7d > 0
+                            ? `${((funnelCounts['order_placed'] ?? 0) / pageViews7d * 100).toFixed(1)}%`
+                            : '0.0%'}
+                    </p>
                     <p className="text-sm text-text-muted mt-1">{t('panel.analytics.conversionRate')}</p>
                 </div>
             </div>

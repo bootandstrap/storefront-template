@@ -5,6 +5,44 @@ import type ProductReviewModuleService from "../../../modules/product-reviews/se
 type ReviewStatus = "pending" | "approved" | "rejected"
 
 /**
+ * GET /admin/reviews
+ * 
+ * List ALL reviews across all products, with optional status filter.
+ * Admin-only — for moderation in Owner Panel.
+ */
+export async function GET(
+    req: MedusaRequest,
+    res: MedusaResponse
+) {
+    const status = (req.query.status as string) || undefined
+
+    const reviewService = req.scope.resolve(PRODUCT_REVIEW_MODULE) as ProductReviewModuleService
+
+    const filters: Record<string, unknown> = {}
+    if (status && ["pending", "approved", "rejected"].includes(status)) {
+        filters.status = status
+    }
+
+    const reviews = await reviewService.listProductReviews(
+        filters,
+        {
+            order: { created_at: "DESC" },
+            take: 200,
+        }
+    )
+
+    // Calculate stats
+    const stats = {
+        total: reviews.length,
+        pending: reviews.filter((r: any) => r.status === "pending").length,
+        approved: reviews.filter((r: any) => r.status === "approved").length,
+        rejected: reviews.filter((r: any) => r.status === "rejected").length,
+    }
+
+    res.json({ reviews, stats })
+}
+
+/**
  * PUT /admin/reviews
  * 
  * Update review status (approve/reject).

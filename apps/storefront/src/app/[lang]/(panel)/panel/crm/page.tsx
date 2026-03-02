@@ -4,11 +4,13 @@
  * Displays customer segments, quick stats, and CRM actions.
  * Gated by enable_crm feature flag (module: CRM).
  * Data from Medusa customers + Supabase analytics.
+ * Tenant-scoped: all Medusa queries are scoped to the authenticated tenant.
  */
 
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCustomers } from '@/lib/medusa/admin'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import FeatureGate from '@/components/ui/FeatureGate'
 import CRMClient from './CRMClient'
 
@@ -35,8 +37,12 @@ export default async function CRMPage({
         return <FeatureGate flag="enable_crm" lang={lang} />
     }
 
+    // Resolve tenant scope — all admin queries MUST be scoped
+    const tenantId = getRequiredTenantId()
+    const scope = await getTenantMedusaScope(tenantId)
+
     // Fetch total customers for quick stat
-    const { customers, count } = await getAdminCustomers({ limit: 10, offset: 0 })
+    const { customers, count } = await getAdminCustomers({ limit: 10, offset: 0 }, scope)
 
     // Build segments from customer data
     const segments = {
@@ -57,6 +63,14 @@ export default async function CRMPage({
                 maxContacts={planLimits.max_crm_contacts}
                 enableSegmentation={featureFlags.enable_crm_segmentation}
                 enableExport={featureFlags.enable_crm_export}
+                customers={customers.map(c => ({
+                    id: c.id,
+                    email: c.email,
+                    firstName: c.first_name ?? '',
+                    lastName: c.last_name ?? '',
+                    orderCount: c.orders?.length ?? 0,
+                    createdAt: c.created_at,
+                }))}
                 lang={lang}
                 labels={{
                     title: t('panel.crm.title'),

@@ -55,7 +55,7 @@ export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
+    const currency = items[0]?.variant?.prices?.[0]?.currency_code || config.default_currency || 'usd'
 
     const formattedSubtotal = new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
         style: 'currency',

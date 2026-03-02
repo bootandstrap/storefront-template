@@ -1,7 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getRequiredTenantId } from '@/lib/config'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { getClientIP } from '@/lib/security/rate-limiter'
+
+// ── Rate limiter: 5 billing portal requests per minute per IP ──
+const billingRateLimiter = createSmartRateLimiter({
+    limit: 5,
+    windowMs: 60_000,
+    name: 'billing-portal',
+})
 
 /**
  * POST /api/billing/portal
@@ -11,8 +21,17 @@ import { getRequiredTenantId } from '@/lib/config'
  *
  * Body: { returnUrl: string }
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
+        // Rate limit
+        const clientIp = getClientIP(req)
+        if (await billingRateLimiter.isLimited(clientIp)) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please wait a moment.' },
+                { status: 429 }
+            )
+        }
+
         const secretKey = process.env.STRIPE_SECRET_KEY
         if (!secretKey) {
             return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })
@@ -40,12 +59,16 @@ export async function POST(req: Request) {
         const body = await req.json()
         const { returnUrl } = body as { returnUrl: string }
 
-        // Get tenant's Stripe customer ID
-        const { data: tenant } = await supabase
+        // Get tenant's Stripe customer ID using admin client
+        // (RLS on 'tenants' table restricts SELECT to super_admin only;
+        //  owner role is already validated above via profiles, so we use
+        //  service role to bypass RLS for this specific, scoped read)
+        const adminSupabase = createAdminClient()
+        const { data: tenant } = await adminSupabase
             .from('tenants')
             .select('stripe_customer_id')
             .eq('id', tenantId)
-            .single()
+            .single() as { data: { stripe_customer_id: string | null } | null }
 
         if (!tenant?.stripe_customer_id) {
             return NextResponse.json(

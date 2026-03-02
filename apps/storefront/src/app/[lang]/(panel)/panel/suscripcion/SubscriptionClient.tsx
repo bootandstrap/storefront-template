@@ -22,58 +22,31 @@ interface SubscriptionClientProps {
     lang: string
 }
 
-// Module catalog — maps feature flags to module info for display.
-// Matches MODULOS.md catalog. Only shows modules that are purchasable add-ons.
-const MODULE_CATALOG = [
-    {
-        flag: 'enable_carousel',
-        key: 'cms',
-        icon: '📄',
-        label: { es: 'CMS y Contenido', en: 'CMS & Content', de: 'CMS & Inhalte', fr: 'CMS & Contenu', it: 'CMS & Contenuto' },
-    },
-    {
-        flag: 'enable_multi_language',
-        key: 'i18n',
-        icon: '🌐',
-        label: { es: 'Multi-idioma', en: 'Multi-language', de: 'Mehrsprachig', fr: 'Multilingue', it: 'Multilingua' },
-    },
-    {
-        flag: 'enable_reviews',
-        key: 'reviews',
-        icon: '⭐',
-        label: { es: 'Reseñas de Producto', en: 'Product Reviews', de: 'Produktbewertungen', fr: 'Avis Produit', it: 'Recensioni' },
-    },
-    {
-        flag: 'enable_self_service_returns',
-        key: 'returns',
-        icon: '🔄',
-        label: { es: 'Devoluciones', en: 'Returns', de: 'Retouren', fr: 'Retours', it: 'Resi' },
-    },
-    {
-        flag: 'enable_chatbot',
-        key: 'chatbot',
-        icon: '🤖',
-        label: { es: 'Chatbot IA', en: 'AI Chatbot', de: 'KI-Chatbot', fr: 'Chatbot IA', it: 'Chatbot IA' },
-    },
-    {
-        flag: 'enable_analytics',
-        key: 'analytics',
-        icon: '📊',
-        label: { es: 'Analíticas', en: 'Analytics', de: 'Analytik', fr: 'Analytique', it: 'Analitica' },
-    },
-    {
-        flag: 'enable_crm',
-        key: 'crm',
-        icon: '👥',
-        label: { es: 'CRM', en: 'CRM', de: 'CRM', fr: 'CRM', it: 'CRM' },
-    },
-    {
-        flag: 'enable_automation',
-        key: 'automation',
-        icon: '⚡',
-        label: { es: 'Automatización', en: 'Automation', de: 'Automatisierung', fr: 'Automatisation', it: 'Automazione' },
-    },
-] as const
+// ---------------------------------------------------------------------------
+// Canonical Module Catalog — sourced from governance-contract.json
+// Keys match BSWEB module-catalog.ts exactly. No legacy aliases.
+// ---------------------------------------------------------------------------
+import contract, { type ModuleCatalogEntry } from '@/lib/governance-contract'
+
+// Primary flag that indicates each module is active (maps module key → feature flag)
+const MODULE_PRIMARY_FLAG: Record<string, string> = {
+    ecommerce: 'enable_customer_accounts',
+    sales_channels: 'enable_whatsapp_checkout',
+    chatbot: 'enable_chatbot',
+    crm: 'enable_crm',
+    seo: 'enable_analytics',
+    rrss: 'enable_social_links',
+    i18n: 'enable_multi_language',
+    automation: 'enable_admin_api',
+    auth_advanced: 'enable_google_auth',
+    email_marketing: 'enable_email_notifications',
+}
+
+const MODULE_CATALOG: (ModuleCatalogEntry & { primaryFlag: string })[] =
+    contract.modules.catalog.map((m: ModuleCatalogEntry) => ({
+        ...m,
+        primaryFlag: MODULE_PRIMARY_FLAG[m.key] || '',
+    }))
 
 export default function SubscriptionClient({
     moduleFlags,
@@ -91,11 +64,11 @@ export default function SubscriptionClient({
     const [purchasingModule, setPurchasingModule] = useState<string | null>(null)
 
     // Separate active from available modules
-    const activeModules = MODULE_CATALOG.filter(m => moduleFlags[m.flag] === true)
-    const availableModules = MODULE_CATALOG.filter(m => moduleFlags[m.flag] !== true)
+    const activeModules = MODULE_CATALOG.filter(m => moduleFlags[m.primaryFlag] === true)
+    const availableModules = MODULE_CATALOG.filter(m => moduleFlags[m.primaryFlag] !== true)
 
     function getModuleLabel(mod: typeof MODULE_CATALOG[number]) {
-        return mod.label[lang as keyof typeof mod.label] || mod.label.en
+        return mod.name
     }
 
     async function handleModulePurchase(moduleKey: string) {

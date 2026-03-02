@@ -1,7 +1,7 @@
 # Production Contracts by Module
 
 > **Purpose**: Defines the minimum guarantees each module must satisfy before being considered production-ready.
-> **Updated**: 2026-02-20 (Post Production Readiness Remediation)
+> **Updated**: 2026-03-02 (Mega Plan Phase 2 — cross-verified against source code)
 
 ---
 
@@ -204,7 +204,7 @@ Every module must satisfy these dimensions:
 |-----------|--------|-------|
 | Feature Flag | `enable_product_badges` (indirect) | |
 | Plan Limit | `max_badges` | ⚠️ Not enforced |
-| Server Enforcement | 🟡 | Redirect to catalogo; no standalone flag check |
+| Server Enforcement | ✅ | `requireFlag('enable_promotions')` in `/api/cart/promotions` |
 | Limit Enforcement | ⚠️ | `max_badges` in type but no `checkLimit()` call |
 | Auth Guard | ✅ | Panel layout |
 | Panel Guard | ✅ | `ADVANCED_ROUTES` set |
@@ -237,9 +237,9 @@ Every module must satisfy these dimensions:
 |--------|------|-------------------|-------|
 | Customer Accounts | `enable_customer_accounts` | ✅ | `cuenta/layout.tsx` redirects |
 | Order Tracking | `enable_order_tracking` | ✅ | `pedidos/page.tsx` checks |
-| Wishlist | `enable_wishlist` | 🟡 | UI-only gating |
-| Reviews | `enable_reviews` | 🟡 | UI-only gating |
-| Newsletter | `enable_newsletter` | 🟡 | UI-only gating |
+| Wishlist | `enable_wishlist` | ✅ | Server-side in `/api/wishlist` via `assertWishlistEnabled()` |
+| Reviews | `enable_reviews` | 🟡 | UI-only — no write API exists yet |
+| Newsletter | `enable_newsletter` | ✅ | Server-side in `/api/newsletter` via `isFeatureEnabled()` |
 
 ---
 

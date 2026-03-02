@@ -237,7 +237,7 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(loginUrl)
         }
 
-        // Check role — must be a valid panel role (owner, admin, super_admin)
+        // Check role — must be a valid panel role
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')

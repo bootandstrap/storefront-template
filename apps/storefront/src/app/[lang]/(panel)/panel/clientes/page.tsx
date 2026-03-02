@@ -3,10 +3,13 @@
  *
  * Server component fetches customers from Medusa Admin API,
  * delegates to CustomersClient for interactive UI.
+ * Tenant-scoped: all Medusa queries are scoped to the authenticated tenant.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCustomers } from '@/lib/medusa/admin'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import CustomersClient from './CustomersClient'
 
@@ -32,11 +35,15 @@ export default async function CustomersPage({
     const t = createTranslator(dictionary)
     const query = parsePanelListQuery(rawSearchParams, { defaultLimit: 20 })
 
+    // Resolve tenant scope — all admin queries MUST be scoped
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+
     const { customers, count } = await getAdminCustomers({
         limit: query.limit,
         offset: query.offset,
         q: query.q,
-    })
+    }, scope)
 
     return (
         <div className="space-y-6">

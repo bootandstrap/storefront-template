@@ -8,7 +8,6 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { getRequiredTenantId } from '@/lib/config'
 import { PANEL_ALLOWED_ROLES, type PanelRole } from '@/lib/panel-access-policy'
 
 // Re-use the centralized PANEL_ALLOWED_ROLES from panel-access-policy.ts
@@ -41,23 +40,11 @@ export async function requirePanelAuth(): Promise<PanelAuthResult> {
 
     const role = profile.role as PanelRole
 
-    // -----------------------------------------------------------------------
-    // Tenant resolution rules:
-    // - super_admin: use ENV tenant if set (for SaaS-level operations)
-    // - owner: MUST have tenant_id in their profile — hard fail otherwise
-    // -----------------------------------------------------------------------
-    let tenantId: string
-
-    if (role === 'super_admin') {
-        // super_admin can operate on any tenant — use ENV as default scope
-        tenantId = profile.tenant_id || getRequiredTenantId()
-    } else {
-        // Tenant-bound roles: tenant_id MUST come from profile
-        if (!profile.tenant_id) {
-            throw new Error(`Role "${role}" requires a tenant_id in profile. User ${user.id} has none.`)
-        }
-        tenantId = profile.tenant_id
+    // Tenant-bound roles: tenant_id MUST come from profile
+    if (!profile.tenant_id) {
+        throw new Error(`Role "${role}" requires a tenant_id in profile. User ${user.id} has none.`)
     }
 
+    const tenantId = profile.tenant_id
     return { supabase, user, role, tenantId }
 }

@@ -26,6 +26,7 @@ import {
     Bot,
     RotateCcw,
     Truck,
+    Star,
     X,
 } from 'lucide-react'
 import {
@@ -66,6 +67,7 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
         badges: <BadgeCheck className="w-5 h-5" />,
         chatbot: <Bot className="w-5 h-5" />,
         returns: <RotateCcw className="w-5 h-5" />,
+        reviews: <Star className="w-5 h-5" />,
     }
 
     const isActive = (href: string, exact?: boolean) => {

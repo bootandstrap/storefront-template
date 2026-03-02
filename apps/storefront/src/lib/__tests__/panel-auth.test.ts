@@ -18,10 +18,6 @@ vi.mock('@/lib/supabase/server', () => ({
     })),
 }))
 
-vi.mock('@/lib/config', () => ({
-    getRequiredTenantId: vi.fn(() => 'env-tenant-123'),
-}))
-
 // Chain: .select() → .eq() → .single()
 mockSelect.mockReturnValue({ eq: mockEq })
 mockEq.mockReturnValue({ single: mockSingle })
@@ -69,19 +65,9 @@ describe('requirePanelAuth', () => {
         await expect(requirePanelAuth()).rejects.toThrow('requires a tenant_id')
     })
 
-    it('super_admin uses profile tenant_id when available', async () => {
+    it('throws when role is super_admin', async () => {
         mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
         mockSingle.mockResolvedValue({ data: { role: 'super_admin', tenant_id: 'sa-tenant' } })
-        const result = await requirePanelAuth()
-        expect(result.role).toBe('super_admin')
-        expect(result.tenantId).toBe('sa-tenant')
-    })
-
-    it('super_admin falls back to ENV tenant when profile has none', async () => {
-        mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-        mockSingle.mockResolvedValue({ data: { role: 'super_admin', tenant_id: null } })
-        const result = await requirePanelAuth()
-        expect(result.role).toBe('super_admin')
-        expect(result.tenantId).toBe('env-tenant-123')
+        await expect(requirePanelAuth()).rejects.toThrow('Insufficient permissions')
     })
 })

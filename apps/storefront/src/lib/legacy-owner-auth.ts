@@ -56,7 +56,8 @@ export async function reconcileLegacyOwnerRole(
 
     const admin = createAdminClient()
 
-    const { data: ownerTenant, error: ownerTenantError } = await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tenants table not in generated types
+    const { data: ownerTenant, error: ownerTenantError } = await (admin as any)
         .from('tenants')
         .select('id, owner_email, created_at')
         .eq('owner_email', email)
@@ -80,7 +81,8 @@ export async function reconcileLegacyOwnerRole(
         return input.currentRole ?? null
     }
 
-    const { error: profileError } = await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- profiles table not in generated types
+    const { error: profileError } = await (admin as any)
         .from('profiles')
         .update({
             role: 'owner',

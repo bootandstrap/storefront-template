@@ -24,11 +24,18 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+export interface OnboardingData {
+    businessName: string
+    whatsapp: string
+    email: string
+    paymentMethods: string[]
+}
+
 interface OnboardingWizardProps {
     storeName: string
     storeUrl: string
     locale: string
-    onComplete: () => Promise<void>
+    onComplete: (data: OnboardingData) => Promise<void>
     t: (key: string) => string
 }
 
@@ -72,11 +79,11 @@ export default function OnboardingWizard({
     const handleComplete = useCallback(async () => {
         setCompleting(true)
         try {
-            await onComplete()
+            await onComplete({ businessName, whatsapp, email, paymentMethods })
         } finally {
             setCompleting(false)
         }
-    }, [onComplete])
+    }, [onComplete, businessName, whatsapp, email, paymentMethods])
 
     const togglePayment = (method: string) => {
         setPaymentMethods((prev) =>

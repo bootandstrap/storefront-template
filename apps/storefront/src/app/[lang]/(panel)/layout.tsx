@@ -1,9 +1,9 @@
 /**
  * (panel) group layout — Owner Panel chrome
  *
- * Auth guard: owner or super_admin only.
+ * Auth guard: owner only.
+ * Feature flag gate: enable_owner_panel must be true.
  * Includes: PanelSidebar + content area.
- * Panel access is ALWAYS available by role — never gated by feature flags.
  * OnboardingWizard shows on first access when config.onboarding_completed is false.
  */
 
@@ -27,7 +27,7 @@ export default async function PanelLayout({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Auth guard: check for owner or super_admin role
+    // Auth guard: check owner role
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -47,6 +47,11 @@ export default async function PanelLayout({
         redirect(`/${lang}/cuenta`)
     }
 
+    // Feature flag gate: enable_owner_panel controls all panel access
+    if (!featureFlags.enable_owner_panel) {
+        redirect(`/${lang}`)
+    }
+
     // Determine store URL for onboarding wizard
     const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `/${lang}`
 
@@ -63,6 +68,7 @@ export default async function PanelLayout({
                     enable_chatbot: featureFlags.enable_chatbot,
                     enable_self_service_returns: featureFlags.enable_self_service_returns,
                     enable_crm: featureFlags.enable_crm,
+                    enable_reviews: featureFlags.enable_reviews,
                     owner_lite_enabled: featureFlags.owner_lite_enabled,
                     owner_advanced_modules_enabled: featureFlags.owner_advanced_modules_enabled,
                 }}
@@ -82,6 +88,7 @@ export default async function PanelLayout({
                     chatbot: t('panel.nav.chatbot'),
                     returns: t('panel.nav.returns'),
                     crm: t('panel.nav.crm'),
+                    reviews: t('panel.nav.reviews'),
                     ownerPanel: t('panel.nav.ownerPanel'),
                     backToStore: t('panel.nav.backToStore'),
                 }}
@@ -102,4 +109,3 @@ export default async function PanelLayout({
         </div>
     )
 }
-

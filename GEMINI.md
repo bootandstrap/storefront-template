@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-01.
+> Last updated: 2026-03-02.
 
 ## 1. What This Repository Is
 
@@ -55,7 +55,8 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 | `apps/storefront/src/lib/medusa/` | Typed API fetchers — shared contract with Medusa backend |
 | `apps/storefront/src/lib/supabase/` | Auth clients (browser, server, admin) — shared contract |
 | `apps/storefront/src/lib/security/` | Rate limiting, abuse prevention — platform security |
-| `apps/storefront/src/lib/config.ts` | Config fetcher with TTL cache — SaaS governance core |
+| `apps/storefront/src/lib/config.ts` | Config fetcher with TTL cache + RPC dual-mode — SaaS governance core |
+| `apps/storefront/src/lib/log-tenant-error.ts` | Error logging to tenant_errors — uses governance RPC |
 | `apps/storefront/src/lib/features.ts` | Feature flag checker — reads from Supabase |
 | `apps/storefront/src/lib/limits.ts` | Plan limits checker — reads from Supabase |
 | `apps/storefront/src/lib/feature-gate-config.ts` | Flag → module → BSWEB slug mapping |
@@ -164,7 +165,7 @@ For Supabase Storage images, use the existing `supabase-image-loader.ts`.
 ## 4. Invariants — Rules That Must Never Break
 
 1. **Feature flag checks stay**: Never remove `isFeatureEnabled()` guards. If a feature is flag-gated, it stays flag-gated.
-2. **Config fetch untouched**: `getConfig()` in `lib/config.ts` is the single source of truth for tenant config. Don't bypass it.
+2. **Config fetch untouched**: `getConfig()` in `lib/config.ts` is the single source of truth for tenant config. Uses governance RPCs (anon key) when available, service_role fallback. Don't bypass it.
 3. **Auth flow intact**: Login, registration, and panel access are governed by SaaS. Don't modify auth routes.
 4. **API routes untouched**: Webhook handlers, health checks, and revalidation endpoints are platform infrastructure.
 5. **SEO structure preserved**: `sitemap.ts`, `robots.ts`, JSON-LD builders, and `<head>` metadata must remain functional.

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { Mail, Send, Clock, BarChart3, ShoppingCart, Star, Palette, Lock } from 'lucide-react'
-import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type AutomationConfig } from '@/lib/email-automations'
+import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type AutomationConfig } from '@/lib/email-automations-shared'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,10 +105,10 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                         key={tab.key}
                         onClick={() => !tab.gated && setActiveTab(tab.key)}
                         className={`px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === tab.key
-                                ? 'bg-primary text-white'
-                                : tab.gated
-                                    ? 'text-text-muted cursor-not-allowed opacity-50'
-                                    : 'text-text-secondary hover:bg-surface-1'
+                            ? 'bg-primary text-white'
+                            : tab.gated
+                                ? 'text-text-muted cursor-not-allowed opacity-50'
+                                : 'text-text-secondary hover:bg-surface-1'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />
@@ -186,8 +186,8 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                         abandoned_cart_enabled: !prev.abandoned_cart_enabled,
                                     }))}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${automationConfig.abandoned_cart_enabled
-                                            ? 'bg-green-50 border-green-300 text-green-700'
-                                            : 'border-surface-3 text-text-secondary'
+                                        ? 'bg-green-50 border-green-300 text-green-700'
+                                        : 'border-surface-3 text-text-secondary'
                                         }`}
                                 >
                                     {automationConfig.abandoned_cart_enabled ? labels.enabled : labels.disabled}
@@ -210,8 +210,8 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                                 abandoned_cart_delay_hours: opt.value,
                                             }))}
                                             className={`px-3 py-2 rounded-xl text-sm border transition-all ${automationConfig.abandoned_cart_delay_hours === opt.value
-                                                    ? 'bg-primary text-white border-primary'
-                                                    : 'border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                ? 'bg-primary text-white border-primary'
+                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
                                                 }`}
                                         >
                                             {opt.label}
@@ -239,8 +239,8 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                         review_request_enabled: !prev.review_request_enabled,
                                     }))}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${automationConfig.review_request_enabled
-                                            ? 'bg-green-50 border-green-300 text-green-700'
-                                            : 'border-surface-3 text-text-secondary'
+                                        ? 'bg-green-50 border-green-300 text-green-700'
+                                        : 'border-surface-3 text-text-secondary'
                                         }`}
                                 >
                                     {automationConfig.review_request_enabled ? labels.enabled : labels.disabled}
@@ -263,8 +263,8 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                                 review_request_delay_days: opt.value,
                                             }))}
                                             className={`px-3 py-2 rounded-xl text-sm border transition-all ${automationConfig.review_request_delay_days === opt.value
-                                                    ? 'bg-primary text-white border-primary'
-                                                    : 'border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                ? 'bg-primary text-white border-primary'
+                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
                                                 }`}
                                         >
                                             {opt.label}

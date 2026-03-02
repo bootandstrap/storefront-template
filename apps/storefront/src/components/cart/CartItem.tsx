@@ -22,7 +22,7 @@ export default function CartItem({ item }: CartItemProps) {
 
     const unitPrice = item.unit_price / 100
     const total = (item.unit_price * item.quantity) / 100
-    const currency = item.variant?.prices?.[0]?.currency_code || 'COP'
+    const currency = item.variant?.prices?.[0]?.currency_code || 'usd'
 
     function formatPrice(amount: number) {
         return new Intl.NumberFormat(locale, {

@@ -3,9 +3,26 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { isFeatureEnabled } from '@/lib/features'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+
+// Phase 4.2: Rate limit — 5 req / 60s per IP (same pattern as billing/returns/chat)
+const newsletterRateLimiter = createSmartRateLimiter({
+    limit: 5,
+    windowMs: 60_000,
+    name: 'newsletter',
+})
 
 // ── POST /api/newsletter — subscribe email ───────────────────────
 export async function POST(req: NextRequest) {
+    // Rate limit check (per IP)
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (await newsletterRateLimiter.isLimited(ip)) {
+        return NextResponse.json(
+            { error: 'Too many requests' },
+            { status: 429 }
+        )
+    }
+
     // Server-side feature flag enforcement
     const { featureFlags, planLimits } = await getConfig()
     if (!isFeatureEnabled(featureFlags, 'enable_newsletter')) {

@@ -19,6 +19,7 @@ const mockAdminClient = { from: mockFrom }
 
 vi.mock('@/lib/supabase/governance', () => ({
     createGovernanceClient: vi.fn(() => mockAdminClient),
+    getGovernanceMode: vi.fn(() => 'legacy'),
 }))
 
 // Mock 'server-only' (no-op in test environment)
@@ -128,6 +129,6 @@ describe('getConfig — authorization', () => {
         const result = await getConfig()
 
         // Should fall back gracefully (infra failure = use fallback)
-        expect(result.config.business_name).toBe('My Store')
+        expect(result.config.business_name).toBe('Store')
     })
 })

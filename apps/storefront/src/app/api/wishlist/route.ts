@@ -69,6 +69,22 @@ export async function POST(req: NextRequest) {
         )
     }
 
+    // Enforce max_wishlist_items plan limit
+    const { planLimits } = await getConfig()
+    if (planLimits.max_wishlist_items > 0) {
+        const { count: currentCount } = await supabase
+            .from('product_wishlists')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+
+        if ((currentCount ?? 0) >= planLimits.max_wishlist_items) {
+            return NextResponse.json(
+                { error: 'Wishlist limit reached' },
+                { status: 403 }
+            )
+        }
+    }
+
     const { error } = await supabase
         .from('product_wishlists')
         .upsert(

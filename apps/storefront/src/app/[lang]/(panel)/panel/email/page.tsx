@@ -13,7 +13,8 @@ import { getConfigForTenant } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { redirect } from 'next/navigation'
 import EmailClient from './EmailClient'
-import { DEFAULT_AUTOMATION_CONFIG, type AutomationConfig } from '@/lib/email-automations'
+import { DEFAULT_AUTOMATION_CONFIG, type AutomationConfig } from '@/lib/email-automations-shared'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,80 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
     return { title: t('panel.email.title') }
+}
+
+/**
+ * Loads automation config from email_automation_config table.
+ * Falls back to defaults if row doesn't exist (shouldn't happen — auto-created by trigger).
+ */
+async function loadAutomationConfig(tenantId: string): Promise<AutomationConfig> {
+    const supabase = createAdminClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
+    const { data, error } = await (supabase as any)
+        .from('email_automation_config')
+        .select('abandoned_cart_enabled, abandoned_cart_delay_hours, review_request_enabled, review_request_delay_days')
+        .eq('tenant_id', tenantId)
+        .maybeSingle()
+
+    if (error || !data) {
+        console.warn(`[email] Could not load automation config for tenant ${tenantId}: ${error?.message ?? 'no row'}`)
+        return DEFAULT_AUTOMATION_CONFIG
+    }
+
+    return {
+        abandoned_cart_enabled: data.abandoned_cart_enabled ?? false,
+        abandoned_cart_delay_hours: data.abandoned_cart_delay_hours ?? 3,
+        review_request_enabled: data.review_request_enabled ?? false,
+        review_request_delay_days: data.review_request_delay_days ?? 7,
+    }
+}
+
+/**
+ * Loads email stats from email_log table for the current month.
+ * Returns sent count, open rate, and bounce rate.
+ */
+async function loadEmailStats(tenantId: string): Promise<{
+    sent_this_month: number
+    open_rate: number
+    bounce_rate: number
+}> {
+    const supabase = createAdminClient()
+
+    // Count emails sent this month
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
+    const { count: sentCount } = await (supabase as any)
+        .from('email_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('sent_at', startOfMonth.toISOString())
+
+    // Count opens and bounces for rate calculation
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: openCount } = await (supabase as any)
+        .from('email_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('sent_at', startOfMonth.toISOString())
+        .eq('status', 'opened')
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: bounceCount } = await (supabase as any)
+        .from('email_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('sent_at', startOfMonth.toISOString())
+        .eq('status', 'bounced')
+
+    const sent = sentCount ?? 0
+    return {
+        sent_this_month: sent,
+        open_rate: sent > 0 ? Math.round(((openCount ?? 0) / sent) * 100) : 0,
+        bounce_rate: sent > 0 ? Math.round(((bounceCount ?? 0) / sent) * 100) : 0,
+    }
 }
 
 export default async function EmailMarketingPage({
@@ -44,18 +119,19 @@ export default async function EmailMarketingPage({
     const campaignsFlag = isFeatureEnabled(featureFlags, 'enable_email_campaigns')
     const templatesFlag = isFeatureEnabled(featureFlags, 'enable_email_templates')
 
-    // TODO: Load from email_automation_config table when migration is applied
-    const automationConfig: AutomationConfig = DEFAULT_AUTOMATION_CONFIG
+    // Load real data from DB (concurrent)
+    const [automationConfig, emailStats] = await Promise.all([
+        loadAutomationConfig(tenantId),
+        loadEmailStats(tenantId),
+    ])
 
-    // TODO: Load from email_log table aggregation when migration is applied
     const monthlyLimit = 'max_email_sends_month' in planLimits
         ? (planLimits as unknown as Record<string, number>).max_email_sends_month
         : 500
+
     const stats = {
-        sent_this_month: 0,
+        ...emailStats,
         monthly_limit: monthlyLimit,
-        open_rate: 0,
-        bounce_rate: 0,
     }
 
     const dictionary = await getDictionary(lang as Locale)
@@ -86,8 +162,25 @@ export default async function EmailMarketingPage({
     // Server action for saving config
     async function saveAutomationConfig(config: AutomationConfig) {
         'use server'
-        // TODO: Save to email_automation_config table when migration is applied
-        console.log('[email] Save config for tenant', tenantId, config)
+        const supabase = createAdminClient()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
+        const { error } = await (supabase as any)
+            .from('email_automation_config')
+            .upsert({
+                tenant_id: tenantId,
+                abandoned_cart_enabled: config.abandoned_cart_enabled,
+                abandoned_cart_delay_hours: config.abandoned_cart_delay_hours,
+                review_request_enabled: config.review_request_enabled,
+                review_request_delay_days: config.review_request_delay_days,
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'tenant_id' })
+
+        if (error) {
+            console.error(`[email] Failed to save automation config for tenant ${tenantId}:`, error.message)
+            return { success: false, error: error.message }
+        }
+
         return { success: true }
     }
 

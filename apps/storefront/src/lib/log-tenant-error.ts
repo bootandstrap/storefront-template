@@ -33,20 +33,38 @@ export async function logTenantError({
 
         // Dynamic import to avoid circular dependencies and module evaluation issues
         // Uses governance client — tenant_errors lives in the central hub
-        const { createGovernanceClient } = await import('@/lib/supabase/governance')
+        const { createGovernanceClient, getGovernanceMode } = await import('@/lib/supabase/governance')
         const supabase = createGovernanceClient()
+        const mode = getGovernanceMode()
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('tenant_errors') as any).insert({
-            tenant_id: tenantId,
-            source,
-            severity,
-            message,
-            details,
-        })
+        if (mode === 'rpc') {
+            // Phase 4.1: RPC via anon key (no service_role needed)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase.rpc as any)('log_tenant_error', {
+                p_tenant_id: tenantId,
+                p_source: source,
+                p_severity: severity,
+                p_message: message,
+                p_details: details,
+            })
 
-        if (error) {
-            console.error('[logTenantError] Failed to insert:', error.message)
+            if (error) {
+                console.error('[logTenantError] RPC failed:', error.message)
+            }
+        } else {
+            // Legacy: direct insert via service_role
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase.from('tenant_errors') as any).insert({
+                tenant_id: tenantId,
+                source,
+                severity,
+                message,
+                details,
+            })
+
+            if (error) {
+                console.error('[logTenantError] Failed to insert:', error.message)
+            }
         }
     } catch (err) {
         // Non-blocking: log to console if insert fails

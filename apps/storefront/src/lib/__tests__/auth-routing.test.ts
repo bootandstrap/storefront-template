@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { resolvePostLoginDestination } from '../auth-routing'
 
 describe('resolvePostLoginDestination', () => {
-    it('sends owner roles to panel by default', () => {
+    it('sends owner role to panel by default', () => {
         expect(resolvePostLoginDestination({ lang: 'es', role: 'owner' })).toBe('/es/panel')
-        expect(resolvePostLoginDestination({ lang: 'es', role: 'super_admin' })).toBe('/es/panel')
     })
 
     it('sends non-owner roles to account by default', () => {
         expect(resolvePostLoginDestination({ lang: 'es', role: 'customer' })).toBe('/es/cuenta')
         expect(resolvePostLoginDestination({ lang: 'es', role: 'admin' })).toBe('/es/cuenta')
+        expect(resolvePostLoginDestination({ lang: 'es', role: 'super_admin' })).toBe('/es/cuenta')
         expect(resolvePostLoginDestination({ lang: 'es', role: null })).toBe('/es/cuenta')
     })
 

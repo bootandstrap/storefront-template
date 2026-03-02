@@ -2,10 +2,13 @@
  * Orders Page — Owner Panel
  *
  * Server component fetches orders + plan limits, delegates to OrdersClient.
+ * Tenant-scoped: all Medusa queries are scoped to the authenticated tenant.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminOrders } from '@/lib/medusa/admin'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import OrdersClient from './OrdersClient'
 
@@ -30,6 +33,10 @@ export default async function OrdersPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
+    // Resolve tenant scope — all admin queries MUST be scoped
+    const { tenantId } = await requirePanelAuth()
+    const scope = await getTenantMedusaScope(tenantId)
+
     const query = parsePanelListQuery(rawSearchParams, {
         defaultLimit: 20,
         allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
@@ -40,7 +47,7 @@ export default async function OrdersPage({
         offset: query.offset,
         q: query.q,
         status: query.status,
-    })
+    }, scope)
 
     return (
         <div className="space-y-6">

@@ -1,9 +1,20 @@
+/**
+ * Devoluciones (Returns) — Owner Panel Page (Server Component)
+ *
+ * Feature-gated: requires enable_self_service_returns flag.
+ * Loads returns from Medusa Admin API and provides approve/reject actions.
+ *
+ * Zone: 🟡 EXTEND — panel page, uses locked auth/config + Medusa admin APIs
+ */
+
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
 import FeatureGate from '@/components/ui/FeatureGate'
-import { getAdminReturns, type AdminReturn } from '@/lib/medusa/admin'
+import { getAdminReturns, receiveAdminReturn, cancelAdminReturn, type AdminReturn } from '@/lib/medusa/admin'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
+import ReturnActions from '@/components/returns/ReturnActions'
 import { RotateCcw, PackageX } from 'lucide-react'
+import { revalidatePath } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,6 +56,46 @@ export default async function PanelReturnsPage({
         completed: t('returns.status.completed'),
     }
 
+    // Server action: approve (receive) a return
+    async function approveReturn(returnId: string, items: { id: string; quantity: number }[]) {
+        'use server'
+        try {
+            const result = await receiveAdminReturn(returnId, items)
+            if (result.error) {
+                return { success: false, error: result.error }
+            }
+            revalidatePath(`/${lang}/panel/devoluciones`)
+            return { success: true }
+        } catch (err) {
+            return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+    }
+
+    // Server action: reject (cancel) a return
+    async function rejectReturn(returnId: string) {
+        'use server'
+        try {
+            const result = await cancelAdminReturn(returnId)
+            if (result.error) {
+                return { success: false, error: result.error }
+            }
+            revalidatePath(`/${lang}/panel/devoluciones`)
+            return { success: true }
+        } catch (err) {
+            return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+    }
+
+    const actionLabels = {
+        approve: t('returns.action.approve') || 'Approve',
+        reject: t('returns.action.reject') || 'Reject',
+        approving: t('returns.action.approving') || 'Approving…',
+        rejecting: t('returns.action.rejecting') || 'Rejecting…',
+        approved: t('returns.action.approved') || 'Approved',
+        rejected: t('returns.action.rejected') || 'Rejected',
+        error: t('returns.action.error') || 'Action failed',
+    }
+
     return (
         <div className="space-y-6">
             <div>
@@ -78,6 +129,9 @@ export default async function PanelReturnsPage({
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                                         {t('panel.returns.status')}
                                     </th>
+                                    <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                                        {t('panel.returns.actions') || 'Actions'}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-3">
@@ -100,6 +154,20 @@ export default async function PanelReturnsPage({
                                                 status={formatReturnStatus(ret.status)}
                                                 labels={statusLabels}
                                             />
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            {ret.status === 'requested' && (
+                                                <ReturnActions
+                                                    returnId={ret.id}
+                                                    items={(ret.items || []).map(i => ({
+                                                        id: i.id,
+                                                        quantity: i.quantity,
+                                                    }))}
+                                                    approveAction={approveReturn}
+                                                    rejectAction={rejectReturn}
+                                                    labels={actionLabels}
+                                                />
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
