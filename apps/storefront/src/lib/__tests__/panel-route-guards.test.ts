@@ -3,7 +3,7 @@ import {
     getPanelFallbackRoute,
     shouldAllowPanelRoute,
     type PanelRouteKey,
-} from '../panel-route-guards'
+} from '../panel-policy'
 
 // Default: no owner_lite flags → advanced modules visible
 const defaultFlags = {

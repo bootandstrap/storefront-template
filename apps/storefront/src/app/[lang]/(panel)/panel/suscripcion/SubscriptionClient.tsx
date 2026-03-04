@@ -13,8 +13,11 @@ import { useI18n } from '@/lib/i18n/provider'
  * Module purchases use embedded Stripe Checkout with in-panel redirect.
  */
 
+import type { ActiveModuleInfo } from '@/lib/active-modules'
+
 interface SubscriptionClientProps {
     moduleFlags: Record<string, boolean>
+    activeModuleOrders: ActiveModuleInfo[]
     planLimits: Record<string, number | string>
     tenantStatus: string
     maintenanceDaysRemaining?: number
@@ -50,6 +53,7 @@ const MODULE_CATALOG: (ModuleCatalogEntry & { primaryFlag: string })[] =
 
 export default function SubscriptionClient({
     moduleFlags,
+    activeModuleOrders,
     planLimits: _planLimits,
     tenantStatus,
     maintenanceDaysRemaining,
@@ -62,10 +66,12 @@ export default function SubscriptionClient({
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [purchasingModule, setPurchasingModule] = useState<string | null>(null)
+    const [selectedTiers, setSelectedTiers] = useState<Record<string, string>>({})
 
-    // Separate active from available modules
-    const activeModules = MODULE_CATALOG.filter(m => moduleFlags[m.primaryFlag] === true)
-    const availableModules = MODULE_CATALOG.filter(m => moduleFlags[m.primaryFlag] !== true)
+    // Separate active from available modules using the Commercial Source of Truth (orders)
+    const activeModuleKeys = new Set(activeModuleOrders.map(m => m.moduleKey))
+    const activeModules = MODULE_CATALOG.filter(m => activeModuleKeys.has(m.key))
+    const availableModules = MODULE_CATALOG.filter(m => !activeModuleKeys.has(m.key))
 
     function getModuleLabel(mod: typeof MODULE_CATALOG[number]) {
         return mod.name
@@ -75,17 +81,18 @@ export default function SubscriptionClient({
         setPurchasingModule(moduleKey)
         setError(null)
         try {
+            const tierId = selectedTiers[moduleKey] || MODULE_CATALOG.find(m => m.key === moduleKey)?.tiers?.[0]?.key
             const res = await fetch('/api/module-purchase', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-locale': lang,
                 },
-                body: JSON.stringify({ module_key: moduleKey }),
+                body: JSON.stringify({ module_key: moduleKey, tier_id: tierId }),
             })
             const data = await res.json()
             if (data.url) {
-                window.location.href = data.url  // Redirect to Stripe Checkout
+                window.location.assign(data.url)  // Redirect to Stripe Checkout
             } else {
                 setError(data.error || t('panel.subscription.errorCheckout'))
                 setPurchasingModule(null)
@@ -205,7 +212,25 @@ export default function SubscriptionClient({
                                     <span className="text-2xl">{mod.icon}</span>
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-text-primary text-sm">{getModuleLabel(mod)}</p>
-                                        <p className="text-xs text-primary flex items-center gap-1">
+
+                                        {mod.tiers && mod.tiers.length > 1 && (
+                                            <div className="mt-2 mb-3" onClick={(e) => e.stopPropagation()}>
+                                                <select
+                                                    value={selectedTiers[mod.key] || mod.tiers[0].key}
+                                                    onChange={(e) => setSelectedTiers({ ...selectedTiers, [mod.key]: e.target.value })}
+                                                    className="w-full bg-surface-2 border border-surface-3 text-text-primary text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary/50 transition-colors"
+                                                    disabled={purchasingModule === mod.key}
+                                                >
+                                                    {mod.tiers.map(tier => (
+                                                        <option key={tier.key} value={tier.key}>
+                                                            {tier.name} — {tier.price_chf} CHF/mo
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        <p className="text-xs text-primary flex items-center gap-1 mt-1">
                                             {purchasingModule === mod.key ? (
                                                 <><Loader2 className="w-3 h-3 animate-spin" /> {t('panel.subscription.redirecting') || 'Redirigiendo...'}</>
                                             ) : (

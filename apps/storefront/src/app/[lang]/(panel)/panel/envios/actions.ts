@@ -1,6 +1,6 @@
 'use server'
 
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getAdminShippingOptions, updateAdminShippingOption } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import type { AdminShippingOption } from '@/lib/medusa/admin'
@@ -13,7 +13,7 @@ export async function listShippingOptions(): Promise<{
     error?: string
 }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
         const { shipping_options } = await getAdminShippingOptions(scope)
         return { options: shipping_options }
@@ -36,7 +36,7 @@ export async function updateShippingPrice(
             return { success: false, error: 'Invalid parameters' }
         }
 
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
         const { error } = await updateAdminShippingOption(optionId, {
             prices: [{ amount, currency_code: currencyCode }],
@@ -62,7 +62,7 @@ export async function updateShippingName(
             return { success: false, error: 'Name is required' }
         }
 
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
         const { error } = await updateAdminShippingOption(optionId, { name: name.trim() }, scope)
 

@@ -1,8 +1,7 @@
 'use server'
 
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfigForTenant } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
@@ -31,17 +30,14 @@ export async function createCategory(data: {
     name: string
     description?: string
 }): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
-    const [{ planLimits }, categoryCount] = await Promise.all([
-        getConfigForTenant(tenantId),
-        getCategoryCount(scope),
-    ])
-    const limitCheck = checkLimit(planLimits, 'max_categories', categoryCount)
+    const categoryCount = await getCategoryCount(scope)
+    const limitCheck = checkLimit(appConfig.planLimits, 'max_categories', categoryCount)
     if (!limitCheck.allowed) {
         return { success: false, error: 'Límite de categorías alcanzado' }
     }
@@ -68,7 +64,7 @@ export async function editCategory(
     id: string,
     data: { name?: string; description?: string }
 ): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (data.name !== undefined && !data.name.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -95,7 +91,7 @@ export async function editCategory(
 }
 
 export async function removeCategory(id: string): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     const scope = await getTenantMedusaScope(tenantId)
     const result = await deleteAdminCategory(id, scope)
     if (result.error) {

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ describe('Production Contract: Revalidation & Cross-Repo Governance', () => {
             // Behavior-driven: verify the config source contains the 5 min TTL
             const configPath = join(__dirname, '../config.ts')
             if (existsSync(configPath)) {
-                const source = require('fs').readFileSync(configPath, 'utf-8')
+                const source = readFileSync(configPath, 'utf-8')
                 // The TTL is defined as 5 * 60 * 1000 or 300_000 or 300000
                 const hasTTL = source.includes('5 * 60 * 1000') ||
                     source.includes('300_000') ||

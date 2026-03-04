@@ -52,15 +52,17 @@ function getLimiter(name: string, config: { limit: number; windowMs: number; nam
     return limiters.get(name)!
 }
 
-// ── IP Extraction ────────────────────────────────────────────
+// ── IP Extraction (F-10: trusted proxy model) ────────────────
+// Uses LAST X-Forwarded-For value (appended by our reverse proxy)
+// instead of FIRST (user-controllable, spoofable).
 
 function getClientIp(headerList: Headers): string {
-    // Prefer x-forwarded-for (set by Traefik/Dokploy)
     const forwarded = headerList.get('x-forwarded-for')
     if (forwarded) {
-        return forwarded.split(',')[0].trim()
+        const parts = forwarded.split(',').map(s => s.trim()).filter(Boolean)
+        return parts[parts.length - 1] || '0.0.0.0'
     }
-    return headerList.get('x-real-ip') || 'unknown'
+    return headerList.get('x-real-ip') || '0.0.0.0'
 }
 
 // ── Anti-Abuse Check (per IP) ───────────────────────────────

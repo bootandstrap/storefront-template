@@ -7,7 +7,7 @@
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminOrders } from '@/lib/medusa/admin'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import OrdersClient from './OrdersClient'
@@ -34,7 +34,7 @@ export default async function OrdersPage({
     const t = createTranslator(dictionary)
 
     // Resolve tenant scope — all admin queries MUST be scoped
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
 
     const query = parsePanelListQuery(rawSearchParams, {

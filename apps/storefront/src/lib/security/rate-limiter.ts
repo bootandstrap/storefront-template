@@ -76,18 +76,12 @@ export function checkRateLimit(
 
 /**
  * Extract client IP from a request.
- * Respects X-Forwarded-For (Traefik/proxy) and falls back to
- * X-Real-IP or 'unknown'.
+ * Delegates to the canonical get-client-ip module (trusted proxy model: LAST XFF value).
+ *
+ * @deprecated Import `getClientIp` from '@/lib/security/get-client-ip' directly.
+ * This re-export exists for backward compatibility with existing consumers.
  */
-export function getClientIP(request: Request): string {
-    const forwarded = request.headers.get('x-forwarded-for')
-    if (forwarded) {
-        // Take the first IP in the chain (client)
-        return forwarded.split(',')[0]!.trim()
-    }
-
-    return request.headers.get('x-real-ip') || 'unknown'
-}
+export { getClientIp as getClientIP } from './get-client-ip'
 
 /**
  * Start the periodic cleanup of expired entries.

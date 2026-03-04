@@ -52,6 +52,22 @@ export default async function PanelLayout({
         redirect(`/${lang}`)
     }
 
+    // ── Feature-flag sub-route guard (Defense in Depth) ──
+    const { headers } = await import('next/headers')
+    const { shouldAllowPanelRoute } = await import('@/lib/panel-policy')
+    const headersList = await headers()
+    // x-invoke-path contains the current requested path in App Router
+    const pathname = headersList.get('x-invoke-path') || headersList.get('x-middleware-invoke') || ''
+    const pathSegments = pathname.split('/').filter(Boolean)
+    const panelIndex = pathSegments.indexOf('panel')
+    if (panelIndex !== -1 && pathSegments[panelIndex + 1]) {
+        const routeSegment = pathSegments[panelIndex + 1]
+        // Cast to panel route key since the runtime segments might include unknowns
+        if (!shouldAllowPanelRoute(routeSegment as import('@/lib/panel-policy').PanelRouteKey, featureFlags)) {
+            redirect(`/${lang}/panel`)
+        }
+    }
+
     // Determine store URL for onboarding wizard
     const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `/${lang}`
 

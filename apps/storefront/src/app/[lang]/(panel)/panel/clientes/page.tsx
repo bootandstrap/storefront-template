@@ -8,7 +8,7 @@
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCustomers } from '@/lib/medusa/admin'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import CustomersClient from './CustomersClient'
@@ -36,7 +36,7 @@ export default async function CustomersPage({
     const query = parsePanelListQuery(rawSearchParams, { defaultLimit: 20 })
 
     // Resolve tenant scope — all admin queries MUST be scoped
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
 
     const { customers, count } = await getAdminCustomers({

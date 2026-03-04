@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockRequirePanelAuth = vi.fn()
+const mockWithPanelGuard = vi.fn()
 const mockGetConfig = vi.fn()
 const mockGetProductCount = vi.fn()
 const mockCreateAdminProduct = vi.fn()
 
-vi.mock('@/lib/panel-auth', () => ({
-    requirePanelAuth: mockRequirePanelAuth,
+vi.mock('@/lib/panel-guard', () => ({
+    withPanelGuard: mockWithPanelGuard,
 }))
 
 vi.mock('@/lib/revalidate', () => ({
@@ -64,10 +64,13 @@ const basePlanLimits = {
 describe('createProduct server-side limits', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRequirePanelAuth.mockResolvedValue({
-            user: { id: 'u1' },
-            role: 'owner',
+        mockWithPanelGuard.mockResolvedValue({
             tenantId: 'tenant-1',
+            appConfig: {
+                planLimits: basePlanLimits,
+                config: { stock_mode: 'always_in_stock', low_stock_threshold: 5 },
+                featureFlags: { enable_ecommerce: true },
+            },
         })
         mockGetConfig.mockResolvedValue({
             planLimits: basePlanLimits,

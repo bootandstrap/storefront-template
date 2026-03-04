@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import {
     cancelAdminOrder,
     createOrderFulfillment,
@@ -15,7 +15,7 @@ export async function fulfillOrder(
     orderId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
 
         const order = await getAdminOrderDetail(orderId, scope)
@@ -39,7 +39,7 @@ export async function cancelOrder(
     orderId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
 
         const order = await getAdminOrderDetail(orderId, scope)
@@ -69,7 +69,7 @@ export async function refundOrder(
             return { success: false, error: 'Invalid refund parameters' }
         }
 
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
 
         // Verify order belongs to tenant

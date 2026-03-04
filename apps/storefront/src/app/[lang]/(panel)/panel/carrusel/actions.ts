@@ -1,9 +1,8 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfigForTenant } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
 import { SlideInputSchema, SlideUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
@@ -29,13 +28,12 @@ export async function createSlide(
     input: SlideInput
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId, appConfig } = await withPanelGuard()
         const parsed = SlideInputSchema.safeParse(input)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
         const validInput = parsed.data
-        const { planLimits } = await getConfigForTenant(tenantId)
 
         // Count existing slides for this tenant
         const { count } = await supabase
@@ -43,7 +41,7 @@ export async function createSlide(
             .select('*', { count: 'exact', head: true })
             .eq('tenant_id', tenantId)
 
-        const limitCheck = checkLimit(planLimits, 'max_carousel_slides', count ?? 0)
+        const limitCheck = checkLimit(appConfig.planLimits, 'max_carousel_slides', count ?? 0)
         if (!limitCheck.allowed) {
             return { success: false, error: 'Carousel slide limit reached' }
         }
@@ -86,7 +84,7 @@ export async function updateSlide(
     updates: Partial<SlideInput>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
         const parsed = SlideUpdateSchema.safeParse(updates)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
@@ -115,7 +113,7 @@ export async function deleteSlide(
     id: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
 
         const { error } = await supabase
             .from('carousel_slides')
@@ -140,7 +138,7 @@ export async function reorderSlides(
     orderedIds: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
 
         // Update sort_order for each slide (scoped to tenant)
         const updates = orderedIds.map((id, index) =>

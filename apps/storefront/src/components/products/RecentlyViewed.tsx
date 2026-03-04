@@ -60,6 +60,7 @@ export default function RecentlyViewed({
 
     useEffect(() => {
         const all = getRecentlyViewed()
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setItems(currentHandle ? all.filter((p) => p.handle !== currentHandle) : all)
     }, [currentHandle])
 

@@ -87,6 +87,7 @@ export interface FeatureFlags {
     enable_google_auth: boolean
     enable_email_auth: boolean
     // Content
+    enable_ecommerce: boolean
     enable_reviews: boolean
     enable_wishlist: boolean
     enable_carousel: boolean
@@ -295,6 +296,7 @@ const FALLBACK_CONFIG: AppConfig = {
         require_auth_to_order: false,
         enable_google_auth: false,
         enable_email_auth: false,
+        enable_ecommerce: false,
         enable_reviews: false,
         enable_wishlist: false,
         enable_carousel: false,
@@ -401,6 +403,62 @@ export function clearCachedConfig(): void {
     globalForConfig.__configCacheTimestamp = 0
 }
 
+// ---------------------------------------------------------------------------
+// Circuit breaker — prevents hammering Supabase during outages
+// ---------------------------------------------------------------------------
+// States: CLOSED (normal) → OPEN (skip fetch for WINDOW_MS) → HALF_OPEN (probe)
+// After THRESHOLD consecutive failures → OPEN.
+// After WINDOW_MS → HALF_OPEN: one probe request allowed.
+// If probe succeeds → CLOSED. If probe fails → OPEN again.
+// ---------------------------------------------------------------------------
+
+type CircuitState = 'closed' | 'open' | 'half-open'
+
+const globalForCircuit = globalThis as unknown as {
+    __circuitState?: CircuitState
+    __circuitFailCount?: number
+    __circuitLastFailTime?: number
+}
+
+const CIRCUIT_THRESHOLD = 3       // open after 3 consecutive failures
+const CIRCUIT_WINDOW_MS = 60_000  // stay open for 60s before probe
+
+function shouldCircuitSkipFetch(): boolean {
+    const state = globalForCircuit.__circuitState ?? 'closed'
+    if (state === 'closed') return false
+    if (state === 'open') {
+        const elapsed = Date.now() - (globalForCircuit.__circuitLastFailTime ?? 0)
+        if (elapsed > CIRCUIT_WINDOW_MS) {
+            globalForCircuit.__circuitState = 'half-open'
+            return false // allow one probe
+        }
+        return true // skip, use fallback
+    }
+    // half-open: allow probe
+    return false
+}
+
+function circuitRecordSuccess(): void {
+    globalForCircuit.__circuitState = 'closed'
+    globalForCircuit.__circuitFailCount = 0
+}
+
+function circuitRecordFailure(): void {
+    const count = (globalForCircuit.__circuitFailCount ?? 0) + 1
+    globalForCircuit.__circuitFailCount = count
+    globalForCircuit.__circuitLastFailTime = Date.now()
+    if (count >= CIRCUIT_THRESHOLD) {
+        globalForCircuit.__circuitState = 'open'
+    }
+}
+
+/** Exported for testing — resets circuit breaker to closed state */
+export function resetCircuitBreaker(): void {
+    globalForCircuit.__circuitState = 'closed'
+    globalForCircuit.__circuitFailCount = 0
+    globalForCircuit.__circuitLastFailTime = 0
+}
+
 /**
  * Fire-and-forget alert when degraded mode is activated.
  * Reports to tenant_errors table for SuperAdmin Error Inbox visibility,
@@ -452,6 +510,11 @@ export async function getConfig(): Promise<AppConfig> {
     // Build-phase prerender (e.g. /_not-found): no real tenant context, use fallback
     if (isBuildPhase()) {
         console.info('[config] Build-phase prerender detected — using fallback config')
+        return FALLBACK_CONFIG
+    }
+
+    // Circuit breaker: skip Supabase if circuit is open (too many recent failures)
+    if (shouldCircuitSkipFetch()) {
         return FALLBACK_CONFIG
     }
 
@@ -538,8 +601,10 @@ export async function getConfig(): Promise<AppConfig> {
             maintenanceDaysRemaining,
         }
         setCachedConfig(result)
+        circuitRecordSuccess()
         return result
     } catch (err) {
+        circuitRecordFailure()
         // Structured alerting for degraded mode — INFORME §4.3
         const errorMessage = err instanceof Error ? err.message : String(err)
         reportDegradedMode(tenantId, `Config fetch failed — degraded mode activated: ${errorMessage}`)
@@ -557,6 +622,11 @@ export async function getConfig(): Promise<AppConfig> {
 export async function getConfigForTenant(tenantId: string): Promise<AppConfig> {
     if (!tenantId) {
         throw new Error('[config] getConfigForTenant requires a valid tenantId')
+    }
+
+    // Circuit breaker: skip Supabase if circuit is open
+    if (shouldCircuitSkipFetch()) {
+        return FALLBACK_CONFIG
     }
 
     try {
@@ -612,7 +682,7 @@ export async function getConfigForTenant(tenantId: string): Promise<AppConfig> {
             ? new Date(limits.plan_expires_at) < new Date()
             : false
 
-        return {
+        const result: AppConfig = {
             config: (configData as StoreConfig) ?? FALLBACK_CONFIG.config,
             featureFlags: {
                 ...FALLBACK_CONFIG.featureFlags,
@@ -622,7 +692,10 @@ export async function getConfigForTenant(tenantId: string): Promise<AppConfig> {
             planExpired,
             tenantStatus: (tenantStatusRaw as AppConfig['tenantStatus']) ?? 'active',
         }
+        circuitRecordSuccess()
+        return result
     } catch (err) {
+        circuitRecordFailure()
         const errorMessage = err instanceof Error ? err.message : String(err)
         reportDegradedMode(tenantId, `getConfigForTenant failed: ${errorMessage}`)
         return FALLBACK_CONFIG

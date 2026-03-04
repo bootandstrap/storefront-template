@@ -10,6 +10,7 @@ import { WishlistProvider } from '@/contexts/WishlistContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { ToastProvider } from '@/components/ui/Toaster'
 import AnalyticsTracker from '@/components/ui/AnalyticsTracker'
+import ServiceWorkerRegister from '@/components/ui/ServiceWorkerRegister'
 import './globals.css'
 
 // ---------------------------------------------------------------------------
@@ -113,6 +114,8 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content={colors.primary} />
+        <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
       </head>
       <body className="min-h-screen flex flex-col antialiased">
         <CartProvider>
@@ -121,6 +124,7 @@ export default async function RootLayout({
               <ToastProvider>
                 {children}
                 <AnalyticsTracker enabled={featureFlags.enable_analytics} />
+                <ServiceWorkerRegister />
               </ToastProvider>
             </CompareProvider>
           </WishlistProvider>

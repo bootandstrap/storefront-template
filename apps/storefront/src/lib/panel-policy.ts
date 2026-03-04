@@ -138,3 +138,94 @@ export function isAdvancedPanelRouteEnabled(
 
     return isAdvancedModuleEnabled(advanced, featureFlags)
 }
+
+const ESSENTIAL_ROUTES = new Set([
+    'dashboard',
+    'catalogo',
+    'pedidos',
+    'clientes',
+    'tienda',
+    'envios',
+])
+
+const ADVANCED_ROUTES = new Set([
+    'carrusel',
+    'mensajes',
+    'paginas',
+    'analiticas',
+    'insignias',
+    'chatbot',
+    'devoluciones',
+    'crm',
+    'resenas',
+])
+
+export type PanelRouteKey =
+    | 'dashboard'
+    | 'catalogo'
+    | 'pedidos'
+    | 'clientes'
+    | 'tienda'
+    | 'envios'
+    | 'carrusel'
+    | 'mensajes'
+    | 'paginas'
+    | 'analiticas'
+    | 'insignias'
+    | 'chatbot'
+    | 'devoluciones'
+    | 'crm'
+    | 'resenas'
+
+export function getPanelFallbackRoute(lang: string): string {
+    return `/${lang}/panel`
+}
+
+export function shouldAllowPanelRoute(
+    route: PanelRouteKey,
+    featureFlags: PanelFeatureFlags
+): boolean {
+    if (ESSENTIAL_ROUTES.has(route)) return true
+    if (!ADVANCED_ROUTES.has(route)) return true
+
+    return isAdvancedPanelRouteEnabled(`/_/panel/${route}`, featureFlags)
+}
+
+export function classifyPanelRoute(
+    segment: string
+): 'essential' | 'advanced' | 'unknown' {
+    if (ESSENTIAL_ROUTES.has(segment)) return 'essential'
+    if (ADVANCED_ROUTES.has(segment)) return 'advanced'
+    return 'unknown'
+}
+
+export function evaluatePanelAccess(
+    route: PanelRouteKey | string,
+    flags: PanelFeatureFlags,
+    limits: Record<string, number>, // Limits parameter kept for future extensibility
+    userRole: 'owner' | 'super_admin'
+): { allowed: boolean; reason?: string; redirect?: string } {
+    // SuperAdmins bypass capability restrictions inside the panel 
+    // (though proxy usually sends them to the global BSWEB admin anyway)
+    if (userRole === 'super_admin') {
+        return { allowed: true }
+    }
+
+    const classification = classifyPanelRoute(route)
+    if (classification === 'essential') {
+        return { allowed: true }
+    }
+
+    if (classification === 'advanced') {
+        const allowed = shouldAllowPanelRoute(route as PanelRouteKey, flags)
+        if (!allowed) {
+            return {
+                allowed: false,
+                reason: 'advanced_module_disabled_or_owner_lite',
+            }
+        }
+        return { allowed: true }
+    }
+
+    return { allowed: true } // Fail open for unknown future routes
+}

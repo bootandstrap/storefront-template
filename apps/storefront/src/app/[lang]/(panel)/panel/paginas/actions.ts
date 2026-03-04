@@ -1,9 +1,8 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfigForTenant } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
 import { PageInputSchema, PageUpdateSchema } from '@/lib/owner-validation'
 import { sanitizeHtml } from '@/lib/security/sanitize-html'
 
@@ -26,20 +25,19 @@ export async function createPage(
     input: PageInput
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId, appConfig } = await withPanelGuard()
         const parsed = PageInputSchema.safeParse(input)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
         const validInput = parsed.data
-        const { planLimits } = await getConfigForTenant(tenantId)
 
         const { count } = await supabase
             .from('cms_pages')
             .select('*', { count: 'exact', head: true })
             .eq('tenant_id', tenantId)
 
-        const limitCheck = checkLimit(planLimits, 'max_cms_pages', count ?? 0)
+        const limitCheck = checkLimit(appConfig.planLimits, 'max_cms_pages', count ?? 0)
         if (!limitCheck.allowed) {
             return { success: false, error: 'CMS page limit reached' }
         }
@@ -75,7 +73,7 @@ export async function updatePage(
     updates: Partial<PageInput>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
         const parsed = PageUpdateSchema.safeParse(updates)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
@@ -112,7 +110,7 @@ export async function deletePage(
     id: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
 
         const { error } = await supabase
             .from('cms_pages')
@@ -138,7 +136,7 @@ export async function togglePagePublish(
     published: boolean
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
 
         const { error } = await supabase
             .from('cms_pages')

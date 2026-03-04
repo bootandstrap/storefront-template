@@ -1,9 +1,9 @@
 'use server'
 
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfigForTenant } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
+import { estimateTenantStorageUsage, canUploadFile } from '@/lib/storage-usage'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
     getProductCount,
@@ -35,7 +35,7 @@ export async function createProduct(data: {
     status: 'draft' | 'published'
     stockQuantity?: number
 }): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
@@ -44,16 +44,16 @@ export async function createProduct(data: {
     }
 
     const scope = await getTenantMedusaScope(tenantId)
-    const [{ planLimits, config: storeConfig }, productCount] = await Promise.all([
-        getConfigForTenant(tenantId),
-        getProductCount(scope),
-    ])
-    const limitCheck = checkLimit(planLimits, 'max_products', productCount)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
+    const productCount = await getProductCount(scope)
+    const limitCheck = checkLimit(appConfig.planLimits, 'max_products', productCount)
     if (!limitCheck.allowed) {
         return { success: false, error: 'Límite de productos alcanzado' }
     }
 
-    const manageInventory = storeConfig.stock_mode === 'managed'
+    const manageInventory = appConfig.config.stock_mode === 'managed'
 
     const input: CreateProductInput = {
         title: data.title.trim(),
@@ -92,12 +92,15 @@ export async function updateProduct(
         variantId?: string
     }
 ): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (data.title !== undefined && !data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
 
     // Update product fields
     const updateData: Partial<CreateProductInput> = {}
@@ -129,8 +132,11 @@ export async function updateProduct(
 }
 
 export async function removeProduct(id: string): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
     const result = await deleteAdminProduct(id, scope)
     if (result.error) {
         return { success: false, error: result.error }
@@ -151,7 +157,7 @@ export async function uploadProductImage(
     productId: string,
     formData: FormData
 ): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     const file = formData.get('file') as File | null
     if (!file) {
         return { success: false, error: 'No file provided' }
@@ -162,12 +168,14 @@ export async function uploadProductImage(
     }
 
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
 
     // Dynamic file size limit from plan (scoped to auth tenant)
-    const { planLimits } = await getConfigForTenant(tenantId)
-    const maxFileSizeBytes = (planLimits.max_file_upload_mb ?? 5) * 1024 * 1024
+    const maxFileSizeBytes = (appConfig.planLimits.max_file_upload_mb ?? 5) * 1024 * 1024
     if (file.size > maxFileSizeBytes) {
-        return { success: false, error: `El archivo excede el límite de ${planLimits.max_file_upload_mb ?? 5} MB` }
+        return { success: false, error: `El archivo excede el límite de ${appConfig.planLimits.max_file_upload_mb ?? 5} MB` }
     }
 
     // Check current image count against plan limit
@@ -177,9 +185,25 @@ export async function uploadProductImage(
     }
 
     const existingImages = (product.images ?? []).map(img => ({ url: img.url }))
-    const imageLimit = checkLimit(planLimits, 'max_images_per_product', existingImages.length)
+    const imageLimit = checkLimit(appConfig.planLimits, 'max_images_per_product', existingImages.length)
     if (!imageLimit.allowed) {
         return { success: false, error: `Límite de imágenes alcanzado (${imageLimit.limit} por producto)` }
+    }
+
+    // Storage limit enforcement — check tenant-wide storage before upload
+    if (appConfig.planLimits.storage_limit_mb > 0) {
+        const storageUsage = await estimateTenantStorageUsage(scope)
+        const storageCheck = canUploadFile(
+            storageUsage.estimatedMb,
+            file.size,
+            appConfig.planLimits.storage_limit_mb
+        )
+        if (!storageCheck.allowed) {
+            return {
+                success: false,
+                error: `Límite de almacenamiento alcanzado (${storageCheck.usedMb}/${storageCheck.limitMb} MB)`
+            }
+        }
     }
 
     // Upload to Medusa storage
@@ -205,8 +229,11 @@ export async function removeProductImage(
     productId: string,
     imageUrl: string
 ): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
     const result = await deleteProductImage(productId, imageUrl, scope)
     if (result.error) {
         return { success: false, error: result.error }
@@ -225,12 +252,15 @@ export async function updateProductStock(
     variantId: string,
     quantity: number
 ): Promise<ActionResult> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (typeof quantity !== 'number' || quantity < 0) {
         return { success: false, error: 'La cantidad debe ser un número positivo' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
     const result = await updateVariantInventory(productId, variantId, {
         manage_inventory: true,
         inventory_quantity: Math.round(quantity),
@@ -252,11 +282,14 @@ export async function bulkUpdateStatus(
     ids: string[],
     status: 'published' | 'draft'
 ): Promise<ActionResult & { updated: number }> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!ids.length) return { success: false, error: 'No products selected', updated: 0 }
     if (ids.length > 100) return { success: false, error: 'Maximum 100 products per batch', updated: 0 }
 
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found', updated: 0 }
+    }
     let updated = 0
     const errors: string[] = []
 
@@ -277,11 +310,14 @@ export async function bulkUpdateStatus(
 export async function bulkDeleteProducts(
     ids: string[]
 ): Promise<ActionResult & { deleted: number }> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!ids.length) return { success: false, error: 'No products selected', deleted: 0 }
     if (ids.length > 50) return { success: false, error: 'Maximum 50 products per batch delete', deleted: 0 }
 
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found', deleted: 0 }
+    }
     let deleted = 0
     const errors: string[] = []
 
@@ -300,8 +336,11 @@ export async function bulkDeleteProducts(
 }
 
 export async function exportProductsCsv(): Promise<{ success: boolean; csv?: string; error?: string }> {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     const scope = await getTenantMedusaScope(tenantId)
+    if (!scope) {
+        return { success: false, error: 'Medusa configuration not found' }
+    }
 
     const result = await getAdminProductsFull({ limit: 1000 }, scope)
     if (!result.products) {

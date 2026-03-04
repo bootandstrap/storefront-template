@@ -33,7 +33,7 @@ import {
     getPanelNavigation,
     type PanelFeatureFlags,
     type PanelSidebarLabels,
-} from '@/lib/panel-modules'
+} from '@/lib/panel-policy'
 import PanelTopbar from '@/components/panel/PanelTopbar'
 
 interface PanelSidebarProps {

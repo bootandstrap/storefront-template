@@ -8,7 +8,7 @@
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getConfigForTenant } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { redirect } from 'next/navigation'
@@ -105,7 +105,7 @@ export default async function EmailMarketingPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
 
     const { featureFlags, planLimits } = await getConfigForTenant(tenantId)
 

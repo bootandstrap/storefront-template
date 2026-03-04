@@ -9,7 +9,7 @@ import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import ProductsClient from './ProductsClient'
 
@@ -28,7 +28,7 @@ export default async function ProductsManagerPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
     const { config, planLimits } = await getConfigForTenant(tenantId)
 

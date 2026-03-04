@@ -1,0 +1,590 @@
+{
+  "$schema": "governance-contract/v1",
+  "generated_at": "2026-03-04T18:03:17.168Z",
+  "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
+  "flags": {
+    "count": 44,
+    "keys": [
+      "enable_abandoned_cart_emails",
+      "enable_address_management",
+      "enable_admin_api",
+      "enable_analytics",
+      "enable_bank_transfer",
+      "enable_carousel",
+      "enable_cash_on_delivery",
+      "enable_chatbot",
+      "enable_cms_pages",
+      "enable_cookie_consent",
+      "enable_crm",
+      "enable_crm_export",
+      "enable_crm_segmentation",
+      "enable_customer_accounts",
+      "enable_ecommerce",
+      "enable_email_auth",
+      "enable_email_campaigns",
+      "enable_email_notifications",
+      "enable_email_templates",
+      "enable_google_auth",
+      "enable_guest_checkout",
+      "enable_maintenance_mode",
+      "enable_multi_currency",
+      "enable_multi_language",
+      "enable_newsletter",
+      "enable_online_payments",
+      "enable_order_notes",
+      "enable_order_tracking",
+      "enable_owner_panel",
+      "enable_product_badges",
+      "enable_product_comparisons",
+      "enable_product_search",
+      "enable_promotions",
+      "enable_related_products",
+      "enable_reviews",
+      "enable_self_service_returns",
+      "enable_social_links",
+      "enable_user_registration",
+      "enable_whatsapp_checkout",
+      "enable_whatsapp_contact",
+      "enable_wishlist",
+      "owner_advanced_modules_enabled",
+      "owner_lite_enabled",
+      "require_auth_to_order"
+    ],
+    "groups": {
+      "___checkout": {
+        "label": "🛒 Checkout",
+        "color": "#22c55e",
+        "flags": [
+          "enable_whatsapp_checkout",
+          "enable_whatsapp_contact",
+          "enable_online_payments",
+          "enable_cash_on_delivery",
+          "enable_bank_transfer",
+          "enable_guest_checkout",
+          "require_auth_to_order",
+          "enable_order_notes",
+          "enable_promotions"
+        ]
+      },
+      "___auth___accounts": {
+        "label": "🔐 Auth & Accounts",
+        "color": "#3b82f6",
+        "flags": [
+          "enable_user_registration",
+          "enable_email_auth",
+          "enable_google_auth",
+          "enable_customer_accounts",
+          "enable_address_management",
+          "enable_order_tracking"
+        ]
+      },
+      "___content___discovery": {
+        "label": "📦 Content & Discovery",
+        "color": "#f59e0b",
+        "flags": [
+          "enable_ecommerce",
+          "enable_carousel",
+          "enable_cms_pages",
+          "enable_product_search",
+          "enable_reviews",
+          "enable_wishlist",
+          "enable_related_products",
+          "enable_product_comparisons",
+          "enable_product_badges"
+        ]
+      },
+      "___internationalization": {
+        "label": "🌐 Internationalization",
+        "color": "#06b6d4",
+        "flags": [
+          "enable_multi_language",
+          "enable_multi_currency"
+        ]
+      },
+      "___business___branding": {
+        "label": "🏪 Business & Branding",
+        "color": "#ec4899",
+        "flags": [
+          "enable_social_links",
+          "enable_owner_panel",
+          "enable_newsletter"
+        ]
+      },
+      "___system": {
+        "label": "⚙️ System",
+        "color": "#8b5cf6",
+        "flags": [
+          "enable_analytics",
+          "enable_admin_api",
+          "enable_maintenance_mode",
+          "enable_cookie_consent",
+          "enable_chatbot",
+          "enable_self_service_returns",
+          "owner_lite_enabled",
+          "owner_advanced_modules_enabled"
+        ]
+      },
+      "___crm": {
+        "label": "📁 CRM",
+        "color": "#f59e0b",
+        "flags": [
+          "enable_crm",
+          "enable_crm_segmentation",
+          "enable_crm_export"
+        ]
+      },
+      "___email_marketing": {
+        "label": "📧 Email Marketing",
+        "color": "#e11d48",
+        "flags": [
+          "enable_email_notifications",
+          "enable_abandoned_cart_emails",
+          "enable_email_campaigns",
+          "enable_email_templates"
+        ]
+      }
+    }
+  },
+  "limits": {
+    "count": 27,
+    "keys": [
+      "max_admin_users",
+      "max_badges",
+      "max_carousel_slides",
+      "max_categories",
+      "max_chatbot_messages_month",
+      "max_cms_pages",
+      "max_crm_contacts",
+      "max_currencies",
+      "max_custom_domains",
+      "max_customers",
+      "max_email_sends_month",
+      "max_file_upload_mb",
+      "max_images_per_product",
+      "max_languages",
+      "max_newsletter_subscribers",
+      "max_orders_month",
+      "max_payment_methods",
+      "max_products",
+      "max_promotions_active",
+      "max_requests_day",
+      "max_reviews_per_product",
+      "max_whatsapp_templates",
+      "max_wishlist_items",
+      "plan_expires_at",
+      "plan_name",
+      "plan_tier",
+      "storage_limit_mb"
+    ],
+    "numeric_keys": [
+      "max_admin_users",
+      "max_badges",
+      "max_carousel_slides",
+      "max_categories",
+      "max_chatbot_messages_month",
+      "max_cms_pages",
+      "max_crm_contacts",
+      "max_currencies",
+      "max_custom_domains",
+      "max_customers",
+      "max_email_sends_month",
+      "max_file_upload_mb",
+      "max_images_per_product",
+      "max_languages",
+      "max_newsletter_subscribers",
+      "max_orders_month",
+      "max_payment_methods",
+      "max_products",
+      "max_promotions_active",
+      "max_requests_day",
+      "max_reviews_per_product",
+      "max_whatsapp_templates",
+      "max_wishlist_items",
+      "storage_limit_mb"
+    ],
+    "metadata_keys": [
+      "plan_expires_at",
+      "plan_name",
+      "plan_tier"
+    ]
+  },
+  "modules": {
+    "count": 10,
+    "keys": [
+      "auth_advanced",
+      "automation",
+      "chatbot",
+      "crm",
+      "ecommerce",
+      "email_marketing",
+      "i18n",
+      "rrss",
+      "sales_channels",
+      "seo"
+    ],
+    "catalog": [
+      {
+        "key": "ecommerce",
+        "name": "Tienda Online",
+        "icon": "🛍️",
+        "description": "Catálogo, carrito, checkout, cuentas de cliente y panel de gestión",
+        "category": "core",
+        "popular": true,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 25,
+            "features": [
+              "50 productos / 5 categorías",
+              "100 pedidos/mes / 100 clientes",
+              "Carrito + Checkout + Cuentas",
+              "Seguimiento y direcciones",
+              "Búsqueda de productos"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 45,
+            "features": [
+              "200 productos / 20 categorías",
+              "500 pedidos/mes / 500 clientes",
+              "Insignias + Productos relacionados",
+              "Promociones (max 5 activas)",
+              "Reseñas + Wishlist + CMS + Carousel"
+            ],
+            "recommended": true
+          },
+          {
+            "key": "enterprise",
+            "name": "Enterprise",
+            "price_chf": 75,
+            "features": [
+              "Productos y categorías ilimitados",
+              "5000 pedidos/mes / Clientes ∞",
+              "Devoluciones self-service",
+              "API externa",
+              "Todo de Pro incluido"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "sales_channels",
+        "name": "Canales de Venta y Pago",
+        "icon": "💬",
+        "description": "WhatsApp, tarjeta, efectivo, transferencia y más canales de venta",
+        "category": "channels",
+        "popular": true,
+        "requires": [
+          "ecommerce"
+        ],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 15,
+            "features": [
+              "WhatsApp Checkout + Contacto",
+              "5 templates WhatsApp",
+              "1 método de pago"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 30,
+            "features": [
+              "15 templates WhatsApp",
+              "Pago con tarjeta (Stripe)",
+              "Efectivo contra entrega",
+              "Newsletter (1000 suscriptores)",
+              "3 métodos de pago"
+            ],
+            "recommended": true
+          },
+          {
+            "key": "enterprise",
+            "name": "Enterprise",
+            "price_chf": 50,
+            "features": [
+              "Templates ilimitados",
+              "Transferencia bancaria",
+              "Reservas (usuario registrado)",
+              "Newsletter (5000 suscriptores)",
+              "Métodos de pago ∞"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "chatbot",
+        "name": "Chatbot IA",
+        "icon": "🤖",
+        "description": "Asistente inteligente con IA conversacional y RAG",
+        "category": "intelligence",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 20,
+            "features": [
+              "Widget chatbot en tu web",
+              "500 mensajes/mes",
+              "RAG sobre tus documentos"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 40,
+            "features": [
+              "5000 mensajes/mes",
+              "RAG avanzado",
+              "Integración Calendly/Google"
+            ],
+            "recommended": true
+          }
+        ]
+      },
+      {
+        "key": "crm",
+        "name": "CRM",
+        "icon": "📁",
+        "description": "Gestión de contactos, clientes e interacciones",
+        "category": "intelligence",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 15,
+            "features": [
+              "Lista de contactos + notas",
+              "Historial de interacciones",
+              "Max 200 contactos"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 30,
+            "features": [
+              "Max 5000 contactos",
+              "Segmentación / etiquetas",
+              "Exportar CSV"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "seo",
+        "name": "SEO + Analytics",
+        "icon": "🚀",
+        "description": "Posicionamiento web y seguimiento de rendimiento",
+        "category": "marketing",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": [
+              "Analytics avanzadas",
+              "Google Search Console"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "rrss",
+        "name": "Redes Sociales",
+        "icon": "📱",
+        "description": "Links y botones de redes sociales en tu web",
+        "category": "marketing",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 0,
+            "features": [
+              "Instagram + FB + Google Maps",
+              "Links en footer + header"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "i18n",
+        "name": "Multi-idioma y Moneda",
+        "icon": "🌐",
+        "description": "Soporte multilingüe y multi-moneda (independiente)",
+        "category": "advanced",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "2 Idiomas",
+            "price_chf": 15,
+            "features": [
+              "2 idiomas + 1 moneda",
+              "URLs localizadas"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "5 Idiomas + Monedas",
+            "price_chf": 35,
+            "features": [
+              "5 idiomas + 5 monedas",
+              "Conversión automática"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "automation",
+        "name": "Automatizaciones",
+        "icon": "🔌",
+        "description": "Conexiones con servicios externos (n8n, Zapier, Make)",
+        "category": "advanced",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 20,
+            "features": [
+              "5 automatizaciones"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 40,
+            "features": [
+              "Ilimitadas",
+              "Webhooks custom"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "auth_advanced",
+        "name": "Auth Avanzada",
+        "icon": "🛡️",
+        "description": "Login social con Google y otros proveedores OAuth",
+        "category": "advanced",
+        "popular": false,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 5,
+            "features": [
+              "Google OAuth"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 12,
+            "features": [
+              "Google + Apple + Facebook"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "enterprise",
+            "name": "Enterprise",
+            "price_chf": 25,
+            "features": [
+              "2FA",
+              "Magic Link"
+            ],
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "key": "email_marketing",
+        "name": "Email Marketing",
+        "icon": "📧",
+        "description": "Emails transaccionales, abandono de carrito y campañas",
+        "category": "marketing",
+        "popular": true,
+        "requires": [],
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 15,
+            "features": [
+              "Emails transaccionales (pedido, envío, bienvenida)",
+              "500 emails/mes",
+              "Templates predefinidos"
+            ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 30,
+            "features": [
+              "2000 emails/mes",
+              "Abandono de carrito automático",
+              "Review requests post-compra",
+              "Delay configurable (1h/3h/24h)"
+            ],
+            "recommended": true
+          },
+          {
+            "key": "enterprise",
+            "name": "Enterprise",
+            "price_chf": 50,
+            "features": [
+              "10.000 emails/mes",
+              "Campañas manuales",
+              "Segmentación de clientes",
+              "Templates custom (editor no-code)",
+              "Métricas: opens, clicks, bounces"
+            ],
+            "recommended": false
+          }
+        ]
+      }
+    ]
+  },
+  "pricing": {
+    "maintenance_chf_month": 40,
+    "web_base_chf_onetime": 1500
+  },
+  "config_aliases": {
+    "store_email": "order_confirmation_email"
+  }
+}

@@ -48,7 +48,6 @@ jobs:
           TENANT_ID: ci-build-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
-          SUPABASE_SERVICE_ROLE_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
           NEXT_PUBLIC_STORE_URL: https://placeholder.com
@@ -105,14 +104,12 @@ jobs:
         env:
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-key
 
       - name: Run tests with coverage
         run: cd apps/storefront && pnpm test:run -- --coverage
         env:
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-key
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -214,7 +211,6 @@ jobs:
           TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.TEST_MEDUSA_KEY }}
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
@@ -240,7 +236,6 @@ jobs:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           MEDUSA_BACKEND_URL: http://localhost:9000
           REDIS_URL: redis://localhost:6379
           TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
@@ -317,3 +312,28 @@ jobs:
           name: lighthouse-report
           path: apps/storefront/.lighthouseci/
           retention-days: 14
+
+  # ── Failure Notification ────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [build, unit-tests, medusa-tests]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          if [ -n "${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" ] && [ -n "${{ secrets.BSWEB_URL }}" ]; then
+            curl -s -X POST "${{ secrets.BSWEB_URL }}/api/admin/ci-notification" \
+              -H "Authorization: Bearer ${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "repo": "${{ github.repository }}",
+                "workflow": "${{ github.workflow }}",
+                "status": "failure",
+                "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                "ref": "${{ github.ref }}",
+                "actor": "${{ github.actor }}"
+              }' && echo "✅ Notification sent" || echo "⚠️ Notification failed (non-blocking)"
+          else
+            echo "⚠️ BSWEB_URL or BSWEB_INTERNAL_API_TOKEN not configured — skipping notification"
+          fi

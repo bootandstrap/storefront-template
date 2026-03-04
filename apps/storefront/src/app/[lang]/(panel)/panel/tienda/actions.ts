@@ -2,7 +2,7 @@
 
 import { revalidatePanel } from '@/lib/revalidate'
 import type { StoreConfig } from '@/lib/config'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { StoreConfigUpdateSchema } from '@/lib/owner-validation'
 
 // Whitelist of config columns that can be updated from Owner Panel
@@ -39,7 +39,7 @@ export async function saveStoreConfig(
     configData: Partial<StoreConfig>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard()
 
         // Validate with Zod first (rejects unknown fields, XSS, oversized strings)
         const parsed = StoreConfigUpdateSchema.safeParse(configData)

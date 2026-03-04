@@ -1,7 +1,7 @@
 import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
     getProductCount,
@@ -31,7 +31,7 @@ export default async function PanelDashboard({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const appConfig = await getConfigForTenant(tenantId)
     const { planLimits } = appConfig
     const { config: storeConfig, featureFlags } = appConfig

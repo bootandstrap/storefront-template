@@ -50,6 +50,7 @@ export default async function CRMPage({
         withOrders: customers.filter(c => c.orders && c.orders.length > 0).length,
         recent: customers.filter(c => {
             if (!c.created_at) return false
+            // eslint-disable-next-line react-hooks/purity
             const days30Ago = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
             return new Date(c.created_at) > days30Ago
         }).length,

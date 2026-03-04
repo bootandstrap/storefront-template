@@ -1,11 +1,10 @@
 'use server'
 
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { revalidatePanel } from '@/lib/revalidate'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
-import { getConfigForTenant } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 
 // ---------------------------------------------------------------------------
@@ -24,7 +23,7 @@ export async function getProductsWithBadges(): Promise<{
     error?: string
 }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const scope = await getTenantMedusaScope(tenantId)
         const { products } = await getAdminProducts({ limit: 100 }, scope)
 
@@ -57,7 +56,7 @@ export async function toggleBadge(
     enabled: boolean
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const parsed = ToggleBadgeSchema.safeParse({ productId, badgeId, enabled })
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
@@ -76,8 +75,7 @@ export async function toggleBadge(
         let newBadges: string[]
         if (enabled) {
             // Enforce max_badges limit
-            const { planLimits } = await getConfigForTenant(tenantId)
-            const limitCheck = checkLimit(planLimits, 'max_badges', currentBadges.length)
+            const limitCheck = checkLimit(appConfig.planLimits, 'max_badges', currentBadges.length)
             if (!limitCheck.allowed) {
                 return { success: false, error: 'Badge limit reached for this product' }
             }
@@ -112,7 +110,7 @@ export async function setBadges(
     badges: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { tenantId } = await requirePanelAuth()
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
         const parsed = SetBadgesSchema.safeParse({ productId, badges })
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
@@ -121,8 +119,7 @@ export async function setBadges(
         const scope = await getTenantMedusaScope(tenantId)
 
         // Enforce max_badges limit
-        const { planLimits } = await getConfigForTenant(tenantId)
-        const limitCheck = checkLimit(planLimits, 'max_badges', badges.length)
+        const limitCheck = checkLimit(appConfig.planLimits, 'max_badges', badges.length)
         if (!limitCheck.allowed) {
             return { success: false, error: 'Badge limit reached' }
         }

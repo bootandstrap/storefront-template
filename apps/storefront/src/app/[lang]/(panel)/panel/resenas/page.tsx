@@ -30,6 +30,7 @@ async function ReviewsContent({ lang }: { lang: string }) {
 
     return (
         <ReviewsClient
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             initialReviews={reviews as any}
             initialStats={stats}
             dictionary={dictionary}

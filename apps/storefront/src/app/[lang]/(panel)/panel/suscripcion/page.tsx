@@ -2,6 +2,7 @@ import { getConfig } from '@/lib/config'
 import { createClient } from '@/lib/supabase/server'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import SubscriptionClient from './SubscriptionClient'
+import { getActiveModulesForTenant } from '@/lib/active-modules'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,7 @@ export default async function SubscriptionPage({
     const { data: { user } } = await supabase.auth.getUser()
 
     let hasStripeCustomer = false
+    let profileTenantId = null
     if (user) {
         const { data: profile } = await supabase
             .from('profiles')
@@ -34,6 +36,7 @@ export default async function SubscriptionPage({
             .single()
 
         if (profile?.tenant_id) {
+            profileTenantId = profile.tenant_id
             const { data: tenant } = await supabase
                 .from('tenants')
                 .select('stripe_customer_id')
@@ -53,9 +56,15 @@ export default async function SubscriptionPage({
         }
     }
 
+    // Now get commercial active modules
+    const activeModuleOrders = profileTenantId
+        ? await getActiveModulesForTenant(profileTenantId)
+        : []
+
     return (
         <SubscriptionClient
             moduleFlags={moduleFlags}
+            activeModuleOrders={activeModuleOrders}
             planLimits={planLimits as unknown as Record<string, number | string>}
             tenantStatus={tenantStatus}
             maintenanceDaysRemaining={maintenanceDaysRemaining}

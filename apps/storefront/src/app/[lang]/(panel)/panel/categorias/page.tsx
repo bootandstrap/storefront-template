@@ -8,7 +8,7 @@ import { getConfigForTenant } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCategories } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import CategoriesClient from './CategoriesClient'
 
@@ -27,7 +27,7 @@ export default async function CategoriesManagerPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
     const { planLimits } = await getConfigForTenant(tenantId)
 

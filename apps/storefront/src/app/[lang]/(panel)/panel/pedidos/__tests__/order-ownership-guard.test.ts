@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockRequirePanelAuth = vi.fn()
+const mockWithPanelGuard = vi.fn()
 const mockGetTenantMedusaScope = vi.fn()
 const mockGetAdminOrderDetail = vi.fn()
 const mockOrderBelongsToScope = vi.fn()
 const mockCreateOrderFulfillment = vi.fn()
 const mockCancelAdminOrder = vi.fn()
 
-vi.mock('@/lib/panel-auth', () => ({
-    requirePanelAuth: mockRequirePanelAuth,
+vi.mock('@/lib/panel-guard', () => ({
+    withPanelGuard: mockWithPanelGuard,
 }))
 
 vi.mock('@/lib/medusa/tenant-scope', () => ({
@@ -29,10 +29,12 @@ vi.mock('@/lib/revalidate', () => ({
 describe('order ownership guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRequirePanelAuth.mockResolvedValue({
-            user: { id: 'owner-1' },
-            role: 'owner',
+        mockWithPanelGuard.mockResolvedValue({
             tenantId: 'tenant-1',
+            appConfig: {
+                featureFlags: { enable_ecommerce: true },
+                planLimits: {},
+            },
         })
         mockGetTenantMedusaScope.mockResolvedValue({
             tenantId: 'tenant-1',

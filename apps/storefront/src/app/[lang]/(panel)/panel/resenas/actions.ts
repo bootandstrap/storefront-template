@@ -1,13 +1,13 @@
 'use server'
 
 import { adminFetch } from '@/lib/medusa/admin-core'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { revalidatePath } from 'next/cache'
 
 // ─── Fetch all reviews ────────────────────────────────────────
 export async function getReviews(statusFilter?: string) {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_reviews' })
     const scope = await getTenantMedusaScope(tenantId)
     const query = statusFilter ? `?status=${statusFilter}` : ''
     const { data, error } = await adminFetch<{
@@ -38,7 +38,7 @@ export async function getReviews(statusFilter?: string) {
 
 // ─── Moderate review (approve/reject) ─────────────────────────
 export async function moderateReviewAction(reviewId: string, status: 'approved' | 'rejected') {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_reviews' })
     const scope = await getTenantMedusaScope(tenantId)
 
     const { error } = await adminFetch('/admin/reviews', {
@@ -57,7 +57,7 @@ export async function moderateReviewAction(reviewId: string, status: 'approved' 
 
 // ─── Delete review ────────────────────────────────────────────
 export async function deleteReviewAction(reviewId: string) {
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_reviews' })
     const scope = await getTenantMedusaScope(tenantId)
 
     const { error } = await adminFetch('/admin/reviews', {

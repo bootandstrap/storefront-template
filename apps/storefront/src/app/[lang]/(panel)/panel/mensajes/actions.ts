@@ -1,9 +1,8 @@
 'use server'
 
 import { revalidatePanel } from '@/lib/revalidate'
-import { getConfigForTenant } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
-import { requirePanelAuth } from '@/lib/panel-auth'
 import { TemplateInputSchema, TemplateUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
@@ -25,20 +24,19 @@ export async function createTemplate(
     input: TemplateInput
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_whatsapp_checkout' })
         const parsed = TemplateInputSchema.safeParse(input)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
         }
         const validInput = parsed.data
-        const { planLimits } = await getConfigForTenant(tenantId)
 
         const { count } = await supabase
             .from('whatsapp_templates')
             .select('*', { count: 'exact', head: true })
             .eq('tenant_id', tenantId)
 
-        const limitCheck = checkLimit(planLimits, 'max_whatsapp_templates', count ?? 0)
+        const limitCheck = checkLimit(appConfig.planLimits, 'max_whatsapp_templates', count ?? 0)
         if (!limitCheck.allowed) {
             return { success: false, error: 'WhatsApp template limit reached' }
         }
@@ -80,7 +78,7 @@ export async function updateTemplate(
     updates: Partial<TemplateInput>
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard({ requiredFlag: 'enable_whatsapp_checkout' })
         const parsed = TemplateUpdateSchema.safeParse(updates)
         if (!parsed.success) {
             return { success: false, error: parsed.error.issues[0]?.message || 'Invalid input' }
@@ -118,7 +116,7 @@ export async function deleteTemplate(
     id: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { supabase, tenantId } = await requirePanelAuth()
+        const { supabase, tenantId } = await withPanelGuard({ requiredFlag: 'enable_whatsapp_checkout' })
 
         const { error } = await supabase
             .from('whatsapp_templates')

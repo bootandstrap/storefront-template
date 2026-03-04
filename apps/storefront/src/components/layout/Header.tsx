@@ -11,6 +11,7 @@ import { useI18n } from '@/lib/i18n/provider'
 import LanguageSelector from './LanguageSelector'
 import CurrencySelector from './CurrencySelector'
 import MegaMenu from './MegaMenu'
+import ThemeToggle from '@/components/ui/ThemeToggle'
 
 interface HeaderProps {
     config: StoreConfig
@@ -119,6 +120,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
 
                         {/* Language & Currency selectors — desktop */}
                         <div className="hidden md:flex items-center gap-1">
+                            <ThemeToggle />
                             {featureFlags.enable_multi_language && (
                                 <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />
                             )}
@@ -251,21 +253,20 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             </Link>
                         )}
 
-                        {/* Mobile language & currency selectors */}
-                        {(featureFlags.enable_multi_language || featureFlags.enable_multi_currency) && (
-                            <div className="border-t border-surface-3/50 pt-4 mt-2 flex items-center gap-2">
-                                {featureFlags.enable_multi_language && (
-                                    <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />
-                                )}
-                                {featureFlags.enable_multi_currency && (
-                                    <CurrencySelector
-                                        activeCurrencies={activeCurrencies}
-                                        currentCurrency={currentCurrency}
-                                        maxCurrencies={maxCurrencies}
-                                    />
-                                )}
-                            </div>
-                        )}
+                        {/* Mobile theme toggle + language & currency selectors */}
+                        <div className="border-t border-surface-3/50 pt-4 mt-2 flex items-center gap-2">
+                            <ThemeToggle />
+                            {featureFlags.enable_multi_language && (
+                                <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />
+                            )}
+                            {featureFlags.enable_multi_currency && (
+                                <CurrencySelector
+                                    activeCurrencies={activeCurrencies}
+                                    currentCurrency={currentCurrency}
+                                    maxCurrencies={maxCurrencies}
+                                />
+                            )}
+                        </div>
                     </nav>
                 </div>
             )}

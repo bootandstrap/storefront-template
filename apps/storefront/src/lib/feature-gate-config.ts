@@ -30,6 +30,18 @@ export interface FeatureGateEntry {
  */
 export const FEATURE_GATE_MAP: Record<string, FeatureGateEntry> = {
     // ── Panel pages ─────────────────────────────────────────────
+    enable_ecommerce: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.ecommerce',
+        icon: '🛒',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
     enable_analytics: {
         moduleKey: 'seo',
         moduleNameKey: 'featureGate.modules.analytics',
@@ -269,6 +281,7 @@ export function getModuleInfoUrl(flagKey: string, locale: string): string {
  * Used by the coverage test.
  */
 export const PANEL_GATED_FLAGS = [
+    'enable_ecommerce',
     'enable_analytics',
     'enable_chatbot',
     'enable_carousel',

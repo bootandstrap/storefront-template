@@ -16,7 +16,7 @@ import {
     shouldAllowPanelRoute,
     classifyPanelRoute,
     type PanelRouteKey,
-} from '../panel-route-guards'
+} from '../panel-policy'
 
 const ESSENTIAL_ROUTES: PanelRouteKey[] = [
     'dashboard', 'catalogo', 'pedidos', 'clientes', 'tienda',

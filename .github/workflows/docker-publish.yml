@@ -183,3 +183,28 @@ jobs:
           done
           echo "⚠️ Storefront not responding after 120s — check Dokploy logs"
           exit 1
+
+  # ── Failure Notification ────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [build-medusa, build-storefront, deploy]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          if [ -n "${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" ] && [ -n "${{ secrets.BSWEB_URL }}" ]; then
+            curl -s -X POST "${{ secrets.BSWEB_URL }}/api/admin/ci-notification" \
+              -H "Authorization: Bearer ${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "repo": "${{ github.repository }}",
+                "workflow": "${{ github.workflow }}",
+                "status": "failure",
+                "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                "ref": "${{ github.ref }}",
+                "actor": "${{ github.actor }}"
+              }' && echo "✅ Notification sent" || echo "⚠️ Notification failed (non-blocking)"
+          else
+            echo "⚠️ BSWEB_URL or BSWEB_INTERNAL_API_TOKEN not configured — skipping notification"
+          fi

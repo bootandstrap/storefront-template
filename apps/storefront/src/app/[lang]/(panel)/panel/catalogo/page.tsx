@@ -10,7 +10,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories, getAdminProducts } from '@/lib/medusa/admin'
 import { checkLimit } from '@/lib/limits'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
-import { requirePanelAuth } from '@/lib/panel-auth'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import CatalogClient from './CatalogClient'
 
@@ -32,7 +32,7 @@ export default async function CatalogPage({
 }) {
     const { lang } = await params
     const rawSearchParams = await searchParams
-    const { tenantId } = await requirePanelAuth()
+    const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
     const { config, planLimits } = await getConfigForTenant(tenantId)
     const dictionary = await getDictionary(lang as Locale)

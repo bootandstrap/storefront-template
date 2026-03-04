@@ -249,6 +249,19 @@ export async function proxy(request: NextRequest) {
             accountUrl.pathname = lang ? `/${lang}/cuenta` : '/cuenta'
             return NextResponse.redirect(accountUrl)
         }
+
+        // ── Feature-flag sub-route guard ──
+        const panelSegment = pathAfterLang.replace('panel/', '').split('/')[0] || ''
+        if (panelSegment) {
+            const { shouldAllowPanelRoute } = await import('@/lib/panel-policy')
+            const { getConfig } = await import('@/lib/config')
+            const appConfig = await getConfig()
+            if (!shouldAllowPanelRoute(panelSegment as import('@/lib/panel-policy').PanelRouteKey, appConfig.featureFlags)) {
+                const fallbackUrl = request.nextUrl.clone()
+                fallbackUrl.pathname = lang ? `/${lang}/panel` : '/panel'
+                return NextResponse.redirect(fallbackUrl)
+            }
+        }
         return response
     }
 

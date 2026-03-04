@@ -3,7 +3,7 @@ import {
     getPanelNavigation,
     isAdvancedPanelRouteEnabled,
     type PanelFeatureFlags,
-} from '../panel-modules'
+} from '../panel-policy'
 
 function baseFlags(): PanelFeatureFlags {
     return {
