@@ -1,4 +1,5 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { withPanelGuard } from '@/lib/panel-guard'
 import ShippingClient from './ShippingClient'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +17,7 @@ export default async function ShippingPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
+    await withPanelGuard()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 

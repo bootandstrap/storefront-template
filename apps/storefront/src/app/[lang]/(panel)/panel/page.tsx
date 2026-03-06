@@ -135,7 +135,7 @@ export default async function PanelDashboard({
             {/* Medusa degraded banner */}
             {medusaDegraded && (
                 <div className="rounded-xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700">
-                    ⚠️ Medusa no está conectado — las estadísticas de productos, pedidos y categorías no están disponibles.
+                    ⚠️ {t('panel.dashboard.medusaDegraded')}
                 </div>
             )}
 
@@ -325,11 +325,11 @@ export default async function PanelDashboard({
                                                     order.status === 'canceled' ? 'bg-red-100 text-red-700' :
                                                         'bg-blue-100 text-blue-700'
                                                 }`}>
-                                                {order.status}
+                                                {t(`order.${order.status}`) || order.status}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-right font-medium text-text-primary">
-                                            {new Intl.NumberFormat('en', {
+                                            {new Intl.NumberFormat(lang, {
                                                 style: 'currency',
                                                 currency: order.currency_code ?? 'usd',
                                             }).format(order.total / 100)}

@@ -1,27 +1,30 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { logTenantError } from '@/lib/log-tenant-error'
+import { sendEmailForTenant, type EmailTemplate } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
-// Stripe webhook handler — idempotent processing
+// Stripe webhook handler — transactional inbox pattern
+//
+// Events go through: received → processing → processed | failed
+// Failed and stale processing events can be retried by Stripe.
 // ---------------------------------------------------------------------------
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 
-/**
- * Result of attempting to claim a Stripe event for idempotent processing.
- * - 'claimed': This process successfully inserted the row and owns the event.
- * - 'duplicate': The event was already claimed by another process (safe to skip).
- * - 'unavailable': The idempotency backend is unreachable (must trigger Stripe retry).
- */
+// Stale processing timeout — events stuck in 'processing' for longer than this
+// are considered crashed and can be re-claimed by Stripe retries.
+const STALE_PROCESSING_MINUTES = 5
+
 type ClaimResult = 'claimed' | 'duplicate' | 'unavailable'
 
 /**
- * Atomically claim a Stripe event for processing.
- * Uses PostgREST upsert with `resolution=ignore-duplicates` (= INSERT … ON CONFLICT DO NOTHING).
- * Returns a discriminated result so the caller can distinguish between
- * safe-to-skip duplicates and infrastructure failures that need retry.
+ * Transactional inbox: claim a Stripe event for processing.
+ * 
+ * 1. Try INSERT with status='processing' (ON CONFLICT DO NOTHING)
+ * 2. If duplicate, check if retryable (failed / stale processing)
+ * 3. Only 'processed' events are truly skipped
  */
 async function claimEvent(eventId: string, eventType: string): Promise<ClaimResult> {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -32,31 +35,139 @@ async function claimEvent(eventId: string, eventType: string): Promise<ClaimResu
     }
 
     const tenantId = process.env.TENANT_ID || null
+    const headers = {
+        'Content-Type': 'application/json',
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+    }
 
     try {
+        // Step 1: Try to INSERT (new event) in 'processing' state
         const res = await fetch(`${supabaseUrl}/rest/v1/stripe_webhook_events`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                apikey: serviceKey,
-                Authorization: `Bearer ${serviceKey}`,
-                // ignore-duplicates = ON CONFLICT(event_id) DO NOTHING
+                ...headers,
                 Prefer: 'resolution=ignore-duplicates,return=representation',
             },
             body: JSON.stringify({
                 event_id: eventId,
                 event_type: eventType,
                 tenant_id: tenantId,
+                status: 'processing',
+                attempts: 1,
             }),
         })
         const rows = await res.json()
-        // If the response body has a row, we inserted it → we own it.
-        // If empty array → row already existed → duplicate.
-        return (Array.isArray(rows) && rows.length > 0) ? 'claimed' : 'duplicate'
+
+        if (Array.isArray(rows) && rows.length > 0) {
+            return 'claimed'
+        }
+
+        // Step 2: Row exists — check if retryable
+        const checkRes = await fetch(
+            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}&select=status,created_at,attempts`,
+            { headers }
+        )
+        const existing = await checkRes.json()
+
+        if (!Array.isArray(existing) || existing.length === 0) {
+            return 'unavailable'
+        }
+
+        const event = existing[0]
+
+        // Already processed — skip
+        if (event.status === 'processed') return 'duplicate'
+
+        // Failed — allow retry
+        if (event.status === 'failed') {
+            const updateRes = await fetch(
+                `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
+                {
+                    method: 'PATCH',
+                    headers: { ...headers, Prefer: 'return=representation' },
+                    body: JSON.stringify({
+                        status: 'processing',
+                        attempts: (event.attempts || 0) + 1,
+                        error: null,
+                    }),
+                }
+            )
+            const updated = await updateRes.json()
+            return (Array.isArray(updated) && updated.length > 0) ? 'claimed' : 'duplicate'
+        }
+
+        // Stale processing — crashed handler, allow re-claim
+        if (event.status === 'processing') {
+            const createdAt = new Date(event.created_at)
+            const staleThreshold = new Date(Date.now() - STALE_PROCESSING_MINUTES * 60 * 1000)
+            if (createdAt < staleThreshold) {
+                const updateRes = await fetch(
+                    `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}&status=eq.processing`,
+                    {
+                        method: 'PATCH',
+                        headers: { ...headers, Prefer: 'return=representation' },
+                        body: JSON.stringify({ attempts: (event.attempts || 0) + 1, error: null }),
+                    }
+                )
+                const updated = await updateRes.json()
+                return (Array.isArray(updated) && updated.length > 0) ? 'claimed' : 'duplicate'
+            }
+            return 'duplicate'
+        }
+
+        return 'duplicate'
     } catch (err) {
         console.error('[stripe-webhook] claimEvent error:', err)
-        // Fail-closed: return unavailable so Stripe retries rather than silently dropping
         return 'unavailable'
+    }
+}
+
+/** Mark a webhook event as successfully processed. */
+async function markEventProcessed(eventId: string): Promise<void> {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !serviceKey) return
+    try {
+        await fetch(
+            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: serviceKey,
+                    Authorization: `Bearer ${serviceKey}`,
+                    Prefer: 'return=minimal',
+                },
+                body: JSON.stringify({ status: 'processed', processed_at: new Date().toISOString(), error: null }),
+            }
+        )
+    } catch (err) {
+        console.error('[stripe-webhook] markEventProcessed error:', err)
+    }
+}
+
+/** Mark a webhook event as failed — allows Stripe retry. */
+async function markEventFailed(eventId: string, error: string): Promise<void> {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !serviceKey) return
+    try {
+        await fetch(
+            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: serviceKey,
+                    Authorization: `Bearer ${serviceKey}`,
+                    Prefer: 'return=minimal',
+                },
+                body: JSON.stringify({ status: 'failed', error: error.slice(0, 500) }),
+            }
+        )
+    } catch (err) {
+        console.error('[stripe-webhook] markEventFailed error:', err)
     }
 }
 
@@ -123,7 +234,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    // Process events
+    // ── Transactional inbox: process events ──
     try {
         switch (event.type) {
             case 'payment_intent.succeeded': {
@@ -146,6 +257,7 @@ export async function POST(request: NextRequest) {
                             message: `Cart completion failed for cart ${cartId}`,
                             details: { cart_id: cartId, payment_intent: paymentIntent.id },
                         })
+                        await markEventFailed(event.id, `Cart ${cartId} completion failed`)
                         return NextResponse.json(
                             { error: 'Cart completion failed' },
                             { status: 500 }
@@ -155,15 +267,15 @@ export async function POST(request: NextRequest) {
 
                 // ── NON-CRITICAL: email + analytics ──
                 // Failures here are logged but don't warrant Stripe retry.
-                await triggerEmail({
+                await sendTenantEmail({
                     to: paymentIntent.receipt_email || paymentIntent.metadata?.email || '',
                     subject: '🎉 ¡Pedido Confirmado!',
                     template: 'order_confirmation',
                     data: {
-                        customer_name: paymentIntent.metadata?.customer_name,
-                        order_id: paymentIntent.metadata?.cart_id,
+                        customerName: paymentIntent.metadata?.customer_name,
+                        orderId: paymentIntent.metadata?.cart_id,
                         total: (paymentIntent.amount / 100).toFixed(2),
-                        store_url: process.env.NEXT_PUBLIC_SITE_URL || '',
+                        storeUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
                     },
                 })
 
@@ -195,13 +307,13 @@ export async function POST(request: NextRequest) {
                 )
 
                 // Send payment failed email
-                await triggerEmail({
+                await sendTenantEmail({
                     to: paymentIntent.receipt_email || paymentIntent.metadata?.email || '',
                     subject: '⚠️ Pago No Procesado',
                     template: 'payment_failed',
                     data: {
-                        customer_name: paymentIntent.metadata?.customer_name,
-                        order_id: paymentIntent.metadata?.cart_id,
+                        customerName: paymentIntent.metadata?.customer_name,
+                        orderId: paymentIntent.metadata?.cart_id,
                         reason: paymentIntent.last_payment_error?.message,
                     },
                 })
@@ -217,13 +329,13 @@ export async function POST(request: NextRequest) {
                 )
 
                 // Send refund email
-                await triggerEmail({
+                await sendTenantEmail({
                     to: charge.billing_details?.email || '',
                     subject: '💰 Reembolso Procesado',
                     template: 'refund_processed',
                     data: {
-                        customer_name: charge.billing_details?.name || undefined,
-                        order_id: charge.metadata?.cart_id,
+                        customerName: charge.billing_details?.name || undefined,
+                        orderId: charge.metadata?.cart_id,
                         amount: (charge.amount_refunded / 100).toFixed(2),
                     },
                 })
@@ -275,11 +387,14 @@ export async function POST(request: NextRequest) {
                 console.log(`[stripe-webhook] Unhandled event type: ${event.type}`)
         }
 
-        // Event already recorded atomically by claimEvent above
+        // ── Mark event as successfully processed ──
+        await markEventProcessed(event.id)
         return NextResponse.json({ received: true })
     } catch (err) {
         console.error('[stripe-webhook] Unhandled error processing event:', err)
-        // Unhandled error in critical path → request Stripe retry
+        // ── Mark event as failed — allows Stripe retry ──
+        const errMsg = err instanceof Error ? err.message : 'Processing error'
+        await markEventFailed(event.id, errMsg)
         return NextResponse.json(
             { error: 'Processing error' },
             { status: 500 }
@@ -318,46 +433,37 @@ async function completeCartInMedusa(cartId: string): Promise<boolean> {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helper: Trigger transactional email via Supabase Edge Function
-// ---------------------------------------------------------------------------
-
-interface EmailPayload {
+/**
+ * Send email using per-tenant config from `sendEmailForTenant()`.
+ * Non-blocking — errors are logged but don't propagate.
+ */
+async function sendTenantEmail(payload: {
     to: string
     subject: string
-    template: 'order_confirmation' | 'payment_failed' | 'refund_processed'
-    data: Record<string, string | number | undefined>
-}
-
-async function triggerEmail(payload: EmailPayload): Promise<void> {
+    template: EmailTemplate
+    data: Record<string, unknown>
+}): Promise<void> {
     try {
         if (!payload.to) {
             console.warn('[stripe-webhook] No email recipient — skipping email')
             return
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-        if (!supabaseUrl || !supabaseKey) {
-            console.warn('[stripe-webhook] Supabase not configured — skipping email')
+        const tenantId = process.env.TENANT_ID
+        if (!tenantId) {
+            console.warn('[stripe-webhook] No TENANT_ID configured — using default email provider')
+            // Fall back to default provider (console in dev)
+            const { sendEmail } = await import('@/lib/email')
+            const result = await sendEmail(payload)
+            console.log('[stripe-webhook] Email result:', result)
             return
         }
 
-        const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${supabaseKey}`,
-            },
-            body: JSON.stringify(payload),
-        })
-
-        const result = await res.json()
+        const result = await sendEmailForTenant(tenantId, payload)
         console.log('[stripe-webhook] Email result:', result)
     } catch (err) {
         // Non-blocking — don't fail the webhook for email issues
-        console.error('[stripe-webhook] Email trigger error:', err)
+        console.error('[stripe-webhook] Email send error:', err)
     }
 }
 

@@ -1,3 +1,10 @@
+/**
+ * @internal
+ * Panel Policy — Navigation and route classification logic.
+ *
+ * For server actions, use `panel-guard.ts` (`withPanelGuard()`) as the public entry point.
+ * This module is consumed internally by proxy.ts and panel layouts.
+ */
 export interface PanelFeatureFlags {
     enable_carousel?: boolean
     enable_whatsapp_checkout?: boolean
@@ -186,7 +193,7 @@ export function shouldAllowPanelRoute(
     featureFlags: PanelFeatureFlags
 ): boolean {
     if (ESSENTIAL_ROUTES.has(route)) return true
-    if (!ADVANCED_ROUTES.has(route)) return true
+    if (!ADVANCED_ROUTES.has(route)) return false // Fail-closed for unknown routes
 
     return isAdvancedPanelRouteEnabled(`/_/panel/${route}`, featureFlags)
 }
@@ -227,5 +234,8 @@ export function evaluatePanelAccess(
         return { allowed: true }
     }
 
-    return { allowed: true } // Fail open for unknown future routes
+    // Fail-CLOSED for unknown routes (P1-2 fix)
+    // Any route not in ESSENTIAL_ROUTES or ADVANCED_ROUTES is denied by default.
+    // New routes must be explicitly added to one of these sets.
+    return { allowed: false, reason: 'route_not_recognized' }
 }

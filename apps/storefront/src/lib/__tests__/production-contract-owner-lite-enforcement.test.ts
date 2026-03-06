@@ -55,10 +55,10 @@ describe('Owner Lite Enforcement - Production Contract', () => {
         }
     })
 
-    it('allows unknown future routes (fail-open)', () => {
+    it('denies unknown future routes (fail-closed, P1-2)', () => {
         const unknownRoute = 'future_module' as PanelRouteKey
-        expect(shouldAllowPanelRoute(unknownRoute, defaultFlags)).toBe(true)
-        expect(shouldAllowPanelRoute(unknownRoute, liteFlags)).toBe(true)
+        expect(shouldAllowPanelRoute(unknownRoute, defaultFlags)).toBe(false)
+        expect(shouldAllowPanelRoute(unknownRoute, liteFlags)).toBe(false)
         expect(classifyPanelRoute('future_module')).toBe('unknown')
     })
 

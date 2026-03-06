@@ -1,0 +1,90 @@
+# F-35: Lighthouse CI — Post-deploy performance gate
+#
+# Runs Lighthouse audit on the deployed storefront after successful deploy.
+# Fails if performance or accessibility scores drop below 80.
+#
+# Triggered: manually or after deploy completes.
+
+name: Lighthouse CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to audit (e.g., https://slug.bootandstrap.com)'
+        required: true
+        type: string
+  workflow_run:
+    workflows: ['Deploy']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine URL
+        id: url
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.url }}" >> $GITHUB_OUTPUT
+          else
+            # Use STORE_DOMAIN variable set by provisioning
+            echo "target=https://${{ vars.STORE_DOMAIN }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for deploy to stabilize
+        run: sleep 30
+
+      - name: Run Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        id: lighthouse
+        with:
+          urls: |
+            ${{ steps.url.outputs.target }}
+            ${{ steps.url.outputs.target }}/es/productos
+          runs: 3
+          temporaryPublicStorage: true
+
+      - name: Check Performance Score
+        run: |
+          echo "🔍 Lighthouse Results:"
+          echo "${{ steps.lighthouse.outputs.manifest }}" | jq '.[].summary' || true
+
+          # Parse performance score from first run
+          PERF_SCORE=$(echo "${{ steps.lighthouse.outputs.manifest }}" | jq -r '.[0].summary.performance // 0')
+          A11Y_SCORE=$(echo "${{ steps.lighthouse.outputs.manifest }}" | jq -r '.[0].summary.accessibility // 0')
+
+          PERF_INT=$(echo "$PERF_SCORE * 100" | bc | cut -d. -f1)
+          A11Y_INT=$(echo "$A11Y_SCORE * 100" | bc | cut -d. -f1)
+
+          echo "Performance: ${PERF_INT}%"
+          echo "Accessibility: ${A11Y_INT}%"
+
+          if [ "${PERF_INT}" -lt 80 ]; then
+            echo "❌ Performance score ${PERF_INT}% is below 80% threshold"
+            exit 1
+          fi
+
+          if [ "${A11Y_INT}" -lt 80 ]; then
+            echo "❌ Accessibility score ${A11Y_INT}% is below 80% threshold"
+            exit 1
+          fi
+
+          echo "✅ All scores above threshold"
+
+      - name: Upload Lighthouse Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 14

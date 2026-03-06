@@ -31,6 +31,7 @@ export {
     type AdminOrderItem,
     type AdminOrderFull,
     type AdminCustomer,
+    type OrderNote,
     getProductCount,
     getCategoryCount,
     getOrdersThisMonth,
@@ -40,8 +41,17 @@ export {
     getAdminOrderDetail,
     orderBelongsToScope,
     createOrderFulfillment,
+    createFulfillmentWithTracking,
+    addTrackingToFulfillment,
+    createOrderRefund,
+    getOrderNotes,
+    createOrderNote,
+    deleteOrderNote,
+    createReturnRequest,
+    receiveReturn,
     cancelAdminOrder,
     getAdminCustomers,
+    getAdminCustomerDetail,
 } from './admin-orders'
 
 // Products
@@ -49,6 +59,8 @@ export {
     type AdminProductSummary,
     type AdminProductFull,
     type CreateProductInput,
+    type CreateVariantInput,
+    type CreateOptionInput,
     updateProductMetadata,
     getAdminProducts,
     getAdminProductsFull,
@@ -60,6 +72,12 @@ export {
     deleteProductImage,
     updateVariantPrices,
     updateVariantInventory,
+    createProductVariant,
+    updateProductVariant,
+    deleteProductVariant,
+    createProductOption,
+    updateProductOption,
+    deleteProductOption,
 } from './admin-products'
 
 // Categories

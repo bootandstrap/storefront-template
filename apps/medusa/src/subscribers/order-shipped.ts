@@ -2,13 +2,14 @@ import type {
     SubscriberArgs,
     SubscriberConfig,
 } from "@medusajs/framework"
+import { notifyStorefront } from "./shared/bridge"
 
 /**
  * Subscriber: order.fulfillment_created
  *
  * Fires when fulfillment is created for an order (i.e., items shipped).
- * Logs structured shipment data for observability. Extension point for
- * shipping notification emails.
+ * Logs structured shipment data and dispatches shipping notification email
+ * via the storefront's internal API.
  */
 export default async function orderShippedHandler({
     event: { data },
@@ -23,14 +24,17 @@ export default async function orderShippedHandler({
             { relations: ["items", "labels"] }
         )
 
-        // Try to get order context for richer logging
-        let orderInfo: { display_id?: number; email?: string } = {}
+        // Try to get order context for richer logging + email
+        let orderInfo: { display_id?: number; email?: string; first_name?: string } = {}
         if (data.order_id) {
             try {
-                const order = await orderModule.retrieveOrder(data.order_id)
+                const order = await orderModule.retrieveOrder(data.order_id, {
+                    relations: ["shipping_address"],
+                })
                 orderInfo = {
                     display_id: order.display_id,
                     email: order.email,
+                    first_name: order.shipping_address?.first_name,
                 }
             } catch {
                 // order_id may not be directly on the event in all Medusa versions
@@ -57,14 +61,15 @@ export default async function orderShippedHandler({
             })
         )
 
-        // --- Extension point: Shipping notification email ---
-        // const notificationModule = container.resolve("notification")
-        // await notificationModule.createNotifications({
-        //   to: orderInfo.email,
-        //   channel: "email",
-        //   template: "order-shipped",
-        //   data: { fulfillment, tracking_numbers: trackingNumbers },
-        // })
+        // ── Email notification via storefront bridge ──
+        if (orderInfo.email) {
+            await notifyStorefront("order.shipped", {
+                customer_email: orderInfo.email,
+                customer_name: orderInfo.first_name || orderInfo.email.split("@")[0],
+                display_id: orderInfo.display_id,
+                tracking_numbers: trackingNumbers,
+            }, "order-shipped")
+        }
     } catch (error) {
         console.error(
             JSON.stringify({
@@ -80,3 +85,4 @@ export default async function orderShippedHandler({
 export const config: SubscriberConfig = {
     event: "order.fulfillment_created",
 }
+

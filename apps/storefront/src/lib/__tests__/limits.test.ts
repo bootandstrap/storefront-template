@@ -24,6 +24,11 @@ const mockLimits: PlanLimits = {
     max_badges: 3,
     max_newsletter_subscribers: 100,
     max_requests_day: 5000,
+    max_reviews_per_product: 10,
+    max_wishlist_items: 50,
+    max_promotions_active: 5,
+    max_payment_methods: 4,
+    max_crm_contacts: 500,
 }
 
 describe('checkLimit', () => {

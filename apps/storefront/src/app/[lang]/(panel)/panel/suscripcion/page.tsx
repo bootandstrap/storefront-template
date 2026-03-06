@@ -1,6 +1,5 @@
-import { getConfig } from '@/lib/config'
 import { createClient } from '@/lib/supabase/server'
-import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { withPanelGuard } from '@/lib/panel-guard'
 import SubscriptionClient from './SubscriptionClient'
 import { getActiveModulesForTenant } from '@/lib/active-modules'
 
@@ -11,7 +10,7 @@ export const dynamic = 'force-dynamic'
  *
  * Shows the owner's active modules, available add-ons,
  * maintenance status, and billing management.
- * Auth-guarded by the (panel) layout group.
+ * Auth-guarded by withPanelGuard().
  */
 export default async function SubscriptionPage({
     params,
@@ -19,47 +18,29 @@ export default async function SubscriptionPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const appConfig = await getConfig()
+    const { tenantId, appConfig } = await withPanelGuard()
     const { featureFlags, planLimits, tenantStatus, maintenanceDaysRemaining } = appConfig
 
     // Check if tenant has Stripe customer
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: tenant } = await supabase
+        .from('tenants')
+        .select('stripe_customer_id')
+        .eq('id', tenantId)
+        .single()
 
-    let hasStripeCustomer = false
-    let profileTenantId = null
-    if (user) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('tenant_id')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.tenant_id) {
-            profileTenantId = profile.tenant_id
-            const { data: tenant } = await supabase
-                .from('tenants')
-                .select('stripe_customer_id')
-                .eq('id', profile.tenant_id)
-                .single()
-
-            hasStripeCustomer = !!tenant?.stripe_customer_id
-        }
-    }
+    const hasStripeCustomer = !!tenant?.stripe_customer_id
 
     // Build list of module flags and their status from feature_flags
     const moduleFlags: Record<string, boolean> = {}
-    const flagKeys = Object.keys(featureFlags) as (keyof typeof featureFlags)[]
-    for (const key of flagKeys) {
+    for (const [key, value] of Object.entries(featureFlags)) {
         if (key.startsWith('enable_')) {
-            moduleFlags[key] = featureFlags[key] as boolean
+            moduleFlags[key] = value as boolean
         }
     }
 
     // Now get commercial active modules
-    const activeModuleOrders = profileTenantId
-        ? await getActiveModulesForTenant(profileTenantId)
-        : []
+    const activeModuleOrders = await getActiveModulesForTenant(tenantId)
 
     return (
         <SubscriptionClient

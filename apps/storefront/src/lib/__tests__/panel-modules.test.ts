@@ -46,6 +46,8 @@ function baseLabels() {
         badges: 'Badges',
         chatbot: 'Chatbot',
         returns: 'Returns',
+        crm: 'CRM',
+        reviews: 'Reviews',
         ownerPanel: 'Owner Panel',
         backToStore: 'Back',
     }

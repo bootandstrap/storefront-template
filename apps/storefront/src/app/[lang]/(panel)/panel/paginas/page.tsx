@@ -4,7 +4,7 @@
  * Server component fetches pages + plan limits, delegates to PagesClient.
  */
 
-import { getConfig, getRequiredTenantId } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
@@ -26,7 +26,8 @@ export default async function CMSPagesPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { planLimits, featureFlags } = await getConfig()
+    const { tenantId, appConfig } = await withPanelGuard()
+    const { planLimits, featureFlags } = appConfig
 
     if (!featureFlags.enable_cms_pages) {
         return <FeatureGate flag="enable_cms_pages" lang={lang} />
@@ -36,7 +37,7 @@ export default async function CMSPagesPage({
     const { data: pages } = await supabase
         .from('cms_pages')
         .select('*')
-        .eq('tenant_id', getRequiredTenantId())
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
 
     const pageList = (pages ?? []).map((p: Record<string, unknown>) => ({

@@ -136,6 +136,11 @@ describe('Limit Enforcement Scenarios', () => {
         max_badges: 3,
         max_newsletter_subscribers: 100,
         max_requests_day: 5000,
+        max_reviews_per_product: 5,
+        max_wishlist_items: 20,
+        max_promotions_active: 2,
+        max_payment_methods: 2,
+        max_crm_contacts: 100,
     }
 
     const proPlan = {

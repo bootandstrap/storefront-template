@@ -2,15 +2,15 @@
  * Reviews Moderation Page — Owner Panel
  *
  * Server component fetches all reviews via Medusa Admin API.
- * Gated by enable_reviews feature flag.
+ * Gated by enable_reviews feature flag via withPanelGuard.
  * Tenant-scoped: all queries go through getTenantMedusaScope.
  */
 
 import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getConfig } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { isFeatureEnabled } from '@/lib/features'
-import { ShieldX, Star } from 'lucide-react'
+import { ShieldX } from 'lucide-react'
 import ReviewsClient from './ReviewsClient'
 import { getReviews } from './actions'
 
@@ -74,7 +74,8 @@ export default async function ReviewsPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags } = await getConfig()
+    const { appConfig } = await withPanelGuard()
+    const { featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 

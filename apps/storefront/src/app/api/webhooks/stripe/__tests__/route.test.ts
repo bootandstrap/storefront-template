@@ -99,7 +99,7 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         expect(res.status).toBe(400)
     })
 
-    it('skips duplicate event when claimEvent returns empty (row already exists)', async () => {
+    it('skips duplicate event when claimEvent finds already-processed event', async () => {
         const fakeEvent = {
             id: 'evt_duplicate_123',
             type: 'payment_intent.succeeded',
@@ -107,10 +107,28 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
-        // claimEvent: upsert returns empty array → row already existed → duplicate
-        mockFetchSetup([
-            { url: 'stripe_webhook_events', response: [] },
-        ])
+        // New inbox model: INSERT returns [] (row exists) → GET status check → already processed → duplicate
+        // Use sequential fetch mock to handle multiple calls to similar URLs
+        let callCount = 0
+        globalThis.fetch = vi.fn().mockImplementation(() => {
+            callCount++
+            if (callCount === 1) {
+                // First call: INSERT returns empty (row already existed)
+                return Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    json: () => Promise.resolve([]),
+                    text: () => Promise.resolve('[]'),
+                })
+            }
+            // Second call: GET returns existing row with status='processed'
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve([{ status: 'processed', created_at: new Date().toISOString(), attempts: 1 }]),
+                text: () => Promise.resolve('[]'),
+            })
+        })
 
         vi.resetModules()
         const { POST } = await import('../route')

@@ -29,6 +29,9 @@ export type EmailTemplate =
     | 'order_shipped'
     | 'order_delivered'
     | 'order_cancelled'
+    | 'payment_failed'
+    | 'refund_processed'
+    | 'low_stock_alert'
     | 'welcome'
     | 'password_reset'
     | 'account_verification'
@@ -199,6 +202,51 @@ function buildHtml(payload: EmailPayload): string {
                     <p>${data.greeting || `Hi ${data.customerName},`}</p>
                     <p>${data.message || 'Your order is on its way.'}</p>
                     ${data.trackingUrl ? `<p><a href="${data.trackingUrl}" class="btn">Track Package</a></p>` : ''}
+                </div>
+            `)
+
+        case 'payment_failed':
+            return wrap(`
+                <div class="header"><h1>⚠️ ${data.heading || 'Payment Not Processed'}</h1></div>
+                <div class="content">
+                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
+                    <p>We weren't able to process your payment${data.orderId ? ` for order #${data.orderId}` : ''}.</p>
+                    ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
+                    <p>Please try again or use a different payment method.</p>
+                    ${data.retryUrl ? `<p><a href="${data.retryUrl}" class="btn">Try Again</a></p>` : ''}
+                </div>
+            `)
+
+        case 'refund_processed':
+            return wrap(`
+                <div class="header"><h1>💰 ${data.heading || 'Refund Processed'}</h1></div>
+                <div class="content">
+                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
+                    <p>Your refund of <strong>${data.currency || ''}${data.amount || ''}</strong> has been processed${data.orderId ? ` for order #${data.orderId}` : ''}.</p>
+                    <p>Please allow 5-10 business days for the refund to appear on your statement.</p>
+                </div>
+            `)
+
+        case 'low_stock_alert':
+            return wrap(`
+                <div class="header"><h1>📉 ${data.heading || 'Low Stock Alert'}</h1></div>
+                <div class="content">
+                    <p>The following product is ${data.outOfStock ? '<strong>OUT OF STOCK</strong>' : 'running low'}:</p>
+                    <div class="detail-row"><span>Product</span><span>${data.title || 'Unknown'}</span></div>
+                    ${data.sku ? `<div class="detail-row"><span>SKU</span><span>${data.sku}</span></div>` : ''}
+                    <div class="detail-row"><span>Available Stock</span><span><strong>${data.availableStock ?? 0}</strong></span></div>
+                    <p>Consider restocking this item to avoid missed sales.</p>
+                </div>
+            `)
+
+        case 'order_cancelled':
+            return wrap(`
+                <div class="header"><h1>❌ ${data.heading || 'Order Cancelled'}</h1></div>
+                <div class="content">
+                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
+                    <p>Your order #${data.orderId || ''} has been cancelled.</p>
+                    ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
+                    <p>If you have any questions, please contact us.</p>
                 </div>
             `)
 

@@ -26,10 +26,17 @@ export interface AdminProductFull {
     thumbnail: string | null
     status: string
     images: { id: string; url: string }[]
+    options: {
+        id: string
+        title: string
+        values: { id: string; value: string }[]
+    }[]
     variants: {
         id: string
         title: string
+        sku: string | null
         prices: { amount: number; currency_code: string }[]
+        options: { id: string; value: string; option_id: string }[]
         manage_inventory: boolean
         inventory_quantity?: number
     }[]
@@ -44,12 +51,29 @@ export interface CreateProductInput {
     description?: string
     status?: 'draft' | 'published'
     categories?: { id: string }[]
+    options?: { title: string; values: string[] }[]
     variants?: {
         title: string
+        sku?: string
         prices: { amount: number; currency_code: string }[]
+        options?: Record<string, string>
         manage_inventory?: boolean
         inventory_quantity?: number
     }[]
+}
+
+export interface CreateVariantInput {
+    title: string
+    sku?: string
+    prices: { amount: number; currency_code: string }[]
+    options?: Record<string, string>
+    manage_inventory?: boolean
+    inventory_quantity?: number
+}
+
+export interface CreateOptionInput {
+    title: string
+    values: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -230,5 +254,93 @@ export async function updateVariantInventory(
         method: 'POST',
         body: JSON.stringify(data),
     }, scope)
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Variant CRUD
+// ---------------------------------------------------------------------------
+
+export async function createProductVariant(
+    productId: string,
+    data: CreateVariantInput,
+    scope?: TenantMedusaScope | null
+): Promise<{ variant: AdminProductFull['variants'][0] | null; error: string | null }> {
+    const res = await adminFetch<{ variant: AdminProductFull['variants'][0] }>(
+        `/admin/products/${productId}/variants`,
+        { method: 'POST', body: JSON.stringify(data) },
+        scope
+    )
+    return { variant: res.data?.variant ?? null, error: res.error }
+}
+
+export async function updateProductVariant(
+    productId: string,
+    variantId: string,
+    data: Partial<CreateVariantInput>,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(
+        `/admin/products/${productId}/variants/${variantId}`,
+        { method: 'POST', body: JSON.stringify(data) },
+        scope
+    )
+    return { error: res.error }
+}
+
+export async function deleteProductVariant(
+    productId: string,
+    variantId: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(
+        `/admin/products/${productId}/variants/${variantId}`,
+        { method: 'DELETE' },
+        scope
+    )
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Product Options (Size, Color, Material, etc.)
+// ---------------------------------------------------------------------------
+
+export async function createProductOption(
+    productId: string,
+    data: CreateOptionInput,
+    scope?: TenantMedusaScope | null
+): Promise<{ option: AdminProductFull['options'][0] | null; error: string | null }> {
+    const res = await adminFetch<{ product_option: AdminProductFull['options'][0] }>(
+        `/admin/products/${productId}/options`,
+        { method: 'POST', body: JSON.stringify(data) },
+        scope
+    )
+    return { option: res.data?.product_option ?? null, error: res.error }
+}
+
+export async function updateProductOption(
+    productId: string,
+    optionId: string,
+    data: Partial<CreateOptionInput>,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(
+        `/admin/products/${productId}/options/${optionId}`,
+        { method: 'POST', body: JSON.stringify(data) },
+        scope
+    )
+    return { error: res.error }
+}
+
+export async function deleteProductOption(
+    productId: string,
+    optionId: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(
+        `/admin/products/${productId}/options/${optionId}`,
+        { method: 'DELETE' },
+        scope
+    )
     return { error: res.error }
 }

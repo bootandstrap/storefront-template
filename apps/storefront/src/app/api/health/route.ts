@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getEmailProviderName } from '@/lib/email'
 
 const startTime = Date.now()
 
@@ -74,6 +75,22 @@ export async function GET(request: Request) {
             status: 'error',
             latency_ms: -1,
             error: err instanceof Error ? err.message : 'Medusa unreachable',
+        }
+    }
+
+    // Email provider
+    try {
+        const providerName = getEmailProviderName()
+        checks.email = {
+            status: providerName === 'console' ? 'degraded' : 'ok',
+            latency_ms: 0,
+            ...(providerName === 'console' && { error: 'Using console provider (no real emails sent)' }),
+        }
+    } catch (err) {
+        checks.email = {
+            status: 'error',
+            latency_ms: -1,
+            error: err instanceof Error ? err.message : 'Email provider error',
         }
     }
 

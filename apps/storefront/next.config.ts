@@ -70,18 +70,21 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://www.facebook.com",
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com",
-              "frame-src https://js.stripe.com https://hooks.stripe.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
+            value: (() => {
+              const isDev = process.env.NODE_ENV === 'development'
+              return [
+                "default-src 'self'",
+                `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`,
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "font-src 'self' https://fonts.gstatic.com",
+                "img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://www.facebook.com",
+                "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com",
+                "frame-src https://js.stripe.com https://hooks.stripe.com",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+              ].join("; ")
+            })(),
           },
         ],
       },

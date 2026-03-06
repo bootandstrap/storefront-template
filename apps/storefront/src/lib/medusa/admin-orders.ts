@@ -213,6 +213,165 @@ export async function cancelAdminOrder(
 }
 
 // ---------------------------------------------------------------------------
+// Fulfillment with tracking
+// ---------------------------------------------------------------------------
+
+export async function createFulfillmentWithTracking(
+    orderId: string,
+    data: {
+        items?: { id: string; quantity: number }[]
+        tracking_numbers?: string[]
+        no_notification?: boolean
+        metadata?: Record<string, unknown>
+    },
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const body: Record<string, unknown> = {}
+    if (data.items?.length) {
+        body.items = data.items
+    }
+    if (data.tracking_numbers?.length) {
+        body.labels = data.tracking_numbers.map(tn => ({
+            tracking_number: tn,
+        }))
+    }
+    if (data.no_notification) body.no_notification = true
+    if (data.metadata) body.metadata = data.metadata
+
+    const res = await adminFetch(`/admin/orders/${orderId}/fulfillments`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+    }, scope)
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Shipment tracking (add to existing fulfillment)
+// ---------------------------------------------------------------------------
+
+export async function addTrackingToFulfillment(
+    orderId: string,
+    fulfillmentId: string,
+    trackingNumber: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(
+        `/admin/orders/${orderId}/fulfillments/${fulfillmentId}/shipments`,
+        {
+            method: 'POST',
+            body: JSON.stringify({
+                labels: [{ tracking_number: trackingNumber }],
+            }),
+        },
+        scope
+    )
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Refund processing (Stripe)
+// ---------------------------------------------------------------------------
+
+export async function createOrderRefund(
+    orderId: string,
+    data: {
+        amount: number
+        reason?: string
+        note?: string
+    },
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/orders/${orderId}/refunds`, {
+        method: 'POST',
+        body: JSON.stringify({
+            amount: data.amount,
+            reason: data.reason || 'other',
+            note: data.note,
+        }),
+    }, scope)
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Order Notes
+// ---------------------------------------------------------------------------
+
+export interface OrderNote {
+    id: string
+    value: string
+    author_id?: string
+    created_at: string
+}
+
+export async function getOrderNotes(
+    orderId: string,
+    scope?: TenantMedusaScope | null
+): Promise<OrderNote[]> {
+    const res = await adminFetch<{ notes: OrderNote[] }>(
+        `/admin/notes?resource_type=order&resource_id=${orderId}`,
+        {},
+        scope
+    )
+    return res.data?.notes ?? []
+}
+
+export async function createOrderNote(
+    orderId: string,
+    value: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ note: OrderNote | null; error: string | null }> {
+    const res = await adminFetch<{ note: OrderNote }>(
+        '/admin/notes',
+        {
+            method: 'POST',
+            body: JSON.stringify({
+                resource_type: 'order',
+                resource_id: orderId,
+                value,
+            }),
+        },
+        scope
+    )
+    return { note: res.data?.note ?? null, error: res.error }
+}
+
+export async function deleteOrderNote(
+    noteId: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/notes/${noteId}`, { method: 'DELETE' }, scope)
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
+// Returns & Refund Requests
+// ---------------------------------------------------------------------------
+
+export async function createReturnRequest(
+    orderId: string,
+    items: { id: string; quantity: number; reason?: string }[],
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/orders/${orderId}/returns`, {
+        method: 'POST',
+        body: JSON.stringify({ items }),
+    }, scope)
+    return { error: res.error }
+}
+
+export async function receiveReturn(
+    returnId: string,
+    items: { id: string; quantity: number }[],
+    scope?: TenantMedusaScope | null
+): Promise<{ error: string | null }> {
+    const res = await adminFetch(`/admin/returns/${returnId}/receive`, {
+        method: 'POST',
+        body: JSON.stringify({ items }),
+    }, scope)
+    return { error: res.error }
+}
+
+// ---------------------------------------------------------------------------
 // Customers (read-only)
 // ---------------------------------------------------------------------------
 
@@ -252,4 +411,16 @@ export async function getAdminCustomers(params?: {
         scope
     )
     return { customers: res.data?.customers ?? [], count: res.data?.count ?? 0 }
+}
+
+export async function getAdminCustomerDetail(
+    id: string,
+    scope?: TenantMedusaScope | null
+): Promise<AdminCustomer | null> {
+    const res = await adminFetch<{ customer: AdminCustomer }>(
+        `/admin/customers/${id}?fields=*orders`,
+        {},
+        scope
+    )
+    return res.data?.customer ?? null
 }

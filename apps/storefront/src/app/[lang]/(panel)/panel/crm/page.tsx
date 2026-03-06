@@ -5,12 +5,14 @@
  * Gated by enable_crm feature flag (module: CRM).
  * Data from Medusa customers + Supabase analytics.
  * Tenant-scoped: all Medusa queries are scoped to the authenticated tenant.
+ *
+ * B4 fix: migrated from getConfig() to withPanelGuard() for proper auth.
  */
 
-import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCustomers } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import CRMClient from './CRMClient'
 
@@ -29,7 +31,8 @@ export default async function CRMPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags, planLimits } = await getConfig()
+    const { tenantId, appConfig } = await withPanelGuard()
+    const { featureFlags, planLimits } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -38,7 +41,6 @@ export default async function CRMPage({
     }
 
     // Resolve tenant scope — all admin queries MUST be scoped
-    const tenantId = getRequiredTenantId()
     const scope = await getTenantMedusaScope(tenantId)
 
     // Fetch total customers for quick stat
@@ -86,6 +88,14 @@ export default async function CRMPage({
                     exportDesc: t('panel.crm.exportDesc'),
                     comingSoon: t('panel.crm.comingSoon'),
                     noData: t('panel.crm.noData'),
+                    contactHeader: t('panel.crm.contactHeader'),
+                    emailHeader: t('panel.crm.emailHeader'),
+                    ordersHeader: t('panel.crm.ordersHeader'),
+                    joinedHeader: t('panel.crm.joinedHeader'),
+                    searchPlaceholder: t('panel.crm.searchPlaceholder'),
+                    downloading: t('panel.crm.downloading'),
+                    exportSuccess: t('panel.crm.exportSuccess'),
+                    allContacts: t('panel.crm.allContacts'),
                 }}
             />
         </div>

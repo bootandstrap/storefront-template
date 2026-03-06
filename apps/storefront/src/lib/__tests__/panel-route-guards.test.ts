@@ -64,7 +64,7 @@ describe('panel-route-guards', () => {
         expect(getPanelFallbackRoute('en')).toBe('/en/panel')
     })
 
-    it('treats unknown routes as allowed', () => {
-        expect(shouldAllowPanelRoute('desconocido' as PanelRouteKey, defaultFlags)).toBe(true)
+    it('denies unknown routes (fail-closed, P1-2)', () => {
+        expect(shouldAllowPanelRoute('desconocido' as PanelRouteKey, defaultFlags)).toBe(false)
     })
 })

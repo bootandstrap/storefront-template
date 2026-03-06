@@ -1,24 +1,12 @@
 /**
+ * @internal
  * Policy Engine — Centralized server-side enforcement for feature flags and plan limits.
  *
- * This module provides fail-closed guards that throw typed errors when a
- * feature is disabled or a plan limit is exceeded. Use these in API routes
- * and server actions to ensure server-side enforcement.
+ * For panel server actions, prefer `panel-guard.ts` (`withPanelGuard()`) which wraps
+ * auth + config + flag + limit checks in a single call.
  *
- * Example usage in an API route:
- * ```ts
- * import { requireFlag } from '@/lib/policy-engine'
- * 
- * export async function POST(request: NextRequest) {
- *     await requireFlag('enable_promotions')
- *     // ... actual logic
- * }
- * ```
- *
- * Example usage in a server action:
- * ```ts
- * await requireFeatureWithLimit('enable_cms_pages', 'max_cms_pages', currentPageCount)
- * ```
+ * This module provides lower-level fail-closed guards for API routes and non-panel
+ * server-side code that needs direct flag/limit enforcement.
  *
  * @module policy-engine
  * @since P0-4, P0-5 (Phase 2: Iron Gate)

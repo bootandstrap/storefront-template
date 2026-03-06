@@ -107,7 +107,12 @@ export default async function EmailMarketingPage({
     const { lang } = await params
     const { tenantId } = await withPanelGuard()
 
-    const { featureFlags, planLimits } = await getConfigForTenant(tenantId)
+    const { featureFlags, planLimits, config: storeConfig } = await getConfigForTenant(tenantId)
+
+    // Detect email provider configuration
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- config row has dynamic keys
+    const cfgAny = storeConfig as unknown as Record<string, unknown>
+    const hasProvider = !!cfgAny.email_provider && !!cfgAny.email_api_key
 
     // Gate: redirect if base email flag not enabled
     if (!isFeatureEnabled(featureFlags, 'enable_email_notifications')) {
@@ -157,6 +162,10 @@ export default async function EmailMarketingPage({
         save: t('common.save'),
         upgradeRequired: t('panel.email.upgradeRequired'),
         emailsRemaining: t('panel.email.emailsRemaining'),
+        providerWarning: t('panel.email.providerWarning'),
+        providerWarningAction: t('panel.email.providerWarningAction'),
+        templatesPlaceholder: t('panel.email.templatesPlaceholder'),
+        campaignsPlaceholder: t('panel.email.campaignsPlaceholder'),
     }
 
     // Server action for saving config
@@ -195,6 +204,7 @@ export default async function EmailMarketingPage({
                     enable_email_campaigns: campaignsFlag,
                     enable_email_templates: templatesFlag,
                 }}
+                hasProvider={hasProvider}
                 labels={labels}
                 saveAction={saveAutomationConfig}
             />

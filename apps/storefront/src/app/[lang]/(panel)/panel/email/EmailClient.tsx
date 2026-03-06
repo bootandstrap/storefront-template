@@ -37,6 +37,10 @@ interface Labels {
     save: string
     upgradeRequired: string
     emailsRemaining: string
+    providerWarning: string
+    providerWarningAction: string
+    templatesPlaceholder: string
+    campaignsPlaceholder: string
 }
 
 interface Props {
@@ -48,6 +52,7 @@ interface Props {
         enable_email_campaigns: boolean
         enable_email_templates: boolean
     }
+    hasProvider: boolean
     labels: Labels
     saveAction: (config: AutomationConfig) => Promise<{ success: boolean; error?: string }>
 }
@@ -56,7 +61,7 @@ interface Props {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function EmailClient({ config, stats, flags, labels, saveAction }: Props) {
+export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
@@ -97,6 +102,24 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                 </h1>
                 <p className="text-text-muted mt-1">{labels.subtitle}</p>
             </div>
+
+            {/* G5: Provider warning */}
+            {!hasProvider && (
+                <div className="rounded-xl border border-amber-400/40 bg-amber-50/80 dark:bg-amber-950/30 px-5 py-4 flex items-start gap-3">
+                    <Mail className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                            {labels.providerWarning}
+                        </p>
+                        <a
+                            href={`/panel/tienda`}
+                            className="text-sm text-primary hover:underline mt-1 inline-block"
+                        >
+                            {labels.providerWarningAction} →
+                        </a>
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1 rounded-xl border border-surface-3 overflow-hidden w-fit">
@@ -222,8 +245,8 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                         )}
                     </div>
 
-                    {/* Review Requests */}
-                    <div className={`glass rounded-2xl p-6 ${!flags.enable_abandoned_cart_emails ? 'opacity-60' : ''}`}>
+                    {/* Review Requests — B2 fix: gates on base email flag, not abandoned cart */}
+                    <div className={`glass rounded-2xl p-6 ${!flags.enable_email_notifications ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <Star className="w-5 h-5 text-yellow-500" />
@@ -232,7 +255,7 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                     <p className="text-xs text-text-muted">{labels.reviewRequestDesc}</p>
                                 </div>
                             </div>
-                            {flags.enable_abandoned_cart_emails ? (
+                            {flags.enable_email_notifications ? (
                                 <button
                                     onClick={() => setAutomationConfig(prev => ({
                                         ...prev,
@@ -251,7 +274,7 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                                 </span>
                             )}
                         </div>
-                        {flags.enable_abandoned_cart_emails && automationConfig.review_request_enabled && (
+                        {flags.enable_email_notifications && automationConfig.review_request_enabled && (
                             <div className="mt-4 pt-4 border-t border-surface-2">
                                 <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
                                 <div className="flex gap-2">
@@ -286,19 +309,19 @@ export default function EmailClient({ config, stats, flags, labels, saveAction }
                 </div>
             )}
 
-            {/* Templates Tab (gated) */}
+            {/* Templates Tab (gated) — B6 fix: i18n */}
             {activeTab === 'templates' && (
                 <div className="glass rounded-2xl p-12 text-center">
                     <Palette className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">Custom template editor — coming in Enterprise tier</p>
+                    <p className="text-text-muted">{labels.templatesPlaceholder}</p>
                 </div>
             )}
 
-            {/* Campaigns Tab (gated) */}
+            {/* Campaigns Tab (gated) — B6 fix: i18n */}
             {activeTab === 'campaigns' && (
                 <div className="glass rounded-2xl p-12 text-center">
                     <Send className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">Campaign manager — coming in Enterprise tier</p>
+                    <p className="text-text-muted">{labels.campaignsPlaceholder}</p>
                 </div>
             )}
         </>

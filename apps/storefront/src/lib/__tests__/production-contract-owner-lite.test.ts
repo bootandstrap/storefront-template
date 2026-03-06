@@ -108,15 +108,15 @@ describe('Production Contract: Owner Lite Gating', () => {
         })
     })
 
-    describe('future-proof: unknown routes fail-open', () => {
+    describe('security: unknown routes fail-closed (P1-2)', () => {
         it('unknown route classifies as unknown', () => {
             expect(classifyPanelRoute('future_module')).toBe('unknown')
         })
 
-        it('unknown route is allowed (fail-open)', () => {
+        it('unknown route is denied (fail-closed)', () => {
             expect(
                 shouldAllowPanelRoute('future_module' as PanelRouteKey, liteFlags)
-            ).toBe(true)
+            ).toBe(false)
         })
     })
 

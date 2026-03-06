@@ -2,11 +2,11 @@
  * Chatbot IA — Owner Panel
  *
  * Settings + usage dashboard for the tenant's AI chatbot.
- * Gated by enable_chatbot feature flag.
+ * Gated by enable_chatbot feature flag via withPanelGuard.
  */
 
-import { getConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import { ChatbotPanelClient } from './ChatbotPanelClient'
 
@@ -25,7 +25,8 @@ export default async function ChatbotPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags } = await getConfig()
+    const { appConfig } = await withPanelGuard()
+    const { featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 

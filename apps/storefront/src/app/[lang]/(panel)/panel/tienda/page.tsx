@@ -1,5 +1,5 @@
-import { getConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { withPanelGuard } from '@/lib/panel-guard'
 import StoreConfigClient from './StoreConfigClient'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,8 @@ export default async function StoreConfigPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config } = await getConfig()
+    const { appConfig } = await withPanelGuard()
+    const { config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 

@@ -8,7 +8,7 @@
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getConfig } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import { getAdminReturns, receiveAdminReturn, cancelAdminReturn, type AdminReturn } from '@/lib/medusa/admin'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
@@ -33,7 +33,8 @@ export default async function PanelReturnsPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags } = await getConfig()
+    const { appConfig } = await withPanelGuard()
+    const { featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 

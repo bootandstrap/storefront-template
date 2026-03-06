@@ -4,7 +4,7 @@
  * Server component fetches templates + plan limits, delegates to MessagesClient.
  */
 
-import { getConfig, getRequiredTenantId } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { checkLimit } from '@/lib/limits'
@@ -26,7 +26,8 @@ export default async function WhatsAppTemplatesPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { planLimits, featureFlags } = await getConfig()
+    const { tenantId, appConfig } = await withPanelGuard()
+    const { planLimits, featureFlags } = appConfig
 
     if (!featureFlags.enable_whatsapp_checkout) {
         return <FeatureGate flag="enable_whatsapp_checkout" lang={lang} />
@@ -36,7 +37,7 @@ export default async function WhatsAppTemplatesPage({
     const { data: templates } = await supabase
         .from('whatsapp_templates')
         .select('*')
-        .eq('tenant_id', getRequiredTenantId())
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
 
     const templateList = (templates ?? []).map((t: Record<string, unknown>) => ({

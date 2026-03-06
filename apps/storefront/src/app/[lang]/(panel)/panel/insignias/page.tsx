@@ -6,7 +6,7 @@
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getConfig } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import { getProductsWithBadges } from './actions'
 import BadgesClient from './BadgesClient'
@@ -26,7 +26,8 @@ export default async function ProductBadgesPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags } = await getConfig()
+    const { appConfig } = await withPanelGuard()
+    const { featureFlags } = appConfig
 
     if (!featureFlags.enable_product_badges) {
         return <FeatureGate flag="enable_product_badges" lang={lang} />

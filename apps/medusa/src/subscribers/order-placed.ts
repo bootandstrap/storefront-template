@@ -2,13 +2,14 @@ import type {
     SubscriberArgs,
     SubscriberConfig,
 } from "@medusajs/framework"
+import { notifyStorefront, logAnalyticsEvent } from "./shared/bridge"
 
 /**
  * Subscriber: order.placed
  *
- * Fires when a new order is created. Currently logs structured order data
- * for observability (visible in Dokploy container logs). Designed as an
- * extension point for future email notifications and analytics.
+ * Fires when a new order is created. Logs structured order data for
+ * observability and dispatches email notification via the storefront's
+ * internal API (which has access to tenant email config).
  */
 export default async function orderPlacedHandler({
     event: { data },
@@ -37,25 +38,27 @@ export default async function orderPlacedHandler({
             })
         )
 
-        // --- Extension point: Email notification ---
-        // When email config is available (P2.6), dispatch order confirmation:
-        //
-        // const notificationModule = container.resolve("notification")
-        // await notificationModule.createNotifications({
-        //   to: order.email,
-        //   channel: "email",
-        //   template: "order-confirmation",
-        //   data: { order },
-        // })
+        // ── Email notification via storefront bridge ──
+        // The storefront has access to tenant email config (Resend/SendGrid/Console).
+        // We POST the event data there and it handles email dispatch.
+        await notifyStorefront("order.placed", {
+            customer_email: order.email,
+            customer_name: order.shipping_address?.first_name || order.email?.split("@")[0],
+            display_id: order.display_id,
+            total: order.total,
+            currency: order.currency_code,
+            item_count: order.items?.length ?? 0,
+        }, "order-placed")
 
-        // --- Extension point: Analytics ---
-        // Fire-and-forget analytics event to Supabase:
-        //
-        // const analyticsService = container.resolve("analytics")
-        // await analyticsService.trackEvent("order_placed", {
-        //   order_id: order.id,
-        //   total: order.total,
-        // })
+        // ── Analytics ──
+        // Fire-and-forget analytics event (if Supabase URL is available)
+        await logAnalyticsEvent("order_placed", {
+            order_id: order.id,
+            display_id: order.display_id,
+            total: order.total,
+            currency: order.currency_code,
+            item_count: order.items?.length ?? 0,
+        })
     } catch (error) {
         // Subscriber errors must not break the order flow
         console.error(

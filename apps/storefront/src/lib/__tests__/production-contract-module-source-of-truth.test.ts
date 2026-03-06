@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getActiveModulesForTenant } from '../active-modules'
 
 // ---------------------------------------------------------------------------
-// Mock the supabase client
+// Mock the governance client (used by active-modules.ts)
 // ---------------------------------------------------------------------------
 
 const mockIn = vi.fn()
@@ -12,8 +12,8 @@ const mockFrom = vi.fn(() => ({ select: mockSelect }))
 
 const mockSupabaseClient = { from: mockFrom }
 
-vi.mock('@/lib/supabase/server', () => ({
-    createClient: vi.fn(async () => mockSupabaseClient),
+vi.mock('@/lib/supabase/governance', () => ({
+    createGovernanceClient: vi.fn(() => mockSupabaseClient),
 }))
 
 describe('Commercial Source of Truth (orders-based)', () => {

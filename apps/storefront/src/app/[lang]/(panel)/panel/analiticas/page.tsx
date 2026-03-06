@@ -3,11 +3,10 @@
  *
  * Displays page views, top products, and conversion funnel.
  * Data from analytics_events table (filtered by tenant_id).
- * Gated by enable_analytics feature flag in the sidebar
- * (page still renders but shows "enable analytics" message if disabled).
+ * Gated by enable_analytics feature flag.
  */
 
-import { getConfig, getRequiredTenantId } from '@/lib/config'
+import { withPanelGuard } from '@/lib/panel-guard'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import FeatureGate from '@/components/ui/FeatureGate'
@@ -27,7 +26,8 @@ export default async function AnalyticsPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { featureFlags } = await getConfig()
+    const { tenantId, appConfig } = await withPanelGuard()
+    const { featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -41,7 +41,6 @@ export default async function AnalyticsPage({
     const supabase = await createClient()
     const sevenDaysAgo = new Date(new Date().getTime() - cutoffMs).toISOString()
 
-    const tenantId = getRequiredTenantId()
     const [pageViewsRes, topProductsRes, funnelRes] = await Promise.all([
         supabase
             .from('analytics_events')

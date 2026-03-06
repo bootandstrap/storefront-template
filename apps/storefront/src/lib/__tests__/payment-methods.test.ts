@@ -41,6 +41,14 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_related_products: true,
         enable_cookie_consent: true,
         enable_self_service_returns: false,
+        enable_ecommerce: false,
+        enable_crm: false,
+        enable_crm_segmentation: false,
+        enable_crm_export: false,
+        enable_email_notifications: false,
+        enable_abandoned_cart_emails: false,
+        enable_email_campaigns: false,
+        enable_email_templates: false,
         ...overrides,
     }
 }

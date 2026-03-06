@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolvePostLoginDestination } from '@/lib/auth-routing'
-import { reconcileLegacyOwnerRole } from '@/lib/legacy-owner-auth'
+import { reconcileLegacyOwnerRole } from '@/lib/panel-auth'
 
 export interface LoginState {
     error: string | null
