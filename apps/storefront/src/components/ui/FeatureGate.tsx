@@ -14,7 +14,7 @@
  */
 
 import Link from 'next/link'
-import { FEATURE_GATE_MAP, getModuleInfoUrl } from '@/lib/feature-gate-config'
+import { FEATURE_GATE_MAP, getModuleActivationUrl, getModuleInfoUrl } from '@/lib/feature-gate-config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { Check, ArrowRight, Info, Sparkles, Zap, Shield } from 'lucide-react'
 
@@ -77,6 +77,7 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
     const icon = entry?.icon ?? '🔒'
     const moduleName = entry ? t(entry.moduleNameKey) : flag
     const moduleUrl = getModuleInfoUrl(flag, lang)
+    const activationUrl = getModuleActivationUrl(flag, lang)
     const moduleKey = entry?.moduleKey ?? ''
     const benefits = MODULE_BENEFITS[moduleKey] ?? []
 
@@ -104,16 +105,21 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
                             </p>
                         </div>
 
-                        <div className="space-y-8 mt-4">
+                        <div className="space-y-6 mt-4">
                             <a
                                 href={moduleUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 className="group/btn relative overflow-hidden rounded-full bg-text-primary text-surface-0 px-8 py-4 text-sm font-medium transition-all duration-300 hover:bg-primary inline-flex items-center gap-3 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20"
                             >
                                 <span className="relative z-10">{t('featureGate.cta')}</span>
                                 <ArrowRight className="relative z-10 w-4 h-4 transition-transform duration-300 animate-slide-right group-hover/btn:translate-x-1" />
                             </a>
+
+                            <Link
+                                href={activationUrl}
+                                className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 text-primary px-6 py-3 text-sm font-medium hover:bg-primary/10 transition-colors"
+                            >
+                                {t('featureGate.activateNow') || 'Activar ahora'}
+                            </Link>
 
                             <div className="flex items-center">
                                 <Link

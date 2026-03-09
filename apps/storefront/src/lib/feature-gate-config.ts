@@ -277,6 +277,17 @@ export function getModuleInfoUrl(flagKey: string, locale: string): string {
 }
 
 /**
+ * Get in-panel activation URL for a gated module.
+ * Keeps owners in Storefront for immediate checkout flow.
+ */
+export function getModuleActivationUrl(flagKey: string, locale: string): string {
+    const entry = FEATURE_GATE_MAP[flagKey]
+    if (!entry?.moduleKey) return `/${locale}/panel/suscripcion`
+
+    return `/${locale}/panel/suscripcion?module=${encodeURIComponent(entry.moduleKey)}`
+}
+
+/**
  * Get all flags that are currently gating panel pages.
  * Used by the coverage test.
  */
