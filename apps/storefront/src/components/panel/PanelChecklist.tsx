@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CheckCircle, Circle } from 'lucide-react'
 
@@ -45,11 +45,10 @@ export default function PanelChecklist({
     subtitle,
     skipLabel,
 }: PanelChecklistProps) {
-    const [hidden, setHidden] = useState(false)
-
-    useEffect(() => {
-        setHidden(isChecklistSkipped(window.localStorage))
-    }, [])
+    const [hidden, setHidden] = useState(() => {
+        if (typeof window === 'undefined') return false
+        return isChecklistSkipped(window.localStorage)
+    })
 
     if (hidden || items.length === 0) return null
 

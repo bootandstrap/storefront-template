@@ -45,13 +45,23 @@ interface WelcomeModalProps {
 // Confetti Particle
 // ---------------------------------------------------------------------------
 
+function hashToPercent(seed: string): number {
+    let hash = 0
+    for (let i = 0; i < seed.length; i += 1) {
+        hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+    }
+    return (hash % 10000) / 100
+}
+
 function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
+    const leftPercent = hashToPercent(`${color}:${delay}`)
+
     return (
         <div
             className="absolute w-2 h-2 rounded-full opacity-0 animate-confetti"
             style={{
                 backgroundColor: color,
-                left: `${Math.random() * 100}%`,
+                left: `${leftPercent}%`,
                 animationDelay: `${delay}ms`,
             }}
         />

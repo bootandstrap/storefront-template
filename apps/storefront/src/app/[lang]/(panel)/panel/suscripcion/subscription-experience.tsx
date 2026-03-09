@@ -14,11 +14,11 @@ export function calculateActiveMonthlyEstimate(
     catalog: ModuleCatalogEntry[],
     maintenancePrice: number
 ): number {
-    const catalogByKey = new Map(catalog.map((module) => [module.key, module]))
+    const catalogByKey = new Map(catalog.map((catalogEntry) => [catalogEntry.key, catalogEntry]))
     const modulesTotal = activeModuleOrders.reduce((acc, order) => {
-        const module = catalogByKey.get(order.moduleKey)
-        if (!module) return acc
-        const selectedTier = getSelectedTier(module, order.tierKey)
+        const catalogEntry = catalogByKey.get(order.moduleKey)
+        if (!catalogEntry) return acc
+        const selectedTier = getSelectedTier(catalogEntry, order.tierKey)
         return acc + (selectedTier?.price_chf || 0)
     }, 0)
     return maintenancePrice + modulesTotal
@@ -30,16 +30,16 @@ export function pickRecommendedModule(
 ): ModuleCatalogEntry | null {
     if (availableModules.length === 0) return null
 
-    const ecommerce = availableModules.find((module) => module.key === 'ecommerce')
+    const ecommerce = availableModules.find((catalogEntry) => catalogEntry.key === 'ecommerce')
     if (!activeModuleKeys.has('ecommerce') && ecommerce) {
         return ecommerce
     }
 
-    const dependencyReady = availableModules.filter((module) =>
-        !module.requires?.length || module.requires.every((req) => activeModuleKeys.has(req))
+    const dependencyReady = availableModules.filter((catalogEntry) =>
+        !catalogEntry.requires?.length || catalogEntry.requires.every((req) => activeModuleKeys.has(req))
     )
 
-    return dependencyReady.find((module) => module.popular)
+    return dependencyReady.find((catalogEntry) => catalogEntry.popular)
         || dependencyReady[0]
         || availableModules[0]
 }
@@ -160,17 +160,17 @@ export function SubscriptionExperience({
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {activeModules.map((module) => {
-                            const activeOrder = activeOrdersByModule.get(module.key)
-                            const tier = getSelectedTier(module, activeOrder?.tierKey)
+                        {activeModules.map((catalogEntry) => {
+                            const activeOrder = activeOrdersByModule.get(catalogEntry.key)
+                            const tier = getSelectedTier(catalogEntry, activeOrder?.tierKey)
                             return (
                                 <div
-                                    key={module.key}
+                                    key={catalogEntry.key}
                                     className="glass rounded-xl p-4 border border-green-500/20 bg-green-500/5"
                                 >
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-text-primary text-sm">{module.icon} {module.name}</p>
+                                            <p className="font-semibold text-text-primary text-sm">{catalogEntry.icon} {catalogEntry.name}</p>
                                             <p className="text-xs text-green-400">{t('panel.subscription.active') || 'Activo'} · {tier.name}</p>
                                         </div>
                                         <p className="text-sm font-semibold text-text-primary">{formatChf(tier.price_chf)}/mes</p>
@@ -202,36 +202,36 @@ export function SubscriptionExperience({
                         {t('panel.subscription.availableModules') || 'Módulos disponibles'}
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {availableModules.map((module) => {
-                            const selectedTier = getSelectedTier(module, selectedTiers[module.key])
-                            const buying = purchasingModule === module.key
+                        {availableModules.map((catalogEntry) => {
+                            const selectedTier = getSelectedTier(catalogEntry, selectedTiers[catalogEntry.key])
+                            const buying = purchasingModule === catalogEntry.key
                             return (
                                 <article
-                                    key={module.key}
+                                    key={catalogEntry.key}
                                     className="glass rounded-xl p-5 border border-surface-3 hover:border-primary/30 transition-colors"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <p className="font-semibold text-text-primary">{module.icon} {module.name}</p>
-                                            <p className="text-xs text-text-muted mt-1">{module.description}</p>
+                                            <p className="font-semibold text-text-primary">{catalogEntry.icon} {catalogEntry.name}</p>
+                                            <p className="text-xs text-text-muted mt-1">{catalogEntry.description}</p>
                                         </div>
-                                        {recommendedModule?.key === module.key && (
+                                        {recommendedModule?.key === catalogEntry.key && (
                                             <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary">
                                                 <Sparkles className="w-3 h-3" /> Recomendado
                                             </span>
                                         )}
                                     </div>
 
-                                    {module.tiers.length > 1 && (
+                                    {catalogEntry.tiers.length > 1 && (
                                         <div className="mt-3">
                                             <label className="text-xs text-text-muted block mb-1">Selecciona nivel</label>
                                             <select
                                                 value={selectedTier.key}
-                                                onChange={(e) => onTierChange(module.key, e.target.value)}
+                                                onChange={(e) => onTierChange(catalogEntry.key, e.target.value)}
                                                 className="w-full bg-surface-2 border border-surface-3 text-text-primary text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary/50 transition-colors"
                                                 disabled={buying}
                                             >
-                                                {module.tiers.map((tier) => (
+                                                {catalogEntry.tiers.map((tier) => (
                                                     <option key={tier.key} value={tier.key}>
                                                         {tier.name} — {tier.price_chf} CHF/mes
                                                     </option>
@@ -258,7 +258,7 @@ export function SubscriptionExperience({
                                             <p className="text-lg font-semibold text-text-primary">{formatChf(selectedTier.price_chf)}/mes</p>
                                         </div>
                                         <button
-                                            onClick={() => onPurchase(module.key)}
+                                            onClick={() => onPurchase(catalogEntry.key)}
                                             disabled={buying}
                                             className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60"
                                         >

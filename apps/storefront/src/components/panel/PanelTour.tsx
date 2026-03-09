@@ -67,11 +67,14 @@ export default function PanelTour({ steps, onComplete, t }: PanelTourProps) {
             el.classList.remove('tour-highlight')
         )
 
-        updateSpotlight()
-        setVisible(true)
+        const raf = window.requestAnimationFrame(() => {
+            updateSpotlight()
+            setVisible(true)
+        })
 
         // Cleanup
         return () => {
+            window.cancelAnimationFrame(raf)
             document.querySelectorAll('.tour-highlight').forEach(el =>
                 el.classList.remove('tour-highlight')
             )
@@ -203,7 +206,7 @@ export default function PanelTour({ steps, onComplete, t }: PanelTourProps) {
             </div>
 
             {/* Inject tour styles */}
-            <style jsx global>{`
+            <style>{`
                 .tour-highlight {
                     position: relative;
                     z-index: 56;

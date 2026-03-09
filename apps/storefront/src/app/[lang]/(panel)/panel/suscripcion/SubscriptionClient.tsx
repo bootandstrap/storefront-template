@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n/provider'
 
@@ -71,16 +71,6 @@ export default function SubscriptionClient({
         return modules
     }, [rawAvailableModules, requestedModule, recommendedModule])
     const activeMonthlyEstimate = calculateActiveMonthlyEstimate(activeModuleOrders, MODULE_CATALOG, MAINTENANCE_PRICE_CHF)
-
-    useEffect(() => {
-        if (!requestedModule) return
-        const requested = availableModules.find((module) => module.key === requestedModule)
-        if (!requested?.tiers?.[0]) return
-        setSelectedTiers((current) => {
-            if (current[requestedModule]) return current
-            return { ...current, [requestedModule]: requested.tiers[0].key }
-        })
-    }, [requestedModule, availableModules])
 
     async function handleModulePurchase(moduleKey: string) {
         setPurchasingModule(moduleKey)

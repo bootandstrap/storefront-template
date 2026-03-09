@@ -38,6 +38,7 @@ function baseLabels() {
         customers: 'Customers',
         storeConfig: 'Store',
         shipping: 'Shipping',
+        myProject: 'My Project',
         modules: 'Modules',
         carousel: 'Carousel',
         whatsapp: 'WhatsApp',
@@ -61,7 +62,8 @@ describe('panel-modules', () => {
             featureFlags: baseFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(6)
+        expect(nav.essentialItems).toHaveLength(7)
+        expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
         expect(nav.moduleItems.length).toBeGreaterThan(0)
     })
 
@@ -72,7 +74,8 @@ describe('panel-modules', () => {
             featureFlags: liteFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(6)
+        expect(nav.essentialItems).toHaveLength(7)
+        expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
         expect(nav.moduleItems).toHaveLength(0)
     })
 
