@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Crown, ArrowUpRight, CreditCard, Check, Loader2, Puzzle, CheckCircle } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 
 /**
@@ -14,11 +13,14 @@ import { useI18n } from '@/lib/i18n/provider'
  */
 
 import type { ActiveModuleInfo } from '@/lib/active-modules'
+import {
+    calculateActiveMonthlyEstimate,
+    pickRecommendedModule,
+    SubscriptionExperience,
+} from './subscription-experience'
 
 interface SubscriptionClientProps {
-    moduleFlags: Record<string, boolean>
     activeModuleOrders: ActiveModuleInfo[]
-    planLimits: Record<string, number | string>
     tenantStatus: string
     maintenanceDaysRemaining?: number
     hasStripeCustomer: boolean
@@ -31,30 +33,11 @@ interface SubscriptionClientProps {
 // ---------------------------------------------------------------------------
 import contract, { type ModuleCatalogEntry } from '@/lib/governance-contract'
 
-// Primary flag that indicates each module is active (maps module key → feature flag)
-const MODULE_PRIMARY_FLAG: Record<string, string> = {
-    ecommerce: 'enable_customer_accounts',
-    sales_channels: 'enable_whatsapp_checkout',
-    chatbot: 'enable_chatbot',
-    crm: 'enable_crm',
-    seo: 'enable_analytics',
-    rrss: 'enable_social_links',
-    i18n: 'enable_multi_language',
-    automation: 'enable_admin_api',
-    auth_advanced: 'enable_google_auth',
-    email_marketing: 'enable_email_notifications',
-}
-
-const MODULE_CATALOG: (ModuleCatalogEntry & { primaryFlag: string })[] =
-    contract.modules.catalog.map((m: ModuleCatalogEntry) => ({
-        ...m,
-        primaryFlag: MODULE_PRIMARY_FLAG[m.key] || '',
-    }))
+const MODULE_CATALOG: ModuleCatalogEntry[] = contract.modules.catalog
+const MAINTENANCE_PRICE_CHF = contract.pricing.maintenance_chf_month
 
 export default function SubscriptionClient({
-    moduleFlags,
     activeModuleOrders,
-    planLimits: _planLimits,
     tenantStatus,
     maintenanceDaysRemaining,
     hasStripeCustomer,
@@ -63,19 +46,41 @@ export default function SubscriptionClient({
     const { t } = useI18n()
     const searchParams = useSearchParams()
     const purchasedModule = searchParams?.get('module_purchased')
+    const requestedModule = searchParams?.get('module')
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [purchasingModule, setPurchasingModule] = useState<string | null>(null)
     const [selectedTiers, setSelectedTiers] = useState<Record<string, string>>({})
 
     // Separate active from available modules using the Commercial Source of Truth (orders)
-    const activeModuleKeys = new Set(activeModuleOrders.map(m => m.moduleKey))
+    const activeModuleKeys = useMemo(() => new Set(activeModuleOrders.map(m => m.moduleKey)), [activeModuleOrders])
     const activeModules = MODULE_CATALOG.filter(m => activeModuleKeys.has(m.key))
-    const availableModules = MODULE_CATALOG.filter(m => !activeModuleKeys.has(m.key))
+    const rawAvailableModules = MODULE_CATALOG.filter(m => !activeModuleKeys.has(m.key))
+    const recommendedModule = pickRecommendedModule(rawAvailableModules, activeModuleKeys)
+    const availableModules = useMemo(() => {
+        const modules = [...rawAvailableModules]
+        modules.sort((a, b) => {
+            if (requestedModule && a.key === requestedModule) return -1
+            if (requestedModule && b.key === requestedModule) return 1
+            if (recommendedModule && a.key === recommendedModule.key) return -1
+            if (recommendedModule && b.key === recommendedModule.key) return 1
+            if (a.popular && !b.popular) return -1
+            if (!a.popular && b.popular) return 1
+            return a.name.localeCompare(b.name)
+        })
+        return modules
+    }, [rawAvailableModules, requestedModule, recommendedModule])
+    const activeMonthlyEstimate = calculateActiveMonthlyEstimate(activeModuleOrders, MODULE_CATALOG, MAINTENANCE_PRICE_CHF)
 
-    function getModuleLabel(mod: typeof MODULE_CATALOG[number]) {
-        return mod.name
-    }
+    useEffect(() => {
+        if (!requestedModule) return
+        const requested = availableModules.find((module) => module.key === requestedModule)
+        if (!requested?.tiers?.[0]) return
+        setSelectedTiers((current) => {
+            if (current[requestedModule]) return current
+            return { ...current, [requestedModule]: requested.tiers[0].key }
+        })
+    }, [requestedModule, availableModules])
 
     async function handleModulePurchase(moduleKey: string) {
         setPurchasingModule(moduleKey)
@@ -124,153 +129,30 @@ export default function SubscriptionClient({
         })
     }
 
+    function handleTierChange(moduleKey: string, tierKey: string) {
+        setSelectedTiers((current) => ({ ...current, [moduleKey]: tierKey }))
+    }
+
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                    <Puzzle className="w-6 h-6 text-primary" />
-                    {t('panel.subscription.title')}
-                </h1>
-                <p className="text-sm text-text-muted mt-1">
-                    {t('panel.subscription.subtitle')}
-                </p>
-            </div>
-
-            {/* Success banner — shows after returning from Stripe Checkout */}
-            {purchasedModule && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-sm text-green-400 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 shrink-0" />
-                    {t('panel.subscription.moduleActivated') || '¡Módulo activado correctamente! Los cambios se reflejan en tu tienda.'}
-                </div>
-            )}
-
-            {/* Maintenance banner */}
-            {tenantStatus === 'maintenance_free' && maintenanceDaysRemaining != null && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-400 flex items-center gap-2">
-                    <Crown className="w-5 h-5 shrink-0" />
-                    {t('panel.subscription.maintenanceFree').replace('{{days}}', String(maintenanceDaysRemaining))}
-                </div>
-            )}
-
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl p-4">
-                    {error}
-                </div>
-            )}
-
-            {/* Active Modules */}
-            <section>
-                <h2 className="text-lg font-semibold text-text-primary mb-3 flex items-center gap-2">
-                    <Check className="w-5 h-5 text-green-400" />
-                    {t('panel.subscription.activeModules') || 'Módulos activos'}
-                </h2>
-                {activeModules.length === 0 ? (
-                    <div className="glass rounded-xl p-8 text-center">
-                        <p className="text-text-muted text-sm">
-                            {t('panel.subscription.noActiveModules') || 'No hay módulos activos todavía.'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {activeModules.map(mod => (
-                            <div
-                                key={mod.key}
-                                className="glass rounded-xl p-4 border border-green-500/20 bg-green-500/5"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl">{mod.icon}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-text-primary text-sm">{getModuleLabel(mod)}</p>
-                                        <p className="text-xs text-green-400 flex items-center gap-1">
-                                            <Check className="w-3 h-3" /> {t('panel.subscription.active') || 'Activo'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-
-            {/* Available Modules — embedded purchase via Stripe Checkout */}
-            {availableModules.length > 0 && (
-                <section>
-                    <h2 className="text-lg font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <ArrowUpRight className="w-5 h-5 text-primary" />
-                        {t('panel.subscription.availableModules') || 'Módulos disponibles'}
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {availableModules.map(mod => (
-                            <button
-                                key={mod.key}
-                                onClick={() => handleModulePurchase(mod.key)}
-                                disabled={purchasingModule === mod.key}
-                                className="glass rounded-xl p-4 border border-surface-3 hover:border-primary/40 transition-all group text-left w-full disabled:opacity-70"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl">{mod.icon}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-text-primary text-sm">{getModuleLabel(mod)}</p>
-
-                                        {mod.tiers && mod.tiers.length > 1 && (
-                                            <div className="mt-2 mb-3" onClick={(e) => e.stopPropagation()}>
-                                                <select
-                                                    value={selectedTiers[mod.key] || mod.tiers[0].key}
-                                                    onChange={(e) => setSelectedTiers({ ...selectedTiers, [mod.key]: e.target.value })}
-                                                    className="w-full bg-surface-2 border border-surface-3 text-text-primary text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary/50 transition-colors"
-                                                    disabled={purchasingModule === mod.key}
-                                                >
-                                                    {mod.tiers.map(tier => (
-                                                        <option key={tier.key} value={tier.key}>
-                                                            {tier.name} — {tier.price_chf} CHF/mo
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        <p className="text-xs text-primary flex items-center gap-1 mt-1">
-                                            {purchasingModule === mod.key ? (
-                                                <><Loader2 className="w-3 h-3 animate-spin" /> {t('panel.subscription.redirecting') || 'Redirigiendo...'}</>
-                                            ) : (
-                                                <><CreditCard className="w-3 h-3" /> {t('panel.subscription.purchase') || 'Contratar'}</>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Billing Management */}
-            {hasStripeCustomer && (
-                <section className="glass rounded-xl p-6">
-                    <h2 className="text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-primary" />
-                        {t('panel.subscription.billing') || 'Facturación'}
-                    </h2>
-                    <p className="text-sm text-text-muted mb-4">
-                        {t('panel.subscription.billingDescription') || 'Gestiona tus métodos de pago, facturas y suscripciones activas.'}
-                    </p>
-                    <button
-                        onClick={handleManageBilling}
-                        disabled={isPending}
-                        className="btn btn-primary px-6 py-2.5 text-sm flex items-center gap-2 disabled:opacity-50"
-                    >
-                        {isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <>
-                                <CreditCard className="w-4 h-4" />
-                                {t('panel.subscription.manageBilling')}
-                            </>
-                        )}
-                    </button>
-                </section>
-            )}
-        </div>
+        <SubscriptionExperience
+            t={t}
+            purchasedModule={purchasedModule}
+            tenantStatus={tenantStatus}
+            maintenanceDaysRemaining={maintenanceDaysRemaining}
+            error={error}
+            activeModules={activeModules}
+            activeModuleOrders={activeModuleOrders}
+            availableModules={availableModules}
+            selectedTiers={selectedTiers}
+            purchasingModule={purchasingModule}
+            hasStripeCustomer={hasStripeCustomer}
+            isPending={isPending}
+            recommendedModule={recommendedModule}
+            activeMonthlyEstimate={activeMonthlyEstimate}
+            maintenancePrice={MAINTENANCE_PRICE_CHF}
+            onTierChange={handleTierChange}
+            onPurchase={handleModulePurchase}
+            onManageBilling={handleManageBilling}
+        />
     )
 }

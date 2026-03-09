@@ -19,7 +19,7 @@ export default async function SubscriptionPage({
 }) {
     const { lang } = await params
     const { tenantId, appConfig } = await withPanelGuard()
-    const { featureFlags, planLimits, tenantStatus, maintenanceDaysRemaining } = appConfig
+    const { tenantStatus, maintenanceDaysRemaining } = appConfig
 
     // Check if tenant has Stripe customer
     const supabase = await createClient()
@@ -31,22 +31,12 @@ export default async function SubscriptionPage({
 
     const hasStripeCustomer = !!tenant?.stripe_customer_id
 
-    // Build list of module flags and their status from feature_flags
-    const moduleFlags: Record<string, boolean> = {}
-    for (const [key, value] of Object.entries(featureFlags)) {
-        if (key.startsWith('enable_')) {
-            moduleFlags[key] = value as boolean
-        }
-    }
-
     // Now get commercial active modules
     const activeModuleOrders = await getActiveModulesForTenant(tenantId)
 
     return (
         <SubscriptionClient
-            moduleFlags={moduleFlags}
             activeModuleOrders={activeModuleOrders}
-            planLimits={planLimits as unknown as Record<string, number | string>}
             tenantStatus={tenantStatus}
             maintenanceDaysRemaining={maintenanceDaysRemaining}
             hasStripeCustomer={hasStripeCustomer}
