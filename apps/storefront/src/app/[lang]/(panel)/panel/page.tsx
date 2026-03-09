@@ -12,14 +12,12 @@ import {
 import StatCard from '@/components/panel/StatCard'
 import UsageMeter from '@/components/panel/UsageMeter'
 import EmptyState from '@/components/panel/EmptyState'
+import PanelChecklist from '@/components/panel/PanelChecklist'
 import {
     Package,
     ShoppingCart,
     Users,
     FolderTree,
-    CheckCircle,
-    ArrowRight,
-    Circle,
     DollarSign,
     Plus,
     BarChart3,
@@ -261,78 +259,16 @@ export default async function PanelDashboard({
                         href: `/${lang}/panel/tienda`,
                     },
                 ]
-                const completedCount = checklistItems.filter(i => i.done).length
-                const allDone = completedCount === checklistItems.length
+                const allDone = checklistItems.every(item => item.done)
                 if (allDone) return null
-                const progress = (completedCount / checklistItems.length) * 100
 
                 return (
-                    <div id="panel-checklist" className="glass rounded-2xl p-6 border border-primary/20">
-                        <script dangerouslySetInnerHTML={{
-                            __html: `
-                            if (typeof localStorage !== 'undefined' && localStorage.getItem('panel_checklist_skipped') === '1') {
-                                document.getElementById('panel-checklist')?.remove();
-                            }
-                        `}} />
-                        <div className="flex items-center gap-4 mb-5">
-                            {/* Progress ring */}
-                            <div className="relative w-14 h-14 flex-shrink-0">
-                                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                                    <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" className="text-surface-3" strokeWidth="4" />
-                                    <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" className="text-primary transition-all duration-700" strokeWidth="4" strokeLinecap="round"
-                                        strokeDasharray={`${progress * 1.508} 150.8`} />
-                                </svg>
-                                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-text-primary">
-                                    {completedCount}/{checklistItems.length}
-                                </span>
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold font-display text-text-primary">
-                                    {t('panel.checklist.title') || '🚀 Getting Started'}
-                                </h2>
-                                <p className="text-sm text-text-muted">
-                                    {t('panel.checklist.subtitle') || 'Complete these steps to launch your store'}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            {checklistItems.map((item) => (
-                                <Link
-                                    key={item.id}
-                                    href={item.href}
-                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${item.done
-                                        ? 'bg-green-500/5 text-text-secondary'
-                                        : 'bg-surface-2/50 hover:bg-primary/5 text-text-primary'
-                                        }`}
-                                >
-                                    {item.done ? (
-                                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                    ) : (
-                                        <Circle className="w-5 h-5 text-text-muted/40 flex-shrink-0" />
-                                    )}
-                                    <span className={`text-sm font-medium flex-1 ${item.done ? 'line-through opacity-60' : ''}`}>
-                                        {item.label}
-                                    </span>
-                                    {!item.done && <ArrowRight className="w-4 h-4 text-text-muted" />}
-                                </Link>
-                            ))}
-                        </div>
-                        <div className="mt-4 flex justify-end">
-                            <button
-                                id="checklist-skip-btn"
-                                className="text-xs text-text-muted hover:text-text-secondary transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-2/60"
-                            >
-                                {t('panel.checklist.skip') || 'Skip'}
-                            </button>
-                        </div>
-                        <script dangerouslySetInnerHTML={{
-                            __html: `
-                            document.getElementById('checklist-skip-btn')?.addEventListener('click', function() {
-                                try { localStorage.setItem('panel_checklist_skipped', '1'); } catch(e) {}
-                                this.closest('.glass')?.remove();
-                            });
-                        `}} />
-                    </div>
+                    <PanelChecklist
+                        items={checklistItems}
+                        title={t('panel.checklist.title') || '🚀 Getting Started'}
+                        subtitle={t('panel.checklist.subtitle') || 'Complete these steps to launch your store'}
+                        skipLabel={t('panel.checklist.skip') || 'Skip'}
+                    />
                 )
             })()}
 
