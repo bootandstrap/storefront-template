@@ -19,7 +19,18 @@ import {
 } from '../panel-policy'
 
 const ESSENTIAL_ROUTES: PanelRouteKey[] = [
-    'dashboard', 'catalogo', 'pedidos', 'clientes', 'tienda',
+    'dashboard',
+    'catalogo',
+    'pedidos',
+    'clientes',
+    'tienda',
+    'envios',
+    'mi-proyecto',
+    'categorias',
+    'productos',
+    'inventario',
+    'email',
+    'suscripcion',
 ]
 
 const ADVANCED_ROUTES: PanelRouteKey[] = [
@@ -121,16 +132,16 @@ describe('Production Contract: Owner Lite Gating', () => {
     })
 
     describe('route inventory completeness', () => {
-        it('all 5 essential routes are defined', () => {
-            expect(ESSENTIAL_ROUTES).toHaveLength(5)
+        it('all 12 essential routes are defined', () => {
+            expect(ESSENTIAL_ROUTES).toHaveLength(12)
         })
 
-        it('all 7 advanced routes are defined', () => {
+        it('all 7 advanced routes are defined for Owner Lite gating', () => {
             expect(ADVANCED_ROUTES).toHaveLength(7)
         })
 
-        it('total panel routes = 12', () => {
-            expect(ESSENTIAL_ROUTES.length + ADVANCED_ROUTES.length).toBe(12)
+        it('total route inventory for this contract = 19', () => {
+            expect(ESSENTIAL_ROUTES.length + ADVANCED_ROUTES.length).toBe(19)
         })
     })
 })

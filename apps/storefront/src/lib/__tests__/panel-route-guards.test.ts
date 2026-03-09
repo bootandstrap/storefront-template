@@ -28,6 +28,27 @@ const fullFlags = {
 }
 
 describe('panel-route-guards', () => {
+    it('allows all currently implemented non-module panel routes', () => {
+        const existingRoutes: PanelRouteKey[] = [
+            'dashboard',
+            'catalogo',
+            'pedidos',
+            'clientes',
+            'tienda',
+            'envios',
+            'mi-proyecto',
+            'categorias',
+            'productos',
+            'inventario',
+            'email',
+            'suscripcion',
+        ]
+
+        for (const route of existingRoutes) {
+            expect(shouldAllowPanelRoute(route, defaultFlags)).toBe(true)
+        }
+    })
+
     it('always allows essential routes', () => {
         expect(shouldAllowPanelRoute('dashboard', defaultFlags)).toBe(true)
         expect(shouldAllowPanelRoute('catalogo', defaultFlags)).toBe(true)

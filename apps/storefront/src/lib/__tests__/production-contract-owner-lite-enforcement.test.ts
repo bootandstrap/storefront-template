@@ -27,7 +27,20 @@ describe('Owner Lite Enforcement - Production Contract', () => {
     }
 
     it('allows essential routes unconditionally', () => {
-        const essentialRoutes: PanelRouteKey[] = ['dashboard', 'catalogo', 'pedidos', 'clientes', 'tienda', 'envios']
+        const essentialRoutes: PanelRouteKey[] = [
+            'dashboard',
+            'catalogo',
+            'pedidos',
+            'clientes',
+            'tienda',
+            'envios',
+            'mi-proyecto',
+            'categorias',
+            'productos',
+            'inventario',
+            'email',
+            'suscripcion',
+        ]
         for (const route of essentialRoutes) {
             expect(shouldAllowPanelRoute(route, defaultFlags)).toBe(true)
             expect(shouldAllowPanelRoute(route, liteFlags)).toBe(true)

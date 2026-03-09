@@ -156,6 +156,11 @@ const ESSENTIAL_ROUTES = new Set([
     'tienda',
     'envios',
     'mi-proyecto',
+    'categorias',
+    'productos',
+    'inventario',
+    'email',
+    'suscripcion',
 ])
 
 const ADVANCED_ROUTES = new Set([
@@ -178,6 +183,11 @@ export type PanelRouteKey =
     | 'tienda'
     | 'envios'
     | 'mi-proyecto'
+    | 'categorias'
+    | 'productos'
+    | 'inventario'
+    | 'email'
+    | 'suscripcion'
     | 'carrusel'
     | 'mensajes'
     | 'paginas'
