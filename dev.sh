@@ -188,6 +188,22 @@ fi
 
 # ── 2. Medusa Backend ─────────────────────
 echo -e "\n${BLUE}[2/3]${NC} Starting Medusa backend..."
+
+# Source .env so MEDUSA_ADMIN_EMAIL/PASSWORD are available
+if [[ -f "$ROOT_DIR/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source <(grep -v '^#' "$ROOT_DIR/.env" | grep -v '^\s*$' | sed 's/[[:space:]]*$//')
+    set +a
+fi
+
+# Ensure Medusa admin user exists (mirrors docker-entrypoint.sh behavior in production)
+# Without this, the owner panel can't authenticate with the Medusa Admin API
+if [[ -n "${MEDUSA_ADMIN_EMAIL:-}" ]] && [[ -n "${MEDUSA_ADMIN_PASSWORD:-}" ]]; then
+    echo -e "  ${YELLOW}→${NC} Ensuring Medusa admin user: $MEDUSA_ADMIN_EMAIL"
+    (cd "$ROOT_DIR/apps/medusa" && NODE_OPTIONS='--dns-result-order=ipv4first' npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD" 2>&1 | sed 's/^/  [medusa-user] /') || true
+fi
+
 start_service "medusa" "$ROOT_DIR/apps/medusa" "REDIS_URL='$DEV_REDIS_URL' NODE_OPTIONS='--dns-result-order=ipv4first' pnpm dev"
 
 # ── 3. Next.js Storefront ─────────────────

@@ -43,23 +43,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.9,
             alternates: buildAlternates(`/${CANONICAL_ROUTES.products}`),
         })
+
+        // Legal pages
+        const legalSlugs = ['privacidad', 'terminos', 'cookies', 'aviso']
+        for (const slug of legalSlugs) {
+            entries.push({
+                url: `${prefix}/legal/${slug}`,
+                lastModified: new Date(),
+                changeFrequency: 'monthly' as const,
+                priority: 0.3,
+                alternates: buildAlternates(`/legal/${slug}`),
+            })
+        }
     }
 
-    // Dynamic product pages per locale
+    // Dynamic product pages per locale — paginate to fetch ALL products
     try {
-        const { products } = await getProducts({ limit: 100 })
-        for (const locale of activeLocales) {
-            const prefix = `${baseUrl}/${locale}`
-            for (const product of products) {
-                const productPath = `/${CANONICAL_ROUTES.products}/${product.handle}`
-                entries.push({
-                    url: `${prefix}${productPath}`,
-                    lastModified: new Date(product.updated_at),
-                    changeFrequency: 'weekly' as const,
-                    priority: 0.8,
-                    alternates: buildAlternates(productPath),
-                })
+        const PAGE_SIZE = 200
+        let offset = 0
+        let hasMore = true
+
+        while (hasMore) {
+            const { products } = await getProducts({ limit: PAGE_SIZE, offset })
+            for (const locale of activeLocales) {
+                const prefix = `${baseUrl}/${locale}`
+                for (const product of products) {
+                    const productPath = `/${CANONICAL_ROUTES.products}/${product.handle}`
+                    entries.push({
+                        url: `${prefix}${productPath}`,
+                        lastModified: new Date(product.updated_at),
+                        changeFrequency: 'weekly' as const,
+                        priority: 0.8,
+                        alternates: buildAlternates(productPath),
+                    })
+                }
             }
+            hasMore = products.length === PAGE_SIZE
+            offset += PAGE_SIZE
         }
     } catch {
         // Products unavailable — return static pages only

@@ -1,4 +1,4 @@
-import { Leaf, Truck, BadgeDollarSign, Smartphone } from 'lucide-react'
+import { CheckCircle, Truck, BadgeCheck, Smartphone } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 
@@ -11,50 +11,43 @@ export default function TrustSection({ dictionary }: TrustSectionProps) {
 
     const trustItems = [
         {
-            icon: Leaf,
+            icon: CheckCircle,
             title: t('trust.freshDaily'),
             description: t('trust.freshDailyDesc'),
-            color: 'text-green-500',
-            bgColor: 'bg-green-100 dark:bg-green-900/30',
         },
         {
             icon: Truck,
             title: t('trust.fastDelivery'),
             description: t('trust.fastDeliveryDesc'),
-            color: 'text-blue-500',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/30',
         },
         {
-            icon: BadgeDollarSign,
+            icon: BadgeCheck,
             title: t('trust.bestPrice'),
             description: t('trust.bestPriceDesc'),
-            color: 'text-amber-500',
-            bgColor: 'bg-amber-100 dark:bg-amber-900/30',
         },
         {
             icon: Smartphone,
             title: t('trust.easyOrder'),
             description: t('trust.easyOrderDesc'),
-            color: 'text-purple-500',
-            bgColor: 'bg-purple-100 dark:bg-purple-900/30',
         },
     ]
 
     return (
-        <section className="py-12 md:py-16">
-            <h2 className="text-2xl md:text-3xl font-bold font-display text-text-primary mb-8 text-center">
-                {t('trust.title')}
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                {trustItems.map((item) => (
-                    <div key={item.title} className="text-center p-4 md:p-6 rounded-xl bg-surface-1 hover:bg-surface-2 card-lift">
-                        <div className={`w-12 h-12 mx-auto mb-4 rounded-full ${item.bgColor} flex items-center justify-center`}>
-                            <item.icon className={`w-6 h-6 ${item.color}`} />
-                        </div>
-                        <h3 className="font-semibold text-text-primary mb-1 text-sm md:text-base">
+        <section className="py-10 border-y border-surface-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-surface-2">
+                {trustItems.map((item, i) => (
+                    <div
+                        key={item.title}
+                        className={`flex flex-col items-center text-center px-6 py-4 ${i > 0 ? '' : ''}`}
+                    >
+                        <item.icon
+                            className="w-5 h-5 text-primary mb-3"
+                            strokeWidth={1.5}
+                        />
+                        <h3 className="text-sm font-semibold text-text-primary mb-0.5">
                             {item.title}
                         </h3>
-                        <p className="text-xs md:text-sm text-text-muted">
+                        <p className="text-xs text-text-muted leading-snug">
                             {item.description}
                         </p>
                     </div>

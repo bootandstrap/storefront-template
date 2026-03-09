@@ -9,20 +9,21 @@ import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { getEnabledMethods } from '@/lib/payment-methods'
 import CartItem from './CartItem'
 import FreeShippingBanner from './FreeShippingBanner'
-import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
 
 interface CartDrawerProps {
     config: StoreConfig
     featureFlags: FeatureFlags
+    planLimits: PlanLimits
 }
 
-export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
+export default function CartDrawer({ config, featureFlags, planLimits }: CartDrawerProps) {
     const { cart, cartId, drawerOpen, closeDrawer, setCart, itemCount } = useCart()
     const { t, locale, localizedHref } = useI18n()
     const [isLoading, startTransition] = useTransition()
 
     // Compute which payment methods are available based on feature flags
-    const enabledMethods = getEnabledMethods(featureFlags)
+    const enabledMethods = getEnabledMethods(featureFlags, planLimits)
     const hasWhatsAppCheckout = enabledMethods.some(m => m.id === 'whatsapp')
     const hasAnyCheckoutMethod = enabledMethods.length > 0
 
@@ -64,7 +65,7 @@ export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
     }).format(subtotal / 100)
 
     return (
-        <div data-testid="cart-drawer" className="fixed inset-0 z-50 animate-fade-in">
+        <div data-testid="cart-drawer" className="fixed inset-0 z-50 animate-fade-in" role="dialog" aria-modal="true" aria-label={t('cart.title')}>
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -78,7 +79,7 @@ export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
                     <div className="flex items-center gap-2">
                         <ShoppingBag className="w-5 h-5 text-primary" />
                         <h2 className="text-lg font-bold font-display">
-                            {t('cart.title')} ({itemCount})
+                            {t('cart.title')} (<span aria-live="polite">{itemCount}</span>)
                         </h2>
                     </div>
                     <button
@@ -98,7 +99,7 @@ export default function CartDrawer({ config, featureFlags }: CartDrawerProps) {
                         </div>
                     ) : items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <p className="text-4xl mb-4">🛒</p>
+                            <ShoppingBag className="w-10 h-10 text-text-muted mb-4" strokeWidth={1.5} />
                             <h3 className="text-lg font-semibold text-text-primary mb-2">
                                 {t('cart.empty')}
                             </h3>

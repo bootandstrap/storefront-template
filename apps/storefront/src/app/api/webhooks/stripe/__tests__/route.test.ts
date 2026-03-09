@@ -25,7 +25,26 @@ vi.mock('stripe', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Mock fetch for Supabase + Medusa calls
+// Mock governance client — isolate from real Supabase client singleton
+// ---------------------------------------------------------------------------
+
+const mockRpc = vi.fn()
+const mockInsert = vi.fn()
+
+vi.mock('server-only', () => ({}))
+
+vi.mock('@/lib/supabase/governance', () => ({
+    createGovernanceClient: vi.fn(() => ({
+        rpc: mockRpc,
+        from: vi.fn(() => ({
+            insert: mockInsert.mockResolvedValue({ data: null, error: null }),
+        })),
+    })),
+    getGovernanceMode: vi.fn(() => 'rpc'),
+}))
+
+// ---------------------------------------------------------------------------
+// Mock fetch for Medusa + email calls
 // ---------------------------------------------------------------------------
 
 const originalFetch = globalThis.fetch
@@ -58,6 +77,13 @@ function mockFetchSetup(responses: Array<{ url: string; response: unknown; ok?: 
 beforeEach(() => {
     vi.clearAllMocks()
     globalThis.fetch = originalFetch
+    // Reset governance singleton
+    const g = globalThis as unknown as Record<string, unknown>
+    delete g.__supabaseGovernanceClient
+    delete g.__governanceMode
+    // Default: claim returns 'claimed'
+    mockRpc.mockResolvedValue({ data: 'claimed', error: null })
+    mockInsert.mockResolvedValue({ data: null, error: null })
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_secret'
     process.env.STRIPE_SECRET_KEY = 'sk_test_key'
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
@@ -107,28 +133,8 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
-        // New inbox model: INSERT returns [] (row exists) → GET status check → already processed → duplicate
-        // Use sequential fetch mock to handle multiple calls to similar URLs
-        let callCount = 0
-        globalThis.fetch = vi.fn().mockImplementation(() => {
-            callCount++
-            if (callCount === 1) {
-                // First call: INSERT returns empty (row already existed)
-                return Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    json: () => Promise.resolve([]),
-                    text: () => Promise.resolve('[]'),
-                })
-            }
-            // Second call: GET returns existing row with status='processed'
-            return Promise.resolve({
-                ok: true,
-                status: 200,
-                json: () => Promise.resolve([{ status: 'processed', created_at: new Date().toISOString(), attempts: 1 }]),
-                text: () => Promise.resolve('[]'),
-            })
-        })
+        // Governance mock: claim returns 'duplicate' → skip processing
+        mockRpc.mockResolvedValue({ data: 'duplicate', error: null })
 
         vi.resetModules()
         const { POST } = await import('../route')
@@ -156,15 +162,13 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
-        // claimEvent: upsert returns the inserted row → we own this event
+        // Governance mock: claim returns 'claimed', mark succeeds
+        mockRpc.mockResolvedValue({ data: 'claimed', error: null })
+
+        // Fetch mocks: only Medusa + email (RPCs go through mockRpc)
         mockFetchSetup([
-            {
-                url: 'stripe_webhook_events',
-                response: [{ id: 'new-row', event_id: 'evt_new_456' }],
-            },
             { url: 'carts/cart_123/complete', response: { order: { id: 'order_1' } } },
             { url: 'functions/v1/send-email', response: { success: true } },
-            { url: 'analytics_events', response: {} },
         ])
 
         vi.resetModules()
@@ -192,8 +196,8 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
-        // claimEvent: fetch throws → 'unavailable' → 503 for Stripe retry
-        globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
+        // Governance mock: claim throws → 'unavailable' → 503 for Stripe retry
+        mockRpc.mockResolvedValue({ data: null, error: { message: 'Network error' } })
 
         vi.resetModules()
         const { POST } = await import('../route')
@@ -206,9 +210,6 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
     })
 
     it('returns 503 when Supabase config is missing (fail-safe: forces Stripe retry)', async () => {
-        delete process.env.NEXT_PUBLIC_SUPABASE_URL
-        delete process.env.SUPABASE_SERVICE_ROLE_KEY
-
         const fakeEvent = {
             id: 'evt_no_config_001',
             type: 'payment_intent.succeeded',
@@ -221,6 +222,9 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
             },
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
+
+        // Governance mock: RPC throws error → 'unavailable' → 503
+        mockRpc.mockRejectedValue(new Error('Config missing'))
 
         vi.resetModules()
         const { POST } = await import('../route')
@@ -249,12 +253,11 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
+        // Governance mock: claim succeeds
+        mockRpc.mockResolvedValue({ data: 'claimed', error: null })
+
+        // Fetch mock: cart completion fails (Medusa returns 500)
         mockFetchSetup([
-            {
-                url: 'stripe_webhook_events',
-                response: [{ id: 'row-1', event_id: 'evt_cart_fail_001' }],
-            },
-            // Cart completion fails (Medusa returns 500)
             { url: 'carts/cart_fail_999/complete', response: { error: 'Internal error' }, ok: false },
         ])
 
@@ -285,16 +288,13 @@ describe('POST /api/webhooks/stripe — atomic idempotency', () => {
         }
         mockConstructEvent.mockReturnValue(fakeEvent)
 
+        // Governance mock: claim succeeds
+        mockRpc.mockResolvedValue({ data: 'claimed', error: null })
+
+        // Fetch mocks: cart succeeds, email fails (non-critical)
         mockFetchSetup([
-            {
-                url: 'stripe_webhook_events',
-                response: [{ id: 'row-2', event_id: 'evt_email_fail_002' }],
-            },
-            // Cart completion succeeds
             { url: 'carts/cart_ok_111/complete', response: { order: { id: 'order_ok' } } },
-            // Email fails — but this is non-critical
             { url: 'functions/v1/send-email', response: { error: 'Email service down' }, ok: false },
-            { url: 'analytics_events', response: {} },
         ])
 
         vi.resetModules()

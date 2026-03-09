@@ -1,4 +1,5 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { Truck } from 'lucide-react'
 import { withPanelGuard } from '@/lib/panel-guard'
 import ShippingClient from './ShippingClient'
 
@@ -24,7 +25,8 @@ export default async function ShippingPage({
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
+                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
+                    <Truck className="w-6 h-6 text-primary" />
                     {t('panel.shipping.title')}
                 </h1>
                 <p className="text-text-muted mt-1">

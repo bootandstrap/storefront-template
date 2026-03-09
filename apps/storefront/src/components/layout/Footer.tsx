@@ -88,6 +88,21 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                                     {t('order.lookup')}
                                 </Link>
                             </li>
+                            <li>
+                                <Link href={`/${lang}/faq`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                    {t('footer.faq')}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={`/${lang}/about`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                    {t('footer.about')}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={`/${lang}/legal/devoluciones`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                    {t('footer.returns')}
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
@@ -98,13 +113,23 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                         </h4>
                         <ul className="space-y-2">
                             <li>
-                                <Link href={`/${lang}/paginas/terminos`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                <Link href={`/${lang}/legal/terminos`} className="text-sm text-text-muted hover:text-primary transition-colors">
                                     {t('footer.terms')}
                                 </Link>
                             </li>
                             <li>
-                                <Link href={`/${lang}/paginas/privacidad`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                <Link href={`/${lang}/legal/privacidad`} className="text-sm text-text-muted hover:text-primary transition-colors">
                                     {t('footer.privacy')}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={`/${lang}/legal/cookies`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                    {t('footer.cookies')}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={`/${lang}/legal/aviso`} className="text-sm text-text-muted hover:text-primary transition-colors">
+                                    {t('footer.imprint')}
                                 </Link>
                             </li>
                         </ul>

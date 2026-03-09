@@ -33,10 +33,27 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
+// SSR-safe: returns no-op defaults when rendered outside CartProvider during
+// server-side rendering. CartProvider lives in root layout.tsx, but during
+// the initial SSR pass the context value may not have been initialized yet.
+const SSR_DEFAULTS: CartContextValue = {
+    cart: null,
+    cartId: null,
+    itemCount: 0,
+    isLoading: false,
+    drawerOpen: false,
+    openDrawer: () => { },
+    closeDrawer: () => { },
+    setCart: () => { },
+    setCartId: () => { },
+    resetCart: () => { },
+    optimisticItems: [],
+    addOptimisticItem: () => { },
+}
+
 export function useCart(): CartContextValue {
     const ctx = useContext(CartContext)
-    if (!ctx) throw new Error('useCart must be used within <CartProvider>')
-    return ctx
+    return ctx ?? SSR_DEFAULTS
 }
 
 // ---------------------------------------------------------------------------

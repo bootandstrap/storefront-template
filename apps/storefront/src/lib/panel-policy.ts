@@ -25,6 +25,7 @@ export interface PanelSidebarLabels {
     customers: string
     storeConfig: string
     shipping: string
+    myProject: string
     modules: string
     carousel: string
     whatsapp: string
@@ -59,6 +60,7 @@ const ESSENTIAL_MODULES = [
     { key: 'customers', segment: 'clientes' },
     { key: 'storeConfig', segment: 'tienda' },
     { key: 'shipping', segment: 'envios' },
+    { key: 'myProject', segment: 'mi-proyecto' },
 ] as const
 
 const ADVANCED_MODULES: AdvancedModuleDef[] = [
@@ -153,6 +155,7 @@ const ESSENTIAL_ROUTES = new Set([
     'clientes',
     'tienda',
     'envios',
+    'mi-proyecto',
 ])
 
 const ADVANCED_ROUTES = new Set([
@@ -174,6 +177,7 @@ export type PanelRouteKey =
     | 'clientes'
     | 'tienda'
     | 'envios'
+    | 'mi-proyecto'
     | 'carrusel'
     | 'mensajes'
     | 'paginas'

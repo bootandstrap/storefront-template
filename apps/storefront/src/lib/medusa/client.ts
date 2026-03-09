@@ -1,5 +1,7 @@
+import { resolveRegionId } from './region'
+
 const MEDUSA_BACKEND_URL =
-    process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUBLISHABLE_KEY =
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
@@ -11,7 +13,7 @@ async function medusaFetch<T>(
     path: string,
     options?: RequestInit & { timeout?: number }
 ): Promise<T> {
-    const { timeout = 3000, ...fetchOptions } = options ?? {}
+    const { timeout = 8000, ...fetchOptions } = options ?? {}
     const url = `${MEDUSA_BACKEND_URL}${path}`
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -134,6 +136,7 @@ export async function getProducts(params?: {
     category_id?: string[]
     order?: string
     q?: string
+    region_id?: string
 }): Promise<ProductListResponse> {
     const searchParams = new URLSearchParams()
     if (params?.limit) searchParams.set('limit', String(params.limit))
@@ -143,14 +146,21 @@ export async function getProducts(params?: {
     params?.category_id?.forEach((id) => searchParams.append('category_id[]', id))
     searchParams.set('fields', '+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity')
 
+    // Region is REQUIRED for pricing — resolve from cookie/config/fallback
+    const regionId = params?.region_id || await resolveRegionId()
+    if (regionId) searchParams.set('region_id', regionId)
+
     const qs = searchParams.toString()
     return medusaFetch<ProductListResponse>(`/store/products${qs ? `?${qs}` : ''}`)
 }
 
-export async function getProduct(handle: string): Promise<MedusaProduct | null> {
+export async function getProduct(handle: string, regionId?: string): Promise<MedusaProduct | null> {
     try {
+        // Region is REQUIRED for pricing — resolve from cookie/config/fallback
+        const region = regionId || await resolveRegionId()
+        const regionParam = region ? `&region_id=${region}` : ''
         const res = await medusaFetch<{ products: MedusaProduct[] }>(
-            `/store/products?handle=${handle}&fields=+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity`
+            `/store/products?handle=${handle}&fields=+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity${regionParam}`
         )
         return res.products[0] ?? null
     } catch {
@@ -177,10 +187,12 @@ export async function getCategories(): Promise<MedusaCategory[]> {
 // Cart
 // ---------------------------------------------------------------------------
 
-export async function createCart(): Promise<MedusaCart> {
+export async function createCart(regionId?: string): Promise<MedusaCart> {
+    // Region is REQUIRED for cart — determines currency, taxes, shipping
+    const region = regionId || await resolveRegionId()
     const res = await medusaFetch<{ cart: MedusaCart }>('/store/carts', {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify(region ? { region_id: region } : {}),
     })
     return res.cart
 }

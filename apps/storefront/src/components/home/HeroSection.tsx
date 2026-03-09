@@ -35,14 +35,15 @@ export default function HeroSection({ config, featureFlags, dictionary, lang }: 
                     className="object-cover"
                 />
             ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-secondary">
-                    {/* Abstract SVG background pattern */}
-                    <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 800 500" fill="none">
-                        <circle cx="400" cy="250" r="200" stroke="white" strokeWidth="0.5" />
-                        <circle cx="400" cy="250" r="300" stroke="white" strokeWidth="0.5" />
-                        <circle cx="400" cy="250" r="100" stroke="white" strokeWidth="0.5" />
-                        <path d="M200 250 Q400 50 600 250 Q400 450 200 250Z" stroke="white" strokeWidth="0.5" />
-                    </svg>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/70">
+                    {/* Subtle dot grid — crafted, not AI-generated */}
+                    <div
+                        className="absolute inset-0 opacity-[0.15]"
+                        style={{
+                            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                            backgroundSize: '32px 32px',
+                        }}
+                    />
                 </div>
             )}
 

@@ -57,7 +57,11 @@ export async function authenticatedMedusaFetch<T>(
 
     const attempt = async (signal?: AbortSignal): Promise<T> => {
         const res = await fetch(url, { ...fetchOptions, headers, signal })
-        if (!res.ok) throw new Error(`Medusa ${res.status}: ${path}`)
+        if (!res.ok) {
+            const err = new Error(`Medusa ${res.status}: ${path}`)
+                ; (err as Error & { status: number }).status = res.status
+            throw err
+        }
         return res.json()
     }
 
@@ -66,8 +70,12 @@ export async function authenticatedMedusaFetch<T>(
     const timer = setTimeout(() => controller.abort(), timeout)
     try {
         return await attempt(controller.signal)
-    } catch {
-        // Retry once with doubled timeout
+    } catch (firstErr) {
+        // Don't retry auth errors — 401 means no Medusa customer, retrying won't help
+        if ((firstErr as Error & { status?: number }).status === 401) {
+            throw firstErr
+        }
+        // Retry once with doubled timeout for transient errors
         const retryController = new AbortController()
         const retryTimer = setTimeout(() => retryController.abort(), timeout * 2)
         try {

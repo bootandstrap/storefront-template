@@ -34,6 +34,7 @@ async function ReviewsContent({ lang }: { lang: string }) {
             initialReviews={reviews as any}
             initialStats={stats}
             dictionary={dictionary}
+            lang={lang}
         />
     )
 }

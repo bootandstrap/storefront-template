@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
+import { getRegions } from '@/lib/medusa/region'
 import CheckoutPageClient from './CheckoutPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -19,7 +20,7 @@ export default async function CheckoutPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config, featureFlags, planLimits: _planLimits, planExpired } = await getConfig()
+    const { config, featureFlags, planLimits, planExpired } = await getConfig()
 
     // -----------------------------------------------------------------------
     // Governance: require_auth_to_order / enable_guest_checkout
@@ -60,6 +61,21 @@ export default async function CheckoutPage({
     // friendly page here too for better UX
     // (Actual count check happens in actions.ts to avoid extra DB call here)
 
+    // -----------------------------------------------------------------------
+    // Medusa: region countries for address step
+    // -----------------------------------------------------------------------
+    const regions = await getRegions()
+    const countryMap = new Map<string, string>()
+    for (const region of regions) {
+        for (const country of region.countries) {
+            countryMap.set(country.iso_2, country.display_name)
+        }
+    }
+    const countries = Array.from(countryMap.entries()).map(([iso_2, display_name]) => ({
+        iso_2,
+        display_name,
+    }))
+
     // Bank details are now proper typed columns on StoreConfig
     const bankDetails = {
         bank_name: config.bank_name ?? null,
@@ -73,6 +89,8 @@ export default async function CheckoutPage({
         <CheckoutPageClient
             config={config}
             featureFlags={featureFlags}
+            planLimits={planLimits}
+            countries={countries}
             bankDetails={bankDetails}
         />
     )

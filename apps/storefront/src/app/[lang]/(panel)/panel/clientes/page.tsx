@@ -59,6 +59,7 @@ export default async function CustomersPage({
                     subtitle: t('panel.customers.subtitle'),
                     searchPlaceholder: t('panel.customers.searchPlaceholder'),
                     noCustomers: t('panel.customers.noCustomers'),
+                    noCustomersHint: t('panel.customers.noCustomersHint'),
                     customer: t('panel.customers.customer'),
                     email: t('panel.customers.email'),
                     orders: t('panel.customers.orders'),
@@ -67,6 +68,7 @@ export default async function CustomersPage({
                     total: t('panel.orders.total'),
                     previous: t('pagination.previous'),
                     next: t('pagination.next'),
+                    noOrders: t('panel.customers.noOrders'),
                 }}
             />
         </div>

@@ -23,7 +23,7 @@ export default async function PanelLayout({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { config, featureFlags } = await getConfig()
+    const { config, featureFlags, planLimits } = await getConfig()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -68,8 +68,21 @@ export default async function PanelLayout({
         }
     }
 
-    // Determine store URL for onboarding wizard
+    // Determine store URL for onboarding
     const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `/${lang}`
+
+    // Count active modules from feature flags
+    const moduleFlags = [
+        featureFlags.enable_carousel,
+        featureFlags.enable_whatsapp_checkout,
+        featureFlags.enable_cms_pages,
+        featureFlags.enable_analytics,
+        featureFlags.enable_chatbot,
+        featureFlags.enable_self_service_returns,
+        featureFlags.enable_crm,
+        featureFlags.enable_reviews,
+    ]
+    const activeModuleCount = moduleFlags.filter(Boolean).length
 
     return (
         <div className="min-h-screen bg-surface-0 md:flex">
@@ -95,6 +108,7 @@ export default async function PanelLayout({
                     customers: t('panel.nav.customers'),
                     storeConfig: t('panel.nav.storeConfig'),
                     shipping: t('panel.nav.shipping'),
+                    myProject: t('panel.nav.myProject'),
                     modules: t('panel.nav.modules'),
                     carousel: t('panel.nav.carousel'),
                     whatsapp: t('panel.nav.whatsapp'),
@@ -108,15 +122,27 @@ export default async function PanelLayout({
                     ownerPanel: t('panel.nav.ownerPanel'),
                     backToStore: t('panel.nav.backToStore'),
                 }}
+                planName={planLimits.plan_name}
             />
             <div className="flex-1 overflow-auto">
                 <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
-                    {/* OnboardingWizard — shows once on first panel access */}
+                    {/* Onboarding — welcome + guided tour on first panel access */}
                     {!config.onboarding_completed && (
                         <PanelOnboarding
                             storeName={config.business_name}
                             storeUrl={storeUrl}
                             locale={lang}
+                            domain={process.env.NEXT_PUBLIC_STORE_DOMAIN || null}
+                            currency={config.default_currency || 'EUR'}
+                            language={config.language || 'en'}
+                            moduleCount={activeModuleCount}
+                            hasLogo={!!config.logo_url}
+                            hasContact={!!config.whatsapp_number || !!config.store_email}
+                            translations={Object.fromEntries(
+                                Object.keys(dictionary)
+                                    .filter(k => k.startsWith('welcome.') || k.startsWith('tour.') || k.startsWith('onboarding.'))
+                                    .map(k => [k, (dictionary as Record<string, string>)[k]])
+                            )}
                         />
                     )}
                     {children}
@@ -125,3 +151,4 @@ export default async function PanelLayout({
         </div>
     )
 }
+

@@ -18,6 +18,7 @@ import {
     CheckCircle, XCircle, Clock, Truck, ShoppingBag, AlertCircle, RotateCcw
 } from 'lucide-react'
 import { fulfillOrder, cancelOrder, refundOrder } from './actions'
+import { toIntlLocale } from '@/lib/i18n/intl-locale'
 import type { AdminOrderFull } from '@/lib/medusa/admin'
 
 // ---------------------------------------------------------------------------
@@ -33,6 +34,7 @@ interface OrderLabels {
     completed: string
     canceled: string
     noOrders: string
+    noOrdersDesc?: string
     order: string
     customer: string
     date: string
@@ -49,6 +51,10 @@ interface OrderLabels {
     refundAmount: string
     refundHint: string
     refundSuccess: string
+    shipping: string
+    taxes: string
+    discount: string
+    subtotal: string
     shippingAddress: string
     payment: string
     fulfilled: string
@@ -99,15 +105,15 @@ function fulfillmentIcon(status: string) {
     return <Package className="w-3.5 h-3.5 text-amber-600" />
 }
 
-function formatPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat('es-ES', {
+function formatPrice(amount: number, currency: string, lang: string): string {
+    return new Intl.NumberFormat(toIntlLocale(lang), {
         style: 'currency',
         currency: currency.toUpperCase(),
     }).format(amount / 100)
 }
 
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
+function formatDate(dateStr: string, lang: string): string {
+    return new Date(dateStr).toLocaleDateString(toIntlLocale(lang), {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -129,7 +135,7 @@ export default function OrdersClient({
     pageSize,
     initialSearch,
     initialStatus,
-    lang: _lang,
+    lang,
     labels,
 }: Props) {
     const router = useRouter()
@@ -208,7 +214,7 @@ export default function OrdersClient({
             return
         }
         if (amountCents > maxAmount) {
-            toast.error(`Max: ${formatPrice(maxAmount, currency)}`)
+            toast.error(`Max: ${formatPrice(maxAmount, currency, lang)}`)
             return
         }
         if (!confirm(labels.refundConfirm)) return
@@ -294,9 +300,18 @@ export default function OrdersClient({
 
             {/* Orders list */}
             {orders.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <div className="text-5xl mb-4">📦</div>
-                    <p className="text-text-muted text-lg">{labels.noOrders}</p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <ShoppingBag className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {labels.noOrders}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed mb-1">
+                            {labels.noOrdersDesc || 'When customers place orders, they will appear here. Share your store!'}
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -322,13 +337,13 @@ export default function OrdersClient({
                                         </span>
                                         {/* Date */}
                                         <span className="text-xs text-text-muted hidden sm:inline">
-                                            {formatDate(order.created_at)}
+                                            {formatDate(order.created_at, lang)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {/* Total */}
                                         <span className="font-bold text-sm">
-                                            {formatPrice(order.total, order.currency_code)}
+                                            {formatPrice(order.total, order.currency_code, lang)}
                                         </span>
                                         {/* Status badge */}
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
@@ -376,10 +391,10 @@ export default function OrdersClient({
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-sm font-medium">
-                                                                {item.quantity} × {formatPrice(item.unit_price, order.currency_code)}
+                                                                {item.quantity} × {formatPrice(item.unit_price, order.currency_code, lang)}
                                                             </p>
                                                             <p className="text-xs text-text-muted">
-                                                                {formatPrice(item.total, order.currency_code)}
+                                                                {formatPrice(item.total, order.currency_code, lang)}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -390,25 +405,25 @@ export default function OrdersClient({
                                             <div className="mt-3 pt-3 border-t border-surface-2 space-y-1 text-sm">
                                                 {order.shipping_total > 0 && (
                                                     <div className="flex justify-between text-text-muted">
-                                                        <span>Envío</span>
-                                                        <span>{formatPrice(order.shipping_total, order.currency_code)}</span>
+                                                        <span>{labels.shipping}</span>
+                                                        <span>{formatPrice(order.shipping_total, order.currency_code, lang)}</span>
                                                     </div>
                                                 )}
                                                 {order.tax_total > 0 && (
                                                     <div className="flex justify-between text-text-muted">
-                                                        <span>Impuestos</span>
-                                                        <span>{formatPrice(order.tax_total, order.currency_code)}</span>
+                                                        <span>{labels.taxes}</span>
+                                                        <span>{formatPrice(order.tax_total, order.currency_code, lang)}</span>
                                                     </div>
                                                 )}
                                                 {order.discount_total > 0 && (
                                                     <div className="flex justify-between text-green-600">
-                                                        <span>Descuento</span>
-                                                        <span>-{formatPrice(order.discount_total, order.currency_code)}</span>
+                                                        <span>{labels.discount}</span>
+                                                        <span>-{formatPrice(order.discount_total, order.currency_code, lang)}</span>
                                                     </div>
                                                 )}
                                                 <div className="flex justify-between font-bold text-text-primary pt-1">
                                                     <span>{labels.total}</span>
-                                                    <span>{formatPrice(order.total, order.currency_code)}</span>
+                                                    <span>{formatPrice(order.total, order.currency_code, lang)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -462,7 +477,7 @@ export default function OrdersClient({
                                                     {order.payments.map(p => (
                                                         <div key={p.id} className="text-sm">
                                                             <p className="font-medium text-text-primary capitalize">{p.provider_id.replace(/_/g, ' ')}</p>
-                                                            <p className="text-xs text-text-muted">{formatPrice(p.amount, p.currency_code)}</p>
+                                                            <p className="text-xs text-text-muted">{formatPrice(p.amount, p.currency_code, lang)}</p>
                                                         </div>
                                                     ))}
                                                 </div>

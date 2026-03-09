@@ -19,6 +19,7 @@ import { createTranslator } from '@/lib/i18n'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CartDrawer from '@/components/cart/CartDrawer'
+import BottomNav from '@/components/layout/BottomNav'
 import { DeferredChatWidget } from '@/components/chat/DeferredChatWidget'
 import CookieConsentBanner from '@/components/consent/CookieConsentBanner'
 import CompareBarWrapper from '@/components/products/CompareBar'
@@ -97,9 +98,7 @@ export default async function ShopLayout({
 
     return (
         <>
-            <a href="#main-content" className="skip-to-content">
-                {t('common.skipToContent')}
-            </a>
+
 
             {/* Governance: plan expiration banner */}
             {planExpired && (
@@ -130,7 +129,8 @@ export default async function ShopLayout({
                 {children}
             </main>
             <Footer config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />
-            <CartDrawer config={config} featureFlags={featureFlags} />
+            <CartDrawer config={config} featureFlags={featureFlags} planLimits={planLimits} />
+            <BottomNav />
 
             {/* WhatsApp floating CTA — gated by enable_whatsapp_contact (NOT checkout) */}
             {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
@@ -139,7 +139,7 @@ export default async function ShopLayout({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="whatsapp-float"
-                    aria-label="Contact via WhatsApp"
+                    aria-label={t('common.contactWhatsApp') || 'Contact via WhatsApp'}
                 >
                     <MessageCircle className="w-6 h-6" />
                 </a>

@@ -185,8 +185,12 @@ export async function adminFetch<T>(
                 console.error('[medusa-admin] Retry failed:', retryRes.status, errBody)
                 return { data: null, error: `Medusa Admin API error: ${retryRes.status} — ${errBody}` }
             }
-            const json = await retryRes.json()
-            return { data: json, error: null }
+            try {
+                const json = await retryRes.json()
+                return { data: json, error: null }
+            } catch {
+                return { data: null, error: `Medusa Admin API returned non-JSON response after retry (status ${retryRes.status})` }
+            }
         }
 
         if (!res.ok) {
@@ -195,8 +199,12 @@ export async function adminFetch<T>(
             return { data: null, error: `Medusa Admin API error: ${res.status} — ${errBody}` }
         }
 
-        const json = await res.json()
-        return { data: json, error: null }
+        try {
+            const json = await res.json()
+            return { data: json, error: null }
+        } catch {
+            return { data: null, error: `Medusa Admin API returned non-JSON response (status ${res.status})` }
+        }
     } catch (err) {
         console.error('[medusa-admin]', err)
         return { data: null, error: 'Failed to connect to Medusa Admin API' }

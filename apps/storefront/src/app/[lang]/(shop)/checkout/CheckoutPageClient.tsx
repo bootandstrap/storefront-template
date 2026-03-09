@@ -10,11 +10,14 @@ import CartItem from '@/components/cart/CartItem'
 import FreeShippingBanner from '@/components/cart/FreeShippingBanner'
 import PromotionInput from '@/components/checkout/PromotionInput'
 import { getEnabledMethods } from '@/lib/payment-methods'
-import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
+import type { CheckoutCountry } from '@/components/checkout/steps/CheckoutAddressStep'
 
 interface CheckoutPageClientProps {
     config: StoreConfig
     featureFlags: FeatureFlags
+    planLimits: PlanLimits
+    countries?: CheckoutCountry[]
     bankDetails?: {
         bank_name?: string | null
         bank_account_number?: string | null
@@ -27,6 +30,8 @@ interface CheckoutPageClientProps {
 export default function CheckoutPageClient({
     config,
     featureFlags,
+    planLimits,
+    countries = [],
     bankDetails,
 }: CheckoutPageClientProps) {
     const { cart, itemCount, optimisticItems } = useCart()
@@ -35,7 +40,7 @@ export default function CheckoutPageClient({
     const [useFallback, setUseFallback] = useState(false)
 
     // Check if any payment method is enabled
-    const hasAnyMethod = getEnabledMethods(featureFlags).length > 0
+    const hasAnyMethod = getEnabledMethods(featureFlags, planLimits).length > 0
 
     const items = optimisticItems ?? []
     const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
@@ -151,7 +156,7 @@ export default function CheckoutPageClient({
                                     ) : (
                                         <>
                                             {formatPrice(displayTotal)}
-                                            {useFallback && <span className="text-amber-500 text-sm" title="Total aproximado">*</span>}
+                                            {useFallback && <span className="text-amber-500 text-sm" title={t('checkout.approximateTotal')}>*</span>}
                                         </>
                                     )}
                                 </span>
@@ -159,7 +164,7 @@ export default function CheckoutPageClient({
                             {useFallback && (
                                 <div className="flex items-start gap-1.5 mb-4 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
                                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                                    <p>Total aproximado. El monto exacto se calculará en el siguiente paso.</p>
+                                    <p>{t('checkout.approximateHint')}</p>
                                 </div>
                             )}
                             {hasAnyMethod ? (
@@ -190,6 +195,8 @@ export default function CheckoutPageClient({
             <CheckoutModal
                 config={config}
                 featureFlags={featureFlags}
+                planLimits={planLimits}
+                countries={countries}
                 bankDetails={bankDetails}
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}

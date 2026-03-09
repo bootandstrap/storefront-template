@@ -11,7 +11,22 @@ import {
 } from '@/lib/medusa/admin'
 import StatCard from '@/components/panel/StatCard'
 import UsageMeter from '@/components/panel/UsageMeter'
-import { Package, ShoppingCart, Users, FolderTree, CheckCircle, ArrowRight, Circle } from 'lucide-react'
+import EmptyState from '@/components/panel/EmptyState'
+import {
+    Package,
+    ShoppingCart,
+    Users,
+    FolderTree,
+    CheckCircle,
+    ArrowRight,
+    Circle,
+    DollarSign,
+    Plus,
+    BarChart3,
+    Settings,
+    Tag,
+    Inbox,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
@@ -78,8 +93,32 @@ export default async function PanelDashboard({
         } catch { /* ignore */ }
     }
 
+    // Revenue calculation from recent orders
+    const revenueThisMonth = recentOrders.reduce((sum, order) => {
+        return sum + (order.total ?? 0)
+    }, 0)
+    const currency = recentOrders[0]?.currency_code ?? storeConfig.default_currency ?? 'usd'
+    const formattedRevenue = new Intl.NumberFormat(lang, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(revenueThisMonth / 100)
+
+    // Simple sparkline data — create 7-bar data from recent orders
+    // Group recent orders by day-of-week for the sparkline
+    const sparklineOrders = (() => {
+        const data = new Array(7).fill(0)
+        for (const order of recentOrders) {
+            if (order.created_at) {
+                const day = new Date(order.created_at).getDay()
+                data[day]++
+            }
+        }
+        return data
+    })()
+
     // Usage meter data
-    // Real metrics — backed by Medusa admin API and Supabase queries
     const realMeters = [
         { label: t('panel.usage.products'), result: checkLimit(planLimits, 'max_products', productCount) },
         { label: t('panel.usage.categories'), result: checkLimit(planLimits, 'max_categories', categoryCount) },
@@ -88,7 +127,7 @@ export default async function PanelDashboard({
         { label: t('panel.usage.adminUsers'), result: checkLimit(planLimits, 'max_admin_users', adminCount) },
     ]
 
-    // Load email and traffic stats (uses admin client for service-role access)
+    // Load email and traffic stats
     let emailSendsThisMonth = 0
     let dailyPageViews = 0
     try {
@@ -96,7 +135,7 @@ export default async function PanelDashboard({
         const startOfMonth = new Date()
         startOfMonth.setDate(1)
         startOfMonth.setHours(0, 0, 0, 0)
-        const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0]
 
         const [emailRes, trafficRes] = await Promise.all([
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
@@ -119,16 +158,55 @@ export default async function PanelDashboard({
         // Gracefully degrade — show 0
     }
 
-    // Storage estimate: ~2MB per product (avg images per product × avg image size)
-    // This is an estimate — actual Supabase storage metering requires bucket-level API
     const estimatedStorageMb = Math.round(productCount * 2)
 
-    // Meters backed by real data
     const extendedMeters = [
         { label: t('panel.usage.emailsMonth'), result: checkLimit(planLimits, 'max_email_sends_month', emailSendsThisMonth) },
         { label: t('panel.usage.trafficDay'), result: checkLimit(planLimits, 'max_requests_day', dailyPageViews) },
         { label: `${t('panel.usage.storage')} (est.)`, result: checkLimit(planLimits, 'storage_limit_mb', estimatedStorageMb) },
     ]
+
+    // Quick actions for the grid
+    const quickActions = [
+        {
+            icon: <Plus className="w-5 h-5" />,
+            label: t('panel.quickActions.addProduct') || 'Add Product',
+            href: `/${lang}/panel/catalogo`,
+        },
+        {
+            icon: <Inbox className="w-5 h-5" />,
+            label: t('panel.quickActions.processOrders') || 'Orders',
+            href: `/${lang}/panel/pedidos`,
+        },
+        {
+            icon: <Tag className="w-5 h-5" />,
+            label: t('panel.quickActions.categories') || 'Categories',
+            href: `/${lang}/panel/categorias`,
+        },
+        {
+            icon: <Settings className="w-5 h-5" />,
+            label: t('panel.quickActions.settings') || 'Settings',
+            href: `/${lang}/panel/tienda`,
+        },
+        ...(featureFlags.enable_analytics ? [{
+            icon: <BarChart3 className="w-5 h-5" />,
+            label: t('panel.quickActions.analytics') || 'Analytics',
+            href: `/${lang}/panel/analiticas`,
+        }] : []),
+    ]
+
+    // Relative time helper
+    const relativeTime = (dateStr: string) => {
+        const now = Date.now()
+        const then = new Date(dateStr).getTime()
+        const diff = now - then
+        const minutes = Math.floor(diff / 60000)
+        if (minutes < 60) return `${minutes}m`
+        const hours = Math.floor(minutes / 60)
+        if (hours < 24) return `${hours}h`
+        const days = Math.floor(hours / 24)
+        return `${days}d`
+    }
 
     return (
         <div className="space-y-8">
@@ -189,7 +267,13 @@ export default async function PanelDashboard({
                 const progress = (completedCount / checklistItems.length) * 100
 
                 return (
-                    <div className="glass rounded-2xl p-6 border border-primary/20">
+                    <div id="panel-checklist" className="glass rounded-2xl p-6 border border-primary/20">
+                        <script dangerouslySetInnerHTML={{
+                            __html: `
+                            if (typeof localStorage !== 'undefined' && localStorage.getItem('panel_checklist_skipped') === '1') {
+                                document.getElementById('panel-checklist')?.remove();
+                            }
+                        `}} />
                         <div className="flex items-center gap-4 mb-5">
                             {/* Progress ring */}
                             <div className="relative w-14 h-14 flex-shrink-0">
@@ -233,32 +317,81 @@ export default async function PanelDashboard({
                                 </Link>
                             ))}
                         </div>
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                id="checklist-skip-btn"
+                                className="text-xs text-text-muted hover:text-text-secondary transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-2/60"
+                            >
+                                {t('panel.checklist.skip') || 'Skip'}
+                            </button>
+                        </div>
+                        <script dangerouslySetInnerHTML={{
+                            __html: `
+                            document.getElementById('checklist-skip-btn')?.addEventListener('click', function() {
+                                try { localStorage.setItem('panel_checklist_skipped', '1'); } catch(e) {}
+                                this.closest('.glass')?.remove();
+                            });
+                        `}} />
                     </div>
                 )
             })()}
 
-            {/* Stat cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stat cards — 5 cards with trends and sparklines */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <StatCard
+                    label={t('panel.stats.revenue') || 'Revenue'}
+                    value={formattedRevenue}
+                    icon={<DollarSign className="w-5 h-5" />}
+                    href={`/${lang}/panel/pedidos`}
+                />
                 <StatCard
                     label={t('panel.stats.products')}
                     value={productCount}
                     icon={<Package className="w-5 h-5" />}
+                    href={`/${lang}/panel/catalogo`}
                 />
                 <StatCard
                     label={t('panel.stats.ordersMonth')}
                     value={ordersThisMonth}
                     icon={<ShoppingCart className="w-5 h-5" />}
+                    sparklineData={sparklineOrders}
+                    href={`/${lang}/panel/pedidos`}
                 />
                 <StatCard
                     label={t('panel.stats.customers')}
                     value={customerCount}
                     icon={<Users className="w-5 h-5" />}
+                    href={`/${lang}/panel/clientes`}
                 />
                 <StatCard
                     label={t('panel.stats.categories')}
                     value={categoryCount}
                     icon={<FolderTree className="w-5 h-5" />}
+                    href={`/${lang}/panel/categorias`}
                 />
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
+                    {t('panel.quickActions.title') || 'Quick Actions'}
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {quickActions.map((action) => (
+                        <Link
+                            key={action.href}
+                            href={action.href}
+                            className="quick-action"
+                        >
+                            <div className="quick-action-icon">
+                                {action.icon}
+                            </div>
+                            <span className="text-sm font-medium text-center leading-tight">
+                                {action.label}
+                            </span>
+                        </Link>
+                    ))}
+                </div>
             </div>
 
             {/* Usage meters */}
@@ -282,13 +415,27 @@ export default async function PanelDashboard({
 
             {/* Recent orders */}
             <div>
-                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
-                    {t('panel.dashboard.recentOrders')}
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold font-display text-text-primary">
+                        {t('panel.dashboard.recentOrders')}
+                    </h2>
+                    {recentOrders.length > 0 && (
+                        <Link
+                            href={`/${lang}/panel/pedidos`}
+                            className="text-sm text-primary hover:underline font-medium"
+                        >
+                            {t('panel.dashboard.viewAll') || 'View all'} →
+                        </Link>
+                    )}
+                </div>
                 {recentOrders.length === 0 ? (
-                    <div className="glass rounded-2xl p-8 text-center">
-                        <p className="text-text-muted">{t('panel.dashboard.noOrders')}</p>
-                    </div>
+                    <EmptyState
+                        icon={<Inbox className="w-8 h-8" />}
+                        title={t('panel.dashboard.noOrders') || 'No orders yet'}
+                        description={t('panel.dashboard.noOrdersDesc') || 'When customers place orders, they will appear here. Share your store to start receiving orders!'}
+                        actionLabel={t('panel.dashboard.shareStore') || 'Share your store'}
+                        actionHref={`/${lang}/panel/tienda`}
+                    />
                 ) : (
                     <div className="glass rounded-2xl overflow-hidden">
                         <table className="w-full text-sm">
@@ -300,7 +447,7 @@ export default async function PanelDashboard({
                                     <th className="text-left px-4 py-3 font-medium">
                                         {t('panel.dashboard.customer')}
                                     </th>
-                                    <th className="text-left px-4 py-3 font-medium">
+                                    <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
                                         {t('panel.dashboard.status')}
                                     </th>
                                     <th className="text-right px-4 py-3 font-medium">
@@ -310,16 +457,28 @@ export default async function PanelDashboard({
                             </thead>
                             <tbody>
                                 {recentOrders.map((order) => (
-                                    <tr key={order.id} className="border-b border-surface-2 last:border-0">
-                                        <td className="px-4 py-3 font-medium text-text-primary">
-                                            #{order.display_id}
+                                    <tr
+                                        key={order.id}
+                                        className="border-b border-surface-2 last:border-0 hover:bg-surface-1/50 transition-colors cursor-pointer group"
+                                    >
+                                        <td className="px-4 py-3">
+                                            <Link href={`/${lang}/panel/pedidos?search=${order.display_id}`} className="block">
+                                                <span className="font-medium text-text-primary">
+                                                    #{order.display_id}
+                                                </span>
+                                                {order.created_at && (
+                                                    <span className="text-xs text-text-muted ml-2">
+                                                        {relativeTime(order.created_at)}
+                                                    </span>
+                                                )}
+                                            </Link>
                                         </td>
                                         <td className="px-4 py-3 text-text-secondary">
                                             {order.customer
                                                 ? `${order.customer.first_name ?? ''} ${order.customer.last_name ?? ''}`.trim() || order.customer.email
                                                 : '—'}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 hidden sm:table-cell">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
                                                 order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                                                     order.status === 'canceled' ? 'bg-red-100 text-red-700' :

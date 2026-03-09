@@ -135,9 +135,9 @@ export async function getAdminOrders(params?: {
     searchParams.set('limit', String(normalized.limit))
     searchParams.set('offset', String(normalized.offset))
     searchParams.set('order', '-created_at')
-    searchParams.set('fields', '*customer,*items,*shipping_address,*fulfillments,*payments,sales_channel_id,metadata')
+    searchParams.set('fields', '*customer,*items,*shipping_address,sales_channel_id,metadata')
     if (normalized.status && normalized.status !== 'all') {
-        searchParams.set('status', normalized.status)
+        searchParams.append('status[]', normalized.status)
     }
     if (normalized.q) {
         searchParams.set('q', normalized.q)
@@ -156,7 +156,7 @@ export async function getAdminOrderDetail(
     scope?: TenantMedusaScope | null
 ): Promise<AdminOrderFull | null> {
     const res = await adminFetch<{ order: AdminOrderFull }>(
-        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,*fulfillments,*payments,sales_channel_id,metadata`,
+        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,sales_channel_id,metadata`,
         {},
         scope
     )

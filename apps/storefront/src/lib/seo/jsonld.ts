@@ -2,11 +2,26 @@ import type { StoreConfig } from '@/lib/config'
 import type { MedusaProduct } from '@/lib/medusa/client'
 
 /**
+ * Map Medusa inventory to Schema.org availability
+ */
+function getAvailability(product: MedusaProduct): string {
+    const variant = product.variants?.[0]
+    if (!variant) return 'https://schema.org/OutOfStock'
+    const qty = (variant as unknown as Record<string, unknown>).inventory_quantity as number | undefined
+    if (qty === undefined || qty === null) return 'https://schema.org/InStock' // no tracking = assume in stock
+    if (qty <= 0) return 'https://schema.org/OutOfStock'
+    if (qty <= 5) return 'https://schema.org/LimitedAvailability'
+    return 'https://schema.org/InStock'
+}
+
+/**
  * Product JSON-LD structured data for SEO
+ * Includes dynamic availability and optional aggregateRating
  */
 export function productJsonLD(
     product: MedusaProduct,
-    config: StoreConfig
+    config: StoreConfig,
+    reviewStats?: { ratingValue: number; reviewCount: number } | null
 ): Record<string, unknown> {
     const price = product.variants?.[0]?.prices?.[0]
 
@@ -20,12 +35,21 @@ export function productJsonLD(
             '@type': 'Organization',
             name: config.business_name,
         },
+        ...(reviewStats && reviewStats.reviewCount > 0 && {
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: reviewStats.ratingValue.toFixed(1),
+                reviewCount: reviewStats.reviewCount,
+                bestRating: 5,
+                worstRating: 1,
+            },
+        }),
         ...(price && {
             offers: {
                 '@type': 'Offer',
                 price: (price.amount / 100).toFixed(2),
                 priceCurrency: price.currency_code.toUpperCase(),
-                availability: 'https://schema.org/InStock',
+                availability: getAvailability(product),
                 seller: {
                     '@type': 'Organization',
                     name: config.business_name,
@@ -122,5 +146,26 @@ export function websiteJsonLD(config: StoreConfig): Record<string, unknown> {
             },
             'query-input': 'required name=search_term_string',
         },
+    }
+}
+
+/**
+ * FAQPage JSON-LD — structured data for FAQ pages
+ * Enables rich results in Google (accordion-style FAQ snippets)
+ */
+export function faqPageJsonLD(
+    items: Array<{ question: string; answer: string }>
+): Record<string, unknown> {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: items.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+            },
+        })),
     }
 }

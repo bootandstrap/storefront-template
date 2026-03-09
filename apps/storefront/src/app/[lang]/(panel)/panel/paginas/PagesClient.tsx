@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
+import { FileText, Plus } from 'lucide-react'
 import { createPage, updatePage, deletePage, togglePagePublish } from './actions'
 
 interface CMSPage {
@@ -107,25 +108,26 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
 
     return (
         <>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-primary" />
                         {t('panel.pages.title')}
+                        <span className="ml-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                            {pageCount}
+                        </span>
                     </h1>
-                    <p className="text-text-muted mt-1">{t('panel.pages.subtitle')}</p>
+                    <p className="text-text-muted mt-1">{t('panel.pages.subtitle')} · {pageCount} / {maxPages} {t('panel.pages.pages')}</p>
                 </div>
                 <button
-                    className="btn btn-primary"
+                    className="btn btn-primary flex items-center gap-2"
                     disabled={!canAdd || isPending}
                     onClick={() => { resetForm(); setShowForm(true) }}
                 >
-                    + {t('panel.pages.addPage')}
+                    <Plus className="w-4 h-4" />
+                    {t('panel.pages.addPage')}
                 </button>
             </div>
-
-            <p className="text-xs text-text-muted">
-                {pageCount} / {maxPages} {t('panel.pages.pages')}
-            </p>
 
             {error && (
                 <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
@@ -167,9 +169,25 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
 
             {/* Pages list */}
             {pages.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <div className="text-4xl mb-3">📄</div>
-                    <p className="text-text-muted">{t('panel.pages.empty')}</p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {t('panel.pages.empty')}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                            {t('panel.pages.emptyHint') || 'Create custom pages for your store — about us, FAQ, policies, and more.'}
+                        </p>
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                            disabled={!canAdd || isPending}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            + {t('panel.pages.addPage')}
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-3">

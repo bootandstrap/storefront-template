@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toaster'
 import { moderateReviewAction, deleteReviewAction } from './actions'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
+import { toIntlLocale } from '@/lib/i18n/intl-locale'
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
@@ -49,11 +50,11 @@ function StarRating({ value }: { value: number }) {
     )
 }
 
-function StatusBadge({ status }: { status: ReviewStatus }) {
-    const config: Record<ReviewStatus, { label: string; className: string; icon: typeof Clock }> = {
-        pending: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
-        approved: { label: 'Aprobada', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: Check },
-        rejected: { label: 'Rechazada', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+function StatusBadge({ status, statusLabels }: { status: ReviewStatus; statusLabels: Record<ReviewStatus, string> }) {
+    const config: Record<ReviewStatus, { className: string; icon: typeof Clock }> = {
+        pending: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
+        approved: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: Check },
+        rejected: { className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
     }
 
     const c = config[status]
@@ -62,7 +63,7 @@ function StatusBadge({ status }: { status: ReviewStatus }) {
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.className}`}>
             <Icon className="w-3 h-3" />
-            {c.label}
+            {statusLabels[status]}
         </span>
     )
 }
@@ -71,12 +72,19 @@ export default function ReviewsClient({
     initialReviews,
     initialStats,
     dictionary,
+    lang,
 }: {
     initialReviews: Review[]
     initialStats: ReviewStats
     dictionary: Dictionary
+    lang: string
 }) {
     const t = createTranslator(dictionary)
+    const statusLabels: Record<ReviewStatus, string> = {
+        pending: t('panel.reviews.statusPending'),
+        approved: t('panel.reviews.statusApproved'),
+        rejected: t('panel.reviews.statusRejected'),
+    }
     const { success, error: showError } = useToast()
     const [reviews, setReviews] = useState(initialReviews)
     const [stats, setStats] = useState(initialStats)
@@ -147,8 +155,14 @@ export default function ReviewsClient({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
+                        <Star className="w-6 h-6 text-primary" />
                         {t('panel.nav.reviews') || 'Reseñas'}
+                        {stats.total > 0 && (
+                            <span className="ml-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                                {stats.total}
+                            </span>
+                        )}
                     </h1>
                     <p className="text-sm text-text-muted mt-1">
                         {t('panel.reviews.subtitle') || 'Modera las reseñas de tus productos'}
@@ -177,23 +191,30 @@ export default function ReviewsClient({
             {filter !== 'all' && (
                 <div className="flex items-center gap-2 text-sm text-text-muted">
                     <Filter className="w-4 h-4" />
-                    <span>Filtrando: {filterButtons.find(f => f.key === filter)?.label}</span>
+                    <span>{t('panel.reviews.filtering')}: {filterButtons.find(f => f.key === filter)?.label}</span>
                     <button
                         onClick={() => setFilter('all')}
                         className="text-primary hover:underline text-xs"
                     >
-                        Limpiar
+                        {t('common.clear')}
                     </button>
                 </div>
             )}
 
             {/* Reviews list */}
             {filteredReviews.length === 0 ? (
-                <div className="glass rounded-xl p-8 text-center">
-                    <Star className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
-                    <p className="text-text-muted text-sm">
-                        {t('panel.reviews.empty') || 'No hay reseñas que mostrar'}
-                    </p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <Star className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {t('panel.reviews.empty') || 'No reviews yet'}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed">
+                            {t('panel.reviews.emptyHint') || 'When customers leave reviews on your products, they will appear here for moderation.'}
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -206,7 +227,7 @@ export default function ReviewsClient({
                                             {review.author_name}
                                         </span>
                                         <StarRating value={review.rating} />
-                                        <StatusBadge status={review.status} />
+                                        <StatusBadge status={review.status} statusLabels={statusLabels} />
                                     </div>
 
                                     {review.comment && (
@@ -217,7 +238,7 @@ export default function ReviewsClient({
 
                                     <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
                                         <span>
-                                            {new Date(review.created_at).toLocaleDateString()}
+                                            {new Date(review.created_at).toLocaleDateString(toIntlLocale(lang))}
                                         </span>
                                         <span className="text-text-muted/40">•</span>
                                         <span className="font-mono text-[10px]">

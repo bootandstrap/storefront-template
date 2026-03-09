@@ -120,9 +120,18 @@ export default function ShippingClient() {
 
     if (options.length === 0) {
         return (
-            <div className="glass rounded-2xl p-8 text-center">
-                <div className="text-4xl mb-3">📦</div>
-                <p className="text-text-muted">{t('panel.shipping.empty')}</p>
+            <div className="glass rounded-2xl">
+                <div className="empty-state">
+                    <div className="empty-state-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></svg>
+                    </div>
+                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        {t('panel.shipping.empty')}
+                    </h3>
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                        {t('panel.shipping.emptyHint') || 'Configure shipping options in your Medusa backend to manage delivery rates here.'}
+                    </p>
+                </div>
             </div>
         )
     }

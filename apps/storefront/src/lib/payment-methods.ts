@@ -1,4 +1,4 @@
-import type { FeatureFlags } from '@/lib/config'
+import type { FeatureFlags, PlanLimits } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import {
     MessageCircle,
@@ -85,10 +85,21 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 
 /**
  * Returns only the payment methods whose feature flags are enabled.
- * Sorted by priority (ascending).
+ * Sorted by priority (ascending). Enforces `max_payment_methods` plan limit.
  */
-export function getEnabledMethods(flags: FeatureFlags): PaymentMethod[] {
-    return PAYMENT_METHODS
+export function getEnabledMethods(
+    flags: FeatureFlags,
+    limits?: PlanLimits | null,
+): PaymentMethod[] {
+    const enabled = PAYMENT_METHODS
         .filter((m) => isFeatureEnabled(flags, m.flag))
         .sort((a, b) => a.priority - b.priority)
+
+    // Enforce max_payment_methods plan limit (0 = unlimited)
+    const max = limits?.max_payment_methods ?? 0
+    if (max > 0 && enabled.length > max) {
+        return enabled.slice(0, max)
+    }
+
+    return enabled
 }

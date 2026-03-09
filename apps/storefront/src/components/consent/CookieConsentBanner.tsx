@@ -69,8 +69,10 @@ export default function CookieConsentBanner() {
     if (state !== 'pending' || !visible) return null
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-slide-up safe-area-bottom">
-            <div className="max-w-2xl mx-auto glass rounded-2xl p-5 shadow-2xl border border-white/10">
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-slide-up safe-area-bottom" role="dialog" aria-label={t('cookies.title') || 'Cookie consent'}>
+            <div
+                className="max-w-2xl mx-auto glass rounded-2xl p-5 shadow-2xl border border-white/10"
+            >
                 {/* Header */}
                 <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -87,7 +89,7 @@ export default function CookieConsentBanner() {
                     <button
                         onClick={rejectAll}
                         className="text-text-muted hover:text-text-primary transition-colors"
-                        aria-label="Close"
+                        aria-label={t('cookies.rejectAll') || 'Close'}
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -107,6 +109,9 @@ export default function CookieConsentBanner() {
                             <span className="text-xs text-text-primary">{t('cookies.analytics') || 'Analíticas'}</span>
                             <button
                                 type="button"
+                                role="switch"
+                                aria-checked={prefs.analytics}
+                                aria-label={t('cookies.analytics') || 'Analytics'}
                                 onClick={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))}
                                 className={`relative w-10 h-5 rounded-full transition-colors ${prefs.analytics ? 'bg-primary' : 'bg-surface-3'}`}
                             >
@@ -119,6 +124,9 @@ export default function CookieConsentBanner() {
                             <span className="text-xs text-text-primary">{t('cookies.marketing') || 'Marketing'}</span>
                             <button
                                 type="button"
+                                role="switch"
+                                aria-checked={prefs.marketing}
+                                aria-label={t('cookies.marketing') || 'Marketing'}
                                 onClick={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))}
                                 className={`relative w-10 h-5 rounded-full transition-colors ${prefs.marketing ? 'bg-primary' : 'bg-surface-3'}`}
                             >

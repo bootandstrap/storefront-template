@@ -13,6 +13,7 @@ interface ProductLabels {
     addProduct: string
     editProduct: string
     noProducts: string
+    addProductHint?: string
     name: string
     description: string
     price: string
@@ -245,10 +246,14 @@ export default function ProductsClient({
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
+                        <Package className="w-6 h-6 text-primary" />
                         {labels.title}
+                        <span className="ml-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                            {productCount}
+                        </span>
                     </h1>
-                    <p className="text-text-muted mt-1">{labels.subtitle}</p>
+                    <p className="text-text-muted mt-1">{labels.subtitle} · {productCount} / {maxProducts} {labels.products}</p>
                 </div>
                 <button
                     className="btn btn-primary flex items-center gap-2"
@@ -443,9 +448,26 @@ export default function ProductsClient({
 
             {/* Product grid */}
             {filtered.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <Package className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">{labels.noProducts}</p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <Package className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {labels.noProducts}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                            {labels.addProductHint || 'Create your first product to start selling. Add photos, prices, and descriptions.'}
+                        </p>
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                            disabled={!canAdd || isPending}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {labels.addProduct}
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

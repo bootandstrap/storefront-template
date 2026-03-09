@@ -2,19 +2,20 @@
  * Devoluciones (Returns) — Owner Panel Page (Server Component)
  *
  * Feature-gated: requires enable_self_service_returns flag.
- * Loads returns from Medusa Admin API and provides approve/reject actions.
+ * Loads returns from Medusa Admin API with tenant scoping.
+ * Server actions extracted to actions.ts for tenant isolation.
  *
  * Zone: 🟡 EXTEND — panel page, uses locked auth/config + Medusa admin APIs
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { toIntlLocale } from '@/lib/i18n/intl-locale'
 import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
-import { getAdminReturns, receiveAdminReturn, cancelAdminReturn, type AdminReturn } from '@/lib/medusa/admin'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import ReturnActions from '@/components/returns/ReturnActions'
 import { RotateCcw, PackageX } from 'lucide-react'
-import { revalidatePath } from 'next/cache'
+import { fetchReturns, approveReturnAction, rejectReturnAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,49 +43,14 @@ export default async function PanelReturnsPage({
         return <FeatureGate flag="enable_self_service_returns" lang={lang} />
     }
 
-    let returns: AdminReturn[] = []
-    try {
-        const result = await getAdminReturns({ limit: 50 })
-        returns = result.returns
-    } catch {
-        // Medusa may not have returns module — show empty state
-    }
+    // Fetch returns — tenant-scoped via actions.ts
+    const { returns } = await fetchReturns()
 
     const statusLabels = {
         pending: t('returns.status.pending'),
         approved: t('returns.status.approved'),
         rejected: t('returns.status.rejected'),
         completed: t('returns.status.completed'),
-    }
-
-    // Server action: approve (receive) a return
-    async function approveReturn(returnId: string, items: { id: string; quantity: number }[]) {
-        'use server'
-        try {
-            const result = await receiveAdminReturn(returnId, items)
-            if (result.error) {
-                return { success: false, error: result.error }
-            }
-            revalidatePath(`/${lang}/panel/devoluciones`)
-            return { success: true }
-        } catch (err) {
-            return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
-        }
-    }
-
-    // Server action: reject (cancel) a return
-    async function rejectReturn(returnId: string) {
-        'use server'
-        try {
-            const result = await cancelAdminReturn(returnId)
-            if (result.error) {
-                return { success: false, error: result.error }
-            }
-            revalidatePath(`/${lang}/panel/devoluciones`)
-            return { success: true }
-        } catch (err) {
-            return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
-        }
     }
 
     const actionLabels = {
@@ -96,6 +62,8 @@ export default async function PanelReturnsPage({
         rejected: t('returns.action.rejected') || 'Rejected',
         error: t('returns.action.error') || 'Action failed',
     }
+
+    const intlLocale = toIntlLocale(lang)
 
     return (
         <div className="space-y-6">
@@ -146,7 +114,7 @@ export default async function PanelReturnsPage({
                                         </td>
                                         <td className="px-4 py-3 text-text-muted">
                                             {new Date(ret.created_at).toLocaleDateString(
-                                                lang === 'es' ? 'es-ES' : lang,
+                                                intlLocale,
                                                 { day: 'numeric', month: 'short', year: 'numeric' }
                                             )}
                                         </td>
@@ -164,8 +132,8 @@ export default async function PanelReturnsPage({
                                                         id: i.id,
                                                         quantity: i.quantity,
                                                     }))}
-                                                    approveAction={approveReturn}
-                                                    rejectAction={rejectReturn}
+                                                    approveAction={approveReturnAction}
+                                                    rejectAction={rejectReturnAction}
                                                     labels={actionLabels}
                                                 />
                                             )}

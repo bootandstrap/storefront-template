@@ -165,6 +165,13 @@ const PAGE_LABELS: Record<string, Record<string, string>> = {
         fr: 'En cours',
         it: 'In corso',
     },
+    since: {
+        es: 'Desde',
+        en: 'Since',
+        de: 'Seit',
+        fr: 'Depuis',
+        it: 'Dal',
+    },
     pending: {
         es: 'Pendiente',
         en: 'Pending',
@@ -202,8 +209,8 @@ export function ProjectTimeline({ project }: Props) {
                 <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mx-auto mb-6">
                     🏗️
                 </div>
-                <h2 className="text-2xl font-black text-navy-900 mb-3">{t('title')}</h2>
-                <p className="text-slate-500 text-lg">{t('noProject')}</p>
+                <h2 className="text-2xl font-black text-text-primary mb-3">{t('title')}</h2>
+                <p className="text-text-muted text-lg">{t('noProject')}</p>
             </div>
         )
     }
@@ -216,17 +223,17 @@ export function ProjectTimeline({ project }: Props) {
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
             {/* Header */}
             <div className="text-center">
-                <h1 className="text-3xl font-black text-navy-900 mb-2">{t('title')}</h1>
-                <p className="text-slate-500">{t('subtitle')}</p>
+                <h1 className="text-3xl font-black text-text-primary mb-2">{t('title')}</h1>
+                <p className="text-text-muted">{t('subtitle')}</p>
             </div>
 
             {/* Progress card */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <div className="glass rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-navy-900">{t('progress')}</span>
+                    <span className="text-sm font-bold text-text-primary">{t('progress')}</span>
                     <span className="text-2xl font-black text-primary">{progress}%</span>
                 </div>
-                <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-4 bg-surface-2 rounded-full overflow-hidden">
                     <div
                         className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-primary via-violet-500 to-emerald-500"
                         style={{ width: `${progress}%` }}
@@ -236,8 +243,8 @@ export function ProjectTimeline({ project }: Props) {
                 {/* Estimated launch date */}
                 {launchInfo && (
                     <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-                        <span className="text-slate-500">{t('estimatedLaunch')}:</span>
-                        <span className="font-bold text-navy-900">
+                        <span className="text-text-muted">{t('estimatedLaunch')}:</span>
+                        <span className="font-bold text-text-primary">
                             {launchInfo.formattedDate}
                         </span>
                         {launchInfo.daysLeft > 0 && (
@@ -248,7 +255,7 @@ export function ProjectTimeline({ project }: Props) {
             </div>
 
             {/* Phase timeline — vertical on mobile, visual connected nodes */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <div className="glass rounded-2xl p-6">
                 <div className="space-y-0">
                     {PROJECT_PHASES.map((phase, i) => {
                         const config = PHASE_CONFIG[phase]
@@ -268,8 +275,8 @@ export function ProjectTimeline({ project }: Props) {
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all shrink-0 ${isCompleted
                                             ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
                                             : isActive
-                                                ? 'bg-white border-[3px] shadow-lg ring-4 ring-primary/10'
-                                                : 'bg-slate-100 border-2 border-slate-200'
+                                                ? 'bg-surface-0 border-[3px] shadow-lg ring-4 ring-primary/10'
+                                                : 'bg-surface-2 border-2 border-surface-3'
                                             }`}
                                         style={isActive ? { borderColor: config.color } : undefined}
                                     >
@@ -277,14 +284,14 @@ export function ProjectTimeline({ project }: Props) {
                                     </div>
                                     {/* Connector line */}
                                     {i < PROJECT_PHASES.length - 1 && (
-                                        <div className={`w-0.5 flex-1 min-h-[24px] ${isCompleted ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+                                        <div className={`w-0.5 flex-1 min-h-[24px] ${isCompleted ? 'bg-emerald-400' : 'bg-surface-3'}`} />
                                     )}
                                 </div>
 
                                 {/* Phase content */}
                                 <div className={`pb-6 flex-1 ${isFuture ? 'opacity-40' : ''}`}>
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        <h3 className={`font-bold text-base ${isActive ? 'text-primary' : isCompleted ? 'text-navy-900' : 'text-slate-400'}`}>
+                                        <h3 className={`font-bold text-base ${isActive ? 'text-primary' : isCompleted ? 'text-text-primary' : 'text-text-muted'}`}>
                                             {config.label[lang] || config.label['en']}
                                         </h3>
                                         {isActive && (
@@ -293,10 +300,10 @@ export function ProjectTimeline({ project }: Props) {
                                             </span>
                                         )}
                                         {isFuture && (
-                                            <span className="text-[10px] text-slate-400">{t('pending')}</span>
+                                            <span className="text-[10px] text-text-muted">{t('pending')}</span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-slate-500 mb-1">
+                                    <p className="text-sm text-text-muted mb-1">
                                         {config.description[lang] || config.description['en']}
                                     </p>
                                     {/* Dates */}
@@ -307,7 +314,7 @@ export function ProjectTimeline({ project }: Props) {
                                     )}
                                     {startedAt && !completedAt && isActive && (
                                         <p className="text-xs text-primary font-medium">
-                                            Desde {new Date(startedAt).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US')}
+                                            {t('since')} {new Date(startedAt).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US')}
                                         </p>
                                     )}
                                 </div>

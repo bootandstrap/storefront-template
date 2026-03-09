@@ -105,7 +105,7 @@ export default async function LangLayout({
             )}
 
             {/* Accessibility — skip to main content link */}
-            <SkipNav />
+            <SkipNav label={dictionary['common.skipToContent'] || 'Skip to main content'} />
 
             {/* Degraded config banner — Supabase unreachable */}
             {_degraded && process.env.NODE_ENV === 'production' && (

@@ -85,7 +85,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                         <Package className="w-6 h-6" />
                         {labels.title}
                     </h1>
-                    <p className="text-sm text-[var(--color-muted)] mt-1">{labels.subtitle}</p>
+                    <p className="text-sm text-text-muted mt-1">{labels.subtitle}</p>
                 </div>
             </div>
 
@@ -99,7 +99,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                         </h2>
                         <button
                             onClick={() => setShowAlerts(false)}
-                            className="text-xs text-[var(--color-muted)] hover:underline"
+                            className="text-xs text-text-muted hover:underline"
                         >
                             {labels.hide}
                         </button>
@@ -113,7 +113,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                 <div>
                                     <span className="font-medium text-sm">{item.title || item.sku || 'Unknown'}</span>
                                     {item.sku && (
-                                        <span className="ml-2 text-xs text-[var(--color-muted)]">SKU: {item.sku}</span>
+                                        <span className="ml-2 text-xs text-text-muted">SKU: {item.sku}</span>
                                     )}
                                 </div>
                                 <span className={`text-sm font-bold ${item.is_out_of_stock ? 'text-red-600' : 'text-amber-600'}`}>
@@ -127,27 +127,27 @@ export default function InventoryClient({ items, lowStockItems, locations, label
 
             {/* Search */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
                     type="text"
                     placeholder={labels.searchPlaceholder}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-3 bg-surface-1 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none"
                 />
             </div>
 
             {/* Inventory Table */}
             {filtered.length === 0 ? (
-                <div className="text-center py-16 text-[var(--color-muted)]">
+                <div className="text-center py-16 text-text-muted">
                     <Package className="w-12 h-12 mx-auto mb-3 opacity-40" />
                     <p>{labels.noItems}</p>
                 </div>
             ) : (
-                <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+                <div className="rounded-xl border border-surface-3 overflow-hidden">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                            <tr className="bg-surface-1 border-b border-surface-3">
                                 <th className="text-left px-4 py-3 font-medium">{labels.product}</th>
                                 <th className="text-left px-4 py-3 font-medium">{labels.sku}</th>
                                 <th className="text-right px-4 py-3 font-medium flex items-center justify-end gap-1">
@@ -159,14 +159,14 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                 <th className="text-right px-4 py-3 font-medium">{labels.updateStock}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--color-border)]">
+                        <tbody className="divide-y divide-surface-3">
                             {filtered.map(item => {
                                 const available = (item.stocked_quantity ?? 0) - (item.reserved_quantity ?? 0)
                                 const isLow = available <= 5 && available > 0
                                 const isOut = available <= 0
 
                                 return (
-                                    <tr key={item.id} className="hover:bg-[var(--color-surface)]/50 transition-colors">
+                                    <tr key={item.id} className="hover:bg-surface-1/50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 {item.thumbnail ? (
@@ -176,20 +176,20 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                         className="w-8 h-8 rounded object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-8 h-8 rounded bg-[var(--color-surface)] flex items-center justify-center">
-                                                        <Package className="w-4 h-4 text-[var(--color-muted)]" />
+                                                    <div className="w-8 h-8 rounded bg-surface-1 flex items-center justify-center">
+                                                        <Package className="w-4 h-4 text-text-muted" />
                                                     </div>
                                                 )}
                                                 <span className="font-medium">{item.title || labels.untitled}</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-[var(--color-muted)]">
+                                        <td className="px-4 py-3 text-text-muted">
                                             {item.sku || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-right font-mono">
                                             {item.stocked_quantity ?? 0}
                                         </td>
-                                        <td className="px-4 py-3 text-right font-mono text-[var(--color-muted)]">
+                                        <td className="px-4 py-3 text-right font-mono text-text-muted">
                                             {item.reserved_quantity ?? 0}
                                         </td>
                                         <td className="px-4 py-3 text-right">
@@ -206,7 +206,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                         min="0"
                                                         value={editValue}
                                                         onChange={e => setEditValue(parseInt(e.target.value) || 0)}
-                                                        className="w-20 px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-right text-sm font-mono"
+                                                        className="w-20 px-2 py-1 rounded border border-surface-3 bg-surface-1 text-right text-sm font-mono"
                                                         autoFocus
                                                     />
                                                     <button
@@ -221,7 +221,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                     </button>
                                                     <button
                                                         onClick={() => setEditingId(null)}
-                                                        className="text-xs text-[var(--color-muted)] hover:underline"
+                                                        className="text-xs text-text-muted hover:underline"
                                                     >
                                                         {labels.cancel}
                                                     </button>
@@ -232,7 +232,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                         setEditingId(item.id)
                                                         setEditValue(item.stocked_quantity ?? 0)
                                                     }}
-                                                    className="text-xs text-[var(--color-primary)] hover:underline"
+                                                    className="text-xs text-primary hover:underline"
                                                 >
                                                     {labels.updateStock}
                                                 </button>

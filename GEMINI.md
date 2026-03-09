@@ -1,7 +1,38 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-02.
+> Last updated: 2026-03-07.
+
+## 0. Local Development Setup
+
+For **local development** of the template storefront, see the full guide at [`docs/guides/DEVELOPMENT.md`](docs/guides/DEVELOPMENT.md).
+
+### Quick Reference
+
+```bash
+pnpm install                      # Install dependencies
+npx tsx scripts/seed-demo.ts      # Seed demo products (idempotent)
+./dev.sh                          # Start Redis + Medusa + Storefront
+```
+
+### Critical: Governance Supabase
+
+The storefront fetches config, feature flags, and plan limits from the **central governance Supabase** (BootandStrap control plane) — NOT from the tenant's own Supabase.
+
+Required `.env` variables for local dev:
+
+| Variable | Purpose |
+|----------|---------|
+| `TENANT_ID` | Must exist in governance `tenants` table |
+| `GOVERNANCE_SUPABASE_URL` | Governance Supabase URL |
+| `GOVERNANCE_SUPABASE_ANON_KEY` | Governance Supabase **anon** key (NOT the tenant's anon key) |
+| `GOVERNANCE_SUPABASE_SERVICE_KEY` | Governance Supabase service role key |
+
+> **⚠️ Common pitfall**: If `GOVERNANCE_SUPABASE_ANON_KEY` is missing or uses the wrong project's key, the governance RPC fails with "Invalid API key" and the storefront enters **maintenance mode**. The governance client in `lib/supabase/governance.ts` checks `GOVERNANCE_SUPABASE_ANON_KEY` first, then falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+### Dev Tenant
+
+If your `TENANT_ID` doesn't exist in governance, provision one via the `provision_tenant` RPC (see `docs/guides/DEVELOPMENT.md` §Dev Tenant Setup).
 
 ## 1. What This Repository Is
 

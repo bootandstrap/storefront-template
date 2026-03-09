@@ -34,9 +34,13 @@ export default async function CuentaLayout({
         .eq('id', user.id)
         .single()
 
+    // Owners should always use the Owner Panel, not customer account
+    if (isPanelRole(profile?.role)) {
+        redirect(`/${lang}/panel`)
+    }
+
     const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
     const email = user.email || ''
-    const canAccessOwnerPanel = isPanelRole(profile?.role || user.user_metadata?.role)
 
     return (
         <div className="container-page py-8">
@@ -47,7 +51,6 @@ export default async function CuentaLayout({
                     displayName={displayName}
                     email={email}
                     featureFlags={featureFlags}
-                    canAccessOwnerPanel={canAccessOwnerPanel}
                 />
 
                 {/* Content */}

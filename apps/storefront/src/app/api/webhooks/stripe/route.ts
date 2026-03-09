@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { logTenantError } from '@/lib/log-tenant-error'
 import { sendEmailForTenant, type EmailTemplate } from '@/lib/email'
+import { createGovernanceClient } from '@/lib/supabase/governance'
 
 // ---------------------------------------------------------------------------
 // Stripe webhook handler — transactional inbox pattern
@@ -13,159 +14,51 @@ import { sendEmailForTenant, type EmailTemplate } from '@/lib/email'
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 
-// Stale processing timeout — events stuck in 'processing' for longer than this
-// are considered crashed and can be re-claimed by Stripe retries.
-const STALE_PROCESSING_MINUTES = 5
+// Idempotency via SECURITY DEFINER RPCs — no service_role_key needed.
+// RPCs: claim_webhook_event, mark_webhook_processed, mark_webhook_failed
+// All use anon key via governance client. Stale timeout (5 min) is server-side in the RPC.
 
-type ClaimResult = 'claimed' | 'duplicate' | 'unavailable'
+type ClaimResult = 'claimed' | 'duplicate' | 'retry' | 'unavailable'
 
 /**
- * Transactional inbox: claim a Stripe event for processing.
- * 
- * 1. Try INSERT with status='processing' (ON CONFLICT DO NOTHING)
- * 2. If duplicate, check if retryable (failed / stale processing)
- * 3. Only 'processed' events are truly skipped
+ * Transactional inbox: claim a Stripe event for processing via RPC.
+ * Returns 'claimed' | 'retry' (re-claimed) | 'duplicate' | 'unavailable'.
  */
 async function claimEvent(eventId: string, eventType: string): Promise<ClaimResult> {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) {
-        console.warn('[stripe-webhook] Dedup config missing — returning unavailable for Stripe retry')
-        return 'unavailable'
-    }
-
-    const tenantId = process.env.TENANT_ID || null
-    const headers = {
-        'Content-Type': 'application/json',
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-    }
-
     try {
-        // Step 1: Try to INSERT (new event) in 'processing' state
-        const res = await fetch(`${supabaseUrl}/rest/v1/stripe_webhook_events`, {
-            method: 'POST',
-            headers: {
-                ...headers,
-                Prefer: 'resolution=ignore-duplicates,return=representation',
-            },
-            body: JSON.stringify({
-                event_id: eventId,
-                event_type: eventType,
-                tenant_id: tenantId,
-                status: 'processing',
-                attempts: 1,
-            }),
+        const supabase = createGovernanceClient()
+        const tenantId = process.env.TENANT_ID || null
+        const { data, error } = await supabase.rpc('claim_webhook_event', {
+            p_event_id: eventId,
+            p_event_type: eventType,
+            p_tenant_id: tenantId,
         })
-        const rows = await res.json()
-
-        if (Array.isArray(rows) && rows.length > 0) {
-            return 'claimed'
-        }
-
-        // Step 2: Row exists — check if retryable
-        const checkRes = await fetch(
-            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}&select=status,created_at,attempts`,
-            { headers }
-        )
-        const existing = await checkRes.json()
-
-        if (!Array.isArray(existing) || existing.length === 0) {
+        if (error) {
+            console.error('[stripe-webhook] claim RPC error:', error.message)
             return 'unavailable'
         }
-
-        const event = existing[0]
-
-        // Already processed — skip
-        if (event.status === 'processed') return 'duplicate'
-
-        // Failed — allow retry
-        if (event.status === 'failed') {
-            const updateRes = await fetch(
-                `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
-                {
-                    method: 'PATCH',
-                    headers: { ...headers, Prefer: 'return=representation' },
-                    body: JSON.stringify({
-                        status: 'processing',
-                        attempts: (event.attempts || 0) + 1,
-                        error: null,
-                    }),
-                }
-            )
-            const updated = await updateRes.json()
-            return (Array.isArray(updated) && updated.length > 0) ? 'claimed' : 'duplicate'
-        }
-
-        // Stale processing — crashed handler, allow re-claim
-        if (event.status === 'processing') {
-            const createdAt = new Date(event.created_at)
-            const staleThreshold = new Date(Date.now() - STALE_PROCESSING_MINUTES * 60 * 1000)
-            if (createdAt < staleThreshold) {
-                const updateRes = await fetch(
-                    `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}&status=eq.processing`,
-                    {
-                        method: 'PATCH',
-                        headers: { ...headers, Prefer: 'return=representation' },
-                        body: JSON.stringify({ attempts: (event.attempts || 0) + 1, error: null }),
-                    }
-                )
-                const updated = await updateRes.json()
-                return (Array.isArray(updated) && updated.length > 0) ? 'claimed' : 'duplicate'
-            }
-            return 'duplicate'
-        }
-
-        return 'duplicate'
+        return (data as ClaimResult) || 'unavailable'
     } catch (err) {
         console.error('[stripe-webhook] claimEvent error:', err)
         return 'unavailable'
     }
 }
 
-/** Mark a webhook event as successfully processed. */
+/** Mark a webhook event as successfully processed via RPC. */
 async function markEventProcessed(eventId: string): Promise<void> {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) return
     try {
-        await fetch(
-            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: serviceKey,
-                    Authorization: `Bearer ${serviceKey}`,
-                    Prefer: 'return=minimal',
-                },
-                body: JSON.stringify({ status: 'processed', processed_at: new Date().toISOString(), error: null }),
-            }
-        )
+        const supabase = createGovernanceClient()
+        await supabase.rpc('mark_webhook_processed', { p_event_id: eventId })
     } catch (err) {
         console.error('[stripe-webhook] markEventProcessed error:', err)
     }
 }
 
-/** Mark a webhook event as failed — allows Stripe retry. */
+/** Mark a webhook event as failed — allows Stripe retry via RPC. */
 async function markEventFailed(eventId: string, error: string): Promise<void> {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) return
     try {
-        await fetch(
-            `${supabaseUrl}/rest/v1/stripe_webhook_events?event_id=eq.${encodeURIComponent(eventId)}`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: serviceKey,
-                    Authorization: `Bearer ${serviceKey}`,
-                    Prefer: 'return=minimal',
-                },
-                body: JSON.stringify({ status: 'failed', error: error.slice(0, 500) }),
-            }
-        )
+        const supabase = createGovernanceClient()
+        await supabase.rpc('mark_webhook_failed', { p_event_id: eventId, p_error: error })
     } catch (err) {
         console.error('[stripe-webhook] markEventFailed error:', err)
     }
@@ -476,29 +369,14 @@ async function logAnalyticsEvent(
     properties: Record<string, unknown>
 ): Promise<void> {
     try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-        if (!supabaseUrl || !supabaseKey) return
-
+        const supabase = createGovernanceClient()
         const tenantId = process.env.TENANT_ID || null
 
-        await fetch(`${supabaseUrl}/rest/v1/analytics_events`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                apikey: supabaseKey,
-                Authorization: `Bearer ${supabaseKey}`,
-                Prefer: 'return=minimal',
-            },
-            body: JSON.stringify({
-                event_type: eventType,
-                properties: {
-                    ...properties,
-                    source: 'stripe_webhook',
-                },
-                tenant_id: tenantId,
-            }),
+        await supabase.from('analytics_events').insert({
+            event_type: eventType,
+            metadata: { ...properties, source: 'stripe_webhook' },
+            tenant_id: tenantId,
+            user_id: null, // RLS allows INSERT when user_id is NULL
         })
     } catch (err) {
         console.error('[stripe-webhook] Analytics log error:', err)

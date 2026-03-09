@@ -39,6 +39,11 @@ const SLUG_MAPS: Record<string, Record<string, string>> = {
         cart: 'carrito',
         register: 'registro',
         order: 'pedido',
+        // Legal pages
+        privacy: 'privacidad',
+        terms: 'terminos',
+        imprint: 'aviso',
+        returns: 'devoluciones',
     },
     de: {
         produkte: 'productos',
@@ -50,6 +55,12 @@ const SLUG_MAPS: Record<string, Record<string, string>> = {
         registrieren: 'registro',
         anmelden: 'login',
         bestellung: 'pedido',
+        // Legal pages
+        datenschutz: 'privacidad',
+        agb: 'terminos',
+        impressum: 'aviso',
+        ruecksendungen: 'devoluciones',
+        'ueber-uns': 'about',
     },
     fr: {
         produits: 'productos',
@@ -61,10 +72,15 @@ const SLUG_MAPS: Record<string, Record<string, string>> = {
         connexion: 'login',
         inscription: 'registro',
         commande: 'pedido',
+        // Legal pages
+        confidentialite: 'privacidad',
+        conditions: 'terminos',
+        'mentions-legales': 'aviso',
+        retours: 'devoluciones',
+        'a-propos': 'about',
     },
     it: {
         prodotti: 'productos',
-        // account → cuenta (Italian uses "account" same as English)
         account: 'cuenta',
         ordini: 'pedidos',
         profilo: 'perfil',
@@ -74,9 +90,17 @@ const SLUG_MAPS: Record<string, Record<string, string>> = {
         registrazione: 'registro',
         pannello: 'panel',
         ordine: 'pedido',
+        // Legal pages
+        'informativa-privacy': 'privacidad',
+        'termini-condizioni': 'terminos',
+        informativa: 'aviso',
+        resi: 'devoluciones',
+        'chi-siamo': 'about',
     },
-    // Spanish is canonical — no rewrites needed
-    es: {},
+    // Spanish is mostly canonical — only non-obvious mappings
+    es: {
+        'iniciar-sesion': 'login',
+    },
 }
 
 /**
@@ -107,8 +131,8 @@ function rewriteLocalizedPath(path: string, lang: string): string | null {
 // Routes are now /{lang}/... so we strip the lang prefix for classification
 // ---------------------------------------------------------------------------
 
-const PUBLIC_SEGMENTS = ['', 'productos', 'login', 'registro', 'pedido']
-const PUBLIC_PREFIXES = ['productos/', 'auth/', 'api/', 'cms/', 'paginas/']
+const PUBLIC_SEGMENTS = ['', 'productos', 'login', 'registro', 'pedido', 'faq', 'about']
+const PUBLIC_PREFIXES = ['productos/', 'auth/', 'api/', 'cms/', 'paginas/', 'legal/']
 const PROTECTED_SEGMENTS_PREFIX = ['cuenta/']
 const OWNER_SEGMENTS_PREFIX = ['panel/']
 
@@ -140,6 +164,25 @@ export async function proxy(request: NextRequest) {
     response.headers.set('x-request-id', requestId)
     // Make available to downstream server components / API routes via request header
     request.headers.set('x-request-id', requestId)
+
+    // ── CSP nonce generation ──────────────────
+    // Generate a random nonce per request for script-src
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+    request.headers.set('x-csp-nonce', nonce)
+    const isDev = process.env.NODE_ENV === 'development'
+    const csp = [
+        "default-src 'self'",
+        `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`,
+        `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+        `font-src 'self' https://fonts.gstatic.com`,
+        `img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://images.unsplash.com https://www.facebook.com`,
+        `connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com`,
+        `frame-src https://js.stripe.com https://hooks.stripe.com`,
+        `object-src 'none'`,
+        `base-uri 'self'`,
+        `form-action 'self'`,
+    ].join('; ')
+    response.headers.set('Content-Security-Policy', csp)
 
     // Skip static files / Next internals
     if (

@@ -137,7 +137,7 @@ export async function getAdminProductsFull(params?: {
         order: '-created_at',
     })
     if (normalized.status && normalized.status !== 'all') {
-        searchParams.set('status', normalized.status)
+        searchParams.append('status[]', normalized.status)
     }
     if (normalized.q) {
         searchParams.set('q', normalized.q)

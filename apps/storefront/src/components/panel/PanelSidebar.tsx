@@ -18,6 +18,7 @@ import {
     FileText,
     BarChart3,
     ChevronLeft,
+    ChevronDown,
     Package,
     ShoppingBag,
     Users,
@@ -27,6 +28,7 @@ import {
     RotateCcw,
     Truck,
     Star,
+    Kanban,
     X,
 } from 'lucide-react'
 import {
@@ -41,11 +43,23 @@ interface PanelSidebarProps {
     businessName: string
     labels: PanelSidebarLabels
     featureFlags: PanelFeatureFlags
+    /** Optional notification badges: nav key → count */
+    badges?: Record<string, number>
+    /** Plan name for sidebar footer badge */
+    planName?: string
 }
 
-export default function PanelSidebar({ lang, businessName, labels, featureFlags }: PanelSidebarProps) {
+export default function PanelSidebar({
+    lang,
+    businessName,
+    labels,
+    featureFlags,
+    badges = {},
+    planName,
+}: PanelSidebarProps) {
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [modulesExpanded, setModulesExpanded] = useState(true)
 
     const { essentialItems, moduleItems } = getPanelNavigation({
         lang,
@@ -60,6 +74,7 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
         customers: <Users className="w-5 h-5" />,
         storeConfig: <Store className="w-5 h-5" />,
         shipping: <Truck className="w-5 h-5" />,
+        myProject: <Kanban className="w-5 h-5" />,
         carousel: <ImageIcon className="w-5 h-5" />,
         whatsapp: <MessageCircle className="w-5 h-5" />,
         pages: <FileText className="w-5 h-5" />,
@@ -75,16 +90,28 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
         return pathname === href || pathname.startsWith(href + '/')
     }
 
-    const linkClass = (href: string, exact?: boolean) => `
-        flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-        transition-all duration-200
-        ${isActive(href, exact)
-            ? 'bg-primary/10 text-primary border border-primary/20'
-            : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
-        }
-    `
+    const linkClass = (href: string, exact?: boolean) => {
+        const active = isActive(href, exact)
+        return `
+            relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+            transition-all duration-200
+            ${active
+                ? 'bg-primary/8 text-primary sidebar-link-active'
+                : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
+            }
+        `
+    }
 
     const closeMobileMenu = () => setMobileOpen(false)
+
+    const tourIdByKey: Record<string, string> = {
+        dashboard: 'nav-dashboard',
+        catalog: 'nav-catalog',
+        orders: 'nav-orders',
+        customers: 'nav-customers',
+        storeConfig: 'nav-store',
+        shipping: 'nav-shipping',
+    }
 
     const navigationContent = (
         <>
@@ -95,34 +122,59 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
                     href={item.href}
                     className={linkClass(item.href, item.exact)}
                     onClick={closeMobileMenu}
+                    data-tour-id={tourIdByKey[item.key]}
                 >
                     {iconByKey[item.key]}
-                    {item.label}
+                    <span className="flex-1">{item.label}</span>
+                    {/* Notification badge */}
+                    {badges[item.key] != null && badges[item.key] > 0 && (
+                        <span className="badge-count">
+                            {badges[item.key] > 99 ? '99+' : badges[item.key]}
+                        </span>
+                    )}
                 </Link>
             ))}
 
-            {/* Módulos section divider */}
+            {/* Módulos section — collapsible */}
             {moduleItems.length > 0 && (
                 <>
-                    <div className="flex items-center gap-2 px-3 pt-5 pb-1">
+                    <button
+                        type="button"
+                        onClick={() => setModulesExpanded(!modulesExpanded)}
+                        className="flex items-center gap-2 px-3 pt-5 pb-1 w-full text-left group"
+                    >
                         <Puzzle className="w-3.5 h-3.5 text-text-muted/60" />
-                        <span className="text-[11px] font-semibold text-text-muted/60 uppercase tracking-wider">
+                        <span className="text-[11px] font-semibold text-text-muted/60 uppercase tracking-wider flex-1">
                             {labels.modules}
                         </span>
-                        <div className="flex-1 h-px bg-surface-3" />
-                    </div>
+                        <ChevronDown
+                            className={`w-3.5 h-3.5 text-text-muted/40 transition-transform duration-200 ${modulesExpanded ? '' : '-rotate-90'
+                                }`}
+                        />
+                    </button>
 
-                    {moduleItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={linkClass(item.href)}
-                            onClick={closeMobileMenu}
-                        >
-                            {iconByKey[item.key]}
-                            {item.label}
-                        </Link>
-                    ))}
+                    <div
+                        className={`space-y-1 overflow-hidden transition-all duration-300 ${modulesExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                            }`}
+                    >
+                        {moduleItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={linkClass(item.href)}
+                                onClick={closeMobileMenu}
+                                data-tour-id={`nav-${item.key}`}
+                            >
+                                {iconByKey[item.key]}
+                                <span className="flex-1">{item.label}</span>
+                                {badges[item.key] != null && badges[item.key] > 0 && (
+                                    <span className="badge-count">
+                                        {badges[item.key] > 99 ? '99+' : badges[item.key]}
+                                    </span>
+                                )}
+                            </Link>
+                        ))}
+                    </div>
                 </>
             )}
         </>
@@ -164,6 +216,11 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
                         </nav>
 
                         <div className="p-3 border-t border-surface-3">
+                            {planName && (
+                                <div className="px-3 py-2 mb-2">
+                                    <span className="plan-badge">{planName}</span>
+                                </div>
+                            )}
                             <Link
                                 href={`/${lang}`}
                                 onClick={closeMobileMenu}
@@ -193,8 +250,13 @@ export default function PanelSidebar({ lang, businessName, labels, featureFlags 
                     {navigationContent}
                 </nav>
 
-                {/* Back to storefront */}
-                <div className="p-3 border-t border-surface-3">
+                {/* Footer with plan badge + back link */}
+                <div className="p-3 border-t border-surface-3 space-y-2">
+                    {planName && (
+                        <div className="px-3 py-1">
+                            <span className="plan-badge">{planName}</span>
+                        </div>
+                    )}
                     <Link
                         href={`/${lang}`}
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all"

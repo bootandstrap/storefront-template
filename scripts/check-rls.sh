@@ -72,8 +72,9 @@ for table in "${GOVERNANCE_TABLES[@]}"; do
 
     # Pattern: CREATE POLICY ... ON <table> FOR SELECT
     # We look for files that create SELECT policies for this table
-    CREATE_SELECT_PATTERN="CREATE[[:space:]]+POLICY.*ON[[:space:]]+${table}[[:space:]]"
-    USING_TRUE_PATTERN="USING[[:space:]]*\([[:space:]]*true[[:space:]]*\)"
+    # Note: Use (public\.)? prefix and boundary to avoid substring matches (e.g. 'config' matching 'chat_tier_config')
+    CREATE_SELECT_PATTERN="CREATE[[:space:]]+POLICY.*ON[[:space:]]+(public\\.)?${table}[[:space:];(]"
+    USING_TRUE_PATTERN="USING[[:space:]]*\\([[:space:]]*true[[:space:]]*\\)"
 
     # Find the LATEST file (reverse chronological) that creates a policy on this table
     LATEST_FILE=""
@@ -113,7 +114,8 @@ for table in "${GOVERNANCE_TABLES[@]}"; do
 
     # Get all CREATE POLICY lines for this table, then check if any have USING (true)
     # on the same or next line
-    POLICY_LINES=$(grep -Ein "CREATE[[:space:]]+POLICY" "$LATEST_FILE" 2>/dev/null | grep -i "$table" || true)
+    # Note: Use exact table match to avoid 'config' matching 'chat_tier_config'
+    POLICY_LINES=$(grep -Ein "CREATE[[:space:]]+POLICY" "$LATEST_FILE" 2>/dev/null | grep -Ei "ON[[:space:]]+(public\\.)?${table}[[:space:];]" || true)
 
     if [[ -n "$POLICY_LINES" ]]; then
         while IFS=: read -r linenum _rest; do

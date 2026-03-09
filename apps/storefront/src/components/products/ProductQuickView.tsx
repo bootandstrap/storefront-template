@@ -23,7 +23,7 @@ interface ProductQuickViewProps {
  * Lazy-loaded via dynamic import to avoid bundle penalty.
  */
 export default function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewProps) {
-    const { t, locale } = useI18n()
+    const { t, locale, localizedHref } = useI18n()
     const { cartId, setCart, openDrawer } = useCart()
     const [isAdding, setIsAdding] = useState(false)
     const [added, setAdded] = useState(false)
@@ -162,7 +162,7 @@ export default function ProductQuickView({ product, isOpen, onClose }: ProductQu
                             </button>
 
                             <Link
-                                href={`/${locale}/productos/${product.handle}`}
+                                href={`${localizedHref('products')}/${product.handle}`}
                                 onClick={onClose}
                                 className="btn btn-secondary w-full text-center"
                             >

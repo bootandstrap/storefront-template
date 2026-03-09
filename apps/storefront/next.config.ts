@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
         port: "9000",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
     formats: ["image/avif", "image/webp"],
   },
@@ -68,24 +72,8 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
           },
-          {
-            key: "Content-Security-Policy",
-            value: (() => {
-              const isDev = process.env.NODE_ENV === 'development'
-              return [
-                "default-src 'self'",
-                `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`,
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-                "font-src 'self' https://fonts.gstatic.com",
-                "img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://www.facebook.com",
-                "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com",
-                "frame-src https://js.stripe.com https://hooks.stripe.com",
-                "object-src 'none'",
-                "base-uri 'self'",
-                "form-action 'self'",
-              ].join("; ")
-            })(),
-          },
+          // NOTE: Content-Security-Policy is set dynamically per-request
+          // in proxy.ts with a nonce — not here (static headers can't use nonces).
         ],
       },
     ];

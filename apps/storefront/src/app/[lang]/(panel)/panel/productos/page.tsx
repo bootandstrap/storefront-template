@@ -50,6 +50,7 @@ export default async function ProductsManagerPage({
         addProduct: t('panel.products.add'),
         editProduct: t('panel.products.edit'),
         noProducts: t('panel.products.empty'),
+        addProductHint: t('panel.products.emptyHint'),
         name: t('panel.products.name'),
         description: t('panel.products.description'),
         price: t('panel.products.price'),

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { Package, Check } from 'lucide-react'
 import type { MedusaProduct, MedusaVariant } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
+import { useSwipe } from '@/hooks/useSwipe'
 import AddToCartButton from './AddToCartButton'
 import WishlistButton from './WishlistButton'
 import ImageZoom from './ImageZoom'
@@ -41,6 +42,21 @@ export default function ProductDetailClient({
     const [selectedImageIndex, setSelectedImageIndex] = useState(0)
     const [showStickyCta, setShowStickyCta] = useState(false)
     const ctaRef = useRef<HTMLDivElement>(null)
+
+    // ── Swipe gestures for image gallery ────────────────────────────────
+    const handleSwipeLeft = useCallback(() => {
+        setSelectedImageIndex(prev => prev < allImages.length - 1 ? prev + 1 : 0)
+    }, [allImages.length])
+
+    const handleSwipeRight = useCallback(() => {
+        setSelectedImageIndex(prev => prev > 0 ? prev - 1 : allImages.length - 1)
+    }, [allImages.length])
+
+    const swipeHandlers = useSwipe({
+        onSwipeLeft: handleSwipeLeft,
+        onSwipeRight: handleSwipeRight,
+        threshold: 50,
+    })
 
     // Sticky CTA: observe when main CTA scrolls out of view
     useEffect(() => {
@@ -109,7 +125,10 @@ export default function ProductDetailClient({
             {/* ── Image Gallery ─────────────────────────────────────────── */}
             <div className="space-y-3">
                 {/* Main image */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-surface-1">
+                <div
+                    className="relative aspect-square rounded-2xl overflow-hidden bg-surface-1 touch-pan-y"
+                    {...swipeHandlers}
+                >
                     {allImages[selectedImageIndex]?.url ? (
                         <ImageZoom
                             src={allImages[selectedImageIndex].url}

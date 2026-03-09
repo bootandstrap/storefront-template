@@ -11,6 +11,7 @@ interface CategoryItem {
     name: string
     handle: string
     description: string | null
+    productCount: number
 }
 
 interface CategoryLabels {
@@ -19,6 +20,7 @@ interface CategoryLabels {
     addCategory: string
     editCategory: string
     noCategories: string
+    noCategoriesHint?: string
     name: string
     description: string
     confirmDelete: string
@@ -29,6 +31,7 @@ interface CategoryLabels {
     delete: string
     edit: string
     maxReached: string
+    productCount: string
 }
 
 interface Props {
@@ -122,10 +125,17 @@ export default function CategoriesClient({
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
+                        <Layers className="w-6 h-6 text-primary" />
                         {labels.title}
+                        <span className="ml-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                            {categoryCount}
+                        </span>
                     </h1>
-                    <p className="text-text-muted mt-1">{labels.subtitle}</p>
+                    <p className="text-text-muted mt-1">
+                        {labels.subtitle} · {categoryCount} / {maxCategories} {labels.categories}
+                        {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
+                    </p>
                 </div>
                 <button
                     className="btn btn-primary flex items-center gap-2"
@@ -137,11 +147,6 @@ export default function CategoriesClient({
                 </button>
             </div>
 
-            {/* Counter */}
-            <p className="text-xs text-text-muted">
-                {categoryCount} / {maxCategories} {labels.categories}
-                {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-            </p>
 
             {error && (
                 <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
@@ -195,9 +200,26 @@ export default function CategoriesClient({
 
             {/* Category list */}
             {categories.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <Layers className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">{labels.noCategories}</p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <Layers className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {labels.noCategories}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                            {labels.noCategoriesHint || 'Organize your products into categories to help customers find what they need.'}
+                        </p>
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                            disabled={!canAdd || isPending}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {labels.addCategory}
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -213,6 +235,9 @@ export default function CategoriesClient({
                                         <p className="text-xs text-text-muted mt-0.5">/{cat.handle}</p>
                                     </div>
                                 </div>
+                                <span className="text-xs font-medium text-text-muted bg-surface-1 px-2 py-1 rounded-full">
+                                    {cat.productCount} {labels.productCount}
+                                </span>
                             </div>
                             {cat.description && (
                                 <p className="text-sm text-text-muted mt-3 line-clamp-2">{cat.description}</p>

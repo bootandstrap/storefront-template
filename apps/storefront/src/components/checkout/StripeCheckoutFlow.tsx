@@ -5,6 +5,7 @@ import { loadStripe, type Stripe, type Appearance } from '@stripe/stripe-js'
 import {
     Elements,
     PaymentElement,
+    ExpressCheckoutElement,
     useStripe,
     useElements,
 } from '@stripe/react-stripe-js'
@@ -60,6 +61,8 @@ interface StripePaymentFormProps {
         securePaymentNote: string
         paymentError: string
         unexpectedError: string
+        expressCheckoutLabel: string
+        orPayWithCard: string
     }
 }
 
@@ -79,11 +82,12 @@ function StripePaymentForm({
     const [isProcessing, setIsProcessing] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [isComplete, setIsComplete] = useState(false)
+    const [expressAvailable, setExpressAvailable] = useState(false)
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
+    // Shared payment confirmation — single source of truth
+    // Used by both card form submit AND express checkout (Apple Pay / Google Pay)
+    async function confirmAndComplete() {
         if (!stripe || !elements) return
-
         setIsProcessing(true)
         setErrorMessage(null)
 
@@ -126,42 +130,70 @@ function StripePaymentForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <PaymentElement
+        <div className="space-y-4">
+            {/* Express Checkout — Apple Pay / Google Pay (auto-detects availability) */}
+            <ExpressCheckoutElement
+                onReady={({ availablePaymentMethods }) => {
+                    if (availablePaymentMethods) {
+                        setExpressAvailable(true)
+                    }
+                }}
+                onConfirm={() => confirmAndComplete()}
                 options={{
-                    layout: 'accordion',
+                    layout: {
+                        maxRows: 1,
+                        maxColumns: 2,
+                    },
                 }}
             />
 
-            {errorMessage && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-red-400">{errorMessage}</p>
+            {/* Divider — only show if express methods are available */}
+            {expressAvailable && (
+                <div className="flex items-center gap-3 my-2">
+                    <div className="flex-1 h-px bg-surface-3" />
+                    <span className="text-xs text-text-muted">{t.orPayWithCard}</span>
+                    <div className="flex-1 h-px bg-surface-3" />
                 </div>
             )}
 
-            <button
-                type="submit"
-                disabled={!stripe || !elements || isProcessing}
-                className="btn btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isProcessing ? (
-                    <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        {t.processingPayment}
-                    </>
-                ) : (
-                    <>
-                        <CreditCard className="w-5 h-5" />
-                        {t.payLabel} {totalFormatted}
-                    </>
-                )}
-            </button>
+            {/* Regular card payment form */}
+            <form onSubmit={(e) => { e.preventDefault(); confirmAndComplete() }} className="space-y-4">
+                <PaymentElement
+                    options={{
+                        layout: 'accordion',
+                    }}
+                />
 
-            <p className="text-xs text-text-muted text-center">
-                {t.securePaymentNote}
-            </p>
-        </form>
+                {errorMessage && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-sm text-red-400">{errorMessage}</p>
+                    </div>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={!stripe || !elements || isProcessing}
+                    className="btn btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isProcessing ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            {t.processingPayment}
+                        </>
+                    ) : (
+                        <>
+                            <CreditCard className="w-5 h-5" />
+                            {t.payLabel} {totalFormatted}
+                        </>
+                    )}
+                </button>
+
+                <p className="text-xs text-text-muted text-center">
+                    {t.securePaymentNote}
+                </p>
+            </form>
+        </div>
     )
 }
 
@@ -196,6 +228,8 @@ export default function StripeCheckoutFlow({
         securePaymentNote: t('checkout.stripe.secureNote'),
         paymentError: t('checkout.stripe.paymentError'),
         unexpectedError: t('checkout.stripe.unexpectedError'),
+        expressCheckoutLabel: t('checkout.stripe.expressCheckout'),
+        orPayWithCard: t('checkout.stripe.orPayWithCard'),
     }
 
     // Build Stripe Appearance matching SOTA design system

@@ -1,75 +1,168 @@
 'use client'
 
 /**
- * PanelOnboarding — Wrapper for OnboardingWizard in the panel layout.
+ * PanelOnboarding — Orchestrator for the owner panel first-login experience
  *
- * Renders the full-screen OnboardingWizard overlay.
- * On completion, sends all wizard data to `/api/panel/onboarding-complete`
- * to persist business info, contact details, and payment preferences.
- * Then dismisses the overlay and refreshes the page.
+ * Two-phase flow:
+ *   1. WelcomeModal — branding splash + store readiness overview
+ *   2. PanelTour — spotlight-guided tour of panel sections (skippable)
+ *
+ * State:
+ *   - `config.onboarding_completed` (Supabase) — controls whether this shows
+ *   - `bns-tour-done` (localStorage) — remembers if tour was completed/skipped
+ *
+ * On completion, calls `/api/panel/onboarding-complete` to persist.
+ *
+ * NOTE: Does NOT use useI18n() — translations come from server layout as props.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import OnboardingWizard, { type OnboardingData } from './OnboardingWizard'
-import { useI18n } from '@/lib/i18n/provider'
+import WelcomeModal from './WelcomeModal'
+import PanelTour, { type TourStep } from './PanelTour'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface PanelOnboardingProps {
     storeName: string
     storeUrl: string
     locale: string
+    domain: string | null
+    currency: string
+    language: string
+    moduleCount: number
+    hasLogo: boolean
+    hasContact: boolean
+    /** Server-resolved translations (flat key → value) */
+    translations: Record<string, string>
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function PanelOnboarding({
     storeName,
-    storeUrl,
-    locale,
+    domain,
+    currency,
+    language,
+    moduleCount,
+    hasLogo,
+    hasContact,
+    translations,
 }: PanelOnboardingProps) {
-    const [dismissed, setDismissed] = useState(false)
+    const [phase, setPhase] = useState<'welcome' | 'tour' | 'done'>('welcome')
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
-    const { t } = useI18n()
 
-    const handleComplete = useCallback(async (data: OnboardingData) => {
-        setError(null)
+    // Simple t() from props — no context needed
+    const t = useCallback((key: string) => translations[key] || key, [translations])
+
+    const markComplete = useCallback(async () => {
         try {
             const res = await fetch('/api/panel/onboarding-complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify({}),
             })
             if (!res.ok) {
-                const resData = await res.json().catch(() => ({}))
-                throw new Error(typeof resData.error === 'string' ? resData.error : 'Failed to save onboarding state')
+                const data = await res.json().catch(() => ({}))
+                console.warn('[PanelOnboarding] API error (non-blocking):', data.error || res.status)
             }
-            setDismissed(true)
-            router.refresh()
         } catch (err: unknown) {
-            console.error('[PanelOnboarding] Failed to mark onboarding complete:', err)
-            setError(
-                err instanceof Error && err.message
-                    ? err.message
-                    : (t('onboarding.completeError') || 'No se pudo guardar el onboarding. Inténtalo de nuevo.')
-            )
+            // Non-blocking — log but don't prevent user flow
+            console.warn('[PanelOnboarding] Failed to persist onboarding status:', err)
         }
-    }, [router, t])
+    }, [])
 
-    if (dismissed) return null
+    const handleStartTour = useCallback(() => {
+        // Fire-and-forget: mark complete in background, show tour immediately
+        markComplete()
+        setPhase('tour')
+    }, [markComplete])
+
+    const handleSkip = useCallback(() => {
+        // Fire-and-forget: mark complete in background, dismiss immediately
+        markComplete()
+        setPhase('done')
+        router.refresh()
+    }, [markComplete, router])
+
+    const handleTourComplete = useCallback(() => {
+        // Save to localStorage so tour doesn't re-show on navigation
+        try { localStorage.setItem('bns-tour-done', '1') } catch { /* noop */ }
+        setPhase('done')
+        router.refresh()
+    }, [router])
+
+    // Build tour steps from translations
+    const tourSteps: TourStep[] = useMemo(() => [
+        {
+            targetId: 'nav-dashboard',
+            title: t('tour.step.dashboard.title'),
+            description: t('tour.step.dashboard.description'),
+        },
+        {
+            targetId: 'nav-catalog',
+            title: t('tour.step.catalog.title'),
+            description: t('tour.step.catalog.description'),
+        },
+        {
+            targetId: 'nav-orders',
+            title: t('tour.step.orders.title'),
+            description: t('tour.step.orders.description'),
+        },
+        {
+            targetId: 'nav-customers',
+            title: t('tour.step.customers.title'),
+            description: t('tour.step.customers.description'),
+        },
+        {
+            targetId: 'nav-store',
+            title: t('tour.step.store.title'),
+            description: t('tour.step.store.description'),
+        },
+        {
+            targetId: 'nav-shipping',
+            title: t('tour.step.shipping.title'),
+            description: t('tour.step.shipping.description'),
+        },
+    ], [t])
+
+    if (phase === 'done') return null
 
     return (
         <>
             {error && (
-                <div className="fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+                <div className="fixed top-4 left-1/2 z-[70] -translate-x-1/2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
                     {error}
                 </div>
             )}
-            <OnboardingWizard
-                storeName={storeName}
-                storeUrl={storeUrl}
-                locale={locale}
-                onComplete={handleComplete}
-                t={t}
-            />
+
+            {phase === 'welcome' && (
+                <WelcomeModal
+                    storeName={storeName}
+                    domain={domain}
+                    currency={currency}
+                    language={language}
+                    moduleCount={moduleCount}
+                    hasLogo={hasLogo}
+                    hasContact={hasContact}
+                    onStartTour={handleStartTour}
+                    onSkip={handleSkip}
+                    t={t}
+                />
+            )}
+
+            {phase === 'tour' && (
+                <PanelTour
+                    steps={tourSteps}
+                    onComplete={handleTourComplete}
+                    t={t}
+                />
+            )}
         </>
     )
 }

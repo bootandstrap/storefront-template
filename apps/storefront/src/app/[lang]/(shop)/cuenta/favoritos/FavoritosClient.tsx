@@ -189,7 +189,7 @@ export default function FavoritosClient() {
                             )}
                             <button
                                 onClick={() => removeItem(product.id)}
-                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 dark:bg-surface-2/90 backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm hover:shadow-md"
+                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface-0/90 dark:bg-surface-2/90 backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm hover:shadow-md"
                                 aria-label={t('wishlist.remove') || 'Quitar de favoritos'}
                             >
                                 <Trash2 className="w-4 h-4" />

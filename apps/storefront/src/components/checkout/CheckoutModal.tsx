@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
+import type { CheckoutCountry } from './steps/CheckoutAddressStep'
 import {
     isPaymentMethodAvailable,
     initializePaymentSession,
@@ -19,7 +20,7 @@ import {
     type CartTotals,
 } from '@/app/[lang]/(shop)/checkout/actions'
 import { trackEvent } from '@/lib/analytics'
-import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
 import { X, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 
@@ -39,6 +40,8 @@ import CheckoutOrderSummary from './steps/CheckoutOrderSummary'
 interface CheckoutModalProps {
     config: StoreConfig
     featureFlags: FeatureFlags
+    planLimits: PlanLimits
+    countries?: CheckoutCountry[]
     bankDetails?: {
         bank_name?: string | null
         bank_account_number?: string | null
@@ -61,6 +64,8 @@ const ALL_STEPS: CheckoutStep[] = ['info', 'address', 'shipping', 'method', 'pay
 export default function CheckoutModal({
     config,
     featureFlags,
+    planLimits,
+    countries = [],
     bankDetails,
     isOpen,
     onClose,
@@ -82,7 +87,7 @@ export default function CheckoutModal({
     const [street2, setStreet2] = useState('')
     const [city, setCity] = useState('')
     const [postalCode, setPostalCode] = useState('')
-    const [countryCode, setCountryCode] = useState('ES')
+    const [countryCode, setCountryCode] = useState(countries[0]?.iso_2 ?? 'us')
     const [notes, setNotes] = useState('')
     const [addressLoading, setAddressLoading] = useState(false)
 
@@ -129,7 +134,7 @@ export default function CheckoutModal({
     useEffect(() => {
         async function loadMethods() {
             setLoadingMethods(true)
-            const allMethods = getEnabledMethods(featureFlags)
+            const allMethods = getEnabledMethods(featureFlags, planLimits)
             const checks = await Promise.all(
                 allMethods.map(async (m) => ({
                     method: m,
@@ -422,6 +427,8 @@ export default function CheckoutModal({
                             notes={notes}
                             addressLoading={addressLoading}
                             featureFlags={featureFlags}
+                            countries={countries}
+                            lang={locale}
                             onStreetChange={setStreet}
                             onStreet2Change={setStreet2}
                             onCityChange={setCity}

@@ -382,7 +382,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
             {/* ============================================================= */}
             {templates.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
-                    <div className="text-5xl mb-4">💬</div>
+                    <MessageCircle className="w-10 h-10 text-text-muted mx-auto mb-4" strokeWidth={1.5} />
                     <p className="text-text-muted text-lg">{t('panel.messages.empty')}</p>
                     <p className="text-text-muted/60 text-sm mt-2">
                         {t('panel.messages.emptyHint')}

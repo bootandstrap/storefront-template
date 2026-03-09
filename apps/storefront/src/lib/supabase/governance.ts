@@ -16,9 +16,10 @@
 import 'server-only'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import type { GovernanceDatabase } from './governance-types'
 
 const globalForGovernance = globalThis as unknown as {
-    __supabaseGovernanceClient?: ReturnType<typeof createSupabaseClient>
+    __supabaseGovernanceClient?: ReturnType<typeof createSupabaseClient<GovernanceDatabase>>
     __governanceMode?: 'rpc' | 'direct'
 }
 
@@ -47,7 +48,7 @@ export function createGovernanceClient() {
 
     // Phase 4.1: Prefer anon key (RPC path) — eliminates need for service_role in storefronts
     const serviceKey = process.env.GOVERNANCE_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const anonKey = process.env.GOVERNANCE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     // Determine which key to use: prefer anon (RPC mode) if both are available,
     // but fall back to service_role if anon is not available
@@ -66,7 +67,7 @@ export function createGovernanceClient() {
         )
     }
 
-    globalForGovernance.__supabaseGovernanceClient = createSupabaseClient(url, key, {
+    globalForGovernance.__supabaseGovernanceClient = createSupabaseClient<GovernanceDatabase>(url, key, {
         auth: {
             autoRefreshToken: false,
             persistSession: false,

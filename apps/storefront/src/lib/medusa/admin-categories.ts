@@ -18,6 +18,7 @@ export interface AdminCategory {
     rank: number
     parent_category: { id: string; name: string } | null
     category_children: { id: string; name: string }[]
+    products?: { id: string }[]
     created_at: string
     updated_at: string
 }
@@ -43,7 +44,7 @@ export async function getAdminCategories(params?: {
         offset: params?.offset,
     })
     const res = await adminFetch<{ product_categories: AdminCategory[]; count: number }>(
-        `/admin/product-categories?limit=${normalized.limit}&offset=${normalized.offset}&fields=id,name,handle,description,is_active,is_internal,rank,parent_category,category_children,created_at,updated_at&order=name`,
+        `/admin/product-categories?limit=${normalized.limit}&offset=${normalized.offset}&fields=id,name,handle,description,is_active,is_internal,rank,parent_category,category_children,*products,created_at,updated_at&order=name`,
         {},
         scope
     )

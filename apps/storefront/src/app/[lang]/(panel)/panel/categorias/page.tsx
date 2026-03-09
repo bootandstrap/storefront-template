@@ -43,6 +43,7 @@ export default async function CategoriesManagerPage({
         addCategory: t('panel.categories.add'),
         editCategory: t('panel.categories.edit'),
         noCategories: t('panel.categories.empty'),
+        noCategoriesHint: t('panel.categories.emptyHint'),
         name: t('panel.categories.name'),
         description: t('panel.categories.description'),
         confirmDelete: t('panel.categories.confirmDelete'),
@@ -53,6 +54,7 @@ export default async function CategoriesManagerPage({
         delete: t('common.delete'),
         edit: t('common.edit'),
         maxReached: t('limits.maxReached'),
+        productCount: t('panel.categories.productCount'),
     }
 
     return (
@@ -63,6 +65,7 @@ export default async function CategoriesManagerPage({
                     name: c.name,
                     handle: c.handle,
                     description: c.description,
+                    productCount: c.products?.length ?? 0,
                 }))}
                 categoryCount={categoriesData.count}
                 maxCategories={planLimits.max_categories}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut, Kanban } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import type { FeatureFlags } from '@/lib/config'
 
@@ -11,7 +11,6 @@ interface AccountSidebarProps {
     displayName: string
     email: string
     featureFlags: FeatureFlags
-    canAccessOwnerPanel?: boolean
 }
 
 export default function AccountSidebar({
@@ -19,17 +18,12 @@ export default function AccountSidebar({
     displayName,
     email,
     featureFlags,
-    canAccessOwnerPanel = false,
 }: AccountSidebarProps) {
     const { t } = useI18n()
     const pathname = usePathname()
 
     const navItems = [
         { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true, flag: true },
-        ...(canAccessOwnerPanel
-            ? [{ href: `/${lang}/panel`, label: t('panel.nav.ownerPanel'), icon: LayoutDashboard, exact: false, flag: true }]
-            : []),
-        { href: `/${lang}/cuenta/mi-proyecto`, label: t('account.myProject') || 'Mi Proyecto', icon: Kanban, exact: false, flag: true },
         ...(featureFlags.enable_order_tracking
             ? [{ href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false, flag: true }]
             : []),

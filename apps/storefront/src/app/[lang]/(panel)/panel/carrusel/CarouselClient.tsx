@@ -138,9 +138,9 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                     <div>
                         <label className={labelClass}>{t('common.type')}</label>
                         <select value={type} onChange={e => setType(e.target.value as 'image' | 'product' | 'offer')} className={inputClass}>
-                            <option value="image">Image</option>
-                            <option value="product">Product</option>
-                            <option value="offer">Offer</option>
+                            <option value="image">{t('panel.carousel.typeImage')}</option>
+                            <option value="product">{t('panel.carousel.typeProduct')}</option>
+                            <option value="offer">{t('panel.carousel.typeOffer')}</option>
                         </select>
                     </div>
                     <div>
@@ -153,11 +153,11 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>CTA Text</label>
+                            <label className={labelClass}>{t('panel.carousel.ctaText')}</label>
                             <input value={ctaText} onChange={e => setCtaText(e.target.value)} className={inputClass} />
                         </div>
                         <div>
-                            <label className={labelClass}>CTA URL</label>
+                            <label className={labelClass}>{t('panel.carousel.ctaUrl')}</label>
                             <input value={ctaUrl} onChange={e => setCtaUrl(e.target.value)} className={inputClass} />
                         </div>
                     </div>

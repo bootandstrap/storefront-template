@@ -150,11 +150,128 @@ function createSendGridProvider(apiKey: string): EmailProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Template Builder (minimal — replace with proper templating in production)
+// Locale-Aware Email Strings (fallback defaults per locale)
 // ---------------------------------------------------------------------------
 
+type EmailStrings = Record<string, {
+    orderConfirmed: string
+    orderConfirmedMessage: string
+    orderShipped: string
+    orderShippedMessage: string
+    paymentFailed: string
+    paymentFailedMessage: string
+    refundProcessed: string
+    refundMessage: string
+    orderCancelled: string
+    orderCancelledMessage: string
+    welcome: string
+    viewOrder: string
+    trackPackage: string
+    tryAgain: string
+    startShopping: string
+    greeting: string
+}>
+
+const EMAIL_STRINGS: EmailStrings = {
+    en: {
+        orderConfirmed: 'Order Confirmed!',
+        orderConfirmedMessage: "Thank you for your order. We're preparing it now.",
+        orderShipped: 'Your Order Has Shipped!',
+        orderShippedMessage: 'Your order is on its way.',
+        paymentFailed: 'Payment Not Processed',
+        paymentFailedMessage: 'Please try again or use a different payment method.',
+        refundProcessed: 'Refund Processed',
+        refundMessage: 'Please allow 5-10 business days for the refund to appear on your statement.',
+        orderCancelled: 'Order Cancelled',
+        orderCancelledMessage: 'If you have any questions, please contact us.',
+        welcome: 'Welcome!',
+        viewOrder: 'View Order',
+        trackPackage: 'Track Package',
+        tryAgain: 'Try Again',
+        startShopping: 'Start Shopping',
+        greeting: 'Hi',
+    },
+    es: {
+        orderConfirmed: '¡Pedido confirmado!',
+        orderConfirmedMessage: 'Gracias por tu pedido. Lo estamos preparando.',
+        orderShipped: '¡Tu pedido ha sido enviado!',
+        orderShippedMessage: 'Tu pedido está en camino.',
+        paymentFailed: 'Pago no procesado',
+        paymentFailedMessage: 'Por favor, inténtalo de nuevo o usa otro método de pago.',
+        refundProcessed: 'Reembolso procesado',
+        refundMessage: 'El reembolso puede tardar 5-10 días laborables en aparecer en tu estado de cuenta.',
+        orderCancelled: 'Pedido cancelado',
+        orderCancelledMessage: 'Si tienes preguntas, contáctanos.',
+        welcome: '¡Bienvenido/a!',
+        viewOrder: 'Ver pedido',
+        trackPackage: 'Seguir envío',
+        tryAgain: 'Reintentar',
+        startShopping: 'Empezar a comprar',
+        greeting: 'Hola',
+    },
+    de: {
+        orderConfirmed: 'Bestellung bestätigt!',
+        orderConfirmedMessage: 'Vielen Dank für Ihre Bestellung. Wir bereiten sie jetzt vor.',
+        orderShipped: 'Ihre Bestellung wurde versandt!',
+        orderShippedMessage: 'Ihre Bestellung ist unterwegs.',
+        paymentFailed: 'Zahlung nicht verarbeitet',
+        paymentFailedMessage: 'Bitte versuchen Sie es erneut oder verwenden Sie eine andere Zahlungsmethode.',
+        refundProcessed: 'Erstattung verarbeitet',
+        refundMessage: 'Bitte erlauben Sie 5-10 Werktage, bis die Erstattung auf Ihrem Kontoauszug erscheint.',
+        orderCancelled: 'Bestellung storniert',
+        orderCancelledMessage: 'Bei Fragen kontaktieren Sie uns bitte.',
+        welcome: 'Willkommen!',
+        viewOrder: 'Bestellung ansehen',
+        trackPackage: 'Sendung verfolgen',
+        tryAgain: 'Erneut versuchen',
+        startShopping: 'Einkaufen',
+        greeting: 'Hallo',
+    },
+    fr: {
+        orderConfirmed: 'Commande confirmée !',
+        orderConfirmedMessage: 'Merci pour votre commande. Nous la préparons maintenant.',
+        orderShipped: 'Votre commande a été expédiée !',
+        orderShippedMessage: 'Votre commande est en route.',
+        paymentFailed: 'Paiement non traité',
+        paymentFailedMessage: 'Veuillez réessayer ou utiliser un autre moyen de paiement.',
+        refundProcessed: 'Remboursement traité',
+        refundMessage: 'Veuillez prévoir 5 à 10 jours ouvrables pour que le remboursement apparaisse sur votre relevé.',
+        orderCancelled: 'Commande annulée',
+        orderCancelledMessage: 'Si vous avez des questions, contactez-nous.',
+        welcome: 'Bienvenue !',
+        viewOrder: 'Voir la commande',
+        trackPackage: 'Suivre le colis',
+        tryAgain: 'Réessayer',
+        startShopping: 'Commencer vos achats',
+        greeting: 'Bonjour',
+    },
+    it: {
+        orderConfirmed: 'Ordine confermato!',
+        orderConfirmedMessage: 'Grazie per il tuo ordine. Lo stiamo preparando.',
+        orderShipped: 'Il tuo ordine è stato spedito!',
+        orderShippedMessage: 'Il tuo ordine è in arrivo.',
+        paymentFailed: 'Pagamento non elaborato',
+        paymentFailedMessage: 'Per favore riprova o usa un metodo di pagamento diverso.',
+        refundProcessed: 'Rimborso elaborato',
+        refundMessage: 'Il rimborso potrebbe impiegare 5-10 giorni lavorativi per apparire sul tuo estratto conto.',
+        orderCancelled: 'Ordine annullato',
+        orderCancelledMessage: 'Per qualsiasi domanda, contattaci.',
+        welcome: 'Benvenuto/a!',
+        viewOrder: "Vedi l'ordine",
+        trackPackage: 'Traccia il pacco',
+        tryAgain: 'Riprova',
+        startShopping: 'Inizia a fare acquisti',
+        greeting: 'Ciao',
+    },
+}
+
+function getEmailStrings(locale?: string) {
+    return EMAIL_STRINGS[locale || 'en'] || EMAIL_STRINGS.en
+}
+
 function buildHtml(payload: EmailPayload): string {
-    const { template, data } = payload
+    const { template, data, locale } = payload
+    const s = getEmailStrings(locale)
 
     // Minimal responsive email wrapper
     const wrap = (content: string) => `
@@ -186,44 +303,43 @@ function buildHtml(payload: EmailPayload): string {
     switch (template) {
         case 'order_confirmation':
             return wrap(`
-                <div class="header"><h1>🎉 ${data.heading || 'Order Confirmed!'}</h1></div>
+                <div class="header"><h1>🎉 ${data.heading || s.orderConfirmed}</h1></div>
                 <div class="content">
-                    <p>${data.greeting || `Hi ${data.customerName},`}</p>
-                    <p>${data.message || 'Thank you for your order. We\'re preparing it now.'}</p>
+                    <p>${data.greeting || `${s.greeting} ${data.customerName},`}</p>
+                    <p>${data.message || s.orderConfirmedMessage}</p>
                     <p><strong>Order #${data.orderId || ''}</strong></p>
-                    ${data.orderUrl ? `<p><a href="${data.orderUrl}" class="btn">View Order</a></p>` : ''}
+                    ${data.orderUrl ? `<p><a href="${data.orderUrl}" class="btn">${s.viewOrder}</a></p>` : ''}
                 </div>
             `)
 
         case 'order_shipped':
             return wrap(`
-                <div class="header"><h1>📦 ${data.heading || 'Your Order Has Shipped!'}</h1></div>
+                <div class="header"><h1>📦 ${data.heading || s.orderShipped}</h1></div>
                 <div class="content">
-                    <p>${data.greeting || `Hi ${data.customerName},`}</p>
-                    <p>${data.message || 'Your order is on its way.'}</p>
-                    ${data.trackingUrl ? `<p><a href="${data.trackingUrl}" class="btn">Track Package</a></p>` : ''}
+                    <p>${data.greeting || `${s.greeting} ${data.customerName},`}</p>
+                    <p>${data.message || s.orderShippedMessage}</p>
+                    ${data.trackingUrl ? `<p><a href="${data.trackingUrl}" class="btn">${s.trackPackage}</a></p>` : ''}
                 </div>
             `)
 
         case 'payment_failed':
             return wrap(`
-                <div class="header"><h1>⚠️ ${data.heading || 'Payment Not Processed'}</h1></div>
+                <div class="header"><h1>⚠️ ${data.heading || s.paymentFailed}</h1></div>
                 <div class="content">
-                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
-                    <p>We weren't able to process your payment${data.orderId ? ` for order #${data.orderId}` : ''}.</p>
+                    <p>${data.greeting || `${s.greeting} ${data.customerName || ''},`}</p>
+                    <p>${data.message || s.paymentFailedMessage}</p>
                     ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-                    <p>Please try again or use a different payment method.</p>
-                    ${data.retryUrl ? `<p><a href="${data.retryUrl}" class="btn">Try Again</a></p>` : ''}
+                    ${data.retryUrl ? `<p><a href="${data.retryUrl}" class="btn">${s.tryAgain}</a></p>` : ''}
                 </div>
             `)
 
         case 'refund_processed':
             return wrap(`
-                <div class="header"><h1>💰 ${data.heading || 'Refund Processed'}</h1></div>
+                <div class="header"><h1>💰 ${data.heading || s.refundProcessed}</h1></div>
                 <div class="content">
-                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
+                    <p>${data.greeting || `${s.greeting} ${data.customerName || ''},`}</p>
                     <p>Your refund of <strong>${data.currency || ''}${data.amount || ''}</strong> has been processed${data.orderId ? ` for order #${data.orderId}` : ''}.</p>
-                    <p>Please allow 5-10 business days for the refund to appear on your statement.</p>
+                    <p>${s.refundMessage}</p>
                 </div>
             `)
 
@@ -241,21 +357,21 @@ function buildHtml(payload: EmailPayload): string {
 
         case 'order_cancelled':
             return wrap(`
-                <div class="header"><h1>❌ ${data.heading || 'Order Cancelled'}</h1></div>
+                <div class="header"><h1>❌ ${data.heading || s.orderCancelled}</h1></div>
                 <div class="content">
-                    <p>${data.greeting || `Hi ${data.customerName || 'there'},`}</p>
+                    <p>${data.greeting || `${s.greeting} ${data.customerName || ''},`}</p>
                     <p>Your order #${data.orderId || ''} has been cancelled.</p>
                     ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-                    <p>If you have any questions, please contact us.</p>
+                    <p>${s.orderCancelledMessage}</p>
                 </div>
             `)
 
         case 'welcome':
             return wrap(`
-                <div class="header"><h1>👋 ${data.heading || 'Welcome!'}</h1></div>
+                <div class="header"><h1>👋 ${data.heading || s.welcome}</h1></div>
                 <div class="content">
-                    <p>${data.message || `Welcome to ${data.storeName || 'our store'}!`}</p>
-                    ${data.storeUrl ? `<p><a href="${data.storeUrl}" class="btn">Start Shopping</a></p>` : ''}
+                    <p>${data.message || `${s.welcome.replace('!', '')} ${data.storeName || 'our store'}!`}</p>
+                    ${data.storeUrl ? `<p><a href="${data.storeUrl}" class="btn">${s.startShopping}</a></p>` : ''}
                 </div>
             `)
 

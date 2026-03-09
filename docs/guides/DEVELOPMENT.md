@@ -1,15 +1,17 @@
 # Development Setup
 
 > **Repository**: `git clone https://github.com/bootandstrap/bootandstrap-ecommerce.git`
+> Last updated: 2026-03-07.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - pnpm 9+
-- Docker & Docker Compose (for Redis)
-- Supabase account with project created
+- Docker (for Redis in local dev)
+- Supabase account with project created (tenant data plane)
+- Access to BootandStrap governance Supabase credentials (control plane)
 
-## Quick Start (Recommended)
+## Quick Start
 
 ```bash
 # 1. Clone and install
@@ -19,15 +21,17 @@ pnpm install
 
 # 2. Set up environment
 cp .env.example .env
-# Fill in Supabase, Medusa, and Stripe keys
+# Fill in ALL required variables (see §Environment Variables below)
 
 # 3. First-time DB setup (only once)
 cd apps/medusa && npx medusa db:migrate && cd ../..
 
-# 4. Seed products (idempotent — safe to re-run)
-cd apps/medusa && npx medusa exec ./src/scripts/seed.ts && cd ../..
+# 4. Create dev tenant in governance Supabase (only once — see §Dev Tenant below)
 
-# 5. Start everything
+# 5. Seed demo products (idempotent — safe to re-run)
+npx tsx scripts/seed-demo.ts
+
+# 6. Start everything
 ./dev.sh
 ```
 
@@ -39,11 +43,153 @@ This starts:
 
 ### What `dev.sh` does
 
-1. Starts Redis in Docker (`ecommerce-redis-dev`)
+1. Starts Redis (existing local, Docker container, or local `redis-server`)
 2. Symlinks root `.env` → `apps/storefront/.env.local`
 3. Starts Medusa backend (`pnpm dev`) with IPv4 DNS resolution
-4. Starts Storefront (`pnpm dev`)
-5. Traps `Ctrl+C` to stop all services
+4. Starts Storefront (`pnpm dev`) on port 3000
+5. Traps `Ctrl+C` to gracefully stop all services
+
+---
+
+## Dev Tenant Setup (Governance)
+
+The storefront requires a valid tenant in the **governance Supabase** (BootandStrap control plane). Without it, the storefront defaults to **maintenance mode** as a security measure.
+
+### Why This Is Needed
+
+The storefront's `getConfig()` function fetches config, feature flags, and plan limits from the central governance Supabase using the `get_tenant_governance` RPC. If the `TENANT_ID` from `.env` doesn't match any tenant in governance, the storefront activates a restrictive fallback: all features disabled, maintenance mode ON.
+
+### How To Create a Dev Tenant
+
+**Step 1** — Provision the tenant via RPC:
+
+```bash
+# Use the governance service key (from .env GOVERNANCE_SUPABASE_SERVICE_KEY)
+curl -s -X POST "https://odvzsqossriyyscduzfg.supabase.co/rest/v1/rpc/provision_tenant" \
+  -H "apikey: <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Authorization: Bearer <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "p_name": "Dev Local Store",
+    "p_slug": "dev-local",
+    "p_plan_tier": "enterprise",
+    "p_domain": "localhost:3000",
+    "p_color_preset": "emerald",
+    "p_owner_email": "dev@bootandstrap.com",
+    "p_admin_user_id": "00000000-0000-0000-0000-000000000000",
+    "p_country": "ES",
+    "p_region_preset": "eu-south",
+    "p_locale": "es",
+    "p_currency": "EUR"
+  }'
+```
+
+Response returns the new `tenant_id`. Save it.
+
+**Step 2** — Update `.env`:
+
+```env
+TENANT_ID=<returned-tenant-id>
+```
+
+**Step 3** — Enable all feature flags (the RPC sets basic/starter defaults):
+
+```bash
+TID="<returned-tenant-id>"
+curl -s -X PATCH "https://odvzsqossriyyscduzfg.supabase.co/rest/v1/feature_flags?tenant_id=eq.$TID" \
+  -H "apikey: <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Authorization: Bearer <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+  -d '{
+    "enable_ecommerce": true, "enable_chatbot": true, "enable_crm": true,
+    "enable_newsletter": true, "enable_product_badges": true,
+    "enable_related_products": true, "enable_product_comparisons": true,
+    "enable_stock_notifications": true, "enable_cookie_consent": true,
+    "enable_live_chat": true, "enable_multi_currency": true,
+    "enable_self_service_returns": true, "enable_crm_segmentation": true,
+    "enable_crm_export": true, "enable_email_notifications": true,
+    "enable_abandoned_cart_emails": true, "enable_email_campaigns": true,
+    "enable_email_templates": true, "owner_lite_enabled": true,
+    "owner_advanced_modules_enabled": true,
+    "enable_maintenance_mode": false
+  }'
+```
+
+**Step 4** — Set enterprise plan limits:
+
+```bash
+curl -s -X PATCH "https://odvzsqossriyyscduzfg.supabase.co/rest/v1/plan_limits?tenant_id=eq.$TID" \
+  -H "apikey: <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Authorization: Bearer <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+  -d '{
+    "plan_name": "enterprise", "plan_tier": "enterprise",
+    "max_products": 10000, "max_customers": 100000,
+    "max_orders_month": 50000, "max_categories": 200,
+    "max_images_per_product": 20, "max_cms_pages": 100,
+    "max_carousel_slides": 20, "max_admin_users": 20,
+    "max_languages": 5, "max_currencies": 5,
+    "max_badges": 100, "max_newsletter_subscribers": 100000,
+    "max_promotions_active": 50, "max_payment_methods": 5,
+    "max_crm_contacts": 100000, "storage_limit_mb": 50000
+  }'
+```
+
+**Step 5** — Set tenant status to active:
+
+```bash
+curl -s -X PATCH "https://odvzsqossriyyscduzfg.supabase.co/rest/v1/tenants?id=eq.$TID" \
+  -H "apikey: <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Authorization: Bearer <GOVERNANCE_SUPABASE_SERVICE_KEY>" \
+  -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+  -d '{"status": "active", "deployment_status": "active"}'
+```
+
+**Step 6** — Restart the storefront (`.env` changes require restart):
+
+```bash
+# Kill existing and restart
+kill $(lsof -i :3000 -t) 2>/dev/null
+cd apps/storefront && npx next dev --turbopack --port 3000
+```
+
+---
+
+## Seed Script (`scripts/seed-demo.ts`)
+
+Populates the local Medusa instance with realistic demo data:
+
+| What | Count |
+|------|-------|
+| Regions | 1 (Europe — EUR, 4 countries) |
+| Sales Channels | 1 (linked to publishable API key) |
+| Stock Locations | 1 (with fulfillment set + shipping option) |
+| Product Categories | 4 |
+| Products | 12 (with variants and prices) |
+
+### Usage
+
+```bash
+# Default: connects to http://localhost:9000
+npx tsx scripts/seed-demo.ts
+
+# Custom Medusa URL
+MEDUSA_URL=http://other-host:9000 npx tsx scripts/seed-demo.ts
+```
+
+The script is **idempotent** — checks for existing data before creating. Safe to re-run.
+
+### Credentials
+
+The script reads from `.env` (manual parse, no `dotenv` dependency):
+
+| Variable | Default |
+|----------|---------|
+| `MEDUSA_URL` or `MEDUSA_BACKEND_URL` | `http://localhost:9000` |
+| `MEDUSA_ADMIN_EMAIL` | `admin@medusa-test.com` |
+| `MEDUSA_ADMIN_PASSWORD` | `supersecret` |
+
+---
 
 ## Project Structure
 
@@ -51,93 +197,60 @@ This starts:
 ecommerce-template/
 ├── GEMINI.md                    # ← Master guide (read first)
 ├── dev.sh                       # ← One-command dev startup
+├── scripts/
+│   └── seed-demo.ts             # ← Demo data seeder
 ├── apps/
 │   ├── storefront/              # Next.js 16 (App Router)
 │   │   ├── src/
-│   │   │   ├── app/
-│   │   │   │   ├── page.tsx     # Root redirect → /[lang]/
-│   │   │   │   ├── layout.tsx   # Minimal: fonts, CSS vars, CartProvider, Toaster
-│   │   │   │   ├── [lang]/      # ✅ Locale-based routing (en/es/de/fr/it)
-│   │   │   │   │   ├── layout.tsx       # I18nProvider + locale validation
-│   │   │   │   │   ├── (shop)/          # Storefront routes
-│   │   │   │   │   │   ├── layout.tsx   # Header + Footer + CartDrawer
-│   │   │   │   │   │   ├── productos/   # Product list + detail
-│   │   │   │   │   │   ├── carrito/     # Cart page
-│   │   │   │   │   │   ├── checkout/    # Checkout flow
-│   │   │   │   │   │   ├── cuenta/      # Customer panel
-│   │   │   │   │   │   └── pedido/      # Guest order lookup
-│   │   │   │   │   ├── (auth)/          # Login + registro
-│   │   │   │   │   └── (panel)/         # Owner panel (auth-guarded)
-│   │   │   │   ├── api/webhooks/stripe/  # Stripe webhook handler
-│   │   │   │   └── auth/                # OAuth callback
-│   │   │   ├── components/
-│   │   │   │   ├── layout/      # Header, Footer, LanguageSelector, CurrencySelector
-│   │   │   │   ├── products/    # ProductCard, ProductGrid, AddToCartButton
-│   │   │   │   ├── checkout/    # Multi-step modal, Stripe/Bank/COD/WhatsApp
-│   │   │   │   ├── cart/        # CartDrawer, CartItem
-│   │   │   │   └── ui/          # Toaster, Skeleton, ErrorBoundary
-│   │   │   ├── contexts/        # CartContext (with drawer state)
+│   │   │   ├── app/             # Pages (locale-based routing)
+│   │   │   ├── components/      # UI components
 │   │   │   └── lib/
-│   │   │       ├── i18n/        # ✅ Dictionary-based i18n system
-│   │   │       │   ├── index.ts     # getDictionary(), createTranslator()
-│   │   │       │   ├── locale.ts    # Locale resolution chain
-│   │   │       │   ├── currencies.ts# Multi-currency formatting
-│   │   │       │   ├── actions.ts   # Server Actions (setCurrencyCookie)
-│   │   │       │   └── provider.tsx # I18nProvider context
-│   │   │       ├── dictionaries/ # ✅ en.json, es.json, de.json, fr.json, it.json
-│   │   │       ├── supabase/    # Browser + Server clients
-│   │   │       ├── medusa/      # Typed API fetcher (retry + fallback)
-│   │   │       ├── config.ts    # getConfig() — in-memory TTL cache (5 min)
-│   │   │       ├── features.ts  # isFeatureEnabled()
-│   │   │       ├── limits.ts    # checkLimit()
-│   │   │       └── payment-methods.ts  # Dynamic payment registry
-│   │   └── proxy.ts             # Next.js 16 proxy (locale + auth + roles)
-│   │
-│   └── medusa/                  # Medusa.js v2
-│       ├── src/
-│       │   ├── modules/
-│       │   │   ├── supabase-auth/     # ✅ Supabase JWT → AuthIdentity
-│       │   │   └── supabase-storage/  # ✅ Supabase Storage file provider
-│       │   ├── api/             # Custom API routes
-│       │   ├── workflows/       # WhatsApp checkout workflow
-│       │   ├── subscribers/     # Event handlers
-│       │   └── scripts/seed.ts  # ✅ E-Commerce Template seed (idempotent, 13 products)
-│       └── medusa-config.ts     # ✅ Both providers configured
-│
-├── packages/shared/             # @ecommerce-template/shared types + constants
+│   │   │       ├── config.ts    # Governance config fetch (TTL cache)
+│   │   │       ├── features.ts  # Feature flag checker
+│   │   │       ├── limits.ts    # Plan limits checker
+│   │   │       └── supabase/
+│   │   │           └── governance.ts  # Governance Supabase client
+│   │   └── proxy.ts             # Next.js 16 proxy (locale + auth)
+│   └── medusa/                  # Medusa.js v2 backend
+│       ├── medusa-config.ts     # Backend config
+│       └── src/modules/         # Custom Supabase auth + storage
 ├── docs/                        # Documentation
-├── docker-compose.yml
-├── turbo.json
-└── pnpm-workspace.yaml
+└── .agent/workflows/            # Agent workflows
 ```
 
 ## Common Commands
 
 | Command | Description |
 |---------|-------------|
-| `./dev.sh` | **Start all services** (recommended) |
+| `./dev.sh` | **Start all services** (Redis + Medusa + Storefront) |
+| `npx tsx scripts/seed-demo.ts` | **Seed demo products** (idempotent) |
 | `pnpm build` | Build all apps |
-| `cd apps/medusa && npx medusa db:migrate` | Run Medusa migrations |
-| `cd apps/medusa && npx medusa exec ./src/scripts/seed.ts` | Seed product catalog (idempotent — safe to re-run) |
-| `cd apps/medusa && npx medusa user -e admin@example.com -p password` | Create admin user |
+| `pnpm test:run` | Run tests |
+| `cd apps/medusa && npx medusa db:migrate` | Run Medusa DB migrations |
 
 ## Environment Variables
 
 ### Required in `.env`
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
-| `DATABASE_URL` | Supabase pooler connection string |
-| `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Medusa publishable API key (auto-generated on first run) |
-| `REDIS_URL` | Redis connection (default: `redis://localhost:6379`) |
-| `TENANT_ID` | UUID from `tenants` table — scopes storefront config/flags/limits |
+| Variable | Purpose | Source |
+|----------|---------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Tenant Supabase project URL | Tenant Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Tenant Supabase anon key | Tenant Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Tenant Supabase service role key | Tenant Supabase |
+| `DATABASE_URL` | Supabase pooler connection string | Tenant Supabase |
+| `TENANT_ID` | UUID from governance `tenants` table | Governance Supabase |
+| `GOVERNANCE_SUPABASE_URL` | Governance Supabase URL | BootandStrap hub |
+| `GOVERNANCE_SUPABASE_ANON_KEY` | Governance Supabase anon key | BootandStrap hub |
+| `GOVERNANCE_SUPABASE_SERVICE_KEY` | Governance Supabase service role key | BootandStrap hub |
+| `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Medusa publishable API key | Auto-generated |
+| `REDIS_URL` | Redis connection | Default: `redis://localhost:6379` |
+| `MEDUSA_BACKEND_URL` | Medusa API URL | Default: `http://localhost:9000` |
 
-> **Important**: `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is auto-generated when Medusa starts for the first time. Check the Medusa startup logs for the key value, or find it in the Medusa Admin panel under Settings.
->
-> **Important**: `TENANT_ID` must match a row in the `tenants` table in Supabase. Without it, the storefront logs `TENANT_ID not set` warnings and falls back to hardcoded defaults.
+> **Critical**: `GOVERNANCE_SUPABASE_ANON_KEY` must be the anon key for the **governance** Supabase project (`odvzsqossriyyscduzfg`), NOT the tenant Supabase. If this key is wrong, the governance RPC returns "Invalid API key" and the storefront falls back to maintenance mode.
+
+> **Dev mode note**: In local development, all `NEXT_PUBLIC_SUPABASE_*` and `GOVERNANCE_SUPABASE_*` vars point to the **same** central Supabase project. The separation exists for production, where each tenant may have its own Supabase project for auth/data while governance stays centralized.
+
+> **Important**: `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is auto-generated when Medusa starts for the first time. Check the Medusa startup logs or the Admin panel (Settings → API Keys).
 
 ## Debugging
 
@@ -147,8 +260,8 @@ ecommerce-template/
 
 ### Supabase
 - Dashboard: SQL queries, RLS testing, Auth users
-- Feature flags: edit `feature_flags` row to toggle features
-- Config: edit `config` row to change branding
+- Feature flags: `feature_flags` table in governance Supabase
+- Config: `config` table in governance Supabase
 
 ### Next.js
 - Add `logging: { fetches: { fullUrl: true } }` to `next.config.ts` for fetch debugging
@@ -156,51 +269,117 @@ ecommerce-template/
 
 ## Troubleshooting
 
-### `KnexTimeoutError` / `ECONNREFUSED`
+### Storefront shows "En mantenimiento" (Maintenance Mode)
 
-1. **Check pooler hostname** — Verify `DATABASE_URL` in `.env` matches your Supabase project's pooler settings (Settings → Database → Connection string → URI mode)
-2. **Check port** — Use port `5432` for session pooler (not `6543` for transaction pooler)
-3. **No `databaseSchema`** — Do NOT set `databaseSchema: "medusa"` in `medusa-config.ts`. Medusa module migrations create tables in `public`, and this setting causes a schema mismatch
+**Most common cause**: governance config fetch failing.
+
+1. Check `.env` has `GOVERNANCE_SUPABASE_ANON_KEY` (not just the service key)
+2. Verify `GOVERNANCE_SUPABASE_ANON_KEY` is for the **governance** project (check JWT `ref` field)
+3. Verify `TENANT_ID` exists in governance `tenants` table
+4. Verify `enable_maintenance_mode` is `false` in `feature_flags`
+5. Restart storefront after `.env` changes
+
+**Debug**: Check server logs for `[config] get_tenant_governance RPC error: Invalid API key`
 
 ### Storefront shows 0 products
 
-The database is empty. Run the seed script:
+Run the seed script:
 ```bash
-cd apps/medusa && npx medusa exec ./src/scripts/seed.ts
+npx tsx scripts/seed-demo.ts
 ```
-The seed script is **idempotent** — it checks for existing regions, categories, products, fulfillment sets, and stock locations before creating them. Safe to re-run at any time.
 
 ### Storefront returns 400 errors
 
-Missing publishable API key. Check that `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` is set in `.env`.
+Missing publishable API key. Check `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` in `.env`.
 
-### Medusa crashes with `Cannot read properties of undefined (reading 'def')`
+### `KnexTimeoutError` / `ECONNREFUSED`
 
-**Root cause**: Zod version conflict. The storefront uses `zod@4.x` and Medusa v2.13.1 requires `zod@3.x` (it uses `._def` which was removed in Zod 4). pnpm hoists `zod@4` and Medusa's `zod-validation-error` peer dep picks it up.
+1. Check `DATABASE_URL` matches Supabase pooler settings (port `5432`, not `6543`)
+2. Do NOT set `databaseSchema: "medusa"` in `medusa-config.ts`
 
-**Fix**: `zod@3.25.76` is pinned in `apps/medusa/package.json` as a direct dependency + `pnpm.overrides` in root `package.json`. If you ever upgrade Zod in the storefront, verify Medusa still starts.
+### Medusa crashes with Zod error
 
-```bash
-# Verify fix
-pnpm install
-./dev.sh
-# Medusa should show: ✔ Server is ready on port: 9000
+`zod@3.25.76` is pinned in `apps/medusa/package.json`. Don't remove the pin. Run `pnpm install` after dependency changes.
+
+## Module & Feature Flag Architecture
+
+The storefront's features are **governed remotely** by the BootandStrap control plane (BSWEB). Understanding this pipeline is critical for any non-trivial storefront work.
+
+### How Features Get Enabled
+
+```
+Tenant purchases module (Stripe) → BSWEB webhook → module-flag-bridge.ts
+  → resolves module_flag_map (DB) → activates feature_flags + plan_limits
+    → Entitlement Engine resolves 7-layer pipeline → storefront reads via getConfig()
+      → isFeatureEnabled() / isWithinPlanLimit() gate UI
 ```
 
-### Storefront shows `TENANT_ID not set` warnings
+### Key Files (🔴 LOCKED — Do Not Modify)
 
-Set `TENANT_ID` in `.env` to a valid UUID from the `tenants` table in Supabase. Without this, config/flags/limits queries fail with `invalid input syntax for type uuid`.
+| File | Purpose |
+|------|---------|
+| `lib/config.ts` | Fetches governance data (config + flags + limits) via RPC, TTL cached |
+| `lib/features.ts` | `isFeatureEnabled(flags, 'enable_xxx')` — boolean flag check |
+| `lib/limits.ts` | `isWithinPlanLimit(limits, 'max_xxx', currentCount)` — numeric limit check |
+| `lib/feature-gate-config.ts` | Maps flags → BSWEB module pages for upsell UI |
+| `lib/payment-methods.ts` | Payment method registry, flag-gated, priority-sorted |
+| `lib/governance-contract.json` | Expected flags/limits schema (verified by tests) |
+
+### Payment Method System
+
+Payment methods live in `lib/payment-methods.ts` and are:
+1. **Flag-gated**: each method requires a specific `enable_*` flag to be `true`
+2. **Priority-sorted**: methods render in `priority` order (lower = first)
+3. **Limit-enforced**: `max_payment_methods` (plan_limits) caps visible methods
+
+Current payment flags (all in `sales_channels` module):
+
+| Flag | Method | Tier Required |
+|------|--------|---------------|
+| `enable_whatsapp_checkout` | WhatsApp Checkout | Basic (15 CHF/mo) |
+| `enable_online_payments` | Card (Stripe) + Apple Pay + Google Pay | Pro (30 CHF/mo) |
+| `enable_cash_on_delivery` | Cash on Delivery | Pro |
+| `enable_bank_transfer` | Bank Transfer | Enterprise (50 CHF/mo) |
+
+### Adding a New Flag-Gated Feature (Storefront Side)
+
+When BSWEB adds a new feature flag, the storefront needs:
+
+1. **`config.ts`** — Add `enable_<name>: boolean` to the `FeatureFlags` interface
+2. **`governance-contract.json`** — Add to the expected flags array
+3. **`feature-gate-config.ts`** — Add `FEATURE_GATE_MAP` entry (moduleKey, icon, bswSlug per locale)
+4. **Component** — Use `isFeatureEnabled(flags, 'enable_<name>')` to gate UI
+5. **Dictionaries (5 locales)** — Add label keys + `featureGate.modules.<name>` for upsell
+
+Run after changes:
+```bash
+pnpm --filter=storefront vitest run src/lib/__tests__/feature-gate-config.test.ts
+pnpm --filter=storefront vitest run src/lib/__tests__/config-schema.test.ts
+```
+
+### Upsell Pattern (FeatureGate Component)
+
+When a feature is disabled, the storefront shows an upsell card instead of the feature. The card links to the BSWEB module info page using `getModuleInfoUrl(flagKey, locale)`.
+
+```tsx
+// Example: gating a panel page
+if (!isFeatureEnabled(flags, 'enable_crm')) {
+    return <FeatureGate flagKey="enable_crm" locale={lang} />
+}
+```
+
+The `<FeatureGate>` component reads from `FEATURE_GATE_MAP` to show the module name, icon, and purchase link.
+
+---
 
 ## Key Conventions
 
 - **`dev.sh`** — Use this to start dev environment (handles Redis, env symlink, services)
-- **proxy.ts** (NOT middleware.ts) — Next.js 16 uses proxy for auth + locale + role guards
-- **`[lang]/` routes** — all pages live under `app/[lang]/`, root page redirects to preferred locale
-- **`t()` for translations** — use `createTranslator(dictionary)` in server components, `useI18n().t()` in client
-- **Feature flags** — always check flags before rendering optional features
-- **Plan limits** — always check limits before creating resources
-- **Suspense boundaries** — every async data fetch wrapped in `<Suspense>`
-- **Error boundaries** — every route segment has `error.tsx` + `loading.tsx`
-- **All tables in `public` schema** — no separate `medusa` schema
-- **Toast feedback** — use `useToast().success()` for user actions (add to cart, auth, etc.)
-- **Zod version constraint** — Medusa requires `zod@3.x`, storefront uses `zod@4.x`. Both coexist via pinning in `apps/medusa/package.json`. Do NOT remove the pin.
+- **`proxy.ts`** (NOT middleware.ts) — Next.js 16 uses proxy for auth + locale + role guards
+- **`[lang]/` routes** — All pages live under `app/[lang]/`, root page redirects to preferred locale
+- **`t()` for translations** — `createTranslator(dictionary)` in server, `useI18n().t()` in client
+- **Feature flags** — Always check flags before rendering optional features
+- **Plan limits** — Always check limits before creating resources
+- **Suspense boundaries** — Every async data fetch wrapped in `<Suspense>`
+- **All tables in `public` schema** — No separate `medusa` schema
+- **Zod version constraint** — Medusa requires `zod@3.x`, storefront uses `zod@4.x`
