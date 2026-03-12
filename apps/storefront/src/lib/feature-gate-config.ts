@@ -260,6 +260,204 @@ export const FEATURE_GATE_MAP: Record<string, FeatureGateEntry> = {
             it: 'email-marketing',
         },
     },
+    // ── Ecommerce — additional features ──
+    enable_wishlist: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.wishlist',
+        icon: '💝',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    enable_promotions: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.promotions',
+        icon: '🏷️',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    enable_related_products: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.relatedProducts',
+        icon: '🔗',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    enable_product_comparisons: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.productComparisons',
+        icon: '⚖️',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    enable_order_notes: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.orderNotes',
+        icon: '📝',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    enable_order_tracking: {
+        moduleKey: 'ecommerce',
+        moduleNameKey: 'featureGate.modules.orderTracking',
+        icon: '📦',
+        bswSlug: {
+            es: 'tienda-online',
+            en: 'ecommerce',
+            de: 'onlineshop',
+            fr: 'boutique-en-ligne',
+            it: 'negozio-online',
+        },
+    },
+    // ── Sales Channels — payment methods ──
+    enable_online_payments: {
+        moduleKey: 'sales_channels',
+        moduleNameKey: 'featureGate.modules.onlinePayments',
+        icon: '💳',
+        bswSlug: {
+            es: 'canales-de-venta',
+            en: 'sales-channels',
+            de: 'vertriebskanaele',
+            fr: 'canaux-de-vente',
+            it: 'canali-di-vendita',
+        },
+    },
+    enable_cash_on_delivery: {
+        moduleKey: 'sales_channels',
+        moduleNameKey: 'featureGate.modules.cashOnDelivery',
+        icon: '💵',
+        bswSlug: {
+            es: 'canales-de-venta',
+            en: 'sales-channels',
+            de: 'vertriebskanaele',
+            fr: 'canaux-de-vente',
+            it: 'canali-di-vendita',
+        },
+    },
+    enable_bank_transfer: {
+        moduleKey: 'sales_channels',
+        moduleNameKey: 'featureGate.modules.bankTransfer',
+        icon: '🏦',
+        bswSlug: {
+            es: 'canales-de-venta',
+            en: 'sales-channels',
+            de: 'vertriebskanaele',
+            fr: 'canaux-de-vente',
+            it: 'canali-di-vendita',
+        },
+    },
+    enable_whatsapp_contact: {
+        moduleKey: 'sales_channels',
+        moduleNameKey: 'featureGate.modules.whatsappContact',
+        icon: '📱',
+        bswSlug: {
+            es: 'canales-de-venta',
+            en: 'sales-channels',
+            de: 'vertriebskanaele',
+            fr: 'canaux-de-vente',
+            it: 'canali-di-vendita',
+        },
+    },
+    // ── Newsletter ──
+    enable_newsletter: {
+        moduleKey: 'email_marketing',
+        moduleNameKey: 'featureGate.modules.newsletter',
+        icon: '📰',
+        bswSlug: {
+            es: 'email-marketing',
+            en: 'email-marketing',
+            de: 'email-marketing',
+            fr: 'email-marketing',
+            it: 'email-marketing',
+        },
+    },
+    // ── Auth Advanced — remaining features ──
+    enable_user_registration: {
+        moduleKey: 'auth_advanced',
+        moduleNameKey: 'featureGate.modules.userRegistration',
+        icon: '👤',
+        bswSlug: {
+            es: 'auth-avanzada',
+            en: 'advanced-auth',
+            de: 'erweiterte-auth',
+            fr: 'auth-avancee',
+            it: 'auth-avanzata',
+        },
+    },
+    enable_customer_accounts: {
+        moduleKey: 'auth_advanced',
+        moduleNameKey: 'featureGate.modules.customerAccounts',
+        icon: '👥',
+        bswSlug: {
+            es: 'auth-avanzada',
+            en: 'advanced-auth',
+            de: 'erweiterte-auth',
+            fr: 'auth-avancee',
+            it: 'auth-avanzata',
+        },
+    },
+    enable_address_management: {
+        moduleKey: 'auth_advanced',
+        moduleNameKey: 'featureGate.modules.addressManagement',
+        icon: '📍',
+        bswSlug: {
+            es: 'auth-avanzada',
+            en: 'advanced-auth',
+            de: 'erweiterte-auth',
+            fr: 'auth-avancee',
+            it: 'auth-avanzata',
+        },
+    },
+    // ── Social / RRSS ──
+    enable_social_links: {
+        moduleKey: 'rrss',
+        moduleNameKey: 'featureGate.modules.socialLinks',
+        icon: '🔗',
+        bswSlug: {
+            es: 'redes-sociales',
+            en: 'social-media',
+            de: 'soziale-medien',
+            fr: 'reseaux-sociaux',
+            it: 'social-media',
+        },
+    },
+    // ── Automation ──
+    enable_admin_api: {
+        moduleKey: 'automation',
+        moduleNameKey: 'featureGate.modules.adminApi',
+        icon: '⚡',
+        bswSlug: {
+            es: 'automatizacion',
+            en: 'automation',
+            de: 'automatisierung',
+            fr: 'automatisation',
+            it: 'automazione',
+        },
+    },
 }
 
 /**
@@ -288,18 +486,8 @@ export function getModuleActivationUrl(flagKey: string, locale: string): string 
 }
 
 /**
- * Get all flags that are currently gating panel pages.
- * Used by the coverage test.
+ * Auto-derived from FEATURE_GATE_MAP keys — no manual sync needed.
+ * P1-4 fix: previously hand-maintained list that drifted from the map.
  */
-export const PANEL_GATED_FLAGS = [
-    'enable_ecommerce',
-    'enable_analytics',
-    'enable_chatbot',
-    'enable_carousel',
-    'enable_cms_pages',
-    'enable_whatsapp_checkout',
-    'enable_self_service_returns',
-    'enable_product_badges',
-    'enable_crm',
-    'enable_email_notifications',
-] as const
+export const PANEL_GATED_FLAGS = Object.keys(FEATURE_GATE_MAP) as ReadonlyArray<keyof typeof FEATURE_GATE_MAP>
+

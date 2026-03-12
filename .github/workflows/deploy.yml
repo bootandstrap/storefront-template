@@ -12,6 +12,12 @@ permissions:
   contents: read
   packages: write
 
+# Prevent double-trigger with docker-publish.yml on the same push
+concurrency:
+  group: storefront-deploy-${{ github.repository }}-${{ github.sha }}
+  cancel-in-progress: false
+
+
 jobs:
   build-and-deploy:
     name: Build & Deploy
