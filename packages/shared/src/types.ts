@@ -56,8 +56,12 @@ export interface WhatsAppOrderData {
     notes?: string;
 }
 
-/** Store configuration (from Supabase `config` table) */
-export interface StoreConfig {
+/**
+ * @deprecated Use `StoreConfig` from `./governance/schemas` instead.
+ * This legacy type uses camelCase and has only 12 fields.
+ * The governance StoreConfig is the SSOT with 73 fields (snake_case from Supabase).
+ */
+export interface LegacyStoreConfig {
     businessName: string;
     whatsappNumber: string;
     defaultCountryPrefix: string;

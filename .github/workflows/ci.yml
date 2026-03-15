@@ -36,6 +36,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── Governance SSOT Checks ──
+      - name: Shared package contract tests
+        run: pnpm --filter=@bootandstrap/shared test:run
+
+      - name: Governance sync check (inline ↔ shared)
+        run: bash scripts/sync-governance.sh --check
+
       - name: Lint (zero warnings)
         run: pnpm turbo lint --filter=storefront -- --max-warnings=0
 

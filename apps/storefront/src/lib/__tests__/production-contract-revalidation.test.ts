@@ -107,10 +107,15 @@ describe('Production Contract: Revalidation & Cross-Repo Governance', () => {
         })
 
         it('config uses 5-minute cache TTL (verified in source)', () => {
-            // Behavior-driven: verify the config source contains the 5 min TTL
+            // Behavior-driven: verify the shared governance cache source contains the 5 min TTL
+            // TTL was moved from config.ts to @bootandstrap/shared governance/cache.ts
+            // Path: __tests__ → lib → src → storefront → apps → ecommerce-template (5 levels up)
+            const cachePath = join(__dirname, '../../../../../packages/shared/src/governance/cache.ts')
             const configPath = join(__dirname, '../config.ts')
-            if (existsSync(configPath)) {
-                const source = readFileSync(configPath, 'utf-8')
+            // Check shared package first (SSOT), fallback to local config
+            const pathToRead = existsSync(cachePath) ? cachePath : configPath
+            if (existsSync(pathToRead)) {
+                const source = readFileSync(pathToRead, 'utf-8')
                 // The TTL is defined as 5 * 60 * 1000 or 300_000 or 300000
                 const hasTTL = source.includes('5 * 60 * 1000') ||
                     source.includes('300_000') ||
