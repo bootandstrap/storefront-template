@@ -1,21 +1,27 @@
 name: Build & Deploy Storefront
 
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+
 env:
   REGISTRY: ghcr.io
+
 
 permissions:
   contents: read
   packages: write
 
+
 # Prevent double-trigger with docker-publish.yml on the same push
 concurrency:
   group: storefront-deploy-${{ github.repository }}-${{ github.sha }}
   cancel-in-progress: false
+
+
 
 
 jobs:
@@ -24,12 +30,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -38,9 +47,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+
       - name: Extract repo name
         id: repo
         run: echo "name=${GITHUB_REPOSITORY#*/}" >> $GITHUB_OUTPUT
+
 
       - name: Docker meta
         id: meta
@@ -51,10 +62,11 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
 
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-                    context: .
+          context: .
           file: ./apps/storefront/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -66,6 +78,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+
       - name: Deploy to Dokploy
         if: ${{ vars.DOKPLOY_APP_ID != '' }}
         run: |
@@ -76,6 +89,7 @@ jobs:
             -d '{"json": {"applicationId": "${{ vars.DOKPLOY_APP_ID }}"}}'
           echo "✅ Dokploy redeploy triggered"
 
+
       - name: Post-deploy health check
         if: ${{ vars.DOKPLOY_APP_ID != '' && vars.STORE_DOMAIN != '' }}
         run: |
@@ -84,11 +98,3 @@ jobs:
             sleep 30
             status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
               "https://${{ vars.STORE_DOMAIN }}/api/health" 2>/dev/null || echo "000")
-            echo "  Attempt $i: HTTP $status"
-            if [ "$status" = "200" ]; then
-              echo "✅ Storefront healthy"
-              exit 0
-            fi
-          done
-          echo "⚠️ Storefront not responding after 120s — check Dokploy logs"
-          exit 1
