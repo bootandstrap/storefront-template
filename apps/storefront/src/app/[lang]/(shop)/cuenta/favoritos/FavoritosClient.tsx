@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Heart, Package, ShoppingBag, Trash2, ExternalLink } from 'lucide-react'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { useI18n } from '@/lib/i18n/provider'
+import { getRuntimeEnv } from '@/lib/runtime-env'
 
 // ---------------------------------------------------------------------------
 // Lightweight product type for display (fetched client-side from Medusa)
@@ -64,8 +65,8 @@ export default function FavoritosClient() {
         }
 
         // Fetch each product by ID from Medusa Store API
-        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''
-        const API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+        const MEDUSA_URL = getRuntimeEnv('MEDUSA_BACKEND_URL')
+        const API_KEY = getRuntimeEnv('MEDUSA_PUBLISHABLE_KEY')
 
         // Batch fetch — Medusa v2 supports id[] filter
         const params = new URLSearchParams()

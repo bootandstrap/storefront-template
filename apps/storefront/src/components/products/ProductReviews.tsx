@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Star, Send, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
-import { getPublicMedusaUrl } from '@/lib/medusa/url'
+import { getPublicMedusaUrl, getPublishableKey } from '@/lib/medusa/url'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,7 +81,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     const [error, setError] = useState<string | null>(null)
 
     const medusaUrl = getPublicMedusaUrl()
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+    const publishableKey = getPublishableKey()
 
     // Load reviews from Medusa Store API
     const loadReviews = useCallback(async () => {

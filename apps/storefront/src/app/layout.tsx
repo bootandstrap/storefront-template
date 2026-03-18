@@ -5,6 +5,7 @@ import { getConfig } from '@/lib/config'
 import { isValidLocale } from '@/lib/i18n'
 import { resolveThemeColors, lightenHex } from '@/lib/theme/presets'
 import { createClient } from '@/lib/supabase/server'
+import { RuntimeEnvScript } from '@/lib/runtime-env'
 import { CartProvider } from '@/contexts/CartContext'
 import { WishlistProvider } from '@/contexts/WishlistContext'
 import { CompareProvider } from '@/contexts/CompareContext'
@@ -118,6 +119,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
       </head>
       <body className="min-h-screen flex flex-col antialiased">
+        <RuntimeEnvScript />
         <CartProvider>
           <WishlistProvider isAuthenticated={isAuthenticated}>
             <CompareProvider>

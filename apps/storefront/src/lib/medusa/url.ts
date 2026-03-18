@@ -5,20 +5,22 @@
  * Used by CartContext, guest order lookup, and any client component
  * that needs to call the Medusa Store API directly.
  *
- * Rules:
- * - Uses NEXT_PUBLIC_MEDUSA_BACKEND_URL (the canonical env var)
+ * Uses getRuntimeEnv() to support runtime env injection:
+ * - In production: reads from window.__RUNTIME_ENV__ (injected by RuntimeEnvScript)
+ * - In development: reads from process.env.NEXT_PUBLIC_* (available at build time)
  * - Falls back to http://localhost:9000 ONLY in development/test
- * - Throws in production if env var is missing (fail-fast)
  */
+
+import { getRuntimeEnv } from '@/lib/runtime-env'
 
 const DEV_FALLBACK = 'http://localhost:9000'
 
 /**
  * Returns the public-facing Medusa backend URL.
- * Safe for client-side usage (reads NEXT_PUBLIC_* env var).
+ * Safe for client-side and server-side usage.
  */
 export function getPublicMedusaUrl(): string {
-    const url = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+    const url = getRuntimeEnv('MEDUSA_BACKEND_URL')
 
     if (url) {
         // Strip trailing slash for consistent URL joining
@@ -27,11 +29,22 @@ export function getPublicMedusaUrl(): string {
 
     // In production, the env var MUST be set
     if (process.env.NODE_ENV === 'production') {
-        throw new Error(
-            'NEXT_PUBLIC_MEDUSA_BACKEND_URL is required in production. ' +
-            'Set it to your Medusa API URL (e.g. https://api.yourdomain.com).'
+        console.error(
+            '[Medusa] NEXT_PUBLIC_MEDUSA_BACKEND_URL is not set. ' +
+            'Check RuntimeEnvScript in layout.tsx and container env vars.'
         )
+        // Don't throw — return empty to avoid crashing the whole page.
+        // Cart operations will fail gracefully with error toasts.
+        return ''
     }
 
     return DEV_FALLBACK
+}
+
+/**
+ * Returns the Medusa publishable API key.
+ * Safe for client-side and server-side usage.
+ */
+export function getPublishableKey(): string {
+    return getRuntimeEnv('MEDUSA_PUBLISHABLE_KEY')
 }
