@@ -95,8 +95,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     const data = await res.json()
                     if (data?.cart) setCart(data.cart)
                 }
-            } catch {
-                // Cart may have expired — clear stale ID
+            } catch (err) {
+                // Cart may have expired or Medusa unreachable — clear stale ID
+                console.warn('[CartContext] Cart hydration failed:', err)
                 localStorage.removeItem(CART_ID_KEY)
                 setCartIdState(null)
             } finally {

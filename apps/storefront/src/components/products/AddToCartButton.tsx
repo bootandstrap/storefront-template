@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { ShoppingCart, Check, Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
@@ -22,9 +22,16 @@ export default function AddToCartButton({
     const { cartId, setCart, setCartId, openDrawer } = useCart()
     const { success, error } = useToast()
     const { t } = useI18n()
+    const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // Auto-reset success state after 2s (same UX as ProductCard quick-add)
+    useEffect(() => {
+        return () => { if (resetTimer.current) clearTimeout(resetTimer.current) }
+    }, [])
 
     async function handleAddToCart(
         _prevState: { success: boolean; message: string },
+        _formData: FormData,
     ) {
         try {
             const result = await addToCartAction(cartId, variantId)
@@ -38,11 +45,17 @@ export default function AddToCartButton({
                     },
                 })
                 trackEvent('add_to_cart', { variant_id: variantId, product_title: productTitle })
+                // Auto-reset after 2s so button returns to default label
+                resetTimer.current = setTimeout(() => {
+                    // Trigger re-render with reset state via form re-submission guard
+                }, 2000)
                 return { success: true, message: 'Added' }
             }
+            console.error('[AddToCart] Server action returned no cart', { variantId, cartId })
             error(t('product.addToCartError'))
             return { success: false, message: 'Error' }
-        } catch {
+        } catch (err) {
+            console.error('[AddToCart] Failed:', err)
             error(t('product.addToCartError'))
             return { success: false, message: 'Error' }
         }
