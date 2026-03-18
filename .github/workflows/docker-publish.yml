@@ -71,7 +71,7 @@ jobs:
       - name: Build and push Storefront
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/storefront
+          context: .
           file: ./apps/storefront/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
