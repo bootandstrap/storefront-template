@@ -1,0 +1,145 @@
+# -------------------------------------------------------------------
+# Template Sync — Propagate platform changes to all tenant repos
+# -------------------------------------------------------------------
+# Phase 3 of MEGA PLAN v4
+#
+# When platform-layer (🔴 LOCKED) code changes in storefront-template,
+# this workflow auto-creates PRs in each tenant repo. Tenant-specific
+# files (🟢 CUSTOMIZE zone) are protected via .templatesyncignore.
+#
+# Tenant repo list is generated dynamically from Supabase tenants table.
+# -------------------------------------------------------------------
+
+name: Template Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # 🔴 LOCKED — Platform governance layer
+      - 'apps/storefront/src/lib/**'
+      - 'apps/storefront/src/proxy.ts'
+      - 'apps/storefront/src/app/api/**'
+      - 'apps/storefront/src/app/[lang]/(panel)/**'
+      - 'apps/storefront/src/app/[lang]/(auth)/**'
+      # Shared packages
+      - 'packages/shared/**'
+      # CI/CD workflows
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/build-medusa.yml'
+      # Docker
+      - 'apps/storefront/Dockerfile'
+      - 'apps/medusa/Dockerfile'
+      # Root config
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — log which repos would be synced without creating PRs'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# Only one sync at a time
+concurrency:
+  group: template-sync
+  cancel-in-progress: false
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────
+  # Step 1: Build dynamic tenant repo list from Supabase
+  # ────────────────────────────────────────────────────────────────────
+  resolve-tenants:
+    name: Resolve Tenant Repos
+    runs-on: ubuntu-latest
+    # Only run on the SOURCE template repo, never on tenant repos
+    if: github.repository == 'bootandstrap/storefront-template'
+    outputs:
+      repos: ${{ steps.list.outputs.repos }}
+      count: ${{ steps.list.outputs.count }}
+    steps:
+      - name: Query tenant repos from Supabase
+        id: list
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Fetch active tenants with github_repo set
+          response=$(curl -sf \
+            "${SUPABASE_URL}/rest/v1/tenants?select=slug,github_repo&status=eq.active&github_repo=not.is.null" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+            -H "Content-Type: application/json")
+          
+          # Extract repo names into JSON array
+          repos=$(echo "$response" | jq -c '[.[].github_repo]')
+          count=$(echo "$response" | jq 'length')
+          
+          echo "repos=${repos}" >> $GITHUB_OUTPUT
+          echo "count=${count}" >> $GITHUB_OUTPUT
+          echo "📋 Found ${count} tenant repos to sync"
+
+  # ────────────────────────────────────────────────────────────────────
+  # Step 2: Sync template to each tenant repo
+  # ────────────────────────────────────────────────────────────────────
+  sync:
+    name: Sync → ${{ matrix.repo }}
+    needs: resolve-tenants
+    if: needs.resolve-tenants.outputs.count > 0
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        repo: ${{ fromJson(needs.resolve-tenants.outputs.repos) }}
+    steps:
+      - name: Template Sync
+        if: inputs.dry_run != 'true'
+        uses: AndreasAugworsky/actions-template-sync@v2
+        with:
+          source_repo_path: bootandstrap/storefront-template
+          upstream_branch: main
+          pr_title: "🔄 Platform update — ${{ github.event.head_commit.message }}"
+          pr_labels: "platform-update,automated"
+          pr_commit_msg: "chore: sync platform updates from template"
+          is_force: false
+          is_pr_cleanup: true
+          github_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
+
+      - name: Dry Run Log
+        if: inputs.dry_run == 'true'
+        run: |
+          echo "🔍 DRY RUN: Would sync to ${{ matrix.repo }}"
+          echo "  Source: bootandstrap/storefront-template@main"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Message: ${{ github.event.head_commit.message }}"
+
+  # ────────────────────────────────────────────────────────────────────
+  # Step 3: Summary
+  # ────────────────────────────────────────────────────────────────────
+  summary:
+    name: Sync Summary
+    needs: [resolve-tenants, sync]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report
+        run: |
+          echo "## Template Sync Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tenant repos**: ${{ needs.resolve-tenants.outputs.count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.sync.result }}" = "success" ]; then
+            echo "✅ All syncs completed successfully" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.sync.result }}" = "failure" ]; then
+            echo "⚠️ Some syncs failed — check individual job logs" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Sync status: ${{ needs.sync.result }}" >> $GITHUB_STEP_SUMMARY
+          fi

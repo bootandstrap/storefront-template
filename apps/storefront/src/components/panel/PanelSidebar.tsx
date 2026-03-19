@@ -36,7 +36,8 @@ import {
     type PanelFeatureFlags,
     type PanelSidebarLabels,
 } from '@/lib/panel-policy'
-import PanelTopbar from '@/components/panel/PanelTopbar'
+// PanelTopbar is now mounted in the panel layout, not here
+import PanelTour, { type TourStep } from '@/components/panel/PanelTour'
 
 interface PanelSidebarProps {
     lang: string
@@ -47,6 +48,16 @@ interface PanelSidebarProps {
     badges?: Record<string, number>
     /** Plan name for sidebar footer badge */
     planName?: string
+    /** Whether onboarding was completed (shows replay tour button) */
+    onboardingCompleted?: boolean
+    /** Label for the replay tour button */
+    replayTourLabel?: string
+    /** Server-resolved translations for tour steps */
+    tourTranslations?: Record<string, string>
+    /** Controlled mobile open state (driven from layout topbar hamburger) */
+    mobileOpen?: boolean
+    /** Callback when mobile menu state changes */
+    onMobileOpenChange?: (open: boolean) => void
 }
 
 export default function PanelSidebar({
@@ -56,10 +67,21 @@ export default function PanelSidebar({
     featureFlags,
     badges = {},
     planName,
+    onboardingCompleted = false,
+    replayTourLabel,
+    tourTranslations = {},
+    mobileOpen: controlledMobileOpen,
+    onMobileOpenChange,
 }: PanelSidebarProps) {
     const pathname = usePathname()
-    const [mobileOpen, setMobileOpen] = useState(false)
+    const [internalMobileOpen, setInternalMobileOpen] = useState(false)
+    const mobileOpen = controlledMobileOpen ?? internalMobileOpen
+    const setMobileOpen = (open: boolean) => {
+        setInternalMobileOpen(open)
+        onMobileOpenChange?.(open)
+    }
     const [modulesExpanded, setModulesExpanded] = useState(true)
+    const [showReplayTour, setShowReplayTour] = useState(false)
 
     const { essentialItems, moduleItems } = getPanelNavigation({
         lang,
@@ -75,6 +97,7 @@ export default function PanelSidebar({
         storeConfig: <Store className="w-5 h-5" />,
         shipping: <Truck className="w-5 h-5" />,
         myProject: <Kanban className="w-5 h-5" />,
+        modules: <Puzzle className="w-5 h-5" />,
         carousel: <ImageIcon className="w-5 h-5" />,
         whatsapp: <MessageCircle className="w-5 h-5" />,
         pages: <FileText className="w-5 h-5" />,
@@ -111,6 +134,7 @@ export default function PanelSidebar({
         customers: 'nav-customers',
         storeConfig: 'nav-store',
         shipping: 'nav-shipping',
+        modules: 'nav-modules',
     }
 
     const navigationContent = (
@@ -182,11 +206,6 @@ export default function PanelSidebar({
 
     return (
         <>
-            <PanelTopbar
-                businessName={businessName}
-                ownerPanelLabel={labels.ownerPanel}
-                onMenuClick={() => setMobileOpen(true)}
-            />
 
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-50">
@@ -257,6 +276,16 @@ export default function PanelSidebar({
                             <span className="plan-badge">{planName}</span>
                         </div>
                     )}
+                {/* Replay tour button */}
+                    {onboardingCompleted && (
+                        <button
+                            type="button"
+                            onClick={() => setShowReplayTour(true)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-text-muted hover:text-primary hover:bg-primary/5 transition-all w-full"
+                        >
+                            🎓 {replayTourLabel || 'Replay Tour'}
+                        </button>
+                    )}
                     <Link
                         href={`/${lang}`}
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all"
@@ -266,6 +295,24 @@ export default function PanelSidebar({
                     </Link>
                 </div>
             </aside>
+
+            {/* Replay tour overlay */}
+            {showReplayTour && (
+                <PanelTour
+                    steps={[
+                        { targetId: 'nav-dashboard', title: tourTranslations['tour.step.dashboard.title'] || 'Dashboard', description: tourTranslations['tour.step.dashboard.description'] || '' },
+                        { targetId: 'nav-catalog', title: tourTranslations['tour.step.catalog.title'] || 'Catalog', description: tourTranslations['tour.step.catalog.description'] || '' },
+                        { targetId: 'nav-orders', title: tourTranslations['tour.step.orders.title'] || 'Orders', description: tourTranslations['tour.step.orders.description'] || '' },
+                        { targetId: 'nav-customers', title: tourTranslations['tour.step.customers.title'] || 'Customers', description: tourTranslations['tour.step.customers.description'] || '' },
+                        { targetId: 'nav-store', title: tourTranslations['tour.step.store.title'] || 'Store settings', description: tourTranslations['tour.step.store.description'] || '' },
+                        { targetId: 'nav-shipping', title: tourTranslations['tour.step.shipping.title'] || 'Shipping', description: tourTranslations['tour.step.shipping.description'] || '' },
+                        { targetId: 'nav-modules', title: tourTranslations['tour.step.modules.title'] || 'Modules', description: tourTranslations['tour.step.modules.description'] || '' },
+                    ]}
+                    onComplete={() => setShowReplayTour(false)}
+                    t={(key: string) => tourTranslations[key] || key}
+                    isReplay
+                />
+            )}
         </>
     )
 }

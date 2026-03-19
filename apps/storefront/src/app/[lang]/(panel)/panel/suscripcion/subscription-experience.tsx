@@ -129,21 +129,21 @@ export function SubscriptionExperience({
 
             <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="glass rounded-xl p-4 border border-surface-3">
-                    <p className="text-xs uppercase tracking-wider text-text-muted">Tu stack activo</p>
-                    <p className="text-2xl font-bold text-text-primary mt-1">{activeModules.length} módulos</p>
-                    <p className="text-xs text-text-muted mt-1">Base mantenimiento: {formatChf(maintenancePrice)}/mes</p>
+                    <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.activeStack')}</p>
+                    <p className="text-2xl font-bold text-text-primary mt-1">{activeModules.length} {t('panel.subscription.modulesLabel')}</p>
+                    <p className="text-xs text-text-muted mt-1">{t('panel.subscription.maintenanceBase')}: {formatChf(maintenancePrice)}/{t('panel.subscription.perMonth')}</p>
                 </div>
                 <div className="glass rounded-xl p-4 border border-surface-3">
-                    <p className="text-xs uppercase tracking-wider text-text-muted">Precio mensual estimado</p>
-                    <p className="text-2xl font-bold text-text-primary mt-1">{formatChf(activeMonthlyEstimate)}/mes</p>
-                    <p className="text-xs text-text-muted mt-1">Incluye mantenimiento + módulos activos</p>
+                    <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.monthlyEstimate')}</p>
+                    <p className="text-2xl font-bold text-text-primary mt-1">{formatChf(activeMonthlyEstimate)}/{t('panel.subscription.perMonth')}</p>
+                    <p className="text-xs text-text-muted mt-1">{t('panel.subscription.includesDescription')}</p>
                 </div>
                 <div className="glass rounded-xl p-4 border border-primary/30 bg-primary/5">
-                    <p className="text-xs uppercase tracking-wider text-primary/80">Siguiente recomendación</p>
+                    <p className="text-xs uppercase tracking-wider text-primary/80">{t('panel.subscription.nextRecommendation')}</p>
                     <p className="text-lg font-semibold text-text-primary mt-1">
-                        {recommendedModule?.name || 'Ya tienes el stack principal'}
+                        {recommendedModule?.name || t('panel.subscription.fullStack')}
                     </p>
-                    <p className="text-xs text-text-muted mt-1">Elegida según dependencias y prioridad comercial</p>
+                    <p className="text-xs text-text-muted mt-1">{t('panel.subscription.recommendationReason')}</p>
                 </div>
             </section>
 
@@ -186,11 +186,11 @@ export function SubscriptionExperience({
                 <section className="glass rounded-xl p-5 border border-primary/30 bg-primary/5">
                     <h2 className="text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
                         <Lightbulb className="w-5 h-5 text-primary" />
-                        Recomendado para tu tienda
+                        {t('panel.subscription.recommendedForStore')}
                     </h2>
                     <p className="text-sm text-text-secondary">
                         {recommendedModule.icon} <span className="font-semibold text-text-primary">{recommendedModule.name}</span>:
-                        {' '}impacto rápido con una configuración sencilla para equipo no técnico.
+                        {' '}{t('panel.subscription.recommendedDescription')}
                     </p>
                 </section>
             )}
@@ -217,14 +217,14 @@ export function SubscriptionExperience({
                                         </div>
                                         {recommendedModule?.key === catalogEntry.key && (
                                             <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary">
-                                                <Sparkles className="w-3 h-3" /> Recomendado
+                                                <Sparkles className="w-3 h-3" /> {t('panel.subscription.recommended')}
                                             </span>
                                         )}
                                     </div>
 
                                     {catalogEntry.tiers.length > 1 && (
                                         <div className="mt-3">
-                                            <label className="text-xs text-text-muted block mb-1">Selecciona nivel</label>
+                                            <label className="text-xs text-text-muted block mb-1">{t('panel.subscription.selectTier')}</label>
                                             <select
                                                 value={selectedTier.key}
                                                 onChange={(e) => onTierChange(catalogEntry.key, e.target.value)}
@@ -241,7 +241,7 @@ export function SubscriptionExperience({
                                     )}
 
                                     <div className="mt-4 space-y-2">
-                                        <p className="text-xs uppercase tracking-wider text-text-muted">Qué incluye</p>
+                                        <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.whatIncludes')}</p>
                                         <ul className="space-y-1.5">
                                             {selectedTier.features.slice(0, 3).map((feature) => (
                                                 <li key={feature} className="text-sm text-text-secondary flex items-start gap-2">
@@ -254,8 +254,8 @@ export function SubscriptionExperience({
 
                                     <div className="mt-4 flex items-center justify-between">
                                         <div>
-                                            <p className="text-xs uppercase tracking-wider text-text-muted">Precio mensual estimado</p>
-                                            <p className="text-lg font-semibold text-text-primary">{formatChf(selectedTier.price_chf)}/mes</p>
+                                            <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.monthlyEstimate')}</p>
+                                            <p className="text-lg font-semibold text-text-primary">{formatChf(selectedTier.price_chf)}/{t('panel.subscription.perMonth')}</p>
                                         </div>
                                         <button
                                             onClick={() => onPurchase(catalogEntry.key)}

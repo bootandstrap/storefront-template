@@ -100,6 +100,16 @@ export default async function AnalyticsPage({
     return (
         <div className="space-y-6 max-w-4xl">
 
+            {/* ── Header ─────────────────────────────────────── */}
+            <div>
+                <h1 className="text-2xl font-bold font-display text-text-primary">
+                    {t('panel.analytics.title')}
+                </h1>
+                <p className="text-text-muted mt-1">
+                    {t('panel.analytics.subtitle')}
+                </p>
+            </div>
+
             {/* ── Summary Stats ─────────────────────────────── */}
             <div className="grid grid-cols-3 gap-4">
                 <div className="bg-surface-0 border border-surface-2 rounded-xl p-5">

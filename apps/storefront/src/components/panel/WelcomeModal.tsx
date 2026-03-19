@@ -10,7 +10,7 @@
  * Includes an animated SOTA thank-you with BootandStrap branding.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Globe, DollarSign, Languages, Puzzle,
     ImageIcon, Phone,
@@ -86,12 +86,31 @@ export default function WelcomeModal({
 }: WelcomeModalProps) {
     const [phase, setPhase] = useState<'branding' | 'readiness'>('branding')
     const [visible, setVisible] = useState(false)
+    const [typedName, setTypedName] = useState('')
+    const typewriterRef = useRef<NodeJS.Timeout | null>(null)
 
     // Entrance animation
     useEffect(() => {
         const timer = setTimeout(() => setVisible(true), 50)
         return () => clearTimeout(timer)
     }, [])
+
+    // Typewriter effect for store name during branding phase
+    useEffect(() => {
+        if (phase === 'branding' && storeName) {
+            let i = 0
+            setTypedName('')
+            const tick = () => {
+                if (i < storeName.length) {
+                    setTypedName(storeName.slice(0, i + 1))
+                    i++
+                    typewriterRef.current = setTimeout(tick, 80)
+                }
+            }
+            typewriterRef.current = setTimeout(tick, 600)
+            return () => { if (typewriterRef.current) clearTimeout(typewriterRef.current) }
+        }
+    }, [phase, storeName])
 
     // Auto-transition from branding splash to readiness after 3.5s
     useEffect(() => {
@@ -183,9 +202,14 @@ export default function WelcomeModal({
                         </div>
 
                         {/* Thank you message */}
-                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary text-center mb-3 animate-fade-in-up">
+                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary text-center mb-1 animate-fade-in-up">
                             {t('welcome.thankYou') || '¡Gracias por confiar en nosotros!'}
                         </h1>
+                        {/* Typewriter store name */}
+                        <p className="text-lg font-bold text-primary text-center mb-3 h-7">
+                            {typedName}
+                            <span className="inline-block w-0.5 h-5 bg-primary ml-0.5 animate-pulse align-middle" />
+                        </p>
                         <p className="text-text-muted text-center text-sm max-w-sm animate-fade-in-up-delay">
                             {t('welcome.poweredBy') || 'Tu tienda está potenciada por BootandStrap'}
                         </p>
@@ -235,18 +259,19 @@ export default function WelcomeModal({
 
                         {/* Readiness checklist */}
                         <div className="px-8 pb-4 space-y-1.5">
-                            {readinessItems.map((item) => {
+                            {readinessItems.map((item, idx) => {
                                 const Icon = item.icon
                                 return (
                                     <div
                                         key={item.label}
-                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${item.done
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all opacity-0 animate-fade-in-up ${item.done
                                             ? 'bg-green-500/5 text-text-secondary'
                                             : 'bg-amber-500/5 text-amber-600'
                                             }`}
+                                        style={{ animationDelay: `${idx * 120}ms`, animationFillMode: 'forwards' }}
                                     >
                                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${item.done
-                                            ? 'bg-green-500/15 text-green-500'
+                                            ? 'bg-green-500/15 text-green-500 animate-pulse-glow'
                                             : 'bg-amber-500/15 text-amber-500'
                                             }`}>
                                             {item.done ? (

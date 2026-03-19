@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-07.
+> Last updated: 2026-03-19.
 
 ## 0. Local Development Setup
 
@@ -95,7 +95,7 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 | `apps/storefront/src/lib/policy-engine.ts` | Business rule enforcement |
 | `apps/storefront/src/proxy.ts` | Next.js 16 routing proxy — auth + locale + role protection |
 | `apps/storefront/src/app/api/` | All API routes (webhooks, health, orders, revalidate, chat) |
-| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags |
+| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **19 components** as of 2026-03-19: PanelTopbar, CommandPalette (⌘K), PanelChecklist, ActivityFeed, PanelLayout, PanelShell, ModulesMarketplaceClient, TierComparisonTable, etc. |
 | `apps/storefront/src/app/[lang]/(auth)/` | Auth pages — governed by SaaS flags |
 | `apps/storefront/src/lib/i18n/index.ts` | i18n engine — only edit dictionaries, not the engine |
 | `apps/storefront/src/lib/i18n/locale.ts` | Locale resolution logic |

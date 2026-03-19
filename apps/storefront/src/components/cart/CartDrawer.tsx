@@ -56,9 +56,10 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || config.default_currency || 'usd'
+    // Use tenant config currency first — variant.prices is often empty in Medusa v2 cart responses
+    const currency = config.default_currency || items[0]?.variant?.prices?.[0]?.currency_code || 'eur'
 
-    const formattedSubtotal = new Intl.NumberFormat(locale === 'es' ? 'es-CO' : locale, {
+    const formattedSubtotal = new Intl.NumberFormat(locale === 'es' ? 'es-ES' : locale, {
         style: 'currency',
         currency: currency.toUpperCase(),
         minimumFractionDigits: 0,
@@ -114,7 +115,7 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
                             </button>
                         </div>
                     ) : (
-                        items.map((item) => <CartItem key={item.id} item={item} />)
+                        items.map((item) => <CartItem key={item.id} item={item} currencyCode={currency} />)
                     )}
                 </div>
 

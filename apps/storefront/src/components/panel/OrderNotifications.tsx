@@ -95,7 +95,7 @@ export default function OrderNotifications() {
             <button
                 onClick={handleToggle}
                 className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
-                aria-label={t('panel.orders.notifications') || 'Order notifications'}
+                aria-label={t('panel.orders.notifications')}
             >
                 <Bell className="w-5 h-5 text-text-muted" />
                 {unreadCount > 0 && (
@@ -109,14 +109,14 @@ export default function OrderNotifications() {
                 <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto glass rounded-xl shadow-xl border border-border z-50">
                     <div className="p-3 border-b border-border flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-text-primary">
-                            {t('panel.orders.recentOrders') || 'Recent Orders'}
+                            {t('panel.orders.recentOrders')}
                         </h3>
                         {notifications.length > 0 && (
                             <button
                                 onClick={() => setNotifications([])}
                                 className="text-xs text-text-muted hover:text-text-secondary"
                             >
-                                {t('common.clearAll') || 'Clear all'}
+                                {t('common.clearAll')}
                             </button>
                         )}
                     </div>
@@ -125,7 +125,7 @@ export default function OrderNotifications() {
                         <div className="p-6 text-center">
                             <Package className="w-8 h-8 text-text-muted mx-auto mb-2" />
                             <p className="text-sm text-text-muted">
-                                {t('panel.orders.noNew') || 'No new orders'}
+                                {t('panel.orders.noNew')}
                             </p>
                         </div>
                     ) : (

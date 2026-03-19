@@ -46,3 +46,9 @@ export { getRequiredTenantId, isBuildPhase } from './tenant'
 
 // Degraded mode reporting
 export { reportDegradedMode } from './report'
+
+// Feature gate types (module↔flag mapping)
+export type { ModuleKey, FeatureGateEntry } from './feature-gates'
+
+// Limitable resource types (plan limit keys)
+export type { LimitableResource, LimitCheckResult } from './limitable-resources'

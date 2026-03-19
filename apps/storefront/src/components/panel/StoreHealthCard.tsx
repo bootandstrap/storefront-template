@@ -1,0 +1,200 @@
+'use client'
+
+/**
+ * StoreHealthCard — Animated circular progress ring showing store readiness score
+ *
+ * Displays: score (0-100), level badge, next action suggestion, checklist breakdown.
+ * Compact mode for dashboard, expanded mode for full view.
+ */
+
+import { useState, useEffect } from 'react'
+import { ChevronDown, ChevronUp, ArrowRight, Check } from 'lucide-react'
+import type { StoreReadinessResult, ReadinessCheck, StoreLevel } from '@/lib/store-readiness'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface StoreHealthCardProps {
+  readiness: StoreReadinessResult
+  t: (key: string) => string
+  compact?: boolean
+  lang: string
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const LEVEL_CONFIG: Record<StoreLevel, { emoji: string; labelKey: string; cssClass: string }> = {
+  setup:    { emoji: '🔧', labelKey: 'storeHealth.level.setup',    cssClass: 'level-badge-setup' },
+  growing:  { emoji: '🌱', labelKey: 'storeHealth.level.growing',  cssClass: 'level-badge-growing' },
+  thriving: { emoji: '🌟', labelKey: 'storeHealth.level.thriving', cssClass: 'level-badge-thriving' },
+}
+
+const RING_RADIUS = 40
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function StoreHealthCard({
+  readiness,
+  t,
+  compact = false,
+  lang,
+}: StoreHealthCardProps) {
+  const [animatedScore, setAnimatedScore] = useState(0)
+  const [expanded, setExpanded] = useState(false)
+
+  // Animate score on mount
+  useEffect(() => {
+    const target = readiness.score
+    const duration = 1000
+    const start = performance.now()
+
+    function animate(now: number) {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setAnimatedScore(Math.round(eased * target))
+      if (progress < 1) requestAnimationFrame(animate)
+    }
+
+    requestAnimationFrame(animate)
+  }, [readiness.score])
+
+  const levelConf = LEVEL_CONFIG[readiness.level]
+  const strokeDasharray = `${(animatedScore / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`
+
+  // Score color gradient
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return '#10b981' // green
+    if (score >= 40) return '#3b82f6' // blue
+    return '#f59e0b' // amber
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        background: 'var(--color-surface-0)',
+        border: '1px solid var(--color-surface-2)',
+      }}
+    >
+      <div className="flex items-center gap-5">
+        {/* Animated Ring */}
+        <div className="relative flex-shrink-0">
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            {/* Background ring */}
+            <circle
+              cx="48" cy="48" r={RING_RADIUS}
+              fill="none"
+              stroke="var(--color-surface-2)"
+              strokeWidth="6"
+            />
+            {/* Progress ring */}
+            <circle
+              cx="48" cy="48" r={RING_RADIUS}
+              fill="none"
+              stroke={getScoreColor(readiness.score)}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset="0"
+              className="health-ring"
+              style={{
+                transform: 'rotate(-90deg)',
+                transformOrigin: '48px 48px',
+                filter: `drop-shadow(0 0 6px ${getScoreColor(readiness.score)}40)`,
+              }}
+            />
+          </svg>
+          {/* Score number */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span
+              className="text-2xl font-bold animate-score-count"
+              style={{ color: getScoreColor(readiness.score) }}
+            >
+              {animatedScore}
+            </span>
+            <span className="text-[10px] text-text-muted font-medium">/ 100</span>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <h3 className="text-sm font-bold text-text-primary">
+              {t('storeHealth.title')}
+            </h3>
+            <span className={`level-badge ${levelConf.cssClass}`}>
+              {levelConf.emoji} {t(levelConf.labelKey)}
+            </span>
+          </div>
+
+          <p className="text-xs text-text-muted mb-2">
+            {readiness.completedCount}/{readiness.totalCount} {t('storeHealth.completed')}
+          </p>
+
+          {/* Next action suggestion */}
+          {readiness.nextAction && (
+            <a
+              href={readiness.nextAction.actionHref}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-light transition-colors"
+            >
+              {readiness.nextAction.emoji} {t(readiness.nextAction.descKey)}
+              <ArrowRight className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Expand/collapse for checklist */}
+      {!compact && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-center gap-1 mt-3 pt-3 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            style={{ borderTop: '1px solid var(--color-surface-2)' }}
+          >
+            {expanded ? t('storeHealth.collapse') : t('storeHealth.expand')}
+            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {expanded && (
+            <div className="mt-3 space-y-2 animate-fade-in">
+              {readiness.checks.map((check: ReadinessCheck) => (
+                <a
+                  key={check.id}
+                  href={check.actionHref}
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-1 transition-colors group"
+                >
+                  {check.done ? (
+                    <div className="w-5 h-5 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3 text-green-500" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 flex-shrink-0"
+                      style={{ borderColor: 'var(--color-surface-3)' }}
+                    />
+                  )}
+                  <span className="text-lg flex-shrink-0">{check.emoji}</span>
+                  <span className={`text-xs flex-1 ${check.done ? 'text-text-muted line-through' : 'text-text-primary font-medium'}`}>
+                    {t(check.labelKey)}
+                  </span>
+                  {!check.done && (
+                    <ArrowRight className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}

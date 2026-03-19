@@ -160,7 +160,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                             <input className={inputClass} value={formData.facebook_pixel_id ?? ''} onChange={(e) => update('facebook_pixel_id', e.target.value)} />
                         </div>
                         <div>
-                            <label className={labelClass}>Sentry DSN</label>
+                            <label className={labelClass}>{t('panel.config.sentryDsn')}</label>
                             <input className={inputClass} value={formData.sentry_dsn ?? ''} onChange={(e) => update('sentry_dsn', e.target.value)} placeholder="https://xxx@xxx.ingest.sentry.io/xxx" />
                         </div>
                     </>
@@ -195,7 +195,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                         </div>
                         <div>
                             <label className={labelClass}>{t('panel.config.bankAccountType')}</label>
-                            <input className={inputClass} value={formData.bank_account_type ?? ''} onChange={(e) => update('bank_account_type', e.target.value)} placeholder="Ahorros / Corriente" />
+                            <input className={inputClass} value={formData.bank_account_type ?? ''} onChange={(e) => update('bank_account_type', e.target.value)} placeholder={t('panel.config.accountTypePlaceholder')} />
                         </div>
                         <div>
                             <label className={labelClass}>{t('panel.config.bankAccountNumber')}</label>

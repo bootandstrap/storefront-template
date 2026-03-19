@@ -225,4 +225,41 @@ echo ""
 echo -e "   Press ${YELLOW}Ctrl+C${NC} to stop all services"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# ── Health Check Loop ─────────────────────
+echo -e "\n${BLUE}[health]${NC} Waiting for services to become ready..."
+MEDUSA_HEALTHY=0
+STOREFRONT_HEALTHY=0
+
+for i in {1..30}; do
+    if [[ "$MEDUSA_HEALTHY" -eq 0 ]]; then
+        medusa_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/health 2>/dev/null || echo "000")
+        if [[ "$medusa_code" == "200" ]]; then
+            echo -e "  ${GREEN}✓${NC} Medusa API healthy (${i}s)"
+            MEDUSA_HEALTHY=1
+        fi
+    fi
+
+    if [[ "$STOREFRONT_HEALTHY" -eq 0 ]]; then
+        store_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${STOREFRONT_PORT}/api/health/live" 2>/dev/null || echo "000")
+        if [[ "$store_code" == "200" ]]; then
+            echo -e "  ${GREEN}✓${NC} Storefront healthy (${i}s)"
+            STOREFRONT_HEALTHY=1
+        fi
+    fi
+
+    if [[ "$MEDUSA_HEALTHY" -eq 1 ]] && [[ "$STOREFRONT_HEALTHY" -eq 1 ]]; then
+        echo -e "\n${GREEN}✅ All services ready!${NC}\n"
+        break
+    fi
+
+    sleep 2
+done
+
+if [[ "$MEDUSA_HEALTHY" -eq 0 ]] || [[ "$STOREFRONT_HEALTHY" -eq 0 ]]; then
+    echo -e "\n${YELLOW}⚠ Some services may still be starting. Check the logs above.${NC}"
+    [[ "$MEDUSA_HEALTHY" -eq 0 ]] && echo -e "  ${YELLOW}→ Medusa not yet responding on :9000${NC}"
+    [[ "$STOREFRONT_HEALTHY" -eq 0 ]] && echo -e "  ${YELLOW}→ Storefront not yet responding on :${STOREFRONT_PORT}${NC}"
+    echo ""
+fi
+
 wait "${PIDS[@]}"

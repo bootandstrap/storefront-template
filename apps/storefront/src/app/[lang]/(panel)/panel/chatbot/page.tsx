@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     const { lang } = await params
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-    return { title: t('panel.chatbot.title') || 'Chatbot IA' }
+    return { title: t('panel.chatbot.title') }
 }
 
 export default async function ChatbotPage({
@@ -38,10 +38,10 @@ export default async function ChatbotPage({
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {t('panel.chatbot.title') || 'Chatbot IA'}
+                    {t('panel.chatbot.title')}
                 </h1>
                 <p className="text-text-muted mt-1">
-                    {t('panel.chatbot.subtitle') || 'Configuración y métricas de uso del asistente virtual'}
+                    {t('panel.chatbot.subtitle')}
                 </p>
             </div>
             <ChatbotPanelClient

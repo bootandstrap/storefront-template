@@ -69,6 +69,13 @@ export const FALLBACK_CONFIG: AppConfig = {
         free_shipping_threshold: 0,
         tax_display_mode: 'tax_included',
         onboarding_completed: false,
+        // Gamification defaults
+        achievements_unlocked: [],
+        dismissed_tips: [],
+        checklist_skipped: false,
+        tour_completed: false,
+        panel_language: null,
+        storefront_language: null,
     },
     featureFlags: {
         // RESTRICTIVE DEFAULTS — all optional features OFF during degradation

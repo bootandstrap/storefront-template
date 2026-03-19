@@ -1,38 +1,8 @@
 import type { PlanLimits } from '@/lib/config'
 
-export type LimitableResource =
-    | 'max_products'
-    | 'max_customers'
-    | 'max_orders_month'
-    | 'max_categories'
-    | 'max_images_per_product'
-    | 'max_cms_pages'
-    | 'max_carousel_slides'
-    | 'max_admin_users'
-    | 'storage_limit_mb'
-    | 'max_languages'
-    | 'max_currencies'
-    | 'max_whatsapp_templates'
-    | 'max_file_upload_mb'
-    | 'max_email_sends_month'
-    | 'max_custom_domains'
-    | 'max_chatbot_messages_month'
-    | 'max_badges'
-    | 'max_newsletter_subscribers'
-    | 'max_requests_day'
-    | 'max_reviews_per_product'
-    | 'max_wishlist_items'
-    | 'max_promotions_active'
-    | 'max_payment_methods'
-    | 'max_crm_contacts'
-
-export interface LimitCheckResult {
-    allowed: boolean
-    remaining: number
-    limit: number
-    current: number
-    percentage: number
-}
+// Re-export from shared package — canonical source of truth
+export type { LimitableResource, LimitCheckResult } from '@bootandstrap/shared'
+import type { LimitableResource, LimitCheckResult } from '@bootandstrap/shared'
 
 /**
  * Check if a resource is within plan limits.

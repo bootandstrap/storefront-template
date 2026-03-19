@@ -54,13 +54,13 @@ export default async function PanelReturnsPage({
     }
 
     const actionLabels = {
-        approve: t('returns.action.approve') || 'Approve',
-        reject: t('returns.action.reject') || 'Reject',
-        approving: t('returns.action.approving') || 'Approving…',
-        rejecting: t('returns.action.rejecting') || 'Rejecting…',
-        approved: t('returns.action.approved') || 'Approved',
-        rejected: t('returns.action.rejected') || 'Rejected',
-        error: t('returns.action.error') || 'Action failed',
+        approve: t('returns.action.approve'),
+        reject: t('returns.action.reject'),
+        approving: t('returns.action.approving'),
+        rejecting: t('returns.action.rejecting'),
+        approved: t('returns.action.approved'),
+        rejected: t('returns.action.rejected'),
+        error: t('returns.action.error'),
     }
 
     const intlLocale = toIntlLocale(lang)
@@ -99,7 +99,7 @@ export default async function PanelReturnsPage({
                                         {t('panel.returns.status')}
                                     </th>
                                     <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.actions') || 'Actions'}
+                                        {t('panel.returns.actions')}
                                     </th>
                                 </tr>
                             </thead>

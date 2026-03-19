@@ -11,9 +11,11 @@ import type { MedusaLineItem } from '@/lib/medusa/client'
 
 interface CartItemProps {
     item: MedusaLineItem
+    /** Currency code from parent (tenant config) — variant.prices is often empty in Medusa v2 cart */
+    currencyCode?: string
 }
 
-export default function CartItem({ item }: CartItemProps) {
+export default function CartItem({ item, currencyCode }: CartItemProps) {
     const { cartId, setCart } = useCart()
     const { error: showError } = useToast()
     const { t, locale } = useI18n()
@@ -22,7 +24,8 @@ export default function CartItem({ item }: CartItemProps) {
 
     const unitPrice = item.unit_price / 100
     const total = (item.unit_price * item.quantity) / 100
-    const currency = item.variant?.prices?.[0]?.currency_code || 'usd'
+    // Use parent-provided currency first, then try variant prices, final fallback 'eur'
+    const currency = currencyCode || item.variant?.prices?.[0]?.currency_code || 'eur'
 
     function formatPrice(amount: number) {
         return new Intl.NumberFormat(locale, {

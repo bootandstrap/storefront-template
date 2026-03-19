@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
     const { lang } = await params
     const dictionary = await getDictionary(lang as Locale)
-    return { title: dictionary['panel.inventory.title'] || 'Inventory' }
+    return { title: dictionary['panel.inventory.title'] }
 }
 
 export default async function InventoryPage({
@@ -39,25 +39,25 @@ export default async function InventoryPage({
     const dict = await getDictionary(lang as Locale)
 
     const labels = {
-        title: dict['panel.inventory.title'] || 'Inventory',
-        subtitle: dict['panel.inventory.subtitle'] || 'Manage stock levels across all products',
-        searchPlaceholder: dict['panel.inventory.searchPlaceholder'] || 'Search by SKU or name...',
-        sku: dict['panel.inventory.sku'] || 'SKU',
-        product: dict['panel.inventory.product'] || 'Product',
-        stocked: dict['panel.inventory.stocked'] || 'Stocked',
-        reserved: dict['panel.inventory.reserved'] || 'Reserved',
-        available: dict['panel.inventory.available'] || 'Available',
-        lowStock: dict['panel.inventory.lowStock'] || 'Low Stock',
-        outOfStock: dict['panel.inventory.outOfStock'] || 'Out of Stock',
-        updateStock: dict['panel.inventory.updateStock'] || 'Update Stock',
-        noItems: dict['panel.inventory.noItems'] || 'No inventory items found',
-        save: dict['common.save'] || 'Save',
-        cancel: dict['common.cancel'] || 'Cancel',
-        alerts: dict['panel.inventory.alerts'] || 'Stock Alerts',
-        noAlerts: dict['panel.inventory.noAlerts'] || 'All products are well-stocked',
-        hide: dict['panel.inventory.hide'] || 'Hide',
-        itemsLeft: dict['panel.inventory.itemsLeft'] || 'left',
-        untitled: dict['panel.inventory.untitled'] || 'Untitled',
+        title: dict['panel.inventory.title'],
+        subtitle: dict['panel.inventory.subtitle'],
+        searchPlaceholder: dict['panel.inventory.searchPlaceholder'],
+        sku: dict['panel.inventory.sku'],
+        product: dict['panel.inventory.product'],
+        stocked: dict['panel.inventory.stocked'],
+        reserved: dict['panel.inventory.reserved'],
+        available: dict['panel.inventory.available'],
+        lowStock: dict['panel.inventory.lowStock'],
+        outOfStock: dict['panel.inventory.outOfStock'],
+        updateStock: dict['panel.inventory.updateStock'],
+        noItems: dict['panel.inventory.noItems'],
+        save: dict['common.save'],
+        cancel: dict['common.cancel'],
+        alerts: dict['panel.inventory.alerts'],
+        noAlerts: dict['panel.inventory.noAlerts'],
+        hide: dict['panel.inventory.hide'],
+        itemsLeft: dict['panel.inventory.itemsLeft'],
+        untitled: dict['panel.inventory.untitled'],
     }
 
     return (

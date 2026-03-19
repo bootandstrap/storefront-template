@@ -29,16 +29,19 @@ interface PanelTourProps {
     steps: TourStep[]
     onComplete: () => void
     t: (key: string) => string
+    /** When true, skips localStorage guard and shows celebratory ending */
+    isReplay?: boolean
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function PanelTour({ steps, onComplete, t }: PanelTourProps) {
+export default function PanelTour({ steps, onComplete, t, isReplay = false }: PanelTourProps) {
     const [currentStep, setCurrentStep] = useState(0)
     const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null)
     const [visible, setVisible] = useState(false)
+    const [showConfetti, setShowConfetti] = useState(false)
     const tooltipRef = useRef<HTMLDivElement>(null)
 
     const step = steps[currentStep]
@@ -90,7 +93,12 @@ export default function PanelTour({ steps, onComplete, t }: PanelTourProps) {
 
     const goNext = useCallback(() => {
         if (isLast) {
-            onComplete()
+            // Show confetti burst before completing
+            setShowConfetti(true)
+            document.querySelectorAll('.tour-highlight').forEach(el =>
+                el.classList.remove('tour-highlight')
+            )
+            setTimeout(() => onComplete(), 1800)
         } else {
             setVisible(false)
             setTimeout(() => setCurrentStep(s => s + 1), 200)
@@ -216,6 +224,32 @@ export default function PanelTour({ steps, onComplete, t }: PanelTourProps) {
                     transition: box-shadow 0.3s ease;
                 }
             `}</style>
+
+            {/* Confetti burst on completion */}
+            {showConfetti && (
+                <div className="fixed inset-0 z-[70] pointer-events-none flex items-center justify-center">
+                    <div className="text-center animate-fade-in">
+                        <p className="text-4xl mb-2">🎉</p>
+                        <p className="text-lg font-bold text-text-primary">
+                            {isReplay
+                                ? (t('tour.replayDone') || 'Tour revisited!')
+                                : (t('tour.congrats') || 'Tour complete!')}
+                        </p>
+                    </div>
+                    {/* 24 confetti particles */}
+                    {Array.from({ length: 24 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute w-2 h-2 rounded-full animate-confetti"
+                            style={{
+                                backgroundColor: ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 6],
+                                left: `${(i * 17 + 5) % 100}%`,
+                                animationDelay: `${i * 80}ms`,
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
         </>
     )
 }

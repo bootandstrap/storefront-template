@@ -3,19 +3,20 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import PanelTopbar from '../PanelTopbar'
 
 describe('panel-shell-responsive', () => {
-    it('renders a mobile-only topbar with menu button', () => {
+    it('renders a sticky topbar with greeting and breadcrumbs', () => {
         const html = renderToStaticMarkup(
             <PanelTopbar
+                ownerName="Juan"
                 businessName="Mi Negocio"
-                ownerPanelLabel="Panel Owner"
+                lang="es"
+                breadcrumbMap={{ catalogo: 'Catálogo', pedidos: 'Pedidos' }}
+                greetings={{ morning: 'Buenos días', afternoon: 'Buenas tardes', evening: 'Buenas noches' }}
+                labels={{ ownerPanel: 'Panel Owner', backToStore: 'Volver', logout: 'Cerrar sesión' }}
                 onMenuClick={() => {}}
             />
         )
 
-        expect(html).toContain('md:hidden')
-        expect(html).toContain('Open panel menu')
         expect(html).toContain('Mi Negocio')
-        expect(html).toContain('Panel Owner')
+        expect(html).toContain('Juan')
     })
 })
-

@@ -9,10 +9,16 @@ import {
     getOrdersThisMonth,
     getRecentOrders,
 } from '@/lib/medusa/admin'
+import { calculateStoreReadiness } from '@/lib/store-readiness'
+import { evaluateAchievements, ACHIEVEMENT_DEFS, getAchievementsGrouped, type AchievementContext } from '@/lib/achievements'
+import { evaluateSmartTips, type SmartTipContext } from '@/lib/smart-tips'
 import StatCard from '@/components/panel/StatCard'
 import UsageMeter from '@/components/panel/UsageMeter'
 import EmptyState from '@/components/panel/EmptyState'
 import PanelChecklist from '@/components/panel/PanelChecklist'
+import StoreHealthCard from '@/components/panel/StoreHealthCard'
+import SmartTip from '@/components/panel/SmartTip'
+import ActivityFeed, { type ActivityEvent } from '@/components/panel/ActivityFeed'
 import {
     Package,
     ShoppingCart,
@@ -164,36 +170,94 @@ export default async function PanelDashboard({
         { label: `${t('panel.usage.storage')} (est.)`, result: checkLimit(planLimits, 'storage_limit_mb', estimatedStorageMb) },
     ]
 
-    // Quick actions for the grid
-    const quickActions = [
+    // ── Gamification data ──────────────────────────────────────────────
+    const readiness = await calculateStoreReadiness(tenantId, lang)
+
+    const hasPaymentMethod = featureFlags.enable_whatsapp_checkout ||
+        featureFlags.enable_online_payments ||
+        featureFlags.enable_cash_on_delivery ||
+        featureFlags.enable_bank_transfer
+
+    const activeModuleCount = [
+        featureFlags.enable_carousel,
+        featureFlags.enable_analytics,
+        featureFlags.enable_chatbot,
+        featureFlags.enable_crm,
+        featureFlags.enable_reviews,
+        featureFlags.enable_whatsapp_checkout,
+        featureFlags.enable_multi_language,
+        featureFlags.enable_email_templates,
+    ].filter(Boolean).length
+
+    const achievementCtx: AchievementContext = {
+        productCount,
+        categoryCount,
+        ordersThisMonth,
+        hasLogo: !!storeConfig.logo_url,
+        hasContact: !!storeConfig.whatsapp_number || !!storeConfig.store_email,
+        hasPaymentMethod,
+        maintenanceOff: !featureFlags.enable_maintenance_mode,
+        activeModuleCount,
+        tourCompleted: !!storeConfig.onboarding_completed,
+        readinessScore: readiness.score,
+        revenueThisMonth,
+    }
+
+    const unlockedIds = evaluateAchievements(achievementCtx)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storedAchievements: string[] = (storeConfig as any).achievements_unlocked || []
+    const achievementsGrouped = getAchievementsGrouped(unlockedIds)
+
+    const tipCtx: SmartTipContext = {
+        productCount,
+        categoryCount,
+        ordersThisMonth,
+        hasLogo: !!storeConfig.logo_url,
+        hasContact: !!storeConfig.whatsapp_number || !!storeConfig.store_email,
+        hasPaymentMethod,
+        maintenanceOff: !featureFlags.enable_maintenance_mode,
+        activeModuleCount,
+        readinessScore: readiness.score,
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dismissedTips: string[] = (storeConfig as any).dismissed_tips || []
+    const smartTips = evaluateSmartTips(tipCtx, 'panel', dismissedTips)
+
+    // Quick actions — smart-sorted by store state priority
+    const allActions = [
         {
             icon: <Plus className="w-5 h-5" />,
             label: t('panel.quickActions.addProduct') || 'Add Product',
             href: `/${lang}/panel/catalogo`,
+            priority: productCount === 0 ? 100 : 1,
         },
         {
             icon: <Inbox className="w-5 h-5" />,
             label: t('panel.quickActions.processOrders') || 'Orders',
             href: `/${lang}/panel/pedidos`,
+            priority: ordersThisMonth > 0 ? 80 : 10,
         },
         {
             icon: <Tag className="w-5 h-5" />,
             label: t('panel.quickActions.categories') || 'Categories',
             href: `/${lang}/panel/categorias`,
+            priority: categoryCount === 0 && productCount > 0 ? 70 : 5,
         },
         {
             icon: <Settings className="w-5 h-5" />,
             label: t('panel.quickActions.settings') || 'Settings',
             href: `/${lang}/panel/tienda`,
+            priority: !storeConfig.logo_url ? 60 : 3,
         },
         ...(featureFlags.enable_analytics ? [{
             icon: <BarChart3 className="w-5 h-5" />,
             label: t('panel.quickActions.analytics') || 'Analytics',
             href: `/${lang}/panel/analiticas`,
+            priority: ordersThisMonth >= 5 ? 50 : 2,
         }] : []),
     ]
+    const quickActions = allActions.sort((a, b) => b.priority - a.priority).slice(0, 5)
 
-    // Relative time helper
     const relativeTime = (dateStr: string) => {
         const now = Date.now()
         const then = new Date(dateStr).getTime()
@@ -204,6 +268,41 @@ export default async function PanelDashboard({
         if (hours < 24) return `${hours}h`
         const days = Math.floor(hours / 24)
         return `${days}d`
+    }
+
+    // Activity feed — try audit_log, fall back to recent orders
+    let activityEvents: ActivityEvent[] = []
+    try {
+        const admin = createAdminClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: auditRows } = await (admin as any)
+            .from('audit_log')
+            .select('id, action, entity_type, entity_id, metadata, created_at')
+            .eq('tenant_id', tenantId)
+            .order('created_at', { ascending: false })
+            .limit(5)
+
+        if (auditRows && auditRows.length > 0) {
+            activityEvents = auditRows.map((row: { id: string; action: string; entity_type: string; entity_id: string; metadata?: Record<string, unknown>; created_at: string }) => ({
+                id: row.id,
+                type: `${row.entity_type}_${row.action}`,
+                description: `${row.entity_type} #${row.entity_id?.slice(0, 8) ?? '—'} — ${row.action}`,
+                timestamp: row.created_at,
+                meta: row.metadata ?? undefined,
+            }))
+        }
+    } catch {
+        // audit_log might not exist yet — graceful fallback
+    }
+
+    // Fallback: synthesize feed from recent orders if no audit data
+    if (activityEvents.length === 0 && recentOrders.length > 0) {
+        activityEvents = recentOrders.slice(0, 5).map(order => ({
+            id: order.id,
+            type: order.status === 'completed' ? 'order_completed' : 'order_created',
+            description: `${t('panel.dashboard.orderId')} #${order.display_id} — ${t(`order.${order.status}`) || order.status}`,
+            timestamp: order.created_at,
+        }))
     }
 
     return (
@@ -225,49 +324,59 @@ export default async function PanelDashboard({
                 </p>
             </div>
 
-            {/* Store Readiness Checklist — shows after onboarding when store is new */}
-            {storeConfig.onboarding_completed && (() => {
-                const checklistItems = [
-                    {
-                        id: 'product',
-                        label: t('panel.checklist.addProduct') || 'Add your first product',
-                        done: productCount > 0,
-                        href: `/${lang}/panel/catalogo`,
-                    },
-                    {
-                        id: 'logo',
-                        label: t('panel.checklist.setLogo') || 'Set up your store appearance',
-                        done: !!storeConfig.logo_url,
-                        href: `/${lang}/panel/tienda`,
-                    },
-                    {
-                        id: 'payments',
-                        label: t('panel.checklist.configPayments') || 'Review payment methods',
-                        done: featureFlags.enable_whatsapp_checkout || featureFlags.enable_online_payments || featureFlags.enable_cash_on_delivery || featureFlags.enable_bank_transfer,
-                        href: `/${lang}/panel/tienda`,
-                    },
-                    {
-                        id: 'contact',
-                        label: t('panel.checklist.setContact') || 'Add contact information',
-                        done: !!storeConfig.whatsapp_number || !!storeConfig.store_email,
-                        href: `/${lang}/panel/tienda`,
-                    },
-                    {
-                        id: 'publish',
-                        label: t('panel.checklist.publish') || 'Publish your store',
-                        done: !featureFlags.enable_maintenance_mode,
-                        href: `/${lang}/panel/tienda`,
-                    },
-                ]
-                const allDone = checklistItems.every(item => item.done)
-                if (allDone) return null
+            {/* Smart Tips — contextual suggestions */}
+            {smartTips.length > 0 && (
+                <div className="space-y-2">
+                    {smartTips.map(tip => (
+                        <SmartTip key={tip.id} tip={tip} t={t} lang={lang} />
+                    ))}
+                </div>
+            )}
 
+            {/* Store Health + Achievements row */}
+            {storeConfig.onboarding_completed && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    {/* Health Card — takes 1 column */}
+                    <StoreHealthCard readiness={readiness} t={t} lang={lang} />
+
+                    {/* Achievements — takes 2 columns */}
+                    <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: 'var(--color-surface-0)', border: '1px solid var(--color-surface-2)' }}>
+                        <h3 className="text-sm font-bold text-text-primary mb-3">
+                            🏆 {t('achievement.title')}
+                        </h3>
+                        <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
+                            {[...achievementsGrouped.setup, ...achievementsGrouped.sales, ...achievementsGrouped.growth].map(ach => (
+                                <div
+                                    key={ach.id}
+                                    title={t(ach.titleKey)}
+                                    className={`achievement-badge ${ach.unlocked ? 'unlocked' : 'locked'}`}
+                                >
+                                    <span className="text-xl">{ach.emoji}</span>
+                                    <span className="text-[9px] text-text-muted leading-tight line-clamp-1">
+                                        {t(ach.titleKey)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-xs text-text-muted mt-3">
+                            {unlockedIds.length}/{ACHIEVEMENT_DEFS.length} {t('achievement.unlocked')}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Legacy checklist fallback for pre-onboarding */}
+            {storeConfig.onboarding_completed && readiness.score < 40 && (() => {
+                const pendingChecks = readiness.checks.filter(c => !c.done).slice(0, 5)
+                if (pendingChecks.length === 0) return null
                 return (
                     <PanelChecklist
-                        items={checklistItems}
+                        checks={pendingChecks}
+                        dbSkipped={!!(storeConfig as Record<string, unknown>).checklist_skipped}
                         title={t('panel.checklist.title') || '🚀 Getting Started'}
                         subtitle={t('panel.checklist.subtitle') || 'Complete these steps to launch your store'}
                         skipLabel={t('panel.checklist.skip') || 'Skip'}
+                        allDoneLabel={t('checklist.allDone')}
                     />
                 )
             })()}
@@ -328,6 +437,22 @@ export default async function PanelDashboard({
                         </Link>
                     ))}
                 </div>
+            </div>
+
+            {/* Activity Feed */}
+            <div>
+                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
+                    {t('panel.activity.title')}
+                </h2>
+                <ActivityFeed
+                    events={activityEvents}
+                    labels={{
+                        title: t('panel.activity.title'),
+                        noActivity: t('panel.activity.noActivity'),
+                        noActivityDesc: t('panel.activity.noActivityDesc'),
+                    }}
+                    lang={lang}
+                />
             </div>
 
             {/* Usage meters */}

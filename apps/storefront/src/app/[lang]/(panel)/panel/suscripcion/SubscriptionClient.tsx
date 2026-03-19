@@ -102,10 +102,12 @@ export default function SubscriptionClient({
         startTransition(async () => {
             setError(null)
             try {
-                const res = await fetch('/api/billing/portal', {
+                const res = await fetch('/api/billing-portal', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ returnUrl: window.location.href }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-locale': lang,
+                    },
                 })
                 const data = await res.json()
                 if (data.url) {

@@ -710,6 +710,34 @@ body {
   animation: fade-in-up 0.6s var(--ease-smooth) 0.2s both;
 }
 
+/* Gamification animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer-slide 3s ease-in-out infinite;
+}
+
 .bg-gradient-radial {
   background: radial-gradient(circle at center, var(--tw-gradient-from, transparent), var(--tw-gradient-via, transparent), var(--tw-gradient-to, transparent));
 }
@@ -1529,4 +1557,186 @@ body.drawer-open .whatsapp-float {
 [dir="rtl"] .mr-auto {
   margin-right: 0;
   margin-left: auto;
+}
+
+/* ========================================================================
+   Gamification — Achievements, Health Ring, Celebrations
+   ======================================================================== */
+
+/* Achievement badge card */
+.achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0.75rem;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-surface-3);
+  transition: all 0.3s var(--ease-smooth);
+  text-align: center;
+}
+
+.achievement-badge.unlocked {
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-1)), var(--color-surface-1));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.achievement-badge.locked {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.achievement-badge.locked:hover {
+  opacity: 0.7;
+  filter: grayscale(0.4);
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+}
+
+.achievement-badge.newly-unlocked {
+  animation: glow-pulse 2s ease-in-out 3;
+}
+
+/* Health ring */
+@keyframes progress-fill {
+  from {
+    stroke-dasharray: 0 251.33;
+  }
+}
+
+.health-ring {
+  transition: stroke-dasharray 1s var(--ease-spring);
+}
+
+@keyframes score-count {
+  from { opacity: 0; transform: scale(0.5); }
+  50% { transform: scale(1.15); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-score-count {
+  animation: score-count 0.6s var(--ease-spring) 0.3s both;
+}
+
+/* Celebration toast */
+@keyframes celebrate-in {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+  60% {
+    transform: translateX(-8px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes celebrate-shake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(8deg); }
+  45% { transform: rotate(-5deg); }
+  60% { transform: rotate(5deg); }
+  75% { transform: rotate(-2deg); }
+}
+
+.celebrate-toast-enter {
+  animation: celebrate-in 0.5s var(--ease-spring);
+}
+
+.celebrate-emoji {
+  animation: celebrate-shake 0.6s var(--ease-spring) 0.3s both;
+}
+
+/* Confetti burst (for celebrations) */
+@keyframes confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--confetti-x, 40px), var(--confetti-y, -80px)) rotate(var(--confetti-r, 360deg)) scale(0.3);
+  }
+}
+
+.confetti-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  animation: confetti-burst 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Smart tip */
+.smart-tip {
+  position: relative;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-1)), var(--color-surface-1));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-surface-3));
+  animation: slide-up 0.3s var(--ease-smooth) both;
+}
+
+.smart-tip-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  padding: 0;
+}
+
+.smart-tip-dismiss:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+/* Level badges */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.level-badge-setup {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.level-badge-growing {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.level-badge-thriving {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
 }

@@ -69,6 +69,13 @@ export const StoreConfigSchema = z.object({
     tax_display_mode: z.enum(['tax_included', 'tax_excluded']),
     // Onboarding
     onboarding_completed: z.boolean(),
+    // Gamification (Phase 5 — migration: 20260319_gamification_fields.sql)
+    achievements_unlocked: z.array(z.string()).default([]),
+    dismissed_tips: z.array(z.string()).default([]),
+    checklist_skipped: z.boolean().default(false),
+    tour_completed: z.boolean().default(false),
+    panel_language: z.string().nullable().default(null),
+    storefront_language: z.string().nullable().default(null),
 })
 
 export type StoreConfig = z.infer<typeof StoreConfigSchema>

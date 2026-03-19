@@ -1,0 +1,73 @@
+# -------------------------------------------------------------------
+# Schema Drift Check — CI Guard
+# -------------------------------------------------------------------
+# Phase 4 of MEGA PLAN v4
+#
+# Runs schema drift + governance contract alignment tests on every PR
+# to prevent flag/limit type drift from reaching production.
+# -------------------------------------------------------------------
+
+name: Schema Drift Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/storefront/src/lib/governance/**'
+      - 'apps/storefront/src/lib/features.ts'
+      - 'apps/storefront/src/lib/limits.ts'
+      - 'apps/storefront/src/lib/feature-gate-config.ts'
+      - 'apps/storefront/src/lib/config.ts'
+      - 'packages/shared/src/governance/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/storefront/src/lib/governance/**'
+      - 'packages/shared/src/governance/**'
+
+jobs:
+  schema-check:
+    name: Schema Drift Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Schema Drift Tests
+        run: |
+          cd apps/storefront
+          npx vitest run src/lib/__tests__/schema-drift-flags.test.ts \
+                         src/lib/__tests__/schema-drift-limits.test.ts \
+                         src/lib/__tests__/governance-contract-alignment.test.ts \
+                         --reporter=verbose
+        env:
+          # Tests don't need runtime env vars — they validate static types/shapes
+          NODE_ENV: test
+
+      - name: Report
+        if: failure()
+        run: |
+          echo "## ❌ Schema Drift Detected" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Flag or limit definitions have drifted between:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`FeatureFlagsSchema\` / \`PlanLimitsSchema\` (Zod shapes)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`FALLBACK_CONFIG\` (fail-closed defaults)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`LimitableResource\` / \`FEATURE_GATE_MAP\` (runtime checkers)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Fix: ensure all definitions are in sync. See test output above." >> $GITHUB_STEP_SUMMARY

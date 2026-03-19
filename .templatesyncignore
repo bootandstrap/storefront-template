@@ -1,0 +1,44 @@
+# Template Sync Ignore
+# =====================
+# Files and directories that should NOT be synced from the template repo
+# to tenant repos. These correspond to the 🟢 CUSTOMIZE zone from GEMINI.md.
+#
+# Tenants customize these files for their brand/content. Template sync
+# must never overwrite them.
+#
+# See: ecommerce-template/GEMINI.md § "🟢 CUSTOMIZE — Safe to modify freely"
+
+# ── 🟢 CUSTOMIZE zone ──────────────────────────────────────────────────
+
+# Design tokens, colors, typography — each tenant has unique branding
+apps/storefront/src/app/globals.css
+
+# Homepage sections — fully customized per tenant
+apps/storefront/src/components/home/
+
+# Header & Footer — tenant logo, navigation, links
+apps/storefront/src/components/layout/Header.tsx
+apps/storefront/src/components/layout/Footer.tsx
+
+# Translation dictionaries — tenant-specific text
+apps/storefront/src/lib/i18n/dictionaries/
+
+# Static assets — logos, favicons, OG images, fonts
+apps/storefront/public/
+
+# Homepage composition — which sections appear and in what order
+apps/storefront/src/app/[lang]/(shop)/page.tsx
+
+# ── Tenant-specific config ──────────────────────────────────────────────
+
+# Environment files — credentials, domains, tenant IDs
+.env
+.env.local
+.env.production
+
+# GitHub workflow secrets/vars are set per-repo by provisioning
+# (but the workflow files themselves SHOULD sync)
+
+# ── Sync metadata ───────────────────────────────────────────────────────
+# The sync action's own tracking files
+.templatesyncignore

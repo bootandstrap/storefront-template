@@ -1,40 +1,171 @@
 'use client'
 
-import { Menu } from 'lucide-react'
+/**
+ * PanelTopbar — SOTA Owner Panel Header (Phase 6)
+ *
+ * Always-visible sticky top bar with:
+ * - Time-of-day greeting + owner name
+ * - Breadcrumb (Panel / current section)
+ * - Notification bell (OrderNotifications)
+ * - User avatar dropdown (Back to Store + Logout)
+ * - Mobile hamburger toggle
+ */
+
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { Menu, ChevronRight, LogOut, Store, User } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import OrderNotifications from '@/components/panel/OrderNotifications'
 
 interface PanelTopbarProps {
+    ownerName: string
     businessName: string
-    ownerPanelLabel: string
+    lang: string
+    breadcrumbMap: Record<string, string>
+    greetings: {
+        morning: string
+        afternoon: string
+        evening: string
+    }
+    labels: {
+        ownerPanel: string
+        backToStore: string
+        logout: string
+    }
     onMenuClick: () => void
 }
 
+function getGreeting(greetings: PanelTopbarProps['greetings']): string {
+    const hour = new Date().getHours()
+    if (hour < 12) return greetings.morning
+    if (hour < 18) return greetings.afternoon
+    return greetings.evening
+}
+
 export default function PanelTopbar({
+    ownerName,
     businessName,
-    ownerPanelLabel,
+    lang,
+    breadcrumbMap,
+    greetings,
+    labels,
     onMenuClick,
 }: PanelTopbarProps) {
+    const pathname = usePathname()
+    const [avatarOpen, setAvatarOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Close avatar dropdown on outside click
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setAvatarOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [])
+
+    // Resolve current breadcrumb from pathname
+    const currentSection = useMemo(() => {
+        const segments = pathname.split('/').filter(Boolean)
+        const panelIdx = segments.indexOf('panel')
+        if (panelIdx === -1 || !segments[panelIdx + 1]) return null
+        const segment = segments[panelIdx + 1]
+        return breadcrumbMap[segment] || segment
+    }, [pathname, breadcrumbMap])
+
+    const greeting = getGreeting(greetings)
+    const initial = (ownerName || businessName || 'U')[0].toUpperCase()
+
     return (
-        <header className="md:hidden sticky top-0 z-40 glass-strong border-b border-surface-3">
-            <div className="h-14 px-4 flex items-center justify-between">
-                <div className="min-w-0">
-                    <div className="text-sm font-semibold text-text-primary truncate">
-                        {businessName}
-                    </div>
-                    <div className="text-[11px] text-text-muted truncate">
-                        {ownerPanelLabel}
+        <header className="sticky top-0 z-40 bg-surface-0/80 backdrop-blur-md border-b border-surface-2">
+            <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-4">
+                {/* Left: hamburger (mobile) + greeting + breadcrumb */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <button
+                        type="button"
+                        onClick={onMenuClick}
+                        aria-label="Open panel menu"
+                        className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1 shrink-0"
+                    >
+                        <Menu className="w-5 h-5" />
+                    </button>
+
+                    <div className="min-w-0">
+                        {/* Greeting (desktop) */}
+                        <div className="hidden md:block text-sm font-semibold text-text-primary truncate">
+                            {greeting}, <span className="text-primary">{ownerName || businessName}</span>
+                        </div>
+                        {/* Mobile: business name */}
+                        <div className="md:hidden text-sm font-semibold text-text-primary truncate">
+                            {businessName}
+                        </div>
+                        {/* Breadcrumb */}
+                        <div className="flex items-center gap-1 text-[11px] text-text-muted">
+                            <span>{labels.ownerPanel}</span>
+                            {currentSection && (
+                                <>
+                                    <ChevronRight className="w-3 h-3" />
+                                    <span className="font-medium text-text-secondary">{currentSection}</span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={onMenuClick}
-                    aria-label="Open panel menu"
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1"
-                >
-                    <Menu className="w-5 h-5" />
-                </button>
+                {/* Right: notifications + avatar */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <OrderNotifications />
+
+                    {/* Avatar */}
+                    <div className="relative" ref={dropdownRef}>
+                        <button
+                            type="button"
+                            onClick={() => setAvatarOpen(!avatarOpen)}
+                            className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center hover:bg-primary/25 transition-colors"
+                            aria-label="User menu"
+                        >
+                            {initial}
+                        </button>
+
+                        {avatarOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface-1 border border-surface-3 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                                {/* User info */}
+                                <div className="px-4 py-3 border-b border-surface-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center">
+                                            {initial}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-text-primary truncate">{ownerName || businessName}</p>
+                                            <p className="text-[11px] text-text-muted truncate">{businessName}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Menu items */}
+                                <div className="py-1">
+                                    <a
+                                        href={`/${lang}`}
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2/50 transition-colors"
+                                    >
+                                        <Store className="w-4 h-4" />
+                                        {labels.backToStore}
+                                    </a>
+                                    <form action="/api/auth/logout" method="POST">
+                                        <button
+                                            type="submit"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            {labels.logout}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </header>
     )
 }
-

@@ -84,6 +84,31 @@ export async function GET(request: NextRequest) {
                 error: err instanceof Error ? err.message : 'Unknown error',
             }
         }
+    } else if (supabaseUrl) {
+        // Fallback: try anon key if service key is missing (less reliable but better than "down")
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.GOVERNANCE_SUPABASE_ANON_KEY
+        if (anonKey) {
+            try {
+                const t0 = Date.now()
+                const res = await fetch(
+                    `${supabaseUrl}/rest/v1/config?select=id&limit=1`,
+                    { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } }
+                )
+                checks.supabase = {
+                    status: res.ok ? 'ok' : 'degraded',
+                    latency_ms: Date.now() - t0,
+                    error: 'Using anon key fallback (service key not configured)',
+                }
+            } catch (err) {
+                checks.supabase = {
+                    status: 'degraded',
+                    latency_ms: -1,
+                    error: `Anon key fallback failed: ${err instanceof Error ? err.message : err}`,
+                }
+            }
+        } else {
+            checks.supabase = { status: 'down', latency_ms: -1, error: 'No Supabase keys configured' }
+        }
     } else {
         checks.supabase = { status: 'down', latency_ms: -1, error: 'Not configured' }
     }

@@ -35,9 +35,9 @@ describe('Governance Contract Tests', () => {
         expect(Object.keys(shape)).toHaveLength(26)
     })
 
-    it('StoreConfig has exactly 52 fields', () => {
+    it('StoreConfig has exactly 58 fields', () => {
         const shape = StoreConfigSchema.shape
-        expect(Object.keys(shape)).toHaveLength(52)
+        expect(Object.keys(shape)).toHaveLength(58)
     })
 
     it('TenantStatus has exactly 4 values', () => {
@@ -127,5 +127,15 @@ describe('Governance Contract Tests', () => {
     it('StoreConfig includes onboarding_completed', () => {
         const shape = StoreConfigSchema.shape
         expect(shape).toHaveProperty('onboarding_completed')
+    })
+
+    it('StoreConfig includes gamification fields', () => {
+        const shape = StoreConfigSchema.shape
+        expect(shape).toHaveProperty('achievements_unlocked')
+        expect(shape).toHaveProperty('dismissed_tips')
+        expect(shape).toHaveProperty('checklist_skipped')
+        expect(shape).toHaveProperty('tour_completed')
+        expect(shape).toHaveProperty('panel_language')
+        expect(shape).toHaveProperty('storefront_language')
     })
 })

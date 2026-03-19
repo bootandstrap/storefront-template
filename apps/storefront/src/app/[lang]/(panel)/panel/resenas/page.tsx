@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     const { lang } = await params
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-    return { title: t('panel.nav.reviews') || 'Reseñas' }
+    return { title: t('panel.nav.reviews') }
 }
 
 // ─── Reviews content (Suspense-wrapped) ──────────────────────
@@ -85,7 +85,7 @@ export default async function ReviewsPage({
             <div className="glass rounded-xl p-8 text-center">
                 <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
                 <p className="text-text-muted text-sm">
-                    {t('common.featureDisabled') || 'This feature is not available on your current plan.'}
+                    {t('common.featureDisabled')}
                 </p>
             </div>
         )

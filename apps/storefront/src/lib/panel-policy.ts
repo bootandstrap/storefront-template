@@ -61,6 +61,7 @@ const ESSENTIAL_MODULES = [
     { key: 'storeConfig', segment: 'tienda' },
     { key: 'shipping', segment: 'envios' },
     { key: 'myProject', segment: 'mi-proyecto' },
+    { key: 'modules', segment: 'modulos' },
 ] as const
 
 const ADVANCED_MODULES: AdvancedModuleDef[] = [
@@ -161,6 +162,7 @@ const ESSENTIAL_ROUTES = new Set([
     'inventario',
     'email',
     'suscripcion',
+    'modulos',
 ])
 
 const ADVANCED_ROUTES = new Set([
@@ -188,6 +190,7 @@ export type PanelRouteKey =
     | 'inventario'
     | 'email'
     | 'suscripcion'
+    | 'modulos'
     | 'carrusel'
     | 'mensajes'
     | 'paginas'
