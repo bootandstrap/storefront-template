@@ -42,9 +42,10 @@ const nextConfig: NextConfig = {
     cssChunking: 'strict',
   },
 
-  // ── Security Headers ─────────────────────────
+  // ── Security + CDN Headers ─────────────────────────
   async headers() {
     return [
+      // ── Global security headers ──
       {
         source: "/(.*)",
         headers: [
@@ -74,6 +75,36 @@ const nextConfig: NextConfig = {
           },
           // NOTE: Content-Security-Policy is set dynamically per-request
           // in proxy.ts with a nonce — not here (static headers can't use nonces).
+        ],
+      },
+      // ── Static asset caching (hashed filenames → immutable) ──
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // ── Image caching (1 day + stale-while-revalidate 7 days) ──
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      // ── Font caching (1 year, immutable) ──
+      {
+        source: "/fonts/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
         ],
       },
     ];
