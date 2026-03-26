@@ -26,15 +26,25 @@ export default async function ProductosPage({
     const offset = (currentPage - 1) * PRODUCTS_PER_PAGE
 
     const categories = await getCategories()
-    const { products, count } = await getProducts({
-        category_id: sp.category
-            ? [categories.find((c) => c.handle === sp.category)?.id].filter(Boolean) as string[]
-            : undefined,
-        order: sp.sort || undefined,
-        q: sp.q || undefined,
-        limit: PRODUCTS_PER_PAGE,
-        offset,
-    })
+
+    // Graceful fallback: Medusa might not be running
+    let products: Awaited<ReturnType<typeof getProducts>>['products'] = []
+    let count = 0
+    try {
+        const res = await getProducts({
+            category_id: sp.category
+                ? [categories.find((c) => c.handle === sp.category)?.id].filter(Boolean) as string[]
+                : undefined,
+            order: sp.sort || undefined,
+            q: sp.q || undefined,
+            limit: PRODUCTS_PER_PAGE,
+            offset,
+        })
+        products = res.products
+        count = res.count
+    } catch {
+        // Medusa down — show empty state
+    }
 
     const totalPages = Math.ceil(count / PRODUCTS_PER_PAGE)
 

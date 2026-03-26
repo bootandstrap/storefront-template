@@ -1,7 +1,7 @@
 # Architecture Overview — Storefront Template
 
 > Consolidated from: ARCHITECTURE.md, DOMAIN_SPLIT.md, STACK_REFERENCE.md.
-> Last updated: 2026-03-03.
+> Last updated: 2026-03-25.
 
 ## System Overview
 
@@ -72,6 +72,85 @@ Browser → proxy.ts (locale detection, slug rewriting, auth + role check)
 | Products, Categories | `force-dynamic` | 0 | On-demand |
 | Cart | No cache | 0 | Real-time |
 
+---
+
+## Owner Panel Architecture
+
+The owner panel (`/[lang]/panel/`) is a full-featured store management dashboard governed by SaaS flags and plan limits.
+
+### Panel Chrome
+
+| Component | Purpose |
+|-----------|---------|
+| `PanelShell` | Layout: sidebar + topbar + content area + command palette |
+| `PanelTopbar` | Greeting, breadcrumbs, contextual setup nudge, logout |
+| `PanelSidebar` | 3-group navigation (Operations · Content · Settings) |
+| `CommandPalette` | `⌘K` / `Ctrl+K` keyboard navigation |
+| `PanelToaster` | Global toast notification system |
+
+### Sidebar Navigation Groups
+
+```
+Operations    Content       Settings
+─────────     ─────────     ─────────
+Dashboard     Carousel      Store Config
+Catalog       WhatsApp      Shipping
+Orders        CMS Pages     My Project
+Customers     Analytics     Modules
+Utilities     Chatbot       Subscription
+POS           Reviews
+              CRM
+              Badges
+```
+
+### Dashboard Engines
+
+| Engine | File | Purpose |
+|--------|------|---------|
+| **Store Readiness** | `lib/store-readiness.ts` | Calculates health score (0-100), generates categorized checklist |
+| **Smart Tips** | `lib/smart-tips.ts` | Contextual suggestions based on store state |
+| **Achievements** | `lib/achievements.ts` | Gamified milestones (product count, order volume, etc.) |
+| **Panel Policy** | `lib/panel-policy.ts` | Route gating, navigation generation, role enforcement |
+
+### Dashboard Components
+
+| Component | Purpose |
+|-----------|---------|
+| `StoreHealthCard` | Readiness score ring + expandable checklist + replay tour/language |
+| `SetupProgress` | Persistent collapsible setup widget (replaces one-shot checklist) |
+| `SmartTip` | Contextual suggestion cards |
+| `UsageMeter` | Plan limit usage visualization |
+| `AchievementProvider` | Client-side toast for newly unlocked achievements |
+| `AnimatedStatValue` | Animated number display for dashboard KPIs |
+
+### Onboarding Flow
+
+```
+First visit → PanelOnboarding (3 phases: Welcome → Language → Tour)
+           → Marks onboarding_completed in Supabase
+           → SetupProgress widget stays visible until 100%
+           → Topbar nudge shows "X steps left" when score < 60
+           → StoreHealthCard offers "Replay Tour" and "Language" re-access
+```
+
+### POS System
+
+Components: `POSClient`, `POSProductGrid`, `POSVariantPicker`, `POSCart`, `POSPaymentOverlay`, `POSReceipt`, `POSOfflineBanner`, `POSDashboard`.
+
+Features: barcode scanning, variant selection, thermal printing (ESC/POS via Web Serial), offline detection, cart management.
+
+### Utilities Page (`/panel/utilidades`)
+
+Centralized tabbed UI with feature-flag gating:
+
+| Tab | Flag | Features |
+|-----|------|----------|
+| WiFi QR | `enable_ecommerce` | QR code generation, `navigator.connection` detection, saved config |
+| Loyalty Engine | `enable_crm` | Stamp cards, redemption, customer history |
+| Price Labels | `enable_ecommerce` | Barcode generator, price label sheets for printing |
+
+---
+
 ## Project-Specific Stack Patterns
 
 ### proxy.ts (Next.js 16 — NOT middleware.ts)
@@ -105,3 +184,12 @@ Medusa requires `zod@3.x`, storefront uses `zod@4.x`. Both coexist via pinning i
 | Redis | 7 Alpine |
 | TypeScript | 5.x (strict mode) |
 | pnpm | 9.x |
+
+## Test Coverage
+
+| Metric | Count |
+|--------|-------|
+| Test files | 83 |
+| Total tests | 1030 |
+| Panel components | 36 |
+| Panel pages | 26 |

@@ -3,13 +3,13 @@
 /**
  * PanelSidebar — Owner Panel Navigation
  *
- * 3 fixed items (Inicio, Catálogo, Mi Tienda)
- * + dynamic "Módulos" section (feature-flag-gated)
+ * 3 semantic groups: Operaciones · Contenido · Ajustes
+ * Feature-flag gated items auto-hide when disabled.
  */
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     LayoutDashboard,
     Store,
@@ -18,7 +18,6 @@ import {
     FileText,
     BarChart3,
     ChevronLeft,
-    ChevronDown,
     Package,
     ShoppingBag,
     Users,
@@ -30,13 +29,15 @@ import {
     Star,
     Kanban,
     X,
+    Monitor,
+    Wrench,
 } from 'lucide-react'
 import {
-    getPanelNavigation,
+    getPanelNavigationGrouped,
     type PanelFeatureFlags,
     type PanelSidebarLabels,
+    type PanelNavItem,
 } from '@/lib/panel-policy'
-// PanelTopbar is now mounted in the panel layout, not here
 import PanelTour, { type TourStep } from '@/components/panel/PanelTour'
 
 interface PanelSidebarProps {
@@ -80,10 +81,22 @@ export default function PanelSidebar({
         setInternalMobileOpen(open)
         onMobileOpenChange?.(open)
     }
-    const [modulesExpanded, setModulesExpanded] = useState(true)
     const [showReplayTour, setShowReplayTour] = useState(false)
 
-    const { essentialItems, moduleItems } = getPanelNavigation({
+    // ── Escape key closes mobile drawer ──
+    useEffect(() => {
+        if (!mobileOpen) return
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                setMobileOpen(false)
+            }
+        }
+        window.addEventListener('keydown', handleEscape)
+        return () => window.removeEventListener('keydown', handleEscape)
+    }, [mobileOpen])
+
+    const grouped = getPanelNavigationGrouped({
         lang,
         labels,
         featureFlags,
@@ -94,6 +107,7 @@ export default function PanelSidebar({
         catalog: <Package className="w-5 h-5" />,
         orders: <ShoppingBag className="w-5 h-5" />,
         customers: <Users className="w-5 h-5" />,
+        utilities: <Wrench className="w-5 h-5" />,
         storeConfig: <Store className="w-5 h-5" />,
         shipping: <Truck className="w-5 h-5" />,
         myProject: <Kanban className="w-5 h-5" />,
@@ -106,6 +120,7 @@ export default function PanelSidebar({
         chatbot: <Bot className="w-5 h-5" />,
         returns: <RotateCcw className="w-5 h-5" />,
         reviews: <Star className="w-5 h-5" />,
+        pos: <Monitor className="w-5 h-5" />,
     }
 
     const isActive = (href: string, exact?: boolean) => {
@@ -117,7 +132,7 @@ export default function PanelSidebar({
         const active = isActive(href, exact)
         return `
             relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-            transition-all duration-200
+            transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
             ${active
                 ? 'bg-primary/8 text-primary sidebar-link-active'
                 : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
@@ -137,70 +152,45 @@ export default function PanelSidebar({
         modules: 'nav-modules',
     }
 
+    const renderNavLink = (item: PanelNavItem) => (
+        <Link
+            key={item.href}
+            href={item.href}
+            className={linkClass(item.href, item.exact)}
+            onClick={closeMobileMenu}
+            data-tour-id={tourIdByKey[item.key]}
+        >
+            {iconByKey[item.key]}
+            <span className="flex-1">{item.label}</span>
+            {badges[item.key] != null && badges[item.key] > 0 && (
+                <span className="badge-count">
+                    {badges[item.key] > 99 ? '99+' : badges[item.key]}
+                </span>
+            )}
+        </Link>
+    )
+
+    const renderGroup = (label: string, items: PanelNavItem[]) => {
+        if (items.length === 0) return null
+        return (
+            <div key={label}>
+                <div className="px-3 pt-5 pb-1.5">
+                    <span className="text-[11px] font-semibold text-text-muted/60 uppercase tracking-wider">
+                        {label}
+                    </span>
+                </div>
+                <div className="space-y-0.5">
+                    {items.map(renderNavLink)}
+                </div>
+            </div>
+        )
+    }
+
     const navigationContent = (
         <>
-            {/* Fixed items */}
-            {essentialItems.map((item) => (
-                <Link
-                    key={item.href}
-                    href={item.href}
-                    className={linkClass(item.href, item.exact)}
-                    onClick={closeMobileMenu}
-                    data-tour-id={tourIdByKey[item.key]}
-                >
-                    {iconByKey[item.key]}
-                    <span className="flex-1">{item.label}</span>
-                    {/* Notification badge */}
-                    {badges[item.key] != null && badges[item.key] > 0 && (
-                        <span className="badge-count">
-                            {badges[item.key] > 99 ? '99+' : badges[item.key]}
-                        </span>
-                    )}
-                </Link>
-            ))}
-
-            {/* Módulos section — collapsible */}
-            {moduleItems.length > 0 && (
-                <>
-                    <button
-                        type="button"
-                        onClick={() => setModulesExpanded(!modulesExpanded)}
-                        className="flex items-center gap-2 px-3 pt-5 pb-1 w-full text-left group"
-                    >
-                        <Puzzle className="w-3.5 h-3.5 text-text-muted/60" />
-                        <span className="text-[11px] font-semibold text-text-muted/60 uppercase tracking-wider flex-1">
-                            {labels.modules}
-                        </span>
-                        <ChevronDown
-                            className={`w-3.5 h-3.5 text-text-muted/40 transition-transform duration-200 ${modulesExpanded ? '' : '-rotate-90'
-                                }`}
-                        />
-                    </button>
-
-                    <div
-                        className={`space-y-1 overflow-hidden transition-all duration-300 ${modulesExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {moduleItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={linkClass(item.href)}
-                                onClick={closeMobileMenu}
-                                data-tour-id={`nav-${item.key}`}
-                            >
-                                {iconByKey[item.key]}
-                                <span className="flex-1">{item.label}</span>
-                                {badges[item.key] != null && badges[item.key] > 0 && (
-                                    <span className="badge-count">
-                                        {badges[item.key] > 99 ? '99+' : badges[item.key]}
-                                    </span>
-                                )}
-                            </Link>
-                        ))}
-                    </div>
-                </>
-            )}
+            {renderGroup(labels.groupOperations, grouped.operations)}
+            {renderGroup(labels.groupContent, grouped.content)}
+            {renderGroup(labels.groupSettings, grouped.settings)}
         </>
     )
 
@@ -208,7 +198,7 @@ export default function PanelSidebar({
         <>
 
             {mobileOpen && (
-                <div className="md:hidden fixed inset-0 z-50">
+                <div className="md:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Panel menu">
                     <button
                         type="button"
                         aria-label="Close panel menu backdrop"
@@ -224,7 +214,7 @@ export default function PanelSidebar({
                                 type="button"
                                 onClick={closeMobileMenu}
                                 aria-label="Close panel menu"
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -243,7 +233,7 @@ export default function PanelSidebar({
                             <Link
                                 href={`/${lang}`}
                                 onClick={closeMobileMenu}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all"
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                                 {labels.backToStore}
@@ -281,14 +271,14 @@ export default function PanelSidebar({
                         <button
                             type="button"
                             onClick={() => setShowReplayTour(true)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-text-muted hover:text-primary hover:bg-primary/5 transition-all w-full"
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-text-muted hover:text-primary hover:bg-primary/5 transition-all w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         >
                             🎓 {replayTourLabel || 'Replay Tour'}
                         </button>
                     )}
                     <Link
                         href={`/${lang}`}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-surface-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                         <ChevronLeft className="w-4 h-4" />
                         {labels.backToStore}

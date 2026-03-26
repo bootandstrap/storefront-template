@@ -73,7 +73,7 @@ export async function getRevenueMetrics(
         orders: { total: number; currency_code: string }[]
         count: number
     }>(
-        `/admin/orders?limit=0&fields=total,currency_code&created_at[gte]=${startDate.toISOString()}`,
+        `/admin/orders?limit=100&fields=total,currency_code&created_at[gte]=${startDate.toISOString()}`,
         {},
         scope
     )

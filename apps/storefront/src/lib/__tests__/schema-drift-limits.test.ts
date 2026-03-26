@@ -42,6 +42,7 @@ const EXPECTED_LIMITABLE_RESOURCES: LimitableResource[] = [
     'max_wishlist_items',
     'max_promotions_active',
     'max_payment_methods',
+    'max_pos_payment_methods',
     'max_crm_contacts',
 ]
 
@@ -83,7 +84,7 @@ describe('Schema Drift — Plan Limits', () => {
     })
 
     // Fields that are not numeric limits (metadata/string fields)
-    const NON_NUMERIC_FIELDS = ['id', 'tenant_id', 'created_at', 'updated_at', 'plan_name', 'plan_expires_at']
+    const NON_NUMERIC_FIELDS = ['id', 'tenant_id', 'created_at', 'updated_at', 'plan_name', 'plan_tier', 'plan_expires_at']
 
     it('FALLBACK_CONFIG plan limits are restrictive (fail-closed)', () => {
         // Fail-closed: limits should be 0 (fully blocked) or a minimal floor (e.g., 1 language).

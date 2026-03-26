@@ -48,19 +48,20 @@ export default function ModulesMarketplaceClient({
   }
 
   const filteredModules = useMemo(() => {
-    if (selectedCategory === 'all') return catalog
-    return catalog.filter(m => m.category === selectedCategory)
+    const validCatalog = catalog.filter(m => m.key) // Filter out entries with null/undefined keys
+    if (selectedCategory === 'all') return validCatalog
+    return validCatalog.filter(m => m.category === selectedCategory)
   }, [catalog, selectedCategory])
 
   const activeCount = Object.keys(activeModules).length
-  const totalModules = catalog.length
+  const totalModules = catalog.filter(m => m.key).length
   const isPowerUser = activeCount >= 5
 
   return (
     <div className="space-y-6">
       {/* ── Power User Banner ── */}
       {isPowerUser && (
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 p-4">
+        <div className="relative overflow-hidden glass rounded-2xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 p-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">⚡</span>
             <div>
@@ -78,7 +79,7 @@ export default function ModulesMarketplaceClient({
       )}
       {/* ── Summary Stats ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-surface-1 rounded-xl p-4 border border-border">
+        <div className="glass rounded-2xl p-4">
           <div className="text-sm text-text-muted">{labels.activeModules}</div>
           <div className="text-2xl font-bold text-text-primary mt-1">
             {activeCount} <span className="text-sm font-normal text-text-muted">/ {totalModules}</span>
@@ -92,7 +93,7 @@ export default function ModulesMarketplaceClient({
           </div>
         </div>
 
-        <div className="bg-surface-1 rounded-xl p-4 border border-border">
+        <div className="glass rounded-2xl p-4">
           <div className="text-sm text-text-muted">{labels.monthlySpend}</div>
           <div className="text-2xl font-bold text-text-primary mt-1">
             {monthlySpend > 0 ? `${monthlySpend} CHF` : '—'}
@@ -100,7 +101,7 @@ export default function ModulesMarketplaceClient({
           </div>
         </div>
 
-        <div className="bg-surface-1 rounded-xl p-4 border border-border">
+        <div className="glass rounded-2xl p-4">
           <div className="text-sm text-text-muted">{labels.availableModules}</div>
           <div className="text-2xl font-bold text-text-primary mt-1">
             {totalModules - activeCount}
@@ -112,17 +113,18 @@ export default function ModulesMarketplaceClient({
       </div>
 
       {/* ── Category Tabs ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 glass rounded-2xl p-1.5">
         {CATEGORIES.map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
+            aria-pressed={selectedCategory === cat}
             className={`
-              px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
-              transition-all duration-200
+              px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap
+              transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
               ${selectedCategory === cat
                 ? 'bg-primary text-white shadow-sm'
-                : 'bg-surface-1 text-text-muted hover:bg-surface-2 hover:text-text-primary border border-border'
+                : 'text-text-muted hover:bg-surface-2 hover:text-text-primary'
               }
             `}
           >
@@ -149,12 +151,12 @@ export default function ModulesMarketplaceClient({
             <div
               key={mod.key}
               className={`
-                relative bg-surface-1 rounded-xl border transition-all duration-300
+                relative glass rounded-2xl transition-all duration-300
                 ${isRecent
-                  ? 'border-primary/50 ring-2 ring-primary/20 shadow-md shadow-primary/10 animate-pulse-subtle'
+                  ? 'border border-primary/50 ring-2 ring-primary/20 shadow-md shadow-primary/10 animate-pulse-subtle'
                   : isActive
-                    ? 'border-primary/30 shadow-sm shadow-primary/5'
-                    : 'border-border hover:border-border-hover hover:shadow-sm'
+                    ? 'border border-primary/30 shadow-sm shadow-primary/5'
+                    : 'hover:shadow-lg hover:-translate-y-0.5'
                 }
               `}
             >
@@ -221,7 +223,9 @@ export default function ModulesMarketplaceClient({
                     )}
                     <button
                       onClick={() => setExpandedModule(isExpanded ? null : mod.key)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-2 text-text-muted hover:text-text-primary transition-colors"
+                      aria-expanded={isExpanded}
+                      aria-label={`${labels.viewDetails} — ${mod.name}`}
+                      className="px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-medium bg-surface-2 text-text-muted hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       {labels.viewDetails}
                     </button>
@@ -241,7 +245,7 @@ export default function ModulesMarketplaceClient({
 
               {/* ── Expanded Tier Comparison ── */}
               {isExpanded && (
-                <div className="border-t border-border px-4 py-4 bg-surface-0 rounded-b-xl">
+                <div className="border-t border-surface-2 px-4 py-4 bg-surface-0/50 rounded-b-2xl">
                   <h4 className="text-sm font-semibold text-text-primary mb-3">{labels.features}</h4>
 
                   <div className="grid gap-3" style={{

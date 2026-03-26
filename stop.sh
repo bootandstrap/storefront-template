@@ -2,9 +2,10 @@
 # ============================================
 # stop.sh — Stop all development services
 # ============================================
-# Stops: Medusa, Storefront, SuperAdmin, Redis
+# Stops: Medusa, Storefront (3000+3001), Redis
+# Cleans: .next cache to avoid stale builds
 #
-# Usage: ./stop.sh
+# Usage: ./stop.sh [--no-cache-clean]
 # ============================================
 
 set -Eeuo pipefail
@@ -13,6 +14,14 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REDIS_CONTAINER_NAME="ecommerce-redis-dev"
 DEV_REDIS_PID_FILE="$ROOT_DIR/.dev-redis.pid"
 STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
+CLEAN_CACHE=1
+
+# Parse flags
+for arg in "$@"; do
+    case "$arg" in
+        --no-cache-clean) CLEAN_CACHE=0 ;;
+    esac
+done
 
 # Colors
 GREEN='\033[0;32m'
@@ -28,19 +37,31 @@ docker_ready() {
     command_exists docker && docker info >/dev/null 2>&1
 }
 
-stop_pid() {
-    local pid="$1"
-    local label="$2"
-    if [[ -z "$pid" ]] || ! kill -0 "$pid" 2>/dev/null; then
-        return
+stop_port() {
+    local port="$1"
+    local pids
+    pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+    if [[ -z "$pids" ]]; then
+        return 0
     fi
+    local count=0
+    while IFS= read -r pid; do
+        [[ -z "$pid" ]] && continue
+        echo -e "  ${YELLOW}→${NC} Killing PID ${pid} on port ${port}"
+        kill "$pid" 2>/dev/null || true
+        count=$((count + 1))
+    done <<< "$pids"
 
-    echo -e "  ${YELLOW}→${NC} Stopping ${label} (PID: ${pid})"
-    kill "$pid" 2>/dev/null || true
-    sleep 0.2
-    if kill -0 "$pid" 2>/dev/null; then
-        kill -9 "$pid" 2>/dev/null || true
+    # Wait briefly, then force-kill stragglers
+    sleep 0.3
+    pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+    if [[ -n "$pids" ]]; then
+        while IFS= read -r pid; do
+            [[ -z "$pid" ]] && continue
+            kill -9 "$pid" 2>/dev/null || true
+        done <<< "$pids"
     fi
+    return $count
 }
 
 echo -e "${YELLOW}⏹  Stopping development services...${NC}"
@@ -49,14 +70,29 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 STOPPED=0
 
 # ── Stop known service ports ─────────────────
-for PORT in "$STOREFRONT_PORT" 9000; do
+# Kill 3000 + 3001 (fallback port) + 9000 (Medusa)
+for PORT in "$STOREFRONT_PORT" 3001 9000; do
     PORT_PIDS="$(lsof -ti :"$PORT" 2>/dev/null || true)"
     if [[ -n "$PORT_PIDS" ]]; then
         while IFS= read -r pid; do
             [[ -z "$pid" ]] && continue
-            stop_pid "$pid" "process on port $PORT"
+            echo -e "  ${YELLOW}→${NC} Stopping process on port ${PORT} (PID: ${pid})"
+            kill "$pid" 2>/dev/null || true
             STOPPED=$((STOPPED + 1))
         done <<< "$PORT_PIDS"
+    fi
+done
+
+# Force-kill stragglers after a brief wait
+sleep 0.5
+for PORT in "$STOREFRONT_PORT" 3001 9000; do
+    STALE="$(lsof -ti :"$PORT" 2>/dev/null || true)"
+    if [[ -n "$STALE" ]]; then
+        while IFS= read -r pid; do
+            [[ -z "$pid" ]] && continue
+            echo -e "  ${RED}→${NC} Force-killing PID ${pid} on port ${PORT}"
+            kill -9 "$pid" 2>/dev/null || true
+        done <<< "$STALE"
     fi
 done
 
@@ -64,7 +100,8 @@ done
 if [[ -f "$DEV_REDIS_PID_FILE" ]]; then
     REDIS_PID="$(cat "$DEV_REDIS_PID_FILE" 2>/dev/null || true)"
     if [[ -n "${REDIS_PID:-}" ]] && kill -0 "$REDIS_PID" 2>/dev/null; then
-        stop_pid "$REDIS_PID" "local Redis"
+        echo -e "  ${YELLOW}→${NC} Stopping local Redis (PID: ${REDIS_PID})"
+        kill "$REDIS_PID" 2>/dev/null || true
         STOPPED=$((STOPPED + 1))
     fi
     rm -f "$DEV_REDIS_PID_FILE"
@@ -84,9 +121,17 @@ else
     echo -e "  ${YELLOW}⚠${NC} Docker unavailable; skipped container cleanup"
 fi
 
+# ── Clean .next cache ────────────────────────
+if [[ "$CLEAN_CACHE" -eq 1 ]]; then
+    if [[ -d "$ROOT_DIR/apps/storefront/.next" ]]; then
+        rm -rf "$ROOT_DIR/apps/storefront/.next"
+        echo -e "  ${GREEN}✓${NC} Cleaned storefront .next cache"
+    fi
+fi
+
 echo ""
 if [[ "$STOPPED" -gt 0 ]]; then
-    echo -e "${GREEN}✅ Services stopped.${NC}"
+    echo -e "${GREEN}✅ ${STOPPED} service(s) stopped.${NC}"
 else
     echo -e "${GREEN}✅ No running services found.${NC}"
 fi

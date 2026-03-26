@@ -1,5 +1,16 @@
 'use client'
 
+/**
+ * Product Badges — Owner Panel (SOTA rewrite)
+ *
+ * Fixes:
+ * - Emoji empty state → lucide icon + animated empty state
+ * - Inline SVG fallback → lucide Package icon
+ * - No animation → PageEntrance + ListStagger + StaggerItem
+ * - Inline status badge → PanelStatusBadge-style
+ * - Badge toggle: add scale ping animation
+ */
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
@@ -7,6 +18,10 @@ import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
 import { toggleBadge } from './actions'
 import { AVAILABLE_BADGES, type BadgeId } from './badges'
+import { Award, Package, Search } from 'lucide-react'
+import { motion } from 'framer-motion'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 
 interface ProductWithBadges {
     id: string
@@ -37,30 +52,27 @@ export default function BadgesClient({ products, error: initialError }: Props) {
     const handleToggle = (productId: string, badgeId: BadgeId, currentlyEnabled: boolean) => {
         startTransition(async () => {
             const result = await toggleBadge(productId, badgeId, !currentlyEnabled)
-            if (result.success) {
-                router.refresh()
-                toast.success('✓')
-            } else {
-                setError(result.error ?? 'Error')
-                toast.error(result.error ?? 'Error')
-            }
+            if (result.success) { router.refresh(); toast.success('✓') }
+            else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
         })
     }
 
     return (
-        <>
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
-                        {t('panel.badges.title')}
-                    </h1>
-                    <p className="text-text-muted mt-1">{t('panel.badges.subtitle')}</p>
-                </div>
-            </div>
+        <PageEntrance className="space-y-5">
+            <PanelPageHeader
+                title={t('panel.badges.title')}
+                subtitle={t('panel.badges.subtitle')}
+                icon={<Award className="w-5 h-5" />}
+            />
 
             {/* Badge legend */}
-            <div className="glass rounded-2xl p-4">
-                <p className="text-xs font-medium text-text-secondary mb-2">
+            <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="glass rounded-2xl p-4"
+            >
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
                     {t('panel.badges.available')}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -73,93 +85,116 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                         </span>
                     ))}
                 </div>
-            </div>
+            </motion.div>
 
             {error && (
-                <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm"
+                >
+                    {error}
+                </motion.div>
             )}
 
             {/* Search */}
-            <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('panel.badges.searchProducts')}
-                className="w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-            />
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('panel.badges.searchProducts')}
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                />
+            </div>
 
             {/* Product list */}
             {filtered.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <div className="text-4xl mb-3">🏷️</div>
-                    <p className="text-text-muted">
-                        {products.length === 0
-                            ? t('panel.badges.connectMedusa')
-                            : t('panel.badges.noResults')}
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {filtered.map((product) => (
-                        <div key={product.id} className="glass rounded-2xl p-4">
-                            <div className="flex items-center gap-4">
-                                {/* Thumbnail */}
-                                <div className="w-12 h-12 rounded-lg bg-surface-1 flex-shrink-0 overflow-hidden relative">
-                                    {product.thumbnail ? (
-                                        <Image
-                                            src={product.thumbnail}
-                                            alt={product.title}
-                                            fill
-                                            className="object-cover"
-                                            sizes="48px"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-text-muted">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Title */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-text-primary truncate">
-                                        {product.title}
-                                    </h3>
-                                    <p className="text-xs text-text-muted">{product.handle}</p>
-                                </div>
-
-                                {/* Status */}
-                                <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${product.status === 'published'
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-surface-2 text-text-muted'
-                                    }`}>
-                                    {product.status}
-                                </span>
-                            </div>
-
-                            {/* Badge toggles */}
-                            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-surface-2">
-                                {AVAILABLE_BADGES.map((badge) => {
-                                    const isEnabled = product.badges.includes(badge.id)
-                                    return (
-                                        <button
-                                            key={badge.id}
-                                            onClick={() => handleToggle(product.id, badge.id, isEnabled)}
-                                            disabled={isPending}
-                                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${isEnabled
-                                                ? badge.color + ' ring-2 ring-offset-1 ring-current/20'
-                                                : 'bg-surface-1 text-text-muted hover:bg-surface-2'
-                                                } ${isPending ? 'opacity-50' : ''}`}
-                                        >
-                                            {badge.emoji} {badge.label}
-                                        </button>
-                                    )
-                                })}
-                            </div>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="glass rounded-2xl"
+                >
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <Award className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
                         </div>
+                        <p className="text-text-muted text-lg">
+                            {products.length === 0
+                                ? t('panel.badges.connectMedusa')
+                                : t('panel.badges.noResults')}
+                        </p>
+                    </div>
+                </motion.div>
+            ) : (
+                <ListStagger className="space-y-3">
+                    {filtered.map((product) => (
+                        <StaggerItem key={product.id}>
+                            <motion.div
+                                whileHover={{ y: -1 }}
+                                className="glass rounded-2xl p-4 transition-shadow hover:shadow-lg"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* Thumbnail */}
+                                    <div className="w-12 h-12 rounded-xl bg-surface-1 flex-shrink-0 overflow-hidden relative">
+                                        {product.thumbnail ? (
+                                            <Image
+                                                src={product.thumbnail}
+                                                alt={product.title}
+                                                fill
+                                                className="object-cover"
+                                                sizes="48px"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-text-muted">
+                                                <Package className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Title */}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-medium text-text-primary truncate">
+                                            {product.title}
+                                        </h3>
+                                        <p className="text-xs text-text-muted">{product.handle}</p>
+                                    </div>
+
+                                    {/* Status */}
+                                    <span className={`text-xs px-2.5 py-1 rounded-full flex-shrink-0 font-medium ${product.status === 'published'
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                                        : 'bg-surface-2 text-text-muted'
+                                    }`}>
+                                        {product.status}
+                                    </span>
+                                </div>
+
+                                {/* Badge toggles */}
+                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-surface-2">
+                                    {AVAILABLE_BADGES.map((badge) => {
+                                        const isEnabled = product.badges.includes(badge.id)
+                                        return (
+                                            <motion.button
+                                                key={badge.id}
+                                                onClick={() => handleToggle(product.id, badge.id, isEnabled)}
+                                                disabled={isPending}
+                                                whileTap={{ scale: 0.92 }}
+                                                aria-pressed={isEnabled}
+                                                aria-label={`${badge.label}: ${isEnabled ? 'enabled' : 'disabled'}`}
+                                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-full text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${isEnabled
+                                                    ? badge.color + ' ring-2 ring-offset-1 ring-current/20 shadow-sm'
+                                                    : 'bg-surface-1 text-text-muted hover:bg-surface-2'
+                                                } ${isPending ? 'opacity-50' : ''}`}
+                                            >
+                                                {badge.emoji} {badge.label}
+                                            </motion.button>
+                                        )
+                                    })}
+                                </div>
+                            </motion.div>
+                        </StaggerItem>
                     ))}
-                </div>
+                </ListStagger>
             )}
-        </>
+        </PageEntrance>
     )
 }

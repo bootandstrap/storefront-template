@@ -31,6 +31,11 @@ interface PanelTopbarProps {
         backToStore: string
         logout: string
     }
+    /** Optional setup nudge shown inline next to greeting */
+    setupNudge?: {
+        label: string   // e.g. "4 setup steps left"
+        href: string    // links to dashboard
+    } | null
     onMenuClick: () => void
 }
 
@@ -48,22 +53,32 @@ export default function PanelTopbar({
     breadcrumbMap,
     greetings,
     labels,
+    setupNudge,
     onMenuClick,
 }: PanelTopbarProps) {
     const pathname = usePathname()
     const [avatarOpen, setAvatarOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Close avatar dropdown on outside click
+    // Close avatar dropdown on outside click or Escape
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setAvatarOpen(false)
             }
         }
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape' && avatarOpen) {
+                setAvatarOpen(false)
+            }
+        }
         document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [])
+        document.addEventListener('keydown', handleKeyDown)
+        return () => {
+            document.removeEventListener('mousedown', handleClick)
+            document.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [avatarOpen])
 
     // Resolve current breadcrumb from pathname
     const currentSection = useMemo(() => {
@@ -78,7 +93,7 @@ export default function PanelTopbar({
     const initial = (ownerName || businessName || 'U')[0].toUpperCase()
 
     return (
-        <header className="sticky top-0 z-40 bg-surface-0/80 backdrop-blur-md border-b border-surface-2">
+        <header data-panel-topbar className="sticky top-0 z-40 bg-surface-0/80 backdrop-blur-md border-b border-surface-2">
             <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-4">
                 {/* Left: hamburger (mobile) + greeting + breadcrumb */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -86,15 +101,26 @@ export default function PanelTopbar({
                         type="button"
                         onClick={onMenuClick}
                         aria-label="Open panel menu"
-                        className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1 shrink-0"
+                        className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                         <Menu className="w-5 h-5" />
                     </button>
 
                     <div className="min-w-0">
                         {/* Greeting (desktop) */}
-                        <div className="hidden md:block text-sm font-semibold text-text-primary truncate">
-                            {greeting}, <span className="text-primary">{ownerName || businessName}</span>
+                        <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-text-primary">
+                            <span className="truncate">
+                                {greeting}, <span className="text-primary">{ownerName || businessName}</span>
+                            </span>
+                            {setupNudge && (
+                                <a
+                                    href={setupNudge.href}
+                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500/90 hover:text-amber-400 transition-colors ml-1"
+                                >
+                                    <span>⚡</span>
+                                    <span>{setupNudge.label}</span>
+                                </a>
+                            )}
                         </div>
                         {/* Mobile: business name */}
                         <div className="md:hidden text-sm font-semibold text-text-primary truncate">
@@ -122,8 +148,9 @@ export default function PanelTopbar({
                         <button
                             type="button"
                             onClick={() => setAvatarOpen(!avatarOpen)}
-                            className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center hover:bg-primary/25 transition-colors"
+                            className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center hover:bg-primary/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                             aria-label="User menu"
+                            aria-expanded={avatarOpen}
                         >
                             {initial}
                         </button>
@@ -146,7 +173,7 @@ export default function PanelTopbar({
                                 <div className="py-1">
                                     <a
                                         href={`/${lang}`}
-                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2/50 transition-colors"
+                                        className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-text-secondary hover:bg-surface-2/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
                                     >
                                         <Store className="w-4 h-4" />
                                         {labels.backToStore}
@@ -154,7 +181,7 @@ export default function PanelTopbar({
                                     <form action="/api/auth/logout" method="POST">
                                         <button
                                             type="submit"
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-red-400 hover:bg-red-500/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-inset"
                                         >
                                             <LogOut className="w-4 h-4" />
                                             {labels.logout}

@@ -67,6 +67,26 @@ const MODULE_BENEFITS: Record<string, { icon: React.ReactNode; key: string }[]> 
         { icon: <Shield className="w-4 h-4" />, key: 'featureGate.benefits.automation' },
         { icon: <Sparkles className="w-4 h-4" />, key: 'featureGate.benefits.templates' },
     ],
+    pos: [
+        { icon: <Zap className="w-4 h-4" />, key: 'featureGate.benefits.posQuickSale' },
+        { icon: <Shield className="w-4 h-4" />, key: 'featureGate.benefits.posMultiDevice' },
+        { icon: <Sparkles className="w-4 h-4" />, key: 'featureGate.benefits.posOffline' },
+    ],
+    capacidad: [
+        { icon: <Zap className="w-4 h-4" />, key: 'featureGate.benefits.trafficExpansion' },
+        { icon: <Shield className="w-4 h-4" />, key: 'featureGate.benefits.trafficAnalytics' },
+        { icon: <Sparkles className="w-4 h-4" />, key: 'featureGate.benefits.trafficAutoscale' },
+    ],
+    rrss: [
+        { icon: <Zap className="w-4 h-4" />, key: 'featureGate.benefits.socialLinks' },
+        { icon: <Shield className="w-4 h-4" />, key: 'featureGate.benefits.socialProof' },
+        { icon: <Sparkles className="w-4 h-4" />, key: 'featureGate.benefits.socialSharing' },
+    ],
+    automation: [
+        { icon: <Zap className="w-4 h-4" />, key: 'featureGate.benefits.adminApi' },
+        { icon: <Shield className="w-4 h-4" />, key: 'featureGate.benefits.webhooks' },
+        { icon: <Sparkles className="w-4 h-4" />, key: 'featureGate.benefits.integrations' },
+    ],
 }
 
 export default async function FeatureGate({ flag, lang }: FeatureGateProps) {

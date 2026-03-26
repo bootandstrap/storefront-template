@@ -1,7 +1,7 @@
 # Critical Flows
 
 > Consolidated from: AUTH_FLOW.md, CHECKOUT_FLOWS.md, MEDUSA_CUSTOMIZATIONS.md, API_REFERENCE.md.
-> Last updated: 2026-03-03.
+> Last updated: 2026-03-25.
 
 ## 1. Auth Flow (Flag-Driven Providers)
 
@@ -71,7 +71,69 @@ All methods share `CheckoutModal`: shipping address → method selection → met
 
 ---
 
-## 3. Medusa Customizations
+## 3. Owner Panel Onboarding Flow
+
+The panel guides new owners through store setup via a multi-phase process.
+
+### Phase 1: Welcome Wizard (`PanelOnboarding`)
+
+```
+First panel visit → PanelOnboarding (3 phases)
+  Phase 1: Welcome — business name, locale, currency confirmation
+  Phase 2: Language — panel language selection (5 locales)
+  Phase 3: Tour — guided walkthrough of panel sections
+→ POST /api/panel/onboarding-complete → sets onboarding_completed in governance
+```
+
+### Phase 2: Persistent Setup Progress (`SetupProgress`)
+
+After onboarding completes, the dashboard shows a persistent setup widget:
+
+```
+store-readiness.ts calculates score (0-100) from:
+  ⚙️ Setup   — branding, contact info, payment methods, domain
+  📝 Content — products, categories, images
+  💰 Sales   — first order, shipping config
+  📈 Growth  — modules activated, maintenance off
+
+SetupProgress widget → collapsible (localStorage), never permanently dismissed
+  → Shows module upsell badges for gated checks
+  → Celebrates at 100% with animation, then auto-collapses
+  → Re-accessible via StoreHealthCard "Replay Tour" + "Language" buttons
+  → Topbar nudge shows "X steps left" when score < 60
+```
+
+### Re-Access Points
+
+| Entry Point | What It Does |
+|-------------|-------------|
+| `SetupProgress` (dashboard) | Collapsible checklist, always visible until 100% |
+| `StoreHealthCard` → "Replay Tour" | Clears `bns-tour-done` localStorage, refresh |
+| `StoreHealthCard` → "Language" | Links to `/panel/tienda` (store config) |
+| `PanelTopbar` nudge | Shows "⚡ X steps left" inline when score < 60 |
+
+---
+
+## 4. POS Flow (Point of Sale)
+
+Full-screen overlay mode for in-person sales at `/[lang]/panel/pos`.
+
+```
+Owner opens POS → POSClient (full-screen, no sidebar/topbar)
+  → POSProductGrid (search + barcode scan via camera)
+  → POSVariantPicker (size/color selection modal)
+  → POSCart (item list + quantity adjustment)
+  → POSPaymentOverlay (cash/card/mixed payment)
+  → POSReceipt (on-screen + thermal printer via ESC/POS Web Serial)
+  → POSOfflineBanner (offline detection + queue)
+  → POSDashboard (daily sales summary)
+```
+
+Flag: `enable_pos`. Layout detection: `PanelShell` checks pathname for `/pos` → hides sidebar/topbar.
+
+---
+
+## 5. Medusa Customizations
 
 ### Custom Modules
 
@@ -90,18 +152,20 @@ Authenticates via `POST /auth/user/emailpass` with env credentials. JWT cached 2
 
 ---
 
-## 4. Key Server Actions & API Routes
+## 6. Key Server Actions & API Routes
 
 ### Custom API Routes
 
 | Route | Purpose |
-|-------|---------|
+|-------|---------
 | `POST /api/webhooks/stripe` | Stripe webhook handler (4 flows: module_order, module_purchase, tenant_provisioning, legacy) |
 | `GET /api/health[/live\|/ready]` | Health checks (liveness + readiness probes) |
 | `POST /api/revalidate` | On-demand config revalidation |
 | `POST /api/analytics` | Analytics event recording |
 | `POST /api/chat` | Chatbot (flag + quota gated) |
 | `GET /auth/callback` | OAuth callback (all providers) |
+| `POST /api/panel/onboarding-complete` | Marks owner onboarding as done |
+| `POST /api/panel/inventory/update-stock` | POS stock adjustment |
 
 ### Owner Panel Actions (all require `requirePanelAuth()`)
 
@@ -115,6 +179,8 @@ Authenticates via `POST /auth/user/emailpass` with env credentials. JWT cached 2
 | Páginas | create, update, delete, togglePublish CMS pages |
 | Insignias | toggleBadge |
 | Tienda | saveStoreConfig |
+| POS | processPayment, updateInventory |
+| Email | sendCampaign, manageLists |
 
 All mutations call `revalidatePanel()` for instant UI refresh.
 

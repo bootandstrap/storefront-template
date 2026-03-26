@@ -303,44 +303,40 @@ export interface OrderNote {
     created_at: string
 }
 
+/**
+ * @deprecated Medusa v2 removed the `/admin/notes` endpoint.
+ * Returns empty array. Order notes are no longer supported.
+ */
 export async function getOrderNotes(
-    orderId: string,
-    scope?: TenantMedusaScope | null
+    _orderId: string,
+    _scope?: TenantMedusaScope | null
 ): Promise<OrderNote[]> {
-    const res = await adminFetch<{ notes: OrderNote[] }>(
-        `/admin/notes?resource_type=order&resource_id=${orderId}`,
-        {},
-        scope
-    )
-    return res.data?.notes ?? []
+    console.warn('[admin-orders] getOrderNotes: /admin/notes is removed in Medusa v2. Returning empty.')
+    return []
 }
 
+/**
+ * @deprecated Medusa v2 removed the `/admin/notes` endpoint.
+ * Returns null note with error message.
+ */
 export async function createOrderNote(
-    orderId: string,
-    value: string,
-    scope?: TenantMedusaScope | null
+    _orderId: string,
+    _value: string,
+    _scope?: TenantMedusaScope | null
 ): Promise<{ note: OrderNote | null; error: string | null }> {
-    const res = await adminFetch<{ note: OrderNote }>(
-        '/admin/notes',
-        {
-            method: 'POST',
-            body: JSON.stringify({
-                resource_type: 'order',
-                resource_id: orderId,
-                value,
-            }),
-        },
-        scope
-    )
-    return { note: res.data?.note ?? null, error: res.error }
+    console.warn('[admin-orders] createOrderNote: /admin/notes is removed in Medusa v2.')
+    return { note: null, error: 'Order notes are not available in Medusa v2' }
 }
 
+/**
+ * @deprecated Medusa v2 removed the `/admin/notes` endpoint.
+ */
 export async function deleteOrderNote(
-    noteId: string,
-    scope?: TenantMedusaScope | null
+    _noteId: string,
+    _scope?: TenantMedusaScope | null
 ): Promise<{ error: string | null }> {
-    const res = await adminFetch(`/admin/notes/${noteId}`, { method: 'DELETE' }, scope)
-    return { error: res.error }
+    console.warn('[admin-orders] deleteOrderNote: /admin/notes is removed in Medusa v2.')
+    return { error: 'Order notes are not available in Medusa v2' }
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +368,7 @@ export async function receiveReturn(
 }
 
 // ---------------------------------------------------------------------------
-// Customers (read-only)
+// Customers
 // ---------------------------------------------------------------------------
 
 export interface AdminCustomer {
@@ -384,6 +380,7 @@ export interface AdminCustomer {
     has_account: boolean
     created_at: string
     orders?: { id: string }[]
+    metadata?: Record<string, unknown>
 }
 
 export async function getAdminCustomers(params?: {
@@ -418,9 +415,29 @@ export async function getAdminCustomerDetail(
     scope?: TenantMedusaScope | null
 ): Promise<AdminCustomer | null> {
     const res = await adminFetch<{ customer: AdminCustomer }>(
-        `/admin/customers/${id}?fields=*orders`,
+        `/admin/customers/${id}?fields=*orders,metadata`,
         {},
         scope
     )
     return res.data?.customer ?? null
+}
+
+/**
+ * Updates a customer's metadata in Medusa.
+ * Used for persisting loyalty stamps, preferences, etc.
+ */
+export async function updateCustomerMetadata(
+    customerId: string,
+    metadata: Record<string, unknown>,
+    scope?: TenantMedusaScope | null
+): Promise<{ customer: AdminCustomer | null; error: string | null }> {
+    const res = await adminFetch<{ customer: AdminCustomer }>(
+        `/admin/customers/${customerId}`,
+        {
+            method: 'POST',
+            body: JSON.stringify({ metadata }),
+        },
+        scope
+    )
+    return { customer: res.data?.customer ?? null, error: res.error }
 }

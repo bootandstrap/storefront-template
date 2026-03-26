@@ -80,7 +80,7 @@ export const StoreConfigSchema = z.object({
 
 export type StoreConfig = z.infer<typeof StoreConfigSchema>
 
-// ─── FeatureFlags (40 flags) ──────────────────────────────────────────────
+// ─── FeatureFlags (57 flags) ──────────────────────────────────────────────
 
 export const FeatureFlagsSchema = z.object({
     // Checkout
@@ -136,6 +136,21 @@ export const FeatureFlagsSchema = z.object({
     enable_abandoned_cart_emails: z.boolean(),
     enable_email_campaigns: z.boolean(),
     enable_email_templates: z.boolean(),
+    // POS
+    enable_pos: z.boolean(),
+    enable_pos_kiosk: z.boolean(),
+    enable_pos_keyboard_shortcuts: z.boolean(),
+    enable_pos_quick_sale: z.boolean(),
+    enable_pos_offline_cart: z.boolean(),
+    enable_pos_thermal_printer: z.boolean(),
+    enable_pos_line_discounts: z.boolean(),
+    enable_pos_customer_search: z.boolean(),
+    enable_pos_multi_device: z.boolean(),
+    enable_pos_shifts: z.boolean(),
+    // Capacidad (Traffic)
+    enable_traffic_expansion: z.boolean(),
+    enable_traffic_analytics: z.boolean(),
+    enable_traffic_autoscale: z.boolean(),
 })
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>
@@ -153,6 +168,7 @@ export const PlanLimitsSchema = z.object({
     max_admin_users: z.number(),
     storage_limit_mb: z.number(),
     plan_name: z.string(),
+    plan_tier: z.string().nullable(),
     plan_expires_at: z.string().nullable(),
     max_languages: z.number(),
     max_currencies: z.number(),
@@ -169,6 +185,7 @@ export const PlanLimitsSchema = z.object({
     max_promotions_active: z.number(),
     max_payment_methods: z.number(),
     max_crm_contacts: z.number(),
+    max_pos_payment_methods: z.number(),
 })
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>

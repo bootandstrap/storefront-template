@@ -37,18 +37,26 @@ export async function requirePanelAuth(): Promise<PanelAuthResult> {
         .eq('id', user.id)
         .single()
 
-    if (!profile || !PANEL_ROLES.includes(profile.role as PanelRole)) {
+    // Determine role: profile > user_metadata fallback
+    const resolvedRole = profile?.role ?? user.user_metadata?.role ?? null
+
+    if (!resolvedRole || !PANEL_ROLES.includes(resolvedRole as PanelRole)) {
         throw new Error('Insufficient permissions')
     }
 
-    const role = profile.role as PanelRole
+    const role = resolvedRole as PanelRole
 
-    // Tenant-bound roles: tenant_id MUST come from profile
-    if (!profile.tenant_id) {
-        throw new Error(`Role "${role}" requires a tenant_id in profile. User ${user.id} has none.`)
+    // Tenant resolution:
+    // - owner: tenant_id MUST come from profile (DB truth)
+    // - super_admin: can use profile tenant_id OR fall back to env TENANT_ID
+    //   (super_admins are platform-level, may not have a tenant-scoped profile)
+    const tenantId = profile?.tenant_id
+        ?? (role === 'super_admin' ? process.env.TENANT_ID : null)
+
+    if (!tenantId) {
+        throw new Error(`Role "${role}" requires a tenant_id. User ${user.id} has none in profile and no env fallback.`)
     }
 
-    const tenantId = profile.tenant_id
     return { supabase, user, role, tenantId }
 }
 

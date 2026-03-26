@@ -3,12 +3,14 @@
 /**
  * Customer actions — Owner Panel
  *
- * Tenant-scoped server actions for lazy-loading customer details.
+ * Tenant-scoped server actions for lazy-loading customer details
+ * and syncing loyalty data to Medusa.
  */
 
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
-import { getAdminOrders } from '@/lib/medusa/admin-orders'
+import { getAdminOrders, getAdminCustomerDetail, updateCustomerMetadata } from '@/lib/medusa/admin-orders'
+import type { LoyaltyMedusaData } from '@/lib/pos/loyalty-engine'
 
 export interface CustomerOrderSummary {
     id: string
@@ -46,5 +48,56 @@ export async function fetchCustomerOrders(customerId: string): Promise<{
         return { orders: customerOrders, error: null }
     } catch {
         return { orders: [], error: 'Failed to load orders' }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Loyalty ⇄ Medusa Sync
+// ---------------------------------------------------------------------------
+
+/**
+ * Persists loyalty data to Medusa customer.metadata.loyalty
+ * Called client-side after addStamp() / redeemReward() for dual-write.
+ */
+export async function syncLoyaltyStamps(
+    customerId: string,
+    loyaltyData: LoyaltyMedusaData
+): Promise<{ error: string | null }> {
+    try {
+        const { tenantId } = await withPanelGuard()
+        const scope = await getTenantMedusaScope(tenantId)
+
+        const { error } = await updateCustomerMetadata(
+            customerId,
+            { loyalty: loyaltyData },
+            scope
+        )
+
+        return { error }
+    } catch {
+        return { error: 'Failed to sync loyalty data' }
+    }
+}
+
+/**
+ * Reads loyalty data from Medusa customer.metadata.loyalty
+ * Returns null if no loyalty data exists yet.
+ */
+export async function fetchCustomerLoyalty(
+    customerId: string
+): Promise<{ loyalty: LoyaltyMedusaData | null; error: string | null }> {
+    try {
+        const { tenantId } = await withPanelGuard()
+        const scope = await getTenantMedusaScope(tenantId)
+
+        const customer = await getAdminCustomerDetail(customerId, scope)
+        if (!customer) {
+            return { loyalty: null, error: 'Customer not found' }
+        }
+
+        const loyalty = (customer.metadata?.loyalty as LoyaltyMedusaData) ?? null
+        return { loyalty, error: null }
+    } catch {
+        return { loyalty: null, error: 'Failed to fetch loyalty data' }
     }
 }

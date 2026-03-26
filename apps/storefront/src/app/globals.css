@@ -1,6 +1,41 @@
 @import "tailwindcss";
 
 /* ========================================================================
+   Untitled UI React – Foundation Layer
+   Coexists with existing design system. UUI components use these tokens.
+   ======================================================================== */
+@import "../styles/untitled-ui/theme.css";
+@import "../styles/untitled-ui/typography.css";
+
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+/* Dark mode variant: activates UUI dark tokens on .dark-mode class
+   AND when system prefers dark. This bridges with the project's existing
+   prefers-color-scheme dark mode approach. */
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+
+/* UUI label/focus variants */
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* UUI custom utilities */
+@utility scrollbar-hide {
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+/* ========================================================================
    SOTA E-Commerce Template Design System — Tailwind v4 CSS-first config
    ======================================================================== */
 
@@ -53,6 +88,79 @@
   /* --- Animation --- */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Standard Tailwind palettes (Tailwind v4 @theme inline strips defaults) --- */
+  /* Emerald */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  /* Teal */
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  /* Rose */
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  /* Amber */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  /* Violet */
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  /* Blue */
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  /* Orange */
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  /* Green (used in receipts/success) */
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  /* Red */
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+}
+
+/* ========================================================================
+   UUI ↔ Project Brand Bridge
+   Remaps UUI's hardcoded purple brand-* scale to the project's dynamic
+   --color-primary via color-mix(). ALL UUI semantic tokens (bg-brand-solid,
+   fg-brand-primary, focus-ring, border-brand, toggle, slider, etc.) chain
+   from this base scale, so this single block unifies the design system.
+   ======================================================================== */
+
+:root {
+  --color-brand-25:  color-mix(in srgb, var(--color-primary) 4%, white);
+  --color-brand-50:  color-mix(in srgb, var(--color-primary) 8%, white);
+  --color-brand-100: color-mix(in srgb, var(--color-primary) 15%, white);
+  --color-brand-200: color-mix(in srgb, var(--color-primary) 30%, white);
+  --color-brand-300: color-mix(in srgb, var(--color-primary) 45%, white);
+  --color-brand-400: color-mix(in srgb, var(--color-primary) 65%, white);
+  --color-brand-500: color-mix(in srgb, var(--color-primary) 85%, white);
+  --color-brand-600: var(--color-primary);
+  --color-brand-700: color-mix(in srgb, var(--color-primary) 85%, black);
+  --color-brand-800: color-mix(in srgb, var(--color-primary) 70%, black);
+  --color-brand-900: color-mix(in srgb, var(--color-primary) 55%, black);
+  --color-brand-950: color-mix(in srgb, var(--color-primary) 35%, black);
 }
 
 /* ========================================================================
@@ -1739,4 +1847,147 @@ body.drawer-open .whatsapp-float {
 .level-badge-thriving {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+}
+
+/* ═══════════════════════════════════════════════════
+ * POS Fullscreen Mode
+ * Body class toggled by POSClient via useEffect.
+ * Hides panel sidebar + topbar for distraction-free POS.
+ * ═══════════════════════════════════════════════════ */
+
+/* Hide desktop sidebar */
+body.pos-fullscreen aside.hidden.md\:flex {
+  display: none !important;
+}
+
+/* Hide mobile sidebar overlay */
+body.pos-fullscreen .md\:hidden.fixed.inset-0.z-50 {
+  display: none !important;
+}
+
+/* Remove topbar */
+body.pos-fullscreen [data-panel-topbar] {
+  display: none !important;
+}
+
+/* Remove content area constraints */
+body.pos-fullscreen .max-w-6xl {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Ensure full height */
+body.pos-fullscreen {
+  overflow: hidden;
+}
+
+/* ── POS Grid Layout (viewport-locked 65/35 split) ── */
+.pos-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 35%);
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Mobile: full-height products + bottom cart mini-bar */
+@media (max-width: 767px) {
+  .pos-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+}
+
+/* ── POS Viewport Lock ── */
+/* NOTE: PanelShell already sets h-dvh + overflow-hidden when isPOS.
+   pos-viewport fills that container — do NOT use 100dvh here. */
+.pos-viewport {
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface-0, #fff);
+}
+
+/* ── POS Cart Sidebar ── */
+.pos-cart-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-cart-sidebar__items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pos-cart-sidebar__footer {
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── POS Product Panel (only scrollable area) ── */
+.pos-products-panel {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  height: 100%;
+}
+
+/* ── Mobile Cart Bottom Sheet ── */
+@media (max-width: 767px) {
+  .pos-cart-minibar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: var(--color-surface-0, #fff);
+    border-top: 1px solid var(--color-surface-2, #e5e7eb);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pos-cart-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .pos-cart-sheet__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+  }
+
+  .pos-cart-sheet__panel {
+    position: relative;
+    max-height: 85dvh;
+    border-radius: 1.25rem 1.25rem 0 0;
+    background: var(--color-surface-0, #fff);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pos-cart-sheet__handle {
+    width: 2.5rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: var(--color-surface-3, #d1d5db);
+    margin: 0.5rem auto;
+    flex-shrink: 0;
+  }
 }

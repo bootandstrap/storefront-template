@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+
+// Mock client-side dependencies that can't run in SSR tests
+vi.mock('next/navigation', () => ({ usePathname: () => '/es/panel' }))
+vi.mock('@/components/panel/OrderNotifications', () => ({
+    default: () => null,
+}))
+
 import PanelTopbar from '../PanelTopbar'
 
 describe('panel-shell-responsive', () => {

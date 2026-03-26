@@ -4,20 +4,36 @@
  * StoreHealthCard — Animated circular progress ring showing store readiness score
  *
  * Displays: score (0-100), level badge, next action suggestion, checklist breakdown.
- * Compact mode for dashboard, expanded mode for full view.
+ * Labels are pre-resolved on the server to avoid passing functions to client components.
  */
 
-import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, ArrowRight, Check } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { ChevronDown, ChevronUp, ArrowRight, Check, RotateCcw, Globe } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import type { StoreReadinessResult, ReadinessCheck, StoreLevel } from '@/lib/store-readiness'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+export interface StoreHealthLabels {
+  title: string
+  completed: string
+  expand: string
+  collapse: string
+  levelLabels: Record<StoreLevel, string>
+  /** Pre-resolved check labels, keyed by check.id */
+  checkLabels: Record<string, string>
+  /** Pre-resolved next action label (if any) */
+  nextActionLabel?: string
+  /** Labels for quick-action footer buttons */
+  replayTourLabel?: string
+  languageLabel?: string
+}
+
 interface StoreHealthCardProps {
   readiness: StoreReadinessResult
-  t: (key: string) => string
+  labels: StoreHealthLabels
   compact?: boolean
   lang: string
 }
@@ -26,10 +42,10 @@ interface StoreHealthCardProps {
 // Constants
 // ---------------------------------------------------------------------------
 
-const LEVEL_CONFIG: Record<StoreLevel, { emoji: string; labelKey: string; cssClass: string }> = {
-  setup:    { emoji: '🔧', labelKey: 'storeHealth.level.setup',    cssClass: 'level-badge-setup' },
-  growing:  { emoji: '🌱', labelKey: 'storeHealth.level.growing',  cssClass: 'level-badge-growing' },
-  thriving: { emoji: '🌟', labelKey: 'storeHealth.level.thriving', cssClass: 'level-badge-thriving' },
+const LEVEL_CONFIG: Record<StoreLevel, { emoji: string; cssClass: string }> = {
+  setup:    { emoji: '🔧', cssClass: 'level-badge-setup' },
+  growing:  { emoji: '🌱', cssClass: 'level-badge-growing' },
+  thriving: { emoji: '🌟', cssClass: 'level-badge-thriving' },
 }
 
 const RING_RADIUS = 40
@@ -41,12 +57,20 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 export default function StoreHealthCard({
   readiness,
-  t,
+  labels,
   compact = false,
   lang,
 }: StoreHealthCardProps) {
   const [animatedScore, setAnimatedScore] = useState(0)
   const [expanded, setExpanded] = useState(false)
+  const router = useRouter()
+
+  const handleReplayTour = useCallback(() => {
+    try {
+      localStorage.removeItem('bns-tour-done')
+    } catch { /* noop */ }
+    router.refresh()
+  }, [router])
 
   // Animate score on mount
   useEffect(() => {
@@ -128,24 +152,24 @@ export default function StoreHealthCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
             <h3 className="text-sm font-bold text-text-primary">
-              {t('storeHealth.title')}
+              {labels.title}
             </h3>
             <span className={`level-badge ${levelConf.cssClass}`}>
-              {levelConf.emoji} {t(levelConf.labelKey)}
+              {levelConf.emoji} {labels.levelLabels[readiness.level]}
             </span>
           </div>
 
           <p className="text-xs text-text-muted mb-2">
-            {readiness.completedCount}/{readiness.totalCount} {t('storeHealth.completed')}
+            {readiness.completedCount}/{readiness.totalCount} {labels.completed}
           </p>
 
           {/* Next action suggestion */}
-          {readiness.nextAction && (
+          {readiness.nextAction && labels.nextActionLabel && (
             <a
               href={readiness.nextAction.actionHref}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-light transition-colors"
             >
-              {readiness.nextAction.emoji} {t(readiness.nextAction.descKey)}
+              {readiness.nextAction.emoji} {labels.nextActionLabel}
               <ArrowRight className="w-3 h-3" />
             </a>
           )}
@@ -161,7 +185,7 @@ export default function StoreHealthCard({
             className="w-full flex items-center justify-center gap-1 mt-3 pt-3 text-xs text-text-muted hover:text-text-secondary transition-colors"
             style={{ borderTop: '1px solid var(--color-surface-2)' }}
           >
-            {expanded ? t('storeHealth.collapse') : t('storeHealth.expand')}
+            {expanded ? labels.collapse : labels.expand}
             {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
@@ -184,13 +208,41 @@ export default function StoreHealthCard({
                   )}
                   <span className="text-lg flex-shrink-0">{check.emoji}</span>
                   <span className={`text-xs flex-1 ${check.done ? 'text-text-muted line-through' : 'text-text-primary font-medium'}`}>
-                    {t(check.labelKey)}
+                    {labels.checkLabels[check.id] ?? check.labelKey}
                   </span>
                   {!check.done && (
                     <ArrowRight className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </a>
               ))}
+            </div>
+          )}
+
+          {/* Quick-access footer: Replay Tour + Language */}
+          {(labels.replayTourLabel || labels.languageLabel) && (
+            <div
+              className="flex items-center justify-center gap-3 mt-3 pt-3"
+              style={{ borderTop: '1px solid var(--color-surface-2)' }}
+            >
+              {labels.replayTourLabel && (
+                <button
+                  type="button"
+                  onClick={handleReplayTour}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-text-muted hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/5"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  {labels.replayTourLabel}
+                </button>
+              )}
+              {labels.languageLabel && (
+                <a
+                  href={`/${lang}/panel/tienda`}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-text-muted hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/5"
+                >
+                  <Globe className="w-3 h-3" />
+                  {labels.languageLabel}
+                </a>
+              )}
             </div>
           )}
         </>

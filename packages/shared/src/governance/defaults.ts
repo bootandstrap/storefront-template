@@ -124,6 +124,21 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_abandoned_cart_emails: false,
         enable_email_campaigns: false,
         enable_email_templates: false,
+        // POS
+        enable_pos: false,
+        enable_pos_kiosk: false,
+        enable_pos_keyboard_shortcuts: false,
+        enable_pos_quick_sale: false,
+        enable_pos_offline_cart: false,
+        enable_pos_thermal_printer: false,
+        enable_pos_line_discounts: false,
+        enable_pos_customer_search: false,
+        enable_pos_multi_device: false,
+        enable_pos_shifts: false,
+        // Capacidad (Traffic)
+        enable_traffic_expansion: false,
+        enable_traffic_analytics: false,
+        enable_traffic_autoscale: false,
     },
     planLimits: {
         // MINIMUM VALUES — no capacity granted during degradation
@@ -137,6 +152,7 @@ export const FALLBACK_CONFIG: AppConfig = {
         max_admin_users: 0,
         storage_limit_mb: 0,
         plan_name: 'degraded',
+        plan_tier: null,
         plan_expires_at: null,
         max_languages: 1,
         max_currencies: 1,
@@ -152,6 +168,7 @@ export const FALLBACK_CONFIG: AppConfig = {
         max_wishlist_items: 0,
         max_promotions_active: 0,
         max_payment_methods: 0,
+        max_pos_payment_methods: 0,
         max_crm_contacts: 0,
     },
     planExpired: false,

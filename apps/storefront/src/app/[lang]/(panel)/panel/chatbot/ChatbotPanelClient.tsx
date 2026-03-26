@@ -1,7 +1,23 @@
 'use client'
 
+/**
+ * ChatbotPanelClient — Owner Panel (SOTA rewrite)
+ *
+ * Features:
+ * - PageEntrance animation
+ * - StatCard for summary metrics (replaces inline cards)
+ * - Animated settings toggles with motion indicator
+ * - Animated chart with motion path drawing
+ * - Loading skeleton instead of bare spinner
+ */
+
 import { useState, useEffect, useCallback } from 'react'
 import { MessageSquare, Coins, Save, Loader2, Bot, TrendingUp } from 'lucide-react'
+import { motion } from 'framer-motion'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import StatCard from '@/components/panel/StatCard'
+import { PageEntrance } from '@/components/panel/PanelAnimations'
+import { PageSkeleton } from '@/components/panel/PanelSkeleton'
 
 // ── Types ──────────────────────────────────────────────────
 interface DailyStat {
@@ -89,11 +105,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
     }, [])
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[40vh]">
-                <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
-            </div>
-        )
+        return <PageSkeleton />
     }
 
     // Chart geometry
@@ -128,53 +140,53 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
     const areaD = `${pathD} L ${vbW},${vbH} L 0,${vbH} Z`
 
     return (
-        <div className="space-y-8 max-w-4xl">
+        <PageEntrance className="space-y-6">
+            {/* Header */}
+            <PanelPageHeader
+                title="Chatbot IA"
+                subtitle={labels.model}
+                icon={<Bot className="w-5 h-5" />}
+            />
 
-            {/* ── Summary Stats ─────────────────────────────── */}
+            {/* Summary Stats — StatCard */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                    {
-                        label: labels.model,
-                        icon: Bot,
-                        value: MODEL_DISPLAY[stats?.activeModel || ''] || stats?.activeModel || '—',
-                    },
-                    {
-                        label: labels.messages,
-                        icon: MessageSquare,
-                        value: (stats?.summary.messages ?? 0).toLocaleString(),
-                    },
-                    {
-                        label: 'Tokens',
-                        icon: TrendingUp,
-                        value: (stats?.summary.tokens ?? 0) > 1000
+                <StatCard
+                    label={labels.model}
+                    value={MODEL_DISPLAY[stats?.activeModel || ''] || stats?.activeModel || '—'}
+                    icon={<Bot className="w-4 h-4" />}
+                    stagger={0}
+                />
+                <StatCard
+                    label={labels.messages}
+                    value={(stats?.summary.messages ?? 0).toLocaleString()}
+                    icon={<MessageSquare className="w-4 h-4" />}
+                    stagger={1}
+                />
+                <StatCard
+                    label="Tokens"
+                    value={
+                        (stats?.summary.tokens ?? 0) > 1000
                             ? `${((stats?.summary.tokens ?? 0) / 1000).toFixed(1)}k`
-                            : String(stats?.summary.tokens ?? 0),
-                    },
-                    {
-                        label: labels.cost,
-                        icon: Coins,
-                        value: `$${(stats?.summary.cost ?? 0).toFixed(4)}`,
-                    },
-                ].map((stat) => (
-                    <div
-                        key={stat.label}
-                        className="bg-surface-0 border border-surface-2 rounded-xl p-5"
-                    >
-                        <div className="flex items-center gap-2 mb-3">
-                            <stat.icon className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
-                            <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                                {stat.label}
-                            </span>
-                        </div>
-                        <p className="text-2xl font-bold font-display text-text-primary truncate">
-                            {stat.value}
-                        </p>
-                    </div>
-                ))}
+                            : String(stats?.summary.tokens ?? 0)
+                    }
+                    icon={<TrendingUp className="w-4 h-4" />}
+                    stagger={2}
+                />
+                <StatCard
+                    label={labels.cost}
+                    value={`$${(stats?.summary.cost ?? 0).toFixed(4)}`}
+                    icon={<Coins className="w-4 h-4" />}
+                    stagger={3}
+                />
             </div>
 
-            {/* ── Usage Chart ───────────────────────────────── */}
-            <div className="bg-surface-0 border border-surface-2 rounded-xl p-6">
+            {/* Usage Chart */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="glass rounded-2xl p-6"
+            >
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h3 className="text-sm font-semibold text-text-primary">
@@ -208,14 +220,23 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                 <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
                             </linearGradient>
                         </defs>
-                        <path d={areaD} fill="url(#area-fill)" />
-                        <path
+                        <motion.path
+                            d={areaD}
+                            fill="url(#area-fill)"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                        />
+                        <motion.path
                             d={pathD}
                             fill="none"
                             stroke="var(--color-primary)"
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ delay: 0.4, duration: 1, ease: 'easeOut' }}
                         />
                         {points.map((p, i) => (
                             <g key={i} className="group cursor-default">
@@ -254,61 +275,83 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                         {new Date().toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                     </span>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* ── Settings ──────────────────────────────────── */}
-            <div className="bg-surface-0 border border-surface-2 rounded-xl p-6">
+            {/* Settings */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="glass rounded-2xl p-6"
+            >
                 <h3 className="text-sm font-semibold text-text-primary mb-6">
                     {labels.settings}
                 </h3>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
                     {/* Left: AI Model + Temperature toggles */}
                     <div className="space-y-6">
-                        {/* Model */}
+                        {/* Model toggle */}
                         <div>
                             <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
                                 {labels.aiModel}
                             </label>
-                            <div className="inline-flex bg-surface-1 p-1 rounded-lg border border-surface-2">
+                            <div className="inline-flex glass p-1 rounded-xl">
                                 {MODEL_OPTIONS.map(o => (
                                     <button
                                         key={o.value}
                                         onClick={() => updateSetting('model', o.value)}
                                         disabled={saving === 'model'}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${settings.model === o.value
-                                                ? 'bg-surface-0 text-text-primary shadow-sm'
+                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                            settings.model === o.value
+                                                ? 'text-primary'
                                                 : 'text-text-muted hover:text-text-secondary'
-                                            }`}
+                                        }`}
                                     >
-                                        {o.label}
-                                        {saving === 'model' && settings.model === o.value && (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        {settings.model === o.value && (
+                                            <motion.div
+                                                layoutId="model-indicator"
+                                                className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                            />
                                         )}
+                                        <span className="relative z-10 flex items-center gap-1.5">
+                                            {o.label}
+                                            {saving === 'model' && settings.model === o.value && (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            )}
+                                        </span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Temperature */}
+                        {/* Temperature toggle */}
                         <div>
                             <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
                                 {labels.temperature}
                             </label>
-                            <div className="inline-flex bg-surface-1 p-1 rounded-lg border border-surface-2">
+                            <div className="inline-flex glass p-1 rounded-xl">
                                 {TEMPERATURE_OPTIONS.map(o => (
                                     <button
                                         key={o.value}
                                         onClick={() => updateSetting('temperature', o.value)}
                                         disabled={saving === 'temperature'}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex flex-col items-start gap-0 ${settings.temperature === o.value
-                                                ? 'bg-surface-0 text-text-primary shadow-sm'
+                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex flex-col items-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                            settings.temperature === o.value
+                                                ? 'text-primary'
                                                 : 'text-text-muted hover:text-text-secondary'
-                                            }`}
+                                        }`}
                                     >
-                                        <span>{o.label}</span>
-                                        <span className="text-[10px] opacity-60">{o.sub}</span>
+                                        {settings.temperature === o.value && (
+                                            <motion.div
+                                                layoutId="temp-indicator"
+                                                className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{o.label}</span>
+                                        <span className="relative z-10 text-[10px] opacity-60">{o.sub}</span>
                                     </button>
                                 ))}
                             </div>
@@ -327,7 +370,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                 ].map(({ key, label, default: def }) => (
                                     <div
                                         key={key}
-                                        className="bg-surface-1 border border-surface-2 rounded-lg p-3 focus-within:border-primary/50 transition-colors"
+                                        className="glass rounded-xl p-3 focus-within:ring-2 focus-within:ring-primary/30 transition-all"
                                     >
                                         <label className="block text-[10px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                                             {label}
@@ -339,12 +382,12 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                                 onChange={e =>
                                                     setSettings(prev => ({ ...prev, [key]: e.target.value }))
                                                 }
-                                                className="w-full bg-transparent text-base font-semibold text-text-primary outline-none appearance-none"
+                                                className="w-full bg-transparent text-base font-semibold text-text-primary outline-none appearance-none min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg"
                                             />
                                             <button
                                                 onClick={() => updateSetting(key, settings[key] || def)}
                                                 disabled={saving === key}
-                                                className="w-6 h-6 rounded flex items-center justify-center text-text-muted hover:text-primary transition-colors disabled:opacity-40"
+                                                className="w-7 h-7 min-h-[28px] rounded-lg flex items-center justify-center text-text-muted hover:text-primary transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                                             >
                                                 {saving === key
                                                     ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -379,7 +422,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                 }
                                 placeholder={labels.welcomePlaceholder}
                                 rows={5}
-                                className="w-full px-4 py-3 rounded-lg border border-surface-2 bg-surface-0 text-text-primary text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all outline-none resize-none"
+                                className="w-full px-4 py-3 min-h-[44px] rounded-xl glass text-text-primary text-sm focus:ring-2 focus:ring-primary/30 transition-all outline-none resize-none"
                             />
                             <button
                                 onClick={() =>
@@ -389,7 +432,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                     )
                                 }
                                 disabled={saving === `welcome_message_${locale}`}
-                                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary-light transition-colors disabled:opacity-50"
+                                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-light transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                             >
                                 {saving === `welcome_message_${locale}`
                                     ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -400,7 +443,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </PageEntrance>
     )
 }

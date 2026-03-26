@@ -65,9 +65,11 @@ describe('requirePanelAuth', () => {
         await expect(requirePanelAuth()).rejects.toThrow('requires a tenant_id')
     })
 
-    it('throws when role is super_admin', async () => {
+    it('succeeds when role is super_admin (panel role)', async () => {
         mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
         mockSingle.mockResolvedValue({ data: { role: 'super_admin', tenant_id: 'sa-tenant' } })
-        await expect(requirePanelAuth()).rejects.toThrow('Insufficient permissions')
+        const result = await requirePanelAuth()
+        expect(result.role).toBe('super_admin')
+        expect(result.tenantId).toBe('sa-tenant')
     })
 })

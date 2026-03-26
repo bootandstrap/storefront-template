@@ -141,6 +141,8 @@ describe('Limit Enforcement Scenarios', () => {
         max_promotions_active: 2,
         max_payment_methods: 2,
         max_crm_contacts: 100,
+        plan_tier: 'starter',
+        max_pos_payment_methods: 2,
     }
 
     const proPlan = {

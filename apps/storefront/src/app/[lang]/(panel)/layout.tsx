@@ -37,7 +37,7 @@ export default async function PanelLayout({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Auth guard: check owner role
+    // Auth guard: check owner/super_admin role
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -45,14 +45,17 @@ export default async function PanelLayout({
         redirect(`/${lang}/login`)
     }
 
-    // Check role in profiles table
+    // Check role in profiles table — super_admin may not have a profile row
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role, first_name, last_name')
+        .select('role, full_name')
         .eq('id', user.id)
         .single()
 
-    if (!isPanelRole(profile?.role)) {
+    // Resolve role: profile > user_metadata fallback (super_admin may only have metadata)
+    const resolvedRole = profile?.role ?? user.user_metadata?.role ?? null
+
+    if (!isPanelRole(resolvedRole)) {
         redirect(`/${lang}/cuenta`)
     }
 
@@ -88,6 +91,7 @@ export default async function PanelLayout({
         featureFlags.enable_self_service_returns,
         featureFlags.enable_crm,
         featureFlags.enable_reviews,
+        featureFlags.enable_pos,
     ]
     const activeModuleCount = moduleFlags.filter(Boolean).length
 
@@ -95,11 +99,15 @@ export default async function PanelLayout({
     let achievementUnlockedIds: string[] = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const storedAchievements: string[] = (config as any).achievements_unlocked || []
+    let readinessScore = 0
+    let readinessRemaining = 0
 
     if (config.onboarding_completed) {
         try {
             const tenantId = config.tenant_id || ''
             const readiness = await calculateStoreReadiness(tenantId, lang)
+            readinessScore = readiness.score
+            readinessRemaining = readiness.checks.filter(c => !c.done).length
 
             let productCount = 0
             let categoryCount = 0
@@ -139,6 +147,10 @@ export default async function PanelLayout({
         }
     }
 
+    // Pre-compute new IDs server-side so the client only gets truly new ones
+    const storedSet = new Set(storedAchievements)
+    const newAchievementIds = achievementUnlockedIds.filter(id => !storedSet.has(id))
+
     // Build achievement label map
     const achievementLabels = Object.fromEntries(
         Object.keys(dictionary)
@@ -147,13 +159,14 @@ export default async function PanelLayout({
     )
 
     // ── Owner name resolution ──
-    const ownerName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || config.business_name || ''
+    const ownerName = profile?.full_name || config.business_name || ''
 
     // ── Breadcrumb map (segment → localized label) ──
     const breadcrumbMap: Record<string, string> = {
         catalogo: t('panel.nav.catalog'),
         pedidos: t('panel.nav.orders'),
         clientes: t('panel.nav.customers'),
+        utilidades: t('panel.nav.utilities'),
         tienda: t('panel.nav.storeConfig'),
         envios: t('panel.nav.shipping'),
         'mi-proyecto': t('panel.nav.myProject'),
@@ -167,6 +180,7 @@ export default async function PanelLayout({
         devoluciones: t('panel.nav.returns'),
         crm: t('panel.nav.crm'),
         resenas: t('panel.nav.reviews'),
+        pos: t('panel.nav.pos'),
         suscripcion: t('panel.nav.subscription'),
     }
 
@@ -186,6 +200,7 @@ export default async function PanelLayout({
             catalog: t('panel.nav.catalog'),
             orders: t('panel.nav.orders'),
             customers: t('panel.nav.customers'),
+            utilities: t('panel.nav.utilities'),
             storeConfig: t('panel.nav.storeConfig'),
             shipping: t('panel.nav.shipping'),
             myProject: t('panel.nav.myProject'),
@@ -199,8 +214,13 @@ export default async function PanelLayout({
             returns: t('panel.nav.returns'),
             crm: t('panel.nav.crm'),
             reviews: t('panel.nav.reviews'),
+            pos: t('panel.nav.pos'),
+            capacidad: t('panel.nav.capacidad'),
             ownerPanel: t('panel.nav.ownerPanel'),
             backToStore: t('panel.nav.backToStore'),
+            groupOperations: t('panel.nav.groupOperations'),
+            groupContent: t('panel.nav.groupContent'),
+            groupSettings: t('panel.nav.groupSettings'),
         },
         featureFlags,
     })
@@ -249,6 +269,7 @@ export default async function PanelLayout({
 
     return (
         <PanelShell
+            tenantId={config.tenant_id ?? undefined}
             lang={lang}
             ownerName={ownerName}
             businessName={config.business_name}
@@ -257,6 +278,7 @@ export default async function PanelLayout({
                 catalog: t('panel.nav.catalog'),
                 orders: t('panel.nav.orders'),
                 customers: t('panel.nav.customers'),
+                utilities: t('panel.nav.utilities'),
                 storeConfig: t('panel.nav.storeConfig'),
                 shipping: t('panel.nav.shipping'),
                 myProject: t('panel.nav.myProject'),
@@ -270,8 +292,13 @@ export default async function PanelLayout({
                 returns: t('panel.nav.returns'),
                 crm: t('panel.nav.crm'),
                 reviews: t('panel.nav.reviews'),
+                pos: t('panel.nav.pos'),
+                capacidad: t('panel.nav.capacidad'),
                 ownerPanel: t('panel.nav.ownerPanel'),
                 backToStore: t('panel.nav.backToStore'),
+                groupOperations: t('panel.nav.groupOperations'),
+                groupContent: t('panel.nav.groupContent'),
+                groupSettings: t('panel.nav.groupSettings'),
             }}
             featureFlags={{
                 enable_carousel: featureFlags.enable_carousel,
@@ -282,6 +309,7 @@ export default async function PanelLayout({
                 enable_self_service_returns: featureFlags.enable_self_service_returns,
                 enable_crm: featureFlags.enable_crm,
                 enable_reviews: featureFlags.enable_reviews,
+                enable_pos: featureFlags.enable_pos,
                 owner_lite_enabled: featureFlags.owner_lite_enabled,
                 owner_advanced_modules_enabled: featureFlags.owner_advanced_modules_enabled,
             }}
@@ -295,6 +323,10 @@ export default async function PanelLayout({
             planName={planLimits.plan_name}
             commandPaletteItems={commandPaletteItems}
             commandPaletteLabels={commandPaletteLabels}
+            setupNudge={config.onboarding_completed && readinessScore < 60 && readinessRemaining > 0 ? {
+                label: t('panel.topbar.stepsLeft').replace('{{count}}', String(readinessRemaining)),
+                href: `/${lang}/panel`,
+            } : null}
         >
             {/* Onboarding — welcome + guided tour on first panel access */}
             {!config.onboarding_completed && (
@@ -318,6 +350,7 @@ export default async function PanelLayout({
             <AchievementProvider
                 currentlyUnlocked={achievementUnlockedIds}
                 previouslyStored={storedAchievements}
+                newAchievementIds={newAchievementIds}
                 achievementLabels={achievementLabels}
                 unlockLabel={t('achievement.unlocked')}
             >

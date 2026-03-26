@@ -20,7 +20,7 @@ export async function loginAction(
     const requestedRedirect = formData.get('redirect') as string | null
 
     if (!email || !password) {
-        return { error: 'Email and password are required', success: false }
+        return { error: 'missing_fields', success: false }
     }
 
     const supabase = await createClient()

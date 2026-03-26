@@ -11,6 +11,7 @@ const defaultFlags = {
     enable_whatsapp_checkout: true,
     enable_cms_pages: true,
     enable_analytics: true,
+    enable_product_badges: true,
 }
 
 // Owner lite mode: owner_lite_enabled=true, advanced=false

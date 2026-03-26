@@ -27,6 +27,7 @@ function fullFlags(): PanelFeatureFlags {
         ...baseFlags(),
         owner_lite_enabled: true,
         owner_advanced_modules_enabled: true,
+        enable_product_badges: true,
     }
 }
 
@@ -36,6 +37,7 @@ function baseLabels() {
         catalog: 'Catalog',
         orders: 'Orders',
         customers: 'Customers',
+        utilities: 'Utilities',
         storeConfig: 'Store',
         shipping: 'Shipping',
         myProject: 'My Project',
@@ -49,8 +51,13 @@ function baseLabels() {
         returns: 'Returns',
         crm: 'CRM',
         reviews: 'Reviews',
+        pos: 'POS',
+        capacidad: 'Capacity',
         ownerPanel: 'Owner Panel',
         backToStore: 'Back',
+        groupOperations: 'Operations',
+        groupContent: 'Content',
+        groupSettings: 'Settings',
     }
 }
 
@@ -62,7 +69,7 @@ describe('panel-modules', () => {
             featureFlags: baseFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(7)
+        expect(nav.essentialItems).toHaveLength(9)
         expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
         expect(nav.moduleItems.length).toBeGreaterThan(0)
     })
@@ -74,7 +81,7 @@ describe('panel-modules', () => {
             featureFlags: liteFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(7)
+        expect(nav.essentialItems).toHaveLength(9)
         expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
         expect(nav.moduleItems).toHaveLength(0)
     })
@@ -97,6 +104,20 @@ describe('panel-modules', () => {
         ])
     })
 
+    it('excludes badges when enable_product_badges is off', () => {
+        const flags = fullFlags()
+        flags.enable_analytics = false
+        flags.enable_product_badges = false
+
+        const nav = getPanelNavigation({
+            lang: 'es',
+            labels: baseLabels(),
+            featureFlags: flags,
+        })
+
+        expect(nav.moduleItems.map(item => item.key)).not.toContain('badges')
+    })
+
     it('blocks advanced routes in owner lite mode', () => {
         expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', liteFlags())).toBe(false)
         expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', liteFlags())).toBe(false)
@@ -112,5 +133,14 @@ describe('panel-modules', () => {
         expect(
             isAdvancedPanelRouteEnabled('/es/panel/insignias', flags)
         ).toBe(true)
+    })
+
+    it('blocks insignias when enable_product_badges is off', () => {
+        const flags = fullFlags()
+        flags.enable_product_badges = false
+
+        expect(
+            isAdvancedPanelRouteEnabled('/es/panel/insignias', flags)
+        ).toBe(false)
     })
 })

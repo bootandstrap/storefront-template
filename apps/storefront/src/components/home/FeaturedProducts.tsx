@@ -12,7 +12,16 @@ interface FeaturedProductsProps {
 
 export default async function FeaturedProducts({ dictionary, lang }: FeaturedProductsProps) {
     const t = createTranslator(dictionary)
-    const { products } = await getProducts({ limit: 8 })
+
+    // Graceful fallback: Medusa might not be running (local dev, cold start)
+    let products: Awaited<ReturnType<typeof getProducts>>['products'] = []
+    try {
+        const res = await getProducts({ limit: 8 })
+        products = res.products
+    } catch {
+        // Medusa down — show empty state instead of crashing
+    }
+
     const { featureFlags } = await getConfig()
 
     if (!products.length) {

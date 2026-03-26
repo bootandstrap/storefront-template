@@ -9,13 +9,17 @@
  */
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { useRealtimeGovernance } from '@/lib/hooks/useRealtimeGovernance'
 import PanelTopbar from '@/components/panel/PanelTopbar'
 import PanelSidebar from '@/components/panel/PanelSidebar'
 import CommandPalette from '@/components/panel/CommandPalette'
+import PanelToaster from '@/components/panel/PanelToaster'
 import type { CommandItem, CommandPaletteLabels } from '@/components/panel/CommandPalette'
 import type { PanelFeatureFlags, PanelSidebarLabels } from '@/lib/panel-policy'
 
 interface PanelShellProps {
+    tenantId?: string
     lang: string
     ownerName: string
     businessName: string
@@ -38,10 +42,13 @@ interface PanelShellProps {
     onboardingCompleted?: boolean
     replayTourLabel?: string
     tourTranslations?: Record<string, string>
+    /** Inline setup nudge for the topbar greeting */
+    setupNudge?: { label: string; href: string } | null
     children: React.ReactNode
 }
 
 export default function PanelShell({
+    tenantId,
     lang,
     ownerName,
     businessName,
@@ -56,37 +63,57 @@ export default function PanelShell({
     onboardingCompleted,
     replayTourLabel,
     tourTranslations,
+    setupNudge,
     children,
 }: PanelShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
+    const pathname = usePathname()
+    const isPOS = pathname.includes('/pos')
+
+    // ── Realtime governance: live push of flag/limit/module changes ──
+    useRealtimeGovernance(tenantId)
 
     return (
-        <div className="min-h-screen bg-surface-0 md:flex">
-            <PanelSidebar
-                lang={lang}
-                businessName={businessName}
-                labels={sidebarLabels}
-                featureFlags={featureFlags}
-                planName={planName}
-                onboardingCompleted={onboardingCompleted}
-                replayTourLabel={replayTourLabel}
-                tourTranslations={tourTranslations}
-                mobileOpen={mobileOpen}
-                onMobileOpenChange={setMobileOpen}
-            />
-            <div className="flex-1 overflow-auto">
-                <PanelTopbar
-                    ownerName={ownerName}
-                    businessName={businessName}
+        <div
+            className={`bg-surface-0 md:flex ${isPOS ? 'overflow-hidden' : 'min-h-screen'}`}
+            style={isPOS ? { height: '100dvh' } : undefined}
+        >
+            {!isPOS && (
+                <PanelSidebar
                     lang={lang}
-                    breadcrumbMap={breadcrumbMap}
-                    greetings={greetings}
-                    labels={topbarLabels}
-                    onMenuClick={() => setMobileOpen(true)}
+                    businessName={businessName}
+                    labels={sidebarLabels}
+                    featureFlags={featureFlags}
+                    planName={planName}
+                    onboardingCompleted={onboardingCompleted}
+                    replayTourLabel={replayTourLabel}
+                    tourTranslations={tourTranslations}
+                    mobileOpen={mobileOpen}
+                    onMobileOpenChange={setMobileOpen}
                 />
-                <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
-                    {children}
-                </div>
+            )}
+            <div className={`flex-1 min-h-0 ${isPOS ? 'overflow-hidden flex flex-col h-full' : 'overflow-auto'}`}>
+                {!isPOS && (
+                    <PanelTopbar
+                        ownerName={ownerName}
+                        businessName={businessName}
+                        lang={lang}
+                        breadcrumbMap={breadcrumbMap}
+                        greetings={greetings}
+                        labels={topbarLabels}
+                        setupNudge={setupNudge}
+                        onMenuClick={() => setMobileOpen(true)}
+                    />
+                )}
+                {isPOS ? (
+                    <div className="flex-1 min-h-0 overflow-hidden h-full">
+                        {children}
+                    </div>
+                ) : (
+                    <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
+                        {children}
+                    </div>
+                )}
             </div>
             {/* Global Command Palette — ⌘K / Ctrl+K */}
             <CommandPalette
@@ -94,6 +121,8 @@ export default function PanelShell({
                 labels={commandPaletteLabels}
                 lang={lang}
             />
+            {/* Global Toast Provider — call toast() from anywhere */}
+            <PanelToaster />
         </div>
     )
 }

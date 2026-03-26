@@ -78,6 +78,21 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_abandoned_cart_emails: true,
                 enable_email_campaigns: true,
                 enable_email_templates: true,
+                // POS
+                enable_pos: true,
+                enable_pos_kiosk: true,
+                enable_pos_keyboard_shortcuts: true,
+                enable_pos_quick_sale: true,
+                enable_pos_offline_cart: true,
+                enable_pos_thermal_printer: true,
+                enable_pos_line_discounts: true,
+                enable_pos_customer_search: true,
+                enable_pos_multi_device: true,
+                enable_pos_shifts: true,
+                // Capacidad
+                enable_traffic_expansion: true,
+                enable_traffic_analytics: true,
+                enable_traffic_autoscale: true,
             }
 
             const interfaceKeys = Object.keys(dummyFlags).sort()
@@ -117,6 +132,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 max_admin_users: 3,
                 storage_limit_mb: 500,
                 plan_name: 'starter',
+                plan_tier: null,
                 plan_expires_at: null,
                 max_languages: 1,
                 max_currencies: 1,
@@ -132,6 +148,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 max_wishlist_items: 100,
                 max_promotions_active: 5,
                 max_payment_methods: 3,
+                max_pos_payment_methods: 3,
                 max_crm_contacts: 200,
             }
 
@@ -196,8 +213,8 @@ describe('Config Schema Alignment (Governance Contract)', () => {
 
         it('module keys are all canonical', () => {
             const expectedModules = [
-                'auth_advanced', 'automation', 'chatbot', 'crm',
-                'ecommerce', 'email_marketing', 'i18n', 'rrss',
+                'auth_advanced', 'automation', 'capacidad', 'chatbot', 'crm',
+                'ecommerce', 'email_marketing', 'i18n', 'pos', 'rrss',
                 'sales_channels', 'seo',
             ]
             expect(contract.modules.keys.sort()).toEqual(expectedModules.sort())

@@ -46,8 +46,21 @@ const mockFlags: FeatureFlags = {
     enable_abandoned_cart_emails: false,
     enable_email_campaigns: false,
     enable_email_templates: false,
+    enable_pos: false,
+    enable_pos_kiosk: false,
+    enable_pos_keyboard_shortcuts: false,
+    enable_pos_quick_sale: false,
+    enable_pos_offline_cart: false,
+    enable_pos_thermal_printer: false,
+    enable_pos_line_discounts: false,
+    enable_pos_customer_search: false,
+    enable_pos_multi_device: false,
+    enable_pos_shifts: false,
     owner_lite_enabled: true,
     owner_advanced_modules_enabled: false,
+    enable_traffic_expansion: false,
+    enable_traffic_analytics: false,
+    enable_traffic_autoscale: false,
 }
 
 describe('isFeatureEnabled', () => {

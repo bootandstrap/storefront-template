@@ -6,10 +6,13 @@ describe('resolvePostLoginDestination', () => {
         expect(resolvePostLoginDestination({ lang: 'es', role: 'owner' })).toBe('/es/panel')
     })
 
-    it('sends non-owner roles to account by default', () => {
+    it('sends super_admin to panel (panel role)', () => {
+        expect(resolvePostLoginDestination({ lang: 'es', role: 'super_admin' })).toBe('/es/panel')
+    })
+
+    it('sends non-panel roles to account by default', () => {
         expect(resolvePostLoginDestination({ lang: 'es', role: 'customer' })).toBe('/es/cuenta')
         expect(resolvePostLoginDestination({ lang: 'es', role: 'admin' })).toBe('/es/cuenta')
-        expect(resolvePostLoginDestination({ lang: 'es', role: 'super_admin' })).toBe('/es/cuenta')
         expect(resolvePostLoginDestination({ lang: 'es', role: null })).toBe('/es/cuenta')
     })
 

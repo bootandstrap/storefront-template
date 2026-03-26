@@ -1,10 +1,30 @@
 'use client'
 
+/**
+ * CRM Client — Owner Panel (SOTA rewrite)
+ *
+ * Features:
+ * - PageEntrance + ListStagger animations
+ * - StatCard for summary metrics (replaces hand-rolled inline cards)
+ * - Animated segment filter tabs with motion indicator
+ * - Animated empty state + search "no results"
+ * - Usage meter for plan limit
+ * - Feature action cards with hover animations
+ */
+
 import { useState, useTransition } from 'react'
-import { Search, Download, Users, Tag, Lock, Loader2 } from 'lucide-react'
+import PanelBadge from '@/components/panel/PanelBadge'
+import { Search, Download, Users, Tag, Lock, Loader2, UserCheck, UserPlus } from 'lucide-react'
+import { motion } from 'framer-motion'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import StatCard from '@/components/panel/StatCard'
+import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import { exportCrmCsv } from './actions'
 
-// Module-level constant — computed once at import time, not during render
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const DAYS_30_AGO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
 // ---------------------------------------------------------------------------
@@ -60,6 +80,8 @@ interface Props {
     labels: Labels
 }
 
+type Segment = 'all' | 'withOrders' | 'recent'
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -75,7 +97,7 @@ export default function CRMClient({
     labels,
 }: Props) {
     const [searchQuery, setSearchQuery] = useState('')
-    const [activeSegment, setActiveSegment] = useState<'all' | 'withOrders' | 'recent'>('all')
+    const [activeSegment, setActiveSegment] = useState<Segment>('all')
     const [isExporting, startExport] = useTransition()
     const usagePercent = maxContacts > 0 ? Math.min((totalCustomers / maxContacts) * 100, 100) : 0
 
@@ -105,33 +127,94 @@ export default function CRMClient({
         })
     }
 
-    return (
-        <div className="space-y-6 max-w-5xl">
+    const formatDate = (iso: string) => {
+        try {
+            return new Date(iso).toLocaleDateString(
+                lang === 'es' ? 'es-ES' : lang,
+                { day: 'numeric', month: 'short', year: 'numeric' }
+            )
+        } catch {
+            return iso.slice(0, 10)
+        }
+    }
 
-            {/* ── Summary Stats ─────────────────────────────── */}
-            <div className="grid grid-cols-3 gap-4">
-                {[
-                    { label: labels.totalContacts, value: segments.total, highlight: false },
-                    { label: labels.withOrders, value: segments.withOrders, highlight: false },
-                    { label: labels.newLast30d, value: segments.recent, highlight: true },
-                ].map(stat => (
-                    <div
-                        key={stat.label}
-                        className="bg-surface-0 border border-surface-2 rounded-xl p-5"
-                    >
-                        <p className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
-                            {stat.label}
-                        </p>
-                        <p className={`text-3xl font-bold font-display ${stat.highlight ? 'text-primary' : 'text-text-primary'}`}>
-                            {stat.value}
+    const segmentTabs: { key: Segment; label: string; count: number }[] = [
+        { key: 'all', label: labels.allContacts, count: segments.total },
+        { key: 'withOrders', label: labels.withOrders, count: segments.withOrders },
+        { key: 'recent', label: labels.newLast30d, count: segments.recent },
+    ]
+
+    // Full empty state
+    if (segments.total === 0) {
+        return (
+            <PageEntrance className="space-y-5">
+                <PanelPageHeader
+                    title={labels.title}
+                    subtitle={labels.subtitle}
+                    icon={<Users className="w-5 h-5" />}
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="glass rounded-2xl"
+                >
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <Users className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {labels.noData}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed">
+                            {labels.subtitle}
                         </p>
                     </div>
-                ))}
+                </motion.div>
+            </PageEntrance>
+        )
+    }
+
+    return (
+        <PageEntrance className="space-y-5">
+            {/* Header */}
+            <PanelPageHeader
+                title={labels.title}
+                subtitle={labels.subtitle}
+                icon={<Users className="w-5 h-5" />}
+                badge={segments.total}
+            />
+
+            {/* Summary Stats — using StatCard */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <StatCard
+                    label={labels.totalContacts}
+                    value={segments.total}
+                    icon={<Users className="w-4 h-4" />}
+                    stagger={0}
+                />
+                <StatCard
+                    label={labels.withOrders}
+                    value={segments.withOrders}
+                    icon={<UserCheck className="w-4 h-4" />}
+                    stagger={1}
+                />
+                <StatCard
+                    label={labels.newLast30d}
+                    value={segments.recent}
+                    icon={<UserPlus className="w-4 h-4" />}
+                    variant="hero"
+                    stagger={2}
+                />
             </div>
 
-            {/* ── Plan usage ────────────────────────────────── */}
+            {/* Plan usage bar */}
             {maxContacts > 0 && (
-                <div className="bg-surface-0 border border-surface-2 rounded-xl px-5 py-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="glass rounded-2xl px-5 py-4"
+                >
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-text-muted">
                             {labels.usageOf}
@@ -141,20 +224,22 @@ export default function CRMClient({
                         </span>
                     </div>
                     <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full rounded-full transition-all duration-700 ${usagePercent > 90 ? 'bg-red-500' :
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${usagePercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+                            className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' :
                                     usagePercent > 70 ? 'bg-amber-500' : 'bg-primary'
                                 }`}
-                            style={{ width: `${usagePercent}%` }}
                         />
                     </div>
-                </div>
+                </motion.div>
             )}
 
-            {/* ── Contact List ──────────────────────────────── */}
+            {/* Contact list with toolbar */}
             {customers.length > 0 && (
                 <div className="space-y-3">
-                    {/* Toolbar */}
+                    {/* Toolbar: Search + Segment tabs */}
                     <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -163,26 +248,33 @@ export default function CRMClient({
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 placeholder={labels.searchPlaceholder}
-                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-surface-0 border border-surface-2 text-text-primary text-sm focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-text-muted"
+                                className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-text-muted"
                             />
                         </div>
                         {enableSegmentation && (
-                            <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-surface-2">
-                                {[
-                                    { key: 'all' as const, label: labels.allContacts, count: segments.total },
-                                    { key: 'withOrders' as const, label: labels.withOrders, count: segments.withOrders },
-                                    { key: 'recent' as const, label: labels.newLast30d, count: segments.recent },
-                                ].map(seg => (
+                            <div className="flex items-center gap-1 p-1 glass rounded-xl">
+                                {segmentTabs.map(seg => (
                                     <button
                                         key={seg.key}
                                         onClick={() => setActiveSegment(seg.key)}
-                                        className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all duration-150 ${activeSegment === seg.key
-                                                ? 'bg-surface-0 text-text-primary shadow-sm'
+                                        aria-pressed={activeSegment === seg.key}
+                                        className={`relative px-3 py-2 min-h-[40px] rounded-lg text-xs font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                            activeSegment === seg.key
+                                                ? 'text-primary'
                                                 : 'text-text-muted hover:text-text-secondary'
-                                            }`}
+                                        }`}
                                     >
-                                        {seg.label}
-                                        <span className="ml-1 opacity-50">({seg.count})</span>
+                                        {activeSegment === seg.key && (
+                                            <motion.div
+                                                layoutId="crm-segment-indicator"
+                                                className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">
+                                            {seg.label}
+                                            <span className="ml-1 opacity-50">({seg.count})</span>
+                                        </span>
                                     </button>
                                 ))}
                             </div>
@@ -190,7 +282,7 @@ export default function CRMClient({
                     </div>
 
                     {/* Table */}
-                    <div className="bg-surface-0 border border-surface-2 rounded-xl overflow-hidden">
+                    <div className="glass rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
@@ -210,11 +302,17 @@ export default function CRMClient({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-2/60">
-                                    {filteredCustomers.map(c => (
-                                        <tr key={c.id} className="hover:bg-surface-1/40 transition-colors">
+                                    {filteredCustomers.map((c, i) => (
+                                        <motion.tr
+                                            key={c.id}
+                                            initial={{ opacity: 0, y: 4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.02 }}
+                                            className="hover:bg-surface-1/40 transition-colors"
+                                        >
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center text-text-primary text-xs font-semibold flex-shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
                                                         {(c.firstName?.[0] || c.email[0] || '?').toUpperCase()}
                                                     </div>
                                                     <div className="min-w-0">
@@ -234,39 +332,46 @@ export default function CRMClient({
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 {c.orderCount > 0 ? (
-                                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-700 dark:text-green-400">
+                                                    <PanelBadge variant="success" size="sm">
                                                         {c.orderCount}
-                                                    </span>
+                                                    </PanelBadge>
                                                 ) : (
                                                     <span className="text-text-muted text-xs">—</span>
                                                 )}
                                             </td>
                                             <td className="px-5 py-4 text-right text-text-muted text-xs hidden md:table-cell">
-                                                {new Date(c.createdAt).toLocaleDateString(
-                                                    lang === 'es' ? 'es-ES' : lang,
-                                                    { day: 'numeric', month: 'short', year: 'numeric' }
-                                                )}
+                                                {formatDate(c.createdAt)}
                                             </td>
-                                        </tr>
+                                        </motion.tr>
                                     ))}
                                 </tbody>
                             </table>
                             {filteredCustomers.length === 0 && searchQuery && (
-                                <div className="px-5 py-10 text-center text-text-muted text-sm">
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="px-5 py-10 text-center text-text-muted text-sm"
+                                >
                                     No contacts matching &quot;{searchQuery}&quot;
-                                </div>
+                                </motion.div>
                             )}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── CRM Actions ───────────────────────────────── */}
+            {/* CRM Actions — Feature cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Segmentation */}
-                <div className={`bg-surface-0 border border-surface-2 rounded-xl p-5 ${!enableSegmentation ? 'opacity-60' : ''}`}>
+                {/* Segmentation card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    whileHover={{ y: -2 }}
+                    className={`glass rounded-2xl p-5 transition-shadow hover:shadow-lg ${!enableSegmentation ? 'opacity-60' : ''}`}
+                >
                     <div className="flex items-start gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-surface-1 flex items-center justify-center text-text-muted flex-shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 flex items-center justify-center text-primary flex-shrink-0">
                             <Tag className="w-4 h-4" />
                         </div>
                         <div>
@@ -280,21 +385,27 @@ export default function CRMClient({
                     </div>
                     <div className="flex items-center gap-2 mt-4">
                         {enableSegmentation ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {labels.comingSoon}
-                            </span>
+                            <PanelBadge variant="info" size="sm">
+                                                {labels.comingSoon}
+                                            </PanelBadge>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-2 text-text-muted">
+                            <PanelBadge variant="neutral" size="sm">
                                 <Lock className="w-3 h-3" /> {labels.comingSoon}
-                            </span>
+                            </PanelBadge>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Export */}
-                <div className={`bg-surface-0 border border-surface-2 rounded-xl p-5 ${!enableExport ? 'opacity-60' : ''}`}>
+                {/* Export card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    whileHover={{ y: -2 }}
+                    className={`glass rounded-2xl p-5 transition-shadow hover:shadow-lg ${!enableExport ? 'opacity-60' : ''}`}
+                >
                     <div className="flex items-start gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-surface-1 flex items-center justify-center text-text-muted flex-shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 flex items-center justify-center text-primary flex-shrink-0">
                             <Download className="w-4 h-4" />
                         </div>
                         <div>
@@ -311,7 +422,8 @@ export default function CRMClient({
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-text-primary text-surface-0 hover:bg-primary transition-colors disabled:opacity-50"
+                                aria-label={labels.exportContacts}
+                                className="btn btn-primary inline-flex items-center gap-2 text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                             >
                                 {isExporting
                                     ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -320,26 +432,13 @@ export default function CRMClient({
                                 {isExporting ? labels.downloading : labels.exportContacts}
                             </button>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-2 text-text-muted">
+                            <PanelBadge variant="neutral" size="sm">
                                 <Lock className="w-3 h-3" /> {labels.comingSoon}
-                            </span>
+                            </PanelBadge>
                         )}
                     </div>
-                </div>
+                </motion.div>
             </div>
-
-            {/* ── Empty state ───────────────────────────────── */}
-            {segments.total === 0 && (
-                <div className="bg-surface-0 border border-surface-2 rounded-xl p-12 text-center">
-                    <Users className="w-8 h-8 text-text-muted mx-auto mb-4" strokeWidth={1.5} />
-                    <h3 className="text-base font-semibold text-text-primary mb-1">
-                        {labels.noData}
-                    </h3>
-                    <p className="text-sm text-text-muted">
-                        {labels.subtitle}
-                    </p>
-                </div>
-            )}
-        </div>
+        </PageEntrance>
     )
 }

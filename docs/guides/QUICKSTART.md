@@ -6,10 +6,9 @@
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Node.js | ≥ 18 | [nodejs.org](https://nodejs.org) |
-| pnpm | ≥ 8 | `npm i -g pnpm` |
-| PostgreSQL | ≥ 14 | [postgresql.org](https://www.postgresql.org/download/) |
-| Docker | Any | [docker.com](https://www.docker.com) (optional, for Redis) |
+| Node.js | ≥ 22 | [nodejs.org](https://nodejs.org) |
+| pnpm | ≥ 9 | `npm i -g pnpm` |
+| Docker | Any | [docker.com](https://www.docker.com) (for Redis) |
 
 ## Setup
 

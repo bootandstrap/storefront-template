@@ -61,12 +61,26 @@ describe('Production Contract: API Endpoint Security', () => {
                 const source = readRoute(endpoint)
                 if (!source) return // skip if file doesn't exist
 
-                // Must import createClient from supabase/server
-                expect(source).toContain("from '@/lib/supabase/server'")
-                // Must call auth.getUser()
-                expect(source).toContain('auth.getUser()')
-                // Must return 401 for unauthenticated
-                expect(source).toContain('401')
+                // Must use EITHER direct createClient + auth.getUser() OR withPanelGuard()
+                // withPanelGuard() wraps Supabase auth internally — equally secure
+                const hasDirectAuth =
+                    source.includes("from '@/lib/supabase/server'") &&
+                    source.includes('auth.getUser()')
+                const hasPanelGuard = source.includes('withPanelGuard')
+
+                expect(
+                    hasDirectAuth || hasPanelGuard,
+                    `${endpoint} must have authentication (createClient+auth.getUser or withPanelGuard)`
+                ).toBe(true)
+
+                // Must return 401 or throw for unauthenticated
+                // withPanelGuard throws automatically, direct auth returns 401
+                const has401 = source.includes('401')
+                const guardHandlesAuth = hasPanelGuard // guard throws on unauth
+                expect(
+                    has401 || guardHandlesAuth,
+                    `${endpoint} must reject unauthenticated requests`
+                ).toBe(true)
             }
         )
 

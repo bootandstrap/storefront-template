@@ -52,12 +52,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
     const t = createTranslator(dictionary)
     const jsonLd = productJsonLD(product, config)
 
-    // Fetch related products
+    // Fetch related products — graceful if Medusa is down
     const categoryId = product.categories?.[0]?.id
-    const { products: related } = categoryId
-        ? await getProducts({ limit: 4, category_id: [categoryId] })
-        : { products: [] }
-    const relatedProducts = related.filter((p) => p.id !== product.id).slice(0, 4)
+    let relatedProducts: typeof product[] = []
+    try {
+        const { products: related } = categoryId
+            ? await getProducts({ limit: 4, category_id: [categoryId] })
+            : { products: [] as typeof product[] }
+        relatedProducts = related.filter((p) => p.id !== product.id).slice(0, 4)
+    } catch {
+        // Medusa down for related products — skip section
+    }
 
     return (
         <>

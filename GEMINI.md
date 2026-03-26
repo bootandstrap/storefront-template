@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-19.
+> Last updated: 2026-03-25 (36+ panel components, utilities page, persistent onboarding).
 
 ## 0. Local Development Setup
 
@@ -55,7 +55,7 @@ These are the primary customization targets. Changes here are the core of client
 
 | Path | What it controls |
 |------|-----------------|
-| `apps/storefront/src/app/globals.css` | Design tokens, colors, typography, spacing, animations |
+| `apps/storefront/src/app/globals.css` | Design tokens, colors, typography, spacing, animations. **CRITICAL**: Uses Tailwind v4 `@theme inline` which replaces ALL default palettes — any standard color (emerald, rose, amber, etc.) must be explicitly registered in the `@theme inline` block or it renders transparent |
 | `apps/storefront/src/components/home/` | Homepage sections (Hero, CategoryGrid, FeaturedProducts, TrustSection, Carousel) |
 | `apps/storefront/src/components/layout/Header.tsx` | Header — logo, navigation, layout |
 | `apps/storefront/src/components/layout/Footer.tsx` | Footer — links, social, legal |
@@ -95,7 +95,7 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 | `apps/storefront/src/lib/policy-engine.ts` | Business rule enforcement |
 | `apps/storefront/src/proxy.ts` | Next.js 16 routing proxy — auth + locale + role protection |
 | `apps/storefront/src/app/api/` | All API routes (webhooks, health, orders, revalidate, chat) |
-| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **19 components** as of 2026-03-19: PanelTopbar, CommandPalette (⌘K), PanelChecklist, ActivityFeed, PanelLayout, PanelShell, ModulesMarketplaceClient, TierComparisonTable, etc. |
+| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **36+ components** as of 2026-03-25: PanelTopbar, PanelShell, PanelSidebar, CommandPalette (⌘K), PanelToaster, SetupProgress, StoreHealthCard, SmartTip, AchievementProvider, UsageMeter, AnimatedStatValue, ModulesMarketplaceClient, TierComparisonTable, POS (POSCart, POSClient, POSProductGrid, POSPaymentOverlay, POSOfflineBanner, POSDashboard, POSVariantPicker, POSReceipt), Utilities (WiFiQRCard, LoyaltyCardPreview, BarcodeGenerator, PriceLabelSheet), etc. |
 | `apps/storefront/src/app/[lang]/(auth)/` | Auth pages — governed by SaaS flags |
 | `apps/storefront/src/lib/i18n/index.ts` | i18n engine — only edit dictionaries, not the engine |
 | `apps/storefront/src/lib/i18n/locale.ts` | Locale resolution logic |
@@ -208,7 +208,7 @@ For Supabase Storage images, use the existing `supabase-image-loader.ts`.
 
 ## 5. Testing Contract
 
-After ANY customization, these must pass:
+After ANY customization, these must pass (83 test files / 1030 tests):
 
 ```bash
 pnpm test:run              # All unit tests green
@@ -244,6 +244,7 @@ If a test fails after your changes, your changes broke something. Fix before pus
 - ❌ Adding `'use client'` to pages that don't need it
 - ❌ Modifying `config.ts`, `features.ts`, or `limits.ts`
 - ❌ Editing `.env` or `.env.local`
+- ❌ Using standard Tailwind colors (emerald, rose, amber, etc.) without first registering them in `globals.css` `@theme inline` block — Tailwind v4 `@theme inline` strips ALL defaults
 - ❌ Adding npm packages without checking bundle impact
 - ❌ Removing error boundaries (`error.tsx` files)
 - ❌ Changing URL slug patterns (breaks SEO + i18n alternates)

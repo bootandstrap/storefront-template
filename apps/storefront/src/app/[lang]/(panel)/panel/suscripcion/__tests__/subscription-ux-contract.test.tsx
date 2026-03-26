@@ -46,8 +46,9 @@ describe('subscription ux contract', () => {
             />
         )
 
-        expect(html).toContain('Qué incluye')
-        expect(html).toContain('Precio mensual estimado')
+        // With t=(key)=>key, the rendered HTML contains i18n keys, not translations
+        expect(html).toContain('panel.subscription.whatIncludes')
+        expect(html).toContain('panel.subscription.monthlyEstimate')
     })
 
     it('recommends ecommerce first when not active', () => {

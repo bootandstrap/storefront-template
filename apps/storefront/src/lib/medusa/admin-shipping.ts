@@ -202,6 +202,9 @@ export async function getTaxRatesForRegion(
 // Store Settings
 // ---------------------------------------------------------------------------
 
+/**
+ * Medusa v2: `/admin/stores` (plural). Returns `{stores: [...]}`.
+ */
 export async function getStoreSettings(
     scope?: TenantMedusaScope | null
 ): Promise<{
@@ -212,17 +215,37 @@ export async function getStoreSettings(
     metadata: Record<string, unknown> | null
 } | null> {
     const res = await adminFetch<{
-        store: {
+        stores: {
             id: string
             name: string
             default_currency_code: string
-            currencies: string[]
+            supported_currencies?: { currency_code: string }[]
+            currencies?: string[]
             metadata: Record<string, unknown> | null
-        }
-    }>('/admin/store', {}, scope)
-    return res.data?.store ?? null
+        }[]
+    }>('/admin/stores', {}, scope)
+
+    const store = res.data?.stores?.[0]
+    if (!store) return null
+
+    // v2 uses `supported_currencies` array of objects; normalize to string[]
+    const currencies = store.currencies
+        ?? store.supported_currencies?.map(c => c.currency_code)
+        ?? []
+
+    return {
+        id: store.id,
+        name: store.name,
+        default_currency_code: store.default_currency_code,
+        currencies,
+        metadata: store.metadata,
+    }
 }
 
+/**
+ * Medusa v2: `/admin/stores/{id}` (requires store ID).
+ * Fetches store ID first, then applies update.
+ */
 export async function updateStoreSettings(
     data: {
         name?: string
@@ -232,7 +255,11 @@ export async function updateStoreSettings(
     },
     scope?: TenantMedusaScope | null
 ): Promise<{ error: string | null }> {
-    const res = await adminFetch('/admin/store', {
+    // First, get the store ID
+    const store = await getStoreSettings(scope)
+    if (!store) return { error: 'Store not found' }
+
+    const res = await adminFetch(`/admin/stores/${store.id}`, {
         method: 'POST',
         body: JSON.stringify(data),
     }, scope)

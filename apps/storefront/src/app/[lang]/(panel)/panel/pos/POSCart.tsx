@@ -1,0 +1,938 @@
+'use client'
+
+/**
+ * POSCart — SOTA cart sidebar for POS (Phase C: Enhanced Checkout Flow)
+ *
+ * Architectural improvements:
+ * - 3-step checkout: cart → payment method → process/receipt
+ * - Inline POSNumpad for cash payments (touch-first)
+ * - Per-method UX: card terminal instructions, Twint QR hint, cash numpad
+ * - Step indicator with animated transitions
+ * - Pinned footer with ALWAYS-visible prominent PAGAR button (56px)
+ * - 44px minimum touch targets on quantity controls (WCAG)
+ * - Payment methods pre-filtered by plan limits
+ * - Grey-out pattern for unavailable features (disabled + tooltip)
+ * - All labels use posLabel() with fallback
+ */
+
+import { useState, useCallback } from 'react'
+import {
+    Minus, Plus, Trash2, User, Percent, DollarSign, X,
+    Package, PauseCircle, ArrowLeft, ShoppingCart, CreditCard,
+    Banknote, Smartphone, Delete, Check, ChevronRight,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import type { POSCartItem, POSDiscount, PaymentMethod } from '@/lib/pos/pos-config'
+import { POS_PAYMENT_CONFIG, posLabel } from '@/lib/pos/pos-i18n'
+import { getUpsellTooltip } from '@/lib/pos/pos-i18n'
+
+interface POSCartProps {
+    items: POSCartItem[]
+    discount: POSDiscount | null
+    customerName: string | null
+    paymentMethod: PaymentMethod
+    subtotal: number
+    discountAmount: number
+    taxAmount: number
+    total: number
+    processing: boolean
+    /** Pre-filtered list of available payment method keys */
+    enabledPaymentMethods: PaymentMethod[]
+    /** Feature gating booleans */
+    canLineDiscounts: boolean
+    canCustomerSearch: boolean
+    canThermalPrint: boolean
+    onUpdateQty: (variantId: string, quantity: number) => void
+    onRemoveItem: (variantId: string) => void
+    onSetDiscount: (discount: POSDiscount | null) => void
+    onSetCustomer: () => void
+    onSetPayment: (method: PaymentMethod) => void
+    onCharge: () => void
+    onClear: () => void
+    labels: Record<string, string>
+}
+
+// ── Park/hold helpers ──
+const PARKED_KEY = 'pos_parked_sales'
+
+interface ParkedSale {
+    id: string
+    items: POSCartItem[]
+    discount: POSDiscount | null
+    customerName: string | null
+    parkedAt: string
+}
+
+function getParkedSales(): ParkedSale[] {
+    if (typeof window === 'undefined') return []
+    try {
+        return JSON.parse(localStorage.getItem(PARKED_KEY) || '[]')
+    } catch {
+        return []
+    }
+}
+
+function saveParkedSale(sale: Omit<ParkedSale, 'id' | 'parkedAt'>) {
+    const parked = getParkedSales()
+    parked.push({
+        ...sale,
+        id: crypto.randomUUID(),
+        parkedAt: new Date().toISOString(),
+    })
+    localStorage.setItem(PARKED_KEY, JSON.stringify(parked))
+}
+
+function removeParkedSale(id: string) {
+    const parked = getParkedSales().filter(s => s.id !== id)
+    localStorage.setItem(PARKED_KEY, JSON.stringify(parked))
+}
+
+// ── Quick cash amounts (major units) ──
+const QUICK_AMOUNTS = [5, 10, 20, 50, 100] as const
+
+// ── Numpad digits ──
+const NUMPAD_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'] as const
+
+// ── Step type ──
+type CheckoutStep = 'cart' | 'payment' | 'cash_numpad'
+
+export default function POSCart({
+    items,
+    discount,
+    customerName,
+    paymentMethod,
+    subtotal,
+    discountAmount,
+    taxAmount,
+    total,
+    processing,
+    enabledPaymentMethods,
+    canLineDiscounts,
+    canCustomerSearch,
+    canThermalPrint,
+    onUpdateQty,
+    onRemoveItem,
+    onSetDiscount,
+    onSetCustomer,
+    onSetPayment,
+    onCharge,
+    onClear,
+    labels,
+}: POSCartProps) {
+    const [showDiscountInput, setShowDiscountInput] = useState(false)
+    const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')
+    const [discountValue, setDiscountValue] = useState('')
+    const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart')
+
+    // ── Cash numpad state ──
+    const [numpadValue, setNumpadValue] = useState('')
+
+    const formatCurrency = (amount: number, currency = 'EUR') => {
+        return new Intl.NumberFormat('de-CH', {
+            style: 'currency',
+            currency,
+        }).format(amount / 100)
+    }
+
+    const applyDiscount = () => {
+        const val = parseFloat(discountValue)
+        if (isNaN(val) || val <= 0) return
+        onSetDiscount({
+            type: discountType,
+            value: discountType === 'fixed' ? Math.round(val * 100) : val,
+        })
+        setShowDiscountInput(false)
+        setDiscountValue('')
+    }
+
+    const handleParkSale = useCallback(() => {
+        if (items.length === 0) return
+        saveParkedSale({ items, discount, customerName })
+        onClear()
+    }, [items, discount, customerName, onClear])
+
+    // ── Main charge handler: navigates through steps ──
+    const handleCharge = useCallback(() => {
+        if (checkoutStep === 'cart') {
+            // Go to payment method selection
+            setCheckoutStep('payment')
+            return
+        }
+        if (checkoutStep === 'payment') {
+            if (paymentMethod === 'cash') {
+                // For cash: go to numpad
+                setNumpadValue('')
+                setCheckoutStep('cash_numpad')
+                return
+            }
+            // For card/twint/manual: process directly
+            onCharge()
+            setCheckoutStep('cart')
+            return
+        }
+        if (checkoutStep === 'cash_numpad') {
+            // Confirm cash payment
+            onCharge()
+            setCheckoutStep('cart')
+            setNumpadValue('')
+            return
+        }
+    }, [checkoutStep, paymentMethod, onCharge])
+
+    // ── Numpad handlers ──
+    const handleNumpadDigit = (digit: string) => {
+        if (digit === '.' && numpadValue.includes('.')) return
+        if (numpadValue.includes('.') && numpadValue.split('.')[1].length >= 2) return
+        setNumpadValue(prev => prev + digit)
+    }
+    const handleNumpadDelete = () => setNumpadValue(prev => prev.slice(0, -1))
+    const handleNumpadClear = () => setNumpadValue('')
+    const handleNumpadQuick = (amount: number) => setNumpadValue(amount.toFixed(2))
+
+    const numpadNumeric = parseFloat(numpadValue) || 0
+    const numpadChangeAmount = numpadNumeric * 100 - total // in cents
+
+    // Build the payment pills from the enabled methods only
+    const paymentPills = enabledPaymentMethods
+        .map(key => POS_PAYMENT_CONFIG.find(pc => pc.key === key))
+        .filter(Boolean) as typeof POS_PAYMENT_CONFIG
+
+    const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
+
+    // ── Step indicator dots ──
+    const stepIndex = checkoutStep === 'cart' ? 0 : checkoutStep === 'payment' ? 1 : 2
+    const stepLabels = [
+        posLabel('panel.pos.cart', labels),
+        posLabel('panel.pos.selectPayment', labels),
+        paymentMethod === 'cash'
+            ? posLabel('panel.pos.cashTendered', labels)
+            : posLabel('panel.pos.confirmPayment', labels),
+    ]
+
+    const goBack = () => {
+        if (checkoutStep === 'cash_numpad') {
+            setCheckoutStep('payment')
+            setNumpadValue('')
+        } else if (checkoutStep === 'payment') {
+            setCheckoutStep('cart')
+        }
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-surface-0">
+            {/* ═══════════════════════════════════════════════ */}
+            {/* Step Indicator (with animated progress bar)    */}
+            {/* ═══════════════════════════════════════════════ */}
+            <AnimatePresence>
+                {checkoutStep !== 'cart' && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-b border-surface-2 overflow-hidden"
+                    >
+                        <div className="px-4 py-2 space-y-1.5">
+                            {/* Step labels */}
+                            <div className="flex items-center gap-1.5">
+                                {stepLabels.map((label, i) => (
+                                    <div key={i} className="flex items-center gap-1.5">
+                                        {i > 0 && <ChevronRight className="w-3 h-3 text-text-muted/30 flex-shrink-0" />}
+                                        <span
+                                            className="text-[10px] font-semibold transition-colors duration-300"
+                                            style={{ color: i === stepIndex ? 'var(--color-primary)' : i < stepIndex ? '#10b981' : 'var(--color-text-muted, #999)' }}
+                                        >
+                                            {label}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Animated progress bar */}
+                            <div className="h-0.5 bg-surface-2 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full rounded-full"
+                                    style={{ background: 'linear-gradient(90deg, #10b981, var(--color-primary))' }}
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${((stepIndex + 1) / stepLabels.length) * 100}%` }}
+                                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ═══════════════════════════════════════════════════════════ */}
+            {/* STEP 1: CART VIEW                                         */}
+            {/* ═══════════════════════════════════════════════════════════ */}
+            <AnimatePresence mode="wait">
+                {checkoutStep === 'cart' && (
+                    <motion.div
+                        key="cart"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-col flex-1 min-h-0"
+                    >
+                        {/* ── Header ── */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                <ShoppingCart className="w-4 h-4 text-text-muted" />
+                                <h2 className="text-sm font-bold text-text-primary">
+                                    {posLabel('panel.pos.cart', labels)}
+                                </h2>
+                                {itemCount > 0 && (
+                                    <motion.span
+                                        key={itemCount}
+                                        initial={{ scale: 0.5 }}
+                                        animate={{ scale: 1 }}
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold"
+                                    >
+                                        {itemCount}
+                                    </motion.span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {items.length > 0 && (
+                                    <>
+                                        {/* Park/Hold */}
+                                        <button
+                                            onClick={handleParkSale}
+                                            className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1
+                                                       text-[11px] text-amber-500/80 hover:text-amber-600 hover:bg-amber-50
+                                                       font-medium transition-colors rounded-xl px-2"
+                                            title={posLabel('panel.pos.holdSale', labels)}
+                                        >
+                                            <PauseCircle className="w-4 h-4" />
+                                            <span className="hidden sm:inline">{posLabel('panel.pos.holdSale', labels)}</span>
+                                        </button>
+                                        {/* Clear */}
+                                        <button
+                                            onClick={onClear}
+                                            className="min-h-[44px] min-w-[44px] flex items-center justify-center
+                                                       text-[11px] text-rose-500/80 hover:text-rose-600 hover:bg-rose-50
+                                                       font-medium transition-colors rounded-xl px-2"
+                                        >
+                                            {posLabel('panel.pos.clearCart', labels)}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ── Customer pill (grey-out if !canCustomerSearch) ── */}
+                        <button
+                            onClick={() => canCustomerSearch && onSetCustomer()}
+                            disabled={!canCustomerSearch}
+                            className={`mx-3 mt-2.5 flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 flex-shrink-0 min-h-[44px] ${
+                                !canCustomerSearch
+                                    ? 'border border-dashed border-surface-3 text-text-muted/40 cursor-not-allowed'
+                                    : customerName
+                                        ? 'bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10'
+                                        : 'border border-dashed border-surface-3 text-text-muted hover:border-primary/30 hover:text-primary'
+                            }`}
+                            title={canCustomerSearch
+                                ? (customerName || posLabel('panel.pos.addCustomer', labels))
+                                : getUpsellTooltip('enable_pos_customer_search', labels)
+                            }
+                        >
+                            <User className="w-3.5 h-3.5" />
+                            {canCustomerSearch
+                                ? (customerName || posLabel('panel.pos.addCustomer', labels))
+                                : posLabel('panel.pos.addCustomer', labels)
+                            }
+                            {!canCustomerSearch && (
+                                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-text-muted/60 font-semibold">
+                                    Enterprise
+                                </span>
+                            )}
+                        </button>
+
+                        {/* ── Items list (ONLY scrollable section) ── */}
+                        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1.5">
+                            {items.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-text-muted gap-3 py-12">
+                                    <motion.div
+                                        className="w-16 h-16 rounded-2xl bg-surface-1 flex items-center justify-center"
+                                        initial={{ scale: 0.7, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ type: 'spring', damping: 12, stiffness: 150, delay: 0.1 }}
+                                    >
+                                        <ShoppingCart className="w-7 h-7 opacity-25" />
+                                    </motion.div>
+                                    <motion.p
+                                        className="text-sm text-text-muted/60 font-medium"
+                                        initial={{ opacity: 0, y: 4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        {posLabel('panel.pos.emptyCart', labels)}
+                                    </motion.p>
+                                    <motion.p
+                                        className="text-[11px] text-text-muted/40 text-center max-w-[180px]"
+                                        initial={{ opacity: 0, y: 4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                    >
+                                        {posLabel('panel.pos.emptyCartHint', labels) || 'Selecciona productos del catálogo para comenzar'}
+                                    </motion.p>
+                                </div>
+                            ) : (
+                                <AnimatePresence initial={false}>
+                                    {items.map(item => (
+                                        <motion.div
+                                            key={item.id}
+                                            layout
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="relative rounded-xl overflow-hidden"
+                                        >
+                                            {/* Red backdrop revealed on swipe */}
+                                            <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-end pr-4 rounded-xl">
+                                                <Trash2 className="w-5 h-5 text-rose-500/60" />
+                                            </div>
+                                            {/* Draggable item card */}
+                                            <motion.div
+                                                drag="x"
+                                                dragConstraints={{ left: -80, right: 0 }}
+                                                dragElastic={0.15}
+                                                onDragEnd={(_, info) => {
+                                                    if (info.offset.x < -60) onRemoveItem(item.id)
+                                                }}
+                                                className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-1/60 group
+                                                           hover:bg-surface-1 transition-colors duration-150 min-h-[56px]
+                                                           cursor-grab active:cursor-grabbing relative z-10"
+                                                style={{ background: 'var(--color-surface-1, #f8faf6)', touchAction: 'pan-y' }}
+                                            >
+                                                {item.thumbnail ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={item.thumbnail}
+                                                        alt=""
+                                                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
+                                                        <Package className="w-4 h-4 text-text-muted/30" />
+                                                    </div>
+                                                )}
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-text-primary truncate">
+                                                        {item.title}
+                                                    </p>
+                                                    <p className="text-[10px] text-text-muted">
+                                                        {formatCurrency(item.unit_price, item.currency_code)}
+                                                        {item.variant_title && ` · ${item.variant_title}`}
+                                                    </p>
+                                                </div>
+                                                {/* Quantity controls — 44px WCAG touch targets */}
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => onUpdateQty(item.id, item.quantity - 1)}
+                                                        aria-label={`Decrease quantity of ${item.title}`}
+                                                        className="w-[44px] h-[44px] rounded-xl bg-surface-2 hover:bg-surface-3
+                                                                   flex items-center justify-center transition-colors
+                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                    >
+                                                        <Minus className="w-4 h-4" />
+                                                    </button>
+                                                    <motion.span
+                                                        key={item.quantity}
+                                                        initial={{ scale: 1.2 }}
+                                                        animate={{ scale: 1 }}
+                                                        className="w-8 text-center text-sm font-bold tabular-nums"
+                                                    >
+                                                        {item.quantity}
+                                                    </motion.span>
+                                                    <button
+                                                        onClick={() => onUpdateQty(item.id, item.quantity + 1)}
+                                                        aria-label={`Increase quantity of ${item.title}`}
+                                                        className="w-[44px] h-[44px] rounded-xl bg-surface-2 hover:bg-surface-3
+                                                                   flex items-center justify-center transition-colors
+                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                {/* Item total + Remove */}
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className="text-xs font-semibold text-text-primary tabular-nums">
+                                                        {formatCurrency(item.unit_price * item.quantity, item.currency_code)}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => onRemoveItem(item.id)}
+                                                        aria-label={`Remove ${item.title} from cart`}
+                                                        className="w-[36px] h-[36px] flex items-center justify-center text-text-muted/60
+                                                                   hover:text-rose-500 hover:bg-rose-50 active:scale-90 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            )}
+                        </div>
+
+                        {/* ── Pinned Footer: Totals + PAY ── */}
+                        <div className="border-t border-surface-2 px-4 py-3 space-y-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0">
+                            {/* Discount (grey-out if !canLineDiscounts) */}
+                            {discount ? (
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="flex items-center gap-1 font-medium" style={{ color: '#059669' }}>
+                                        <Percent className="w-3 h-3" />
+                                        {posLabel('panel.pos.discount', labels)}
+                                        {discount.type === 'percentage' ? ` ${discount.value}%` : ''}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold" style={{ color: '#059669' }}>
+                                            -{formatCurrency(discountAmount)}
+                                        </span>
+                                        <button
+                                            onClick={() => onSetDiscount(null)}
+                                            className="text-text-muted hover:text-rose-500 transition-colors"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : !showDiscountInput ? (
+                                <button
+                                    onClick={() => canLineDiscounts && setShowDiscountInput(true)}
+                                    disabled={!canLineDiscounts}
+                                    className={`text-xs font-medium transition-colors ${
+                                        canLineDiscounts
+                                            ? 'text-primary hover:text-primary-dark'
+                                            : 'text-text-muted/40 cursor-not-allowed'
+                                    }`}
+                                    title={canLineDiscounts
+                                        ? posLabel('panel.pos.addDiscount', labels)
+                                        : getUpsellTooltip('enable_pos_line_discounts', labels)
+                                    }
+                                >
+                                    + {posLabel('panel.pos.addDiscount', labels)}
+                                    {!canLineDiscounts && (
+                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-text-muted/60 font-semibold">
+                                            Enterprise
+                                        </span>
+                                    )}
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-1.5">
+                                    <div className="flex rounded-lg overflow-hidden border border-surface-3">
+                                        <button
+                                            onClick={() => setDiscountType('percentage')}
+                                            className={`px-2.5 py-2 text-xs transition-colors ${
+                                                discountType === 'percentage' ? 'bg-primary text-white' : 'bg-surface-1'
+                                            }`}
+                                        >
+                                            <Percent className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                            onClick={() => setDiscountType('fixed')}
+                                            className={`px-2.5 py-2 text-xs transition-colors ${
+                                                discountType === 'fixed' ? 'bg-primary text-white' : 'bg-surface-1'
+                                            }`}
+                                        >
+                                            <DollarSign className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={discountValue}
+                                        onChange={e => setDiscountValue(e.target.value)}
+                                        placeholder={discountType === 'percentage' ? '10' : '5.00'}
+                                        className="flex-1 px-2.5 py-2 text-xs border border-surface-3 rounded-lg bg-surface-0
+                                                   focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                        onKeyDown={e => e.key === 'Enter' && applyDiscount()}
+                                    />
+                                    <button
+                                        onClick={applyDiscount}
+                                        className="px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                                    >
+                                        OK
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowDiscountInput(false); setDiscountValue('') }}
+                                        className="text-text-muted hover:text-rose-500 transition-colors"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* ── Totals ── */}
+                            <div className="space-y-1 text-xs">
+                                <div className="flex justify-between text-text-muted">
+                                    <span>{posLabel('panel.pos.subtotal', labels)}</span>
+                                    <span className="tabular-nums">{formatCurrency(subtotal)}</span>
+                                </div>
+                                {taxAmount > 0 && (
+                                    <div className="flex justify-between text-text-muted">
+                                        <span>{posLabel('panel.pos.tax', labels)}</span>
+                                        <span className="tabular-nums">{formatCurrency(taxAmount)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-baseline text-text-primary pt-2 mt-1 border-t border-surface-2">
+                                    <span className="text-sm font-bold">{posLabel('panel.pos.total', labels)}</span>
+                                    <span className="text-xl font-black tabular-nums">{formatCurrency(total)}</span>
+                                </div>
+                            </div>
+
+                            {/* ★ PAGAR BUTTON ★ */}
+                            <button
+                                onClick={handleCharge}
+                                disabled={items.length === 0 || processing}
+                                className="w-full h-[56px] rounded-2xl text-white font-bold text-lg
+                                           active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed
+                                           transition-all duration-200
+                                           flex items-center justify-center gap-2"
+                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                            >
+                                {processing ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {posLabel('panel.pos.processing', labels)}
+                                    </span>
+                                ) : (
+                                    <>
+                                        <CreditCard className="w-5 h-5" />
+                                        {posLabel('panel.pos.pay', labels)} {total > 0 ? formatCurrency(total) : ''}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {/* STEP 2: PAYMENT METHOD SELECTION                          */}
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {checkoutStep === 'payment' && (
+                    <motion.div
+                        key="payment"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-col flex-1 min-h-0"
+                    >
+                        {/* ── Payment step header ── */}
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                            <button
+                                onClick={goBack}
+                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-surface-1 text-text-secondary
+                                           flex items-center justify-center transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <span className="text-sm font-bold text-text-primary flex-1">
+                                {posLabel('panel.pos.selectPayment', labels)}
+                            </span>
+                            <span className="text-lg font-black tabular-nums text-text-primary">
+                                {formatCurrency(total)}
+                            </span>
+                        </div>
+
+                        {/* ── Payment content area ── */}
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+                            {/* ── Payment method pills (large, 72px) ── */}
+                            <div className="grid grid-cols-2 gap-2">
+                                {paymentPills.map(pm => {
+                                    const Icon = pm.icon
+                                    const isActive = paymentMethod === pm.key
+                                    return (
+                                        <button
+                                            key={pm.key}
+                                            onClick={() => onSetPayment(pm.key)}
+                                            className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl text-xs font-semibold
+                                                        transition-all duration-200 min-h-[72px] ${
+                                                isActive
+                                                    ? pm.activeClass
+                                                    : 'bg-surface-1 text-text-secondary hover:bg-surface-2 border border-transparent'
+                                            }`}
+                                        >
+                                            <Icon className="w-6 h-6" />
+                                            <span>{posLabel(pm.labelKey, labels)}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+
+                            {/* ── Per-method instructions ── */}
+                            <AnimatePresence mode="wait">
+                                {paymentMethod === 'cash' && (
+                                    <motion.div
+                                        key="cash-hint"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-amber-50/60 border border-amber-200/40"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                            <Banknote className="w-5 h-5 text-amber-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-amber-800">
+                                                {posLabel('panel.pos.cashPaymentTitle', labels) || 'Pago en efectivo'}
+                                            </p>
+                                            <p className="text-[11px] text-amber-600/80 mt-0.5">
+                                                {posLabel('panel.pos.cashPaymentHint', labels) || 'Pulse Confirmar para entrar el importe recibido'}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {paymentMethod === 'card_terminal' && (
+                                    <motion.div
+                                        key="card-hint"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-blue-50/60 border border-blue-200/40"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <CreditCard className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-blue-800">
+                                                {posLabel('panel.pos.cardTerminalTitle', labels) || 'Terminal de tarjeta'}
+                                            </p>
+                                            <p className="text-[11px] text-blue-600/80 mt-0.5">
+                                                {posLabel('panel.pos.cardTerminalHint', labels) || 'Presente la tarjeta o dispositivo en el terminal'}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {paymentMethod === 'twint' && (
+                                    <motion.div
+                                        key="twint-hint"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-violet-50/60 border border-violet-200/40"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                            <Smartphone className="w-5 h-5 text-violet-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-violet-800">
+                                                {posLabel('panel.pos.twintTitle', labels) || 'Pago con Twint'}
+                                            </p>
+                                            <p className="text-[11px] text-violet-600/80 mt-0.5">
+                                                {posLabel('panel.pos.twintHint', labels) || 'Se mostrará un código QR para el cliente'}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {paymentMethod === 'manual_card' && (
+                                    <motion.div
+                                        key="manual-hint"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50/60 border border-slate-200/40"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                            <CreditCard className="w-5 h-5 text-slate-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-slate-800">
+                                                {posLabel('panel.pos.manualCardTitle', labels) || 'Registro manual'}
+                                            </p>
+                                            <p className="text-[11px] text-slate-600/80 mt-0.5">
+                                                {posLabel('panel.pos.manualCardHint', labels) || 'Confirme que el pago con tarjeta ha sido procesado'}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* ── Pinned Footer: CONFIRM / NEXT ── */}
+                        <div className="border-t border-surface-2 px-4 py-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0">
+                            <button
+                                onClick={handleCharge}
+                                disabled={items.length === 0 || processing}
+                                className="w-full h-[56px] rounded-2xl text-white font-bold text-lg
+                                           active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed
+                                           transition-all duration-200
+                                           flex items-center justify-center gap-2
+                                           relative overflow-hidden"
+                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                            >
+                                {processing ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {posLabel('panel.pos.processing', labels)}
+                                    </span>
+                                ) : paymentMethod === 'cash' ? (
+                                    <>
+                                        <Banknote className="w-5 h-5" />
+                                        {posLabel('panel.pos.enterAmount', labels) || 'Introducir Importe'}
+                                    </>
+                                ) : paymentMethod === 'card_terminal' ? (
+                                    <>
+                                        <CreditCard className="w-5 h-5" />
+                                        {posLabel('panel.pos.presentCard', labels)} {formatCurrency(total)}
+                                    </>
+                                ) : paymentMethod === 'twint' ? (
+                                    <>
+                                        <Smartphone className="w-5 h-5" />
+                                        {posLabel('panel.pos.scanTwint', labels)} {formatCurrency(total)}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-5 h-5" />
+                                        {posLabel('panel.pos.confirmPayment', labels)} {formatCurrency(total)}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {/* STEP 3: CASH NUMPAD (inline, touch-first)                 */}
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {checkoutStep === 'cash_numpad' && (
+                    <motion.div
+                        key="numpad"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-col flex-1 min-h-0"
+                    >
+                        {/* ── Numpad header ── */}
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                            <button
+                                onClick={goBack}
+                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-surface-1 text-text-secondary
+                                           flex items-center justify-center transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <span className="text-sm font-bold text-text-primary flex-1">
+                                {posLabel('panel.pos.cashTendered', labels)}
+                            </span>
+                            <span className="text-xs text-text-muted">
+                                {posLabel('panel.pos.totalDue', labels) || 'Total'}: <span className="font-bold text-text-primary">{formatCurrency(total)}</span>
+                            </span>
+                        </div>
+
+                        {/* ── Calculator display ── */}
+                        <div className="px-5 pt-4 pb-2 bg-surface-1/30">
+                            <p className="text-3xl font-black text-text-primary tabular-nums text-right">
+                                {numpadValue
+                                    ? formatCurrency(Math.round(parseFloat(numpadValue) * 100))
+                                    : <span className="text-text-muted/40">0.00</span>
+                                }
+                            </p>
+                            {/* Change / Short */}
+                            {numpadNumeric > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-right text-xs font-semibold mt-1"
+                                    style={{ color: numpadChangeAmount >= 0 ? '#10b981' : '#f43f5e' }}
+                                
+                                >
+                                    {numpadChangeAmount >= 0
+                                        ? `${posLabel('panel.pos.change', labels)}: ${formatCurrency(numpadChangeAmount)}`
+                                        : `${posLabel('panel.pos.shortAmount', labels)}: ${formatCurrency(Math.abs(numpadChangeAmount))}`
+                                    }
+                                </motion.div>
+                            )}
+                        </div>
+
+                        {/* ── Quick amounts ── */}
+                        <div className="flex gap-1.5 px-3 pt-3 pb-1">
+                            {QUICK_AMOUNTS.map(amount => (
+                                <button
+                                    key={amount}
+                                    onClick={() => handleNumpadQuick(amount)}
+                                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all
+                                               active:scale-[0.95] ${
+                                        numpadValue === amount.toFixed(2)
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'bg-primary/8 text-primary hover:bg-primary/15'
+                                    }`}
+                                >
+                                    {amount}
+                                </button>
+                            ))}
+                            {/* Exact button */}
+                            <button
+                                onClick={() => handleNumpadQuick(total / 100)}
+                                className="flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all active:scale-[0.95]"
+                                style={numpadValue === (total / 100).toFixed(2)
+                                    ? { background: '#10b981', color: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }
+                                    : { background: 'rgba(16,185,129,0.08)', color: '#059669' }
+                                }
+                            >
+                                {posLabel('panel.pos.exact', labels) || 'Exacto'}
+                            </button>
+                        </div>
+
+                        {/* ── Digit grid ── */}
+                        <div className="grid grid-cols-3 gap-1.5 px-3 py-2 flex-1 min-h-0">
+                            {NUMPAD_DIGITS.map(d => (
+                                <button
+                                    key={d}
+                                    onClick={() => handleNumpadDigit(d)}
+                                    className="rounded-xl bg-surface-1 text-lg font-bold text-text-primary
+                                               hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                                               transition-all duration-100 min-h-[48px]"
+                                >
+                                    {d}
+                                </button>
+                            ))}
+                            {/* Backspace */}
+                            <button
+                                onClick={handleNumpadDelete}
+                                onDoubleClick={handleNumpadClear}
+                                className="rounded-xl bg-surface-1 flex items-center justify-center
+                                           text-text-secondary hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                                           transition-all duration-100 min-h-[48px]"
+                                title={posLabel('panel.pos.deleteHint', labels) || 'Tap: borrar · Doble-tap: limpiar'}
+                            >
+                                <Delete className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* ── Confirm Button ── */}
+                        <div className="border-t border-surface-2 px-3 py-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0 flex gap-2">
+                            <button
+                                onClick={goBack}
+                                className="flex-1 h-[52px] rounded-2xl bg-surface-1 text-sm font-semibold text-text-secondary
+                                           hover:bg-surface-2 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <X className="w-4 h-4" />
+                                {posLabel('panel.pos.cancel', labels)}
+                            </button>
+                            <button
+                                onClick={handleCharge}
+                                disabled={numpadChangeAmount < 0 || processing}
+                                className="flex-[2] h-[52px] rounded-2xl text-white text-sm font-bold
+                                           active:scale-[0.97]
+                                           disabled:opacity-30 disabled:cursor-not-allowed
+                                           transition-all duration-150 flex items-center justify-center gap-2"
+                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                            >
+                                <Check className="w-5 h-5" />
+                                {posLabel('panel.pos.confirmCharge', labels)} {total > 0 ? formatCurrency(total) : ''}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    )
+}
+
+export { getParkedSales, removeParkedSale }
+export type { ParkedSale }

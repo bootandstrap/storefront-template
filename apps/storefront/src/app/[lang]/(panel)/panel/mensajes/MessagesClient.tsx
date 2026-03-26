@@ -1,13 +1,16 @@
 'use client'
 
 /**
- * WhatsApp Templates — Owner Panel
+ * WhatsApp Templates — Owner Panel (SOTA rewrite)
  *
- * Improved UX with:
- * - Live preview pane (renders {{variables}} with sample data)
- * - Click-to-insert variable bar
- * - Template type selector with sensible defaults
- * - Responsive layout (stacked on mobile)
+ * Features:
+ * - PageEntrance animation
+ * - ListStagger for template list
+ * - SlideOver or animated expand for form
+ * - PanelConfirmDialog replaces window.confirm()
+ * - Animated preset selector
+ * - Animated empty state
+ * - Hover-lift cards
  */
 
 import { useState, useTransition, useRef } from 'react'
@@ -16,7 +19,11 @@ import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { createTemplate, updateTemplate, deleteTemplate } from './actions'
 import { renderWhatsAppPreviewParts } from './preview-render'
-import { Plus, Eye, Code, Trash2, Pencil, MessageCircle, Copy, Check } from 'lucide-react'
+import { Plus, Eye, Code, Trash2, Pencil, MessageCircle, Copy, Check, X, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,6 +95,12 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const confirmDialog = useConfirmDialog({
+        title: t('common.confirmDelete'),
+        description: t('panel.messages.deleteConfirm') || '¿Seguro que quieres eliminar esta plantilla?',
+        confirmLabel: t('common.delete'),
+        variant: 'danger',
+    })
 
     // UI state
     const [showForm, setShowForm] = useState(false)
@@ -139,7 +152,6 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
         const newBody = body.slice(0, start) + tag + body.slice(end)
         setBody(newBody)
 
-        // Restore cursor position after the inserted tag
         requestAnimationFrame(() => {
             textarea.focus()
             const pos = start + tag.length
@@ -176,11 +188,12 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
     }
 
     const handleDelete = (id: string) => {
-        if (!confirm(t('common.confirmDelete'))) return
-        startTransition(async () => {
-            const result = await deleteTemplate(id)
-            if (result.success) { router.refresh(); toast.success('✓') }
-            else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+        confirmDialog.confirm(() => {
+            startTransition(async () => {
+                const result = await deleteTemplate(id)
+                if (result.success) { router.refresh(); toast.success('✓') }
+                else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+            })
         })
     }
 
@@ -190,149 +203,317 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
         setTimeout(() => setCopiedId(null), 2000)
     }
 
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
 
     return (
-        <>
+        <PageEntrance className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
-                        {t('panel.messages.title')}
-                    </h1>
-                    <p className="text-text-muted mt-1">{t('panel.messages.subtitle')}</p>
-                </div>
-                <button
-                    className="btn btn-primary inline-flex items-center gap-2"
-                    disabled={!canAdd || isPending}
-                    onClick={() => { resetForm(); setShowForm(true) }}
-                >
-                    <Plus className="w-4 h-4" />
-                    {t('panel.messages.addTemplate')}
-                </button>
-            </div>
+            <PanelPageHeader
+                title={t('panel.messages.title')}
+                subtitle={t('panel.messages.subtitle')}
+                icon={<MessageCircle className="w-5 h-5" />}
+                action={
+                    <button
+                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        disabled={!canAdd || isPending}
+                        onClick={() => { resetForm(); setShowForm(true) }}
+                    >
+                        <Plus className="w-4 h-4" />
+                        {t('panel.messages.addTemplate')}
+                    </button>
+                }
+            />
 
-            <p className="text-xs text-text-muted">
+            {/* Template count */}
+            <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs text-text-muted"
+            >
                 {templateCount} / {maxTemplates} {t('panel.messages.templates')}
-            </p>
+            </motion.p>
 
-            {error && (
-                <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
-                    <span>{error}</span>
-                    <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 ml-2 text-xs">✕</button>
-                </div>
-            )}
+            {/* Error banner */}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
+                    >
+                        <span>{error}</span>
+                        <button onClick={() => setError(null)} aria-label="Dismiss error" className="text-red-500 hover:text-red-700 ml-2 p-1.5 min-h-[36px] rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50">
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ============================================================= */}
             {/* CREATE / EDIT FORM                                             */}
             {/* ============================================================= */}
-            {showForm && (
-                <div className="glass rounded-2xl p-6 space-y-5">
-                    <h2 className="font-bold text-lg text-text-primary">
-                        {editingId ? t('common.edit') : t('panel.messages.addTemplate')}
-                    </h2>
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                        className="glass rounded-2xl p-6 space-y-5"
+                    >
+                        <h2 className="font-bold text-lg text-text-primary">
+                            {editingId ? t('common.edit') : t('panel.messages.addTemplate')}
+                        </h2>
 
-                    {/* Template type selector (only for new) */}
-                    {!editingId && (
-                        <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-2">
-                                {t('panel.messages.templateType')}
-                            </label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {TEMPLATE_PRESETS.map(preset => (
-                                    <button
-                                        key={preset.id}
-                                        onClick={() => selectPreset(preset)}
-                                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${selectedPreset === preset.id
-                                            ? 'border-primary bg-primary/5 text-primary'
-                                            : 'border-surface-3 bg-surface-0 text-text-secondary hover:border-primary/30'
-                                            }`}
-                                    >
-                                        <span className="text-xl">{preset.emoji}</span>
-                                        <span className="font-medium">{preset.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Name */}
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            {t('common.name')}
-                        </label>
-                        <input
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            className={inputClass}
-                            placeholder="Ej: Confirmación de pedido"
-                        />
-                    </div>
-
-                    {/* Editor + Preview side by side */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {/* Editor Column */}
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <label className="block text-sm font-medium text-text-secondary">
-                                    {t('panel.messages.template')}
+                        {/* Template type selector (only for new) */}
+                        {!editingId && (
+                            <div>
+                                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+                                    {t('panel.messages.templateType')}
                                 </label>
-                                <button
-                                    onClick={() => setShowPreview(!showPreview)}
-                                    className="lg:hidden text-xs text-primary flex items-center gap-1"
-                                >
-                                    {showPreview ? <Code className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                    {showPreview ? t('panel.messages.hidePreview') : t('panel.messages.showPreview')}
-                                </button>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {TEMPLATE_PRESETS.map(preset => (
+                                        <motion.button
+                                            key={preset.id}
+                                            onClick={() => selectPreset(preset)}
+                                            whileHover={{ y: -2 }}
+                                            whileTap={{ scale: 0.97 }}
+                                            aria-pressed={selectedPreset === preset.id}
+                                            className={`flex flex-col items-center gap-1.5 p-3 min-h-[70px] rounded-xl border-2 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${selectedPreset === preset.id
+                                                ? 'border-primary bg-primary/5 text-primary'
+                                                : 'border-surface-3 bg-surface-0 text-text-secondary hover:border-primary/30'
+                                                }`}
+                                        >
+                                            <span className="text-xl">{preset.emoji}</span>
+                                            <span className="font-medium">{preset.label}</span>
+                                        </motion.button>
+                                    ))}
+                                </div>
                             </div>
+                        )}
 
-                            {/* Variable insert bar */}
-                            <div className="flex flex-wrap gap-1.5">
-                                {TEMPLATE_VARIABLES.map(v => (
-                                    <button
-                                        key={v.key}
-                                        onClick={() => insertVariable(v.key)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-1 hover:bg-primary/10 hover:text-primary text-text-muted text-xs font-medium transition-all border border-surface-3 hover:border-primary/30"
-                                        title={`Insertar {{${v.key}}}`}
-                                    >
-                                        <span>{v.emoji}</span>
-                                        {v.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Template textarea */}
-                            <textarea
-                                ref={textareaRef}
-                                value={body}
-                                onChange={e => setBody(e.target.value)}
-                                className={inputClass + ' font-mono min-h-[200px] resize-y'}
-                                rows={10}
-                                placeholder={t('panel.messages.editorPlaceholder')}
+                        {/* Name */}
+                        <div>
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5">
+                                {t('common.name')}
+                            </label>
+                            <input
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                className={inputClass}
+                                placeholder="Ej: Confirmación de pedido"
                             />
-
-                            <p className="text-xs text-text-muted">
-                                💡 {t('panel.messages.variableHint')}
-                            </p>
                         </div>
 
-                        {/* Preview Column */}
-                        <div className={`${showPreview ? '' : 'hidden lg:block'}`}>
-                            <div className="flex items-center gap-2 mb-3">
-                                <Eye className="w-4 h-4 text-text-muted" />
-                                <span className="text-sm font-medium text-text-secondary">
-                                    {t('panel.messages.preview')}
-                                </span>
+                        {/* Editor + Preview side by side */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Editor Column */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">
+                                        {t('panel.messages.template')}
+                                    </label>
+                                    <button
+                                        onClick={() => setShowPreview(!showPreview)}
+                                        className="lg:hidden text-xs text-primary flex items-center gap-1"
+                                    >
+                                        {showPreview ? <Code className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                        {showPreview ? t('panel.messages.hidePreview') : t('panel.messages.showPreview')}
+                                    </button>
+                                </div>
+
+                                {/* Variable insert bar */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {TEMPLATE_VARIABLES.map(v => (
+                                        <motion.button
+                                            key={v.key}
+                                            onClick={() => insertVariable(v.key)}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            aria-label={`Insert {{${v.key}}}`}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-lg glass text-text-muted text-xs font-medium transition-all hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            title={`Insertar {{${v.key}}}`}
+                                        >
+                                            <span>{v.emoji}</span>
+                                            {v.label}
+                                        </motion.button>
+                                    ))}
+                                </div>
+
+                                {/* Template textarea */}
+                                <textarea
+                                    ref={textareaRef}
+                                    value={body}
+                                    onChange={e => setBody(e.target.value)}
+                                    className={inputClass + ' font-mono min-h-[200px] resize-y'}
+                                    rows={10}
+                                    placeholder={t('panel.messages.editorPlaceholder')}
+                                />
+
+                                <p className="text-xs text-text-muted">
+                                    💡 {t('panel.messages.variableHint')}
+                                </p>
                             </div>
-                            <div className="bg-[#e5ddd5] rounded-2xl p-4 min-h-[200px]">
-                                {/* WhatsApp-style chat bubble */}
-                                <div className="max-w-[85%] ml-auto">
-                                    <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
-                                        {body ? (
-                                            <div
-                                                className="text-sm text-gray-800 whitespace-pre-wrap break-words"
-                                            >
-                                                {renderWhatsAppPreviewParts(body).map((part, idx) =>
+
+                            {/* Preview Column */}
+                            <div className={`${showPreview ? '' : 'hidden lg:block'}`}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Eye className="w-4 h-4 text-text-muted" />
+                                    <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+                                        {t('panel.messages.preview')}
+                                    </span>
+                                </div>
+                                <div className="bg-[#e5ddd5] rounded-2xl p-4 min-h-[200px]">
+                                    {/* WhatsApp-style chat bubble */}
+                                    <div className="max-w-[85%] ml-auto">
+                                        <motion.div
+                                            key={body}
+                                            initial={{ opacity: 0.6, scale: 0.98 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="bg-[#dcf8c6] rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm"
+                                        >
+                                            {body ? (
+                                                <div className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                                                    {renderWhatsAppPreviewParts(body).map((part, idx) =>
+                                                        part.bold ? (
+                                                            <strong key={`${idx}-${part.text}`}>{part.text}</strong>
+                                                        ) : (
+                                                            <span key={`${idx}-${part.text}`}>{part.text}</span>
+                                                        )
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-400 italic">
+                                                    {t('panel.messages.previewEmpty')}
+                                                </p>
+                                            )}
+                                            <div className="text-right mt-1">
+                                                <span className="text-[10px] text-gray-500">14:32 ✓✓</span>
+                                            </div>
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Default toggle */}
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <div
+                                role="switch"
+                                aria-checked={isDefault}
+                                tabIndex={0}
+                                onClick={() => setIsDefault(!isDefault)}
+                                onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') setIsDefault(!isDefault) }}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ${
+                                    isDefault ? 'bg-primary' : 'bg-surface-3'
+                                }`}
+                            >
+                                <motion.span
+                                    layout
+                                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ${
+                                        isDefault ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </div>
+                            <span className="text-sm text-text-secondary">
+                                {t('panel.messages.setDefault')}
+                            </span>
+                        </label>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-2">
+                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {isPending ? '...' : editingId ? t('common.save') : t('common.create')}
+                            </button>
+                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{t('common.cancel')}</button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ============================================================= */}
+            {/* TEMPLATE LIST                                                  */}
+            {/* ============================================================= */}
+            {templates.length === 0 ? (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="glass rounded-2xl"
+                >
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <MessageCircle className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-text-muted text-lg">{t('panel.messages.empty')}</p>
+                        <p className="text-text-muted/60 text-sm mt-2">
+                            {t('panel.messages.emptyHint')}
+                        </p>
+                    </div>
+                </motion.div>
+            ) : (
+                <ListStagger className="space-y-4">
+                    {templates.map((tmpl) => (
+                        <StaggerItem key={tmpl.id}>
+                            <motion.div
+                                whileHover={{ y: -2 }}
+                                className="glass rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
+                            >
+                                {/* Template header */}
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                            <MessageCircle className="w-5 h-5 text-green-600" />
+                                        </div>
+                                        <h3 className="font-bold text-text-primary">
+                                            {tmpl.name}
+                                        </h3>
+                                        {tmpl.is_default && (
+                                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                                Default
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => copyTemplate(tmpl)}
+                                            aria-label={t('common.copy')}
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            title={t('common.copy')}
+                                        >
+                                            {copiedId === tmpl.id
+                                                ? <Check className="w-4 h-4 text-green-600" />
+                                                : <Copy className="w-4 h-4" />
+                                            }
+                                        </button>
+                                        <button
+                                            onClick={() => openEdit(tmpl)}
+                                            aria-label={t('common.edit')}
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            disabled={isPending}
+                                            title={t('common.edit')}
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(tmpl.id)}
+                                            aria-label={t('common.delete')}
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                            disabled={isPending}
+                                            title={t('common.delete')}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Template preview (WhatsApp-style) */}
+                                <div className="bg-[#e5ddd5]/50 dark:bg-[#1a1a1a] px-5 py-4">
+                                    <div className="max-w-[70%] ml-auto">
+                                        <div className="bg-[#dcf8c6] dark:bg-emerald-900/40 rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
+                                            <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+                                                {renderWhatsAppPreviewParts(tmpl.template).map((part, idx) =>
                                                     part.bold ? (
                                                         <strong key={`${idx}-${part.text}`}>{part.text}</strong>
                                                     ) : (
@@ -340,140 +521,34 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                                                     )
                                                 )}
                                             </div>
-                                        ) : (
-                                            <p className="text-sm text-gray-400 italic">
-                                                {t('panel.messages.previewEmpty')}
-                                            </p>
-                                        )}
-                                        <div className="text-right mt-1">
-                                            <span className="text-[10px] text-gray-500">14:32 ✓✓</span>
+                                            <div className="text-right mt-1">
+                                                <span className="text-[10px] text-gray-500">14:32 ✓✓</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Default toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={isDefault}
-                            onChange={e => setIsDefault(e.target.checked)}
-                            className="rounded border-surface-3"
-                        />
-                        <span className="text-sm text-text-secondary">
-                            {t('panel.messages.setDefault')}
-                        </span>
-                    </label>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-2">
-                        <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary">
-                            {isPending ? '...' : editingId ? t('common.save') : t('common.create')}
-                        </button>
-                        <button onClick={resetForm} className="btn btn-ghost">{t('common.cancel')}</button>
-                    </div>
-                </div>
-            )}
-
-            {/* ============================================================= */}
-            {/* TEMPLATE LIST                                                  */}
-            {/* ============================================================= */}
-            {templates.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <MessageCircle className="w-10 h-10 text-text-muted mx-auto mb-4" strokeWidth={1.5} />
-                    <p className="text-text-muted text-lg">{t('panel.messages.empty')}</p>
-                    <p className="text-text-muted/60 text-sm mt-2">
-                        {t('panel.messages.emptyHint')}
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {templates.map(tmpl => (
-                        <div key={tmpl.id} className="glass rounded-2xl overflow-hidden">
-                            {/* Template header */}
-                            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2">
-                                <div className="flex items-center gap-3">
-                                    <MessageCircle className="w-5 h-5 text-green-600" />
-                                    <h3 className="font-bold text-text-primary">
-                                        {tmpl.name}
-                                    </h3>
-                                    {tmpl.is_default && (
-                                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                                            Default
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => copyTemplate(tmpl)}
-                                        className="p-2 rounded-lg hover:bg-surface-1 text-text-muted hover:text-text-secondary transition-colors"
-                                        title={t('common.copy')}
-                                    >
-                                        {copiedId === tmpl.id
-                                            ? <Check className="w-4 h-4 text-green-600" />
-                                            : <Copy className="w-4 h-4" />
-                                        }
-                                    </button>
-                                    <button
-                                        onClick={() => openEdit(tmpl)}
-                                        className="p-2 rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors"
-                                        disabled={isPending}
-                                        title={t('common.edit')}
-                                    >
-                                        <Pencil className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(tmpl.id)}
-                                        className="p-2 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
-                                        disabled={isPending}
-                                        title={t('common.delete')}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Template preview (WhatsApp-style) */}
-                            <div className="bg-[#e5ddd5]/50 px-5 py-4">
-                                <div className="max-w-[70%] ml-auto">
-                                    <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
-                                        <div
-                                            className="text-sm text-gray-800 whitespace-pre-wrap break-words"
-                                        >
-                                            {renderWhatsAppPreviewParts(tmpl.template).map((part, idx) =>
-                                                part.bold ? (
-                                                    <strong key={`${idx}-${part.text}`}>{part.text}</strong>
-                                                ) : (
-                                                    <span key={`${idx}-${part.text}`}>{part.text}</span>
-                                                )
-                                            )}
-                                        </div>
-                                        <div className="text-right mt-1">
-                                            <span className="text-[10px] text-gray-500">14:32 ✓✓</span>
+                                {/* Variables used */}
+                                {tmpl.variables.length > 0 && (
+                                    <div className="px-5 py-3 border-t border-surface-2">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            <span className="text-xs text-text-muted mr-1">Variables:</span>
+                                            {tmpl.variables.map(v => (
+                                                <span key={v} className="text-xs glass text-text-secondary px-2 py-0.5 rounded-full font-mono">
+                                                    {`{{${v}}}`}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Variables used */}
-                            {tmpl.variables.length > 0 && (
-                                <div className="px-5 py-3 bg-surface-0 border-t border-surface-2">
-                                    <div className="flex flex-wrap gap-1.5">
-                                        <span className="text-xs text-text-muted mr-1">Variables:</span>
-                                        {tmpl.variables.map(v => (
-                                            <span key={v} className="text-xs bg-surface-1 text-text-secondary px-2 py-0.5 rounded-full font-mono">
-                                                {`{{${v}}}`}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </motion.div>
+                        </StaggerItem>
                     ))}
-                </div>
+                </ListStagger>
             )}
-        </>
+
+            {/* Confirm dialog */}
+            <PanelConfirmDialog {...confirmDialog.dialogProps} />
+        </PageEntrance>
     )
 }

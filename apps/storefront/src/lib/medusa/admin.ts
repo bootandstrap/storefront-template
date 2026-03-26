@@ -52,6 +52,7 @@ export {
     cancelAdminOrder,
     getAdminCustomers,
     getAdminCustomerDetail,
+    updateCustomerMetadata,
 } from './admin-orders'
 
 // Products

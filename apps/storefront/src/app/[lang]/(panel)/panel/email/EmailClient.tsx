@@ -1,10 +1,26 @@
 'use client'
 
+/**
+ * EmailClient — Owner Panel (SOTA rewrite)
+ *
+ * Features:
+ * - PageEntrance animation
+ * - StatCard for dashboard metrics (replaces hand-rolled cards)
+ * - Animated tabs with motion indicator
+ * - Animated usage bar (motion width)
+ * - Feature-gated tab styling
+ * - Animated automation cards
+ */
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
-import { Mail, Send, Clock, BarChart3, ShoppingCart, Star, Palette, Lock } from 'lucide-react'
+import { Mail, Send, Clock, BarChart3, ShoppingCart, Star, Palette, Lock, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type AutomationConfig } from '@/lib/email-automations-shared'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import StatCard from '@/components/panel/StatCard'
+import { PageEntrance } from '@/components/panel/PanelAnimations'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,6 +73,8 @@ interface Props {
     saveAction: (config: AutomationConfig) => Promise<{ success: boolean; error?: string }>
 }
 
+type TabKey = 'dashboard' | 'automations' | 'templates' | 'campaigns'
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -67,7 +85,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
     const toast = useToast()
 
     const [automationConfig, setAutomationConfig] = useState<AutomationConfig>(config)
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'automations' | 'templates' | 'campaigns'>('dashboard')
+    const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
 
     const handleSave = () => {
         startTransition(async () => {
@@ -85,245 +103,365 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
         ? Math.round((stats.sent_this_month / stats.monthly_limit) * 100)
         : 0
 
-    const tabs = [
-        { key: 'dashboard' as const, label: labels.dashboard, icon: BarChart3, gated: false },
-        { key: 'automations' as const, label: labels.automations, icon: Clock, gated: false },
-        { key: 'templates' as const, label: labels.templates, icon: Palette, gated: !flags.enable_email_templates },
-        { key: 'campaigns' as const, label: labels.campaigns, icon: Send, gated: !flags.enable_email_campaigns },
+    const tabs: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }>; gated: boolean }[] = [
+        { key: 'dashboard', label: labels.dashboard, icon: BarChart3, gated: false },
+        { key: 'automations', label: labels.automations, icon: Clock, gated: false },
+        { key: 'templates', label: labels.templates, icon: Palette, gated: !flags.enable_email_templates },
+        { key: 'campaigns', label: labels.campaigns, icon: Send, gated: !flags.enable_email_campaigns },
     ]
 
     return (
-        <>
+        <PageEntrance className="space-y-5">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                    <Mail className="w-6 h-6 text-primary" />
-                    {labels.title}
-                </h1>
-                <p className="text-text-muted mt-1">{labels.subtitle}</p>
-            </div>
+            <PanelPageHeader
+                title={labels.title}
+                subtitle={labels.subtitle}
+                icon={<Mail className="w-5 h-5" />}
+            />
 
-            {/* G5: Provider warning */}
-            {!hasProvider && (
-                <div className="rounded-xl border border-amber-400/40 bg-amber-50/80 dark:bg-amber-950/30 px-5 py-4 flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                        <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-                            {labels.providerWarning}
-                        </p>
-                        <a
-                            href={`/panel/tienda`}
-                            className="text-sm text-primary hover:underline mt-1 inline-block"
-                        >
-                            {labels.providerWarningAction} →
-                        </a>
-                    </div>
-                </div>
-            )}
-
-            {/* Tabs */}
-            <div className="flex gap-1 rounded-xl border border-surface-3 overflow-hidden w-fit">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => !tab.gated && setActiveTab(tab.key)}
-                        className={`px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === tab.key
-                            ? 'bg-primary text-white'
-                            : tab.gated
-                                ? 'text-text-muted cursor-not-allowed opacity-50'
-                                : 'text-text-secondary hover:bg-surface-1'
-                            }`}
+            {/* Provider warning */}
+            <AnimatePresence>
+                {!hasProvider && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="rounded-xl border border-amber-400/40 bg-amber-50/80 dark:bg-amber-950/30 px-5 py-4 flex items-start gap-3"
                     >
-                        <tab.icon className="w-4 h-4" />
-                        {tab.label}
-                        {tab.gated && <Lock className="w-3 h-3" />}
-                    </button>
-                ))}
+                        <Mail className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                                {labels.providerWarning}
+                            </p>
+                            <a
+                                href="/panel/tienda"
+                                className="text-sm text-primary hover:underline mt-1 inline-block"
+                            >
+                                {labels.providerWarningAction} →
+                            </a>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Tabs with animated indicator */}
+            <div className="flex gap-1 glass rounded-xl w-fit p-1">
+                {tabs.map(tab => {
+                    const Icon = tab.icon
+                    return (
+                        <button
+                            key={tab.key}
+                            onClick={() => !tab.gated && setActiveTab(tab.key)}
+                            aria-pressed={activeTab === tab.key}
+                            aria-disabled={tab.gated}
+                            className={`relative px-4 py-2.5 min-h-[44px] text-sm font-medium flex items-center gap-2 transition-all rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                activeTab === tab.key
+                                    ? 'text-primary'
+                                    : tab.gated
+                                        ? 'text-text-muted cursor-not-allowed opacity-50'
+                                        : 'text-text-secondary hover:text-text-primary'
+                            }`}
+                        >
+                            {activeTab === tab.key && (
+                                <motion.div
+                                    layoutId="email-tab-indicator"
+                                    className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {tab.label}
+                                {tab.gated && <Lock className="w-3 h-3" />}
+                            </span>
+                        </button>
+                    )
+                })}
             </div>
 
             {/* Dashboard Tab */}
-            {activeTab === 'dashboard' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Emails Sent */}
-                    <div className="glass rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                            <Send className="w-5 h-5 text-primary" />
-                            <span className="text-sm font-medium text-text-secondary">{labels.sentThisMonth}</span>
-                        </div>
-                        <div className="text-3xl font-bold text-text-primary">
-                            {stats.sent_this_month.toLocaleString()}
-                        </div>
-                        <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
-                            <div className="flex-1 bg-surface-2 rounded-full h-2 overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-primary'
-                                        }`}
-                                    style={{ width: `${Math.min(usagePercent, 100)}%` }}
+            <AnimatePresence mode="wait">
+                {activeTab === 'dashboard' && (
+                    <motion.div
+                        key="dashboard"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-4"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-1">
+                                <StatCard
+                                    label={labels.sentThisMonth}
+                                    value={stats.sent_this_month.toLocaleString()}
+                                    icon={<Send className="w-4 h-4" />}
+                                    stagger={0}
                                 />
                             </div>
-                            {usagePercent}% · {labels.emailsRemaining}: {(stats.monthly_limit - stats.sent_this_month).toLocaleString()}
-                        </div>
-                    </div>
-
-                    {/* Open Rate */}
-                    <div className="glass rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                            <BarChart3 className="w-5 h-5 text-green-500" />
-                            <span className="text-sm font-medium text-text-secondary">{labels.openRate}</span>
-                        </div>
-                        <div className="text-3xl font-bold text-text-primary">
-                            {stats.open_rate}%
-                        </div>
-                    </div>
-
-                    {/* Bounce Rate */}
-                    <div className="glass rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                            <Mail className="w-5 h-5 text-red-400" />
-                            <span className="text-sm font-medium text-text-secondary">{labels.bounceRate}</span>
-                        </div>
-                        <div className="text-3xl font-bold text-text-primary">
-                            {stats.bounce_rate}%
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Automations Tab */}
-            {activeTab === 'automations' && (
-                <div className="space-y-4">
-                    {/* Abandoned Cart */}
-                    <div className={`glass rounded-2xl p-6 ${!flags.enable_abandoned_cart_emails ? 'opacity-60' : ''}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <ShoppingCart className="w-5 h-5 text-orange-500" />
-                                <div>
-                                    <h3 className="font-bold text-text-primary">{labels.abandonedCart}</h3>
-                                    <p className="text-xs text-text-muted">{labels.abandonedCartDesc}</p>
-                                </div>
+                            <div className="md:col-span-1">
+                                <StatCard
+                                    label={labels.openRate}
+                                    value={`${stats.open_rate}%`}
+                                    icon={<BarChart3 className="w-4 h-4" />}
+                                    stagger={1}
+                                />
                             </div>
-                            {flags.enable_abandoned_cart_emails ? (
-                                <button
-                                    onClick={() => setAutomationConfig(prev => ({
-                                        ...prev,
-                                        abandoned_cart_enabled: !prev.abandoned_cart_enabled,
-                                    }))}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${automationConfig.abandoned_cart_enabled
-                                        ? 'bg-green-50 border-green-300 text-green-700'
-                                        : 'border-surface-3 text-text-secondary'
-                                        }`}
-                                >
-                                    {automationConfig.abandoned_cart_enabled ? labels.enabled : labels.disabled}
-                                </button>
-                            ) : (
-                                <span className="text-xs text-text-muted flex items-center gap-1">
-                                    <Lock className="w-3 h-3" /> {labels.upgradeRequired}
-                                </span>
-                            )}
-                        </div>
-                        {flags.enable_abandoned_cart_emails && automationConfig.abandoned_cart_enabled && (
-                            <div className="mt-4 pt-4 border-t border-surface-2">
-                                <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
-                                <div className="flex gap-2">
-                                    {ABANDONED_CART_DELAY_OPTIONS.map(opt => (
-                                        <button
-                                            key={opt.value}
-                                            onClick={() => setAutomationConfig(prev => ({
-                                                ...prev,
-                                                abandoned_cart_delay_hours: opt.value,
-                                            }))}
-                                            className={`px-3 py-2 rounded-xl text-sm border transition-all ${automationConfig.abandoned_cart_delay_hours === opt.value
-                                                ? 'bg-primary text-white border-primary'
-                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
-                                                }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="md:col-span-1">
+                                <StatCard
+                                    label={labels.bounceRate}
+                                    value={`${stats.bounce_rate}%`}
+                                    icon={<Mail className="w-4 h-4" />}
+                                    stagger={2}
+                                />
                             </div>
+                        </div>
+
+                        {/* Usage bar */}
+                        {stats.monthly_limit > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="glass rounded-2xl px-5 py-4"
+                            >
+                                <div className="flex items-center justify-between mb-2 text-xs">
+                                    <span className="text-text-muted">
+                                        {usagePercent}% · {labels.emailsRemaining}: {(stats.monthly_limit - stats.sent_this_month).toLocaleString()}
+                                    </span>
+                                    <span className="font-semibold text-text-primary">
+                                        {stats.sent_this_month.toLocaleString()} / {stats.monthly_limit.toLocaleString()}
+                                    </span>
+                                </div>
+                                <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(usagePercent, 100)}%` }}
+                                        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-primary'}`}
+                                    />
+                                </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </motion.div>
+                )}
 
-                    {/* Review Requests — B2 fix: gates on base email flag, not abandoned cart */}
-                    <div className={`glass rounded-2xl p-6 ${!flags.enable_email_notifications ? 'opacity-60' : ''}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <Star className="w-5 h-5 text-yellow-500" />
-                                <div>
-                                    <h3 className="font-bold text-text-primary">{labels.reviewRequest}</h3>
-                                    <p className="text-xs text-text-muted">{labels.reviewRequestDesc}</p>
-                                </div>
-                            </div>
-                            {flags.enable_email_notifications ? (
-                                <button
-                                    onClick={() => setAutomationConfig(prev => ({
-                                        ...prev,
-                                        review_request_enabled: !prev.review_request_enabled,
-                                    }))}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${automationConfig.review_request_enabled
-                                        ? 'bg-green-50 border-green-300 text-green-700'
-                                        : 'border-surface-3 text-text-secondary'
-                                        }`}
-                                >
-                                    {automationConfig.review_request_enabled ? labels.enabled : labels.disabled}
-                                </button>
-                            ) : (
-                                <span className="text-xs text-text-muted flex items-center gap-1">
-                                    <Lock className="w-3 h-3" /> {labels.upgradeRequired}
-                                </span>
-                            )}
-                        </div>
-                        {flags.enable_email_notifications && automationConfig.review_request_enabled && (
-                            <div className="mt-4 pt-4 border-t border-surface-2">
-                                <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
-                                <div className="flex gap-2">
-                                    {REVIEW_REQUEST_DELAY_OPTIONS.map(opt => (
-                                        <button
-                                            key={opt.value}
-                                            onClick={() => setAutomationConfig(prev => ({
-                                                ...prev,
-                                                review_request_delay_days: opt.value,
-                                            }))}
-                                            className={`px-3 py-2 rounded-xl text-sm border transition-all ${automationConfig.review_request_delay_days === opt.value
-                                                ? 'bg-primary text-white border-primary'
-                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
-                                                }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Save button */}
-                    <button
-                        onClick={handleSave}
-                        disabled={isPending}
-                        className="btn btn-primary"
+                {/* Automations Tab */}
+                {activeTab === 'automations' && (
+                    <motion.div
+                        key="automations"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-4"
                     >
-                        {isPending ? '...' : labels.save}
-                    </button>
-                </div>
-            )}
+                        {/* Abandoned Cart */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ y: -1 }}
+                            className={`glass rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_abandoned_cart_emails ? 'opacity-60' : ''}`}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                                        <ShoppingCart className="w-5 h-5 text-orange-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-text-primary">{labels.abandonedCart}</h3>
+                                        <p className="text-xs text-text-muted">{labels.abandonedCartDesc}</p>
+                                    </div>
+                                </div>
+                                {flags.enable_abandoned_cart_emails ? (
+                                    <button
+                                        onClick={() => setAutomationConfig(prev => ({
+                                            ...prev,
+                                            abandoned_cart_enabled: !prev.abandoned_cart_enabled,
+                                        }))}
+                                        aria-pressed={automationConfig.abandoned_cart_enabled}
+                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.abandoned_cart_enabled
+                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                                            : 'border-surface-3 text-text-secondary'
+                                            }`}
+                                    >
+                                        {automationConfig.abandoned_cart_enabled ? labels.enabled : labels.disabled}
+                                    </button>
+                                ) : (
+                                    <span className="text-xs text-text-muted flex items-center gap-1">
+                                        <Lock className="w-3 h-3" /> {labels.upgradeRequired}
+                                    </span>
+                                )}
+                            </div>
+                            <AnimatePresence>
+                                {flags.enable_abandoned_cart_emails && automationConfig.abandoned_cart_enabled && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="mt-4 pt-4 border-t border-surface-2">
+                                            <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
+                                            <div className="flex gap-2">
+                                                {ABANDONED_CART_DELAY_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => setAutomationConfig(prev => ({
+                                                            ...prev,
+                                                            abandoned_cart_delay_hours: opt.value,
+                                                        }))}
+                                                        aria-pressed={automationConfig.abandoned_cart_delay_hours === opt.value}
+                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.abandoned_cart_delay_hours === opt.value
+                                                            ? 'text-white'
+                                                            : 'border border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                            }`}
+                                                    >
+                                                        {automationConfig.abandoned_cart_delay_hours === opt.value && (
+                                                            <motion.div
+                                                                layoutId="cart-delay-indicator"
+                                                                className="absolute inset-0 bg-primary rounded-xl"
+                                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                            />
+                                                        )}
+                                                        <span className="relative z-10">{opt.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
 
-            {/* Templates Tab (gated) — B6 fix: i18n */}
-            {activeTab === 'templates' && (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <Palette className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">{labels.templatesPlaceholder}</p>
-                </div>
-            )}
+                        {/* Review Requests */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            whileHover={{ y: -1 }}
+                            className={`glass rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_email_notifications ? 'opacity-60' : ''}`}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                                        <Star className="w-5 h-5 text-yellow-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-text-primary">{labels.reviewRequest}</h3>
+                                        <p className="text-xs text-text-muted">{labels.reviewRequestDesc}</p>
+                                    </div>
+                                </div>
+                                {flags.enable_email_notifications ? (
+                                    <button
+                                        onClick={() => setAutomationConfig(prev => ({
+                                            ...prev,
+                                            review_request_enabled: !prev.review_request_enabled,
+                                        }))}
+                                        aria-pressed={automationConfig.review_request_enabled}
+                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.review_request_enabled
+                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                                            : 'border-surface-3 text-text-secondary'
+                                            }`}
+                                    >
+                                        {automationConfig.review_request_enabled ? labels.enabled : labels.disabled}
+                                    </button>
+                                ) : (
+                                    <span className="text-xs text-text-muted flex items-center gap-1">
+                                        <Lock className="w-3 h-3" /> {labels.upgradeRequired}
+                                    </span>
+                                )}
+                            </div>
+                            <AnimatePresence>
+                                {flags.enable_email_notifications && automationConfig.review_request_enabled && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="mt-4 pt-4 border-t border-surface-2">
+                                            <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
+                                            <div className="flex gap-2">
+                                                {REVIEW_REQUEST_DELAY_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => setAutomationConfig(prev => ({
+                                                            ...prev,
+                                                            review_request_delay_days: opt.value,
+                                                        }))}
+                                                        aria-pressed={automationConfig.review_request_delay_days === opt.value}
+                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.review_request_delay_days === opt.value
+                                                            ? 'text-white'
+                                                            : 'border border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                            }`}
+                                                    >
+                                                        {automationConfig.review_request_delay_days === opt.value && (
+                                                            <motion.div
+                                                                layoutId="review-delay-indicator"
+                                                                className="absolute inset-0 bg-primary rounded-xl"
+                                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                            />
+                                                        )}
+                                                        <span className="relative z-10">{opt.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
 
-            {/* Campaigns Tab (gated) — B6 fix: i18n */}
-            {activeTab === 'campaigns' && (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <Send className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                    <p className="text-text-muted">{labels.campaignsPlaceholder}</p>
-                </div>
-            )}
-        </>
+                        {/* Save button */}
+                        <motion.button
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            onClick={handleSave}
+                            disabled={isPending}
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        >
+                            {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isPending ? '...' : labels.save}
+                        </motion.button>
+                    </motion.div>
+                )}
+
+                {/* Templates Tab (gated) */}
+                {activeTab === 'templates' && (
+                    <motion.div
+                        key="templates"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="glass rounded-2xl"
+                    >
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <Palette className="w-8 h-8 text-text-muted" />
+                            </div>
+                            <p className="text-text-muted">{labels.templatesPlaceholder}</p>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Campaigns Tab (gated) */}
+                {activeTab === 'campaigns' && (
+                    <motion.div
+                        key="campaigns"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="glass rounded-2xl"
+                    >
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <Send className="w-8 h-8 text-text-muted" />
+                            </div>
+                            <p className="text-text-muted">{labels.campaignsPlaceholder}</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </PageEntrance>
     )
 }

@@ -1,7 +1,7 @@
 # Development Setup
 
 > **Repository**: `git clone https://github.com/bootandstrap/bootandstrap-ecommerce.git`
-> Last updated: 2026-03-07.
+> Last updated: 2026-03-25.
 
 ## Prerequisites
 
@@ -60,6 +60,32 @@ The storefront requires a valid tenant in the **governance Supabase** (BootandSt
 The storefront's `getConfig()` function fetches config, feature flags, and plan limits from the central governance Supabase using the `get_tenant_governance` RPC. If the `TENANT_ID` from `.env` doesn't match any tenant in governance, the storefront activates a restrictive fallback: all features disabled, maintenance mode ON.
 
 ### How To Create a Dev Tenant
+
+The seed script **auto-provisions** the tenant if needed — no manual curls required:
+
+```bash
+npx tsx scripts/seed-demo.ts
+```
+
+This will:
+1. Check if `TENANT_ID` exists in governance → if not, call `provision_tenant` RPC
+2. Set ALL 57 feature flags to enabled (enterprise tier)
+3. Set ALL 28 plan limits to maximum values
+4. Write the new `TENANT_ID` to `.env` automatically
+5. Seed demo products, customers, and orders in Medusa
+
+**Requirements**: `GOVERNANCE_SUPABASE_URL` + `GOVERNANCE_SUPABASE_SERVICE_ROLE_KEY` must be set in `.env`.
+
+After seeding, restart the storefront:
+
+```bash
+# Kill existing and restart
+kill $(lsof -i :3000 -t) 2>/dev/null
+./dev.sh
+```
+
+<details>
+<summary>Manual Alternative (advanced — not usually needed)</summary>
 
 **Step 1** — Provision the tenant via RPC:
 
@@ -148,24 +174,28 @@ curl -s -X PATCH "https://odvzsqossriyyscduzfg.supabase.co/rest/v1/tenants?id=eq
 **Step 6** — Restart the storefront (`.env` changes require restart):
 
 ```bash
-# Kill existing and restart
 kill $(lsof -i :3000 -t) 2>/dev/null
 cd apps/storefront && npx next dev --turbopack --port 3000
 ```
+
+</details>
 
 ---
 
 ## Seed Script (`scripts/seed-demo.ts`)
 
-Populates the local Medusa instance with realistic demo data:
+Populates the local Medusa instance with realistic demo data using the **fresh-produce** industry template:
 
 | What | Count |
 |------|-------|
 | Regions | 1 (Europe — EUR, 4 countries) |
 | Sales Channels | 1 (linked to publishable API key) |
 | Stock Locations | 1 (with fulfillment set + shipping option) |
-| Product Categories | 4 |
-| Products | 12 (with variants and prices) |
+| Product Categories | 6 (Frutas, Verduras, Temporada, Conservas, Aceites, Cestas) |
+| Products | 18 (with variants, prices, and stock levels) |
+| Demo Customers | 5 (with Supabase profiles) |
+| Demo Orders | 8 (mix of completed, pending, and cancelled) |
+| Demo Carts | 3 (abandoned carts for analytics) |
 
 ### Usage
 
@@ -196,25 +226,40 @@ The script reads from `.env` (manual parse, no `dotenv` dependency):
 ```
 ecommerce-template/
 ├── GEMINI.md                    # ← Master guide (read first)
+├── CUSTOMIZATION.md             # ← Client-facing customization guide
 ├── dev.sh                       # ← One-command dev startup
 ├── scripts/
-│   └── seed-demo.ts             # ← Demo data seeder
+│   └── seed-demo.ts             # ← Demo data seeder (industry templates)
 ├── apps/
 │   ├── storefront/              # Next.js 16 (App Router)
 │   │   ├── src/
 │   │   │   ├── app/             # Pages (locale-based routing)
-│   │   │   ├── components/      # UI components
+│   │   │   │   └── [lang]/
+│   │   │   │       ├── (shop)/  # Customer-facing store
+│   │   │   │       ├── (panel)/ # Owner panel (26 pages)
+│   │   │   │       └── (auth)/  # Login / registration
+│   │   │   ├── components/
+│   │   │   │   ├── panel/       # 36 panel components
+│   │   │   │   ├── home/        # Homepage sections
+│   │   │   │   ├── products/    # Product cards, grids
+│   │   │   │   ├── cart/        # Cart drawer, items
+│   │   │   │   ├── checkout/    # Payment flows
+│   │   │   │   └── ui/          # Reusable primitives
 │   │   │   └── lib/
 │   │   │       ├── config.ts    # Governance config fetch (TTL cache)
 │   │   │       ├── features.ts  # Feature flag checker
 │   │   │       ├── limits.ts    # Plan limits checker
+│   │   │       ├── store-readiness.ts  # Dashboard health score engine
+│   │   │       ├── smart-tips.ts       # Contextual suggestions
+│   │   │       ├── achievements.ts     # Gamified milestones
+│   │   │       ├── panel-policy.ts     # Route gating & navigation
 │   │   │       └── supabase/
 │   │   │           └── governance.ts  # Governance Supabase client
 │   │   └── proxy.ts             # Next.js 16 proxy (locale + auth)
 │   └── medusa/                  # Medusa.js v2 backend
 │       ├── medusa-config.ts     # Backend config
 │       └── src/modules/         # Custom Supabase auth + storage
-├── docs/                        # Documentation
+├── docs/                        # Documentation (7 docs)
 └── .agent/workflows/            # Agent workflows
 ```
 

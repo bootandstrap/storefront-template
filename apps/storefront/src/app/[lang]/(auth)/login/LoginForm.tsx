@@ -14,6 +14,7 @@ interface LoginFormProps {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
+    missing_fields: 'auth.missingFields',
     invalid_credentials: 'auth.invalidCredentials',
     email_not_confirmed: 'auth.emailNotConfirmed',
     unknown_error: 'auth.unknownError',

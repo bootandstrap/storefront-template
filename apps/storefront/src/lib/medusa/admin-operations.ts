@@ -58,6 +58,12 @@ export async function receiveAdminReturn(
     return { error: res.error }
 }
 
+/**
+ * Cancel a return request.
+ *
+ * Note: `/admin/returns/{id}/cancel` may not be available in all Medusa v2 versions.
+ * When 404, returns a descriptive error instead of a generic one.
+ */
 export async function cancelAdminReturn(
     returnId: string,
     scope?: TenantMedusaScope | null
@@ -65,6 +71,14 @@ export async function cancelAdminReturn(
     const res = await adminFetch(`/admin/returns/${returnId}/cancel`, {
         method: 'POST',
     }, scope)
+
+    // Provide a user-friendly message when the endpoint doesn't exist in v2
+    if (res.error?.includes('404') || res.error?.includes('Cannot POST')) {
+        return {
+            error: 'Return cancellation is not supported in this version of Medusa. Please manage this return manually.',
+        }
+    }
+
     return { error: res.error }
 }
 

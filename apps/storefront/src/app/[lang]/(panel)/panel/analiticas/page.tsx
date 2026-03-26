@@ -1,20 +1,28 @@
 /**
- * Analytics Dashboard — Owner Panel
+ * Analytics Dashboard — Owner Panel (SOTA rewrite)
  *
- * Displays page views, top products, and conversion funnel.
- * Data from analytics_events table (filtered by tenant_id).
- * Gated by enable_analytics feature flag.
+ * SOTA upgrades:
+ * - Raw `bg-surface-0 border` → `glass rounded-2xl`
+ * - No PanelPageHeader → PanelPageHeader with icon + badge
+ * - Inline h1/p header → PanelPageHeader
+ * - Consistent glass pattern for funnel card
+ * - StatCard for summary metrics
+ *
+ * NOTE: Server component — no framer-motion. Uses CSS transitions for bar widths.
  */
 
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import StatCard from '@/components/panel/StatCard'
 import {
     Eye,
     ShoppingBag,
     ArrowRight,
     TrendingUp,
+    BarChart3,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -26,7 +34,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     return { title: t('panel.analytics.title') }
 }
 
-// Funnel step icons
 const FUNNEL_ICONS: Record<string, React.ReactNode> = {
     page_view: <Eye className="w-4 h-4" />,
     product_view: <ShoppingBag className="w-4 h-4" />,
@@ -100,57 +107,38 @@ export default async function AnalyticsPage({
     return (
         <div className="space-y-6 max-w-4xl">
 
-            {/* ── Header ─────────────────────────────────────── */}
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {t('panel.analytics.title')}
-                </h1>
-                <p className="text-text-muted mt-1">
-                    {t('panel.analytics.subtitle')}
-                </p>
+            {/* ── Header ── */}
+            <PanelPageHeader
+                title={t('panel.analytics.title')}
+                subtitle={t('panel.analytics.subtitle')}
+                icon={<BarChart3 className="w-5 h-5" />}
+            />
+
+            {/* ── Summary Stats ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <StatCard
+                    label={t('panel.analytics.pageViews7d')}
+                    value={pageViews7d.toLocaleString()}
+                    icon={<Eye className="w-5 h-5" />}
+                    stagger={0}
+                />
+                <StatCard
+                    label={t('panel.analytics.productViews7d')}
+                    value={productViews.toLocaleString()}
+                    icon={<ShoppingBag className="w-5 h-5" />}
+                    stagger={1}
+                />
+                <StatCard
+                    label={t('panel.analytics.conversionRate')}
+                    value={`${conversionRate}%`}
+                    icon={<TrendingUp className="w-5 h-5" />}
+                    variant="hero"
+                    stagger={2}
+                />
             </div>
 
-            {/* ── Summary Stats ─────────────────────────────── */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-surface-0 border border-surface-2 rounded-xl p-5">
-                    <p className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
-                        {t('panel.analytics.pageViews7d')}
-                    </p>
-                    <p className="text-3xl font-bold font-display text-text-primary">
-                        {pageViews7d.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-text-muted mt-1.5">
-                        {t('panel.analytics.period')}
-                    </p>
-                </div>
-
-                <div className="bg-surface-0 border border-surface-2 rounded-xl p-5">
-                    <p className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
-                        {t('panel.analytics.productViews7d')}
-                    </p>
-                    <p className="text-3xl font-bold font-display text-text-primary">
-                        {productViews.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-text-muted mt-1.5">
-                        {t('panel.analytics.period')}
-                    </p>
-                </div>
-
-                <div className="bg-surface-0 border border-surface-2 rounded-xl p-5">
-                    <p className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
-                        {t('panel.analytics.conversionRate')}
-                    </p>
-                    <p className="text-3xl font-bold font-display text-primary">
-                        {conversionRate}%
-                    </p>
-                    <p className="text-xs text-text-muted mt-1.5">
-                        {t('panel.analytics.period')}
-                    </p>
-                </div>
-            </div>
-
-            {/* ── Conversion Funnel ────────────────────────── */}
-            <div className="bg-surface-0 border border-surface-2 rounded-xl p-6">
+            {/* ── Conversion Funnel ── */}
+            <div className="glass rounded-2xl p-6">
                 <h3 className="text-sm font-semibold text-text-primary mb-6">
                     {t('panel.analytics.conversionFunnel')}
                 </h3>
@@ -178,7 +166,7 @@ export default async function AnalyticsPage({
                                 )}
 
                                 <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-surface-1 border border-surface-2 text-text-muted flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg glass text-text-muted flex items-center justify-center flex-shrink-0">
                                         {FUNNEL_ICONS[step.key] ?? <Eye className="w-4 h-4" />}
                                     </div>
 

@@ -1,6 +1,7 @@
 import { ArrowUpRight, Check, CreditCard, Crown, Lightbulb, Loader2, Puzzle, Sparkles } from 'lucide-react'
 import type { ActiveModuleInfo } from '@/lib/active-modules'
 import type { ModuleCatalogEntry } from '@/lib/governance-contract'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
 
 export function getSelectedTier(
     module: ModuleCatalogEntry,
@@ -97,48 +98,45 @@ export function SubscriptionExperience({
 
     return (
         <div className="space-y-8">
-            <div className="space-y-2">
-                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                    <Puzzle className="w-6 h-6 text-primary" />
-                    {t('panel.subscription.title')}
-                </h1>
-                <p className="text-sm text-text-muted">
-                    {t('panel.subscription.subtitle')}
-                </p>
-            </div>
+            <PanelPageHeader
+                title={t('panel.subscription.title')}
+                subtitle={t('panel.subscription.subtitle')}
+                icon={<Puzzle className="w-5 h-5" />}
+                badge={activeModules.length}
+            />
 
             {purchasedModule && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-sm text-green-400 flex items-center gap-2">
+                <div className="bg-success/10 border border-success/20 rounded-2xl p-4 text-sm text-success flex items-center gap-2">
                     <Check className="w-5 h-5 shrink-0" />
                     {t('panel.subscription.moduleActivated') || '¡Módulo activado correctamente!'}
                 </div>
             )}
 
             {tenantStatus === 'maintenance_free' && maintenanceDaysRemaining != null && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-400 flex items-center gap-2">
+                <div className="bg-info/10 border border-info/20 rounded-2xl p-4 text-sm text-info flex items-center gap-2">
                     <Crown className="w-5 h-5 shrink-0" />
                     {t('panel.subscription.maintenanceFree').replace('{{days}}', String(maintenanceDaysRemaining))}
                 </div>
             )}
 
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl p-4">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl p-4">
                     {error}
                 </div>
             )}
 
             <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="glass rounded-xl p-4 border border-surface-3">
+                <div className="glass rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.activeStack')}</p>
                     <p className="text-2xl font-bold text-text-primary mt-1">{activeModules.length} {t('panel.subscription.modulesLabel')}</p>
                     <p className="text-xs text-text-muted mt-1">{t('panel.subscription.maintenanceBase')}: {formatChf(maintenancePrice)}/{t('panel.subscription.perMonth')}</p>
                 </div>
-                <div className="glass rounded-xl p-4 border border-surface-3">
+                <div className="glass rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-wider text-text-muted">{t('panel.subscription.monthlyEstimate')}</p>
                     <p className="text-2xl font-bold text-text-primary mt-1">{formatChf(activeMonthlyEstimate)}/{t('panel.subscription.perMonth')}</p>
                     <p className="text-xs text-text-muted mt-1">{t('panel.subscription.includesDescription')}</p>
                 </div>
-                <div className="glass rounded-xl p-4 border border-primary/30 bg-primary/5">
+                <div className="glass rounded-2xl p-4 border border-primary/30 bg-primary/5">
                     <p className="text-xs uppercase tracking-wider text-primary/80">{t('panel.subscription.nextRecommendation')}</p>
                     <p className="text-lg font-semibold text-text-primary mt-1">
                         {recommendedModule?.name || t('panel.subscription.fullStack')}
@@ -153,7 +151,7 @@ export function SubscriptionExperience({
                     {t('panel.subscription.activeModules') || 'Módulos activos'}
                 </h2>
                 {activeModules.length === 0 ? (
-                    <div className="glass rounded-xl p-8 text-center">
+                    <div className="glass rounded-2xl p-8 text-center">
                         <p className="text-text-muted text-sm">
                             {t('panel.subscription.noActiveModules') || 'No hay módulos activos todavía.'}
                         </p>
@@ -166,7 +164,7 @@ export function SubscriptionExperience({
                             return (
                                 <div
                                     key={catalogEntry.key}
-                                    className="glass rounded-xl p-4 border border-green-500/20 bg-green-500/5"
+                                    className="glass rounded-2xl p-4 border border-success/20 bg-success/5"
                                 >
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
@@ -183,7 +181,7 @@ export function SubscriptionExperience({
             </section>
 
             {recommendedModule && (
-                <section className="glass rounded-xl p-5 border border-primary/30 bg-primary/5">
+                <section className="glass rounded-2xl p-5 border border-primary/30 bg-primary/5">
                     <h2 className="text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
                         <Lightbulb className="w-5 h-5 text-primary" />
                         {t('panel.subscription.recommendedForStore')}
@@ -208,7 +206,7 @@ export function SubscriptionExperience({
                             return (
                                 <article
                                     key={catalogEntry.key}
-                                    className="glass rounded-xl p-5 border border-surface-3 hover:border-primary/30 transition-colors"
+                                    className="glass rounded-2xl p-5 hover:border-primary/30 transition-all hover:shadow-lg hover:-translate-y-0.5"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>

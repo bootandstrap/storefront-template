@@ -29,6 +29,8 @@ const mockLimits: PlanLimits = {
     max_promotions_active: 5,
     max_payment_methods: 4,
     max_crm_contacts: 500,
+    plan_tier: 'starter',
+    max_pos_payment_methods: 4,
 }
 
 describe('checkLimit', () => {

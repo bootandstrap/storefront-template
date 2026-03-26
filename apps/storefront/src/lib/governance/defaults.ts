@@ -2,12 +2,47 @@
  * @module governance/defaults
  * @description Fail-closed fallback configuration for degraded mode.
  *
+ * SECURITY: When Supabase is unreachable, we degrade to maintenance mode.
+ * - ALL feature flags OFF (except enable_maintenance_mode)
+ * - ALL plan limits ZERO (except min floors: max_languages=1, max_currencies=1)
+ * - No commerce transactions, no user registration, no feature access
+ *
+ * DYNAMIC: featureFlags and planLimits are auto-derived from governance-contract.json.
+ * Adding a new flag/limit to the contract automatically includes it in FALLBACK_CONFIG.
+ * Only the `config` section is manually maintained (business-logic defaults).
+ *
  * @locked 🔴 LOCKED — DO NOT MODIFY in tenant repos.
  * Source of truth: ecommerce-template/packages/shared/src/governance/defaults.ts
- * Sync via: scripts/sync-governance.sh
  */
 
-import type { AppConfig } from './schemas'
+import type { AppConfig, FeatureFlags, PlanLimits } from './schemas'
+import contract from '@/lib/governance-contract.json'
+
+// ── Auto-derived Feature Flags ────────────────────────────────────────────
+// All flags OFF except enable_maintenance_mode (safest posture during outage)
+const featureFlags = Object.fromEntries(
+    contract.flags.keys.map(k => [k, k === 'enable_maintenance_mode'])
+) as FeatureFlags
+
+// ── Auto-derived Plan Limits ──────────────────────────────────────────────
+// All numeric limits 0 (fail-closed) except minimum floors for functional store
+const METADATA_DEFAULTS: Record<string, unknown> = {
+    plan_name: 'degraded',
+    plan_tier: null,
+    plan_expires_at: null,
+}
+const MINIMUM_FLOORS: Record<string, number> = {
+    max_languages: 1,  // at least 1 language for a functional store
+    max_currencies: 1, // at least 1 currency
+}
+const planLimits = Object.fromEntries(
+    contract.limits.keys.map(k => {
+        if (k in METADATA_DEFAULTS) return [k, METADATA_DEFAULTS[k]]
+        return [k, MINIMUM_FLOORS[k] ?? 0]
+    })
+) as PlanLimits
+
+// ── FALLBACK_CONFIG ───────────────────────────────────────────────────────
 
 export const FALLBACK_CONFIG: AppConfig = {
     config: {
@@ -63,82 +98,18 @@ export const FALLBACK_CONFIG: AppConfig = {
         free_shipping_threshold: 0,
         tax_display_mode: 'tax_included',
         onboarding_completed: false,
+        // Gamification defaults
+        achievements_unlocked: [],
+        dismissed_tips: [],
+        checklist_skipped: false,
+        tour_completed: false,
+        panel_language: null,
+        storefront_language: null,
     },
-    featureFlags: {
-        enable_whatsapp_checkout: false,
-        enable_online_payments: false,
-        enable_cash_on_delivery: false,
-        enable_bank_transfer: false,
-        enable_whatsapp_contact: false,
-        enable_user_registration: false,
-        enable_guest_checkout: false,
-        require_auth_to_order: false,
-        enable_google_auth: false,
-        enable_email_auth: false,
-        enable_ecommerce: false,
-        enable_reviews: false,
-        enable_wishlist: false,
-        enable_carousel: false,
-        enable_cms_pages: false,
-        enable_product_search: false,
-        enable_related_products: false,
-        enable_product_comparisons: false,
-        enable_product_badges: false,
-        enable_analytics: false,
-        enable_promotions: false,
-        enable_multi_language: false,
-        enable_multi_currency: false,
-        enable_admin_api: false,
-        enable_social_links: false,
-        enable_order_notes: false,
-        enable_address_management: false,
-        enable_newsletter: false,
-        enable_maintenance_mode: true,
-        enable_owner_panel: false,
-        enable_customer_accounts: false,
-        enable_order_tracking: false,
-        enable_cookie_consent: false,
-        enable_chatbot: false,
-        enable_self_service_returns: false,
-        owner_lite_enabled: false,
-        owner_advanced_modules_enabled: false,
-        enable_crm: false,
-        enable_crm_segmentation: false,
-        enable_crm_export: false,
-        enable_email_notifications: false,
-        enable_abandoned_cart_emails: false,
-        enable_email_campaigns: false,
-        enable_email_templates: false,
-    },
-    planLimits: {
-        max_products: 0,
-        max_customers: 0,
-        max_orders_month: 0,
-        max_categories: 0,
-        max_images_per_product: 0,
-        max_cms_pages: 0,
-        max_carousel_slides: 0,
-        max_admin_users: 0,
-        storage_limit_mb: 0,
-        plan_name: 'degraded',
-        plan_expires_at: null,
-        max_languages: 1,
-        max_currencies: 1,
-        max_whatsapp_templates: 0,
-        max_file_upload_mb: 0,
-        max_email_sends_month: 0,
-        max_custom_domains: 0,
-        max_chatbot_messages_month: 0,
-        max_badges: 0,
-        max_newsletter_subscribers: 0,
-        max_requests_day: 0,
-        max_reviews_per_product: 0,
-        max_wishlist_items: 0,
-        max_promotions_active: 0,
-        max_payment_methods: 0,
-        max_crm_contacts: 0,
-    },
+    featureFlags,
+    planLimits,
     planExpired: false,
     tenantStatus: 'active',
     _degraded: true,
 }
+

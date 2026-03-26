@@ -91,6 +91,8 @@ export default async function ProductsManagerPage({
                 canAdd={limitCheck.allowed}
                 defaultCurrency={config.default_currency || 'usd'}
                 labels={labels}
+                stockMode={config.stock_mode || 'simple'}
+                maxImagesPerProduct={planLimits.max_images_per_product ?? 10}
             />
         </div>
     )

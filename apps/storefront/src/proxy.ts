@@ -281,13 +281,16 @@ export async function proxy(request: NextRequest) {
         }
 
         // Check role — must be a valid panel role
+        // super_admin may not have a profiles row, so check user_metadata as fallback
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single()
 
-        if (!isPanelRole(profile?.role)) {
+        const resolvedRole = profile?.role ?? user.user_metadata?.role ?? null
+
+        if (!isPanelRole(resolvedRole)) {
             const accountUrl = request.nextUrl.clone()
             accountUrl.pathname = lang ? `/${lang}/cuenta` : '/cuenta'
             return NextResponse.redirect(accountUrl)

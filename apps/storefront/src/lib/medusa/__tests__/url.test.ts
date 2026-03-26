@@ -44,13 +44,13 @@ describe('getPublicMedusaUrl', () => {
         expect(getPublicMedusaUrl()).toBe('http://localhost:9000')
     })
 
-    it('throws in production when env is missing', async () => {
+    it('returns empty string in production when env is missing (graceful degradation)', async () => {
         vi.stubEnv('NEXT_PUBLIC_MEDUSA_BACKEND_URL', '')
         vi.stubEnv('NODE_ENV', 'production')
         const { getPublicMedusaUrl } = await import('../url')
-        expect(() => getPublicMedusaUrl()).toThrow(
-            'NEXT_PUBLIC_MEDUSA_BACKEND_URL is required in production'
-        )
+        // Returns '' instead of throwing — prevents page crashes.
+        // Cart operations will fail gracefully with error toasts.
+        expect(getPublicMedusaUrl()).toBe('')
     })
 })
 

@@ -55,7 +55,12 @@ async function fetchAbandonedCarts(delayHours: number): Promise<AbandonedCart[]>
         )
 
         if (!res.ok) {
-            console.warn(`[email-automations] Failed to fetch abandoned carts: HTTP ${res.status}`)
+            // Medusa v2 removed /admin/carts — 404 is expected
+            if (res.status === 404) {
+                console.warn('[email-automations] /admin/carts not available in Medusa v2. Abandoned cart emails skipped.')
+            } else {
+                console.warn(`[email-automations] Failed to fetch abandoned carts: HTTP ${res.status}`)
+            }
             return []
         }
 

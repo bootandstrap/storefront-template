@@ -34,6 +34,21 @@ const COMMERCIAL_FLAGS = [
     'enable_whatsapp_checkout',
     'enable_cash_on_delivery',
     'enable_bank_transfer',
+    // ── POS ───────────────────────────────────────────────
+    'enable_pos',
+    // ── Capacidad ─────────────────────────────────────────
+    'enable_traffic_expansion',
+    // ── CRM ───────────────────────────────────────────────
+    'enable_crm',
+    // ── Email ─────────────────────────────────────────────
+    'enable_email_notifications',
+    'enable_email_campaigns',
+    // ── RRSS ──────────────────────────────────────────────
+    'enable_social_links',
+    // ── Automation ────────────────────────────────────────
+    'enable_admin_api',
+    // ── Auth ──────────────────────────────────────────────
+    'enable_customer_accounts',
 ] as const
 
 // Files that define/configure flags (not enforcement)

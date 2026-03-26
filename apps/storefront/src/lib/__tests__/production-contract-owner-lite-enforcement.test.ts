@@ -24,6 +24,9 @@ describe('Owner Lite Enforcement - Production Contract', () => {
         enable_self_service_returns: true,
         enable_crm: true,
         enable_reviews: true,
+        enable_product_badges: true,
+        enable_pos: true,
+        enable_traffic_expansion: true,
     }
 
     it('allows essential routes unconditionally', () => {

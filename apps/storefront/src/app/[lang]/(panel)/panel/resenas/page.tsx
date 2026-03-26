@@ -10,7 +10,7 @@ import { Suspense } from 'react'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { isFeatureEnabled } from '@/lib/features'
-import { ShieldX } from 'lucide-react'
+import FeatureGate from '@/components/ui/FeatureGate'
 import ReviewsClient from './ReviewsClient'
 import { getReviews } from './actions'
 
@@ -77,18 +77,9 @@ export default async function ReviewsPage({
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
     const { featureFlags } = appConfig
-    const dictionary = await getDictionary(lang as Locale)
-    const t = createTranslator(dictionary)
 
     if (!isFeatureEnabled(featureFlags, 'enable_reviews')) {
-        return (
-            <div className="glass rounded-xl p-8 text-center">
-                <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                <p className="text-text-muted text-sm">
-                    {t('common.featureDisabled')}
-                </p>
-            </div>
-        )
+        return <FeatureGate flag="enable_reviews" lang={lang} />
     }
 
     return (

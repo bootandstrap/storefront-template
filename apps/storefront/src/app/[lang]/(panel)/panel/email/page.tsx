@@ -11,7 +11,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getConfigForTenant } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
-import { redirect } from 'next/navigation'
+import FeatureGate from '@/components/ui/FeatureGate'
 import EmailClient from './EmailClient'
 import { DEFAULT_AUTOMATION_CONFIG, type AutomationConfig } from '@/lib/email-automations-shared'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -114,9 +114,9 @@ export default async function EmailMarketingPage({
     const cfgAny = storeConfig as unknown as Record<string, unknown>
     const hasProvider = !!cfgAny.email_provider && !!cfgAny.email_api_key
 
-    // Gate: redirect if base email flag not enabled
+    // Gate: show upsell if base email flag not enabled
     if (!isFeatureEnabled(featureFlags, 'enable_email_notifications')) {
-        redirect(`/${lang}/panel`)
+        return <FeatureGate flag="enable_email_notifications" lang={lang} />
     }
 
     // Check individual tier flags

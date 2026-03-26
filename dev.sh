@@ -32,6 +32,23 @@ REDIS_LOCAL_PID=""
 REDIS_READY=0
 DONE_CLEANUP=0
 
+# ── Node version (nvm) ────────────────────
+NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    source "$NVM_DIR/nvm.sh"
+    if [[ -f "$ROOT_DIR/.nvmrc" ]]; then
+        REQUIRED_NODE=$(cat "$ROOT_DIR/.nvmrc" | tr -d '[:space:]')
+        nvm use "$REQUIRED_NODE" --silent 2>/dev/null || nvm install "$REQUIRED_NODE"
+    fi
+fi
+
+NODE_VERSION=$(node --version 2>/dev/null || echo "none")
+echo -e "${GREEN}⚙${NC}  Node: ${NODE_VERSION}  ($(which node))"
+if [[ ! "$NODE_VERSION" =~ ^v20\. ]]; then
+    echo -e "${RED}✗ Node 20.x required (got $NODE_VERSION). Install via: nvm install 20${NC}"
+    exit 1
+fi
+
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
@@ -105,7 +122,7 @@ start_service() {
     (
         set -o pipefail
         cd "$dir"
-        bash -lc "$cmd" 2>&1 | sed "s/^/  [$label] /"
+        eval "$cmd" 2>&1 | sed "s/^/  [$label] /"
     ) &
     PIDS+=("$!")
 }
@@ -129,6 +146,25 @@ if [[ -f "$DEV_REDIS_PID_FILE" ]]; then
     if [[ -n "${OLD_REDIS_PID:-}" ]] && ! kill -0 "$OLD_REDIS_PID" 2>/dev/null; then
         rm -f "$DEV_REDIS_PID_FILE"
     fi
+fi
+
+# ── Clean stale ports ─────────────────────
+echo -e "\n${BLUE}[pre]${NC} Cleaning stale ports & cache..."
+for PORT in "$STOREFRONT_PORT" 3001 9000; do
+    STALE_PIDS="$(lsof -ti :"$PORT" 2>/dev/null || true)"
+    if [[ -n "$STALE_PIDS" ]]; then
+        while IFS= read -r pid; do
+            [[ -z "$pid" ]] && continue
+            echo -e "  ${YELLOW}→${NC} Killing stale PID ${pid} on port ${PORT}"
+            kill -9 "$pid" 2>/dev/null || true
+        done <<< "$STALE_PIDS"
+    fi
+done
+
+# ── Clean .next cache for fresh build ─────
+if [[ -d "$ROOT_DIR/apps/storefront/.next" ]]; then
+    rm -rf "$ROOT_DIR/apps/storefront/.next"
+    echo -e "  ${GREEN}✓${NC} Cleaned .next cache"
 fi
 
 # ── Ensure storefront env symlink ──────────
@@ -205,6 +241,22 @@ if [[ -n "${MEDUSA_ADMIN_EMAIL:-}" ]] && [[ -n "${MEDUSA_ADMIN_PASSWORD:-}" ]]; 
 fi
 
 start_service "medusa" "$ROOT_DIR/apps/medusa" "REDIS_URL='$DEV_REDIS_URL' NODE_OPTIONS='--dns-result-order=ipv4first' pnpm dev"
+
+# ── Wait for Medusa before starting Storefront ──
+echo -e "\n${BLUE}[wait]${NC} Waiting for Medusa API on :9000 (up to 90s)..."
+MEDUSA_UP=0
+for i in {1..45}; do
+    medusa_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/health 2>/dev/null || echo "000")
+    if [[ "$medusa_code" == "200" ]]; then
+        echo -e "  ${GREEN}✓${NC} Medusa API ready (${i}×2s)"
+        MEDUSA_UP=1
+        break
+    fi
+    sleep 2
+done
+if [[ "$MEDUSA_UP" -eq 0 ]]; then
+    echo -e "  ${YELLOW}⚠${NC} Medusa not yet healthy — starting storefront anyway"
+fi
 
 # ── 3. Next.js Storefront ─────────────────
 echo -e "\n${BLUE}[3/3]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."

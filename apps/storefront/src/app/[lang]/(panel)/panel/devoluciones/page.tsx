@@ -1,11 +1,14 @@
 /**
- * Devoluciones (Returns) — Owner Panel Page (Server Component)
+ * Devoluciones (Returns) — Owner Panel Page (SOTA rewrite)
  *
+ * SOTA upgrades:
+ * - Raw h1/p header → PanelPageHeader with icon + badge
+ * - `glass rounded-xl` → `glass rounded-2xl` consistent pattern
+ * - Empty state → premium empty state with animation-ready structure
+ * - Table styling → consistent glass table with better hover
+ *
+ * Server component — no framer-motion.
  * Feature-gated: requires enable_self_service_returns flag.
- * Loads returns from Medusa Admin API with tenant scoping.
- * Server actions extracted to actions.ts for tenant isolation.
- *
- * Zone: 🟡 EXTEND — panel page, uses locked auth/config + Medusa admin APIs
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
@@ -14,6 +17,9 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import ReturnActions from '@/components/returns/ReturnActions'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import PanelBadge from '@/components/panel/PanelBadge'
+import PanelTable, { PanelThead, PanelTbody, PanelTr, PanelTh, PanelTd } from '@/components/panel/PanelTable'
 import { RotateCcw, PackageX } from 'lucide-react'
 import { fetchReturns, approveReturnAction, rejectReturnAction } from './actions'
 
@@ -43,7 +49,6 @@ export default async function PanelReturnsPage({
         return <FeatureGate flag="enable_self_service_returns" lang={lang} />
     }
 
-    // Fetch returns — tenant-scoped via actions.ts
     const { returns } = await fetchReturns()
 
     const statusLabels = {
@@ -67,64 +72,63 @@ export default async function PanelReturnsPage({
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                    <RotateCcw className="w-6 h-6 text-primary" />
-                    {t('panel.returns.title')}
-                </h1>
-                <p className="text-sm text-text-muted mt-1">{t('panel.returns.subtitle')}</p>
-            </div>
+            <PanelPageHeader
+                title={t('panel.returns.title')}
+                subtitle={t('panel.returns.subtitle')}
+                icon={<RotateCcw className="w-5 h-5" />}
+                badge={returns.length}
+            />
 
             {returns.length === 0 ? (
-                <div className="glass rounded-xl p-12 text-center">
-                    <PackageX className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
-                    <p className="text-sm text-text-muted">{t('panel.returns.noRequests')}</p>
+                <div className="glass rounded-2xl">
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <PackageX className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                            {t('panel.returns.noRequests')}
+                        </h3>
+                        <p className="text-sm text-text-secondary leading-relaxed">
+                            {t('panel.returns.noRequestsHint') || 'When customers request returns, they will appear here for review.'}
+                        </p>
+                    </div>
                 </div>
             ) : (
-                <div className="glass rounded-xl overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-surface-3">
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.order')}
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.items')}
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.date')}
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.status')}
-                                    </th>
-                                    <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                        {t('panel.returns.actions')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-surface-3">
+                <div className="glass rounded-2xl overflow-hidden">
+                        <PanelTable ariaLabel="Returns">
+                            <PanelThead>
+                                <PanelTr>
+                                    <PanelTh>{t('panel.returns.order')}</PanelTh>
+                                    <PanelTh>{t('panel.returns.items')}</PanelTh>
+                                    <PanelTh>{t('panel.returns.date')}</PanelTh>
+                                    <PanelTh>{t('panel.returns.status')}</PanelTh>
+                                    <PanelTh align="right">{t('panel.returns.actions')}</PanelTh>
+                                </PanelTr>
+                            </PanelThead>
+                            <PanelTbody>
                                 {returns.map((ret) => (
-                                    <tr key={ret.id} className="hover:bg-surface-1/50 transition-colors">
-                                        <td className="px-4 py-3 text-text-primary font-medium">
+                                    <PanelTr key={ret.id}>
+                                        <PanelTd className="font-medium">
                                             #{ret.order?.display_id || ret.order_id?.slice(-8) || '—'}
-                                        </td>
-                                        <td className="px-4 py-3 text-text-secondary">
-                                            {ret.items?.length || 0} item{(ret.items?.length || 0) !== 1 ? 's' : ''}
-                                        </td>
-                                        <td className="px-4 py-3 text-text-muted">
+                                        </PanelTd>
+                                        <PanelTd>
+                                            <PanelBadge variant="neutral" size="sm">
+                                                {ret.items?.length || 0} item{(ret.items?.length || 0) !== 1 ? 's' : ''}
+                                            </PanelBadge>
+                                        </PanelTd>
+                                        <PanelTd className="text-text-muted">
                                             {new Date(ret.created_at).toLocaleDateString(
                                                 intlLocale,
                                                 { day: 'numeric', month: 'short', year: 'numeric' }
                                             )}
-                                        </td>
-                                        <td className="px-4 py-3">
+                                        </PanelTd>
+                                        <PanelTd>
                                             <ReturnStatusBadge
                                                 status={formatReturnStatus(ret.status)}
                                                 labels={statusLabels}
                                             />
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
+                                        </PanelTd>
+                                        <PanelTd align="right">
                                             {ret.status === 'requested' && (
                                                 <ReturnActions
                                                     returnId={ret.id}
@@ -137,12 +141,11 @@ export default async function PanelReturnsPage({
                                                     labels={actionLabels}
                                                 />
                                             )}
-                                        </td>
-                                    </tr>
+                                        </PanelTd>
+                                    </PanelTr>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            </PanelTbody>
+                        </PanelTable>
                 </div>
             )}
         </div>

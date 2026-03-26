@@ -1,21 +1,39 @@
 'use client'
 
 /**
- * CatalogClient — Tabbed Products + Categories with inline badges
+ * CatalogClient — Tabbed Products + Categories with inline badges (SOTA rewrite)
  *
- * Products tab: product grid with badge toggle chips per card
- * Categories tab: category cards with CRUD
+ * SOTA upgrades:
+ * - confirm() → PanelConfirmDialog
+ * - Emoji buttons (📝🟢✏️🗑️) → lucide icons (Eye/EyeOff, Pencil, Trash2, Tag)
+ * - No animation → PageEntrance + ListStagger
+ * - Static tab bar → animated tabs with layoutId
+ * - Inline `fixed` modals → SlideOver
+ * - Static error div → AnimatePresence error/success banners
+ * - Basic empty state → premium empty state
+ * - Static badge area → AnimatePresence collapsible
+ * - Status badges → dark mode compatible
  */
 
 import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
-import { Package, Plus, Search, X, Layers, ChevronDown, ChevronUp, Upload, Trash2, ImageIcon } from 'lucide-react'
+import {
+    Package, Plus, Search, X, Layers, ChevronDown, ChevronUp,
+    Upload, Trash2, ImageIcon, Eye, EyeOff, Pencil, Tag, Loader2,
+    ChevronLeft, ChevronRight, Barcode,
+} from 'lucide-react'
 import { createProduct, updateProduct, removeProduct, uploadProductImage, removeProductImage } from '../productos/actions'
 import { createCategory, editCategory, removeCategory } from '../categorias/actions'
 import { toggleBadge } from '../insignias/actions'
 import { AVAILABLE_BADGES, type BadgeId } from '../insignias/badges'
 import type { AdminProductFull } from '@/lib/medusa/admin'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import { motion, AnimatePresence } from 'framer-motion'
+import { SlideOver } from '@/components/panel/PanelAnimations'
+import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,12 +138,9 @@ export default function CatalogClient({
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
 
-    // Tab state (server-driven initial value)
     const [activeTab, setActiveTab] = useState<'productos' | 'categorias'>(initialTab)
 
-    // -------------------------------------------------------------------------
-    // Product state
-    // -------------------------------------------------------------------------
+    // ── Product state ──
     const [search, setSearch] = useState(initialSearch)
     const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>(initialStatus)
     const [showProductForm, setShowProductForm] = useState(false)
@@ -139,15 +154,28 @@ export default function CatalogClient({
     const [expandedBadges, setExpandedBadges] = useState<string | null>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
+    const [showLabels, setShowLabels] = useState(false)
 
-    // -------------------------------------------------------------------------
-    // Category state
-    // -------------------------------------------------------------------------
+    // ── Category state ──
     const [showCategoryForm, setShowCategoryForm] = useState(false)
     const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null)
     const [categoryError, setCategoryError] = useState<string | null>(null)
     const [catName, setCatName] = useState('')
     const [catDescription, setCatDescription] = useState('')
+
+    // ── Confirm dialogs ──
+    const productDeleteDialog = useConfirmDialog({
+        title: labels.confirmDelete,
+        description: labels.confirmDelete,
+        confirmLabel: labels.delete,
+        variant: 'danger',
+    })
+    const categoryDeleteDialog = useConfirmDialog({
+        title: labels.confirmDeleteCategory,
+        description: labels.confirmDeleteCategory,
+        confirmLabel: labels.delete,
+        variant: 'danger',
+    })
 
     const totalPages = Math.max(1, Math.ceil(productCount / pageSize))
     const canGoPrev = currentPage > 1
@@ -156,11 +184,8 @@ export default function CatalogClient({
     const updateQuery = (updates: Record<string, string | undefined>) => {
         const next = new URLSearchParams(searchParams.toString())
         for (const [key, value] of Object.entries(updates)) {
-            if (!value) {
-                next.delete(key)
-            } else {
-                next.set(key, value)
-            }
+            if (!value) next.delete(key)
+            else next.set(key, value)
         }
         const query = next.toString()
         router.push(query ? `${pathname}?${query}` : pathname)
@@ -168,26 +193,15 @@ export default function CatalogClient({
 
     const applyProductSearch = () => {
         const q = search.trim()
-        updateQuery({
-            q: q || undefined,
-            page: '1',
-            tab: 'productos',
-        })
+        updateQuery({ q: q || undefined, page: '1', tab: 'productos' })
     }
 
-    // -------------------------------------------------------------------------
-    // Product helpers
-    // -------------------------------------------------------------------------
+    // ── Product helpers ──
 
     const resetProductForm = () => {
-        setFormTitle('')
-        setFormDescription('')
-        setFormPrice('')
-        setFormCategory('')
-        setFormStatus('published')
-        setEditingProduct(null)
-        setShowProductForm(false)
-        setProductError(null)
+        setFormTitle(''); setFormDescription(''); setFormPrice('')
+        setFormCategory(''); setFormStatus('published')
+        setEditingProduct(null); setShowProductForm(false); setProductError(null)
     }
 
     const openEditProduct = (product: AdminProductFull) => {
@@ -206,24 +220,17 @@ export default function CatalogClient({
             setProductError(null)
             if (editingProduct) {
                 const result = await updateProduct(editingProduct.id, {
-                    title: formTitle,
-                    description: formDescription,
-                    status: formStatus,
-                    categoryId: formCategory || null,
-                    price: formPrice ? parseFloat(formPrice) : undefined,
-                    currency: defaultCurrency,
-                    variantId: editingProduct.variants?.[0]?.id,
+                    title: formTitle, description: formDescription, status: formStatus,
+                    categoryId: formCategory || null, price: formPrice ? parseFloat(formPrice) : undefined,
+                    currency: defaultCurrency, variantId: editingProduct.variants?.[0]?.id,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
                 else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
             } else {
                 const result = await createProduct({
-                    title: formTitle,
-                    description: formDescription,
-                    price: parseFloat(formPrice) || 0,
-                    currency: defaultCurrency,
-                    categoryId: formCategory || undefined,
-                    status: formStatus,
+                    title: formTitle, description: formDescription,
+                    price: parseFloat(formPrice) || 0, currency: defaultCurrency,
+                    categoryId: formCategory || undefined, status: formStatus,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
                 else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
@@ -232,11 +239,12 @@ export default function CatalogClient({
     }
 
     const handleDeleteProduct = (id: string) => {
-        if (!confirm(labels.confirmDelete)) return
-        startTransition(async () => {
-            const result = await removeProduct(id)
-            if (result.success) { router.refresh(); toast.success('✓') }
-            else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+        productDeleteDialog.confirm(() => {
+            startTransition(async () => {
+                const result = await removeProduct(id)
+                if (result.success) { router.refresh(); toast.success('✓') }
+                else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+            })
         })
     }
 
@@ -260,30 +268,21 @@ export default function CatalogClient({
         const price = product.variants?.[0]?.prices?.[0]
         if (!price) return '—'
         return new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: price.currency_code,
+            style: 'currency', currency: price.currency_code,
         }).format(price.amount / 100)
     }
 
-    // Image upload handlers
+    // ── Image handlers ──
     const handleImageUpload = async (file: File) => {
         if (!editingProduct) return
-        setIsUploading(true)
-        setProductError(null)
+        setIsUploading(true); setProductError(null)
         try {
             const formData = new FormData()
             formData.append('file', file)
             const result = await uploadProductImage(editingProduct.id, formData)
-            if (result.success) {
-                router.refresh()
-                toast.success(labels.imageAdded)
-            } else {
-                setProductError(result.error ?? 'Upload failed')
-                toast.error(result.error ?? 'Upload failed')
-            }
-        } finally {
-            setIsUploading(false)
-        }
+            if (result.success) { router.refresh(); toast.success(labels.imageAdded) }
+            else { setProductError(result.error ?? 'Upload failed'); toast.error(result.error ?? 'Upload failed') }
+        } finally { setIsUploading(false) }
     }
 
     const handleImageDelete = async (imageUrl: string) => {
@@ -296,39 +295,29 @@ export default function CatalogClient({
     }
 
     const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault()
-        setDragOver(false)
+        e.preventDefault(); setDragOver(false)
         const file = e.dataTransfer.files[0]
-        if (file && file.type.startsWith('image/')) {
-            handleImageUpload(file)
-        }
+        if (file && file.type.startsWith('image/')) handleImageUpload(file)
     }
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) handleImageUpload(file)
-        e.target.value = '' // reset for re-upload
+        e.target.value = ''
     }
 
     const filtered = products
 
-    // -------------------------------------------------------------------------
-    // Category helpers
-    // -------------------------------------------------------------------------
+    // ── Category helpers ──
 
     const resetCategoryForm = () => {
-        setCatName('')
-        setCatDescription('')
-        setEditingCategory(null)
-        setShowCategoryForm(false)
-        setCategoryError(null)
+        setCatName(''); setCatDescription('')
+        setEditingCategory(null); setShowCategoryForm(false); setCategoryError(null)
     }
 
     const openEditCategory = (cat: CategoryItem) => {
-        setCatName(cat.name)
-        setCatDescription(cat.description ?? '')
-        setEditingCategory(cat)
-        setShowCategoryForm(true)
+        setCatName(cat.name); setCatDescription(cat.description ?? '')
+        setEditingCategory(cat); setShowCategoryForm(true)
     }
 
     const handleCategorySubmit = () => {
@@ -336,15 +325,13 @@ export default function CatalogClient({
             setCategoryError(null)
             if (editingCategory) {
                 const result = await editCategory(editingCategory.id, {
-                    name: catName,
-                    description: catDescription,
+                    name: catName, description: catDescription,
                 })
                 if (result.success) { resetCategoryForm(); router.refresh(); toast.success('✓') }
                 else { setCategoryError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
             } else {
                 const result = await createCategory({
-                    name: catName,
-                    description: catDescription,
+                    name: catName, description: catDescription,
                 })
                 if (result.success) { resetCategoryForm(); router.refresh(); toast.success('✓') }
                 else { setCategoryError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
@@ -353,505 +340,642 @@ export default function CatalogClient({
     }
 
     const handleDeleteCategory = (id: string) => {
-        if (!confirm(labels.confirmDeleteCategory)) return
-        startTransition(async () => {
-            const result = await removeCategory(id)
-            if (result.success) { router.refresh(); toast.success('✓') }
-            else { setCategoryError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+        categoryDeleteDialog.confirm(() => {
+            startTransition(async () => {
+                const result = await removeCategory(id)
+                if (result.success) { router.refresh(); toast.success('✓') }
+                else { setCategoryError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+            })
         })
     }
 
-    // -------------------------------------------------------------------------
-    // Shared styles
-    // -------------------------------------------------------------------------
+    // ── Shared styles ──
+    const inputClass = 'w-full px-4 py-2.5 rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
+    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
 
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
-    const labelClass = 'block text-sm font-medium text-text-secondary mb-1'
-
-    // -------------------------------------------------------------------------
-    // Render
-    // -------------------------------------------------------------------------
+    // ── Tabs config ──
+    const tabs = [
+        { key: 'productos' as const, label: labels.tabProducts, icon: Package, count: productCount },
+        { key: 'categorias' as const, label: labels.tabCategories, icon: Layers, count: categoryCount },
+    ]
 
     return (
-        <>
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {labels.catalogTitle}
-                </h1>
-                <p className="text-text-muted mt-1">{labels.catalogSubtitle}</p>
-            </div>
+        <PageEntrance className="space-y-5">
+            {/* ── Header ── */}
+            <PanelPageHeader
+                title={labels.catalogTitle}
+                subtitle={labels.catalogSubtitle}
+                icon={<Package className="w-5 h-5" />}
+            />
 
-            {/* Tabs */}
-            <div className="flex gap-1 rounded-xl border border-surface-3 overflow-hidden w-fit">
-                <button
-                    onClick={() => {
-                        setActiveTab('productos')
-                        updateQuery({ tab: 'productos' })
-                    }}
-                    className={`px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'productos'
-                        ? 'bg-primary text-white'
-                        : 'text-text-secondary hover:bg-surface-1'
-                        }`}
-                >
-                    <Package className="w-4 h-4" />
-                    {labels.tabProducts}
-                    <span className="text-xs opacity-70">({productCount})</span>
-                </button>
-                <button
-                    onClick={() => {
-                        setActiveTab('categorias')
-                        updateQuery({ tab: 'categorias' })
-                    }}
-                    className={`px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'categorias'
-                        ? 'bg-primary text-white'
-                        : 'text-text-secondary hover:bg-surface-1'
-                        }`}
-                >
-                    <Layers className="w-4 h-4" />
-                    {labels.tabCategories}
-                    <span className="text-xs opacity-70">({categoryCount})</span>
-                </button>
-            </div>
-
-            {/* ============================================================= */}
-            {/* PRODUCTS TAB                                                   */}
-            {/* ============================================================= */}
-            {activeTab === 'productos' && (
-                <>
-                    {/* Toolbar */}
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                        <p className="text-xs text-text-muted">
-                            {productCount} / {maxProducts} {labels.products}
-                            {!canAddProduct && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-                        </p>
+            {/* ── Animated Tabs ── */}
+            <div className="flex gap-1 glass rounded-xl overflow-hidden w-fit p-1">
+                {tabs.map(tab => {
+                    const Icon = tab.icon
+                    return (
                         <button
-                            className="btn btn-primary flex items-center gap-2"
-                            disabled={!canAddProduct || isPending}
-                            onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                            key={tab.key}
+                            onClick={() => {
+                                setActiveTab(tab.key)
+                                updateQuery({ tab: tab.key })
+                            }}
+                            aria-pressed={activeTab === tab.key}
+                            className={`px-5 py-2.5 min-h-[44px] text-sm font-medium transition-colors flex items-center gap-2 rounded-lg relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${
+                                activeTab === tab.key
+                                    ? 'text-white'
+                                    : 'text-text-secondary hover:bg-surface-1'
+                            }`}
                         >
-                            <Plus className="w-4 h-4" />
-                            {labels.addProduct}
+                            {activeTab === tab.key && (
+                                <motion.div
+                                    layoutId="catalog-tab-active"
+                                    className="absolute inset-0 bg-primary rounded-lg"
+                                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {tab.label}
+                                <span className="text-xs opacity-70">({tab.count})</span>
+                            </span>
                         </button>
-                    </div>
+                    )
+                })}
+            </div>
 
-                    {/* Filters */}
-                    <div className="flex gap-3 flex-wrap">
-                        <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                            <input
-                                type="text"
-                                placeholder={labels.searchPlaceholder}
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') applyProductSearch()
-                                }}
-                                className={`${inputClass} pl-10`}
-                            />
-                        </div>
-                        <div className="flex gap-1 rounded-xl border border-surface-3 overflow-hidden">
-                            {(['all', 'published', 'draft'] as const).map(s => (
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* PRODUCTS TAB                                                   */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            <AnimatePresence mode="wait">
+                {activeTab === 'productos' && (
+                    <motion.div
+                        key="products"
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 12 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-4"
+                    >
+                        {/* Toolbar */}
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <p className="text-xs text-text-muted">
+                                {productCount} / {maxProducts} {labels.products}
+                                {!canAddProduct && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
+                            </p>
+                            <div className="flex items-center gap-2">
                                 <button
-                                    key={s}
-                                    onClick={() => {
-                                        setStatusFilter(s)
-                                        updateQuery({
-                                            status: s === 'all' ? undefined : s,
-                                            page: '1',
-                                            tab: 'productos',
-                                        })
-                                    }}
-                                    className={`px-3 py-2 text-sm font-medium transition-colors ${statusFilter === s
-                                        ? 'bg-primary text-white'
-                                        : 'text-text-secondary hover:bg-surface-1'
-                                        }`}
+                                    className="btn glass flex items-center gap-2 min-h-[44px] text-sm font-medium text-text-secondary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                    disabled={products.length === 0}
+                                    onClick={() => setShowLabels(true)}
+                                    title="Print price labels"
                                 >
-                                    {s === 'all' ? labels.all : s === 'published' ? labels.published : labels.draft}
+                                    <Barcode className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Labels</span>
                                 </button>
-                            ))}
+                                <button
+                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                    disabled={!canAddProduct || isPending}
+                                    onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {labels.addProduct}
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {productError && (
-                        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{productError}</div>
-                    )}
-
-                    {/* Product grid with inline badges */}
-                    {filtered.length === 0 ? (
-                        <div className="glass rounded-2xl p-12 text-center">
-                            <Package className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                            <p className="text-text-muted">{labels.noProducts}</p>
+                        {/* Filters */}
+                        <div className="flex gap-3 flex-wrap">
+                            <div className="relative flex-1 min-w-[200px]">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                <input
+                                    type="text"
+                                    placeholder={labels.searchPlaceholder}
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') applyProductSearch() }}
+                                    aria-label={labels.searchPlaceholder}
+                                    className={`${inputClass} pl-10 min-h-[44px]`}
+                                />
+                            </div>
+                            <div className="flex gap-1 glass rounded-xl overflow-hidden p-1">
+                                {(['all', 'published', 'draft'] as const).map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => {
+                                            setStatusFilter(s)
+                                            updateQuery({ status: s === 'all' ? undefined : s, page: '1', tab: 'productos' })
+                                        }}
+                                        aria-pressed={statusFilter === s}
+                                        className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                            statusFilter === s ? 'text-white' : 'text-text-secondary hover:bg-surface-1'
+                                        }`}
+                                    >
+                                        {statusFilter === s && (
+                                            <motion.div
+                                                layoutId="catalog-status-filter"
+                                                className="absolute inset-0 bg-primary rounded-lg"
+                                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">
+                                            {s === 'all' ? labels.all : s === 'published' ? labels.published : labels.draft}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filtered.map(product => {
-                                const productBadges = badgeMap[product.id] || []
-                                const isExpanded = expandedBadges === product.id
 
-                                return (
-                                    <div key={product.id} className="glass rounded-2xl overflow-hidden group hover:shadow-lg transition-shadow">
-                                        {/* Thumbnail */}
-                                        <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center">
-                                            {product.thumbnail ? (
-                                                /* eslint-disable-next-line @next/next/no-img-element */
-                                                <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Package className="w-10 h-10 text-text-muted/40" />
-                                            )}
-                                            <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${product.status === 'published'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-yellow-100 text-yellow-700'
-                                                }`}>
-                                                {product.status === 'published' ? labels.published : labels.draft}
-                                            </span>
-                                            {/* Active badges on thumbnail */}
-                                            {productBadges.length > 0 && (
-                                                <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                                                    {productBadges.map(bid => {
-                                                        const badge = AVAILABLE_BADGES.find(b => b.id === bid)
-                                                        if (!badge) return null
-                                                        return (
-                                                            <span key={bid} className={`text-xs px-1.5 py-0.5 rounded-full ${badge.color}`}>
-                                                                {badge.emoji}
-                                                            </span>
-                                                        )
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
+                        {/* Error banner */}
+                        <AnimatePresence>
+                            {productError && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
+                                >
+                                    <span>{productError}</span>
+                                    <button onClick={() => setProductError(null)} aria-label="Dismiss error" className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                        {/* Info */}
-                                        <div className="p-4">
-                                            <h3 className="font-bold text-text-primary truncate">{product.title}</h3>
-                                            <div className="flex items-center justify-between mt-1">
-                                                <span className="text-lg font-bold text-primary">{getPrice(product)}</span>
-                                                <span className="text-xs text-text-muted">
-                                                    {product.categories?.[0]?.name || labels.noCategory}
-                                                </span>
-                                            </div>
-
-                                            {/* Badge toggles (collapsible) */}
-                                            <div className="mt-3 pt-3 border-t border-surface-2">
-                                                <button
-                                                    onClick={() => setExpandedBadges(isExpanded ? null : product.id)}
-                                                    className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors w-full"
-                                                >
-                                                    🏷️ {labels.badgesLabel}
-                                                    <span className="text-text-muted/60">
-                                                        ({productBadges.length})
-                                                    </span>
-                                                    {isExpanded
-                                                        ? <ChevronUp className="w-3 h-3 ml-auto" />
-                                                        : <ChevronDown className="w-3 h-3 ml-auto" />
-                                                    }
-                                                </button>
-                                                {isExpanded && (
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {AVAILABLE_BADGES.map(badge => {
-                                                            const isEnabled = productBadges.includes(badge.id)
-                                                            return (
-                                                                <button
-                                                                    key={badge.id}
-                                                                    onClick={() => handleToggleBadge(product.id, badge.id, isEnabled)}
-                                                                    disabled={isPending}
-                                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${isEnabled
-                                                                        ? badge.color + ' ring-1 ring-offset-1 ring-current/20'
-                                                                        : 'bg-surface-1 text-text-muted hover:bg-surface-2'
-                                                                        } ${isPending ? 'opacity-50' : ''}`}
-                                                                >
-                                                                    {badge.emoji} {badge.label}
-                                                                </button>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex gap-2 mt-3 pt-3 border-t border-surface-2">
-                                                <button
-                                                    onClick={() => handleToggleStatus(product)}
-                                                    className="btn btn-ghost text-xs flex-1"
-                                                    disabled={isPending}
-                                                >
-                                                    {product.status === 'published' ? '📝' : '🟢'}
-                                                    {' '}
-                                                    {product.status === 'published' ? labels.draft : labels.published}
-                                                </button>
-                                                <button
-                                                    onClick={() => openEditProduct(product)}
-                                                    className="btn btn-ghost text-xs flex-1"
-                                                    disabled={isPending}
-                                                >
-                                                    ✏️ {labels.edit}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteProduct(product.id)}
-                                                    className="btn btn-ghost text-xs text-red-500"
-                                                    disabled={isPending}
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </div>
+                        {/* Product grid with inline badges */}
+                        {filtered.length === 0 ? (
+                            <div className="glass rounded-2xl">
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">
+                                        <Package className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
                                     </div>
-                                )
-                            })}
-                        </div>
-                    )}
+                                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                                        {labels.noProducts}
+                                    </h3>
+                                    <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                                        {labels.noProducts}
+                                    </p>
+                                    <button
+                                        className="btn btn-primary inline-flex items-center gap-2"
+                                        disabled={!canAddProduct || isPending}
+                                        onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        {labels.addProduct}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <ListStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {filtered.map(product => {
+                                    const productBadges = badgeMap[product.id] || []
+                                    const isExpanded = expandedBadges === product.id
 
-                    {/* Pagination */}
-                    {productCount > pageSize && (
-                        <div className="flex items-center justify-between pt-2">
-                            <button
-                                onClick={() => updateQuery({ page: String(currentPage - 1), tab: 'productos' })}
-                                disabled={!canGoPrev}
-                                className="btn btn-ghost disabled:opacity-50"
-                            >
-                                {labels.previous}
-                            </button>
-                            <p className="text-sm text-text-muted">
-                                {currentPage} / {totalPages}
+                                    return (
+                                        <StaggerItem key={product.id}>
+                                            <motion.div
+                                                whileHover={{ y: -2 }}
+                                                className="glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
+                                            >
+                                                {/* Thumbnail */}
+                                                <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center cursor-pointer" onClick={() => openEditProduct(product)}>
+                                                    {product.thumbnail ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Package className="w-10 h-10 text-text-muted/40" />
+                                                    )}
+                                                    <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        product.status === 'published'
+                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                    }`}>
+                                                        {product.status === 'published' ? labels.published : labels.draft}
+                                                    </span>
+                                                    {/* Active badges on thumbnail */}
+                                                    {productBadges.length > 0 && (
+                                                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                                                            {productBadges.map(bid => {
+                                                                const badge = AVAILABLE_BADGES.find(b => b.id === bid)
+                                                                if (!badge) return null
+                                                                return (
+                                                                    <span key={bid} className={`text-xs px-1.5 py-0.5 rounded-full ${badge.color}`}>
+                                                                        {badge.emoji}
+                                                                    </span>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Info */}
+                                                <div className="p-4">
+                                                    <h3 className="font-bold text-text-primary truncate cursor-pointer hover:text-primary transition-colors" onClick={() => openEditProduct(product)}>{product.title}</h3>
+                                                    <div className="flex items-center justify-between mt-1">
+                                                        <span className="text-lg font-bold text-primary">{getPrice(product)}</span>
+                                                        <span className="text-xs text-text-muted">
+                                                            {product.categories?.[0]?.name || labels.noCategory}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Badge toggles (collapsible) */}
+                                                    <div className="mt-3 pt-3 border-t border-surface-2">
+                                                        <button
+                                                            onClick={() => setExpandedBadges(isExpanded ? null : product.id)}
+                                                            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors w-full"
+                                                        >
+                                                            <Tag className="w-3 h-3" />
+                                                            {labels.badgesLabel}
+                                                            <span className="text-text-muted/60">({productBadges.length})</span>
+                                                            {isExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                        {AVAILABLE_BADGES.map(badge => {
+                                                                            const isEnabled = productBadges.includes(badge.id)
+                                                                            return (
+                                                                                <motion.button
+                                                                                    key={badge.id}
+                                                                                    whileTap={{ scale: 0.93 }}
+                                                                                    onClick={() => handleToggleBadge(product.id, badge.id, isEnabled)}
+                                                                                    disabled={isPending}
+                                                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                                                                                        isEnabled
+                                                                                            ? badge.color + ' ring-1 ring-offset-1 ring-current/20'
+                                                                                            : 'bg-surface-1 text-text-muted hover:bg-surface-2'
+                                                                                    } ${isPending ? 'opacity-50' : ''}`}
+                                                                                >
+                                                                                    {badge.emoji} {badge.label}
+                                                                                </motion.button>
+                                                                            )
+                                                                        })}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex gap-1 mt-3 pt-3 border-t border-surface-2">
+                                                        <motion.button
+                                                            whileTap={{ scale: 0.93 }}
+                                                            onClick={() => handleToggleStatus(product)}
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                            disabled={isPending}
+                                                            aria-label={product.status === 'published' ? labels.draft : labels.published}
+                                                        >
+                                                            {product.status === 'published'
+                                                                ? <><EyeOff className="w-3.5 h-3.5" /> {labels.draft}</>
+                                                                : <><Eye className="w-3.5 h-3.5" /> {labels.published}</>
+                                                            }
+                                                        </motion.button>
+                                                        <motion.button
+                                                            whileTap={{ scale: 0.93 }}
+                                                            onClick={() => openEditProduct(product)}
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                            disabled={isPending}
+                                                            aria-label={labels.edit}
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" /> {labels.edit}
+                                                        </motion.button>
+                                                        <motion.button
+                                                            whileTap={{ scale: 0.93 }}
+                                                            onClick={() => handleDeleteProduct(product.id)}
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                                            disabled={isPending}
+                                                            aria-label={labels.delete}
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </motion.button>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        </StaggerItem>
+                                    )
+                                })}
+                            </ListStagger>
+                        )}
+
+                        {/* Pagination */}
+                        {productCount > pageSize && (
+                            <div className="flex items-center justify-between pt-2">
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => updateQuery({ page: String(currentPage - 1), tab: 'productos' })}
+                                    disabled={!canGoPrev}
+                                    className="btn btn-ghost inline-flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                    {labels.previous}
+                                </motion.button>
+                                <p className="text-sm text-text-muted tabular-nums">
+                                    {currentPage} / {totalPages}
+                                </p>
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => updateQuery({ page: String(currentPage + 1), tab: 'productos' })}
+                                    disabled={!canGoNext}
+                                    className="btn btn-ghost inline-flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {labels.next}
+                                    <ChevronRight className="w-4 h-4" />
+                                </motion.button>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {/* CATEGORIES TAB                                                 */}
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {activeTab === 'categorias' && (
+                    <motion.div
+                        key="categories"
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-4"
+                    >
+                        {/* Toolbar */}
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <p className="text-xs text-text-muted">
+                                {categoryCount} / {maxCategories} {labels.categories}
+                                {!canAddCategory && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
                             </p>
                             <button
-                                onClick={() => updateQuery({ page: String(currentPage + 1), tab: 'productos' })}
-                                disabled={!canGoNext}
-                                className="btn btn-ghost disabled:opacity-50"
+                                className="btn btn-primary flex items-center gap-2"
+                                disabled={!canAddCategory || isPending}
+                                onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
                             >
-                                {labels.next}
+                                <Plus className="w-4 h-4" />
+                                {labels.addCategory}
                             </button>
                         </div>
-                    )}
 
-                    {/* Product form modal */}
-                    {showProductForm && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="glass-strong rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="font-bold text-lg text-text-primary">
-                                        {editingProduct ? labels.editProduct : labels.addProduct}
-                                    </h2>
-                                    <button onClick={resetProductForm} className="p-1 hover:bg-surface-1 rounded-lg">
-                                        <X className="w-5 h-5 text-text-muted" />
+                        {/* Error banner */}
+                        <AnimatePresence>
+                            {categoryError && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
+                                >
+                                    <span>{categoryError}</span>
+                                    <button onClick={() => setCategoryError(null)} aria-label="Dismiss error" className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                                        <X className="w-4 h-4" />
                                     </button>
-                                </div>
-                                <div>
-                                    <label className={labelClass}>{labels.name} *</label>
-                                    <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className={inputClass} autoFocus />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>{labels.description}</label>
-                                    <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} className={`${inputClass} min-h-[80px] resize-y`} rows={3} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>{labels.price} ({defaultCurrency.toUpperCase()})</label>
-                                        <input type="number" step="0.01" min="0" value={formPrice} onChange={e => setFormPrice(e.target.value)} className={inputClass} placeholder="0.00" />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>{labels.category}</label>
-                                        <select value={formCategory} onChange={e => setFormCategory(e.target.value)} className={inputClass}>
-                                            <option value="">{labels.noCategory}</option>
-                                            {categories.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className={labelClass}>{labels.status}</label>
-                                    <div className="flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormStatus('published')}
-                                            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${formStatus === 'published'
-                                                ? 'bg-green-50 border-green-300 text-green-700'
-                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
-                                                }`}
-                                        >
-                                            🟢 {labels.published}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormStatus('draft')}
-                                            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${formStatus === 'draft'
-                                                ? 'bg-yellow-50 border-yellow-300 text-yellow-700'
-                                                : 'border-surface-3 text-text-secondary hover:bg-surface-1'
-                                                }`}
-                                        >
-                                            📝 {labels.draft}
-                                        </button>
-                                    </div>
-                                </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                {/* Image upload section — only for editing (needs productId) */}
-                                {editingProduct && (
-                                    <div>
-                                        <label className={labelClass}>{labels.images}</label>
-
-                                        {/* Existing images */}
-                                        {editingProduct.images && editingProduct.images.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {editingProduct.images.map(img => (
-                                                    <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-surface-3">
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img src={img.url} alt="" className="w-full h-full object-cover" />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleImageDelete(img.url)}
-                                                            disabled={isPending}
-                                                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100
-                                                                       flex items-center justify-center transition-opacity"
-                                                        >
-                                                            <Trash2 className="w-4 h-4 text-white" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Dropzone */}
-                                        <div
-                                            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-                                            onDragLeave={() => setDragOver(false)}
-                                            onDrop={handleDrop}
-                                            className={`relative border-2 border-dashed rounded-xl p-4 text-center
-                                                        transition-colors cursor-pointer
-                                                        ${dragOver
-                                                    ? 'border-primary bg-primary/5'
-                                                    : 'border-surface-3 hover:border-primary/40'
-                                                }
-                                                        ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
-                                        >
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                                onChange={handleFileSelect}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                disabled={isUploading}
-                                            />
-                                            <Upload className="w-6 h-6 mx-auto text-text-muted mb-1" />
-                                            <p className="text-sm text-text-secondary">
-                                                {isUploading ? labels.uploading : labels.dropzone}
-                                            </p>
-                                            <p className="text-xs text-text-muted mt-0.5">{labels.dropzoneHint}</p>
-                                        </div>
+                        {/* Category grid */}
+                        {categories.length === 0 ? (
+                            <div className="glass rounded-2xl">
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">
+                                        <Layers className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
                                     </div>
-                                )}
-
-                                {/* Hint for new products */}
-                                {!editingProduct && (
-                                    <p className="text-xs text-text-muted flex items-center gap-1.5">
-                                        <ImageIcon className="w-3.5 h-3.5" />
-                                        {labels.saveFirst}
+                                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                                        {labels.noCategories}
+                                    </h3>
+                                    <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                                        {labels.noCategories}
                                     </p>
-                                )}
-                                <div className="flex gap-3 pt-2">
-                                    <button onClick={handleProductSubmit} disabled={isPending || !formTitle.trim()} className="btn btn-primary flex-1">
-                                        {isPending ? '...' : editingProduct ? labels.save : labels.create}
+                                    <button
+                                        className="btn btn-primary inline-flex items-center gap-2"
+                                        disabled={!canAddCategory || isPending}
+                                        onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        {labels.addCategory}
                                     </button>
-                                    <button onClick={resetProductForm} className="btn btn-ghost">{labels.cancel}</button>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </>
-            )}
+                        ) : (
+                            <ListStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {categories.map(cat => (
+                                    <StaggerItem key={cat.id}>
+                                        <motion.div
+                                            whileHover={{ y: -2 }}
+                                            className="glass rounded-2xl p-5 transition-shadow hover:shadow-lg"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                                                        <Layers className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-text-primary">{cat.name}</h3>
+                                                        <p className="text-xs text-text-muted mt-0.5">/{cat.handle}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {cat.description && (
+                                                <p className="text-sm text-text-muted mt-3 line-clamp-2">{cat.description}</p>
+                                            )}
+                                            <div className="flex gap-1 mt-4 pt-3 border-t border-surface-2">
+                                                <motion.button
+                                                    whileTap={{ scale: 0.93 }}
+                                                    onClick={() => openEditCategory(cat)}
+                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                    disabled={isPending}
+                                                    aria-label={`${labels.edit} ${cat.name}`}
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" /> {labels.edit}
+                                                </motion.button>
+                                                <motion.button
+                                                    whileTap={{ scale: 0.93 }}
+                                                    onClick={() => handleDeleteCategory(cat.id)}
+                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                                    disabled={isPending}
+                                                    aria-label={`${labels.delete} ${cat.name}`}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" /> {labels.delete}
+                                                </motion.button>
+                                            </div>
+                                        </motion.div>
+                                    </StaggerItem>
+                                ))}
+                            </ListStagger>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* ============================================================= */}
-            {/* CATEGORIES TAB                                                 */}
-            {/* ============================================================= */}
-            {activeTab === 'categorias' && (
-                <>
-                    {/* Toolbar */}
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                        <p className="text-xs text-text-muted">
-                            {categoryCount} / {maxCategories} {labels.categories}
-                            {!canAddCategory && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-                        </p>
-                        <button
-                            className="btn btn-primary flex items-center gap-2"
-                            disabled={!canAddCategory || isPending}
-                            onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            {labels.addCategory}
-                        </button>
+            {/* ── Product Form SlideOver ── */}
+            <SlideOver isOpen={showProductForm} onClose={resetProductForm} title={editingProduct ? labels.editProduct : labels.addProduct}>
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelClass}>{labels.name} *</label>
+                        <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className={inputClass} autoFocus />
+                    </div>
+                    <div>
+                        <label className={labelClass}>{labels.description}</label>
+                        <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} className={`${inputClass} min-h-[80px] resize-y`} rows={3} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>{labels.price} ({defaultCurrency.toUpperCase()})</label>
+                            <input type="number" step="0.01" min="0" value={formPrice} onChange={e => setFormPrice(e.target.value)} className={inputClass} placeholder="0.00" />
+                        </div>
+                        <div>
+                            <label className={labelClass}>{labels.category}</label>
+                            <select value={formCategory} onChange={e => setFormCategory(e.target.value)} className={inputClass}>
+                                <option value="">{labels.noCategory}</option>
+                                {categories.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelClass}>{labels.status}</label>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setFormStatus('published')}
+                                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
+                                    formStatus === 'published'
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-300 dark:ring-emerald-800'
+                                        : 'glass text-text-secondary hover:bg-surface-1'
+                                }`}
+                            >
+                                <Eye className="w-4 h-4" />
+                                {labels.published}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormStatus('draft')}
+                                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
+                                    formStatus === 'draft'
+                                        ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800'
+                                        : 'glass text-text-secondary hover:bg-surface-1'
+                                }`}
+                            >
+                                <EyeOff className="w-4 h-4" />
+                                {labels.draft}
+                            </button>
+                        </div>
                     </div>
 
-                    {categoryError && (
-                        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{categoryError}</div>
-                    )}
-
-                    {/* Category grid */}
-                    {categories.length === 0 ? (
-                        <div className="glass rounded-2xl p-12 text-center">
-                            <Layers className="w-12 h-12 mx-auto text-text-muted mb-3" />
-                            <p className="text-text-muted">{labels.noCategories}</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {categories.map(cat => (
-                                <div key={cat.id} className="glass rounded-2xl p-5 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                                                <Layers className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-text-primary">{cat.name}</h3>
-                                                <p className="text-xs text-text-muted mt-0.5">/{cat.handle}</p>
-                                            </div>
+                    {/* Image upload section — only when editing */}
+                    {editingProduct && (
+                        <div>
+                            <label className={labelClass}>{labels.images}</label>
+                            {editingProduct.images && editingProduct.images.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {editingProduct.images.map(img => (
+                                        <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden glass">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleImageDelete(img.url)}
+                                                disabled={isPending}
+                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                            >
+                                                <Trash2 className="w-4 h-4 text-white" />
+                                            </button>
                                         </div>
-                                    </div>
-                                    {cat.description && (
-                                        <p className="text-sm text-text-muted mt-3 line-clamp-2">{cat.description}</p>
-                                    )}
-                                    <div className="flex gap-2 mt-4 pt-3 border-t border-surface-2">
-                                        <button onClick={() => openEditCategory(cat)} className="btn btn-ghost text-xs flex-1" disabled={isPending}>
-                                            ✏️ {labels.edit}
-                                        </button>
-                                        <button onClick={() => handleDeleteCategory(cat.id)} className="btn btn-ghost text-xs text-red-500 flex-1" disabled={isPending}>
-                                            🗑️ {labels.delete}
-                                        </button>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Category form modal */}
-                    {showCategoryForm && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="glass-strong rounded-2xl p-6 w-full max-w-md space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="font-bold text-lg text-text-primary">
-                                        {editingCategory ? labels.editCategory : labels.addCategory}
-                                    </h2>
-                                    <button onClick={resetCategoryForm} className="p-1 hover:bg-surface-1 rounded-lg">
-                                        <X className="w-5 h-5 text-text-muted" />
-                                    </button>
-                                </div>
-                                <div>
-                                    <label className={labelClass}>{labels.categoryName} *</label>
-                                    <input value={catName} onChange={e => setCatName(e.target.value)} className={inputClass} autoFocus />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>{labels.categoryDescription}</label>
-                                    <textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} className={`${inputClass} min-h-[60px] resize-y`} rows={2} />
-                                </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button onClick={handleCategorySubmit} disabled={isPending || !catName.trim()} className="btn btn-primary flex-1">
-                                        {isPending ? '...' : editingCategory ? labels.save : labels.create}
-                                    </button>
-                                    <button onClick={resetCategoryForm} className="btn btn-ghost">{labels.cancel}</button>
-                                </div>
+                            )}
+                            <div
+                                onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                                onDragLeave={() => setDragOver(false)}
+                                onDrop={handleDrop}
+                                className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
+                                    dragOver ? 'border-primary bg-primary/5' : 'border-surface-3 hover:border-primary/40'
+                                } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    onChange={handleFileSelect}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    disabled={isUploading}
+                                />
+                                <Upload className="w-6 h-6 mx-auto text-text-muted mb-1" />
+                                <p className="text-sm text-text-secondary">
+                                    {isUploading ? labels.uploading : labels.dropzone}
+                                </p>
+                                <p className="text-xs text-text-muted mt-0.5">{labels.dropzoneHint}</p>
                             </div>
                         </div>
                     )}
-                </>
-            )}
-        </>
+
+                    {!editingProduct && (
+                        <p className="text-xs text-text-muted flex items-center gap-1.5">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            {labels.saveFirst}
+                        </p>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                        <button onClick={handleProductSubmit} disabled={isPending || !formTitle.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {isPending ? '...' : editingProduct ? labels.save : labels.create}
+                        </button>
+                        <button onClick={resetProductForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
+                    </div>
+                </div>
+            </SlideOver>
+
+            {/* ── Category Form SlideOver ── */}
+            <SlideOver isOpen={showCategoryForm} onClose={resetCategoryForm} title={editingCategory ? labels.editCategory : labels.addCategory}>
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelClass}>{labels.categoryName} *</label>
+                        <input value={catName} onChange={e => setCatName(e.target.value)} className={inputClass} autoFocus />
+                    </div>
+                    <div>
+                        <label className={labelClass}>{labels.categoryDescription}</label>
+                        <textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} className={`${inputClass} min-h-[60px] resize-y`} rows={2} />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button onClick={handleCategorySubmit} disabled={isPending || !catName.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {isPending ? '...' : editingCategory ? labels.save : labels.create}
+                        </button>
+                        <button onClick={resetCategoryForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
+                    </div>
+                </div>
+            </SlideOver>
+
+            {/* ── Price Label SlideOver ── */}
+            <SlideOver
+                isOpen={showLabels}
+                onClose={() => setShowLabels(false)}
+                title="Price Labels"
+            >
+                <PriceLabelSheet
+                    items={products.map((p): PriceLabelItem => {
+                        const variant = p.variants?.[0]
+                        const price = variant?.prices?.[0]
+                        return {
+                            name: p.title,
+                            price: price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: price.currency_code }).format(price.amount / 100) : '—',
+                            sku: variant?.sku ?? '',
+                            variant: variant?.title && variant.title !== 'Default Variant' ? variant.title : undefined,
+                        }
+                    })}
+                    onPrint={() => setShowLabels(false)}
+                />
+            </SlideOver>
+
+            {/* ── Confirm Dialogs ── */}
+            <PanelConfirmDialog {...productDeleteDialog.dialogProps} />
+            <PanelConfirmDialog {...categoryDeleteDialog.dialogProps} />
+        </PageEntrance>
     )
 }

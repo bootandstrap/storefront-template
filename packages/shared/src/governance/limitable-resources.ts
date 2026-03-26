@@ -39,6 +39,7 @@ export type LimitableResource =
     | 'max_wishlist_items'
     | 'max_promotions_active'
     | 'max_payment_methods'
+    | 'max_pos_payment_methods'
     | 'max_crm_contacts'
 
 /**

@@ -12,6 +12,7 @@ import { FALLBACK_CONFIG } from '@/lib/governance/defaults'
 import { AppConfigSchema, FeatureFlagsSchema, PlanLimitsSchema } from '@/lib/governance/schemas'
 import { getRequiredTenantId, isBuildPhase } from '@/lib/governance/tenant'
 import { reportDegradedMode } from '@/lib/governance/report'
+import contract from '@/lib/governance-contract.json'
 
 describe('Security Posture — Enterprise Invariants', () => {
 
@@ -33,10 +34,11 @@ describe('Security Posture — Enterprise Invariants', () => {
             expect(trueFlags).toEqual(['enable_maintenance_mode'])
         })
 
-        it('all 43 non-maintenance flags are false', () => {
+        it('all non-maintenance flags are false (contract-derived)', () => {
             const falseFlags = Object.entries(FALLBACK_CONFIG.featureFlags)
                 .filter(([, v]) => v === false)
-            expect(falseFlags).toHaveLength(43)
+            // Auto-derived: contract.flags.count - 1 (maintenance_mode is true)
+            expect(falseFlags).toHaveLength(contract.flags.count - 1)
         })
 
         it('all numeric plan limits are zero (no free access)', () => {
@@ -83,12 +85,12 @@ describe('Security Posture — Enterprise Invariants', () => {
     // ── Schema Field Count Guards ─────────────────────────────────────
 
     describe('schema field count guards (prevent accidental additions/removals)', () => {
-        it('FeatureFlags has exactly 44 flags', () => {
-            expect(Object.keys(FeatureFlagsSchema.shape)).toHaveLength(44)
+        it('FeatureFlags matches contract count', () => {
+            expect(Object.keys(FeatureFlagsSchema.shape)).toHaveLength(contract.flags.count)
         })
 
-        it('PlanLimits has exactly 26 fields', () => {
-            expect(Object.keys(PlanLimitsSchema.shape)).toHaveLength(26)
+        it('PlanLimits matches contract count', () => {
+            expect(Object.keys(PlanLimitsSchema.shape)).toHaveLength(contract.limits.count)
         })
 
         it('FALLBACK_CONFIG flags count matches schema', () => {

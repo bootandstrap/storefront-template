@@ -1,12 +1,30 @@
 'use client'
 
+/**
+ * Categories Manager — Owner Panel (SOTA rewrite)
+ *
+ * Props match page.tsx: categories (id/name/handle/description/productCount),
+ *   categoryCount, maxCategories, canAdd, labels
+ * Actions: createCategory, editCategory, removeCategory
+ *
+ * Fixes:
+ * - confirm() → PanelConfirmDialog
+ * - Emoji buttons (✏️🗑️) → lucide icons
+ * - No animation → PageEntrance + ListStagger + StaggerItem
+ * - useI18n → labels prop from server
+ */
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
-import { Layers, Plus, X } from 'lucide-react'
 import { createCategory, editCategory, removeCategory } from './actions'
+import { FolderTree, Plus, Pencil, Trash2, Loader2, Tag } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 
-interface CategoryItem {
+interface Category {
     id: string
     name: string
     handle: string
@@ -14,13 +32,13 @@ interface CategoryItem {
     productCount: number
 }
 
-interface CategoryLabels {
+interface Labels {
     title: string
     subtitle: string
     addCategory: string
     editCategory: string
     noCategories: string
-    noCategoriesHint?: string
+    noCategoriesHint: string
     name: string
     description: string
     confirmDelete: string
@@ -35,233 +53,222 @@ interface CategoryLabels {
 }
 
 interface Props {
-    categories: CategoryItem[]
+    categories: Category[]
+    canAdd: boolean
     categoryCount: number
     maxCategories: number
-    canAdd: boolean
-    labels: CategoryLabels
+    labels: Labels
 }
 
-export default function CategoriesClient({
-    categories,
-    categoryCount,
-    maxCategories,
-    canAdd,
-    labels,
-}: Props) {
+export default function CategoriesClient({ categories, canAdd, categoryCount, maxCategories, labels }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
-
     const [showForm, setShowForm] = useState(false)
-    const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null)
+    const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const [formName, setFormName] = useState('')
-    const [formDescription, setFormDescription] = useState('')
+    const confirmDialog = useConfirmDialog({
+        title: labels.confirmDelete,
+        description: labels.confirmDelete,
+        confirmLabel: labels.delete,
+        variant: 'danger',
+    })
+
+    const [name, setName] = useState('')
+    const [description, setDescription] = useState('')
 
     const resetForm = () => {
-        setFormName('')
-        setFormDescription('')
-        setEditingCategory(null)
-        setShowForm(false)
-        setError(null)
+        setName(''); setDescription('')
+        setEditingId(null); setShowForm(false); setError(null)
     }
 
-    const openEdit = (cat: CategoryItem) => {
-        setFormName(cat.name)
-        setFormDescription(cat.description ?? '')
-        setEditingCategory(cat)
+    const openEdit = (cat: Category) => {
+        setName(cat.name)
+        setDescription(cat.description ?? '')
+        setEditingId(cat.id)
         setShowForm(true)
     }
 
     const handleSubmit = () => {
+        if (!name.trim()) {
+            setError(labels.name + ' required')
+            return
+        }
         startTransition(async () => {
-            setError(null)
-            if (editingCategory) {
-                const result = await editCategory(editingCategory.id, {
-                    name: formName,
-                    description: formDescription,
-                })
-                if (result.success) {
-                    resetForm()
-                    router.refresh()
-                    toast.success('✓')
-                } else {
-                    setError(result.error ?? 'Error')
-                    toast.error(result.error ?? 'Error')
-                }
-            } else {
-                const result = await createCategory({
-                    name: formName,
-                    description: formDescription,
-                })
-                if (result.success) {
-                    resetForm()
-                    router.refresh()
-                    toast.success('✓')
-                } else {
-                    setError(result.error ?? 'Error')
-                    toast.error(result.error ?? 'Error')
-                }
-            }
-        })
-    }
-
-    const handleDelete = (id: string) => {
-        if (!confirm(labels.confirmDelete)) return
-        startTransition(async () => {
-            const result = await removeCategory(id)
-            if (result.success) { router.refresh(); toast.success('✓') }
+            const result = editingId
+                ? await editCategory(editingId, { name, description: description || undefined })
+                : await createCategory({ name, description: description || undefined })
+            if (result.success) { resetForm(); router.refresh(); toast.success('✓') }
             else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
         })
     }
 
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
-    const labelClass = 'block text-sm font-medium text-text-secondary mb-1'
+    const handleDelete = (id: string) => {
+        confirmDialog.confirm(() => {
+            startTransition(async () => {
+                const result = await removeCategory(id)
+                if (result.success) { router.refresh(); toast.success('✓') }
+                else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+            })
+        })
+    }
+
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
+    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
 
     return (
-        <>
-            {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                        <Layers className="w-6 h-6 text-primary" />
-                        {labels.title}
-                        <span className="ml-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                            {categoryCount}
-                        </span>
-                    </h1>
-                    <p className="text-text-muted mt-1">
-                        {labels.subtitle} · {categoryCount} / {maxCategories} {labels.categories}
-                        {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-                    </p>
-                </div>
-                <button
-                    className="btn btn-primary flex items-center gap-2"
-                    disabled={!canAdd || isPending}
-                    onClick={() => { resetForm(); setShowForm(true) }}
-                >
-                    <Plus className="w-4 h-4" />
-                    {labels.addCategory}
-                </button>
-            </div>
+        <PageEntrance className="space-y-5">
+            <PanelPageHeader
+                title={labels.title}
+                subtitle={labels.subtitle}
+                icon={<FolderTree className="w-5 h-5" />}
+                badge={categoryCount}
+                action={
+                    <button
+                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        disabled={!canAdd || isPending}
+                        onClick={() => { resetForm(); setShowForm(true) }}
+                    >
+                        <Plus className="w-4 h-4" />
+                        {labels.addCategory}
+                    </button>
+                }
+            />
 
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-text-muted">
+                {categoryCount} / {maxCategories} {labels.categories}
+                {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
+            </motion.p>
 
-            {error && (
-                <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
-            )}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                        className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm"
+                    >
+                        {error}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Form modal */}
-            {showForm && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="glass-strong rounded-2xl p-6 w-full max-w-md space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="font-bold text-lg text-text-primary">
-                                {editingCategory ? labels.editCategory : labels.addCategory}
-                            </h2>
-                            <button onClick={resetForm} className="p-1 hover:bg-surface-1 rounded-lg">
-                                <X className="w-5 h-5 text-text-muted" />
-                            </button>
-                        </div>
+            {/* ── Form ── */}
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                        className="glass rounded-2xl p-6 space-y-4"
+                    >
+                        <h2 className="font-bold text-lg text-text-primary">
+                            {editingId ? labels.editCategory : labels.addCategory}
+                        </h2>
                         <div>
-                            <label className={labelClass}>{labels.name} *</label>
-                            <input
-                                value={formName}
-                                onChange={e => setFormName(e.target.value)}
-                                className={inputClass}
-                                autoFocus
-                            />
+                            <label className={labelClass}>{labels.name}</label>
+                            <input value={name} onChange={e => setName(e.target.value)} className={inputClass} />
                         </div>
                         <div>
                             <label className={labelClass}>{labels.description}</label>
                             <textarea
-                                value={formDescription}
-                                onChange={e => setFormDescription(e.target.value)}
-                                className={`${inputClass} min-h-[60px] resize-y`}
-                                rows={2}
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                className={inputClass + ' min-h-[80px] resize-y'}
+                                rows={3}
                             />
                         </div>
                         <div className="flex gap-3 pt-2">
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isPending || !formName.trim()}
-                                className="btn btn-primary flex-1"
-                            >
-                                {isPending ? '...' : editingCategory ? labels.save : labels.create}
+                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {isPending ? '...' : editingId ? labels.save : labels.create}
                             </button>
-                            <button onClick={resetForm} className="btn btn-ghost">
-                                {labels.cancel}
-                            </button>
+                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Category list */}
+            {/* ── Category List ── */}
             {categories.length === 0 ? (
-                <div className="glass rounded-2xl">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="glass rounded-2xl"
+                >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Layers className="w-8 h-8 text-text-muted" />
+                            <FolderTree className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
                         </div>
                         <h3 className="text-lg font-bold font-display text-text-primary mb-2">
                             {labels.noCategories}
                         </h3>
                         <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                            {labels.noCategoriesHint || 'Organize your products into categories to help customers find what they need.'}
+                            {labels.noCategoriesHint}
                         </p>
                         <button
-                            className="btn btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
-                            disabled={!canAdd || isPending}
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            disabled={!canAdd}
                             onClick={() => { resetForm(); setShowForm(true) }}
                         >
                             <Plus className="w-4 h-4" />
                             {labels.addCategory}
                         </button>
                     </div>
-                </div>
+                </motion.div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categories.map(cat => (
-                        <div key={cat.id} className="glass rounded-2xl p-5 hover:shadow-lg transition-shadow">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                                        <Layers className="w-5 h-5" />
+                <ListStagger className="space-y-3">
+                    {categories.map((category) => (
+                        <StaggerItem key={category.id}>
+                            <motion.div
+                                whileHover={{ y: -1 }}
+                                className="glass rounded-2xl p-4 transition-shadow hover:shadow-lg"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* Icon */}
+                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                        <Tag className="w-5 h-5 text-primary" />
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-text-primary">{cat.name}</h3>
-                                        <p className="text-xs text-text-muted mt-0.5">/{cat.handle}</p>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-text-primary truncate">{category.name}</h3>
+                                        <p className="text-xs text-text-muted mt-0.5">/{category.handle}</p>
+                                        {category.description && (
+                                            <p className="text-xs text-text-secondary mt-1 truncate">{category.description}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Product count */}
+                                    <span className="text-xs bg-surface-2 text-text-muted px-2.5 py-1 rounded-full font-medium flex-shrink-0">
+                                        {category.productCount} {labels.productCount}
+                                    </span>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-1 flex-shrink-0">
+                                        <button
+                                            onClick={() => openEdit(category)}
+                                            aria-label={labels.edit}
+                                            className="p-2 min-h-[36px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            disabled={isPending}
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(category.id)}
+                                            aria-label={labels.delete}
+                                            className="p-2 min-h-[36px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                            disabled={isPending}
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
                                 </div>
-                                <span className="text-xs font-medium text-text-muted bg-surface-1 px-2 py-1 rounded-full">
-                                    {cat.productCount} {labels.productCount}
-                                </span>
-                            </div>
-                            {cat.description && (
-                                <p className="text-sm text-text-muted mt-3 line-clamp-2">{cat.description}</p>
-                            )}
-                            <div className="flex gap-2 mt-4 pt-3 border-t border-surface-2">
-                                <button
-                                    onClick={() => openEdit(cat)}
-                                    className="btn btn-ghost text-xs flex-1"
-                                    disabled={isPending}
-                                >
-                                    ✏️ {labels.edit}
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(cat.id)}
-                                    className="btn btn-ghost text-xs text-red-500 flex-1"
-                                    disabled={isPending}
-                                >
-                                    🗑️ {labels.delete}
-                                </button>
-                            </div>
-                        </div>
+                            </motion.div>
+                        </StaggerItem>
                     ))}
-                </div>
+                </ListStagger>
             )}
-        </>
+
+            <PanelConfirmDialog {...confirmDialog.dialogProps} />
+        </PageEntrance>
     )
 }

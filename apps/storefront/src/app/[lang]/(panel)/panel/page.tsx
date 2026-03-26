@@ -13,12 +13,16 @@ import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, ACHIEVEMENT_DEFS, getAchievementsGrouped, type AchievementContext } from '@/lib/achievements'
 import { evaluateSmartTips, type SmartTipContext } from '@/lib/smart-tips'
 import StatCard from '@/components/panel/StatCard'
+import { AnimatedStatValue, AnimatedStringValue } from '@/components/panel/AnimatedStatValue'
 import UsageMeter from '@/components/panel/UsageMeter'
 import EmptyState from '@/components/panel/EmptyState'
-import PanelChecklist from '@/components/panel/PanelChecklist'
+import SetupProgress from '@/components/panel/SetupProgress'
 import StoreHealthCard from '@/components/panel/StoreHealthCard'
 import SmartTip from '@/components/panel/SmartTip'
+import SectionHeader from '@/components/panel/SectionHeader'
 import ActivityFeed, { type ActivityEvent } from '@/components/panel/ActivityFeed'
+import PanelBadge from '@/components/panel/PanelBadge'
+import PanelTable, { PanelThead, PanelTbody, PanelTr, PanelTh, PanelTd } from '@/components/panel/PanelTable'
 import {
     Package,
     ShoppingCart,
@@ -30,6 +34,11 @@ import {
     Settings,
     Tag,
     Inbox,
+    Store,
+    UserCheck,
+    Zap,
+    Activity,
+    Gauge,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -187,6 +196,8 @@ export default async function PanelDashboard({
         featureFlags.enable_whatsapp_checkout,
         featureFlags.enable_multi_language,
         featureFlags.enable_email_templates,
+        featureFlags.enable_pos,
+        featureFlags.enable_traffic_expansion,
     ].filter(Boolean).length
 
     const achievementCtx: AchievementContext = {
@@ -255,6 +266,18 @@ export default async function PanelDashboard({
             href: `/${lang}/panel/analiticas`,
             priority: ordersThisMonth >= 5 ? 50 : 2,
         }] : []),
+        ...(featureFlags.enable_pos ? [{
+            icon: <Store className="w-5 h-5" />,
+            label: t('panel.quickActions.pos') || 'POS',
+            href: `/${lang}/panel/pos`,
+            priority: 40,
+        }] : []),
+        ...(featureFlags.enable_crm ? [{
+            icon: <UserCheck className="w-5 h-5" />,
+            label: t('panel.quickActions.crm') || 'CRM',
+            href: `/${lang}/panel/crm`,
+            priority: 35,
+        }] : []),
     ]
     const quickActions = allActions.sort((a, b) => b.priority - a.priority).slice(0, 5)
 
@@ -306,7 +329,7 @@ export default async function PanelDashboard({
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10">
             {/* Medusa degraded banner */}
             {medusaDegraded && (
                 <div className="rounded-xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700">
@@ -314,21 +337,45 @@ export default async function PanelDashboard({
                 </div>
             )}
 
-            {/* Page header */}
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {t('panel.dashboard.title')}
-                </h1>
-                <p className="text-text-muted mt-1">
-                    {t('panel.dashboard.subtitle')}
-                </p>
+            {/* Welcome Banner */}
+            <div className="glass-strong rounded-2xl p-6 md:p-8 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/3 pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary">
+                            {t('panel.dashboard.title')}
+                        </h1>
+                        <p className="text-text-muted mt-1">
+                            {t('panel.dashboard.subtitle')}
+                        </p>
+                    </div>
+                    {storeConfig.onboarding_completed && (
+                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-0/80 border border-surface-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${
+                                readiness.score >= 80 ? 'bg-success' :
+                                readiness.score >= 40 ? 'bg-warning' : 'bg-error'
+                            }`} />
+                            <span className="text-sm font-medium text-text-secondary">
+                                {readiness.score}% {t('storeHealth.title')}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Smart Tips — contextual suggestions */}
             {smartTips.length > 0 && (
                 <div className="space-y-2">
                     {smartTips.map(tip => (
-                        <SmartTip key={tip.id} tip={tip} t={t} lang={lang} />
+                        <SmartTip
+                            key={tip.id}
+                            tipId={tip.id}
+                            emoji={tip.emoji}
+                            message={t(tip.messageKey)}
+                            actionLabel={t(tip.actionKey)}
+                            actionHref={tip.actionHref}
+                            lang={lang}
+                        />
                     ))}
                 </div>
             )}
@@ -337,10 +384,30 @@ export default async function PanelDashboard({
             {storeConfig.onboarding_completed && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {/* Health Card — takes 1 column */}
-                    <StoreHealthCard readiness={readiness} t={t} lang={lang} />
+                    <StoreHealthCard
+                        readiness={readiness}
+                        labels={{
+                            title: t('storeHealth.title'),
+                            completed: t('storeHealth.completed'),
+                            expand: t('storeHealth.expand'),
+                            collapse: t('storeHealth.collapse'),
+                            levelLabels: {
+                                setup: t('storeHealth.level.setup'),
+                                growing: t('storeHealth.level.growing'),
+                                thriving: t('storeHealth.level.thriving'),
+                            },
+                            checkLabels: Object.fromEntries(
+                                readiness.checks.map(c => [c.id, t(c.labelKey)])
+                            ),
+                            nextActionLabel: readiness.nextAction ? t(readiness.nextAction.descKey) : undefined,
+                            replayTourLabel: t('panel.health.replayTour'),
+                            languageLabel: t('panel.health.language'),
+                        }}
+                        lang={lang}
+                    />
 
                     {/* Achievements — takes 2 columns */}
-                    <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: 'var(--color-surface-0)', border: '1px solid var(--color-surface-2)' }}>
+                    <div className="lg:col-span-2 glass rounded-2xl p-5">
                         <h3 className="text-sm font-bold text-text-primary mb-3">
                             🏆 {t('achievement.title')}
                         </h3>
@@ -365,68 +432,102 @@ export default async function PanelDashboard({
                 </div>
             )}
 
-            {/* Legacy checklist fallback for pre-onboarding */}
-            {storeConfig.onboarding_completed && readiness.score < 40 && (() => {
-                const pendingChecks = readiness.checks.filter(c => !c.done).slice(0, 5)
-                if (pendingChecks.length === 0) return null
-                return (
-                    <PanelChecklist
-                        checks={pendingChecks}
-                        dbSkipped={!!(storeConfig as Record<string, unknown>).checklist_skipped}
-                        title={t('panel.checklist.title') || '🚀 Getting Started'}
-                        subtitle={t('panel.checklist.subtitle') || 'Complete these steps to launch your store'}
-                        skipLabel={t('panel.checklist.skip') || 'Skip'}
-                        allDoneLabel={t('checklist.allDone')}
-                    />
-                )
-            })()}
+            {/* Persistent setup progress — always visible until 100% complete */}
+            {readiness.score < 100 && (
+                <SetupProgress
+                    checks={readiness.checks}
+                    labels={{
+                        title: t('panel.setup.title'),
+                        subtitle: t('panel.setup.subtitle'),
+                        collapsed: t('panel.setup.collapsed'),
+                        complete: t('panel.setup.complete'),
+                        expand: t('panel.setup.expand'),
+                        collapse: t('panel.setup.collapse'),
+                        unlockWith: t('panel.setup.unlockWith'),
+                        categories: {
+                            setup: t('panel.setup.cat.setup'),
+                            content: t('panel.setup.cat.content'),
+                            sales: t('panel.setup.cat.sales'),
+                            growth: t('panel.setup.cat.growth'),
+                        },
+                    }}
+                    checkLabels={Object.fromEntries(
+                        readiness.checks.map(c => [c.id, t(c.labelKey)])
+                    )}
+                    moduleUpsells={{
+                        active_modules: {
+                            moduleName: t('panel.setup.modulesLabel'),
+                            href: `/${lang}/panel/modulos`,
+                        },
+                    }}
+                    lang={lang}
+                />
+            )}
 
-            {/* Stat cards — 5 cards with trends and sparklines */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard
-                    label={t('panel.stats.revenue') || 'Revenue'}
-                    value={formattedRevenue}
-                    icon={<DollarSign className="w-5 h-5" />}
-                    href={`/${lang}/panel/pedidos`}
+            {/* ── Key Metrics ── */}
+            <div>
+                <SectionHeader
+                    title={t('panel.stats.title') || 'Key Metrics'}
+                    icon={<BarChart3 className="w-4.5 h-4.5" />}
                 />
-                <StatCard
-                    label={t('panel.stats.products')}
-                    value={productCount}
-                    icon={<Package className="w-5 h-5" />}
-                    href={`/${lang}/panel/catalogo`}
-                />
-                <StatCard
-                    label={t('panel.stats.ordersMonth')}
-                    value={ordersThisMonth}
-                    icon={<ShoppingCart className="w-5 h-5" />}
-                    sparklineData={sparklineOrders}
-                    href={`/${lang}/panel/pedidos`}
-                />
-                <StatCard
-                    label={t('panel.stats.customers')}
-                    value={customerCount}
-                    icon={<Users className="w-5 h-5" />}
-                    href={`/${lang}/panel/clientes`}
-                />
-                <StatCard
-                    label={t('panel.stats.categories')}
-                    value={categoryCount}
-                    icon={<FolderTree className="w-5 h-5" />}
-                    href={`/${lang}/panel/categorias`}
-                />
+                {/* Hero row: Revenue + Orders */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <StatCard
+                        label={t('panel.stats.revenue') || 'Revenue'}
+                        value={<AnimatedStringValue value={formattedRevenue} />}
+                        icon={<DollarSign className="w-6 h-6" />}
+                        href={`/${lang}/panel/pedidos`}
+                        variant="hero"
+                        stagger={0}
+                    />
+                    <StatCard
+                        label={t('panel.stats.ordersMonth')}
+                        value={<AnimatedStatValue value={ordersThisMonth} locale={lang} />}
+                        icon={<ShoppingCart className="w-6 h-6" />}
+                        sparklineData={sparklineOrders}
+                        href={`/${lang}/panel/pedidos`}
+                        variant="hero"
+                        stagger={1}
+                    />
+                </div>
+                {/* Secondary row: Products, Customers, Categories */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <StatCard
+                        label={t('panel.stats.products')}
+                        value={<AnimatedStatValue value={productCount} locale={lang} />}
+                        icon={<Package className="w-5 h-5" />}
+                        href={`/${lang}/panel/catalogo`}
+                        stagger={2}
+                    />
+                    <StatCard
+                        label={t('panel.stats.customers')}
+                        value={<AnimatedStatValue value={customerCount} locale={lang} />}
+                        icon={<Users className="w-5 h-5" />}
+                        href={`/${lang}/panel/clientes`}
+                        stagger={3}
+                    />
+                    <StatCard
+                        label={t('panel.stats.categories')}
+                        value={<AnimatedStatValue value={categoryCount} locale={lang} />}
+                        icon={<FolderTree className="w-5 h-5" />}
+                        href={`/${lang}/panel/categorias`}
+                        stagger={4}
+                    />
+                </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* ── Quick Actions ── */}
             <div>
-                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
-                    {t('panel.quickActions.title') || 'Quick Actions'}
-                </h2>
+                <SectionHeader
+                    title={t('panel.quickActions.title') || 'Quick Actions'}
+                    icon={<Zap className="w-4.5 h-4.5" />}
+                />
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {quickActions.map((action) => (
                         <Link
                             key={action.href}
                             href={action.href}
-                            className="quick-action"
+                            className="quick-action min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                         >
                             <div className="quick-action-icon">
                                 {action.icon}
@@ -439,11 +540,12 @@ export default async function PanelDashboard({
                 </div>
             </div>
 
-            {/* Activity Feed */}
+            {/* ── Activity Feed ── */}
             <div>
-                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
-                    {t('panel.activity.title')}
-                </h2>
+                <SectionHeader
+                    title={t('panel.activity.title')}
+                    icon={<Activity className="w-4.5 h-4.5" />}
+                />
                 <ActivityFeed
                     events={activityEvents}
                     labels={{
@@ -455,11 +557,13 @@ export default async function PanelDashboard({
                 />
             </div>
 
-            {/* Usage meters */}
+            {/* ── Usage Meters ── */}
             <div>
-                <h2 className="text-lg font-bold font-display text-text-primary mb-4">
-                    {t('panel.usage.title')}
-                </h2>
+                <SectionHeader
+                    title={t('panel.usage.title')}
+                    icon={<Gauge className="w-4.5 h-4.5" />}
+                    description={t('panel.usage.planInfo', { plan: planLimits.plan_name })}
+                />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[...realMeters, ...extendedMeters].map((meter) => (
                         <UsageMeter
@@ -469,26 +573,24 @@ export default async function PanelDashboard({
                         />
                     ))}
                 </div>
-                <p className="text-xs text-text-muted mt-3">
-                    {t('panel.usage.planInfo', { plan: planLimits.plan_name })}
-                </p>
             </div>
 
-            {/* Recent orders */}
+            {/* ── Recent Orders ── */}
             <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold font-display text-text-primary">
-                        {t('panel.dashboard.recentOrders')}
-                    </h2>
-                    {recentOrders.length > 0 && (
-                        <Link
-                            href={`/${lang}/panel/pedidos`}
-                            className="text-sm text-primary hover:underline font-medium"
-                        >
-                            {t('panel.dashboard.viewAll') || 'View all'} →
-                        </Link>
-                    )}
-                </div>
+                <SectionHeader
+                    title={t('panel.dashboard.recentOrders')}
+                    icon={<Inbox className="w-4.5 h-4.5" />}
+                    action={
+                        recentOrders.length > 0 ? (
+                            <Link
+                                href={`/${lang}/panel/pedidos`}
+                                className="text-sm text-primary hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-2 py-1"
+                            >
+                                {t('panel.dashboard.viewAll') || 'View all'} →
+                            </Link>
+                        ) : undefined
+                    }
+                />
                 {recentOrders.length === 0 ? (
                     <EmptyState
                         icon={<Inbox className="w-8 h-8" />}
@@ -499,30 +601,19 @@ export default async function PanelDashboard({
                     />
                 ) : (
                     <div className="glass rounded-2xl overflow-hidden">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-surface-3 text-text-muted">
-                                    <th className="text-left px-4 py-3 font-medium">
-                                        {t('panel.dashboard.orderId')}
-                                    </th>
-                                    <th className="text-left px-4 py-3 font-medium">
-                                        {t('panel.dashboard.customer')}
-                                    </th>
-                                    <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                                        {t('panel.dashboard.status')}
-                                    </th>
-                                    <th className="text-right px-4 py-3 font-medium">
-                                        {t('panel.dashboard.total')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <PanelTable ariaLabel="Recent orders">
+                            <PanelThead>
+                                <PanelTr>
+                                    <PanelTh>{t('panel.dashboard.orderId')}</PanelTh>
+                                    <PanelTh>{t('panel.dashboard.customer')}</PanelTh>
+                                    <PanelTh className="hidden sm:table-cell">{t('panel.dashboard.status')}</PanelTh>
+                                    <PanelTh align="right">{t('panel.dashboard.total')}</PanelTh>
+                                </PanelTr>
+                            </PanelThead>
+                            <PanelTbody>
                                 {recentOrders.map((order) => (
-                                    <tr
-                                        key={order.id}
-                                        className="border-b border-surface-2 last:border-0 hover:bg-surface-1/50 transition-colors cursor-pointer group"
-                                    >
-                                        <td className="px-4 py-3">
+                                    <PanelTr key={order.id} className="cursor-pointer group">
+                                        <PanelTd>
                                             <Link href={`/${lang}/panel/pedidos?search=${order.display_id}`} className="block">
                                                 <span className="font-medium text-text-primary">
                                                     #{order.display_id}
@@ -533,31 +624,31 @@ export default async function PanelDashboard({
                                                     </span>
                                                 )}
                                             </Link>
-                                        </td>
-                                        <td className="px-4 py-3 text-text-secondary">
+                                        </PanelTd>
+                                        <PanelTd className="text-text-secondary">
                                             {order.customer
                                                 ? `${order.customer.first_name ?? ''} ${order.customer.last_name ?? ''}`.trim() || order.customer.email
                                                 : '—'}
-                                        </td>
-                                        <td className="px-4 py-3 hidden sm:table-cell">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                                    order.status === 'canceled' ? 'bg-red-100 text-red-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                                }`}>
+                                        </PanelTd>
+                                        <PanelTd className="hidden sm:table-cell">
+                                            <PanelBadge
+                                                variant={order.status === 'completed' ? 'success' : order.status === 'pending' ? 'warning' : order.status === 'canceled' ? 'error' : 'info'}
+                                                size="sm"
+                                                dot
+                                            >
                                                 {t(`order.${order.status}`) || order.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-medium text-text-primary">
+                                            </PanelBadge>
+                                        </PanelTd>
+                                        <PanelTd align="right" className="font-medium text-text-primary">
                                             {new Intl.NumberFormat(lang, {
                                                 style: 'currency',
                                                 currency: order.currency_code ?? 'usd',
                                             }).format(order.total / 100)}
-                                        </td>
-                                    </tr>
+                                        </PanelTd>
+                                    </PanelTr>
                                 ))}
-                            </tbody>
-                        </table>
+                            </PanelTbody>
+                        </PanelTable>
                     </div>
                 )}
             </div>

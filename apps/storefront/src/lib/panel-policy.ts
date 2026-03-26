@@ -14,6 +14,9 @@ export interface PanelFeatureFlags {
     enable_self_service_returns?: boolean
     enable_crm?: boolean
     enable_reviews?: boolean
+    enable_pos?: boolean
+    enable_traffic_expansion?: boolean
+    enable_product_badges?: boolean
     owner_lite_enabled?: boolean
     owner_advanced_modules_enabled?: boolean
 }
@@ -23,6 +26,7 @@ export interface PanelSidebarLabels {
     catalog: string
     orders: string
     customers: string
+    utilities: string
     storeConfig: string
     shipping: string
     myProject: string
@@ -36,19 +40,27 @@ export interface PanelSidebarLabels {
     returns: string
     crm: string
     reviews: string
+    pos: string
+    capacidad: string
     ownerPanel: string
     backToStore: string
+    groupOperations: string
+    groupContent: string
+    groupSettings: string
 }
+
+export type NavGroup = 'operations' | 'content' | 'settings'
 
 export interface PanelNavItem {
     key: string
     href: string
     label: string
     exact?: boolean
+    group?: NavGroup
 }
 
 interface AdvancedModuleDef {
-    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns' | 'crm' | 'reviews'
+    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns' | 'crm' | 'reviews' | 'pos' | 'capacidad'
     segment: string
     featureKey?: keyof PanelFeatureFlags
 }
@@ -58,22 +70,25 @@ const ESSENTIAL_MODULES = [
     { key: 'catalog', segment: 'catalogo' },
     { key: 'orders', segment: 'pedidos' },
     { key: 'customers', segment: 'clientes' },
+    { key: 'utilities', segment: 'utilidades' },
     { key: 'storeConfig', segment: 'tienda' },
     { key: 'shipping', segment: 'envios' },
     { key: 'myProject', segment: 'mi-proyecto' },
     { key: 'modules', segment: 'modulos' },
 ] as const
 
-const ADVANCED_MODULES: AdvancedModuleDef[] = [
+export const ADVANCED_MODULES: AdvancedModuleDef[] = [
     { key: 'carousel', segment: 'carrusel', featureKey: 'enable_carousel' },
     { key: 'whatsapp', segment: 'mensajes', featureKey: 'enable_whatsapp_checkout' },
     { key: 'pages', segment: 'paginas', featureKey: 'enable_cms_pages' },
     { key: 'analytics', segment: 'analiticas', featureKey: 'enable_analytics' },
-    { key: 'badges', segment: 'insignias' },
+    { key: 'badges', segment: 'insignias', featureKey: 'enable_product_badges' },
     { key: 'chatbot', segment: 'chatbot', featureKey: 'enable_chatbot' },
     { key: 'returns', segment: 'devoluciones', featureKey: 'enable_self_service_returns' },
     { key: 'crm', segment: 'crm', featureKey: 'enable_crm' },
     { key: 'reviews', segment: 'resenas', featureKey: 'enable_reviews' },
+    { key: 'pos', segment: 'pos', featureKey: 'enable_pos' },
+    { key: 'capacidad', segment: 'capacidad', featureKey: 'enable_traffic_expansion' },
 ]
 
 export const OWNER_LITE_MODE_DEFAULT = false
@@ -130,6 +145,69 @@ export function getPanelNavigation({
     return { essentialItems, moduleItems }
 }
 
+// ── 3-Bucket Grouped Navigation ──
+// Maps each nav item to one of: operations, content, settings
+const GROUP_MAP: Record<string, NavGroup> = {
+    // Operations — day-to-day business actions
+    dashboard: 'operations',
+    orders: 'operations',
+    customers: 'operations',
+    utilities: 'operations',
+    pos: 'operations',
+    crm: 'operations',
+    returns: 'operations',
+    // Content — product catalog & marketing
+    catalog: 'content',
+    carousel: 'content',
+    pages: 'content',
+    badges: 'content',
+    chatbot: 'content',
+    reviews: 'content',
+    whatsapp: 'content',
+    // Settings — store configuration & infrastructure
+    storeConfig: 'settings',
+    shipping: 'settings',
+    analytics: 'settings',
+    capacidad: 'settings',
+    myProject: 'settings',
+    modules: 'settings',
+}
+
+export interface GroupedNavigation {
+    operations: PanelNavItem[]
+    content: PanelNavItem[]
+    settings: PanelNavItem[]
+}
+
+export function getPanelNavigationGrouped({
+    lang,
+    labels,
+    featureFlags,
+}: {
+    lang: string
+    labels: PanelSidebarLabels
+    featureFlags: PanelFeatureFlags
+}): GroupedNavigation {
+    const { essentialItems, moduleItems } = getPanelNavigation({ lang, labels, featureFlags })
+    const allItems = [...essentialItems, ...moduleItems]
+
+    const operations: PanelNavItem[] = []
+    const content: PanelNavItem[] = []
+    const settings: PanelNavItem[] = []
+
+    for (const item of allItems) {
+        const group = GROUP_MAP[item.key] || 'settings'
+        const tagged = { ...item, group }
+        switch (group) {
+            case 'operations': operations.push(tagged); break
+            case 'content': content.push(tagged); break
+            case 'settings': settings.push(tagged); break
+        }
+    }
+
+    return { operations, content, settings }
+}
+
 export function isAdvancedPanelRouteEnabled(
     pathname: string,
     featureFlags: PanelFeatureFlags
@@ -154,6 +232,7 @@ const ESSENTIAL_ROUTES = new Set([
     'catalogo',
     'pedidos',
     'clientes',
+    'utilidades',
     'tienda',
     'envios',
     'mi-proyecto',
@@ -175,6 +254,8 @@ const ADVANCED_ROUTES = new Set([
     'devoluciones',
     'crm',
     'resenas',
+    'pos',
+    'capacidad',
 ])
 
 export type PanelRouteKey =
@@ -182,6 +263,7 @@ export type PanelRouteKey =
     | 'catalogo'
     | 'pedidos'
     | 'clientes'
+    | 'utilidades'
     | 'tienda'
     | 'envios'
     | 'mi-proyecto'
@@ -200,6 +282,8 @@ export type PanelRouteKey =
     | 'devoluciones'
     | 'crm'
     | 'resenas'
+    | 'pos'
+    | 'capacidad'
 
 export function getPanelFallbackRoute(lang: string): string {
     return `/${lang}/panel`

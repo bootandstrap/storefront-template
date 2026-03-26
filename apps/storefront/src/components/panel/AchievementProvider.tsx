@@ -3,8 +3,21 @@
 /**
  * AchievementProvider — React context for tracking and celebrating achievements
  *
- * Wraps the panel layout. On mount, compares server-evaluated achievements
- * with stored state, shows celebration toasts for new unlocks, and persists.
+ * v3 (2026-03-22): Bulletproof dedup using localStorage as sole source of truth.
+ *
+ * How it works:
+ * 1. Server evaluates which achievements are unlocked → sends as props
+ * 2. On client mount (useEffect), reads localStorage for already-celebrated IDs
+ * 3. Writes new IDs to localStorage BEFORE triggering state update
+ * 4. Even if the component remounts immediately after, the next useEffect
+ *    reads the updated localStorage and finds zero new achievements
+ * 5. DB persist via saveAchievementsAction is best-effort backup
+ *
+ * Why useEffect and not useState initializer?
+ * - useState initializer runs on BOTH server and client during SSR
+ * - On server, localStorage doesn't exist → returns []
+ * - React hydrates with [] and never re-runs the initializer
+ * - useEffect is client-only, runs after hydration, perfect for this
  */
 
 import {
@@ -23,21 +36,16 @@ import { saveAchievementsAction } from '@/app/[lang]/(panel)/panel/actions'
 // ---------------------------------------------------------------------------
 
 interface AchievementContextValue {
-  /** All currently unlocked achievement IDs */
   unlockedIds: string[]
-  /** Whether any new achievements were detected on this session */
   hasNewUnlocks: boolean
 }
 
 interface AchievementProviderProps {
   children: ReactNode
-  /** Server-evaluated currently unlocked IDs */
   currentlyUnlocked: string[]
-  /** Previously persisted unlocked IDs */
   previouslyStored: string[]
-  /** Translations for achievement titles/descriptions */
+  newAchievementIds?: string[]
   achievementLabels: Record<string, string>
-  /** The "Achievement Unlocked!" label */
   unlockLabel?: string
 }
 
@@ -55,6 +63,43 @@ export function useAchievements() {
 }
 
 // ---------------------------------------------------------------------------
+// localStorage — sole dedup layer (survives reloads, remounts, HMR)
+// ---------------------------------------------------------------------------
+
+const LS_KEY = 'bns_celebrated_achievements'
+
+function readCelebrated(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch { /* corrupted — treat as empty */ }
+  return new Set()
+}
+
+function writeCelebrated(ids: string[]) {
+  try {
+    const current = readCelebrated()
+    for (const id of ids) current.add(id)
+    localStorage.setItem(LS_KEY, JSON.stringify([...current]))
+  } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------------------
+// Emoji mapping
+// ---------------------------------------------------------------------------
+
+const EMOJI: Record<string, string> = {
+  first_product: '📦', brand_identity: '🎨', connected: '📞',
+  go_live: '🚀', tour_complete: '🎓', first_sale: '💰',
+  sales_streak: '🔥', revenue_milestone: '💎', shipping_ready: '🚚',
+  product_master: '🏆', catalog_pro: '📚', module_explorer: '🔌',
+  power_user: '⚡', fully_setup: '🌟', store_master: '👑',
+}
+
+// ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
@@ -62,51 +107,50 @@ export default function AchievementProvider({
   children,
   currentlyUnlocked,
   previouslyStored,
+  newAchievementIds,
   achievementLabels,
   unlockLabel,
 }: AchievementProviderProps) {
   const [celebrations, setCelebrations] = useState<CelebrationItem[]>([])
   const [hasNewUnlocks, setHasNewUnlocks] = useState(false)
 
-  // Detect new achievements on mount
   useEffect(() => {
-    const storedSet = new Set(previouslyStored)
-    const newIds = currentlyUnlocked.filter(id => !storedSet.has(id))
+    // ── Step 1: Read what localStorage already knows about ──
+    const alreadySeen = readCelebrated()
 
-    if (newIds.length > 0) {
-      setHasNewUnlocks(true)
+    // ── Step 2: Determine candidates from server props ──
+    const serverStored = new Set(previouslyStored)
+    const candidates = newAchievementIds
+      ?? currentlyUnlocked.filter(id => !serverStored.has(id))
 
-      // Build celebration items from achievement defs
-      const items: CelebrationItem[] = newIds
-        .map(id => {
-          // Import achievement defs dynamically to avoid server import issues
-          const title = achievementLabels[`achievement.${id}.title`] || id
-          const desc = achievementLabels[`achievement.${id}.desc`] || ''
-          const emojiMap: Record<string, string> = {
-            first_product: '📦', brand_identity: '🎨', connected: '📞',
-            go_live: '🚀', tour_complete: '🎓', first_sale: '💰',
-            sales_streak: '🔥', revenue_milestone: '💎', shipping_ready: '🚚',
-            product_master: '🏆', catalog_pro: '📚', module_explorer: '🔌',
-            power_user: '⚡', fully_setup: '🌟', store_master: '👑',
-          }
+    // ── Step 3: Filter against localStorage (the REAL dedup) ──
+    const fresh = candidates.filter(id => !alreadySeen.has(id))
+    if (fresh.length === 0) return
 
-          return {
-            id,
-            emoji: emojiMap[id] || '🏆',
-            title,
-            description: desc,
-          }
-        })
+    // ── Step 4: Write to localStorage FIRST (before state update) ──
+    // This is critical: even if React tears down and remounts this
+    // component in the same tick, the next useEffect will read the
+    // updated localStorage and find zero fresh achievements.
+    writeCelebrated(fresh)
 
-      setCelebrations(items)
+    // ── Step 5: Now it's safe to trigger the celebration UI ──
+    setHasNewUnlocks(true)
+    setCelebrations(
+      fresh.map(id => ({
+        id,
+        emoji: EMOJI[id] || '🏆',
+        title: achievementLabels[`achievement.${id}.title`] || id,
+        description: achievementLabels[`achievement.${id}.desc`] || '',
+      }))
+    )
 
-      // Persist new achievements (fire-and-forget)
-      saveAchievementsAction(newIds).catch(err => {
-        console.warn('[AchievementProvider] Failed to persist:', err)
-      })
-    }
+    // ── Step 6: Best-effort DB persist (fire-and-forget) ──
+    saveAchievementsAction(fresh).catch(() => {})
+
+  // We intentionally use [] deps — this is a "run once on mount" effect.
+  // The props are read from the closure at mount time only.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
+  }, [])
 
   const handleDismiss = useCallback((id: string) => {
     setCelebrations(prev => prev.filter(c => c.id !== id))
@@ -120,7 +164,11 @@ export default function AchievementProvider({
       }}
     >
       {children}
-      <CelebrationToast items={celebrations} onDismiss={handleDismiss} unlockLabel={unlockLabel} />
+      <CelebrationToast
+        items={celebrations}
+        onDismiss={handleDismiss}
+        unlockLabel={unlockLabel}
+      />
     </AchievementContext.Provider>
   )
 }

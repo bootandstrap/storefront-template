@@ -188,7 +188,7 @@ export default function ModuleConfigClient({
   }
 
   const inputClass =
-    'w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
+    'w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-surface-3 bg-surface-0 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
   const labelClass = 'block text-sm font-medium text-text-secondary mb-1'
 
   return (
@@ -196,7 +196,7 @@ export default function ModuleConfigClient({
       {/* Back link */}
       <Link
         href={`/${locale}/panel/modulos`}
-        className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-2"
       >
         <ArrowLeft className="w-4 h-4" />
         {labels.backToModules}
@@ -241,7 +241,7 @@ export default function ModuleConfigClient({
                   <div className="mt-3 text-lg font-bold text-primary">
                     {tier.price > 0 ? `${tier.price} CHF${labels.monthly}` : labels.free}
                   </div>
-                  <button className="btn btn-primary w-full mt-4">
+                  <button className="btn btn-primary w-full mt-4 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
                     {labels.activate}
                   </button>
                 </div>
@@ -372,7 +372,7 @@ export default function ModuleConfigClient({
                 <button
                   onClick={handleSave}
                   disabled={isPending}
-                  className="btn btn-primary"
+                  className="btn btn-primary min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                 >
                   {isPending ? labels.saving : labels.save}
                 </button>
@@ -405,7 +405,7 @@ export default function ModuleConfigClient({
                     {context.activeTierKey}
                   </div>
                 </div>
-                <button className="btn btn-sm btn-outline">
+                <button className="btn btn-sm btn-outline min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                   {labels.upgrade}
                 </button>
               </div>

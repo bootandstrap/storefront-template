@@ -1,7 +1,7 @@
 # Production Contracts & Enforcement Catalog
 
 > Consolidated from: production-contracts.md + flag-limit-enforcement-catalog.md.
-> Last updated: 2026-03-03.
+> Last updated: 2026-03-25.
 
 ## Contract Dimensions
 
@@ -22,12 +22,17 @@ Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-sid
 | Chatbot | `enable_chatbot` | `max_chatbot_messages_month` | ✅ (fail-closed + rate-limit) | Production |
 | Devoluciones | `enable_self_service_returns` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
 | Insignias | `enable_product_badges` | `max_badges` | ✅ | Production |
+| CRM | `enable_crm` | `max_crm_contacts` | ✅ (`shouldAllowPanelRoute`) | Production |
+| Reseñas | `enable_reviews` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
+| POS | `enable_pos` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
+| Email Notifications | `enable_email_notifications` | `max_email_sends_month` | ✅ (cron + quota check) | Production |
+| Email Campaigns | `enable_email_campaigns` | `max_email_sends_month` | ✅ (cron + quota check) | Production |
 
 ---
 
-## Feature Flag Enforcement (44 flags)
+## Feature Flag Enforcement (44+ flags)
 
-### Server-Enforced (20 flags) ✅
+### Server-Enforced (20+ flags) ✅
 
 | Flag | Enforcement Point |
 |------|-------------------|
@@ -47,9 +52,11 @@ Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-sid
 | `enable_order_tracking` | `cuenta/pedidos/page.tsx` redirect |
 | `enable_chatbot` | `/api/chat` + panel page |
 | `enable_self_service_returns` | Panel devoluciones page |
+| `enable_crm` | Panel CRM page + utilities/loyalty |
+| `enable_pos` | Panel POS page |
+| `enable_ecommerce` | Root module gate + utilities/labels |
 | `owner_lite_enabled` | `panel-modules.ts` |
 | `owner_advanced_modules_enabled` | `panel-modules.ts` + `panel-route-guards.ts` |
-| `enable_ecommerce` | Root module gate (Flag 44/44) |
 
 ### UI-Gated Only (24 flags) 🟡
 
@@ -57,7 +64,7 @@ Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-sid
 
 ---
 
-## Plan Limit Enforcement (25 limits)
+## Plan Limit Enforcement (25+ limits)
 
 ### Server-Enforced (14 limits) ✅
 
@@ -89,7 +96,7 @@ Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-sid
 
 ---
 
-## Test Suites (5 automated)
+## Test Suites (83 files, 1030 tests)
 
 | Suite | Validates |
 |-------|----------|
@@ -98,3 +105,7 @@ Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-sid
 | Owner Lite Gating | 5 essential + 7 advanced routes |
 | Webhook Idempotency | `claimEvent`, critical/non-critical paths |
 | Revalidation & Governance | Migration paths, schema cutoff, tenant scope |
+| Panel Policy Routes | All 26+ panel routes correctly gated by flags |
+| Feature Gate Config | Flag → module mapping integrity |
+| Store Readiness | Score calculation, check categorization |
+| i18n Dictionary Sync | All 5 locale files have matching keys |
