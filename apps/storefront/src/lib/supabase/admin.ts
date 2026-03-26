@@ -1,9 +1,15 @@
 /**
  * Supabase Admin Client — Server-Only
  *
- * Uses SUPABASE_SERVICE_ROLE_KEY to bypass RLS for governance table reads
- * (config, feature_flags, plan_limits). This client is stateless — no cookies,
- * no user session. For user-authenticated operations, use `server.ts` instead.
+ * Uses anon key for governance table reads (config, feature_flags, plan_limits).
+ * All governance tables are accessible via RLS policies or SECURITY DEFINER RPCs.
+ *
+ * ⚠️  Security (2026-03-26): SUPABASE_SERVICE_ROLE_KEY has been permanently
+ *    removed from storefront environments. This client uses anon key only.
+ *    See: system_audit_2026_03_26.md §C-1
+ *
+ * This client is stateless — no cookies, no user session.
+ * For user-authenticated operations, use `server.ts` instead.
  *
  * NEVER import this file in client components.
  *
@@ -19,22 +25,23 @@ const globalForAdmin = globalThis as unknown as {
 }
 
 /**
- * Returns a Supabase client with service_role privileges.
+ * Returns a Supabase client with anon key privileges.
+ * All governance reads go through RLS or SECURITY DEFINER RPCs.
  * Singleton — reused across requests in the same process.
  */
 export function createAdminClient() {
     if (globalForAdmin.__supabaseAdminClient) return globalForAdmin.__supabaseAdminClient
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const anonKey = process.env.GOVERNANCE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (!url || !serviceKey) {
+    if (!url || !anonKey) {
         throw new Error(
-            '[admin-client] NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required'
+            '[admin-client] NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (or GOVERNANCE_SUPABASE_ANON_KEY) are required'
         )
     }
 
-    globalForAdmin.__supabaseAdminClient = createSupabaseClient(url, serviceKey, {
+    globalForAdmin.__supabaseAdminClient = createSupabaseClient(url, anonKey, {
         auth: {
             autoRefreshToken: false,
             persistSession: false,

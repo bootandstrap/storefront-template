@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { timingSafeEqual } from 'node:crypto'
 import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
 
 // ---------------------------------------------------------------------------
@@ -11,6 +12,7 @@ import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
 //   1. REVALIDATION_SECRET (mandatory — shared between SuperAdmin and storefront)
 //   2. REVALIDATION_ALLOWED_IPS (optional — comma-separated allowlist)
 //   3. Rate limiting (30 req/min per IP)
+//   4. Timing-safe secret comparison (prevents timing oracle attacks)
 // ---------------------------------------------------------------------------
 
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET
@@ -20,6 +22,18 @@ const ALLOWED_IPS_RAW = process.env.REVALIDATION_ALLOWED_IPS
 const ALLOWED_IPS: string[] | null = ALLOWED_IPS_RAW
     ? ALLOWED_IPS_RAW.split(',').map(ip => ip.trim()).filter(Boolean)
     : null
+
+/**
+ * Timing-safe string comparison to prevent timing oracle attacks.
+ * Returns false if lengths differ (leaks length info, but that's acceptable
+ * for fixed-length secrets and prevents the more dangerous byte-by-byte oracle).
+ */
+function isSecretValid(provided: string, expected: string): boolean {
+    const a = Buffer.from(provided)
+    const b = Buffer.from(expected)
+    if (a.length !== b.length) return false
+    return timingSafeEqual(a, b)
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -48,7 +62,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // ── Secret validation ──────────────────────────────────
+        // ── Secret validation (timing-safe) ────────────────────
         if (!REVALIDATION_SECRET) {
             return NextResponse.json(
                 { error: 'Revalidation endpoint not configured — set REVALIDATION_SECRET' },
@@ -59,7 +73,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const { secret, path } = body as { secret?: string; path?: string }
 
-        if (secret !== REVALIDATION_SECRET) {
+        if (!secret || !isSecretValid(secret, REVALIDATION_SECRET)) {
             return NextResponse.json(
                 { error: 'Invalid revalidation secret' },
                 { status: 401 }

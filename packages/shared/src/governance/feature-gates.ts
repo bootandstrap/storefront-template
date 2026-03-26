@@ -12,16 +12,18 @@
  * Kept as a union type (not enum) for lightweight usage across repos.
  */
 export type ModuleKey =
-    | 'ecommerce'
-    | 'sales_channels'
-    | 'email_marketing'
-    | 'seo'
-    | 'i18n'
     | 'auth_advanced'
-    | 'crm'
-    | 'rrss'
     | 'automation'
+    | 'capacidad'
     | 'chatbot'
+    | 'crm'
+    | 'ecommerce'
+    | 'email_marketing'
+    | 'i18n'
+    | 'pos'
+    | 'rrss'
+    | 'sales_channels'
+    | 'seo'
 
 /**
  * Entry in the FEATURE_GATE_MAP — maps a feature flag to its owning module

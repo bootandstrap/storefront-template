@@ -21,14 +21,14 @@ export function reportDegradedMode(tenantId: string, message: string): void {
     )
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (supabaseUrl && serviceKey) {
+    const anonKey = process.env.GOVERNANCE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (supabaseUrl && anonKey) {
         fetch(`${supabaseUrl}/rest/v1/tenant_errors`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                apikey: serviceKey,
-                Authorization: `Bearer ${serviceKey}`,
+                apikey: anonKey,
+                Authorization: `Bearer ${anonKey}`,
                 Prefer: 'return=minimal',
             },
             body: JSON.stringify({

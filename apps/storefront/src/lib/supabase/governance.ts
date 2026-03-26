@@ -46,26 +46,19 @@ export function createGovernanceClient() {
 
     const url = process.env.GOVERNANCE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 
-    // Phase 4.1: Prefer anon key (RPC path) — eliminates need for service_role in storefronts
-    const serviceKey = process.env.GOVERNANCE_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+    // Phase 4.1: Prefer governance-specific anon key, fall back to common anon key
     const anonKey = process.env.GOVERNANCE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    // Determine which key to use: prefer anon (RPC mode) if both are available,
-    // but fall back to service_role if anon is not available
-    let key: string
-    if (anonKey && url) {
-        key = anonKey
-        globalForGovernance.__governanceMode = 'rpc'
-    } else if (serviceKey && url) {
-        key = serviceKey
-        globalForGovernance.__governanceMode = 'direct'
-        console.warn('[governance] Using service_role key (legacy mode). Set NEXT_PUBLIC_SUPABASE_ANON_KEY for RPC mode.')
-    } else {
+    if (!anonKey || !url) {
         throw new Error(
-            '[governance-client] NEXT_PUBLIC_SUPABASE_URL and ' +
-            'NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY as fallback) are required'
+            '[governance-client] GOVERNANCE_SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) ' +
+            'and NEXT_PUBLIC_SUPABASE_URL are required. ' +
+            'SUPABASE_SERVICE_ROLE_KEY is no longer accepted (removed 2026-03-26, see audit §C-1).'
         )
     }
+
+    const key = anonKey
+    globalForGovernance.__governanceMode = 'rpc'
 
     globalForGovernance.__supabaseGovernanceClient = createSupabaseClient<GovernanceDatabase>(url, key, {
         auth: {

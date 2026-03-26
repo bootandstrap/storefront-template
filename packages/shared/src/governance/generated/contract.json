@@ -264,7 +264,7 @@
         "name": "Tienda Online",
         "icon": "🛍️",
         "description": "Catálogo, carrito, checkout, cuentas de cliente y panel de gestión",
-        "category": "core",
+        "category": "sell",
         "popular": true,
         "requires": [],
         "tiers": [
@@ -314,7 +314,7 @@
         "name": "Canales de Venta y Pago",
         "icon": "💬",
         "description": "WhatsApp, tarjeta, efectivo, transferencia y más canales de venta",
-        "category": "channels",
+        "category": "sell",
         "popular": true,
         "requires": [
           "ecommerce"
@@ -397,7 +397,7 @@
         "name": "CRM",
         "icon": "📁",
         "description": "Gestión de contactos, clientes e interacciones",
-        "category": "intelligence",
+        "category": "engage",
         "popular": false,
         "requires": [],
         "tiers": [
@@ -530,7 +530,7 @@
         "name": "Multi-idioma y Moneda",
         "icon": "🌐",
         "description": "Soporte multilingüe y multi-moneda (independiente)",
-        "category": "advanced",
+        "category": "automate",
         "popular": false,
         "requires": [],
         "tiers": [
@@ -583,7 +583,7 @@
         "name": "Auth Avanzada",
         "icon": "🛡️",
         "description": "Login social con Google y otros proveedores OAuth",
-        "category": "advanced",
+        "category": "automate",
         "popular": false,
         "requires": [],
         "tiers": [
@@ -622,7 +622,7 @@
         "name": "Email Marketing",
         "icon": "📧",
         "description": "Emails transaccionales, abandono de carrito y campañas",
-        "category": "marketing",
+        "category": "grow",
         "popular": true,
         "requires": [],
         "tiers": [
@@ -669,7 +669,7 @@
         "name": "Punto de Venta",
         "icon": "🏪",
         "description": "Terminal POS web con escáner, recibos, modo kiosco y draft orders de Medusa",
-        "category": "channels",
+        "category": "sell",
         "popular": true,
         "requires": [
           "ecommerce"
@@ -722,7 +722,7 @@
         "name": "Capacidad de Tráfico",
         "icon": "📊",
         "description": "Amplía la capacidad de peticiones diarias y añade analítica de tráfico para tu web",
-        "category": "infrastructure",
+        "category": "automate",
         "popular": false,
         "requires": [],
         "tiers": [

@@ -52,3 +52,7 @@ export type { ModuleKey, FeatureGateEntry } from './feature-gates'
 
 // Limitable resource types (plan limit keys)
 export type { LimitableResource, LimitCheckResult } from './limitable-resources'
+
+// Governance Adapter (Strategy pattern for multi-environment parity)
+export { createGovernanceAdapter } from './adapter'
+export type { GovernanceAdapter, ActiveModule, GovernanceModeEnv } from './adapter'
