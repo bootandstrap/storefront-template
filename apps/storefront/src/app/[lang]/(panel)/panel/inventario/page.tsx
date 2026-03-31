@@ -11,6 +11,8 @@ import { getDictionary, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getInventoryItems, getLowStockItems, getStockLocations } from '@/lib/medusa/admin-inventory'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Warehouse } from 'lucide-react'
 import InventoryClient from './InventoryClient'
 
 export const dynamic = 'force-dynamic'
@@ -62,6 +64,12 @@ export default async function InventoryPage({
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={labels.title}
+                subtitle={labels.subtitle}
+                icon={<Warehouse className="w-5 h-5" />}
+                badge={inventoryData.inventory_items.length}
+            />
             <InventoryClient
                 items={inventoryData.inventory_items}
                 lowStockItems={lowStockData}

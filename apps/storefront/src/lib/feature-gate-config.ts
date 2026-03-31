@@ -73,8 +73,10 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_newsletter:          ['email_marketing', 'newsletter'],
     // ── SEO / Analytics ───────────────────────────────────────
     enable_analytics:           ['seo', 'analytics'],
+    enable_seo:                 ['seo', 'seo'],
     // ── RRSS ──────────────────────────────────────────────────
     enable_social_links:        ['rrss', 'socialLinks'],
+    enable_social_media:        ['rrss', 'socialMedia'],
     // ── POS ───────────────────────────────────────────────────
     enable_pos:                 ['pos', 'pos'],
     enable_pos_kiosk:           ['pos', 'posKiosk'],
@@ -88,6 +90,11 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_pos_shifts:          ['pos', 'posShifts'],
     // ── Automation ────────────────────────────────────────────
     enable_admin_api:           ['automation', 'adminApi'],
+    enable_automations:         ['automation', 'automations'],
+    // ── Auth Advanced ────────────────────────────────────────
+    enable_auth_advanced:       ['auth_advanced', 'authAdvanced'],
+    // ── Sales Channels ───────────────────────────────────────
+    enable_sales_channels:      ['sales_channels', 'salesChannels'],
     // ── Capacidad (Traffic) ───────────────────────────────────
     enable_traffic_expansion:   ['capacidad', 'trafficExpansion'],
     enable_traffic_analytics:   ['capacidad', 'trafficAnalytics'],

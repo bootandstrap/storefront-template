@@ -61,6 +61,11 @@ const mockFlags: FeatureFlags = {
     enable_traffic_expansion: false,
     enable_traffic_analytics: false,
     enable_traffic_autoscale: false,
+    enable_seo: false,
+    enable_social_media: false,
+    enable_automations: false,
+    enable_auth_advanced: false,
+    enable_sales_channels: false,
 }
 
 describe('isFeatureEnabled', () => {

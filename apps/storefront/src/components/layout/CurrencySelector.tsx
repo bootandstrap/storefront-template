@@ -69,7 +69,7 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency, ma
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen(!open)}
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-primary hover:bg-surface-1 transition-all ${isPending ? 'opacity-50' : ''
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-tx-sec hover:text-brand hover:bg-sf-1 transition-all ${isPending ? 'opacity-50' : ''
                     }`}
                 aria-label="Change currency"
                 disabled={isPending}
@@ -79,7 +79,7 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency, ma
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-1 py-1 min-w-[180px] glass-strong rounded-xl border border-surface-3/50 shadow-xl z-50 animate-slide-up">
+                <div className="absolute right-0 top-full mt-1 py-1 min-w-[180px] glass-strong rounded-xl border border-sf-3 shadow-xl z-50 animate-slide-up">
                     {currencies.map((c) => {
                         const isActive = c.code === currentCurrency
                         return (
@@ -87,15 +87,15 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency, ma
                                 key={c.code}
                                 onClick={() => switchCurrency(c)}
                                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isActive
-                                    ? 'bg-primary/10 text-primary font-semibold'
-                                    : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
+                                    ? 'bg-brand-subtle text-brand font-semibold'
+                                    : 'text-tx-sec hover:bg-sf-1 hover:text-tx'
                                     }`}
                             >
                                 <span className="text-lg">{c.flag}</span>
                                 <span>{c.name}</span>
-                                <span className="ml-auto text-text-muted text-xs uppercase">{c.symbol}</span>
+                                <span className="ml-auto text-tx-muted text-xs uppercase">{c.symbol}</span>
                                 {isActive && (
-                                    <span className="text-primary text-xs">✓</span>
+                                    <span className="text-brand text-xs">✓</span>
                                 )}
                             </button>
                         )

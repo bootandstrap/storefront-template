@@ -296,34 +296,58 @@ export async function POST(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Complete cart in Medusa
+// Helper: Complete cart in Medusa (with exponential backoff retry)
 // ---------------------------------------------------------------------------
 
+const MAX_RETRIES = 3
+const INITIAL_BACKOFF_MS = 1000
+
 async function completeCartInMedusa(cartId: string): Promise<boolean> {
-    try {
-        const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 
-        const res = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/complete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
-            },
-        })
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const res = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
+                },
+            })
 
-        if (!res.ok) {
+            if (res.ok) {
+                const data = await res.json()
+                console.log(`[stripe-webhook] Cart ${cartId} completed → Order ${data.order?.id} (attempt ${attempt + 1})`)
+                return true
+            }
+
+            // 409 = already completed — treat as success
+            if (res.status === 409) {
+                console.log(`[stripe-webhook] Cart ${cartId} already completed (409)`)
+                return true
+            }
+
             const text = await res.text()
-            console.error(`[stripe-webhook] Failed to complete cart ${cartId}:`, text)
-            return false
+            console.error(`[stripe-webhook] Cart ${cartId} completion attempt ${attempt + 1}/${MAX_RETRIES + 1} failed (${res.status}):`, text)
+
+            // Don't retry on client errors (4xx except 409)
+            if (res.status >= 400 && res.status < 500) {
+                return false
+            }
+        } catch (err) {
+            console.error(`[stripe-webhook] Cart ${cartId} completion attempt ${attempt + 1}/${MAX_RETRIES + 1} error:`, err)
         }
 
-        const data = await res.json()
-        console.log(`[stripe-webhook] Cart ${cartId} completed → Order ${data.order?.id}`)
-        return true
-    } catch (err) {
-        console.error(`[stripe-webhook] Error completing cart ${cartId}:`, err)
-        return false
+        // Exponential backoff before retry
+        if (attempt < MAX_RETRIES) {
+            const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt)
+            console.log(`[stripe-webhook] Retrying cart ${cartId} in ${backoff}ms...`)
+            await new Promise(resolve => setTimeout(resolve, backoff))
+        }
     }
+
+    console.error(`[stripe-webhook] Cart ${cartId} completion exhausted all ${MAX_RETRIES + 1} attempts`)
+    return false
 }
 
 /**

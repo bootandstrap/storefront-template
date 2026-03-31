@@ -22,6 +22,7 @@ import SmartTip from '@/components/panel/SmartTip'
 import SectionHeader from '@/components/panel/SectionHeader'
 import ActivityFeed, { type ActivityEvent } from '@/components/panel/ActivityFeed'
 import PanelBadge from '@/components/panel/PanelBadge'
+import DashboardChart from './DashboardChart'
 import PanelTable, { PanelThead, PanelTbody, PanelTr, PanelTh, PanelTd } from '@/components/panel/PanelTable'
 import {
     Package,
@@ -129,6 +130,33 @@ export default async function PanelDashboard({
             }
         }
         return data
+    })()
+
+    // Chart data — revenue + orders by day (last 7 days)
+    const revenueByDay = (() => {
+        const days: { date: string; revenue: number }[] = []
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date()
+            d.setDate(d.getDate() - i)
+            const dateStr = d.toISOString().split('T')[0]
+            const dayRevenue = recentOrders
+                .filter(o => o.created_at?.startsWith(dateStr))
+                .reduce((sum, o) => sum + (o.total ?? 0), 0)
+            days.push({ date: dateStr, revenue: dayRevenue })
+        }
+        return days
+    })()
+
+    const ordersByDay = (() => {
+        const days: { date: string; orders: number }[] = []
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date()
+            d.setDate(d.getDate() - i)
+            const dateStr = d.toISOString().split('T')[0]
+            const count = recentOrders.filter(o => o.created_at?.startsWith(dateStr)).length
+            days.push({ date: dateStr, orders: count })
+        }
+        return days
     })()
 
     // Usage meter data
@@ -339,23 +367,23 @@ export default async function PanelDashboard({
 
             {/* Welcome Banner */}
             <div className="glass-strong rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/3 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-subtle via-transparent to-brand-subtle pointer-events-none" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary">
+                        <h1 className="text-2xl md:text-3xl font-bold font-display text-tx">
                             {t('panel.dashboard.title')}
                         </h1>
-                        <p className="text-text-muted mt-1">
+                        <p className="text-tx-muted mt-1">
                             {t('panel.dashboard.subtitle')}
                         </p>
                     </div>
                     {storeConfig.onboarding_completed && (
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-0/80 border border-surface-2">
+                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-glass-heavy border border-sf-2">
                             <div className={`w-2.5 h-2.5 rounded-full ${
                                 readiness.score >= 80 ? 'bg-success' :
                                 readiness.score >= 40 ? 'bg-warning' : 'bg-error'
                             }`} />
-                            <span className="text-sm font-medium text-text-secondary">
+                            <span className="text-sm font-medium text-tx-sec">
                                 {readiness.score}% {t('storeHealth.title')}
                             </span>
                         </div>
@@ -408,7 +436,7 @@ export default async function PanelDashboard({
 
                     {/* Achievements — takes 2 columns */}
                     <div className="lg:col-span-2 glass rounded-2xl p-5">
-                        <h3 className="text-sm font-bold text-text-primary mb-3">
+                        <h3 className="text-sm font-bold text-tx mb-3">
                             🏆 {t('achievement.title')}
                         </h3>
                         <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
@@ -419,13 +447,13 @@ export default async function PanelDashboard({
                                     className={`achievement-badge ${ach.unlocked ? 'unlocked' : 'locked'}`}
                                 >
                                     <span className="text-xl">{ach.emoji}</span>
-                                    <span className="text-[9px] text-text-muted leading-tight line-clamp-1">
+                                    <span className="text-[9px] text-tx-muted leading-tight line-clamp-1">
                                         {t(ach.titleKey)}
                                     </span>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs text-text-muted mt-3">
+                        <p className="text-xs text-tx-muted mt-3">
                             {unlockedIds.length}/{ACHIEVEMENT_DEFS.length} {t('achievement.unlocked')}
                         </p>
                     </div>
@@ -516,6 +544,25 @@ export default async function PanelDashboard({
                 </div>
             </div>
 
+            {/* ── Revenue & Orders Chart ── */}
+            <div>
+                <SectionHeader
+                    title={t('panel.stats.chart') || 'Revenue Overview'}
+                    icon={<BarChart3 className="w-4.5 h-4.5" />}
+                />
+                <DashboardChart
+                    revenueByDay={revenueByDay}
+                    ordersByDay={ordersByDay}
+                    currency={currency}
+                    lang={lang}
+                    labels={{
+                        revenue: t('panel.stats.revenue') || 'Revenue',
+                        orders: t('panel.stats.ordersMonth') || 'Orders',
+                        chartTitle: t('panel.stats.chart') || 'Revenue Overview',
+                    }}
+                />
+            </div>
+
             {/* ── Quick Actions ── */}
             <div>
                 <SectionHeader
@@ -527,7 +574,7 @@ export default async function PanelDashboard({
                         <Link
                             key={action.href}
                             href={action.href}
-                            className="quick-action min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="quick-action min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                         >
                             <div className="quick-action-icon">
                                 {action.icon}
@@ -584,7 +631,7 @@ export default async function PanelDashboard({
                         recentOrders.length > 0 ? (
                             <Link
                                 href={`/${lang}/panel/pedidos`}
-                                className="text-sm text-primary hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-2 py-1"
+                                className="text-sm text-brand hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med rounded-lg px-2 py-1"
                             >
                                 {t('panel.dashboard.viewAll') || 'View all'} →
                             </Link>
@@ -615,17 +662,17 @@ export default async function PanelDashboard({
                                     <PanelTr key={order.id} className="cursor-pointer group">
                                         <PanelTd>
                                             <Link href={`/${lang}/panel/pedidos?search=${order.display_id}`} className="block">
-                                                <span className="font-medium text-text-primary">
+                                                <span className="font-medium text-tx">
                                                     #{order.display_id}
                                                 </span>
                                                 {order.created_at && (
-                                                    <span className="text-xs text-text-muted ml-2">
+                                                    <span className="text-xs text-tx-muted ml-2">
                                                         {relativeTime(order.created_at)}
                                                     </span>
                                                 )}
                                             </Link>
                                         </PanelTd>
-                                        <PanelTd className="text-text-secondary">
+                                        <PanelTd className="text-tx-sec">
                                             {order.customer
                                                 ? `${order.customer.first_name ?? ''} ${order.customer.last_name ?? ''}`.trim() || order.customer.email
                                                 : '—'}
@@ -639,7 +686,7 @@ export default async function PanelDashboard({
                                                 {t(`order.${order.status}`) || order.status}
                                             </PanelBadge>
                                         </PanelTd>
-                                        <PanelTd align="right" className="font-medium text-text-primary">
+                                        <PanelTd align="right" className="font-medium text-tx">
                                             {new Intl.NumberFormat(lang, {
                                                 style: 'currency',
                                                 currency: order.currency_code ?? 'usd',

@@ -76,18 +76,18 @@ export default function GuestOrderLookup() {
         <div className="container-page py-12">
             <div className="max-w-md mx-auto">
                 <div className="text-center mb-8">
-                    <Package className="w-12 h-12 text-primary mx-auto mb-3" />
-                    <h1 className="text-2xl font-bold font-display text-text-primary mb-2">
+                    <Package className="w-12 h-12 text-brand mx-auto mb-3" />
+                    <h1 className="text-2xl font-bold font-display text-tx mb-2">
                         {t('order.lookup')}
                     </h1>
-                    <p className="text-sm text-text-secondary">
+                    <p className="text-sm text-tx-sec">
                         {t('order.lookupHint')}
                     </p>
                 </div>
 
                 <form onSubmit={handleSearch} className="glass rounded-2xl p-6 space-y-4">
                     <div>
-                        <label className="text-sm text-text-secondary block mb-1">
+                        <label className="text-sm text-tx-sec block mb-1">
                             {t('auth.email')}
                         </label>
                         <input
@@ -101,7 +101,7 @@ export default function GuestOrderLookup() {
                     </div>
 
                     <div>
-                        <label className="text-sm text-text-secondary block mb-1">
+                        <label className="text-sm text-tx-sec block mb-1">
                             {t('order.number')}
                         </label>
                         <input
@@ -145,7 +145,7 @@ export default function GuestOrderLookup() {
                 {result && (
                     <div className="mt-4 glass rounded-xl p-5 animate-fade-in">
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-lg font-bold text-text-primary">
+                            <span className="text-lg font-bold text-tx">
                                 {t('order.number')}{result.display_id}
                             </span>
                             {(() => {
@@ -159,7 +159,7 @@ export default function GuestOrderLookup() {
                                 )
                             })()}
                         </div>
-                        <div className="text-sm text-text-muted space-y-1">
+                        <div className="text-sm text-tx-muted space-y-1">
                             <p>
                                 {t('order.date')}:{' '}
                                 {new Intl.DateTimeFormat(locale, {
@@ -170,7 +170,7 @@ export default function GuestOrderLookup() {
                             </p>
                             <p>
                                 {t('cart.total')}:{' '}
-                                <span className="font-bold text-primary">
+                                <span className="font-bold text-brand">
                                     {new Intl.NumberFormat(locale, {
                                         style: 'currency',
                                         currency: (result.currency_code || 'USD').toUpperCase(),

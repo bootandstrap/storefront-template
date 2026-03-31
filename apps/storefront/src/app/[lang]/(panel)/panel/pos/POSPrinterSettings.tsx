@@ -111,7 +111,7 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
     }, [paperWidth])
 
     const statusIcon = {
-        disconnected: <WifiOff className="w-4 h-4 text-text-muted" />,
+        disconnected: <WifiOff className="w-4 h-4 text-tx-muted" />,
         connecting: <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />,
         connected: <CheckCircle className="w-4 h-4 text-emerald-500" />,
         error: <AlertCircle className="w-4 h-4 text-rose-500" />,
@@ -139,23 +139,23 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
 
                     {/* Panel */}
                     <motion.div
-                        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-sm bg-surface-0 shadow-2xl overflow-y-auto"
+                        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-sm bg-sf-0 shadow-2xl overflow-y-auto"
                         initial={{ x: '100%' }}
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-sf-2">
                             <div className="flex items-center gap-2">
-                                <Settings2 className="w-5 h-5 text-text-secondary" />
-                                <h2 className="text-base font-bold text-text-primary">
+                                <Settings2 className="w-5 h-5 text-tx-sec" />
+                                <h2 className="text-base font-bold text-tx">
                                     {labels['panel.pos.printerSettings'] || 'Impresora térmica'}
                                 </h2>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-1 text-text-muted transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-sf-1 text-tx-muted transition-colors"
                                 aria-label="Close"
                             >
                                 <X className="w-4 h-4" />
@@ -165,15 +165,15 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                         <div className="p-5 space-y-6">
                             {/* ── Connection status ── */}
                             <section>
-                                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                                <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-wider mb-3">
                                     {labels['panel.pos.connection'] || 'Conexión'}
                                 </h3>
 
-                                <div className="bg-surface-1 rounded-xl p-4 space-y-3">
+                                <div className="bg-sf-1 rounded-xl p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             {statusIcon[status]}
-                                            <span className="text-sm font-medium text-text-primary">
+                                            <span className="text-sm font-medium text-tx">
                                                 {statusLabel[status]}
                                             </span>
                                         </div>
@@ -181,12 +181,12 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                                             status === 'connected' ? 'bg-emerald-500' :
                                             status === 'connecting' ? 'bg-amber-500 animate-pulse' :
                                             status === 'error' ? 'bg-rose-500' :
-                                            'bg-surface-3'
+                                            'bg-sf-3'
                                         }`} />
                                     </div>
 
                                     {device && (
-                                        <div className="text-xs text-text-muted bg-surface-0 rounded-lg px-3 py-2">
+                                        <div className="text-xs text-tx-muted bg-sf-0 rounded-lg px-3 py-2">
                                             <span className="font-mono">{device.name}</span>
                                             <br />
                                             VID: {device.vendorId || '—'} · PID: {device.productId || '—'}
@@ -220,8 +220,8 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                                             onClick={connect}
                                             disabled={!isSerialAvailable || status === 'connecting'}
                                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                                                       bg-primary text-white text-sm font-medium
-                                                       hover:bg-primary-dark transition-colors min-h-[44px]
+                                                       bg-brand text-white text-sm font-medium
+                                                       hover:bg-brand-dark transition-colors min-h-[44px]
                                                        disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             {status === 'connecting' ? (
@@ -237,7 +237,7 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
 
                             {/* ── Paper width ── */}
                             <section>
-                                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                                <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-wider mb-3">
                                     {labels['panel.pos.paperWidth'] || 'Ancho de papel'}
                                 </h3>
                                 <div className="flex gap-2">
@@ -247,8 +247,8 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                                             onClick={() => handlePaperWidth(w)}
                                             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border min-h-[44px] ${
                                                 paperWidth === w
-                                                    ? 'bg-primary/10 text-primary border-primary/30'
-                                                    : 'text-text-muted hover:bg-surface-1 border-surface-3'
+                                                    ? 'bg-brand-subtle text-brand border-brand'
+                                                    : 'text-tx-muted hover:bg-sf-1 border-sf-3'
                                             }`}
                                         >
                                             {w}
@@ -259,18 +259,18 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
 
                             {/* ── Auto-print toggle ── */}
                             <section>
-                                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                                <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-wider mb-3">
                                     {labels['panel.pos.autoPrint'] || 'Impresión automática'}
                                 </h3>
                                 <button
                                     onClick={() => handleAutoPrint(!autoPrint)}
-                                    className="w-full flex items-center justify-between bg-surface-1 rounded-xl px-4 py-3 min-h-[44px]"
+                                    className="w-full flex items-center justify-between bg-sf-1 rounded-xl px-4 py-3 min-h-[44px]"
                                 >
-                                    <span className="text-sm text-text-primary">
+                                    <span className="text-sm text-tx">
                                         {labels['panel.pos.autoPrintDescription'] || 'Imprimir ticket al completar venta'}
                                     </span>
                                     <div className={`w-10 h-6 rounded-full transition-colors relative ${
-                                        autoPrint ? 'bg-primary' : 'bg-surface-3'
+                                        autoPrint ? 'bg-brand' : 'bg-sf-3'
                                     }`}>
                                         <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
                                             autoPrint ? 'translate-x-[18px]' : 'translate-x-0.5'
@@ -282,29 +282,29 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                             {/* ── Actions ── */}
                             {status === 'connected' && (
                                 <section>
-                                    <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                                    <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-wider mb-3">
                                         {labels['panel.pos.actions'] || 'Acciones'}
                                     </h3>
                                     <div className="space-y-2">
                                         <button
                                             onClick={handleTestPrint}
                                             disabled={testPrinting || isPrinting}
-                                            className="w-full flex items-center gap-3 bg-surface-1 hover:bg-surface-2 rounded-xl px-4 py-3 min-h-[44px]
-                                                       text-sm text-text-primary transition-colors disabled:opacity-40"
+                                            className="w-full flex items-center gap-3 bg-sf-1 hover:bg-sf-2 rounded-xl px-4 py-3 min-h-[44px]
+                                                       text-sm text-tx transition-colors disabled:opacity-40"
                                         >
                                             {testPrinting ? (
-                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                <Loader2 className="w-4 h-4 animate-spin text-brand" />
                                             ) : (
-                                                <Receipt className="w-4 h-4 text-text-muted" />
+                                                <Receipt className="w-4 h-4 text-tx-muted" />
                                             )}
                                             {labels['panel.pos.testPrint'] || 'Imprimir ticket de prueba'}
                                         </button>
                                         <button
                                             onClick={openCashDrawer}
-                                            className="w-full flex items-center gap-3 bg-surface-1 hover:bg-surface-2 rounded-xl px-4 py-3 min-h-[44px]
-                                                       text-sm text-text-primary transition-colors"
+                                            className="w-full flex items-center gap-3 bg-sf-1 hover:bg-sf-2 rounded-xl px-4 py-3 min-h-[44px]
+                                                       text-sm text-tx transition-colors"
                                         >
-                                            <Zap className="w-4 h-4 text-text-muted" />
+                                            <Zap className="w-4 h-4 text-tx-muted" />
                                             {labels['panel.pos.openCashDrawer'] || 'Abrir cajón de dinero'}
                                         </button>
                                     </div>
@@ -312,8 +312,8 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                             )}
 
                             {/* ── Help ── */}
-                            <section className="border-t border-surface-2 pt-4">
-                                <div className="text-xs text-text-muted space-y-1">
+                            <section className="border-t border-sf-2 pt-4">
+                                <div className="text-xs text-tx-muted space-y-1">
                                     <p className="font-medium">{labels['panel.pos.printerHelp'] || 'Compatibilidad'}</p>
                                     <p>• {labels['panel.pos.printerHelpBrowser'] || 'Requiere Chrome 89+ o Edge 89+'}</p>
                                     <p>• {labels['panel.pos.printerHelpUSB'] || 'Conecta la impresora por USB'}</p>

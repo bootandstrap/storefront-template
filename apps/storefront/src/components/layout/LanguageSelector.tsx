@@ -58,7 +58,7 @@ export default function LanguageSelector({ activeLanguages, maxLanguages }: Lang
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-primary hover:bg-surface-1 transition-all"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-tx-sec hover:text-brand hover:bg-sf-1 transition-all"
                 aria-label="Change language"
             >
                 <Globe className="w-4 h-4" />
@@ -67,7 +67,7 @@ export default function LanguageSelector({ activeLanguages, maxLanguages }: Lang
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-1 py-1 min-w-[160px] glass-strong rounded-xl border border-surface-3/50 shadow-xl z-50 animate-slide-up">
+                <div className="absolute right-0 top-full mt-1 py-1 min-w-[160px] glass-strong rounded-xl border border-sf-3 shadow-xl z-50 animate-slide-up">
                     {locales.map((l) => {
                         const info = LOCALE_LABELS[l]
                         const isActive = l === locale
@@ -76,14 +76,14 @@ export default function LanguageSelector({ activeLanguages, maxLanguages }: Lang
                                 key={l}
                                 onClick={() => switchLocale(l)}
                                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isActive
-                                    ? 'bg-primary/10 text-primary font-semibold'
-                                    : 'text-text-secondary hover:bg-surface-1 hover:text-text-primary'
+                                    ? 'bg-brand-subtle text-brand font-semibold'
+                                    : 'text-tx-sec hover:bg-sf-1 hover:text-tx'
                                     }`}
                             >
                                 <span className="text-lg">{info.flag}</span>
                                 <span>{info.label}</span>
                                 {isActive && (
-                                    <span className="ml-auto text-primary text-xs">✓</span>
+                                    <span className="ml-auto text-brand text-xs">✓</span>
                                 )}
                             </button>
                         )

@@ -107,7 +107,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                 <button
                                     onClick={() => setShowAlerts(false)}
                                     aria-label="Dismiss alerts"
-                                    className="p-1.5 min-h-[36px] rounded-lg hover:bg-surface-1 text-text-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                    className="p-1.5 min-h-[36px] rounded-lg hover:bg-sf-1 text-tx-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -123,7 +123,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                         <div>
                                             <span className="font-medium text-sm">{item.title || item.sku || 'Unknown'}</span>
                                             {item.sku && (
-                                                <span className="ml-2 text-xs text-text-muted">SKU: {item.sku}</span>
+                                                <span className="ml-2 text-xs text-tx-muted">SKU: {item.sku}</span>
                                             )}
                                         </div>
                                         <span className={`text-sm font-bold ${item.is_out_of_stock ? 'text-red-600' : 'text-amber-600'}`}>
@@ -139,13 +139,13 @@ export default function InventoryClient({ items, lowStockItems, locations, label
 
             {/* Search */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                 <input
                     type="text"
                     placeholder={labels.searchPlaceholder}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:ring-2 focus:ring-soft focus:outline-none transition-all"
                 />
             </div>
 
@@ -157,9 +157,9 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Package className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <p className="text-text-muted text-lg">{labels.noItems}</p>
+                        <p className="text-tx-muted text-lg">{labels.noItems}</p>
                     </div>
                 </motion.div>
             ) : (
@@ -172,13 +172,13 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-surface-1/50 border-b border-surface-3">
-                                    <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.product}</th>
-                                    <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.sku}</th>
-                                    <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.stocked}</th>
-                                    <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.reserved}</th>
-                                    <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.available}</th>
-                                    <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide">{labels.updateStock}</th>
+                                <tr className="bg-glass border-b border-sf-3">
+                                    <th className="text-left px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.product}</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.sku}</th>
+                                    <th className="text-right px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.stocked}</th>
+                                    <th className="text-right px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.reserved}</th>
+                                    <th className="text-right px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.available}</th>
+                                    <th className="text-right px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.updateStock}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-2">
@@ -194,8 +194,8 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                             animate={{ opacity: 1 }}
                                             className={`transition-colors ${
                                                 editingId === item.id
-                                                    ? 'bg-primary/5'
-                                                    : 'hover:bg-surface-1/50'
+                                                    ? 'bg-brand-subtle'
+                                                    : 'hover:bg-glass'
                                             }`}
                                         >
                                             <td className="px-4 py-3">
@@ -207,20 +207,20 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                             className="w-8 h-8 rounded-lg object-cover"
                                                         />
                                                     ) : (
-                                                        <div className="w-8 h-8 rounded-lg bg-surface-1 flex items-center justify-center">
-                                                            <Package className="w-4 h-4 text-text-muted" />
+                                                        <div className="w-8 h-8 rounded-lg bg-sf-1 flex items-center justify-center">
+                                                            <Package className="w-4 h-4 text-tx-muted" />
                                                         </div>
                                                     )}
                                                     <span className="font-medium">{item.title || labels.untitled}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-text-muted font-mono text-xs">
+                                            <td className="px-4 py-3 text-tx-muted font-mono text-xs">
                                                 {item.sku || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-right font-mono">
                                                 {item.stocked_quantity ?? 0}
                                             </td>
-                                            <td className="px-4 py-3 text-right font-mono text-text-muted">
+                                            <td className="px-4 py-3 text-right font-mono text-tx-muted">
                                                 {item.reserved_quantity ?? 0}
                                             </td>
                                             <td className="px-4 py-3 text-right">
@@ -247,7 +247,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                                 min="0"
                                                                 value={editValue}
                                                                 onChange={e => setEditValue(parseInt(e.target.value) || 0)}
-                                                                className="w-20 px-2 py-1.5 min-h-[36px] rounded-lg glass text-right text-sm font-mono focus:ring-2 focus:ring-primary/30 focus:outline-none"
+                                                                className="w-20 px-2 py-1.5 min-h-[36px] rounded-lg glass text-right text-sm font-mono focus:ring-2 focus:ring-soft focus:outline-none"
                                                                 autoFocus
                                                             />
                                                             <button
@@ -261,7 +261,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                             <button
                                                                 onClick={() => setEditingId(null)}
                                                                 aria-label={labels.cancel}
-                                                                className="p-1.5 min-h-[36px] rounded-lg hover:bg-surface-1 text-text-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                                className="p-1.5 min-h-[36px] rounded-lg hover:bg-sf-1 text-tx-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>
@@ -275,7 +275,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                                 setEditingId(item.id)
                                                                 setEditValue(item.stocked_quantity ?? 0)
                                                             }}
-                                                            className="text-xs text-primary hover:text-primary-light font-medium transition-colors min-h-[36px] inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-2"
+                                                            className="text-xs text-brand hover:text-brand-light font-medium transition-colors min-h-[36px] inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med rounded-lg px-2"
                                                         >
                                                             {labels.updateStock}
                                                         </motion.button>

@@ -28,10 +28,10 @@ export default async function LoginPage({
             <div className="w-full max-w-md">
                 <div className="glass-strong rounded-2xl p-8 space-y-6">
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold font-display text-text-primary">
+                        <h1 className="text-2xl font-bold font-display text-tx">
                             {t('auth.login')}
                         </h1>
-                        <p className="text-sm text-text-muted mt-1">
+                        <p className="text-sm text-tx-muted mt-1">
                             {t('auth.loginSubtitle', { store: businessName })}
                         </p>
                     </div>
@@ -47,7 +47,7 @@ export default async function LoginPage({
                     {!emailEnabled && !googleEnabled && (
                         <div className="text-center py-6">
                             <div className="text-4xl mb-3">🔒</div>
-                            <p className="text-sm text-text-muted">
+                            <p className="text-sm text-tx-muted">
                                 {t('auth.noMethodsAvailable')}
                             </p>
                         </div>

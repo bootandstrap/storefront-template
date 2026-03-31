@@ -75,7 +75,7 @@ export default function AddressesClient({
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold font-display text-text-primary">
+                <h1 className="text-2xl font-bold font-display text-tx">
                     {t('account.addresses')}
                 </h1>
                 <button
@@ -93,9 +93,9 @@ export default function AddressesClient({
             {/* Address list */}
             {addresses.length === 0 ? (
                 <div className="glass rounded-xl p-8 text-center">
-                    <MapPin className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                    <p className="text-text-muted text-sm mb-1">{t('address.noAddresses')}</p>
-                    <p className="text-text-muted text-xs">{t('address.noAddressesHint')}</p>
+                    <MapPin className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                    <p className="text-tx-muted text-sm mb-1">{t('address.noAddresses')}</p>
+                    <p className="text-tx-muted text-xs">{t('address.noAddressesHint')}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -150,10 +150,10 @@ export default function AddressesClient({
                         onClick={() => setDeleteConfirm(null)}
                     />
                     <div className="relative glass rounded-2xl p-6 w-full max-w-sm">
-                        <h3 className="text-lg font-bold text-text-primary mb-2">
+                        <h3 className="text-lg font-bold text-tx mb-2">
                             {t('address.confirmDelete') || 'Delete address?'}
                         </h3>
-                        <p className="text-sm text-text-muted mb-4">
+                        <p className="text-sm text-tx-muted mb-4">
                             {t('address.confirmDeleteMessage') || 'This action cannot be undone.'}
                         </p>
                         <div className="flex gap-3">

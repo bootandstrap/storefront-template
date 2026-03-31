@@ -67,6 +67,35 @@ interface StripePaymentFormProps {
 }
 
 // ---------------------------------------------------------------------------
+// Error mapping — user-friendly messages for common Stripe decline codes
+// ---------------------------------------------------------------------------
+
+type StripeFormTranslations = StripePaymentFormProps['translations']
+
+function mapStripeError(error: { type?: string; code?: string; decline_code?: string; message?: string | null }, t: StripeFormTranslations): string {
+    // Common decline codes → actionable messages
+    const declineMap: Record<string, string> = {
+        insufficient_funds: 'Insufficient funds — please try another card',
+        card_declined: 'Card declined — please try another payment method',
+        expired_card: 'Card expired — please use a valid card',
+        incorrect_cvc: 'Incorrect security code (CVC)',
+        processing_error: 'Processing error — please try again in a moment',
+        authentication_required: 'Authentication required — please complete verification',
+    }
+
+    if (error.decline_code && declineMap[error.decline_code]) {
+        return declineMap[error.decline_code]
+    }
+
+    // Stripe error types
+    if (error.type === 'card_error' || error.type === 'validation_error') {
+        return error.message ?? t.paymentError
+    }
+
+    return error.message ?? t.unexpectedError
+}
+
+// ---------------------------------------------------------------------------
 // Inner form (must be inside <Elements>)
 // ---------------------------------------------------------------------------
 
@@ -86,6 +115,7 @@ function StripePaymentForm({
 
     // Shared payment confirmation — single source of truth
     // Used by both card form submit AND express checkout (Apple Pay / Google Pay)
+    // Handles SCA/3DS via redirect: 'if_required'
     async function confirmAndComplete() {
         if (!stripe || !elements) return
         setIsProcessing(true)
@@ -101,12 +131,39 @@ function StripePaymentForm({
             })
 
             if (error) {
-                const msg = error.message ?? t.paymentError
+                // Map common Stripe error codes to user-friendly messages
+                const msg = mapStripeError(error, t)
                 setErrorMessage(msg)
                 onError(msg)
-            } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-                setIsComplete(true)
-                onSuccess(paymentIntent.id)
+                return
+            }
+
+            if (!paymentIntent) {
+                setErrorMessage(t.unexpectedError)
+                onError(t.unexpectedError)
+                return
+            }
+
+            switch (paymentIntent.status) {
+                case 'succeeded':
+                    setIsComplete(true)
+                    onSuccess(paymentIntent.id)
+                    break
+                case 'processing':
+                    // Payment is still processing (e.g., bank debit)
+                    setIsComplete(true)
+                    onSuccess(paymentIntent.id)
+                    break
+                case 'requires_action':
+                    // SCA/3DS was required and the redirect didn't happen
+                    // This shouldn't normally happen with redirect: 'if_required'
+                    // but we handle it gracefully
+                    setErrorMessage(t.paymentError)
+                    onError('Authentication required — please try again')
+                    break
+                default:
+                    setErrorMessage(t.paymentError)
+                    onError(`Payment status: ${paymentIntent.status}`)
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : t.unexpectedError
@@ -121,8 +178,8 @@ function StripePaymentForm({
         return (
             <div className="text-center py-6 animate-fade-in">
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-text-primary mb-1">{t.paymentSuccess}</h3>
-                <p className="text-sm text-text-secondary">
+                <h3 className="text-lg font-bold text-tx mb-1">{t.paymentSuccess}</h3>
+                <p className="text-sm text-tx-sec">
                     {t.orderConfirmed}
                 </p>
             </div>
@@ -150,9 +207,9 @@ function StripePaymentForm({
             {/* Divider — only show if express methods are available */}
             {expressAvailable && (
                 <div className="flex items-center gap-3 my-2">
-                    <div className="flex-1 h-px bg-surface-3" />
-                    <span className="text-xs text-text-muted">{t.orPayWithCard}</span>
-                    <div className="flex-1 h-px bg-surface-3" />
+                    <div className="flex-1 h-px bg-sf-3" />
+                    <span className="text-xs text-tx-muted">{t.orPayWithCard}</span>
+                    <div className="flex-1 h-px bg-sf-3" />
                 </div>
             )}
 
@@ -162,6 +219,7 @@ function StripePaymentForm({
                     options={{
                         layout: 'accordion',
                     }}
+                    onChange={() => setErrorMessage(null)}
                 />
 
                 {errorMessage && (
@@ -189,7 +247,7 @@ function StripePaymentForm({
                     )}
                 </button>
 
-                <p className="text-xs text-text-muted text-center">
+                <p className="text-xs text-tx-muted text-center">
                     {t.securePaymentNote}
                 </p>
             </form>
@@ -232,14 +290,16 @@ export default function StripeCheckoutFlow({
         orPayWithCard: t('checkout.stripe.orPayWithCard'),
     }
 
-    // Build Stripe Appearance matching SOTA design system
+    // Build Stripe Appearance matching SOTA design system (theme-aware)
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+
     const appearance: Appearance = {
-        theme: 'flat',
+        theme: isDark ? 'night' : 'flat',
         variables: {
             colorPrimary: config.primary_color || '#2D5016',
-            colorBackground: 'rgba(255, 255, 255, 0.05)',
-            colorText: '#e0e0e0',
-            colorTextSecondary: '#a0a0a0',
+            colorBackground: isDark ? '#1a2e12' : '#ffffff',
+            colorText: isDark ? '#e8f0e0' : '#1a2e0a',
+            colorTextSecondary: isDark ? '#a3b89a' : '#6b7d5c',
             colorDanger: '#ef4444',
             borderRadius: '12px',
             fontFamily: 'Inter, system-ui, sans-serif',
@@ -248,8 +308,8 @@ export default function StripeCheckoutFlow({
         },
         rules: {
             '.Input': {
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8faf6',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8df',
                 boxShadow: 'none',
                 transition: 'border-color 0.2s ease',
             },
@@ -258,15 +318,15 @@ export default function StripeCheckoutFlow({
                 boxShadow: `0 0 0 1px ${config.primary_color || '#2D5016'}33`,
             },
             '.Label': {
-                color: '#a0a0a0',
+                color: isDark ? '#a3b89a' : '#6b7d5c',
                 fontWeight: '500',
             },
             '.Tab': {
-                backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#f0f4ec',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8df',
             },
             '.Tab--selected': {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
                 border: `1px solid ${config.primary_color || '#2D5016'}`,
             },
         },
@@ -275,8 +335,8 @@ export default function StripeCheckoutFlow({
     if (loading) {
         return (
             <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
-                <span className="ml-2 text-sm text-text-muted">
+                <Loader2 className="w-6 h-6 animate-spin text-tx-muted" />
+                <span className="ml-2 text-sm text-tx-muted">
                     {t('checkout.stripe.loadingForm')}
                 </span>
             </div>

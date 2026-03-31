@@ -12,7 +12,7 @@
 
 import { useReducer, useCallback, useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
-import { Maximize, Minimize, Wifi, WifiOff, CloudUpload, Receipt, BarChart3, Clock, User, RotateCcw, PauseCircle, ShoppingCart, X as XIcon, LogOut, Printer } from 'lucide-react'
+import { Maximize, Minimize, Wifi, WifiOff, CloudUpload, Receipt, BarChart3, Clock, User, RotateCcw, PauseCircle, ShoppingCart, X as XIcon, LogOut, Printer, Heart, FileText, Split } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     cartReducer,
@@ -26,6 +26,7 @@ import {
     type POSPanelView,
     type POSShift,
     type POSRefund,
+    type POSSaleRecord,
 } from '@/lib/pos/pos-config'
 import type { FeatureFlags, PlanLimits } from '@/lib/config'
 import { charge } from '@/lib/pos/payments/payment-adapter'
@@ -51,6 +52,9 @@ const POSRefundModal = lazy(() => import('./POSRefundModal'))
 const POSRefundReceipt = lazy(() => import('./POSRefundReceipt'))
 const POSParkedSales = lazy(() => import('./POSParkedSales'))
 const POSPrinterSettings = lazy(() => import('./POSPrinterSettings'))
+const POSSplitPayment = lazy(() => import('./POSSplitPayment'))
+const POSLoyaltyCard = lazy(() => import('./POSLoyaltyCard'))
+const POSEndOfDayReport = lazy(() => import('./POSEndOfDayReport'))
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -88,6 +92,8 @@ export default function POSClient({
     const [serverProducts, setServerProducts] = useState<any[]>([])
     const [parkedSalesCount, setParkedSalesCount] = useState(0)
     const [mobileCartOpen, setMobileCartOpen] = useState(false)
+    const [shiftHistory, setShiftHistory] = useState<POSShift[]>([])
+    const [couponCode, setCouponCode] = useState<string | undefined>(undefined)
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const router = useRouter()
 
@@ -117,6 +123,9 @@ export default function POSClient({
     const canThermalPrint = featureFlags.enable_pos_thermal_printer === true
     const canLineDiscounts = featureFlags.enable_pos_line_discounts === true
     const canCustomerSearch = featureFlags.enable_pos_customer_search === true
+    const canSplitPayment = canAccessDashboard  // Enterprise gated
+    const canLoyalty = canAccessShifts           // Pro+ gated
+    const canEndOfDay = canAccessDashboard       // Enterprise gated
 
     // ── Format helper ──
     const formatCurrency = useCallback(
@@ -349,6 +358,14 @@ export default function POSClient({
                 setCompletedSale(sale)
                 setPaymentState({ status: 'idle' })
                 localStorage.removeItem('pos_cart')
+                setCouponCode(undefined)
+
+                // Record co-occurrence for "Frequently bought together" recommendations
+                if (cart.items.length >= 2) {
+                    import('./POSRecommendations').then(mod => {
+                        mod.recordCoOccurrence(cart.items.map(i => ({ title: i.title })))
+                    }).catch(() => { /* non-critical */ })
+                }
             }, 1500)
         } else {
             playError()
@@ -597,26 +614,56 @@ export default function POSClient({
         setParkedSalesCount(getParkedSales().length)
     }, [])
 
+    // ── Load shift history for End-of-Day ──
+    useEffect(() => {
+        if (!canAccessShifts) return
+        import('@/lib/pos/shifts/shift-manager').then(mod => {
+            mod.getShiftHistory(20).then(setShiftHistory)
+        }).catch(() => {})
+    }, [canAccessShifts, currentShift])
+
+    // ── Coupon handlers ──
+    const handleCouponApply = useCallback((discount: POSDiscount, code: string) => {
+        dispatch({ type: 'SET_DISCOUNT', discount })
+        setCouponCode(code)
+    }, [])
+
+    const handleCouponRemove = useCallback(() => {
+        dispatch({ type: 'SET_DISCOUNT', discount: null })
+        setCouponCode(undefined)
+    }, [])
+
+    // ── Split payment handler ──
+    const handleSplitPaymentConfirm = useCallback((entries: { method: PaymentMethod; amount: number }[]) => {
+        // Use the first method as primary for the sale record
+        if (entries.length > 0) {
+            dispatch({ type: 'SET_PAYMENT', method: entries[0].method })
+        }
+        setPanelView(null)
+        // Proceed with charge
+        handleCharge()
+    }, [handleCharge])
+
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDER
     // ═══════════════════════════════════════════════════════════════════════════
 
     return (
-        <PageEntrance className="h-full max-h-full flex flex-col overflow-hidden bg-surface-0 print:hidden">
+        <PageEntrance className="h-full max-h-full flex flex-col overflow-hidden bg-sf-0 print:hidden">
             {/* ── POS Toolbar ── */}
-            <div className="flex items-center justify-between px-3 md:px-5 py-2.5 border-b border-surface-2 bg-surface-0/80 backdrop-blur-xl flex-shrink-0">
+            <div className="flex items-center justify-between px-3 md:px-5 py-2.5 border-b border-sf-2 bg-glass-heavy backdrop-blur-xl flex-shrink-0">
                 {/* Left: Exit + Title + Status */}
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleExitPOS}
-                        className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-surface-1 text-text-secondary
+                        className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-sf-1 text-tx-sec
                                    flex items-center justify-center transition-colors
-                                   focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                         title={posLabel('panel.pos.exitPOS', labels) || 'Salir del POS'}
                     >
                         <LogOut className="w-5 h-5" />
                     </button>
-                    <h1 className="text-sm font-bold text-text-primary tracking-tight uppercase">
+                    <h1 className="text-sm font-bold text-tx tracking-tight uppercase">
                         ⚡ {posLabel('panel.pos.title', labels)}
                     </h1>
 
@@ -663,25 +710,25 @@ export default function POSClient({
                 <div className="flex items-center gap-1">
                     {/* Last sync */}
                     {lastSyncTime && (
-                        <span className="hidden lg:flex items-center text-[10px] text-text-muted mr-2">
+                        <span className="hidden lg:flex items-center text-[10px] text-tx-muted mr-2">
                             {posLabel('panel.pos.lastSync', labels)}: {lastSyncTime.toLocaleTimeString()}
                         </span>
                     )}
 
                     {/* Panel nav buttons */}
-                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-1/60">
+                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-glass">
                         {/* History (Pro — derived from shifts) */}
                         <button
                             onClick={() => canAccessHistory && setPanelView(v => v === 'history' ? null : 'history')}
                             disabled={!canAccessHistory}
                             aria-label={posLabel('panel.pos.history', labels)}
                             className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 !canAccessHistory
-                                    ? 'text-text-muted/40 cursor-not-allowed'
+                                    ? 'text-tx-faint cursor-not-allowed'
                                     : panelView === 'history'
-                                        ? 'bg-primary text-white shadow-sm'
-                                        : 'text-text-secondary hover:bg-surface-2/80'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'text-tx-sec hover:bg-glass-heavy'
                             }`}
                             title={canAccessHistory
                                 ? `${posLabel('panel.pos.history', labels)}${canShortcuts ? ' (F3)' : ''}`
@@ -697,12 +744,12 @@ export default function POSClient({
                             disabled={!canAccessDashboard}
                             aria-label={posLabel('panel.pos.dashboard', labels)}
                             className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 !canAccessDashboard
-                                    ? 'text-text-muted/40 cursor-not-allowed'
+                                    ? 'text-tx-faint cursor-not-allowed'
                                     : panelView === 'dashboard'
-                                        ? 'bg-primary text-white shadow-sm'
-                                        : 'text-text-secondary hover:bg-surface-2/80'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'text-tx-sec hover:bg-glass-heavy'
                             }`}
                             title={canAccessDashboard
                                 ? `${posLabel('panel.pos.dashboard', labels)}${canShortcuts ? ' (F5)' : ''}`
@@ -718,12 +765,12 @@ export default function POSClient({
                             disabled={!canAccessShifts}
                             aria-label={posLabel('panel.pos.shift', labels)}
                             className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 !canAccessShifts
-                                    ? 'text-text-muted/40 cursor-not-allowed'
+                                    ? 'text-tx-faint cursor-not-allowed'
                                     : panelView === 'shift'
-                                        ? 'bg-primary text-white shadow-sm'
-                                        : 'text-text-secondary hover:bg-surface-2/80'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'text-tx-sec hover:bg-glass-heavy'
                             }`}
                             title={canAccessShifts
                                 ? posLabel('panel.pos.shift', labels)
@@ -737,10 +784,10 @@ export default function POSClient({
                             onClick={() => setPanelView(v => v === 'parkedSales' ? null : 'parkedSales')}
                             aria-label={posLabel('panel.pos.parkedSales', labels)}
                             className={`relative p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 panelView === 'parkedSales'
-                                    ? 'bg-primary text-white shadow-sm'
-                                    : 'text-text-secondary hover:bg-surface-2/80'
+                                    ? 'bg-brand text-white shadow-sm'
+                                    : 'text-tx-sec hover:bg-glass-heavy'
                             }`}
                             title={posLabel('panel.pos.parkedSales', labels)}
                         >
@@ -752,30 +799,72 @@ export default function POSClient({
                                 </span>
                             )}
                         </button>
+
+                        {/* Loyalty (Pro+) */}
+                        <button
+                            onClick={() => canLoyalty && setPanelView(v => v === 'loyalty' ? null : 'loyalty')}
+                            disabled={!canLoyalty}
+                            aria-label={posLabel('panel.pos.loyaltyCard', labels)}
+                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
+                                !canLoyalty
+                                    ? 'text-tx-faint cursor-not-allowed'
+                                    : panelView === 'loyalty'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'text-tx-sec hover:bg-glass-heavy'
+                            }`}
+                            title={canLoyalty
+                                ? posLabel('panel.pos.loyaltyCard', labels)
+                                : getUpsellTooltip('enable_pos_shifts', labels)
+                            }
+                        >
+                            <Heart className="w-4 h-4" />
+                        </button>
+
+                        {/* End-of-Day Report (Enterprise) */}
+                        <button
+                            onClick={() => canEndOfDay && setPanelView(v => v === 'endOfDay' ? null : 'endOfDay')}
+                            disabled={!canEndOfDay}
+                            aria-label={posLabel('panel.pos.endOfDayReport', labels)}
+                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
+                                !canEndOfDay
+                                    ? 'text-tx-faint cursor-not-allowed'
+                                    : panelView === 'endOfDay'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'text-tx-sec hover:bg-glass-heavy'
+                            }`}
+                            title={canEndOfDay
+                                ? posLabel('panel.pos.endOfDayReport', labels)
+                                : getUpsellTooltip('enable_pos_thermal_printer', labels)
+                            }
+                        >
+                            <FileText className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {/* Keyboard hints (only if shortcuts enabled) */}
                     {canShortcuts && (
-                        <div className="hidden xl:flex items-center gap-1 text-[10px] text-text-muted ml-2">
-                            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono text-[9px]">F2</kbd>
+                        <div className="hidden xl:flex items-center gap-1 text-[10px] text-tx-muted ml-2">
+                            <kbd className="px-1.5 py-0.5 rounded bg-sf-2 font-mono text-[9px]">F2</kbd>
                             <span>{posLabel('panel.pos.search', labels).split('…')[0]}</span>
                             <span className="mx-0.5 opacity-40">·</span>
-                            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono text-[9px]">F3</kbd>
+                            <kbd className="px-1.5 py-0.5 rounded bg-sf-2 font-mono text-[9px]">F3</kbd>
                             <span>{posLabel('panel.pos.history', labels)}</span>
                         </div>
                     )}
 
                     {/* Divider + Kiosk (gated) */}
-                    <div className="w-px h-5 bg-surface-3 mx-1.5" />
+                    <div className="w-px h-5 bg-sf-3 mx-1.5" />
                     <button
                         onClick={toggleKiosk}
                         disabled={!canKiosk}
                         aria-label={posLabel('panel.pos.kioskMode', labels)}
                         className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center
-                                   focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                             !canKiosk
-                                ? 'text-text-muted/40 cursor-not-allowed'
-                                : 'hover:bg-surface-1 text-text-secondary'
+                                ? 'text-tx-faint cursor-not-allowed'
+                                : 'hover:bg-sf-1 text-tx-sec'
                         }`}
                         title={canKiosk
                             ? `${posLabel('panel.pos.kioskMode', labels)}${canShortcuts ? ' (F11)' : ''}`
@@ -791,10 +880,10 @@ export default function POSClient({
                             onClick={() => setPanelView(v => v === 'printerSettings' ? null : 'printerSettings')}
                             aria-label={posLabel('panel.pos.printerSettings', labels) || 'Printer settings'}
                             className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 panelView === 'printerSettings'
-                                    ? 'bg-primary text-white shadow-sm'
-                                    : 'hover:bg-surface-1 text-text-secondary'
+                                    ? 'bg-brand text-white shadow-sm'
+                                    : 'hover:bg-sf-1 text-tx-sec'
                             }`}
                             title={posLabel('panel.pos.printerSettings', labels) || 'Printer settings'}
                         >
@@ -866,6 +955,13 @@ export default function POSClient({
                             onCharge={handleCharge}
                             onClear={() => dispatch({ type: 'CLEAR' })}
                             labels={labels}
+                            couponCode={couponCode}
+                            onCouponApply={handleCouponApply}
+                            onCouponRemove={handleCouponRemove}
+                            showRecommendations={featureFlags.enable_pos_shifts === true}
+                            products={mergedProducts}
+                            onAddToCart={handleAddToCart}
+                            defaultCurrency={defaultCurrency}
                         />
                     </div>
                 </div>
@@ -921,22 +1017,22 @@ export default function POSClient({
                                 aria-modal="true"
                                 aria-label={posLabel('panel.pos.cart', labels)}
                                 className="md:hidden fixed inset-x-0 bottom-0 z-50
-                                           bg-surface-0 rounded-t-3xl shadow-2xl flex flex-col"
+                                           bg-sf-0 rounded-t-3xl shadow-2xl flex flex-col"
                                 style={{ maxHeight: '90dvh' }}
                             >
                                 <div className="flex items-center justify-center pt-2 pb-1">
-                                    <div className="w-10 h-1 rounded-full bg-surface-3" />
+                                    <div className="w-10 h-1 rounded-full bg-sf-3" />
                                 </div>
                                 <div className="flex items-center justify-between px-4 pb-2">
-                                    <span className="text-sm font-bold text-text-primary">
+                                    <span className="text-sm font-bold text-tx">
                                         {posLabel('panel.pos.cart', labels)}
                                     </span>
                                     <button
                                         onClick={() => setMobileCartOpen(false)}
                                         aria-label={posLabel('panel.pos.close', labels) || 'Close cart'}
-                                        className="w-8 h-8 rounded-full bg-surface-1 flex items-center justify-center
-                                                   hover:bg-surface-2 transition-colors
-                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                        className="w-8 h-8 rounded-full bg-sf-1 flex items-center justify-center
+                                                   hover:bg-sf-2 transition-colors
+                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                     >
                                         <XIcon className="w-4 h-4" />
                                     </button>
@@ -964,6 +1060,10 @@ export default function POSClient({
                                         onCharge={() => { handleCharge(); setMobileCartOpen(false) }}
                                         onClear={() => { dispatch({ type: 'CLEAR' }); setMobileCartOpen(false) }}
                                         labels={labels}
+                                        couponCode={couponCode}
+                                        onCouponApply={handleCouponApply}
+                                        onCouponRemove={handleCouponRemove}
+                                        defaultCurrency={defaultCurrency}
                                     />
                                 </div>
                             </motion.div>
@@ -1069,6 +1169,39 @@ export default function POSClient({
                         isOpen={true}
                         onClose={() => setPanelView(null)}
                         labels={labels}
+                    />
+                </Suspense>
+            )}
+            {panelView === 'splitPayment' && canSplitPayment && (
+                <Suspense fallback={null}>
+                    <POSSplitPayment
+                        total={totals.total}
+                        enabledPaymentMethods={enabledPaymentMethods}
+                        onConfirm={handleSplitPaymentConfirm}
+                        onCancel={() => setPanelView(null)}
+                        labels={labels}
+                        defaultCurrency={defaultCurrency}
+                    />
+                </Suspense>
+            )}
+            {panelView === 'loyalty' && canLoyalty && (
+                <Suspense fallback={null}>
+                    <POSLoyaltyCard
+                        customerId={cart.customer_id}
+                        customerName={cart.customer_name}
+                        onClose={() => setPanelView(null)}
+                        labels={labels}
+                        defaultCurrency={defaultCurrency}
+                    />
+                </Suspense>
+            )}
+            {panelView === 'endOfDay' && canEndOfDay && (
+                <Suspense fallback={null}>
+                    <POSEndOfDayReport
+                        onClose={() => setPanelView(null)}
+                        labels={labels}
+                        defaultCurrency={defaultCurrency}
+                        shifts={shiftHistory}
                     />
                 </Suspense>
             )}

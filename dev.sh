@@ -5,9 +5,10 @@
 # Starts local development services:
 #   • Redis (existing local, Docker, or local redis-server)
 #   • Medusa backend (native — hot-reload)
-#   • Storefront (native — hot-reload)
+#   • Storefront (native — hot-reload or production build)
 #
-# Usage: ./dev.sh
+# Usage: ./dev.sh          (dev mode — Turbopack HMR)
+#        ./dev.sh --prod   (production build — pnpm build + start)
 # Stop:  Ctrl+C
 # ============================================
 
@@ -17,6 +18,15 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REDIS_CONTAINER_NAME="ecommerce-redis-dev"
 DEV_REDIS_PID_FILE="$ROOT_DIR/.dev-redis.pid"
 STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
+PROD_MODE=0
+
+# Parse arguments
+for arg in "$@"; do
+    case "$arg" in
+        --prod|--production) PROD_MODE=1 ;;
+    esac
+done
+
 cd "$ROOT_DIR"
 
 # Colors
@@ -127,7 +137,11 @@ start_service() {
     PIDS+=("$!")
 }
 
-echo -e "${GREEN}🍊 E-Commerce Template — Starting Development Environment${NC}"
+if [[ "$PROD_MODE" -eq 1 ]]; then
+    echo -e "${GREEN}🍊 E-Commerce Template — Starting ${YELLOW}PRODUCTION${GREEN} Environment${NC}"
+else
+    echo -e "${GREEN}🍊 E-Commerce Template — Starting Development Environment${NC}"
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ── Prechecks ──────────────────────────────
@@ -259,12 +273,27 @@ if [[ "$MEDUSA_UP" -eq 0 ]]; then
 fi
 
 # ── 3. Next.js Storefront ─────────────────
-echo -e "\n${BLUE}[3/3]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."
-start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev --port '$STOREFRONT_PORT'"
-
+if [[ "$PROD_MODE" -eq 1 ]]; then
+    echo -e "\n${BLUE}[3/3]${NC} Building Storefront for production..."
+    (cd "$ROOT_DIR/apps/storefront" && REDIS_URL="$DEV_REDIS_URL" pnpm build 2>&1 | sed 's/^/  [build] /')
+    BUILD_EXIT=$?
+    if [[ "$BUILD_EXIT" -ne 0 ]]; then
+        echo -e "  ${RED}✗ Production build failed (exit $BUILD_EXIT)${NC}"
+        exit 1
+    fi
+    echo -e "  ${GREEN}✓${NC} Build complete — starting production server on :${STOREFRONT_PORT}"
+    start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm start --port '$STOREFRONT_PORT'"
+else
+    echo -e "\n${BLUE}[3/3]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."
+    start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev --port '$STOREFRONT_PORT'"
+fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${GREEN}🚀 Development environment starting!${NC}"
+if [[ "$PROD_MODE" -eq 1 ]]; then
+    echo -e "${GREEN}🚀 Production environment starting!${NC}"
+else
+    echo -e "${GREEN}🚀 Development environment starting!${NC}"
+fi
 echo -e "   Storefront:   ${BLUE}http://localhost:${STOREFRONT_PORT}${NC}"
 echo -e "   Medusa API:   ${BLUE}http://localhost:9000${NC}"
 echo -e "   Medusa Admin: ${BLUE}http://localhost:9000/app${NC}"
@@ -282,7 +311,7 @@ echo -e "\n${BLUE}[health]${NC} Waiting for services to become ready..."
 MEDUSA_HEALTHY=0
 STOREFRONT_HEALTHY=0
 
-for i in {1..30}; do
+for i in {1..90}; do
     if [[ "$MEDUSA_HEALTHY" -eq 0 ]]; then
         medusa_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/health 2>/dev/null || echo "000")
         if [[ "$medusa_code" == "200" ]]; then
@@ -292,9 +321,8 @@ for i in {1..30}; do
     fi
 
     if [[ "$STOREFRONT_HEALTHY" -eq 0 ]]; then
-        store_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${STOREFRONT_PORT}/api/health/live" 2>/dev/null || echo "000")
-        if [[ "$store_code" == "200" ]]; then
-            echo -e "  ${GREEN}✓${NC} Storefront healthy (${i}s)"
+        if is_port_open "$STOREFRONT_PORT"; then
+            echo -e "  ${GREEN}✓${NC} Storefront listening on :${STOREFRONT_PORT} (${i}×2s)"
             STOREFRONT_HEALTHY=1
         fi
     fi

@@ -234,13 +234,6 @@ export default function OrdersClient({
 
     return (
         <PageEntrance className="space-y-5">
-            {/* Header */}
-            <PanelPageHeader
-                title={labels.title}
-                subtitle={`${labels.subtitle} · ${totalCount} ${labels.order}(s)`}
-                icon={<ShoppingBag className="w-5 h-5" />}
-                badge={totalCount}
-            />
 
             {/* Error banner */}
             <AnimatePresence>
@@ -273,16 +266,16 @@ export default function OrdersClient({
                                 })
                             }}
                             aria-pressed={filter === tab.key}
-                            className={`relative px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${
+                            className={`relative px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-1 ${
                                 filter === tab.key
-                                    ? 'text-primary'
-                                    : 'text-text-muted hover:text-text-secondary'
+                                    ? 'text-brand'
+                                    : 'text-tx-muted hover:text-tx-sec'
                             }`}
                         >
                             {filter === tab.key && (
                                 <motion.div
                                     layoutId="order-tab-indicator"
-                                    className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                    className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
@@ -292,14 +285,14 @@ export default function OrdersClient({
                 </div>
 
                 <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-tx-muted" />
                     <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') applySearch() }}
                         placeholder={labels.searchPlaceholder}
                         aria-label={labels.searchPlaceholder}
-                        className="pl-9 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all w-full sm:w-64"
+                        className="pl-9 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all w-full sm:w-64"
                     />
                 </div>
             </div>
@@ -313,12 +306,12 @@ export default function OrdersClient({
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <ShoppingBag className="w-8 h-8 text-text-muted" />
+                            <ShoppingBag className="w-8 h-8 text-tx-muted" />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noOrders}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed mb-1">
+                        <p className="text-sm text-tx-sec leading-relaxed mb-1">
                             {labels.noOrdersDesc || 'When customers place orders, they will appear here.'}
                         </p>
                     </div>
@@ -338,16 +331,16 @@ export default function OrdersClient({
                                         onClick={() => setExpandedId(isExpanded ? null : order.id)}
                                         aria-expanded={isExpanded}
                                         aria-label={`${labels.viewDetail} #${order.display_id}`}
-                                        className="w-full flex items-center justify-between px-5 py-4 min-h-[56px] hover:bg-surface-0/50 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+                                        className="w-full flex items-center justify-between px-5 py-4 min-h-[56px] hover:bg-glass transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                     >
                                         <div className="flex items-center gap-4 flex-wrap">
-                                            <span className="font-bold text-primary text-sm">
+                                            <span className="font-bold text-brand text-sm">
                                                 #{order.display_id}
                                             </span>
-                                            <span className="text-sm text-text-secondary">
+                                            <span className="text-sm text-tx-sec">
                                                 {customerName}
                                             </span>
-                                            <span className="text-xs text-text-muted hidden sm:inline">
+                                            <span className="text-xs text-tx-muted hidden sm:inline">
                                                 {formatDate(order.created_at, lang)}
                                             </span>
                                         </div>
@@ -371,17 +364,17 @@ export default function OrdersClient({
                                                 animate={{ rotate: isExpanded ? 180 : 0 }}
                                                 transition={{ duration: 0.2 }}
                                             >
-                                                <ChevronDown className="w-4 h-4 text-text-muted" />
+                                                <ChevronDown className="w-4 h-4 text-tx-muted" />
                                             </motion.div>
                                         </div>
                                     </button>
 
                                     {/* Expanded detail — animated */}
                                     <ExpandableSection isOpen={isExpanded}>
-                                        <div className="border-t border-surface-2 px-5 py-5 space-y-5 bg-surface-0/30">
+                                        <div className="border-t border-sf-2 px-5 py-5 space-y-5 bg-glass">
                                             {/* Items */}
                                             <div>
-                                                <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
+                                                <h4 className="text-sm font-semibold text-tx-sec mb-3 flex items-center gap-2">
                                                     <Package className="w-4 h-4" />
                                                     {labels.items} ({order.items?.length ?? 0})
                                                 </h4>
@@ -393,24 +386,24 @@ export default function OrdersClient({
                                                                 <img
                                                                     src={item.thumbnail}
                                                                     alt={item.title}
-                                                                    className="w-10 h-10 rounded-lg object-cover bg-surface-1"
+                                                                    className="w-10 h-10 rounded-lg object-cover bg-sf-1"
                                                                 />
                                                             ) : (
-                                                                <div className="w-10 h-10 rounded-lg bg-surface-1 flex items-center justify-center">
-                                                                    <Package className="w-5 h-5 text-text-muted" />
+                                                                <div className="w-10 h-10 rounded-lg bg-sf-1 flex items-center justify-center">
+                                                                    <Package className="w-5 h-5 text-tx-muted" />
                                                                 </div>
                                                             )}
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-medium text-text-primary truncate">{item.title}</p>
+                                                                <p className="text-sm font-medium text-tx truncate">{item.title}</p>
                                                                 {item.variant_title && (
-                                                                    <p className="text-xs text-text-muted">{item.variant_title}</p>
+                                                                    <p className="text-xs text-tx-muted">{item.variant_title}</p>
                                                                 )}
                                                             </div>
                                                             <div className="text-right">
                                                                 <p className="text-sm font-medium">
                                                                     {item.quantity} × {formatPrice(item.unit_price, order.currency_code, lang)}
                                                                 </p>
-                                                                <p className="text-xs text-text-muted">
+                                                                <p className="text-xs text-tx-muted">
                                                                     {formatPrice(item.total, order.currency_code, lang)}
                                                                 </p>
                                                             </div>
@@ -419,15 +412,15 @@ export default function OrdersClient({
                                                 </div>
 
                                                 {/* Totals summary */}
-                                                <div className="mt-3 pt-3 border-t border-surface-2 space-y-1 text-sm">
+                                                <div className="mt-3 pt-3 border-t border-sf-2 space-y-1 text-sm">
                                                     {order.shipping_total > 0 && (
-                                                        <div className="flex justify-between text-text-muted">
+                                                        <div className="flex justify-between text-tx-muted">
                                                             <span>{labels.shipping}</span>
                                                             <span>{formatPrice(order.shipping_total, order.currency_code, lang)}</span>
                                                         </div>
                                                     )}
                                                     {order.tax_total > 0 && (
-                                                        <div className="flex justify-between text-text-muted">
+                                                        <div className="flex justify-between text-tx-muted">
                                                             <span>{labels.taxes}</span>
                                                             <span>{formatPrice(order.tax_total, order.currency_code, lang)}</span>
                                                         </div>
@@ -438,7 +431,7 @@ export default function OrdersClient({
                                                             <span>-{formatPrice(order.discount_total, order.currency_code, lang)}</span>
                                                         </div>
                                                     )}
-                                                    <div className="flex justify-between font-bold text-text-primary pt-1">
+                                                    <div className="flex justify-between font-bold text-tx pt-1">
                                                         <span>{labels.total}</span>
                                                         <span>{formatPrice(order.total, order.currency_code, lang)}</span>
                                                     </div>
@@ -449,29 +442,29 @@ export default function OrdersClient({
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {/* Customer */}
                                                 <div className="glass rounded-xl p-4">
-                                                    <h5 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+                                                    <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2">
                                                         {labels.customer}
                                                     </h5>
-                                                    <p className="text-sm font-medium text-text-primary">{customerName}</p>
+                                                    <p className="text-sm font-medium text-tx">{customerName}</p>
                                                     {order.customer?.email && (
-                                                        <p className="text-xs text-text-muted mt-1">{order.customer.email}</p>
+                                                        <p className="text-xs text-tx-muted mt-1">{order.customer.email}</p>
                                                     )}
                                                 </div>
 
                                                 {/* Shipping address */}
                                                 {order.shipping_address && (
                                                     <div className="glass rounded-xl p-4">
-                                                        <h5 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                        <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2 flex items-center gap-1">
                                                             <MapPin className="w-3 h-3" />
                                                             {labels.shippingAddress}
                                                         </h5>
-                                                        <p className="text-sm text-text-primary">
+                                                        <p className="text-sm text-tx">
                                                             {[
                                                                 order.shipping_address.address_1,
                                                                 order.shipping_address.address_2,
                                                             ].filter(Boolean).join(', ')}
                                                         </p>
-                                                        <p className="text-xs text-text-muted">
+                                                        <p className="text-xs text-tx-muted">
                                                             {[
                                                                 order.shipping_address.postal_code,
                                                                 order.shipping_address.city,
@@ -479,8 +472,8 @@ export default function OrdersClient({
                                                             ].filter(Boolean).join(', ')}
                                                         </p>
                                                         {order.shipping_address.phone && (
-                                                            <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
-                                                                <span className="text-text-muted">📱</span> {order.shipping_address.phone}
+                                                            <p className="text-xs text-tx-muted mt-1 flex items-center gap-1">
+                                                                <span className="text-tx-muted">📱</span> {order.shipping_address.phone}
                                                             </p>
                                                         )}
                                                     </div>
@@ -489,14 +482,14 @@ export default function OrdersClient({
                                                 {/* Payment */}
                                                 {order.payments?.length > 0 && (
                                                     <div className="glass rounded-xl p-4">
-                                                        <h5 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                        <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2 flex items-center gap-1">
                                                             <CreditCard className="w-3 h-3" />
                                                             {labels.payment}
                                                         </h5>
                                                         {order.payments.map(p => (
                                                             <div key={p.id} className="text-sm">
-                                                                <p className="font-medium text-text-primary capitalize">{p.provider_id.replace(/_/g, ' ')}</p>
-                                                                <p className="text-xs text-text-muted">{formatPrice(p.amount, p.currency_code, lang)}</p>
+                                                                <p className="font-medium text-tx capitalize">{p.provider_id.replace(/_/g, ' ')}</p>
+                                                                <p className="text-xs text-tx-muted">{formatPrice(p.amount, p.currency_code, lang)}</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -511,7 +504,7 @@ export default function OrdersClient({
                                                             onClick={() => handleFulfill(order.id)}
                                                             disabled={isPending}
                                                             aria-label={labels.fulfill}
-                                                            className="btn btn-primary inline-flex items-center gap-2 text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                                            className="btn btn-primary inline-flex items-center gap-2 text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                                                         >
                                                             <Truck className="w-4 h-4" />
                                                             {isPending ? '...' : labels.fulfill}
@@ -546,7 +539,7 @@ export default function OrdersClient({
                                                                     exit={{ opacity: 0, width: 0 }}
                                                                     className="flex items-center gap-2 glass rounded-xl px-4 py-2"
                                                                 >
-                                                                    <label className="text-sm text-text-secondary whitespace-nowrap">
+                                                                    <label className="text-sm text-tx-sec whitespace-nowrap">
                                                                         {labels.refundAmount} ({order.currency_code.toUpperCase()}):
                                                                     </label>
                                                                     <input
@@ -557,7 +550,7 @@ export default function OrdersClient({
                                                                         value={refundAmount}
                                                                         onChange={e => setRefundAmount(e.target.value)}
                                                                         placeholder={String(order.payments[0].amount / 100)}
-                                                                        className="w-24 px-3 py-1.5 rounded-lg border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                                                        className="w-24 px-3 py-1.5 rounded-lg border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft"
                                                                     />
                                                                     <button
                                                                         onClick={() => handleRefund(
@@ -568,7 +561,7 @@ export default function OrdersClient({
                                                                         )}
                                                                         disabled={isPending}
                                                                         aria-label={labels.refund}
-                                                                        className="btn btn-primary text-sm py-1.5 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1"
+                                                                        className="btn btn-primary text-sm py-1.5 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-1"
                                                                     >
                                                                         {isPending ? '...' : labels.refund}
                                                                     </button>
@@ -576,7 +569,7 @@ export default function OrdersClient({
                                                                         onClick={() => { setRefundingId(null); setRefundAmount('') }}
                                                                         disabled={isPending}
                                                                         aria-label={labels.cancel}
-                                                                        className="p-1.5 rounded-lg hover:bg-surface-1 text-text-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                                        className="p-1.5 rounded-lg hover:bg-sf-1 text-tx-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                                     >
                                                                         <X className="w-4 h-4" />
                                                                     </button>
@@ -621,9 +614,9 @@ export default function OrdersClient({
             )}
 
             {/* Confirm dialogs */}
-            <PanelConfirmDialog {...fulfillDialog.dialogProps} loading={isPending} />
-            <PanelConfirmDialog {...cancelDialog.dialogProps} loading={isPending} />
-            <PanelConfirmDialog {...refundDialog.dialogProps} loading={isPending} />
+            <PanelConfirmDialog {...fulfillDialog.dialogProps} />
+            <PanelConfirmDialog {...cancelDialog.dialogProps} />
+            <PanelConfirmDialog {...refundDialog.dialogProps} />
         </PageEntrance>
     )
 }

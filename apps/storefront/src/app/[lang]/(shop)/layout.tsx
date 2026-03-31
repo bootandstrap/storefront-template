@@ -71,13 +71,13 @@ export default async function ShopLayout({
     // -----------------------------------------------------------------------
     if (featureFlags.enable_maintenance_mode) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-surface-0 px-4">
+            <div className="min-h-screen flex items-center justify-center bg-sf-0 px-4">
                 <div className="glass-strong rounded-2xl p-12 text-center max-w-lg">
                     <div className="text-6xl mb-6">🔧</div>
-                    <h1 className="text-3xl font-bold font-display text-text-primary mb-3">
+                    <h1 className="text-3xl font-bold font-display text-tx mb-3">
                         {t('maintenance.title')}
                     </h1>
-                    <p className="text-text-muted text-lg">
+                    <p className="text-tx-muted text-lg">
                         {t('maintenance.description')}
                     </p>
                     {config.whatsapp_number && (
@@ -109,10 +109,18 @@ export default async function ShopLayout({
 
             {/* Announcement bar */}
             {config.announcement_bar_enabled && config.announcement_bar_text && (
-                <div className="bg-primary text-white text-center py-2 px-4 text-sm font-medium">
+                <div className="bg-brand text-white text-center py-2 px-4 text-sm font-medium">
                     {config.announcement_bar_text}
                 </div>
             )}
+
+            {/* Skip-to-content — WCAG 2.1 AA */}
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-brand focus:text-white focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none"
+            >
+                {t('a11y.skipToContent') || 'Skip to content'}
+            </a>
 
             <Header
                 config={config}
@@ -125,7 +133,7 @@ export default async function ShopLayout({
                 isAuthenticated={isAuthenticated}
                 categories={rootCategories}
             />
-            <main id="main-content" className="flex-1">
+            <main id="main-content" className="flex-1" tabIndex={-1}>
                 {children}
             </main>
             <Footer config={config} featureFlags={featureFlags} dictionary={dictionary} lang={lang} />

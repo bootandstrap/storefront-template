@@ -105,16 +105,16 @@ export default function ShippingClient() {
         }).format(amount / 100)
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
-    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     if (loading) {
         return (
             <PageEntrance className="space-y-4">
                 {[1, 2].map((i) => (
                     <div key={i} className="glass rounded-2xl p-6 animate-pulse">
-                        <div className="h-5 bg-surface-2 rounded w-1/3 mb-3" />
-                        <div className="h-4 bg-surface-2 rounded w-1/2" />
+                        <div className="h-5 bg-sf-2 rounded w-1/3 mb-3" />
+                        <div className="h-4 bg-sf-2 rounded w-1/2" />
                     </div>
                 ))}
             </PageEntrance>
@@ -130,7 +130,7 @@ export default function ShippingClient() {
                     className="glass rounded-2xl p-6 text-center"
                 >
                     <p className="text-red-500 mb-3">{error}</p>
-                    <button onClick={loadOptions} className="btn btn-primary text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                    <button onClick={loadOptions} className="btn btn-primary text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                         {t('common.retry')}
                     </button>
                 </motion.div>
@@ -155,12 +155,12 @@ export default function ShippingClient() {
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Truck className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <Truck className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {t('panel.shipping.empty')}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed">
+                        <p className="text-sm text-tx-sec leading-relaxed">
                             {t('panel.shipping.emptyHint') || 'Configure shipping options in your Medusa backend to manage delivery rates here.'}
                         </p>
                     </div>
@@ -210,7 +210,7 @@ export default function ShippingClient() {
                                                         value={editAmount}
                                                         onChange={(e) => setEditAmount(e.target.value)}
                                                     />
-                                                    <p className="text-xs text-text-muted mt-1">
+                                                    <p className="text-xs text-tx-muted mt-1">
                                                         {t('panel.shipping.priceHint')}
                                                     </p>
                                                 </div>
@@ -219,7 +219,7 @@ export default function ShippingClient() {
                                                         onClick={() => saveEdit(option)}
                                                         disabled={isPending}
                                                         aria-label={t('common.saveChanges')}
-                                                        className="btn btn-primary text-sm min-h-[44px] inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                                        className="btn btn-primary text-sm min-h-[44px] inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                                                     >
                                                         {isPending
                                                             ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -231,7 +231,7 @@ export default function ShippingClient() {
                                                         onClick={cancelEdit}
                                                         disabled={isPending}
                                                         aria-label={t('common.cancel')}
-                                                        className="btn btn-ghost text-sm min-h-[44px] inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                        className="btn btn-ghost text-sm min-h-[44px] inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                     >
                                                         <X className="w-4 h-4" />
                                                         {t('common.cancel')}
@@ -251,7 +251,7 @@ export default function ShippingClient() {
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         isExpress
                                                             ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            : 'bg-primary/10 text-primary'
+                                                            : 'bg-brand-subtle text-brand'
                                                     }`}>
                                                         {isExpress
                                                             ? <Zap className="w-5 h-5" />
@@ -259,14 +259,14 @@ export default function ShippingClient() {
                                                         }
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-semibold text-text-primary">{option.name}</h3>
+                                                        <h3 className="font-semibold text-tx">{option.name}</h3>
                                                         {option.type?.description && (
-                                                            <p className="text-sm text-text-muted mt-0.5">
+                                                            <p className="text-sm text-tx-muted mt-0.5">
                                                                 {option.type.description}
                                                             </p>
                                                         )}
                                                         {option.service_zone?.name && (
-                                                            <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
+                                                            <p className="text-xs text-tx-muted mt-0.5 flex items-center gap-1">
                                                                 <MapPin className="w-3 h-3" />
                                                                 {option.service_zone.name}
                                                             </p>
@@ -274,14 +274,14 @@ export default function ShippingClient() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
-                                                    <span className="text-lg font-bold text-primary">
+                                                    <span className="text-lg font-bold text-brand">
                                                         {price ? formatPrice(price.amount, price.currency_code) : '—'}
                                                     </span>
                                                     <motion.button
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => startEdit(option)}
                                                         aria-label={`${t('common.edit')} ${option.name}`}
-                                                        className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                        className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                     >
                                                         <Pencil className="w-4 h-4" />
                                                     </motion.button>

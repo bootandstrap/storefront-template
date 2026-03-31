@@ -224,12 +224,12 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
             {/* Modal */}
             <div className="relative mx-auto mt-[15vh] w-full max-w-lg px-4">
                 <div
-                    className="bg-surface-0/95 backdrop-blur-xl border border-surface-3 rounded-2xl shadow-2xl overflow-hidden animate-scale-in"
+                    className="bg-glass-heavy backdrop-blur-xl border border-sf-3 rounded-2xl shadow-2xl overflow-hidden animate-scale-in"
                     style={{ animation: 'cmdPaletteIn 150ms ease-out' }}
                 >
                     {/* Search input */}
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-surface-2">
-                        <Search className="w-5 h-5 text-text-muted shrink-0" />
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-sf-2">
+                        <Search className="w-5 h-5 text-tx-muted shrink-0" />
                         <input
                             ref={inputRef}
                             type="text"
@@ -237,11 +237,11 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder={labels.placeholder}
-                            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted/50 outline-none"
+                            className="flex-1 bg-transparent text-sm text-tx placeholder:text-tx-faint outline-none"
                             autoComplete="off"
                             spellCheck={false}
                         />
-                        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-text-muted bg-surface-2 rounded border border-surface-3">
+                        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-tx-muted bg-sf-2 rounded border border-sf-3">
                             esc
                         </kbd>
                     </div>
@@ -250,15 +250,15 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                     <div ref={listRef} className="max-h-[50vh] overflow-y-auto p-2">
                         {flatItems.length === 0 ? (
                             <div className="py-8 text-center">
-                                <Search className="w-8 h-8 text-text-muted/30 mx-auto mb-2" />
-                                <p className="text-sm text-text-muted">{labels.noResults}</p>
+                                <Search className="w-8 h-8 text-tx-faint mx-auto mb-2" />
+                                <p className="text-sm text-tx-muted">{labels.noResults}</p>
                             </div>
                         ) : (
                             <>
                                 {/* Navigation group */}
                                 {navItems.length > 0 && (
                                     <div className="mb-2">
-                                        <p className="px-3 py-1.5 text-[10px] font-semibold text-text-muted/60 uppercase tracking-wider">
+                                        <p className="px-3 py-1.5 text-[10px] font-semibold text-tx-faint uppercase tracking-wider">
                                             {labels.navigation}
                                         </p>
                                         {navItems.map(item => {
@@ -273,16 +273,16 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                                                     data-active={isActive}
                                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                                                         isActive
-                                                            ? 'bg-primary/10 text-primary'
-                                                            : 'text-text-secondary hover:bg-surface-1'
+                                                            ? 'bg-brand-subtle text-brand'
+                                                            : 'text-tx-sec hover:bg-sf-1'
                                                     }`}
                                                 >
-                                                    <span className={`shrink-0 ${isActive ? 'text-primary' : 'text-text-muted'}`}>
+                                                    <span className={`shrink-0 ${isActive ? 'text-brand' : 'text-tx-muted'}`}>
                                                         {ICON_MAP[item.icon] || <ArrowRight className="w-4 h-4" />}
                                                     </span>
                                                     <span className="flex-1 text-left font-medium">{item.label}</span>
                                                     {isActive && (
-                                                        <kbd className="text-[10px] text-text-muted/50">↵</kbd>
+                                                        <kbd className="text-[10px] text-tx-faint">↵</kbd>
                                                     )}
                                                 </button>
                                             )
@@ -293,7 +293,7 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                                 {/* Actions group */}
                                 {actionItems.length > 0 && (
                                     <div>
-                                        <p className="px-3 py-1.5 text-[10px] font-semibold text-text-muted/60 uppercase tracking-wider">
+                                        <p className="px-3 py-1.5 text-[10px] font-semibold text-tx-faint uppercase tracking-wider">
                                             {labels.actions}
                                         </p>
                                         {actionItems.map(item => {
@@ -308,16 +308,16 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                                                     data-active={isActive}
                                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                                                         isActive
-                                                            ? 'bg-primary/10 text-primary'
-                                                            : 'text-text-secondary hover:bg-surface-1'
+                                                            ? 'bg-brand-subtle text-brand'
+                                                            : 'text-tx-sec hover:bg-sf-1'
                                                     }`}
                                                 >
-                                                    <span className={`shrink-0 ${isActive ? 'text-primary' : 'text-text-muted'}`}>
+                                                    <span className={`shrink-0 ${isActive ? 'text-brand' : 'text-tx-muted'}`}>
                                                         {ICON_MAP[item.icon] || <ArrowRight className="w-4 h-4" />}
                                                     </span>
                                                     <span className="flex-1 text-left font-medium">{item.label}</span>
                                                     {isActive && (
-                                                        <kbd className="text-[10px] text-text-muted/50">↵</kbd>
+                                                        <kbd className="text-[10px] text-tx-faint">↵</kbd>
                                                     )}
                                                 </button>
                                             )
@@ -329,10 +329,10 @@ export default function CommandPalette({ items, labels, lang }: CommandPalettePr
                     </div>
 
                     {/* Footer hint */}
-                    <div className="px-4 py-2.5 border-t border-surface-2 flex items-center justify-between">
-                        <span className="text-[10px] text-text-muted/50">{labels.hint}</span>
+                    <div className="px-4 py-2.5 border-t border-sf-2 flex items-center justify-between">
+                        <span className="text-[10px] text-tx-faint">{labels.hint}</span>
                         <div className="flex items-center gap-1">
-                            <kbd className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-text-muted/60 bg-surface-2 rounded border border-surface-3">
+                            <kbd className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-tx-faint bg-sf-2 rounded border border-sf-3">
                                 <Command className="w-2.5 h-2.5 mr-0.5" /> K
                             </kbd>
                         </div>

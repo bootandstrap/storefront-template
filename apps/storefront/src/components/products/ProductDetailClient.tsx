@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { Package, Check } from 'lucide-react'
+import { Package, Check, Share2, Link as LinkIcon } from 'lucide-react'
 import type { MedusaProduct, MedusaVariant } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
 import { useSwipe } from '@/hooks/useSwipe'
+import { useShare } from '@/hooks/useShare'
 import AddToCartButton from './AddToCartButton'
 import WishlistButton from './WishlistButton'
 import ImageZoom from './ImageZoom'
@@ -31,6 +32,7 @@ export default function ProductDetailClient({
     lowStockThreshold = 5,
 }: ProductDetailClientProps) {
     const { t, locale } = useI18n()
+    const { share, copied } = useShare()
     const variants = product.variants || []
     const images = product.images || []
     const allImages = product.thumbnail
@@ -126,7 +128,7 @@ export default function ProductDetailClient({
             <div className="space-y-3">
                 {/* Main image */}
                 <div
-                    className="relative aspect-square rounded-2xl overflow-hidden bg-surface-1 touch-pan-y"
+                    className="relative aspect-square rounded-2xl overflow-hidden bg-sf-1 touch-pan-y"
                     {...swipeHandlers}
                 >
                     {allImages[selectedImageIndex]?.url ? (
@@ -145,12 +147,29 @@ export default function ProductDetailClient({
                         </div>
                     )}
 
-                    {/* Wishlist button */}
-                    {wishlistEnabled && (
-                        <div className="absolute top-3 right-3 z-10">
+                    {/* Wishlist + Share buttons */}
+                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
+                        {wishlistEnabled && (
                             <WishlistButton productId={product.id} />
-                        </div>
-                    )}
+                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                share({
+                                    title: product.title,
+                                    text: product.description || product.title,
+                                })
+                            }}
+                            className="w-9 h-9 rounded-full bg-white/80 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-white dark:hover:bg-black/70 transition-all hover:scale-110 shadow-sm"
+                            aria-label="Share product"
+                        >
+                            {copied
+                                ? <LinkIcon className="w-4 h-4 text-green-500" />
+                                : <Share2 className="w-4 h-4 text-tx" />
+                            }
+                        </button>
+                    </div>
 
                     {/* Image counter (mobile) */}
                     {allImages.length > 1 && (
@@ -168,9 +187,9 @@ export default function ProductDetailClient({
                                 key={img.id}
                                 type="button"
                                 onClick={() => setSelectedImageIndex(idx)}
-                                className={`relative aspect-square rounded-xl overflow-hidden bg-surface-1 transition-all ${selectedImageIndex === idx
-                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-0'
-                                    : 'hover:ring-2 hover:ring-primary/40 opacity-70 hover:opacity-100'
+                                className={`relative aspect-square rounded-xl overflow-hidden bg-sf-1 transition-all ${selectedImageIndex === idx
+                                    ? 'ring-2 ring-brand ring-offset-2 ring-offset-surface-0'
+                                    : 'hover:ring-2 hover:ring-med opacity-70 hover:opacity-100'
                                     }`}
                             >
                                 <Image
@@ -190,22 +209,22 @@ export default function ProductDetailClient({
             <div className="flex flex-col">
                 {/* Category badge */}
                 {product.categories?.[0] && (
-                    <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full w-fit mb-3">
+                    <span className="text-xs font-medium text-brand bg-brand-subtle px-3 py-1 rounded-full w-fit mb-3">
                         {product.categories[0].name}
                     </span>
                 )}
 
-                <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold font-display text-tx mb-2">
                     {product.title}
                 </h1>
 
                 {product.subtitle && (
-                    <p className="text-text-muted mb-4">{product.subtitle}</p>
+                    <p className="text-tx-muted mb-4">{product.subtitle}</p>
                 )}
 
                 {/* Price */}
                 {resolved && (
-                    <p className="text-3xl font-bold text-primary mb-4">
+                    <p className="text-3xl font-bold text-brand mb-4">
                         {formatPrice(resolved.amount, resolved.currency, locale)}
                     </p>
                 )}
@@ -238,7 +257,7 @@ export default function ProductDetailClient({
                             // Option-based selector (buttons)
                             optionGroups.map((group, gIdx) => (
                                 <div key={gIdx}>
-                                    <label className="text-sm font-medium text-text-secondary block mb-2">
+                                    <label className="text-sm font-medium text-tx-sec block mb-2">
                                         {group.label}
                                     </label>
                                     <div className="flex flex-wrap gap-2">
@@ -252,10 +271,10 @@ export default function ProductDetailClient({
                                                     onClick={() => setSelectedVariantId(opt.variantId)}
                                                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
                                                         ${isSelected
-                                                            ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+                                                            ? 'border-brand bg-brand-subtle text-brand ring-1 ring-brand'
                                                             : opt.available
-                                                                ? 'border-surface-3 text-text-secondary hover:border-primary/50 hover:text-primary'
-                                                                : 'border-surface-3 text-text-muted/40 line-through cursor-not-allowed'
+                                                                ? 'border-sf-3 text-tx-sec hover:border-brand hover:text-brand'
+                                                                : 'border-sf-3 text-tx-faint line-through cursor-not-allowed'
                                                         }`}
                                                 >
                                                     {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
@@ -269,13 +288,13 @@ export default function ProductDetailClient({
                         ) : (
                             // Fallback: dropdown selector by variant title
                             <div>
-                                <label className="text-sm font-medium text-text-secondary block mb-2">
+                                <label className="text-sm font-medium text-tx-sec block mb-2">
                                     {t('product.selectVariant') || 'Select option'}
                                 </label>
                                 <select
                                     value={selectedVariantId}
                                     onChange={(e) => setSelectedVariantId(e.target.value)}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all"
                                 >
                                     {variants.map((v) => {
                                         const vPrice = getPrice(v)
@@ -294,7 +313,7 @@ export default function ProductDetailClient({
 
                 {/* Description */}
                 {product.description && (
-                    <div className="prose prose-sm text-text-secondary mb-6 max-w-none">
+                    <div className="prose prose-sm text-tx-sec mb-6 max-w-none">
                         <p>{product.description}</p>
                     </div>
                 )}
@@ -312,7 +331,7 @@ export default function ProductDetailClient({
 
                 {/* Out of stock message */}
                 {!inStock && (
-                    <div className="mb-6 py-3 px-4 rounded-xl bg-surface-1 text-sm text-text-muted text-center">
+                    <div className="mb-6 py-3 px-4 rounded-xl bg-sf-1 text-sm text-tx-muted text-center">
                         {t('product.outOfStockMessage') || 'This product is currently unavailable'}
                     </div>
                 )}
@@ -320,12 +339,12 @@ export default function ProductDetailClient({
 
             {/* Sticky CTA for mobile — appears when main CTA scrolls out of view */}
             {selectedVariant && inStock && showStickyCta && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-surface-0/95 backdrop-blur-sm border-t border-surface-3 safe-area-bottom animate-slide-up">
+                <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-glass-heavy backdrop-blur-sm border-t border-sf-3 safe-area-bottom animate-slide-up">
                     <div className="flex items-center justify-between gap-4 px-4 py-3">
                         <div className="min-w-0">
-                            <p className="text-xs text-text-muted truncate">{product.title}</p>
+                            <p className="text-xs text-tx-muted truncate">{product.title}</p>
                             {resolved && (
-                                <p className="text-lg font-bold text-primary">
+                                <p className="text-lg font-bold text-brand">
                                     {formatPrice(resolved.amount, resolved.currency, locale)}
                                 </p>
                             )}

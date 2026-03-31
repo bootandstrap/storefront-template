@@ -11,6 +11,8 @@ import { getAdminCustomers } from '@/lib/medusa/admin'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Users } from 'lucide-react'
 import CustomersClient from './CustomersClient'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +37,6 @@ export default async function CustomersPage({
     const t = createTranslator(dictionary)
     const query = parsePanelListQuery(rawSearchParams, { defaultLimit: 20 })
 
-    // Resolve tenant scope — all admin queries MUST be scoped
     const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
 
@@ -47,6 +48,12 @@ export default async function CustomersPage({
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.customers.title')}
+                subtitle={t('panel.customers.subtitle')}
+                icon={<Users className="w-5 h-5" />}
+                badge={count}
+            />
             <CustomersClient
                 customers={customers}
                 totalCount={count}

@@ -15,7 +15,7 @@
 
 import { Gauge, Wifi, Zap, BarChart3, Activity, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 
@@ -55,7 +55,7 @@ function AnimatedProgressBar({ value, max, color }: { value: number; max: number
     const isMedium = percent >= 50
 
     return (
-        <div className="w-full h-2.5 rounded-full bg-surface-2 overflow-hidden">
+        <div className="w-full h-2.5 rounded-full bg-sf-2 overflow-hidden">
             <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${percent}%` }}
@@ -99,11 +99,7 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
 
     return (
         <PageEntrance className="space-y-6">
-            <PanelPageHeader
-                title={labels.title}
-                subtitle={labels.subtitle}
-                icon={<Gauge className="w-5 h-5" />}
-            />
+
 
             {/* Usage Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -136,11 +132,11 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
             >
                 <div className="flex justify-between text-sm mb-3">
                     <span className="font-medium">{labels.requestsToday}</span>
-                    <span className="text-text-muted">
+                    <span className="text-tx-muted">
                         {requestsToday.toLocaleString()} / {limits.maxRequestsDay.toLocaleString()}
                     </span>
                 </div>
-                <AnimatedProgressBar value={requestsToday} max={limits.maxRequestsDay} color="bg-primary" />
+                <AnimatedProgressBar value={requestsToday} max={limits.maxRequestsDay} color="bg-brand" />
             </motion.div>
 
             {/* Features */}
@@ -149,7 +145,7 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.15 }}
-                    className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3"
+                    className="text-sm font-bold text-tx-muted uppercase tracking-wide mb-3"
                 >
                     {labels.expansion}
                 </motion.h2>
@@ -164,20 +160,20 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
                                 >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                                            feature.enabled ? 'bg-primary/10' : 'bg-surface-2'
+                                            feature.enabled ? 'bg-brand-subtle' : 'bg-sf-2'
                                         }`}>
-                                            <Icon className={`w-5 h-5 ${feature.enabled ? 'text-primary' : 'text-text-muted'}`} />
+                                            <Icon className={`w-5 h-5 ${feature.enabled ? 'text-brand' : 'text-tx-muted'}`} />
                                         </div>
                                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                                             feature.enabled
                                                 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                                                : 'bg-surface-2 text-text-muted'
+                                                : 'bg-sf-2 text-tx-muted'
                                         }`}>
                                             {feature.enabled ? labels.active : labels.inactive}
                                         </span>
                                     </div>
-                                    <h3 className="font-bold text-text-primary mb-1">{feature.label}</h3>
-                                    <p className="text-xs text-text-secondary leading-relaxed">{feature.description}</p>
+                                    <h3 className="font-bold text-tx mb-1">{feature.label}</h3>
+                                    <p className="text-xs text-tx-sec leading-relaxed">{feature.description}</p>
                                 </motion.div>
                             </StaggerItem>
                         )
@@ -191,7 +187,7 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="text-center text-sm text-text-muted"
+                    className="text-center text-sm text-tx-muted"
                 >
                     {labels.upgradeModule}
                 </motion.p>

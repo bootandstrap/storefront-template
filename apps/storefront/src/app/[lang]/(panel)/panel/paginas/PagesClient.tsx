@@ -109,8 +109,8 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
         }
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
-    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     return (
         <PageEntrance className="space-y-5">
@@ -121,7 +121,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                 badge={pageCount}
                 action={
                     <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                         disabled={!canAdd || isPending}
                         onClick={() => { resetForm(); setShowForm(true) }}
                     >
@@ -131,7 +131,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                 }
             />
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-text-muted">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
                 {pageCount} / {maxPages} {t('panel.pages.pages')}
             </motion.p>
 
@@ -155,7 +155,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
                         className="glass rounded-2xl p-6 space-y-4"
                     >
-                        <h2 className="font-bold text-lg text-text-primary">
+                        <h2 className="font-bold text-lg text-tx">
                             {editingId ? t('common.edit') : t('panel.pages.addPage')}
                         </h2>
                         <div>
@@ -165,7 +165,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                         <div>
                             <label className={labelClass}>Slug</label>
                             <div className="flex items-center gap-1">
-                                <span className="text-sm text-text-muted whitespace-nowrap">/paginas/</span>
+                                <span className="text-sm text-tx-muted whitespace-nowrap">/paginas/</span>
                                 <input value={slug} onChange={e => setSlug(e.target.value)} className={inputClass} />
                             </div>
                         </div>
@@ -186,8 +186,8 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                                 tabIndex={0}
                                 onClick={() => setPublished(!published)}
                                 onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') setPublished(!published) }}
-                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ${
-                                    published ? 'bg-primary' : 'bg-surface-3'
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${
+                                    published ? 'bg-brand' : 'bg-sf-3'
                                 }`}
                             >
                                 <motion.span
@@ -198,14 +198,14 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                                     }`}
                                 />
                             </div>
-                            <span className="text-sm text-text-secondary">{t('common.published')}</span>
+                            <span className="text-sm text-tx-sec">{t('common.published')}</span>
                         </div>
                         <div className="flex gap-3 pt-2">
-                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {isPending ? '...' : editingId ? t('common.save') : t('common.create')}
                             </button>
-                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{t('common.cancel')}</button>
+                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{t('common.cancel')}</button>
                         </div>
                     </motion.div>
                 )}
@@ -219,16 +219,16 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <FileText className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <FileText className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {t('panel.pages.empty')}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                        <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {t('panel.pages.emptyHint') || 'Create custom pages for your store — about us, FAQ, policies, and more.'}
                         </p>
                         <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             disabled={!canAdd || isPending}
                             onClick={() => { resetForm(); setShowForm(true) }}
                         >
@@ -246,22 +246,22 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                                 className="glass rounded-2xl p-5 flex items-center justify-between transition-shadow hover:shadow-lg"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                        <FileText className="w-5 h-5 text-primary" />
+                                    <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-5 h-5 text-brand" />
                                     </div>
                                     <div className="min-w-0">
-                                        <h3 className="font-bold text-text-primary truncate">{page.title}</h3>
-                                        <p className="text-xs text-text-muted mt-0.5">/paginas/{page.slug}</p>
+                                        <h3 className="font-bold text-tx truncate">{page.title}</h3>
+                                        <p className="text-xs text-tx-muted mt-0.5">/paginas/{page.slug}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <button
                                         onClick={() => handleTogglePublish(page)}
                                         aria-pressed={page.published}
-                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[36px] rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[36px] rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
                                             page.published
                                                 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100'
-                                                : 'bg-surface-1 text-text-muted hover:bg-surface-2'
+                                                : 'bg-sf-1 text-tx-muted hover:bg-sf-2'
                                         }`}
                                         disabled={isPending}
                                     >
@@ -271,7 +271,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                                     <button
                                         onClick={() => openEdit(page)}
                                         aria-label={t('common.edit')}
-                                        className="p-2 min-h-[36px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                        className="p-2 min-h-[36px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                         disabled={isPending}
                                     >
                                         <Pencil className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                                     <button
                                         onClick={() => handleDelete(page.id)}
                                         aria-label={t('common.delete')}
-                                        className="p-2 min-h-[36px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                        className="p-2 min-h-[36px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                         disabled={isPending}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />

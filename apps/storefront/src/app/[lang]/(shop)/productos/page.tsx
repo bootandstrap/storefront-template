@@ -50,7 +50,7 @@ export default async function ProductosPage({
 
     return (
         <div className="container-page py-8">
-            <h1 className="text-3xl md:text-4xl font-bold font-display text-text-primary mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold font-display text-tx mb-8">
                 {t('product.allProducts')}
             </h1>
 

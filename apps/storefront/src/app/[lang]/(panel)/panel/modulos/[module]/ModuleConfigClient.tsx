@@ -188,15 +188,15 @@ export default function ModuleConfigClient({
   }
 
   const inputClass =
-    'w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-surface-3 bg-surface-0 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
-  const labelClass = 'block text-sm font-medium text-text-secondary mb-1'
+    'w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-sf-3 bg-sf-0 text-sm text-tx focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all'
+  const labelClass = 'block text-sm font-medium text-tx-sec mb-1'
 
   return (
     <div className="space-y-6">
       {/* Back link */}
       <Link
         href={`/${locale}/panel/modulos`}
-        className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-2"
+        className="inline-flex items-center gap-2 text-sm text-tx-muted hover:text-brand transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med rounded-lg px-2"
       >
         <ArrowLeft className="w-4 h-4" />
         {labels.backToModules}
@@ -204,10 +204,10 @@ export default function ModuleConfigClient({
 
       {/* Not Active State */}
       {!isActive && (
-        <div className="glass rounded-2xl p-8 text-center space-y-4 border border-warning/20">
+        <div className="glass rounded-2xl p-8 text-center space-y-4 border border-warning">
           <div className="text-5xl">🔒</div>
-          <h2 className="text-xl font-bold text-text-primary">{labels.notActivated}</h2>
-          <p className="text-text-muted max-w-md mx-auto">{labels.notActivatedDesc}</p>
+          <h2 className="text-xl font-bold text-tx">{labels.notActivated}</h2>
+          <p className="text-tx-muted max-w-md mx-auto">{labels.notActivatedDesc}</p>
 
           {/* Tier Cards */}
           {context.module.tiers && context.module.tiers.length > 0 && (
@@ -218,19 +218,19 @@ export default function ModuleConfigClient({
                   className={`
                     glass rounded-xl p-5 text-left border transition-all
                     ${tier.is_recommended
-                      ? 'border-primary ring-2 ring-primary/20 scale-[1.02]'
-                      : 'border-surface-3 hover:border-primary/30'
+                      ? 'border-brand ring-2 ring-soft scale-[1.02]'
+                      : 'border-sf-3 hover:border-brand'
                     }
                   `}
                 >
                   {tier.is_recommended && (
-                    <div className="flex items-center gap-1 text-xs font-semibold text-primary mb-2">
+                    <div className="flex items-center gap-1 text-xs font-semibold text-brand mb-2">
                       <Sparkles className="w-3 h-3" />
                       {labels.recommended}
                     </div>
                   )}
-                  <h3 className="font-bold text-text-primary">{tier.name}</h3>
-                  <ul className="text-text-muted text-sm mt-1 space-y-0.5">
+                  <h3 className="font-bold text-tx">{tier.name}</h3>
+                  <ul className="text-tx-muted text-sm mt-1 space-y-0.5">
                     {tier.features.slice(0, 3).map((f, i) => (
                       <li key={i} className="flex items-center gap-1.5">
                         <Check className="w-3 h-3 text-success shrink-0" />
@@ -238,10 +238,10 @@ export default function ModuleConfigClient({
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-3 text-lg font-bold text-primary">
+                  <div className="mt-3 text-lg font-bold text-brand">
                     {tier.price > 0 ? `${tier.price} CHF${labels.monthly}` : labels.free}
                   </div>
-                  <button className="btn btn-primary w-full mt-4 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                  <button className="btn btn-primary w-full mt-4 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                     {labels.activate}
                   </button>
                 </div>
@@ -249,8 +249,8 @@ export default function ModuleConfigClient({
             </div>
           )}
 
-          <p className="text-sm text-text-muted">
-            {labels.contactSupport}: <a href="mailto:soporte@bootandstrap.com" className="text-primary underline">soporte@bootandstrap.com</a>
+          <p className="text-sm text-tx-muted">
+            {labels.contactSupport}: <a href="mailto:soporte@bootandstrap.com" className="text-brand underline">soporte@bootandstrap.com</a>
           </p>
         </div>
       )}
@@ -261,23 +261,23 @@ export default function ModuleConfigClient({
           {/* Feature Flags */}
           {(enabledFlags.length > 0 || disabledFlags.length > 0) && (
             <div className="glass rounded-2xl p-6 space-y-4">
-              <div className="flex items-center gap-2 text-text-primary font-semibold">
-                <Shield className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 text-tx font-semibold">
+                <Shield className="w-5 h-5 text-brand" />
                 {labels.features}
               </div>
 
               {enabledFlags.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
+                  <h4 className="text-xs font-medium text-tx-muted uppercase tracking-wider mb-2">
                     {labels.enabledFeatures}
                   </h4>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {enabledFlags.map(([key]) => (
                       <div key={key} className="flex items-center gap-2 text-sm">
-                        <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-brand-subtle flex items-center justify-center">
                           <Check className="w-3 h-3 text-success" />
                         </div>
-                        <span className="text-text-primary">
+                        <span className="text-tx">
                           {FLAG_DISPLAY_NAMES[key] || key}
                         </span>
                       </div>
@@ -288,25 +288,25 @@ export default function ModuleConfigClient({
 
               {disabledFlags.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
+                  <h4 className="text-xs font-medium text-tx-muted uppercase tracking-wider mb-2">
                     {labels.disabledFeatures}
                   </h4>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {disabledFlags.map(([key]) => (
                       <div key={key} className="flex items-center gap-2 text-sm opacity-60">
-                        <div className="w-5 h-5 rounded-full bg-surface-2 flex items-center justify-center">
-                          <XIcon className="w-3 h-3 text-text-muted" />
+                        <div className="w-5 h-5 rounded-full bg-sf-2 flex items-center justify-center">
+                          <XIcon className="w-3 h-3 text-tx-muted" />
                         </div>
-                        <span className="text-text-muted">
+                        <span className="text-tx-muted">
                           {FLAG_DISPLAY_NAMES[key] || key}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 px-4 py-2 rounded-xl bg-primary/5 border border-primary/10 text-sm text-text-muted flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary shrink-0" />
+                  <div className="mt-3 px-4 py-2 rounded-xl bg-brand-subtle border border-brand-soft text-sm text-tx-muted flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-brand shrink-0" />
                     {labels.upgradeTip}
-                    <ChevronRight className="w-4 h-4 ml-auto text-primary" />
+                    <ChevronRight className="w-4 h-4 ml-auto text-brand" />
                   </div>
                 </div>
               )}
@@ -316,8 +316,8 @@ export default function ModuleConfigClient({
           {/* Config Panel */}
           {hasConfigFields ? (
             <div className="glass rounded-2xl p-6 space-y-5">
-              <div className="flex items-center gap-2 text-text-primary font-semibold">
-                <Settings className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 text-tx font-semibold">
+                <Settings className="w-5 h-5 text-brand" />
                 {labels.configuration}
               </div>
 
@@ -372,7 +372,7 @@ export default function ModuleConfigClient({
                 <button
                   onClick={handleSave}
                   disabled={isPending}
-                  className="btn btn-primary min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                  className="btn btn-primary min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                 >
                   {isPending ? labels.saving : labels.save}
                 </button>
@@ -387,7 +387,7 @@ export default function ModuleConfigClient({
               </div>
             </div>
           ) : (
-            <div className="glass rounded-2xl p-6 text-center text-text-muted">
+            <div className="glass rounded-2xl p-6 text-center text-tx-muted">
               <Settings className="w-8 h-8 mx-auto mb-3 opacity-30" />
               <p>{labels.noConfigAvailable}</p>
             </div>
@@ -398,14 +398,14 @@ export default function ModuleConfigClient({
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                  <div className="text-xs font-medium text-tx-muted uppercase tracking-wider">
                     {labels.currentPlan}
                   </div>
-                  <div className="text-lg font-bold text-text-primary mt-1 capitalize">
+                  <div className="text-lg font-bold text-tx mt-1 capitalize">
                     {context.activeTierKey}
                   </div>
                 </div>
-                <button className="btn btn-sm btn-outline min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                <button className="btn btn-sm btn-outline min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">
                   {labels.upgrade}
                 </button>
               </div>

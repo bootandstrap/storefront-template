@@ -141,12 +141,12 @@ export default function SetupProgress({
             <button
                 type="button"
                 onClick={toggleCollapse}
-                className="w-full glass rounded-xl px-4 py-3 flex items-center gap-3 hover:border-primary/30 transition-all group"
+                className="w-full glass rounded-xl px-4 py-3 flex items-center gap-3 hover:border-brand transition-all group"
             >
                 {/* Mini progress ring */}
                 <div className="relative w-8 h-8 flex-shrink-0">
                     <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
-                        <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" className="text-surface-3" strokeWidth="3" />
+                        <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" className="text-sf-3" strokeWidth="3" />
                         <circle
                             cx="16" cy="16" r="12"
                             fill="none"
@@ -162,12 +162,12 @@ export default function SetupProgress({
                 </div>
 
                 {/* Label */}
-                <span className="text-sm text-text-secondary font-medium flex-1 text-left">
+                <span className="text-sm text-tx-sec font-medium flex-1 text-left">
                     {labels.collapsed.replace('{{count}}', String(remaining))}
                 </span>
 
                 {/* Expand hint */}
-                <ChevronDown className="w-4 h-4 text-text-muted group-hover:text-primary transition-colors" />
+                <ChevronDown className="w-4 h-4 text-tx-muted group-hover:text-brand transition-colors" />
             </button>
         )
     }
@@ -177,7 +177,7 @@ export default function SetupProgress({
         return (
             <div className="glass rounded-2xl p-6 border border-green-500/30 shadow-lg shadow-green-500/10 animate-fade-in text-center">
                 <p className="text-4xl mb-2">🎉</p>
-                <p className="text-lg font-bold text-text-primary">{labels.complete}</p>
+                <p className="text-lg font-bold text-tx">{labels.complete}</p>
                 <div className="flex justify-center gap-1 mt-3">
                     {Array.from({ length: 12 }).map((_, i) => (
                         <div
@@ -196,13 +196,13 @@ export default function SetupProgress({
 
     // ── Expanded state: full checklist ──
     return (
-        <div className="glass rounded-2xl p-5 border border-primary/15">
+        <div className="glass rounded-2xl p-5 border border-brand-soft">
             {/* Header */}
             <div className="flex items-center gap-4 mb-4">
                 {/* Progress ring */}
                 <div className="relative w-12 h-12 flex-shrink-0">
                     <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" className="text-surface-3" strokeWidth="3" />
+                        <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" className="text-sf-3" strokeWidth="3" />
                         <circle
                             cx="24" cy="24" r="20"
                             fill="none"
@@ -220,17 +220,17 @@ export default function SetupProgress({
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        <h3 className="text-sm font-bold text-text-primary">{labels.title}</h3>
+                        <Sparkles className="w-4 h-4 text-brand" />
+                        <h3 className="text-sm font-bold text-tx">{labels.title}</h3>
                     </div>
-                    <p className="text-xs text-text-muted mt-0.5">{labels.subtitle}</p>
+                    <p className="text-xs text-tx-muted mt-0.5">{labels.subtitle}</p>
                 </div>
 
                 {/* Collapse button */}
                 <button
                     type="button"
                     onClick={toggleCollapse}
-                    className="text-xs text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-lg hover:bg-surface-2/60 flex items-center gap-1"
+                    className="text-xs text-tx-muted hover:text-tx-sec transition-colors px-2 py-1 rounded-lg hover:bg-glass flex items-center gap-1"
                 >
                     {labels.collapse}
                     <ChevronUp className="w-3.5 h-3.5" />
@@ -241,7 +241,7 @@ export default function SetupProgress({
             <div className="space-y-4">
                 {grouped.map(group => (
                     <div key={group.key}>
-                        <p className="text-[11px] uppercase tracking-wider text-text-muted font-semibold mb-1.5 flex items-center gap-1.5">
+                        <p className="text-[11px] uppercase tracking-wider text-tx-muted font-semibold mb-1.5 flex items-center gap-1.5">
                             <span>{group.emoji}</span> {group.label}
                         </p>
                         <div className="space-y-1">
@@ -253,8 +253,8 @@ export default function SetupProgress({
                                         href={upsell ? upsell.href : check.actionHref}
                                         className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all group ${
                                             check.done
-                                                ? 'bg-green-500/5 text-text-secondary'
-                                                : 'bg-surface-2/30 hover:bg-primary/5 text-text-primary'
+                                                ? 'bg-green-500/5 text-tx-sec'
+                                                : 'bg-glass hover:bg-brand-subtle text-tx'
                                         }`}
                                     >
                                         {check.done ? (
@@ -270,13 +270,13 @@ export default function SetupProgress({
                                         </span>
                                         {/* Module upsell badge */}
                                         {!check.done && upsell && (
-                                            <span className="inline-flex items-center gap-1 text-[10px] text-primary/80 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                                            <span className="inline-flex items-center gap-1 text-[10px] text-brand bg-brand-subtle px-2 py-0.5 rounded-full border border-brand-soft">
                                                 <Plug className="w-3 h-3" />
                                                 {labels.unlockWith.replace('{{module}}', upsell.moduleName)}
                                             </span>
                                         )}
                                         {!check.done && !upsell && (
-                                            <ArrowRight className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <ArrowRight className="w-3.5 h-3.5 text-tx-muted opacity-0 group-hover:opacity-100 transition-opacity" />
                                         )}
                                     </Link>
                                 )

@@ -51,11 +51,11 @@ export default function ConfirmationClient({
             <div className="glass rounded-2xl p-8 max-w-md w-full text-center">
                 {status === 'loading' && (
                     <>
-                        <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-                        <h1 className="text-xl font-bold text-text-primary mb-2">
+                        <Loader2 className="w-16 h-16 text-brand mx-auto mb-4 animate-spin" />
+                        <h1 className="text-xl font-bold text-tx mb-2">
                             {t('checkout.confirmation.processing') || 'Procesando tu pago...'}
                         </h1>
-                        <p className="text-sm text-text-muted">
+                        <p className="text-sm text-tx-muted">
                             {t('checkout.confirmation.pleaseWait') || 'Por favor, espera un momento.'}
                         </p>
                     </>
@@ -64,10 +64,10 @@ export default function ConfirmationClient({
                 {status === 'success' && (
                     <>
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                        <h1 className="text-xl font-bold text-text-primary mb-2">
+                        <h1 className="text-xl font-bold text-tx mb-2">
                             {t('checkout.confirmation.title') || '¡Pedido confirmado!'}
                         </h1>
-                        <p className="text-sm text-text-muted mb-6">
+                        <p className="text-sm text-tx-muted mb-6">
                             {t('checkout.confirmation.cardMsg') || 'Tu pago ha sido procesado correctamente. Recibirás un email de confirmación.'}
                         </p>
                         <Link
@@ -82,10 +82,10 @@ export default function ConfirmationClient({
                 {status === 'error' && (
                     <>
                         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                        <h1 className="text-xl font-bold text-text-primary mb-2">
+                        <h1 className="text-xl font-bold text-tx mb-2">
                             {t('checkout.confirmation.errorTitle') || 'Error en el pago'}
                         </h1>
-                        <p className="text-sm text-text-muted mb-6">
+                        <p className="text-sm text-tx-muted mb-6">
                             {t('checkout.confirmation.errorMsg') || 'Hubo un problema al procesar tu pago. Por favor, intenta de nuevo.'}
                         </p>
                         <Link

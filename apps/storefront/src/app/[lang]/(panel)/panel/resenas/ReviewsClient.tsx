@@ -18,7 +18,7 @@ import { moderateReviewAction, deleteReviewAction } from './actions'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import { toIntlLocale } from '@/lib/i18n/intl-locale'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -50,7 +50,7 @@ function StarRating({ value }: { value: number }) {
                     key={n}
                     className={`w-3.5 h-3.5 ${n <= value
                         ? 'fill-amber-400 text-amber-400'
-                        : 'text-text-muted/30'
+                        : 'text-tx-faint'
                         }`}
                 />
             ))}
@@ -165,12 +165,7 @@ export default function ReviewsClient({
 
     return (
         <PageEntrance className="space-y-6">
-            <PanelPageHeader
-                title={t('panel.nav.reviews') || 'Reseñas'}
-                subtitle={t('panel.reviews.subtitle') || 'Modera las reseñas de tus productos'}
-                icon={<Star className="w-5 h-5" />}
-                badge={stats.total}
-            />
+
 
             {/* ── Filter stat cards ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -180,20 +175,20 @@ export default function ReviewsClient({
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setFilter(key)}
                         aria-pressed={filter === key}
-                        className={`glass rounded-2xl p-4 min-h-[80px] text-left transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ${filter === key
-                            ? 'ring-2 ring-primary/50'
-                            : 'hover:bg-surface-1'
+                        className={`glass rounded-2xl p-4 min-h-[80px] text-left transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${filter === key
+                            ? 'ring-2 ring-med'
+                            : 'hover:bg-sf-1'
                             }`}
                     >
                         {filter === key && (
                             <motion.div
                                 layoutId="review-filter-active"
-                                className="absolute inset-0 rounded-2xl ring-2 ring-primary/50"
+                                className="absolute inset-0 rounded-2xl ring-2 ring-med"
                                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                             />
                         )}
-                        <p className="text-2xl font-bold text-text-primary relative">{count}</p>
-                        <p className="text-xs text-text-muted mt-0.5 relative">{label}</p>
+                        <p className="text-2xl font-bold text-tx relative">{count}</p>
+                        <p className="text-xs text-tx-muted mt-0.5 relative">{label}</p>
                     </motion.button>
                 ))}
             </div>
@@ -205,13 +200,13 @@ export default function ReviewsClient({
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="flex items-center gap-2 text-sm text-text-muted"
+                        className="flex items-center gap-2 text-sm text-tx-muted"
                     >
                         <Filter className="w-4 h-4" />
                         <span>{t('panel.reviews.filtering')}: {filterButtons.find(f => f.key === filter)?.label}</span>
                         <button
                             onClick={() => setFilter('all')}
-                            className="text-primary hover:underline text-xs min-h-[32px] px-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                            className="text-brand hover:underline text-xs min-h-[32px] px-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                         >
                             {t('common.clear')}
                         </button>
@@ -228,12 +223,12 @@ export default function ReviewsClient({
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Star className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <Star className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {t('panel.reviews.empty') || 'No reviews yet'}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed">
+                        <p className="text-sm text-tx-sec leading-relaxed">
                             {t('panel.reviews.emptyHint') || 'When customers leave reviews on your products, they will appear here for moderation.'}
                         </p>
                     </div>
@@ -249,7 +244,7 @@ export default function ReviewsClient({
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 flex-wrap">
-                                            <span className="font-semibold text-text-primary text-sm">
+                                            <span className="font-semibold text-tx text-sm">
                                                 {review.author_name}
                                             </span>
                                             <StarRating value={review.rating} />
@@ -257,16 +252,16 @@ export default function ReviewsClient({
                                         </div>
 
                                         {review.comment && (
-                                            <p className="text-sm text-text-secondary mt-2 line-clamp-3">
+                                            <p className="text-sm text-tx-sec mt-2 line-clamp-3">
                                                 {review.comment}
                                             </p>
                                         )}
 
-                                        <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
+                                        <div className="flex items-center gap-3 mt-2 text-xs text-tx-muted">
                                             <span>
                                                 {new Date(review.created_at).toLocaleDateString(toIntlLocale(lang))}
                                             </span>
-                                            <span className="text-text-muted/40">•</span>
+                                            <span className="text-tx-faint">•</span>
                                             <span className="font-mono text-[10px]">
                                                 {review.product_id.slice(0, 12)}...
                                             </span>

@@ -29,8 +29,8 @@ export default function CompareButton({ productId, className = '' }: CompareButt
             disabled={isFull}
             className={`p-1.5 rounded-lg transition-all duration-200
                 ${active
-                    ? 'bg-primary text-white shadow-md scale-110'
-                    : 'bg-white/80 text-gray-500 hover:text-primary hover:bg-white hover:shadow-sm'
+                    ? 'bg-brand text-white shadow-md scale-110'
+                    : 'bg-white/80 text-gray-500 hover:text-brand hover:bg-white hover:shadow-sm'
                 }
                 ${isFull ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                 backdrop-blur-sm ${className}`}

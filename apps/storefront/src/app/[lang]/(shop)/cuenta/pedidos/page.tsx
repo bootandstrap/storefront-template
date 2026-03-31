@@ -55,9 +55,9 @@ async function OrdersList({
     if (orders.length === 0 && page === 1) {
         return (
             <div className="glass rounded-xl p-8 text-center">
-                <Package className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                <p className="text-text-muted text-sm mb-1">{t('account.noOrders')}</p>
-                <p className="text-text-muted text-xs">{t('account.noOrdersHint')}</p>
+                <Package className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                <p className="text-tx-muted text-sm mb-1">{t('account.noOrders')}</p>
+                <p className="text-tx-muted text-xs">{t('account.noOrdersHint')}</p>
             </div>
         )
     }
@@ -81,21 +81,21 @@ async function OrdersList({
                         <Link
                             key={order.id}
                             href={`/${lang}/cuenta/pedidos/${order.id}`}
-                            className="glass rounded-xl p-4 flex items-center justify-between hover:bg-surface-2 transition-all group"
+                            className="glass rounded-xl p-4 flex items-center justify-between hover:bg-sf-2 transition-all group"
                         >
                             <div className="space-y-1">
-                                <p className="text-sm font-semibold text-text-primary">
+                                <p className="text-sm font-semibold text-tx">
                                     {t('order.number')}#{order.display_id ?? order.id.slice(-6)}
                                 </p>
-                                <p className="text-xs text-text-muted">{date}</p>
+                                <p className="text-xs text-tx-muted">{date}</p>
                                 <StatusBadge status={status} label={t(cfg.key)} />
                             </div>
                             <div className="text-right space-y-1">
-                                <p className="text-sm font-bold text-text-primary">{total}</p>
-                                <p className="text-xs text-text-muted">
+                                <p className="text-sm font-bold text-tx">{total}</p>
+                                <p className="text-xs text-tx-muted">
                                     {itemCount} {itemCount === 1 ? t('order.item') : t('order.items')}
                                 </p>
-                                <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 justify-end">
+                                <span className="text-xs text-brand opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 justify-end">
                                     <Eye className="w-3 h-3" />
                                     {t('account.viewOrder')}
                                 </span>
@@ -111,7 +111,7 @@ async function OrdersList({
                     {page > 1 ? (
                         <Link
                             href={`/${lang}/cuenta/pedidos?page=${page - 1}`}
-                            className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg glass hover:bg-surface-2 transition-colors"
+                            className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg glass hover:bg-sf-2 transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" />
                             {t('pagination.previous') || 'Prev'}
@@ -123,14 +123,14 @@ async function OrdersList({
                         </span>
                     )}
 
-                    <span className="text-sm text-text-muted px-3">
+                    <span className="text-sm text-tx-muted px-3">
                         {page} / {totalPages}
                     </span>
 
                     {page < totalPages ? (
                         <Link
                             href={`/${lang}/cuenta/pedidos?page=${page + 1}`}
-                            className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg glass hover:bg-surface-2 transition-colors"
+                            className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg glass hover:bg-sf-2 transition-colors"
                         >
                             {t('pagination.next') || 'Next'}
                             <ChevronRight className="w-4 h-4" />
@@ -186,15 +186,15 @@ export default async function PedidosPage({
     if (!featureFlags.enable_order_tracking) {
         return (
             <div className="glass rounded-xl p-8 text-center">
-                <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                <p className="text-text-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
+                <ShieldX className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                <p className="text-tx-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
             </div>
         )
     }
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold font-display text-text-primary">
+            <h1 className="text-2xl font-bold font-display text-tx">
                 {t('account.orderHistory')}
             </h1>
 

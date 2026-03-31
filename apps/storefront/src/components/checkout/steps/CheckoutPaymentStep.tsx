@@ -63,8 +63,8 @@ export default function CheckoutPaymentStep({
         <div className="animate-fade-in">
             {stripeLoading && (
                 <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
-                    <span className="ml-2 text-sm text-text-muted">
+                    <Loader2 className="w-5 h-5 animate-spin text-tx-muted" />
+                    <span className="ml-2 text-sm text-tx-muted">
                         {t('checkout.initPayment')}
                     </span>
                 </div>
@@ -107,6 +107,7 @@ export default function CheckoutPaymentStep({
                 <BankTransferFlow
                     bankDetails={bankDetails ?? {}}
                     totalFormatted={totalFormatted}
+                    cartId={cartId}
                     onConfirm={onBankTransferConfirm}
                 />
             )}

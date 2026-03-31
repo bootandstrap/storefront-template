@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { MessageCircle, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { MessageCircle, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import type { StoreConfig } from '@/lib/config'
 import type { MedusaLineItem } from '@/lib/medusa/client'
 import { useI18n } from '@/lib/i18n/provider'
@@ -44,6 +44,7 @@ export default function WhatsAppCheckoutFlow({
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showPreview, setShowPreview] = useState(false)
 
     // Fetch template from Supabase on mount
     useState(() => {
@@ -59,6 +60,15 @@ export default function WhatsAppCheckoutFlow({
         }
         load()
     })
+
+    // Pre-build message for preview
+    const previewMessage = useMemo(() => {
+        if (loading || items.length === 0) return ''
+        return buildWhatsAppMessage(
+            { items, customerName, customerPhone, deliveryAddress, notes, config },
+            template
+        )
+    }, [items, customerName, customerPhone, deliveryAddress, notes, config, template, loading])
 
     const handleSend = useCallback(async () => {
         if (submitting) return
@@ -101,7 +111,7 @@ export default function WhatsAppCheckoutFlow({
         return (
             <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-green-500" />
-                <span className="ml-2 text-sm text-text-muted">{t('common.loading')}</span>
+                <span className="ml-2 text-sm text-tx-muted">{t('common.loading')}</span>
             </div>
         )
     }
@@ -109,30 +119,55 @@ export default function WhatsAppCheckoutFlow({
     return (
         <div className="space-y-4">
             <div className="text-center mb-2">
-                <MessageCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <h3 className="text-base font-bold text-text-primary">
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                    <MessageCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-base font-bold text-tx">
                     {t('checkout.whatsapp.title')}
                 </h3>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-tx-sec mt-1">
                     {t('checkout.whatsapp.description')}
                 </p>
             </div>
 
             {template && (
-                <div className="text-xs text-text-muted text-center">
+                <div className="text-xs text-tx-muted text-center">
                     📝 {t('checkout.whatsapp.usingTemplate')}: <strong>{template.name}</strong>
                 </div>
             )}
 
+            {/* Message Preview Toggle */}
+            <div className="rounded-xl border border-sf-3 overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-sf-1 hover:bg-sf-2 transition-colors"
+                >
+                    <span className="flex items-center gap-2 text-sm text-tx-sec">
+                        {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {t('checkout.whatsapp.previewMessage') || 'Preview message'}
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 text-tx-muted" />
+                </button>
+                {showPreview && (
+                    <div className="px-4 py-3 bg-sf-1/50 border-t border-sf-3 animate-fade-in">
+                        <pre className="text-xs text-tx-sec whitespace-pre-wrap break-words font-mono leading-relaxed max-h-48 overflow-y-auto">
+                            {previewMessage}
+                        </pre>
+                    </div>
+                )}
+            </div>
+
             {error && (
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-red-400">{error}</p>
+                    <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
             )}
 
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                <p className="text-xs text-green-300">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-green-700 dark:text-green-300">
                     📱 {t('checkout.whatsapp.reviewNote')}
                 </p>
             </div>
@@ -140,7 +175,7 @@ export default function WhatsAppCheckoutFlow({
             <button
                 onClick={handleSend}
                 disabled={submitting}
-                className="btn btn-whatsapp w-full py-3 text-base disabled:opacity-60"
+                className="btn btn-whatsapp w-full py-3 text-base disabled:opacity-60 group"
                 type="button"
             >
                 {submitting ? (
@@ -152,7 +187,7 @@ export default function WhatsAppCheckoutFlow({
                     <>
                         <MessageCircle className="w-5 h-5" />
                         {t('checkout.whatsapp.sendButton')}
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                     </>
                 )}
             </button>

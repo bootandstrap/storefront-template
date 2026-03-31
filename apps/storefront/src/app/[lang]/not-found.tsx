@@ -16,11 +16,11 @@ export default async function NotFound() {
     return (
         <div className="min-h-[60vh] flex items-center justify-center px-4">
             <div className="text-center max-w-md">
-                <div className="text-8xl font-bold font-display text-surface-3 mb-4">404</div>
-                <h1 className="text-2xl font-bold font-display text-text-primary mb-3">
+                <div className="text-8xl font-bold font-display text-sf-3 mb-4">404</div>
+                <h1 className="text-2xl font-bold font-display text-tx mb-3">
                     {t('error.notFound.title')}
                 </h1>
-                <p className="text-text-muted mb-8">
+                <p className="text-tx-muted mb-8">
                     {t('error.notFound.description')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">

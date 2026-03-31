@@ -53,11 +53,11 @@ export default function NewsletterSignup() {
 
     return (
         <div className="w-full max-w-md">
-            <h4 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-primary" />
+            <h4 className="text-sm font-semibold text-tx mb-2 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-brand" />
                 {t('newsletter.title') || 'Newsletter'}
             </h4>
-            <p className="text-xs text-text-muted mb-3">
+            <p className="text-xs text-tx-muted mb-3">
                 {t('newsletter.description') || 'Suscríbete para recibir novedades y ofertas exclusivas.'}
             </p>
 
@@ -75,7 +75,7 @@ export default function NewsletterSignup() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder={t('newsletter.placeholder') || 'tu@email.com'}
                         required
-                        className="flex-1 px-3 py-2 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all min-w-0"
+                        className="flex-1 px-3 py-2 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all min-w-0"
                     />
                     <button
                         type="submit"

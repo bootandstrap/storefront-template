@@ -8,6 +8,8 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { createClient } from '@/lib/supabase/server'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { FolderKanban } from 'lucide-react'
 import { ProjectTimeline } from '../../../(shop)/cuenta/mi-proyecto/ProjectTimeline'
 
 export const dynamic = 'force-dynamic'
@@ -41,14 +43,11 @@ export default async function MiProyectoPage({
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {t('panel.project.title')}
-                </h1>
-                <p className="text-text-muted mt-1">
-                    {t('panel.project.subtitle')}
-                </p>
-            </div>
+            <PanelPageHeader
+                title={t('panel.project.title')}
+                subtitle={t('panel.project.subtitle')}
+                icon={<FolderKanban className="w-5 h-5" />}
+            />
             <ProjectTimeline project={project} />
         </div>
     )

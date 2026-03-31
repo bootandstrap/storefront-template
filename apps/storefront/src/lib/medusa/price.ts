@@ -38,6 +38,33 @@ export function getPrice(variant: MedusaVariant | undefined | null): ResolvedPri
 }
 
 /**
+ * Extract the original (pre-discount) price from a variant.
+ * Returns the original_amount from calculated_price, or falls back to raw prices.
+ * Used alongside getPrice() to show strikethrough pricing.
+ */
+export function getOriginalPrice(variant: MedusaVariant | undefined | null): ResolvedPrice | null {
+    if (!variant) return null
+
+    if (variant.calculated_price?.original_amount != null) {
+        return {
+            amount: variant.calculated_price.original_amount,
+            currency: variant.calculated_price.currency_code,
+        }
+    }
+
+    // Fallback to raw prices (same as getPrice fallback — no discount info available)
+    const price = variant.prices?.[0]
+    if (price) {
+        return {
+            amount: price.amount,
+            currency: price.currency_code,
+        }
+    }
+
+    return null
+}
+
+/**
  * Format a price for display.
  * Converts from cents to display format using Intl.NumberFormat.
  */

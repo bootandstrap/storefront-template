@@ -50,7 +50,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
 
     return (
         <>
-            <header data-testid="main-header" className="glass-strong sticky top-0 z-40 border-b border-surface-3/50">
+            <header data-testid="main-header" className="glass-strong sticky top-0 z-40 border-b border-sf-3">
                 <div className="container-page">
                     <div className="flex items-center justify-between h-16 md:h-18">
                         {/* Logo */}
@@ -65,7 +65,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                     priority
                                 />
                             ) : (
-                                <span className="text-xl font-bold font-display text-primary">
+                                <span className="text-xl font-bold font-display text-brand">
                                     {config.business_name}
                                 </span>
                             )}
@@ -75,11 +75,11 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {featureFlags.enable_product_search && (
                             <div className="hidden md:flex items-center gap-6 flex-1 max-w-md mx-8">
                                 <div className="relative w-full">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                                     <input
                                         type="search"
                                         placeholder={t('product.searchPlaceholder')}
-                                        className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-surface-1 border border-surface-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                                        className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-sf-1 border border-sf-3 text-tx placeholder:text-tx-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-soft transition-all"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 const value = (e.target as HTMLInputElement).value
@@ -100,7 +100,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             ) : (
                                 <Link
                                     href={localizedHref('products')}
-                                    className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
+                                    className="text-sm font-medium text-tx-sec hover:text-brand transition-colors"
                                 >
                                     {t('nav.products')}
                                 </Link>
@@ -110,7 +110,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                     href={`https://wa.me/${config.whatsapp_number}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                    className="text-sm font-medium text-tx-sec hover:text-brand transition-colors flex items-center gap-1"
                                 >
                                     <MessageCircle className="w-4 h-4" />
                                     {t('footer.contact')}
@@ -139,20 +139,20 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             {featureFlags.enable_product_search && (
                                 <button
                                     onClick={() => setSearchOpen(!searchOpen)}
-                                    className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
+                                    className="md:hidden p-2 rounded-full hover:bg-sf-1 transition-colors"
                                     aria-label={t('common.search')}
                                 >
-                                    <Search className="w-5 h-5 text-text-primary" />
+                                    <Search className="w-5 h-5 text-tx" />
                                 </button>
                             )}
 
                             {/* Cart button */}
                             <button
                                 onClick={openDrawer}
-                                className="relative p-2 rounded-full hover:bg-surface-1 transition-colors"
+                                className="relative p-2 rounded-full hover:bg-sf-1 transition-colors"
                                 aria-label={t('cart.title')}
                             >
-                                <ShoppingCart className="w-5 h-5 text-text-primary" />
+                                <ShoppingCart className="w-5 h-5 text-tx" />
                                 {itemCount > 0 && (
                                     <span data-testid="cart-badge" className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center animate-pulse-badge">
                                         {itemCount > 9 ? '9+' : itemCount}
@@ -176,7 +176,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             {/* Mobile menu toggle */}
                             <button
                                 onClick={() => setMobileOpen(!mobileOpen)}
-                                className="md:hidden p-2 rounded-full hover:bg-surface-1 transition-colors"
+                                className="md:hidden p-2 rounded-full hover:bg-sf-1 transition-colors"
                                 aria-label={t('nav.menu')}
                             >
                                 {mobileOpen ? (
@@ -193,12 +193,12 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                 {searchOpen && (
                     <div className="md:hidden px-4 pb-3 animate-slide-up">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                             <input
                                 type="search"
                                 placeholder={t('product.searchPlaceholder')}
                                 autoFocus
-                                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-full bg-surface-1 border border-surface-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-full bg-sf-1 border border-sf-3 text-tx placeholder:text-tx-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-soft transition-all"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         const value = (e.target as HTMLInputElement).value
@@ -221,10 +221,10 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         className="absolute inset-0 bg-black/30"
                         onClick={() => setMobileOpen(false)}
                     />
-                    <nav className="absolute top-16 left-0 right-0 glass-strong border-b border-surface-3/50 p-6 flex flex-col gap-4 animate-slide-up">
+                    <nav className="absolute top-16 left-0 right-0 glass-strong border-b border-sf-3 p-6 flex flex-col gap-4 animate-slide-up">
                         <Link
                             href={localizedHref('products')}
-                            className="text-base font-medium p-2 rounded-lg hover:bg-surface-1"
+                            className="text-base font-medium p-2 rounded-lg hover:bg-sf-1"
                             onClick={() => setMobileOpen(false)}
                         >
                             {t('nav.products')}
@@ -234,7 +234,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                 href={`https://wa.me/${config.whatsapp_number}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-base font-medium p-2 rounded-lg hover:bg-surface-1 flex items-center gap-2"
+                                className="text-base font-medium p-2 rounded-lg hover:bg-sf-1 flex items-center gap-2"
                             >
                                 <MessageCircle className="w-4 h-4" />
                                 {t('checkout.whatsapp')}
@@ -245,7 +245,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {featureFlags.enable_customer_accounts && (
                             <Link
                                 href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
-                                className="text-base font-medium p-2 rounded-lg hover:bg-surface-1 flex items-center gap-2 text-primary"
+                                className="text-base font-medium p-2 rounded-lg hover:bg-sf-1 flex items-center gap-2 text-brand"
                                 onClick={() => setMobileOpen(false)}
                             >
                                 <User className="w-4 h-4" />
@@ -254,7 +254,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         )}
 
                         {/* Mobile theme toggle + language & currency selectors */}
-                        <div className="border-t border-surface-3/50 pt-4 mt-2 flex items-center gap-2">
+                        <div className="border-t border-sf-3 pt-4 mt-2 flex items-center gap-2">
                             <ThemeToggle />
                             {featureFlags.enable_multi_language && (
                                 <LanguageSelector activeLanguages={activeLanguages} maxLanguages={maxLanguages} />

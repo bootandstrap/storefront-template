@@ -22,7 +22,7 @@ import {
 import { trackEvent } from '@/lib/analytics'
 import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
-import { X, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { X, ArrowLeft, ArrowRight, Loader2, User, MapPin, Truck, Wallet, CreditCard, Check } from 'lucide-react'
 
 // Step components
 import CheckoutInfoStep from './steps/CheckoutInfoStep'
@@ -56,6 +56,14 @@ interface CheckoutModalProps {
 type CheckoutStep = 'info' | 'address' | 'shipping' | 'method' | 'payment' | 'confirmation'
 
 const ALL_STEPS: CheckoutStep[] = ['info', 'address', 'shipping', 'method', 'payment', 'confirmation']
+
+const STEP_ICONS: Record<string, typeof User> = {
+    info: User,
+    address: MapPin,
+    shipping: Truck,
+    method: Wallet,
+    payment: CreditCard,
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -360,15 +368,15 @@ export default function CheckoutModal({
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface-0 border border-surface-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom">
+            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-sf-0 border border-sf-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom">
                 {/* Header */}
-                <div className="sticky top-0 bg-surface-0/80 backdrop-blur-xl border-b border-surface-3 p-4 z-10">
+                <div className="sticky top-0 bg-glass-heavy backdrop-blur-xl border-b border-sf-3 p-4 z-10">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             {stepIndex > 0 && step !== 'confirmation' && (
                                 <button
                                     onClick={goBack}
-                                    className="p-1.5 rounded-lg hover:bg-surface-1 transition-colors"
+                                    className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                                     type="button"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
@@ -380,23 +388,41 @@ export default function CheckoutModal({
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-1.5 rounded-lg hover:bg-surface-1 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                             type="button"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* Step indicator */}
+                    {/* Step indicator — icon stepper */}
                     {step !== 'confirmation' && (
-                        <div className="flex gap-1">
-                            {activeSteps.slice(0, -1).map((s: CheckoutStep, i: number) => (
-                                <div
-                                    key={s}
-                                    className={`h-1 flex-1 rounded-full transition-colors ${i <= stepIndex ? 'bg-primary' : 'bg-surface-3'
-                                        }`}
-                                />
-                            ))}
+                        <div className="flex items-center justify-between gap-1">
+                            {activeSteps.slice(0, -1).map((s: CheckoutStep, i: number) => {
+                                const isComplete = i < stepIndex
+                                const isActive = i === stepIndex
+                                const StepIcon = STEP_ICONS[s] || User
+                                return (
+                                    <div key={s} className="flex-1 flex items-center gap-1">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                                            isComplete ? 'bg-brand text-white' :
+                                            isActive ? 'bg-brand/15 text-brand ring-2 ring-brand/30' :
+                                            'bg-sf-2 text-tx-muted'
+                                        }`}>
+                                            {isComplete ? (
+                                                <Check className="w-3 h-3" strokeWidth={2.5} />
+                                            ) : (
+                                                <StepIcon className="w-3 h-3" strokeWidth={1.5} />
+                                            )}
+                                        </div>
+                                        {i < activeSteps.length - 2 && (
+                                            <div className={`flex-1 h-0.5 rounded-full transition-colors duration-300 ${
+                                                isComplete ? 'bg-brand' : 'bg-sf-3'
+                                            }`} />
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
                     )}
                 </div>
@@ -511,7 +537,7 @@ export default function CheckoutModal({
 
                 {/* Footer with navigation (except for payment and confirmation) */}
                 {step !== 'payment' && step !== 'confirmation' && (
-                    <div className="sticky bottom-0 bg-surface-0/80 backdrop-blur-xl border-t border-surface-3 p-4">
+                    <div className="sticky bottom-0 bg-glass-heavy backdrop-blur-xl border-t border-sf-3 p-4">
                         <button
                             onClick={
                                 step === 'address' ? handleAddressContinue

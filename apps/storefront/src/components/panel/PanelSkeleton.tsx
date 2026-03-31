@@ -21,7 +21,7 @@ interface ShimmerProps {
 function Shimmer({ className = '' }: ShimmerProps) {
     return (
         <div
-            className={`animate-pulse rounded-lg bg-surface-2/60 ${className}`}
+            className={`animate-pulse rounded-lg bg-glass ${className}`}
         />
     )
 }
@@ -51,7 +51,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
     return (
         <div className="glass rounded-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex gap-4 px-5 py-3 bg-surface-1/50 border-b border-surface-2">
+            <div className="flex gap-4 px-5 py-3 bg-glass border-b border-sf-2">
                 {Array.from({ length: cols }).map((_, i) => (
                     <Shimmer key={i} className="h-3 flex-1" />
                 ))}
@@ -60,7 +60,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
             {Array.from({ length: rows }).map((_, i) => (
                 <div
                     key={i}
-                    className="flex items-center gap-4 px-5 py-4 border-b border-surface-2/50 last:border-0"
+                    className="flex items-center gap-4 px-5 py-4 border-b border-sf-2 last:border-0"
                 >
                     <Shimmer className="h-8 w-8 rounded-full flex-shrink-0" />
                     {Array.from({ length: cols - 1 }).map((_, j) => (

@@ -39,7 +39,6 @@ const nextConfig: NextConfig = {
       static: 180,
     },
     optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
-    cssChunking: 'strict',
   },
 
   // ── Security + CDN Headers ─────────────────────────

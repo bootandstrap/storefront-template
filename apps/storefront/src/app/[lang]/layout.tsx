@@ -52,13 +52,13 @@ export default async function LangLayout({
 
         return (
             <I18nProvider locale={locale} dictionary={dictionary}>
-                <div className="min-h-screen flex items-center justify-center bg-surface-0 px-4">
+                <div className="min-h-screen flex items-center justify-center bg-sf-0 px-4">
                     <div className="glass-strong rounded-2xl p-12 text-center max-w-lg">
                         <div className="text-6xl mb-6">{isSuspended ? '🚫' : '⏸️'}</div>
-                        <h1 className="text-3xl font-bold font-display text-text-primary mb-3">
+                        <h1 className="text-3xl font-bold font-display text-tx mb-3">
                             {t(isSuspended ? 'tenant.suspended.title' : 'tenant.paused.title')}
                         </h1>
-                        <p className="text-text-muted text-lg">
+                        <p className="text-tx-muted text-lg">
                             {t(isSuspended ? 'tenant.suspended.description' : 'tenant.paused.description')}
                         </p>
                         {config.whatsapp_number && (

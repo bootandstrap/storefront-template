@@ -93,6 +93,12 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_traffic_expansion: true,
                 enable_traffic_analytics: true,
                 enable_traffic_autoscale: true,
+                // New module gates (Phase 4)
+                enable_seo: true,
+                enable_social_media: true,
+                enable_automations: true,
+                enable_auth_advanced: true,
+                enable_sales_channels: true,
             }
 
             const interfaceKeys = Object.keys(dummyFlags).sort()

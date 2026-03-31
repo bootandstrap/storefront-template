@@ -1,18 +1,20 @@
 @import "tailwindcss";
+@source "../../src";
 
 /* ========================================================================
-   Untitled UI React – Foundation Layer
-   Coexists with existing design system. UUI components use these tokens.
+   GLOBALS.CSS — A+D Architecture
+   - @theme inline: ALL tokens baked directly into utility classes (no var() deps)
+   - :root: Runtime CSS vars for component CSS
+   - No UUI dead weight — only 53 actually-used UUI tokens retained
+   Turbopack-safe: utility classes are self-contained, no :root chunk dependency
    ======================================================================== */
-@import "../styles/untitled-ui/theme.css";
+
 @import "../styles/untitled-ui/typography.css";
 
 @plugin "tailwindcss-react-aria-components";
 @plugin "tailwindcss-animate";
 
-/* Dark mode variant: activates UUI dark tokens on .dark-mode class
-   AND when system prefers dark. This bridges with the project's existing
-   prefers-color-scheme dark mode approach. */
+/* Dark mode variant */
 @custom-variant dark (&:where(.dark-mode, .dark-mode *));
 
 /* UUI label/focus variants */
@@ -35,165 +37,536 @@
     transition-timing-function: inherit;
 }
 
-/* ========================================================================
-   SOTA E-Commerce Template Design System — Tailwind v4 CSS-first config
-   ======================================================================== */
-
+/* =========================================================================
+   @theme inline — ALL tokens baked into utility classes.
+   Tailwind generates: .bg-brand { background-color: #2D5016; }
+   NOT: .bg-brand { background-color: var(--color-brand); }
+   This makes every utility self-contained — no :root chunk dependency.
+   ========================================================================= */
 @theme inline {
-  /* --- Dynamic theme (overridden at runtime via CSS vars from config) --- */
-  --color-primary: var(--config-primary, #2D5016);
-  --color-primary-light: var(--config-primary-light, #3d6b1e);
-  --color-secondary: var(--config-secondary, #8BC34A);
-  --color-secondary-light: var(--config-secondary-light, #a4d65e);
-  --color-accent: var(--config-accent, #FF9800);
-  --color-accent-light: var(--config-accent-light, #FFB74D);
+    /* =======================================================================
+       FONTS
+       ======================================================================= */
+    --font-body: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-display: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-mono: ui-monospace, "Roboto Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --font-sans: "Inter", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 
-  /* --- Surface layers (driven by config preset) --- */
-  --color-surface-0: var(--config-surface, #ffffff);
-  --color-surface-1: color-mix(in srgb, var(--config-surface, #f8faf6) 92%, var(--config-primary, #2D5016) 8%);
-  --color-surface-2: color-mix(in srgb, var(--config-surface, #f0f4ec) 85%, var(--config-primary, #2D5016) 15%);
-  --color-surface-3: color-mix(in srgb, var(--config-surface, #e8ede3) 78%, var(--config-primary, #2D5016) 22%);
+    /* =======================================================================
+       FONT SIZES (use --spacing for consistency)
+       ======================================================================= */
+    --text-xs: calc(var(--spacing) * 3);
+    --text-xs--line-height: calc(var(--spacing) * 4.5);
+    --text-sm: calc(var(--spacing) * 3.5);
+    --text-sm--line-height: calc(var(--spacing) * 5);
+    --text-md: calc(var(--spacing) * 4);
+    --text-md--line-height: calc(var(--spacing) * 6);
+    --text-lg: calc(var(--spacing) * 4.5);
+    --text-lg--line-height: calc(var(--spacing) * 7);
+    --text-xl: calc(var(--spacing) * 5);
+    --text-xl--line-height: calc(var(--spacing) * 7.5);
+    --text-display-xs: calc(var(--spacing) * 6);
+    --text-display-xs--line-height: calc(var(--spacing) * 8);
+    --text-display-sm: calc(var(--spacing) * 7.5);
+    --text-display-sm--line-height: calc(var(--spacing) * 9.5);
+    --text-display-md: calc(var(--spacing) * 9);
+    --text-display-md--line-height: calc(var(--spacing) * 11);
+    --text-display-md--letter-spacing: -0.72px;
+    --text-display-lg: calc(var(--spacing) * 12);
+    --text-display-lg--line-height: calc(var(--spacing) * 15);
+    --text-display-lg--letter-spacing: -0.96px;
+    --text-display-xl: calc(var(--spacing) * 15);
+    --text-display-xl--line-height: calc(var(--spacing) * 18);
+    --text-display-xl--letter-spacing: -1.2px;
+    --text-display-2xl: calc(var(--spacing) * 18);
+    --text-display-2xl--line-height: calc(var(--spacing) * 22.5);
+    --text-display-2xl--letter-spacing: -1.44px;
 
-  /* --- Text hierarchy (driven by config preset) --- */
-  --color-text-primary: var(--config-text, #1a2e0a);
-  --color-text-secondary: color-mix(in srgb, var(--config-text, #1a2e0a) 80%, transparent);
-  --color-text-muted: color-mix(in srgb, var(--config-text, #1a2e0a) 65%, transparent);
-  --color-text-inverse: #ffffff;
+    /* =======================================================================
+       LAYOUT
+       ======================================================================= */
+    --max-width-container: 1280px;
+    --breakpoint-xxs: 320px;
+    --breakpoint-xs: 600px;
 
-  /* --- Semantic --- */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+    /* =======================================================================
+       RADIUS
+       ======================================================================= */
+    --radius-none: 0px;
+    --radius-xs: 0.125rem;
+    --radius-sm: 0.25rem;
+    --radius-DEFAULT: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-3xl: 1.5rem;
+    --radius-full: 9999px;
+    --radius-card: 1rem;
+    --radius-button: 0.75rem;
+    --radius-pill: 9999px;
 
-  /* --- Fonts --- */
-  --font-sans: var(--font-inter), "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-outfit), "Sora", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    /* =======================================================================
+       SHADOWS
+       ======================================================================= */
+    --shadow-xs: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    --shadow-sm: 0px 1px 3px rgba(10, 13, 18, 0.1), 0px 1px 2px -1px rgba(10, 13, 18, 0.1);
+    --shadow-md: 0px 4px 6px -1px rgba(10, 13, 18, 0.1), 0px 2px 4px -2px rgba(10, 13, 18, 0.06);
+    --shadow-lg: 0px 12px 16px -4px rgba(10, 13, 18, 0.08), 0px 4px 6px -2px rgba(10, 13, 18, 0.03), 0px 2px 2px -1px rgba(10, 13, 18, 0.04);
+    --shadow-xl: 0px 20px 24px -4px rgba(10, 13, 18, 0.08), 0px 8px 8px -4px rgba(10, 13, 18, 0.03), 0px 3px 3px -1.5px rgba(10, 13, 18, 0.04);
+    --shadow-2xl: 0px 24px 48px -12px rgba(10, 13, 18, 0.18), 0px 4px 4px -2px rgba(10, 13, 18, 0.04);
+    --shadow-3xl: 0px 32px 64px -12px rgba(10, 13, 18, 0.14), 0px 5px 5px -2.5px rgba(10, 13, 18, 0.04);
+    --shadow-skeumorphic: 0px 0px 0px 1px rgba(10, 13, 18, 0.18) inset, 0px -2px 0px 0px rgba(10, 13, 18, 0.05) inset;
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 10px 25px rgba(45, 80, 22, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.15);
 
-  /* --- Spacing scale extensions --- */
-  --spacing-18: 4.5rem;
-  --spacing-22: 5.5rem;
+    /* =======================================================================
+       ANIMATIONS
+       ======================================================================= */
+    --animate-marquee: marquee 60s linear infinite;
+    --animate-caret-blink: caret-blink 1s infinite;
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* --- Border radius --- */
-  --radius-card: 1rem;
-  --radius-button: 0.75rem;
-  --radius-pill: 9999px;
+    @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100%); }
+    }
+    @keyframes caret-blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
 
-  /* --- Shadows --- */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 10px 25px rgba(45, 80, 22, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.15);
+    /* =======================================================================
+       SPACING EXTENSIONS
+       ======================================================================= */
+    --spacing-18: 4.5rem;
+    --spacing-22: 5.5rem;
 
-  /* --- Animation --- */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    /* =======================================================================
+       BASE COLORS
+       ======================================================================= */
+    --color-transparent: rgb(0 0 0 / 0);
+    --color-white: rgb(255 255 255);
+    --color-black: rgb(0 0 0);
 
-  /* --- Standard Tailwind palettes (Tailwind v4 @theme inline strips defaults) --- */
-  /* Emerald */
-  --color-emerald-50: #ecfdf5;
-  --color-emerald-100: #d1fae5;
-  --color-emerald-200: #a7f3d0;
-  --color-emerald-300: #6ee7b7;
-  --color-emerald-400: #34d399;
-  --color-emerald-500: #10b981;
-  --color-emerald-600: #059669;
-  --color-emerald-700: #047857;
-  --color-emerald-800: #065f46;
-  --color-emerald-900: #064e3b;
-  /* Teal */
-  --color-teal-400: #2dd4bf;
-  --color-teal-500: #14b8a6;
-  --color-teal-600: #0d9488;
-  /* Rose */
-  --color-rose-50: #fff1f2;
-  --color-rose-100: #ffe4e6;
-  --color-rose-400: #fb7185;
-  --color-rose-500: #f43f5e;
-  --color-rose-600: #e11d48;
-  /* Amber */
-  --color-amber-50: #fffbeb;
-  --color-amber-100: #fef3c7;
-  --color-amber-200: #fde68a;
-  --color-amber-400: #fbbf24;
-  --color-amber-500: #f59e0b;
-  --color-amber-600: #d97706;
-  /* Violet */
-  --color-violet-400: #a78bfa;
-  --color-violet-500: #8b5cf6;
-  --color-violet-600: #7c3aed;
-  /* Blue */
-  --color-blue-400: #60a5fa;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #2563eb;
-  /* Orange */
-  --color-orange-400: #fb923c;
-  --color-orange-500: #f97316;
-  --color-orange-600: #ea580c;
-  /* Green (used in receipts/success) */
-  --color-green-400: #4ade80;
-  --color-green-500: #22c55e;
-  --color-green-600: #16a34a;
-  /* Red */
-  --color-red-400: #f87171;
-  --color-red-500: #ef4444;
-  --color-red-600: #dc2626;
+    /* =======================================================================
+       SOTA BRAND TOKENS — Our green brand system
+       ======================================================================= */
+    --color-brand: #2D5016;
+    --color-brand-light: #3d6b1e;
+    --color-brand-dark: #234010;
+    --color-brand-subtle: #2d50160a;
+    --color-brand-muted: #2d50161f;
+    --color-brand-emphasis: #2D5016;
+
+    /* Brand scale (green) */
+    --color-brand-25:  #f6f9f4;
+    --color-brand-50:  #eef3ea;
+    --color-brand-100: #dce7d4;
+    --color-brand-200: #b9cfaa;
+    --color-brand-300: #8fb278;
+    --color-brand-400: #6a9a4e;
+    --color-brand-500: #4a8030;
+    --color-brand-600: #2D5016;
+    --color-brand-700: #264413;
+    --color-brand-800: #1f380f;
+    --color-brand-900: #172c0c;
+    --color-brand-950: #0f1c08;
+
+    /* Secondary / Accent */
+    --color-sec: #8BC34A;
+    --color-sec-light: #9ccc65;
+    --color-accent: #FF9800;
+    --color-accent-light: #ffb74d;
+
+    /* Surfaces */
+    --color-sf-0: #ffffff;
+    --color-sf-1: #f8faf6;
+    --color-sf-2: #f0f4ec;
+    --color-sf-3: #e8ede3;
+
+    /* Glass */
+    --color-glass: rgba(255, 255, 255, 0.7);
+    --color-glass-heavy: rgba(255, 255, 255, 0.85);
+
+    /* Text hierarchy */
+    --color-tx: #1a2e0a;
+    --color-tx-sec: #4a5e3a;
+    --color-tx-muted: #6b7d5c;
+    --color-tx-faint: #8b9c7d;
+    --color-tx-inv: #ffffff;
+
+    /* Semantic shortcuts */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    /* =======================================================================
+       GRAY SCALE (from UUI, flat values)
+       ======================================================================= */
+    --color-gray-25: rgb(253 253 253);
+    --color-gray-50: rgb(250 250 250);
+    --color-gray-100: rgb(245 245 245);
+    --color-gray-200: rgb(233 234 235);
+    --color-gray-300: rgb(213 215 218);
+    --color-gray-400: rgb(164 167 174);
+    --color-gray-500: rgb(113 118 128);
+    --color-gray-600: rgb(83 88 98);
+    --color-gray-700: rgb(65 70 81);
+    --color-gray-800: rgb(37 43 55);
+    --color-gray-900: rgb(24 29 39);
+    --color-gray-950: rgb(10 13 18);
+
+    /* =======================================================================
+       ERROR / WARNING / SUCCESS SCALES (from UUI, flat values)
+       ======================================================================= */
+    --color-error-25: rgb(255 251 250);
+    --color-error-50: rgb(254 243 242);
+    --color-error-100: rgb(254 228 226);
+    --color-error-200: rgb(254 205 202);
+    --color-error-300: rgb(253 162 155);
+    --color-error-400: rgb(249 112 102);
+    --color-error-500: rgb(240 68 56);
+    --color-error-600: rgb(217 45 32);
+    --color-error-700: rgb(180 35 24);
+    --color-error-800: rgb(145 32 24);
+    --color-error-900: rgb(122 39 26);
+    --color-error-950: rgb(85 22 12);
+
+    --color-warning-25: rgb(255 252 245);
+    --color-warning-50: rgb(255 250 235);
+    --color-warning-100: rgb(254 240 199);
+    --color-warning-200: rgb(254 223 137);
+    --color-warning-300: rgb(254 200 75);
+    --color-warning-400: rgb(253 176 34);
+    --color-warning-500: rgb(247 144 9);
+    --color-warning-600: rgb(220 104 3);
+    --color-warning-700: rgb(181 71 8);
+    --color-warning-800: rgb(147 55 13);
+    --color-warning-900: rgb(122 46 14);
+    --color-warning-950: rgb(78 29 9);
+
+    --color-success-25: rgb(246 254 249);
+    --color-success-50: rgb(236 253 243);
+    --color-success-100: rgb(220 250 230);
+    --color-success-200: rgb(171 239 198);
+    --color-success-300: rgb(117 224 167);
+    --color-success-400: rgb(71 205 137);
+    --color-success-500: rgb(23 178 106);
+    --color-success-600: rgb(7 148 85);
+    --color-success-700: rgb(6 118 71);
+    --color-success-800: rgb(8 93 58);
+    --color-success-900: rgb(7 77 49);
+    --color-success-950: rgb(5 51 33);
+
+    /* =======================================================================
+       RETAINED UUI SEMANTIC TOKENS — Resolved to flat values (no var() chains!)
+       53 tokens actually used in components
+       ======================================================================= */
+
+    /* --- Foreground (text-fg-*) --- */
+    --color-fg-brand-primary: #4a8030;           /* was var(--color-brand-500) → our green */
+    --color-fg-brand-secondary_alt: #8fb278;     /* was var(--color-brand-300) → our green */
+    --color-fg-brand-secondary_hover: #4a8030;   /* was var(--color-brand-500) → our green */
+    --color-fg-disabled: rgb(164 167 174);       /* was var(--color-gray-400) */
+    --color-fg-disabled_subtle: rgb(213 215 218); /* was var(--color-gray-300) */
+    --color-fg-error-primary: rgb(217 45 32);    /* was var(--color-error-600) */
+    --color-fg-error-secondary: rgb(240 68 56);  /* was var(--color-error-500) */
+    --color-fg-quaternary: rgb(164 167 174);     /* was var(--color-gray-400) */
+    --color-fg-quaternary_hover: rgb(113 118 128); /* was var(--color-gray-500) */
+    --color-fg-success-primary: rgb(7 148 85);   /* was var(--color-success-600) */
+    --color-fg-white: rgb(255 255 255);          /* was var(--color-white) */
+
+    /* --- Background (bg-bg-*) --- */
+    --color-bg-brand-primary: #eef3ea;           /* was var(--color-brand-50) → our green */
+    --color-bg-brand-solid: #2D5016;             /* was var(--color-brand-600) → our green */
+    --color-bg-error-solid: rgb(217 45 32);      /* was var(--color-error-600) */
+    --color-bg-success-solid: rgb(7 148 85);     /* was var(--color-success-600) */
+    --color-bg-active: rgb(250 250 250);         /* was var(--color-gray-50) */
+    --color-bg-disabled: rgb(245 245 245);       /* was var(--color-gray-100) */
+    --color-bg-disabled_subtle: rgb(250 250 250); /* was var(--color-gray-50) */
+    --color-bg-tertiary: rgb(245 245 245);       /* was var(--color-gray-100) */
+    --color-bg-error-primary: rgb(254 243 242);  /* was var(--color-error-50) */
+    --color-bg-error-solid_hover: rgb(180 35 24); /* was var(--color-error-700) */
+
+    /* --- Text (text-text-*) --- */
+    --color-text-primary: rgb(24 29 39);         /* was var(--color-gray-900) */
+    --color-text-secondary: rgb(65 70 81);       /* was var(--color-gray-700) */
+    --color-text-tertiary: rgb(83 88 98);        /* was var(--color-gray-600) */
+    --color-text-disabled: rgb(113 118 128);     /* was var(--color-gray-500) */
+    --color-text-error-primary: rgb(217 45 32);  /* was var(--color-error-600) */
+    --color-text-error-primary_hover: rgb(180 35 24); /* was var(--color-error-700) */
+
+    /* --- Border (border-border-*) --- */
+    --color-border-brand: #8fb278;               /* was var(--color-brand-300) → our green */
+    --color-border-primary: rgb(213 215 218);    /* was var(--color-gray-300) */
+    --color-border-disabled: rgb(213 215 218);   /* was var(--color-gray-300) */
+    --color-border-error: rgb(240 68 56);        /* was var(--color-error-500) */
+    --color-border-error_subtle: rgb(253 162 155); /* was var(--color-error-300) */
+
+    /* --- Button (text-button-*) --- */
+    --color-button-primary-icon: #b9cfaa;        /* was var(--color-brand-200) → our green */
+    --color-button-primary-icon_hover: #dce7d4;  /* was var(--color-brand-100) → our green */
+    --color-button-destructive-primary-icon: rgb(253 162 155);    /* was var(--color-error-300) */
+    --color-button-destructive-primary-icon_hover: rgb(254 205 202); /* was var(--color-error-200) */
+
+    /* --- Focus (ring-focus-*) --- */
+    --color-focus-ring: #8fb278;                 /* was var(--color-brand-300) → our green */
+
+    /* --- Tooltip --- */
+    --color-tooltip-supporting-text: rgb(213 215 218); /* was var(--color-gray-300) */
+
+    /* --- Utility colors (bg-utility-*) — flat values --- */
+    --color-utility-brand-50: #eef3ea;           /* was var(--color-brand-50) → our green */
+    --color-utility-brand-100: #dce7d4;          /* was var(--color-brand-100) → our green */
+    --color-utility-gray-50: rgb(250 250 250);
+    --color-utility-gray-100: rgb(245 245 245);
+    --color-utility-blue-50: rgb(239 248 255);
+    --color-utility-blue-100: rgb(209 233 255);
+    --color-utility-blue-light-50: rgb(240 249 255);
+    --color-utility-blue-light-100: rgb(224 242 254);
+    --color-utility-error-50: rgb(254 243 242);
+    --color-utility-error-100: rgb(254 228 226);
+    --color-utility-success-50: rgb(236 253 243);
+    --color-utility-success-100: rgb(220 250 230);
+    --color-utility-warning-50: rgb(255 250 235);
+    --color-utility-warning-100: rgb(254 240 199);
+    --color-utility-indigo-50: rgb(238 244 255);
+    --color-utility-indigo-100: rgb(224 234 255);
+    --color-utility-orange-50: rgb(254 246 238);
+    --color-utility-orange-100: rgb(253 234 215);
+    --color-utility-pink-50: rgb(253 242 250);
+    --color-utility-pink-100: rgb(252 231 246);
+    --color-utility-purple-50: rgb(244 243 255);
+    --color-utility-purple-100: rgb(235 233 254);
+    --color-utility-gray-blue-50: rgb(248 249 252);
+    --color-utility-gray-blue-100: rgb(234 236 245);
+
+    /* =======================================================================
+       EXTENDED PALETTES — Colors not provided by UUI
+       ======================================================================= */
+
+    /* Gray-Blue scale */
+    --color-gray-blue-25: rgb(252 252 253);
+    --color-gray-blue-200: rgb(213 217 235);
+    --color-gray-blue-300: rgb(179 184 219);
+    --color-gray-blue-400: rgb(113 123 188);
+    --color-gray-blue-500: rgb(78 91 166);
+    --color-gray-blue-600: rgb(62 71 132);
+    --color-gray-blue-700: rgb(54 63 114);
+    --color-gray-blue-800: rgb(41 48 86);
+    --color-gray-blue-900: rgb(16 19 35);
+    --color-gray-blue-950: rgb(13 15 28);
+
+    /* Slate */
+    --color-slate-50: #f8fafc;
+    --color-slate-100: #f1f5f9;
+    --color-slate-200: #e2e8f0;
+    --color-slate-300: #cbd5e1;
+    --color-slate-400: #94a3b8;
+    --color-slate-500: #64748b;
+    --color-slate-600: #475569;
+    --color-slate-700: #334155;
+    --color-slate-800: #1e293b;
+    --color-slate-900: #0f172a;
+
+    /* Zinc */
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f4f4f5;
+    --color-zinc-200: #e4e4e7;
+    --color-zinc-300: #d4d4d8;
+    --color-zinc-400: #a1a1aa;
+    --color-zinc-500: #71717a;
+    --color-zinc-600: #52525b;
+    --color-zinc-700: #3f3f46;
+    --color-zinc-800: #27272a;
+    --color-zinc-900: #18181b;
+
+    /* Neutral */
+    --color-neutral-50: #fafafa;
+    --color-neutral-100: #f5f5f5;
+    --color-neutral-200: #e5e5e5;
+    --color-neutral-300: #d4d4d4;
+    --color-neutral-400: #a3a3a3;
+    --color-neutral-500: #737373;
+    --color-neutral-600: #525252;
+    --color-neutral-700: #404040;
+    --color-neutral-800: #262626;
+    --color-neutral-900: #171717;
+
+    /* Emerald */
+    --color-emerald-50: #ecfdf5;
+    --color-emerald-100: #d1fae5;
+    --color-emerald-200: #a7f3d0;
+    --color-emerald-300: #6ee7b7;
+    --color-emerald-400: #34d399;
+    --color-emerald-500: #10b981;
+    --color-emerald-600: #059669;
+    --color-emerald-700: #047857;
+    --color-emerald-800: #065f46;
+    --color-emerald-900: #064e3b;
+
+    /* Sky */
+    --color-sky-50: #f0f9ff;
+    --color-sky-100: #e0f2fe;
+    --color-sky-200: #bae6fd;
+    --color-sky-300: #7dd3fc;
+    --color-sky-400: #38bdf8;
+    --color-sky-500: #0ea5e9;
+    --color-sky-600: #0284c7;
+
+    /* Amber */
+    --color-amber-50: #fffbeb;
+    --color-amber-100: #fef3c7;
+    --color-amber-200: #fde68a;
+    --color-amber-300: #fcd34d;
+    --color-amber-400: #fbbf24;
+    --color-amber-500: #f59e0b;
+    --color-amber-600: #d97706;
+    --color-amber-700: #b45309;
+    --color-amber-800: #92400e;
+    --color-amber-900: #78350f;
+
+    /* Lime */
+    --color-lime-50: #f7fee7;
+    --color-lime-100: #ecfccb;
+    --color-lime-300: #bef264;
+    --color-lime-400: #a3e635;
+    --color-lime-500: #84cc16;
+    --color-lime-600: #65a30d;
+
+    /* Red */
+    --color-red-50: #fef2f2;
+    --color-red-100: #fee2e2;
+    --color-red-200: #fecaca;
+    --color-red-300: #fca5a5;
+    --color-red-400: #f87171;
+    --color-red-500: #ef4444;
+    --color-red-600: #dc2626;
+    --color-red-700: #b91c1c;
+    --color-red-800: #991b1b;
+    --color-red-900: #7f1d1d;
+    --color-red-950: #450a0a;
 }
 
-/* ========================================================================
-   UUI ↔ Project Brand Bridge
-   Remaps UUI's hardcoded purple brand-* scale to the project's dynamic
-   --color-primary via color-mix(). ALL UUI semantic tokens (bg-brand-solid,
-   fg-brand-primary, focus-ring, border-brand, toggle, slider, etc.) chain
-   from this base scale, so this single block unifies the design system.
-   ======================================================================== */
-
+/* =========================================================================
+   :root — Runtime CSS vars for component CSS (.btn-primary, .glass, etc.)
+   These exist at runtime so component CSS can use var(--color-brand).
+   ========================================================================= */
 :root {
-  --color-brand-25:  color-mix(in srgb, var(--color-primary) 4%, white);
-  --color-brand-50:  color-mix(in srgb, var(--color-primary) 8%, white);
-  --color-brand-100: color-mix(in srgb, var(--color-primary) 15%, white);
-  --color-brand-200: color-mix(in srgb, var(--color-primary) 30%, white);
-  --color-brand-300: color-mix(in srgb, var(--color-primary) 45%, white);
-  --color-brand-400: color-mix(in srgb, var(--color-primary) 65%, white);
-  --color-brand-500: color-mix(in srgb, var(--color-primary) 85%, white);
-  --color-brand-600: var(--color-primary);
-  --color-brand-700: color-mix(in srgb, var(--color-primary) 85%, black);
-  --color-brand-800: color-mix(in srgb, var(--color-primary) 70%, black);
-  --color-brand-900: color-mix(in srgb, var(--color-primary) 55%, black);
-  --color-brand-950: color-mix(in srgb, var(--color-primary) 35%, black);
+    /* Source-of-truth design tokens */
+    --theme-brand: #2D5016;
+    --theme-brand-light: #3d6b1e;
+    --theme-brand-dark: #234010;
+    --theme-brand-subtle: #2d50160a;
+    --theme-brand-muted: #2d50161f;
+    --theme-brand-emphasis: #2D5016;
+    --theme-sec: #8BC34A;
+    --theme-sec-light: #9ccc65;
+    --theme-accent: #FF9800;
+    --theme-accent-light: #ffb74d;
+    --theme-sf-0: #ffffff;
+    --theme-sf-1: #f8faf6;
+    --theme-sf-2: #f0f4ec;
+    --theme-sf-3: #e8ede3;
+    --theme-glass: rgba(255, 255, 255, 0.7);
+    --theme-glass-heavy: rgba(255, 255, 255, 0.85);
+    --theme-tx: #1a2e0a;
+    --theme-tx-sec: #4a5e3a;
+    --theme-tx-muted: #6b7d5c;
+    --theme-tx-faint: #8b9c7d;
+    --theme-tx-inv: #ffffff;
+    --theme-ring-soft: rgba(45, 80, 22, 0.1);
+    --theme-ring-med: rgba(45, 80, 22, 0.2);
+    --theme-border-soft: #e2e8df;
+    --theme-shadow-brand-soft: 0 4px 14px 0 rgba(45, 80, 22, 0.1);
+
+    /* Runtime aliases for component CSS */
+    --color-brand: #2D5016;
+    --color-brand-light: #3d6b1e;
+    --color-brand-dark: #234010;
+    --color-brand-subtle: #2d50160a;
+    --color-brand-muted: #2d50161f;
+    --color-brand-emphasis: #2D5016;
+    --color-sec: #8BC34A;
+    --color-sec-light: #9ccc65;
+    --color-accent: #FF9800;
+    --color-accent-light: #ffb74d;
+    --color-sf-0: #ffffff;
+    --color-sf-1: #f8faf6;
+    --color-sf-2: #f0f4ec;
+    --color-sf-3: #e8ede3;
+    --color-tx: #1a2e0a;
+    --color-tx-sec: #4a5e3a;
+    --color-tx-muted: #6b7d5c;
+    --color-tx-faint: #8b9c7d;
+    --color-tx-inv: #ffffff;
+
+    /* Brand scale (green) */
+    --color-brand-25:  #f6f9f4;
+    --color-brand-50:  #eef3ea;
+    --color-brand-100: #dce7d4;
+    --color-brand-200: #b9cfaa;
+    --color-brand-300: #8fb278;
+    --color-brand-400: #6a9a4e;
+    --color-brand-500: #4a8030;
+    --color-brand-600: #2D5016;
+    --color-brand-700: #264413;
+    --color-brand-800: #1f380f;
+    --color-brand-900: #172c0c;
+    --color-brand-950: #0f1c08;
 }
 
 /* ========================================================================
-   Dark Mode Tokens — controlled by config.theme_mode via .dark class on <html>
+   Dark Mode — controlled by next-themes (.dark class on <html>)
+   Overrides both --theme-* source tokens and --color-* runtime aliases
    ======================================================================== */
 
 .dark {
-  --color-surface-0: #0f1a0a;
-  --color-surface-1: #1a2e12;
-  --color-surface-2: #24401a;
-  --color-surface-3: #2e5222;
-  --color-text-primary: #e8f0e0;
-  --color-text-secondary: #c5d8b8;
-  --color-text-muted: #a3b89a;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
+    /* Surfaces */
+    --theme-sf-0: #0f1a0a;
+    --theme-sf-1: #1a2e12;
+    --theme-sf-2: #24401a;
+    --theme-sf-3: #2e5222;
+    --color-sf-0: #0f1a0a;
+    --color-sf-1: #1a2e12;
+    --color-sf-2: #24401a;
+    --color-sf-3: #2e5222;
 
-/* Auto mode: respect OS preference only when data-theme="auto" */
-@media (prefers-color-scheme: dark) {
-  [data-theme="auto"] {
-    --color-surface-0: #0f1a0a;
-    --color-surface-1: #1a2e12;
-    --color-surface-2: #24401a;
-    --color-surface-3: #2e5222;
-    --color-text-primary: #e8f0e0;
-    --color-text-secondary: #c5d8b8;
-    --color-text-muted: #a3b89a;
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
-    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
+    /* Text */
+    --theme-tx: #e8f0e0;
+    --theme-tx-sec: #c5d8b8;
+    --theme-tx-muted: #a3b89a;
+    --theme-tx-faint: #8b9c7d;
+    --color-tx: #e8f0e0;
+    --color-tx-sec: #c5d8b8;
+    --color-tx-muted: #a3b89a;
+    --color-tx-faint: #8b9c7d;
+    --color-tx-inv: #1a2e0a;
+
+    /* Glass */
+    --theme-glass: rgba(15, 26, 10, 0.7);
+    --theme-glass-heavy: rgba(15, 26, 10, 0.85);
+
+    /* Rings & Borders */
+    --theme-ring-soft: rgba(139, 195, 74, 0.15);
+    --theme-ring-med: rgba(139, 195, 74, 0.25);
+    --theme-border-soft: #2e5222;
+
+    /* Brand tweaks for readability on dark bg */
+    --color-brand-light: #6a9a4e;
+    --color-brand-subtle: rgba(139, 195, 74, 0.06);
+    --color-brand-muted: rgba(139, 195, 74, 0.15);
+
+    /* Shadows */
+    --theme-shadow-brand-soft: 0 4px 14px 0 rgba(139, 195, 74, 0.1);
+    --theme-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --theme-shadow-card-hover: 0 10px 25px rgba(139, 195, 74, 0.15);
+    --theme-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* ========================================================================
@@ -206,8 +579,8 @@ html {
 }
 
 body {
-  background: var(--color-surface-0);
-  color: var(--color-text-primary);
+  background: var(--color-sf-0);
+  color: var(--color-tx);
   font-family: var(--font-sans);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -237,8 +610,8 @@ body {
   left: 1rem;
   z-index: 100;
   padding: 0.75rem 1.5rem;
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
+  background: var(--color-brand);
+  color: var(--color-tx-inv);
   border-radius: var(--radius-button);
   font-weight: 600;
   transition: top 0.2s;
@@ -270,6 +643,7 @@ body {
   background: rgba(15, 26, 10, 0.7);
   border-color: rgba(139, 195, 74, 0.15);
 }
+
 
 .dark .glass-strong {
   background: rgba(15, 26, 10, 0.85);
@@ -327,7 +701,7 @@ body {
 .sparkline-bar {
   flex: 1;
   border-radius: 2px;
-  background: var(--color-primary);
+  background: var(--color-brand);
   opacity: 0.3;
   transform-origin: bottom;
   animation: barGrow 0.5s var(--ease-spring) both;
@@ -354,8 +728,8 @@ body {
 }
 
 .trend-neutral {
-  color: var(--color-text-muted);
-  background: var(--color-surface-2);
+  color: var(--color-tx-muted);
+  background: var(--color-sf-2);
 }
 
 /* Notification badge dot */
@@ -364,7 +738,7 @@ body {
   height: 8px;
   border-radius: 50%;
   background: #ef4444;
-  border: 2px solid var(--color-surface-0);
+  border: 2px solid var(--color-sf-0);
   position: absolute;
   top: -2px;
   right: -2px;
@@ -393,7 +767,7 @@ body {
   border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-sec));
   color: white;
   letter-spacing: 0.02em;
 }
@@ -411,16 +785,16 @@ body {
   gap: 8px;
   padding: 1.25rem 1rem;
   border-radius: var(--radius-card);
-  background: var(--color-surface-0);
-  border: 1px solid var(--color-surface-2);
+  background: var(--color-sf-0);
+  border: 1px solid var(--color-sf-2);
   transition: all 0.2s var(--ease-smooth);
   cursor: pointer;
   text-decoration: none;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
 }
 
 .quick-action:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
 }
@@ -432,7 +806,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-sec));
   color: white;
 }
 
@@ -454,14 +828,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-surface-1), var(--color-surface-2));
+  background: linear-gradient(135deg, var(--color-sf-1), var(--color-sf-2));
   margin-bottom: 1.5rem;
 }
 
 /* Sidebar active link indicator */
 .sidebar-link-active {
   position: relative;
-  background: var(--color-primary) / 0.08;
+  background: var(--color-brand) / 0.08;
 }
 
 .sidebar-link-active::before {
@@ -472,14 +846,14 @@ body {
   bottom: 4px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(180deg, var(--color-brand), var(--color-sec));
 }
 
 /* Funnel chart bars */
 .funnel-bar {
   height: 28px;
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(90deg, var(--color-brand), var(--color-sec));
   transition: width 0.6s var(--ease-spring);
   min-width: 24px;
 }
@@ -490,7 +864,7 @@ body {
 
 .product-card {
   border-radius: var(--radius-card);
-  background: var(--color-surface-0);
+  background: var(--color-sf-0);
   box-shadow: var(--shadow-card);
   transition:
     transform 0.3s var(--ease-spring),
@@ -503,7 +877,7 @@ body {
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
-  border-color: var(--color-secondary);
+  border-color: var(--color-sec);
 }
 
 .product-card .product-card-image {
@@ -544,31 +918,31 @@ body {
 }
 
 .btn-primary {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
+  background: var(--color-brand);
+  color: var(--color-tx-inv);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-light);
+  background: var(--color-brand-light);
   box-shadow: 0 4px 15px rgba(45, 80, 22, 0.3);
 }
 
 .btn-secondary {
-  background: var(--color-surface-2);
-  color: var(--color-text-primary);
+  background: var(--color-sf-2);
+  color: var(--color-tx);
 }
 
 .btn-secondary:hover {
-  background: var(--color-surface-3);
+  background: var(--color-sf-3);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
 }
 
 .btn-ghost:hover {
-  background: var(--color-surface-1);
+  background: var(--color-sf-1);
 }
 
 .btn-whatsapp {
@@ -601,6 +975,29 @@ body {
 }
 
 /* ========================================================================
+   Payment Icons
+   ======================================================================== */
+
+.payment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--color-sf-0);
+  border: 1px solid var(--color-sf-3);
+  transition: border-color 0.2s var(--ease-smooth);
+}
+
+.payment-icon:hover {
+  border-color: var(--color-brand);
+}
+
+.payment-icon-alt {
+  padding: 4px 8px;
+}
+
+/* ========================================================================
    Form Inputs
    ======================================================================== */
 
@@ -609,32 +1006,32 @@ body {
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   border-radius: var(--radius-button);
-  border: 1px solid var(--color-surface-3);
-  background: var(--color-surface-0);
-  color: var(--color-text-primary);
+  border: 1px solid var(--color-sf-3);
+  background: var(--color-sf-0);
+  color: var(--color-tx);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input::placeholder {
-  color: var(--color-text-muted);
+  color: var(--color-tx-muted);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 15%, transparent);
 }
 
 .dark .input {
-  background: var(--color-surface-1);
-  border-color: var(--color-surface-3);
+  background: var(--color-sf-1);
+  border-color: var(--color-sf-3);
 }
 
 [data-theme="auto"] {
   @media (prefers-color-scheme: dark) {
     & .input {
-      background: var(--color-surface-1);
-      border-color: var(--color-surface-3);
+      background: var(--color-sf-1);
+      border-color: var(--color-sf-3);
     }
   }
 }
@@ -655,9 +1052,9 @@ body {
 
 .skeleton {
   background: linear-gradient(90deg,
-      var(--color-surface-2) 25%,
-      var(--color-surface-1) 50%,
-      var(--color-surface-2) 75%);
+      var(--color-sf-2) 25%,
+      var(--color-sf-1) 50%,
+      var(--color-sf-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
   border-radius: var(--radius-button);
@@ -851,6 +1248,192 @@ body {
 }
 
 /* ========================================================================
+   SOTA Animation System — Foundation (Phase 1.8)
+   Provides reusable keyframes, stagger utilities, and hover effects
+   used across all storefront components.
+   ======================================================================== */
+
+/* --- Shake: form validation errors, invalid coupon codes --- */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s var(--ease-smooth);
+}
+
+/* --- Check Bounce: add-to-cart success, form submit success --- */
+@keyframes check-bounce {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-check-bounce {
+  animation: check-bounce 0.5s var(--ease-spring) forwards;
+}
+
+/* --- Scale In: modals, dropdowns, popovers --- */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s var(--ease-smooth) both;
+}
+
+/* --- Slide Up Stagger: cards, grid items entrance (extends existing slide-up) --- */
+@keyframes slide-up-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-stagger {
+  animation: slide-up-stagger 0.5s var(--ease-smooth) both;
+}
+
+/* --- Stagger Delay Utilities --- */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+.stagger-7 { animation-delay: 350ms; }
+.stagger-8 { animation-delay: 400ms; }
+
+/* --- Hover Lift: cards, buttons, interactive elements --- */
+.hover-lift {
+  transition:
+    transform 0.3s var(--ease-spring),
+    box-shadow 0.3s var(--ease-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 24px -8px rgba(45, 80, 22, 0.12),
+    0 4px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+.hover-lift:active {
+  transform: translateY(-1px);
+}
+
+/* --- Hover Glow: brand-colored subtle glow for premium elements --- */
+.hover-glow {
+  transition:
+    box-shadow 0.3s var(--ease-smooth),
+    border-color 0.3s var(--ease-smooth);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(45, 80, 22, 0.15), 0 0 6px rgba(45, 80, 22, 0.1);
+  border-color: rgba(45, 80, 22, 0.3);
+}
+
+/* --- Hover Scale: subtle zoom for images, thumbnails --- */
+.hover-scale {
+  transition: transform 0.4s var(--ease-smooth);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* --- Button Shimmer: premium CTA hover effect --- */
+@keyframes btn-shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: none;
+}
+
+.btn-shimmer:hover::after {
+  animation: btn-shimmer 0.6s ease-out;
+}
+
+/* --- Spin: loading spinners --- */
+@keyframes spin-smooth {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-smooth {
+  animation: spin-smooth 0.8s linear infinite;
+}
+
+/* --- Progress Indeterminate: loading bars --- */
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.animate-progress {
+  animation: progress-indeterminate 1.5s var(--ease-smooth) infinite;
+}
+
+/* ========================================================================
+   Accessibility — Reduced Motion
+   Users who prefer reduced motion get instant transitions, no animations.
+   WCAG 2.1 AA compliant.
+   ======================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+  }
+
+  .hover-scale:hover {
+    transform: none;
+  }
+}
+
+/* ========================================================================
    Toast Notifications
    ======================================================================== */
 
@@ -965,7 +1548,7 @@ body.drawer-open .whatsapp-float {
   font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
   margin-top: 2rem;
   margin-bottom: 0.75rem;
 }
@@ -974,7 +1557,7 @@ body.drawer-open .whatsapp-float {
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
@@ -995,21 +1578,21 @@ body.drawer-open .whatsapp-float {
 }
 
 .cms-content a {
-  color: var(--color-primary);
+  color: var(--color-brand);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .cms-content a:hover {
-  color: var(--color-primary-light);
+  color: var(--color-brand-light);
 }
 
 .cms-content blockquote {
-  border-left: 4px solid var(--color-primary);
+  border-left: 4px solid var(--color-brand);
   padding-left: 1rem;
   margin: 1.5rem 0;
   font-style: italic;
-  color: var(--color-text-muted);
+  color: var(--color-tx-muted);
 }
 
 .cms-content img {
@@ -1028,16 +1611,16 @@ body.drawer-open .whatsapp-float {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-1);
+  background: var(--color-sf-1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-3);
+  background: var(--color-sf-3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-tx-muted);
 }
 
 /* ========================================================================
@@ -1059,8 +1642,8 @@ body.drawer-open .whatsapp-float {
 }
 
 .product-badge-new {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
+  background: var(--color-brand);
+  color: var(--color-tx-inv);
 }
 
 .product-badge-offer {
@@ -1069,8 +1652,8 @@ body.drawer-open .whatsapp-float {
 }
 
 .product-badge-soldout {
-  background: var(--color-surface-3);
-  color: var(--color-text-secondary);
+  background: var(--color-sf-3);
+  color: var(--color-tx-sec);
 }
 
 /* ========================================================================
@@ -1084,15 +1667,15 @@ body.drawer-open .whatsapp-float {
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg,
-      var(--color-surface-1) 0%,
-      var(--color-surface-2) 50%,
-      var(--color-surface-1) 100%);
+      var(--color-sf-1) 0%,
+      var(--color-sf-2) 50%,
+      var(--color-sf-1) 100%);
 }
 
 .image-fallback svg {
   width: 3rem;
   height: 3rem;
-  color: var(--color-text-muted);
+  color: var(--color-tx-muted);
   opacity: 0.5;
 }
 
@@ -1198,7 +1781,7 @@ body.drawer-open .whatsapp-float {
 .section-divider {
   border: none;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-surface-3), transparent);
+  background: linear-gradient(90deg, transparent, var(--color-sf-3), transparent);
   margin: 0 auto;
   max-width: 60%;
 }
@@ -1413,7 +1996,7 @@ body.drawer-open .whatsapp-float {
 }
 
 .quick-view-trigger:hover {
-  background: var(--color-primary);
+  background: var(--color-brand);
   transform: scale(1.1);
 }
 
@@ -1431,7 +2014,7 @@ body.drawer-open .whatsapp-float {
 
 .quick-view-modal {
   position: relative;
-  background: var(--color-surface-0);
+  background: var(--color-sf-0);
   border-radius: 1.5rem;
   max-width: 48rem;
   width: 100%;
@@ -1447,15 +2030,15 @@ body.drawer-open .whatsapp-float {
   z-index: 10;
   padding: 0.5rem;
   border-radius: 9999px;
-  background: var(--color-surface-2);
-  color: var(--color-text-primary);
+  background: var(--color-sf-2);
+  color: var(--color-tx);
   border: none;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .quick-view-close:hover {
-  background: var(--color-surface-3);
+  background: var(--color-sf-3);
 }
 
 .quick-view-content {
@@ -1477,7 +2060,7 @@ body.drawer-open .whatsapp-float {
   aspect-ratio: 1;
   border-radius: var(--radius-card);
   overflow: hidden;
-  background: var(--color-surface-1);
+  background: var(--color-sf-1);
 }
 
 .quick-view-info {
@@ -1499,7 +2082,7 @@ body.drawer-open .whatsapp-float {
   align-items: center;
   gap: 0.25rem;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
   background: none;
   border: none;
   cursor: pointer;
@@ -1509,8 +2092,8 @@ body.drawer-open .whatsapp-float {
 }
 
 .mega-menu-trigger:hover {
-  color: var(--color-primary);
-  background: var(--color-surface-1);
+  color: var(--color-brand);
+  background: var(--color-sf-1);
 }
 
 .mega-menu-dropdown {
@@ -1521,10 +2104,10 @@ body.drawer-open .whatsapp-float {
   z-index: 50;
   min-width: 20rem;
   max-width: 40rem;
-  background: var(--color-surface-0);
+  background: var(--color-sf-0);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-float);
-  border: 1px solid var(--color-surface-2);
+  border: 1px solid var(--color-sf-2);
   padding: 1.5rem;
   margin-top: 0.5rem;
 }
@@ -1539,14 +2122,14 @@ body.drawer-open .whatsapp-float {
   display: block;
   font-weight: 700;
   font-size: 0.875rem;
-  color: var(--color-text-primary);
+  color: var(--color-tx);
   margin-bottom: 0.5rem;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .mega-menu-category:hover {
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
 
 .mega-menu-subcategories {
@@ -1558,14 +2141,14 @@ body.drawer-open .whatsapp-float {
 .mega-menu-subcategory {
   display: block;
   font-size: 0.8125rem;
-  color: var(--color-text-secondary);
+  color: var(--color-tx-sec);
   padding: 0.25rem 0;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .mega-menu-subcategory:hover {
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
 
 /* ========================================================================
@@ -1622,13 +2205,13 @@ body.drawer-open .whatsapp-float {
   align-items: center;
   gap: 0;
   padding: 0.25rem 0.75rem;
-  color: var(--color-text-muted);
+  color: var(--color-tx-muted);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .bottom-nav-item--active {
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
 
 .bottom-nav-badge {
@@ -1638,7 +2221,7 @@ body.drawer-open .whatsapp-float {
   min-width: 16px;
   height: 16px;
   border-radius: 99px;
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: white;
   font-size: 10px;
   font-weight: 700;
@@ -1679,16 +2262,16 @@ body.drawer-open .whatsapp-float {
   gap: 6px;
   padding: 0.75rem;
   border-radius: var(--radius-card);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-surface-3);
+  background: var(--color-sf-1);
+  border: 1px solid var(--color-sf-3);
   transition: all 0.3s var(--ease-smooth);
   text-align: center;
 }
 
 .achievement-badge.unlocked {
-  border-color: var(--color-primary);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-1)), var(--color-surface-1));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-brand);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 5%, var(--color-sf-1)), var(--color-sf-1));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-brand) 15%, transparent);
 }
 
 .achievement-badge.locked {
@@ -1703,10 +2286,10 @@ body.drawer-open .whatsapp-float {
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand) 20%, transparent);
   }
   50% {
-    box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 35%, transparent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand) 35%, transparent);
   }
 }
 
@@ -1793,8 +2376,8 @@ body.drawer-open .whatsapp-float {
   position: relative;
   padding: 0.875rem 1rem;
   border-radius: var(--radius-card);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-1)), var(--color-surface-1));
-  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-surface-3));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 6%, var(--color-sf-1)), var(--color-sf-1));
+  border: 1px solid color-mix(in srgb, var(--color-brand) 20%, var(--color-sf-3));
   animation: slide-up 0.3s var(--ease-smooth) both;
 }
 
@@ -1809,7 +2392,7 @@ body.drawer-open .whatsapp-float {
   justify-content: center;
   border-radius: 50%;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-tx-muted);
   cursor: pointer;
   transition: all 0.2s;
   border: none;
@@ -1817,8 +2400,8 @@ body.drawer-open .whatsapp-float {
 }
 
 .smart-tip-dismiss:hover {
-  background: var(--color-surface-2);
-  color: var(--color-text-primary);
+  background: var(--color-sf-2);
+  color: var(--color-tx);
 }
 
 /* Level badges */
@@ -1909,7 +2492,7 @@ body.pos-fullscreen {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-surface-0, #fff);
+  background: var(--color-sf-0, #fff);
 }
 
 /* ── POS Cart Sidebar ── */
@@ -1949,8 +2532,8 @@ body.pos-fullscreen {
     justify-content: space-between;
     padding: 0.75rem 1rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-    background: var(--color-surface-0, #fff);
-    border-top: 1px solid var(--color-surface-2, #e5e7eb);
+    background: var(--color-sf-0, #fff);
+    border-top: 1px solid var(--color-sf-2, #e5e7eb);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
@@ -1975,7 +2558,7 @@ body.pos-fullscreen {
     position: relative;
     max-height: 85dvh;
     border-radius: 1.25rem 1.25rem 0 0;
-    background: var(--color-surface-0, #fff);
+    background: var(--color-sf-0, #fff);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1986,8 +2569,9 @@ body.pos-fullscreen {
     width: 2.5rem;
     height: 0.25rem;
     border-radius: 9999px;
-    background: var(--color-surface-3, #d1d5db);
+    background: var(--color-sf-3, #d1d5db);
     margin: 0.5rem auto;
     flex-shrink: 0;
   }
 }
+

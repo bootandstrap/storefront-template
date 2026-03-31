@@ -153,19 +153,19 @@ export default function POSRefundModal({
             aria-modal="true"
             aria-label={labels['panel.pos.refund'] || 'Refund'}
         >
-            <div className="bg-surface-0 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="bg-sf-0 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2">
-                    <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-sf-2">
+                    <h3 className="text-base font-bold text-tx flex items-center gap-2">
                         <RotateCcw className="w-5 h-5 text-rose-500" />
                         {labels['panel.pos.refund'] || 'Devolución'}
                     </h3>
                     <button
                         onClick={onClose}
                         aria-label={labels['panel.pos.close'] || 'Close'}
-                        className="p-1.5 rounded-lg hover:bg-surface-1 text-text-secondary min-h-[44px] min-w-[44px]
+                        className="p-1.5 rounded-lg hover:bg-sf-1 text-tx-sec min-h-[44px] min-w-[44px]
                                    flex items-center justify-center
-                                   focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -176,7 +176,7 @@ export default function POSRefundModal({
                     <div className="flex-1 flex items-center justify-center py-12">
                         <div className="space-y-3 w-full px-5">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="h-14 rounded-xl bg-surface-1 animate-pulse" />
+                                <div key={i} className="h-14 rounded-xl bg-sf-1 animate-pulse" />
                             ))}
                         </div>
                     </div>
@@ -194,12 +194,12 @@ export default function POSRefundModal({
                     <>
                         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1">
                             <div className="flex items-center justify-between mb-2">
-                                <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
+                                <p className="text-[11px] font-medium text-tx-muted uppercase tracking-wider">
                                     {posLabel('panel.pos.selectItems', labels)}
                                 </p>
                                 <button
                                     onClick={handleSelectAll}
-                                    className="text-[11px] text-primary font-medium hover:underline"
+                                    className="text-[11px] text-brand font-medium hover:underline"
                                 >
                                     {posLabel('panel.pos.selectAll', labels)}
                                 </button>
@@ -212,13 +212,13 @@ export default function POSRefundModal({
                                     <div
                                         key={item.id}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                                            isSelected ? 'bg-rose-50 border border-rose-200' : 'border border-transparent hover:bg-surface-1'
+                                            isSelected ? 'bg-rose-50 border border-rose-200' : 'border border-transparent hover:bg-sf-1'
                                         }`}
                                         onClick={() => toggleItem(item.id, item.refundable_quantity)}
                                     >
                                         {/* Checkbox */}
                                         <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
-                                            isSelected ? 'bg-rose-500 border-rose-500' : 'border-surface-3 bg-surface-0'
+                                            isSelected ? 'bg-rose-500 border-rose-500' : 'border-sf-3 bg-sf-0'
                                         }`}>
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                         </div>
@@ -227,14 +227,14 @@ export default function POSRefundModal({
                                         {item.thumbnail ? (
                                             <img src={item.thumbnail} alt="" className="w-8 h-8 rounded object-cover" />
                                         ) : (
-                                            <div className="w-8 h-8 rounded bg-surface-2" />
+                                            <div className="w-8 h-8 rounded bg-sf-2" />
                                         )}
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-text-primary truncate">{item.title}</p>
+                                            <p className="text-sm font-medium text-tx truncate">{item.title}</p>
                                             {item.variant_title && (
-                                                <p className="text-[11px] text-text-muted">{item.variant_title}</p>
+                                                <p className="text-[11px] text-tx-muted">{item.variant_title}</p>
                                             )}
                                         </div>
 
@@ -244,8 +244,8 @@ export default function POSRefundModal({
                                                 <button
                                                     onClick={() => updateQty(item.id, -1)}
                                                     aria-label="Decrease quantity"
-                                                    className="w-7 h-7 rounded bg-surface-1 flex items-center justify-center text-text-secondary
-                                                               hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                                    className="w-7 h-7 rounded bg-sf-1 flex items-center justify-center text-tx-sec
+                                                               hover:bg-sf-2 focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                                                 >
                                                     <Minus className="w-3 h-3" />
                                                 </button>
@@ -253,8 +253,8 @@ export default function POSRefundModal({
                                                 <button
                                                     onClick={() => updateQty(item.id, 1)}
                                                     aria-label="Increase quantity"
-                                                    className="w-7 h-7 rounded bg-surface-1 flex items-center justify-center text-text-secondary
-                                                               hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                                    className="w-7 h-7 rounded bg-sf-1 flex items-center justify-center text-tx-sec
+                                                               hover:bg-sf-2 focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                                                 >
                                                     <Plus className="w-3 h-3" />
                                                 </button>
@@ -262,7 +262,7 @@ export default function POSRefundModal({
                                         )}
 
                                         {/* Price */}
-                                        <span className="text-sm font-medium text-text-secondary whitespace-nowrap">
+                                        <span className="text-sm font-medium text-tx-sec whitespace-nowrap">
                                             {formatPrice(item.unit_price * (qty || item.quantity), currency)}
                                         </span>
                                     </div>
@@ -270,9 +270,9 @@ export default function POSRefundModal({
                             })}
                         </div>
 
-                        <div className="px-5 py-3 border-t border-surface-2">
+                        <div className="px-5 py-3 border-t border-sf-2">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-text-muted">
+                                <span className="text-sm text-tx-muted">
                                     {isFullRefund
                                         ? posLabel('panel.pos.fullRefund', labels)
                                         : posLabel('panel.pos.partialRefund', labels)}
@@ -298,7 +298,7 @@ export default function POSRefundModal({
                 {step === 'reason' && (
                     <>
                         <div className="flex-1 px-5 py-4 space-y-2">
-                            <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-3">
+                            <p className="text-[11px] font-medium text-tx-muted uppercase tracking-wider mb-3">
                                 {posLabel('panel.pos.refundReason', labels)}
                             </p>
                             {REASONS.map(r => (
@@ -308,11 +308,11 @@ export default function POSRefundModal({
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                                         reason === r.key
                                             ? 'bg-rose-50 border border-rose-200'
-                                            : 'border border-surface-2 hover:bg-surface-1'
+                                            : 'border border-sf-2 hover:bg-sf-1'
                                     }`}
                                 >
-                                    <r.Icon className="w-5 h-5 text-text-muted" />
-                                    <span className="text-sm font-medium text-text-primary">{posLabel(r.label_key, labels)}</span>
+                                    <r.Icon className="w-5 h-5 text-tx-muted" />
+                                    <span className="text-sm font-medium text-tx">{posLabel(r.label_key, labels)}</span>
                                     {reason === r.key && (
                                         <Check className="w-4 h-4 text-rose-500 ml-auto" />
                                     )}
@@ -325,19 +325,19 @@ export default function POSRefundModal({
                                     onChange={e => setReasonNote(e.target.value)}
                                     placeholder={posLabel('panel.pos.describeReason', labels)}
                                     rows={2}
-                                    className="w-full px-3 py-2 rounded-lg bg-surface-1 border border-surface-2 text-sm
-                                               text-text-primary placeholder:text-text-muted mt-2
-                                               focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                                    className="w-full px-3 py-2 rounded-lg bg-sf-1 border border-sf-2 text-sm
+                                               text-tx placeholder:text-tx-muted mt-2
+                                               focus:outline-none focus:ring-2 focus:ring-soft resize-none"
                                 />
                             )}
                         </div>
 
-                        <div className="px-5 py-3 border-t border-surface-2 flex gap-2">
+                        <div className="px-5 py-3 border-t border-sf-2 flex gap-2">
                             <button
                                 onClick={() => setStep('items')}
-                                className="flex-1 py-2.5 rounded-xl bg-surface-1 text-text-secondary text-sm font-medium min-h-[44px]
-                                           hover:bg-surface-2 transition-colors
-                                           focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                className="flex-1 py-2.5 rounded-xl bg-sf-1 text-tx-sec text-sm font-medium min-h-[44px]
+                                           hover:bg-sf-2 transition-colors
+                                           focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                             >
                                 {posLabel('panel.pos.back', labels)}
                             </button>
@@ -360,10 +360,10 @@ export default function POSRefundModal({
                             <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
                                 <RotateCcw className="w-8 h-8 text-rose-500" />
                             </div>
-                            <h4 className="text-lg font-bold text-text-primary mb-1">
+                            <h4 className="text-lg font-bold text-tx mb-1">
                                 {posLabel('panel.pos.confirmRefundTitle', labels)}
                             </h4>
-                            <p className="text-sm text-text-muted mb-4">
+                            <p className="text-sm text-tx-muted mb-4">
                                 {selectedItems.size} artículo{selectedItems.size !== 1 ? 's' : ''} ·{' '}
                                 {(() => { const r = REASONS.find(rr => rr.key === reason); return r ? posLabel(r.label_key, labels) : '' })()}
                             </p>
@@ -371,12 +371,12 @@ export default function POSRefundModal({
                                 -{formatPrice(refundAmount, currency)}
                             </p>
                         </div>
-                        <div className="px-5 py-3 border-t border-surface-2 flex gap-2">
+                        <div className="px-5 py-3 border-t border-sf-2 flex gap-2">
                             <button
                                 onClick={() => setStep('reason')}
-                                className="flex-1 py-2.5 rounded-xl bg-surface-1 text-text-secondary text-sm font-medium min-h-[44px]
-                                           hover:bg-surface-2 transition-colors
-                                           focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                className="flex-1 py-2.5 rounded-xl bg-sf-1 text-tx-sec text-sm font-medium min-h-[44px]
+                                           hover:bg-sf-2 transition-colors
+                                           focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                             >
                                 {posLabel('panel.pos.back', labels)}
                             </button>
@@ -402,8 +402,8 @@ export default function POSRefundModal({
                             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                                 <Check className="w-8 h-8 text-emerald-600" />
                             </div>
-                            <h4 className="text-lg font-bold text-text-primary">{posLabel('panel.pos.refundComplete', labels)}</h4>
-                            <p className="text-sm text-text-muted mt-1">
+                            <h4 className="text-lg font-bold text-tx">{posLabel('panel.pos.refundComplete', labels)}</h4>
+                            <p className="text-sm text-tx-muted mt-1">
                                 -{formatPrice(refundAmount, currency)}
                             </p>
                         </div>

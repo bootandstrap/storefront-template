@@ -245,7 +245,7 @@ export default function ProductsClient({
         urlHandle: 'URL',
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
 
     return (
         <PageEntrance className="space-y-5">
@@ -256,7 +256,7 @@ export default function ProductsClient({
                 badge={productCount}
                 action={
                     <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                         disabled={!canAdd || isPending}
                         onClick={openCreate}
                     >
@@ -275,7 +275,7 @@ export default function ProductsClient({
                         exit={{ opacity: 0, y: -12 }}
                         className="glass rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap"
                     >
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="text-sm font-medium text-tx">
                             {selectedIds.size} {labels.selected}
                         </span>
                         <div className="flex gap-2 ml-auto">
@@ -306,7 +306,7 @@ export default function ProductsClient({
                             >
                                 <Trash2 className="w-3.5 h-3.5" /> {labels.bulkDelete}
                             </motion.button>
-                            <button onClick={deselectAll} aria-label={labels.deselectAll} className="btn btn-ghost text-xs inline-flex items-center gap-1 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                            <button onClick={deselectAll} aria-label={labels.deselectAll} className="btn btn-ghost text-xs inline-flex items-center gap-1 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">
                                 <X className="w-3.5 h-3.5" /> {labels.deselectAll}
                             </button>
                         </div>
@@ -315,7 +315,7 @@ export default function ProductsClient({
             </AnimatePresence>
 
             {/* ── Counter + limit ── */}
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-text-muted">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
                 {productCount} / {maxProducts} {labels.products}
                 {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
             </motion.p>
@@ -323,7 +323,7 @@ export default function ProductsClient({
             {/* ── Filters ── */}
             <div className="flex gap-3 flex-wrap">
                 <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                     <input
                         type="text"
                         placeholder={labels.searchPlaceholder}
@@ -338,15 +338,15 @@ export default function ProductsClient({
                             key={s}
                             onClick={() => setStatusFilter(s)}
                             aria-pressed={statusFilter === s}
-                            className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${statusFilter === s
+                            className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${statusFilter === s
                                 ? 'text-white'
-                                : 'text-text-secondary hover:bg-surface-1'
+                                : 'text-tx-sec hover:bg-sf-1'
                                 }`}
                         >
                             {statusFilter === s && (
                                 <motion.div
                                     layoutId="product-status-filter"
-                                    className="absolute inset-0 bg-primary rounded-lg"
+                                    className="absolute inset-0 bg-brand rounded-lg"
                                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                 />
                             )}
@@ -356,10 +356,10 @@ export default function ProductsClient({
                         </button>
                     ))}
                 </div>
-                <button onClick={selectAll} aria-label={labels.selectAll} className="btn btn-ghost text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40" title={labels.selectAll}>
+                <button onClick={selectAll} aria-label={labels.selectAll} className="btn btn-ghost text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med" title={labels.selectAll}>
                     <CheckSquare className="w-4 h-4" />
                 </button>
-                <button onClick={handleExportCsv} disabled={isPending} aria-label={labels.exportCsv} className="btn btn-ghost text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40" title={labels.exportCsv}>
+                <button onClick={handleExportCsv} disabled={isPending} aria-label={labels.exportCsv} className="btn btn-ghost text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med" title={labels.exportCsv}>
                     <Download className="w-4 h-4" />
                 </button>
             </div>
@@ -392,16 +392,16 @@ export default function ProductsClient({
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Package className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noProducts}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                        <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {labels.addProductHint || 'Create your first product to start selling.'}
                         </p>
                         <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             disabled={!canAdd || isPending}
                             onClick={openCreate}
                         >
@@ -416,28 +416,28 @@ export default function ProductsClient({
                         <StaggerItem key={product.id}>
                             <motion.div
                                 whileHover={{ y: -2 }}
-                                className={`glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg ${selectedIds.has(product.id) ? 'ring-2 ring-primary' : ''}`}
+                                className={`glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg ${selectedIds.has(product.id) ? 'ring-2 ring-brand' : ''}`}
                             >
                                 {/* Thumbnail */}
                                 <div
-                                    className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center cursor-pointer"
+                                    className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer"
                                     onClick={() => openEdit(product)}
                                 >
                                     <button
                                         onClick={(e) => { e.stopPropagation(); toggleSelect(product.id) }}
                                         aria-label={selectedIds.has(product.id) ? labels.deselectAll : labels.selectAll}
-                                        className="absolute top-2 left-2 z-10 p-1.5 rounded-md bg-surface-0/80 backdrop-blur-sm hover:bg-surface-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        className="absolute top-2 left-2 z-10 p-1.5 rounded-md bg-glass-heavy backdrop-blur-sm hover:bg-sf-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                     >
                                         {selectedIds.has(product.id)
-                                            ? <CheckSquare className="w-4 h-4 text-primary" />
-                                            : <Square className="w-4 h-4 text-text-muted" />
+                                            ? <CheckSquare className="w-4 h-4 text-brand" />
+                                            : <Square className="w-4 h-4 text-tx-muted" />
                                         }
                                     </button>
                                     {product.thumbnail ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Package className="w-10 h-10 text-text-muted/40" />
+                                        <Package className="w-10 h-10 text-tx-faint" />
                                     )}
                                     {(product.images?.length ?? 0) > 1 && (
                                         <span className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded-full font-medium bg-black/60 text-white backdrop-blur-sm">
@@ -454,31 +454,31 @@ export default function ProductsClient({
                                 {/* Info */}
                                 <div className="p-4">
                                     <h3
-                                        className="font-bold text-text-primary truncate cursor-pointer hover:text-primary transition-colors"
+                                        className="font-bold text-tx truncate cursor-pointer hover:text-brand transition-colors"
                                         onClick={() => openEdit(product)}
                                     >
                                         {product.title}
                                     </h3>
                                     <div className="flex items-center justify-between mt-1">
-                                        <span className="text-lg font-bold text-primary">{getPrice(product)}</span>
-                                        <span className="text-xs text-text-muted">
+                                        <span className="text-lg font-bold text-brand">{getPrice(product)}</span>
+                                        <span className="text-xs text-tx-muted">
                                             {product.categories?.[0]?.name || labels.noCategory}
                                         </span>
                                     </div>
                                     {product.description && (
-                                        <p className="text-xs text-text-muted mt-2 line-clamp-2">{product.description}</p>
+                                        <p className="text-xs text-tx-muted mt-2 line-clamp-2">{product.description}</p>
                                     )}
                                     {(product.variants?.length ?? 0) > 1 && (
-                                        <p className="text-xs text-primary/70 mt-1">
+                                        <p className="text-xs text-brand mt-1">
                                             {product.variants.length} variantes
                                         </p>
                                     )}
                                     {/* Actions */}
-                                    <div className="flex gap-1 mt-3 pt-3 border-t border-surface-2">
+                                    <div className="flex gap-1 mt-3 pt-3 border-t border-sf-2">
                                         <motion.button
                                             whileTap={{ scale: 0.93 }}
                                             onClick={() => handleToggleStatus(product)}
-                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             disabled={isPending}
                                             aria-label={product.status === 'published' ? labels.draft : labels.published}
                                         >
@@ -490,7 +490,7 @@ export default function ProductsClient({
                                         <motion.button
                                             whileTap={{ scale: 0.93 }}
                                             onClick={() => openEdit(product)}
-                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             disabled={isPending}
                                             aria-label={labels.edit}
                                         >
@@ -499,7 +499,7 @@ export default function ProductsClient({
                                         <motion.button
                                             whileTap={{ scale: 0.93 }}
                                             onClick={() => handleDelete(product.id)}
-                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                             disabled={isPending}
                                             aria-label={labels.delete}
                                         >

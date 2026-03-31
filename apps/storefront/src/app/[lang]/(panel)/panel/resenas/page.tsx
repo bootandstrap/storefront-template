@@ -11,6 +11,8 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { isFeatureEnabled } from '@/lib/features'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Star } from 'lucide-react'
 import ReviewsClient from './ReviewsClient'
 import { getReviews } from './actions'
 
@@ -77,14 +79,23 @@ export default async function ReviewsPage({
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
     const { featureFlags } = appConfig
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
 
     if (!isFeatureEnabled(featureFlags, 'enable_reviews')) {
         return <FeatureGate flag="enable_reviews" lang={lang} />
     }
 
     return (
-        <Suspense fallback={<ReviewsSkeleton />}>
-            <ReviewsContent lang={lang} />
-        </Suspense>
+        <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.nav.reviews') || 'Rese\u00f1as'}
+                subtitle={t('panel.reviews.subtitle') || 'Modera las rese\u00f1as de tus productos'}
+                icon={<Star className="w-5 h-5" />}
+            />
+            <Suspense fallback={<ReviewsSkeleton />}>
+                <ReviewsContent lang={lang} />
+            </Suspense>
+        </div>
     )
 }

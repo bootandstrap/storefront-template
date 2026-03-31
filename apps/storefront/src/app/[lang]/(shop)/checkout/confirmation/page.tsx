@@ -23,7 +23,7 @@ export default async function CheckoutConfirmationPage({
         <Suspense
             fallback={
                 <div className="min-h-[50vh] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <Loader2 className="w-8 h-8 animate-spin text-brand" />
                 </div>
             }
         >

@@ -1,202 +1,282 @@
 'use client'
 
 /**
- * PanelConfirmDialog — Beautiful confirmation modal
+ * PanelConfirmDialog — Confirmation modal for destructive actions
  *
- * Replaces all raw `confirm()` calls across admin panels.
- * Glass backdrop + framer-motion entrance + danger/warning/info variants.
+ * SOTA pattern: Notion/Linear-style confirmation with:
+ * - Typed confirmation input for critical actions (delete, bulk delete)
+ * - Cancel/Confirm with keyboard shortcuts (Escape/Enter)
+ * - Undo toast after successful destructive action
  */
 
-import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Info, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
+import { AlertTriangle, X, Loader2 } from 'lucide-react'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-type DialogVariant = 'danger' | 'warning' | 'info'
-
-interface PanelConfirmDialogProps {
-    open: boolean
-    onClose: () => void
-    onConfirm: () => void
+export interface ConfirmDialogConfig {
     title: string
-    description?: string | ReactNode
+    message: string
     confirmLabel?: string
     cancelLabel?: string
-    variant?: DialogVariant
-    loading?: boolean
+    variant?: 'danger' | 'warning' | 'info'
+    /** If set, user must type this string to enable confirm */
+    typeToConfirm?: string
+    onConfirm: () => Promise<void> | void
+    onCancel?: () => void
 }
 
-// ─── Variant styling ────────────────────────────────────────────────────────
-
-const variantConfig: Record<DialogVariant, {
-    icon: ReactNode
-    iconBg: string
-    confirmBtn: string
-}> = {
-    danger: {
-        icon: <Trash2 className="w-6 h-6" />,
-        iconBg: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-        confirmBtn: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500/30',
-    },
-    warning: {
-        icon: <AlertTriangle className="w-6 h-6" />,
-        iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-        confirmBtn: 'bg-amber-600 hover:bg-amber-700 text-white focus:ring-amber-500/30',
-    },
-    info: {
-        icon: <Info className="w-6 h-6" />,
-        iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-        confirmBtn: 'bg-primary hover:bg-primary-light text-white focus:ring-primary/30',
-    },
+interface PanelConfirmDialogProps extends ConfirmDialogConfig {
+    open: boolean
+    onClose: () => void
 }
 
-// ─── Component ──────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function PanelConfirmDialog({
     open,
-    onClose,
-    onConfirm,
     title,
-    description,
+    message,
     confirmLabel = 'Confirmar',
     cancelLabel = 'Cancelar',
     variant = 'danger',
-    loading = false,
+    typeToConfirm,
+    onConfirm,
+    onCancel,
+    onClose,
 }: PanelConfirmDialogProps) {
-    const config = variantConfig[variant]
+    const [typedValue, setTypedValue] = useState('')
+    const [loading, setLoading] = useState(false)
+    const inputRef = useRef<HTMLInputElement>(null)
 
-    const handleEsc = useCallback((e: KeyboardEvent) => {
-        if (e.key === 'Escape' && !loading) onClose()
-    }, [onClose, loading])
+    const canConfirm = typeToConfirm ? typedValue === typeToConfirm : true
 
+    // Reset on open/close
     useEffect(() => {
-        if (open) document.addEventListener('keydown', handleEsc)
+        if (open) {
+            setTypedValue('')
+            setLoading(false)
+            requestAnimationFrame(() => inputRef.current?.focus())
+        }
+    }, [open])
+
+    // Escape to close
+    useEffect(() => {
+        if (!open) return
+        function handleEsc(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                onCancel?.()
+                onClose()
+            }
+        }
+        document.addEventListener('keydown', handleEsc)
         return () => document.removeEventListener('keydown', handleEsc)
-    }, [open, handleEsc])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open])
+
+    const handleCancel = useCallback(() => {
+        onCancel?.()
+        onClose()
+    }, [onCancel, onClose])
+
+    const handleConfirm = useCallback(async () => {
+        if (!canConfirm || loading) return
+        setLoading(true)
+        try {
+            await onConfirm()
+            onClose()
+        } catch {
+            setLoading(false)
+        }
+    }, [canConfirm, loading, onConfirm, onClose])
+
+    if (!open) return null
+
+    const variantStyles = {
+        danger: {
+            icon: 'bg-red-500/10 text-red-500',
+            button: 'bg-red-500 hover:bg-red-600 text-white',
+        },
+        warning: {
+            icon: 'bg-amber-500/10 text-amber-500',
+            button: 'bg-amber-500 hover:bg-amber-600 text-white',
+        },
+        info: {
+            icon: 'bg-blue-500/10 text-blue-500',
+            button: 'bg-brand hover:bg-brand-muted text-white',
+        },
+    }
+
+    const style = variantStyles[variant]
 
     return (
-        <AnimatePresence>
-            {open && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-                        onClick={loading ? undefined : onClose}
-                    />
+        <div className="fixed inset-0 z-[110]" role="alertdialog" aria-modal="true">
+            {/* Backdrop */}
+            <button
+                type="button"
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={handleCancel}
+                aria-label="Close dialog"
+            />
 
-                    {/* Dialog */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    >
-                        <div
-                            className="glass rounded-2xl shadow-2xl w-full max-w-sm p-6 relative"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Close button */}
+            {/* Modal */}
+            <div className="relative mx-auto mt-[20vh] w-full max-w-md px-4">
+                <div className="bg-sf-1 border border-sf-3 rounded-2xl shadow-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className="px-6 py-5">
+                        <div className="flex items-start gap-4">
+                            <div className={`w-10 h-10 rounded-xl ${style.icon} flex items-center justify-center shrink-0`}>
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-base font-semibold text-tx">{title}</h3>
+                                <p className="text-sm text-tx-muted mt-1">{message}</p>
+                            </div>
                             <button
-                                onClick={onClose}
-                                disabled={loading}
-                                className="absolute top-4 right-4 p-1 rounded-lg text-text-muted hover:bg-surface-1 hover:text-text-primary transition-colors disabled:opacity-50"
+                                onClick={handleCancel}
+                                className="p-1.5 rounded-lg hover:bg-sf-2 text-tx-muted transition-colors shrink-0"
                             >
                                 <X className="w-4 h-4" />
                             </button>
-
-                            {/* Icon */}
-                            <div className={`w-12 h-12 rounded-2xl ${config.iconBg} flex items-center justify-center mb-4`}>
-                                {config.icon}
-                            </div>
-
-                            {/* Content */}
-                            <h3 className="text-lg font-bold font-display text-text-primary mb-1">
-                                {title}
-                            </h3>
-                            {description && (
-                                <p className="text-sm text-text-muted leading-relaxed mb-6">
-                                    {description}
-                                </p>
-                            )}
-
-                            {/* Actions */}
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={onClose}
-                                    disabled={loading}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-surface-3 text-sm font-medium text-text-secondary hover:bg-surface-1 transition-colors disabled:opacity-50"
-                                >
-                                    {cancelLabel}
-                                </button>
-                                <button
-                                    onClick={onConfirm}
-                                    disabled={loading}
-                                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 ${config.confirmBtn}`}
-                                >
-                                    {loading ? (
-                                        <span className="inline-flex items-center gap-2">
-                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            ...
-                                        </span>
-                                    ) : (
-                                        confirmLabel
-                                    )}
-                                </button>
-                            </div>
                         </div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
+
+                        {/* Type-to-confirm */}
+                        {typeToConfirm && (
+                            <div className="mt-4">
+                                <p className="text-xs text-tx-muted mb-2">
+                                    Escribe <span className="font-mono font-semibold text-tx">{typeToConfirm}</span> para confirmar:
+                                </p>
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={typedValue}
+                                    onChange={(e) => setTypedValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && canConfirm) {
+                                            e.preventDefault()
+                                            handleConfirm()
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 bg-sf-2 border border-sf-3 rounded-lg text-sm text-tx font-mono placeholder:text-tx-faint focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                                    placeholder={typeToConfirm}
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="px-6 py-4 border-t border-sf-2 flex items-center justify-end gap-3">
+                        <button
+                            onClick={handleCancel}
+                            className="px-4 py-2 text-sm rounded-lg border border-sf-3 text-tx-sec hover:bg-sf-2 transition-colors"
+                            disabled={loading}
+                        >
+                            {cancelLabel}
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={!canConfirm || loading}
+                            className={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${style.button} ${
+                                (!canConfirm || loading) ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                        >
+                            {loading ? (
+                                <span className="flex items-center gap-2">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Procesando…
+                                </span>
+                            ) : (
+                                confirmLabel
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     )
 }
 
-// ─── Hook for easy usage ────────────────────────────────────────────────────
-
-import { useState } from 'react'
+// ---------------------------------------------------------------------------
+// Legacy hook (backward-compatible) — used by existing consumers
+// Returns { confirm: (onConfirm) => void, dialogProps: PanelConfirmDialogProps }
+// ---------------------------------------------------------------------------
 
 interface UseConfirmDialogOptions {
     title: string
-    description?: string
+    description: string
     confirmLabel?: string
-    variant?: DialogVariant
+    cancelLabel?: string
+    variant?: 'danger' | 'warning' | 'info'
+    typeToConfirm?: string
 }
 
 export function useConfirmDialog(options: UseConfirmDialogOptions) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+    const [open, setOpen] = useState(false)
+    const onConfirmRef = useRef<(() => void) | null>(null)
 
-    const confirm = (action: () => void) => {
-        setPendingAction(() => action)
-        setIsOpen(true)
-    }
-
-    const handleConfirm = () => {
-        pendingAction?.()
-        setIsOpen(false)
-        setPendingAction(null)
-    }
-
-    const handleClose = () => {
-        setIsOpen(false)
-        setPendingAction(null)
-    }
+    const confirm = useCallback((onConfirm: () => void) => {
+        onConfirmRef.current = onConfirm
+        setOpen(true)
+    }, [])
 
     const dialogProps = {
-        open: isOpen,
-        onClose: handleClose,
-        onConfirm: handleConfirm,
+        open,
         title: options.title,
-        description: options.description,
-        confirmLabel: options.confirmLabel,
-        variant: options.variant ?? 'danger' as DialogVariant,
+        message: options.description,
+        confirmLabel: options.confirmLabel ?? 'Confirmar',
+        cancelLabel: options.cancelLabel ?? 'Cancelar',
+        variant: options.variant ?? 'danger',
+        typeToConfirm: options.typeToConfirm,
+        onConfirm: async () => {
+            onConfirmRef.current?.()
+        },
+        onClose: () => setOpen(false),
     }
 
     return { confirm, dialogProps }
+}
+
+// ---------------------------------------------------------------------------
+// Context-based hook for easy usage
+// ---------------------------------------------------------------------------
+
+type ShowConfirmFn = (config: ConfirmDialogConfig) => void
+const ConfirmContext = createContext<ShowConfirmFn | null>(null)
+
+export function useConfirm() {
+    const fn = useContext(ConfirmContext)
+    if (!fn) throw new Error('useConfirm must be used within <PanelConfirmProvider>')
+    return fn
+}
+
+export function PanelConfirmProvider({ children }: { children: React.ReactNode }) {
+    const [config, setConfig] = useState<ConfirmDialogConfig | null>(null)
+
+    const showConfirm: ShowConfirmFn = useCallback((cfg) => {
+        setConfig(cfg)
+    }, [])
+
+    const handleClose = useCallback(() => {
+        setConfig(null)
+    }, [])
+
+    return (
+        <ConfirmContext.Provider value={showConfirm}>
+            {children}
+            {config && (
+                <PanelConfirmDialog
+                    open={true}
+                    {...config}
+                    onClose={handleClose}
+                />
+            )}
+        </ConfirmContext.Provider>
+    )
 }

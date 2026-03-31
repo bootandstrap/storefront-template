@@ -2,7 +2,7 @@
  * Analytics Dashboard — Owner Panel (SOTA rewrite)
  *
  * SOTA upgrades:
- * - Raw `bg-surface-0 border` → `glass rounded-2xl`
+ * - Raw `bg-sf-0 border` → `glass rounded-2xl`
  * - No PanelPageHeader → PanelPageHeader with icon + badge
  * - Inline h1/p header → PanelPageHeader
  * - Consistent glass pattern for funnel card
@@ -139,7 +139,7 @@ export default async function AnalyticsPage({
 
             {/* ── Conversion Funnel ── */}
             <div className="glass rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-text-primary mb-6">
+                <h3 className="text-sm font-semibold text-tx mb-6">
                     {t('panel.analytics.conversionFunnel')}
                 </h3>
 
@@ -158,7 +158,7 @@ export default async function AnalyticsPage({
                                 {/* Drop-off badge between steps */}
                                 {dropOff && (
                                     <div className="flex items-center gap-2 mb-2 pl-2">
-                                        <div className="w-px h-4 bg-surface-3" />
+                                        <div className="w-px h-4 bg-sf-3" />
                                         <span className="text-[10px] font-semibold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">
                                             −{dropOff}%
                                         </span>
@@ -166,22 +166,22 @@ export default async function AnalyticsPage({
                                 )}
 
                                 <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg glass text-text-muted flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg glass text-tx-muted flex items-center justify-center flex-shrink-0">
                                         {FUNNEL_ICONS[step.key] ?? <Eye className="w-4 h-4" />}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-sm text-text-secondary">
+                                            <span className="text-sm text-tx-sec">
                                                 {step.label}
                                             </span>
-                                            <span className="text-sm font-semibold font-display text-text-primary tabular-nums">
+                                            <span className="text-sm font-semibold font-display text-tx tabular-nums">
                                                 {step.count.toLocaleString()}
                                             </span>
                                         </div>
-                                        <div className="h-2 w-full bg-surface-2 rounded-full overflow-hidden">
+                                        <div className="h-2 w-full bg-sf-2 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+                                                className="h-full rounded-full bg-brand transition-all duration-700 ease-out"
                                                 style={{ width: `${barWidth}%` }}
                                             />
                                         </div>
@@ -192,11 +192,11 @@ export default async function AnalyticsPage({
                     })}
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-surface-2 flex items-center justify-between">
-                    <span className="text-xs text-text-muted">
+                <div className="mt-6 pt-5 border-t border-sf-2 flex items-center justify-between">
+                    <span className="text-xs text-tx-muted">
                         {t('panel.analytics.period')}
                     </span>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-brand">
                         <TrendingUp className="w-3.5 h-3.5" />
                         <span>{conversionRate}% {t('panel.analytics.conversionRate')}</span>
                     </div>

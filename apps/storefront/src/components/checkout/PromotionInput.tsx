@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { Tag, X, Loader2, Check } from 'lucide-react'
+import { firePromoConfetti } from '@/lib/confetti'
 
 interface PromotionInputProps {
     cartId: string
@@ -17,6 +18,7 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [expanded, setExpanded] = useState(false)
+    const formRef = useRef<HTMLDivElement>(null)
 
     const handleApply = useCallback(async () => {
         if (!code.trim() || !cartId) return
@@ -38,8 +40,14 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
             setAppliedCode(code.trim())
             setCode('')
             onApplied?.(code.trim())
+            // 🎉 Success confetti
+            firePromoConfetti()
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('promotions.invalidCode') || 'Invalid discount code')
+            const msg = err instanceof Error ? err.message : t('promotions.invalidCode') || 'Invalid discount code'
+            setError(msg)
+            // 🫨 Shake animation on error
+            formRef.current?.classList.add('animate-shake')
+            setTimeout(() => formRef.current?.classList.remove('animate-shake'), 500)
         } finally {
             setLoading(false)
         }
@@ -65,11 +73,11 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
         }
     }, [cartId, appliedCode, onRemoved])
 
-    // Applied state
+    // Applied state — green pill with checkmark
     if (appliedCode) {
         return (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <Check size={16} className="text-green-600 flex-shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 animate-fade-in">
+                <Check size={16} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                 <span className="flex-1 text-sm font-medium text-green-700 dark:text-green-400">
                     {appliedCode}
                 </span>
@@ -86,13 +94,13 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
         )
     }
 
-    // Collapsed state
+    // Collapsed state — clickable text link
     if (!expanded) {
         return (
             <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                className="flex items-center gap-2 text-sm text-brand hover:text-brand-light transition-colors"
             >
                 <Tag size={14} />
                 {t('promotions.haveCode') || 'Have a discount code?'}
@@ -102,7 +110,7 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
 
     // Expanded input state
     return (
-        <div className="space-y-1.5">
+        <div ref={formRef} className="space-y-1.5">
             <div className="flex gap-2">
                 <input
                     type="text"
@@ -124,7 +132,7 @@ export default function PromotionInput({ cartId, onApplied, onRemoved }: Promoti
                 </button>
             </div>
             {error && (
-                <p className="text-xs text-red-500">{error}</p>
+                <p className="text-xs text-red-500 animate-fade-in">{error}</p>
             )}
         </div>
     )

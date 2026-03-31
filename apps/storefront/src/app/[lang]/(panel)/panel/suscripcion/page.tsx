@@ -1,15 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { withPanelGuard } from '@/lib/panel-guard'
+import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import SubscriptionClient from './SubscriptionClient'
 import { getActiveModulesForTenant } from '@/lib/active-modules'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+    const { lang } = await params
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+    return { title: t('panel.subscription.title') || 'Suscripción y Módulos' }
+}
+
 /**
- * /panel/suscripcion — Modules & Billing overview
+ * /panel/suscripcion — Modules & Billing overview (SOTA)
  *
  * Shows the owner's active modules, available add-ons,
- * maintenance status, and billing management.
+ * maintenance status, cost breakdown chart, and billing management.
  * Auth-guarded by withPanelGuard().
  */
 export default async function SubscriptionPage({

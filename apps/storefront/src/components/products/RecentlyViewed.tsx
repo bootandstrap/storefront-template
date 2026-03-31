@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useI18n } from '@/lib/i18n/provider'
-import { Clock } from 'lucide-react'
+import { Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const STORAGE_KEY = 'recently-viewed'
-const MAX_ITEMS = 10
+const MAX_ITEMS = 12
 
 interface RecentProduct {
     handle: string
@@ -45,9 +45,54 @@ export function getRecentlyViewed(): RecentProduct[] {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Scroll Carousel Hook
+// ---------------------------------------------------------------------------
+
+function useScrollCarousel(ref: React.RefObject<HTMLDivElement | null>) {
+    const [canScrollLeft, setCanScrollLeft] = useState(false)
+    const [canScrollRight, setCanScrollRight] = useState(false)
+
+    const check = useCallback(() => {
+        const el = ref.current
+        if (!el) return
+        setCanScrollLeft(el.scrollLeft > 4)
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    }, [ref])
+
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return
+        check()
+        el.addEventListener('scroll', check, { passive: true })
+        const observer = new ResizeObserver(check)
+        observer.observe(el)
+        return () => {
+            el.removeEventListener('scroll', check)
+            observer.disconnect()
+        }
+    }, [ref, check])
+
+    const scroll = useCallback(
+        (direction: 'left' | 'right') => {
+            const el = ref.current
+            if (!el) return
+            const amount = el.clientWidth * 0.65
+            el.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' })
+        },
+        [ref]
+    )
+
+    return { canScrollLeft, canScrollRight, scroll }
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 /**
- * RecentlyViewed — horizontal scrollable section showing last viewed products.
- * Placed below related products on PDP or optionally on homepage.
+ * RecentlyViewed — horizontal scrollable carousel with navigation arrows.
+ * Shows last viewed products from localStorage. Skips current product.
  */
 export default function RecentlyViewed({
     currentHandle,
@@ -57,6 +102,8 @@ export default function RecentlyViewed({
 }) {
     const { t, locale } = useI18n()
     const [items, setItems] = useState<RecentProduct[]>([])
+    const scrollRef = useRef<HTMLDivElement>(null)
+    const { canScrollLeft, canScrollRight, scroll } = useScrollCarousel(scrollRef)
 
     useEffect(() => {
         const all = getRecentlyViewed()
@@ -68,21 +115,48 @@ export default function RecentlyViewed({
 
     return (
         <section className="mt-12">
-            <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-text-muted" />
-                <h3 className="text-lg font-bold font-display text-text-primary">
-                    {t('product.recentlyViewed')}
-                </h3>
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-tx-muted" />
+                    <h3 className="text-lg font-bold font-display text-tx">
+                        {t('product.recentlyViewed')}
+                    </h3>
+                </div>
+
+                {/* Scroll arrows */}
+                {(canScrollLeft || canScrollRight) && (
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={() => scroll('left')}
+                            disabled={!canScrollLeft}
+                            className="w-8 h-8 rounded-full border border-sf-3 flex items-center justify-center hover:border-brand hover:text-brand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Scroll left"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => scroll('right')}
+                            disabled={!canScrollRight}
+                            className="w-8 h-8 rounded-full border border-sf-3 flex items-center justify-center hover:border-brand hover:text-brand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Scroll right"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
+            <div
+                ref={scrollRef}
+                className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+            >
                 {items.map((product) => (
                     <Link
                         key={product.handle}
                         href={`/${locale}/productos/${product.handle}`}
-                        className="flex-none w-40 group"
+                        className="flex-none w-36 sm:w-40 group"
                     >
-                        <div className="aspect-square relative rounded-xl overflow-hidden bg-surface-1 mb-2">
+                        <div className="aspect-square relative rounded-xl overflow-hidden bg-sf-1 mb-2">
                             {product.thumbnail ? (
                                 <Image
                                     src={product.thumbnail}
@@ -101,11 +175,11 @@ export default function RecentlyViewed({
                                 </div>
                             )}
                         </div>
-                        <p className="text-sm font-medium text-text-primary line-clamp-2 group-hover:text-primary transition-colors">
+                        <p className="text-sm font-medium text-tx line-clamp-2 group-hover:text-brand transition-colors">
                             {product.title}
                         </p>
                         {product.price && (
-                            <p className="text-sm text-text-muted mt-0.5">{product.price}</p>
+                            <p className="text-sm text-tx-muted mt-0.5">{product.price}</p>
                         )}
                     </Link>
                 ))}

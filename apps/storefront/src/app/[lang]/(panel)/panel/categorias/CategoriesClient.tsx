@@ -114,8 +114,8 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
         })
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
-    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     return (
         <PageEntrance className="space-y-5">
@@ -126,7 +126,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                 badge={categoryCount}
                 action={
                     <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                         disabled={!canAdd || isPending}
                         onClick={() => { resetForm(); setShowForm(true) }}
                     >
@@ -136,7 +136,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                 }
             />
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-text-muted">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
                 {categoryCount} / {maxCategories} {labels.categories}
                 {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
             </motion.p>
@@ -161,7 +161,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
                         className="glass rounded-2xl p-6 space-y-4"
                     >
-                        <h2 className="font-bold text-lg text-text-primary">
+                        <h2 className="font-bold text-lg text-tx">
                             {editingId ? labels.editCategory : labels.addCategory}
                         </h2>
                         <div>
@@ -178,11 +178,11 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                             />
                         </div>
                         <div className="flex gap-3 pt-2">
-                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                            <button onClick={handleSubmit} disabled={isPending} className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {isPending ? '...' : editingId ? labels.save : labels.create}
                             </button>
-                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
+                            <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
                         </div>
                     </motion.div>
                 )}
@@ -196,16 +196,16 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <FolderTree className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <FolderTree className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noCategories}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                        <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {labels.noCategoriesHint}
                         </p>
                         <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             disabled={!canAdd}
                             onClick={() => { resetForm(); setShowForm(true) }}
                         >
@@ -224,21 +224,21 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Icon */}
-                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                        <Tag className="w-5 h-5 text-primary" />
+                                    <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center flex-shrink-0">
+                                        <Tag className="w-5 h-5 text-brand" />
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-text-primary truncate">{category.name}</h3>
-                                        <p className="text-xs text-text-muted mt-0.5">/{category.handle}</p>
+                                        <h3 className="font-bold text-tx truncate">{category.name}</h3>
+                                        <p className="text-xs text-tx-muted mt-0.5">/{category.handle}</p>
                                         {category.description && (
-                                            <p className="text-xs text-text-secondary mt-1 truncate">{category.description}</p>
+                                            <p className="text-xs text-tx-sec mt-1 truncate">{category.description}</p>
                                         )}
                                     </div>
 
                                     {/* Product count */}
-                                    <span className="text-xs bg-surface-2 text-text-muted px-2.5 py-1 rounded-full font-medium flex-shrink-0">
+                                    <span className="text-xs bg-sf-2 text-tx-muted px-2.5 py-1 rounded-full font-medium flex-shrink-0">
                                         {category.productCount} {labels.productCount}
                                     </span>
 
@@ -247,7 +247,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                                         <button
                                             onClick={() => openEdit(category)}
                                             aria-label={labels.edit}
-                                            className="p-2 min-h-[36px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            className="p-2 min-h-[36px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             disabled={isPending}
                                         >
                                             <Pencil className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                                         <button
                                             onClick={() => handleDelete(category.id)}
                                             aria-label={labels.delete}
-                                            className="p-2 min-h-[36px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                            className="p-2 min-h-[36px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                             disabled={isPending}
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />

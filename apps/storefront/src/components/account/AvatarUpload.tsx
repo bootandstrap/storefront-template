@@ -3,8 +3,11 @@
 import { useState, useRef, useCallback } from 'react'
 import { Camera, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/provider'
+
+const AvatarCropModal = dynamic(() => import('./AvatarCropModal'), { ssr: false })
 
 // ---------------------------------------------------------------------------
 // Props
@@ -36,12 +39,13 @@ export default function AvatarUpload({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [cropSrc, setCropSrc] = useState<string | null>(null)
 
     const displayUrl = previewUrl ?? currentAvatarUrl
     const initials = (userName?.[0] ?? userEmail?.[0] ?? '?').toUpperCase()
 
     // -----------------------------------------------------------------------
-    // Handle file selection
+    // Handle file selection → opens crop modal
     // -----------------------------------------------------------------------
 
     const handleFileChange = useCallback(
@@ -63,41 +67,50 @@ export default function AvatarUpload({
 
             setError(null)
 
-            // Instant preview
+            // Open crop modal instead of uploading directly
             const objectUrl = URL.createObjectURL(file)
+            setCropSrc(objectUrl)
+        },
+        [t]
+    )
+
+    // -----------------------------------------------------------------------
+    // Handle crop complete — upload the cropped blob
+    // -----------------------------------------------------------------------
+
+    const handleCropComplete = useCallback(
+        async (blob: Blob) => {
+            setCropSrc(null)
+
+            // Show instant preview
+            const objectUrl = URL.createObjectURL(blob)
             setPreviewUrl(objectUrl)
 
             // Upload
             setUploading(true)
             try {
                 const supabase = createClient()
+                const filePath = `${userId}/avatar.webp`
 
-                // Determine extension
-                const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-                const filePath = `${userId}/avatar.${ext}`
+                // Create File from blob
+                const file = new File([blob], 'avatar.webp', { type: 'image/webp' })
 
-                // Upload (upsert to overwrite previous)
                 const { error: uploadError } = await supabase.storage
                     .from('avatars')
                     .upload(filePath, file, {
                         upsert: true,
                         cacheControl: '3600',
-                        contentType: file.type,
+                        contentType: 'image/webp',
                     })
 
-                if (uploadError) {
-                    throw new Error(uploadError.message)
-                }
+                if (uploadError) throw new Error(uploadError.message)
 
-                // Get public URL
                 const { data: { publicUrl } } = supabase.storage
                     .from('avatars')
                     .getPublicUrl(filePath)
 
-                // Bust browser cache by appending timestamp
                 const freshUrl = `${publicUrl}?v=${Date.now()}`
 
-                // Update profile in the database
                 const { error: dbError } = await supabase
                     .from('profiles')
                     .update({
@@ -106,20 +119,16 @@ export default function AvatarUpload({
                     })
                     .eq('id', userId)
 
-                if (dbError) {
-                    throw new Error(dbError.message)
-                }
+                if (dbError) throw new Error(dbError.message)
 
                 setPreviewUrl(freshUrl)
                 onUploadComplete?.(freshUrl)
             } catch (err) {
                 const msg = err instanceof Error ? err.message : t('avatar.uploadError')
                 setError(msg)
-                // Revert preview on failure
                 setPreviewUrl(null)
             } finally {
                 setUploading(false)
-                // Reset input so user can re-select the same file
                 if (fileInputRef.current) fileInputRef.current.value = ''
             }
         },
@@ -131,87 +140,101 @@ export default function AvatarUpload({
     // -----------------------------------------------------------------------
 
     return (
-        <div className="glass rounded-2xl p-6 flex items-center gap-4">
-            {/* Avatar circle */}
-            <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden relative">
-                    {displayUrl ? (
-                        <Image
-                            src={displayUrl}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="80px"
-                            unoptimized
-                        />
-                    ) : (
-                        initials
-                    )}
+        <>
+            <div className="glass rounded-2xl p-6 flex items-center gap-4">
+                {/* Avatar circle */}
+                <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center text-brand font-bold text-2xl overflow-hidden relative">
+                        {displayUrl ? (
+                            <Image
+                                src={displayUrl}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="80px"
+                                unoptimized
+                            />
+                        ) : (
+                            initials
+                        )}
 
-                    {/* Upload overlay */}
-                    {uploading && (
-                        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-                            <Loader2 className="w-6 h-6 text-white animate-spin" />
-                        </div>
-                    )}
+                        {/* Upload overlay */}
+                        {uploading && (
+                            <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Camera button */}
+                    <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-brand text-white shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+                        aria-label={t('avatar.change')}
+                    >
+                        <Camera className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        aria-hidden="true"
+                    />
                 </div>
 
-                {/* Camera button */}
-                <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-primary text-white shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
-                    aria-label={t('avatar.change')}
-                >
-                    <Camera className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Hidden file input */}
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    aria-hidden="true"
-                />
-            </div>
-
-            {/* User info */}
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-text-primary truncate">
-                    {userName || t('profile.noName')}
-                </p>
-                <p className="text-xs text-text-muted">
-                    {t('profile.memberSince')}{' '}
-                    {new Intl.DateTimeFormat(locale, {
-                        month: 'long',
-                        year: 'numeric',
-                    }).format(new Date(memberSince))}
-                </p>
-
-                {/* Error message */}
-                {error && (
-                    <div className="flex items-center gap-1 mt-1">
-                        <p className="text-xs text-red-400 flex-1">{error}</p>
-                        <button
-                            type="button"
-                            onClick={() => setError(null)}
-                            className="text-red-400 hover:text-red-300"
-                        >
-                            <X className="w-3 h-3" />
-                        </button>
-                    </div>
-                )}
-
-                {/* Upload hint */}
-                {!error && !uploading && (
-                    <p className="text-xs text-text-muted/60 mt-0.5">
-                        {t('avatar.hint')}
+                {/* User info */}
+                <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-tx truncate">
+                        {userName || t('profile.noName')}
                     </p>
-                )}
+                    <p className="text-xs text-tx-muted">
+                        {t('profile.memberSince')}{' '}
+                        {new Intl.DateTimeFormat(locale, {
+                            month: 'long',
+                            year: 'numeric',
+                        }).format(new Date(memberSince))}
+                    </p>
+
+                    {/* Error message */}
+                    {error && (
+                        <div className="flex items-center gap-1 mt-1">
+                            <p className="text-xs text-red-400 flex-1">{error}</p>
+                            <button
+                                type="button"
+                                onClick={() => setError(null)}
+                                className="text-red-400 hover:text-red-300"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Upload hint */}
+                    {!error && !uploading && (
+                        <p className="text-xs text-tx-faint mt-0.5">
+                            {t('avatar.hint')}
+                        </p>
+                    )}
+                </div>
             </div>
-        </div>
+
+            {/* Crop modal */}
+            {cropSrc && (
+                <AvatarCropModal
+                    imageSrc={cropSrc}
+                    onCropComplete={handleCropComplete}
+                    onCancel={() => {
+                        setCropSrc(null)
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                />
+            )}
+        </>
     )
 }

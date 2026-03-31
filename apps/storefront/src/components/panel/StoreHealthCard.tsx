@@ -144,14 +144,14 @@ export default function StoreHealthCard({
             >
               {animatedScore}
             </span>
-            <span className="text-[10px] text-text-muted font-medium">/ 100</span>
+            <span className="text-[10px] text-tx-muted font-medium">/ 100</span>
           </div>
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <h3 className="text-sm font-bold text-text-primary">
+            <h3 className="text-sm font-bold text-tx">
               {labels.title}
             </h3>
             <span className={`level-badge ${levelConf.cssClass}`}>
@@ -159,7 +159,7 @@ export default function StoreHealthCard({
             </span>
           </div>
 
-          <p className="text-xs text-text-muted mb-2">
+          <p className="text-xs text-tx-muted mb-2">
             {readiness.completedCount}/{readiness.totalCount} {labels.completed}
           </p>
 
@@ -167,7 +167,7 @@ export default function StoreHealthCard({
           {readiness.nextAction && labels.nextActionLabel && (
             <a
               href={readiness.nextAction.actionHref}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-light transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:text-brand-light transition-colors"
             >
               {readiness.nextAction.emoji} {labels.nextActionLabel}
               <ArrowRight className="w-3 h-3" />
@@ -182,7 +182,7 @@ export default function StoreHealthCard({
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-center gap-1 mt-3 pt-3 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            className="w-full flex items-center justify-center gap-1 mt-3 pt-3 text-xs text-tx-muted hover:text-tx-sec transition-colors"
             style={{ borderTop: '1px solid var(--color-surface-2)' }}
           >
             {expanded ? labels.collapse : labels.expand}
@@ -195,7 +195,7 @@ export default function StoreHealthCard({
                 <a
                   key={check.id}
                   href={check.actionHref}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-1 transition-colors group"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-sf-1 transition-colors group"
                 >
                   {check.done ? (
                     <div className="w-5 h-5 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
@@ -207,11 +207,11 @@ export default function StoreHealthCard({
                     />
                   )}
                   <span className="text-lg flex-shrink-0">{check.emoji}</span>
-                  <span className={`text-xs flex-1 ${check.done ? 'text-text-muted line-through' : 'text-text-primary font-medium'}`}>
+                  <span className={`text-xs flex-1 ${check.done ? 'text-tx-muted line-through' : 'text-tx font-medium'}`}>
                     {labels.checkLabels[check.id] ?? check.labelKey}
                   </span>
                   {!check.done && (
-                    <ArrowRight className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight className="w-3.5 h-3.5 text-tx-muted opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </a>
               ))}
@@ -228,7 +228,7 @@ export default function StoreHealthCard({
                 <button
                   type="button"
                   onClick={handleReplayTour}
-                  className="inline-flex items-center gap-1.5 text-[11px] text-text-muted hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/5"
+                  className="inline-flex items-center gap-1.5 text-[11px] text-tx-muted hover:text-brand transition-colors px-2 py-1 rounded-lg hover:bg-brand-subtle"
                 >
                   <RotateCcw className="w-3 h-3" />
                   {labels.replayTourLabel}
@@ -237,7 +237,7 @@ export default function StoreHealthCard({
               {labels.languageLabel && (
                 <a
                   href={`/${lang}/panel/tienda`}
-                  className="inline-flex items-center gap-1.5 text-[11px] text-text-muted hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/5"
+                  className="inline-flex items-center gap-1.5 text-[11px] text-tx-muted hover:text-brand transition-colors px-2 py-1 rounded-lg hover:bg-brand-subtle"
                 >
                   <Globe className="w-3 h-3" />
                   {labels.languageLabel}

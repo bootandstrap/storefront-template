@@ -68,11 +68,11 @@ export default function CheckoutAddressStep({
     return (
         <div className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 mb-4">
-                <MapPin className="w-5 h-5 text-primary" />
+                <MapPin className="w-5 h-5 text-brand" />
                 <h3 className="font-bold">{t('checkout.steps.address')}</h3>
             </div>
             <div>
-                <label className="text-sm text-text-secondary block mb-1">
+                <label className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.street') || 'Address'} *
                 </label>
                 <input
@@ -85,7 +85,7 @@ export default function CheckoutAddressStep({
                 />
             </div>
             <div>
-                <label className="text-sm text-text-secondary block mb-1">
+                <label className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.street2') || 'Apt / Suite (optional)'}
                 </label>
                 <input
@@ -98,7 +98,7 @@ export default function CheckoutAddressStep({
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.city') || 'City'} *
                     </label>
                     <input
@@ -111,7 +111,7 @@ export default function CheckoutAddressStep({
                     />
                 </div>
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.postalCode') || 'Postal code'} *
                     </label>
                     <input
@@ -125,7 +125,7 @@ export default function CheckoutAddressStep({
                 </div>
             </div>
             <div>
-                <label className="text-sm text-text-secondary block mb-1">
+                <label className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.country') || 'Country'} *
                 </label>
                 <select
@@ -148,7 +148,7 @@ export default function CheckoutAddressStep({
             </div>
             {featureFlags.enable_order_notes && (
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.notes')}
                     </label>
                     <textarea
@@ -162,8 +162,8 @@ export default function CheckoutAddressStep({
             )}
             {addressLoading && (
                 <div className="flex items-center justify-center py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="ml-2 text-sm text-text-muted">
+                    <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                    <span className="ml-2 text-sm text-tx-muted">
                         {t('checkout.savingAddress') || 'Saving address...'}
                     </span>
                 </div>

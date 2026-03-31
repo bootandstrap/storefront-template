@@ -103,24 +103,24 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
 
     return (
         <div className="w-full flex flex-col items-center justify-center min-h-[75vh] py-12 px-2 sm:px-4 space-y-8">
-            <div className="relative w-full max-w-5xl rounded-[2.5rem] overflow-hidden bg-surface-0 border border-surface-2 group shadow-2xl shadow-primary/5 transition-all duration-700 hover:shadow-primary/10 hover:-translate-y-1">
+            <div className="relative w-full max-w-5xl rounded-[2.5rem] overflow-hidden bg-sf-0 border border-sf-2 group shadow-2xl shadow-brand-soft transition-all duration-700 hover:shadow-brand-soft hover:-translate-y-1">
                 {/* Organic backdrop */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-surface-1 opacity-50 transition-opacity duration-700 group-hover:opacity-100 mix-blend-multiply pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-subtle via-transparent to-sf-1 opacity-50 transition-opacity duration-700 group-hover:opacity-100 mix-blend-multiply pointer-events-none" />
 
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
                     {/* Left Column: Copy & CTA */}
-                    <div className="flex flex-col justify-between p-10 lg:p-16 border-b lg:border-b-0 lg:border-r border-surface-2">
+                    <div className="flex flex-col justify-between p-10 lg:p-16 border-b lg:border-b-0 lg:border-r border-sf-2">
                         <div>
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-1 border border-surface-2 text-xs font-semibold uppercase tracking-widest text-text-muted mb-8 mb-10 transition-colors group-hover:border-primary/20 group-hover:text-primary">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sf-1 border border-sf-2 text-xs font-semibold uppercase tracking-widest text-tx-muted mb-8 mb-10 transition-colors group-hover:border-brand-soft group-hover:text-brand">
                                 <Sparkles className="w-3.5 h-3.5" />
                                 <span>{t('featureGate.premiumModule') || 'Premium Module'}</span>
                             </div>
 
-                            <h1 className="text-4xl lg:text-5xl font-display font-bold text-text-primary tracking-tight leading-[1.1] mb-6">
+                            <h1 className="text-4xl lg:text-5xl font-display font-bold text-tx tracking-tight leading-[1.1] mb-6">
                                 {moduleName}
                             </h1>
 
-                            <p className="text-lg text-text-secondary leading-relaxed font-light mb-10 max-w-md">
+                            <p className="text-lg text-tx-sec leading-relaxed font-light mb-10 max-w-md">
                                 {t('featureGate.description').replace('{module}', moduleName)}
                             </p>
                         </div>
@@ -128,7 +128,7 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
                         <div className="space-y-6 mt-4">
                             <a
                                 href={moduleUrl}
-                                className="group/btn relative overflow-hidden rounded-full bg-text-primary text-surface-0 px-8 py-4 text-sm font-medium transition-all duration-300 hover:bg-primary inline-flex items-center gap-3 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20"
+                                className="group/btn relative overflow-hidden rounded-full bg-text-brand text-sf-0 px-8 py-4 text-sm font-medium transition-all duration-300 hover:bg-brand inline-flex items-center gap-3 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-soft"
                             >
                                 <span className="relative z-10">{t('featureGate.cta')}</span>
                                 <ArrowRight className="relative z-10 w-4 h-4 transition-transform duration-300 animate-slide-right group-hover/btn:translate-x-1" />
@@ -136,7 +136,7 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
 
                             <Link
                                 href={activationUrl}
-                                className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 text-primary px-6 py-3 text-sm font-medium hover:bg-primary/10 transition-colors"
+                                className="inline-flex items-center justify-center gap-2 rounded-full border border-brand-soft text-brand px-6 py-3 text-sm font-medium hover:bg-brand-subtle transition-colors"
                             >
                                 {t('featureGate.activateNow') || 'Activar ahora'}
                             </Link>
@@ -144,7 +144,7 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
                             <div className="flex items-center">
                                 <Link
                                     href={`/${lang}/panel`}
-                                    className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors hover:underline underline-offset-4 inline-flex items-center gap-2"
+                                    className="text-sm font-medium text-tx-muted hover:text-tx transition-colors hover:underline underline-offset-4 inline-flex items-center gap-2"
                                 >
                                     <span>←</span> {t('featureGate.backToPanel')}
                                 </Link>
@@ -153,27 +153,27 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
                     </div>
 
                     {/* Right Column: Benefits Showcase & Aesthetics */}
-                    <div className="relative p-10 lg:p-16 bg-surface-1 flex flex-col justify-center overflow-hidden">
+                    <div className="relative p-10 lg:p-16 bg-sf-1 flex flex-col justify-center overflow-hidden">
                         {/* Abstract graphic element in background */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_50%)] opacity-[0.04] animate-pulse pointer-events-none blur-3xl transition-opacity duration-1000 group-hover:opacity-[0.08]" />
 
                         <div className="relative z-10 max-w-md mx-auto w-full">
-                            <div className="w-16 h-16 rounded-2xl bg-surface-0 border border-surface-2 shadow-sm flex items-center justify-center text-3xl mb-12 transform transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg">
+                            <div className="w-16 h-16 rounded-2xl bg-sf-0 border border-sf-2 shadow-sm flex items-center justify-center text-3xl mb-12 transform transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg">
                                 {icon}
                             </div>
 
                             {benefits.length > 0 && (
                                 <div className="space-y-6">
-                                    <h3 className="text-xs font-semibold text-text-muted uppercase tracking-widest pl-1">
+                                    <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-widest pl-1">
                                         {t('featureGate.whatYouGet') || 'What you get'}
                                     </h3>
                                     <ul className="space-y-5">
                                         {benefits.map((benefit, i) => (
                                             <li key={i} className="flex items-start gap-4 flex-nowrap group/item cursor-default">
-                                                <div className="w-10 h-10 rounded-full bg-surface-0 border border-surface-2 flex items-center justify-center flex-shrink-0 text-text-secondary group-hover/item:text-primary transition-colors duration-300 group-hover/item:border-primary/30 group-hover/item:shadow-sm">
+                                                <div className="w-10 h-10 rounded-full bg-sf-0 border border-sf-2 flex items-center justify-center flex-shrink-0 text-tx-sec group-hover/item:text-brand transition-colors duration-300 group-hover/item:border-brand group-hover/item:shadow-sm">
                                                     {benefit.icon}
                                                 </div>
-                                                <div className="pt-2.5 font-medium text-text-primary text-sm leading-snug group-hover/item:text-primary transition-colors duration-300">
+                                                <div className="pt-2.5 font-medium text-tx text-sm leading-snug group-hover/item:text-brand transition-colors duration-300">
                                                     {t(benefit.key) || benefit.key}
                                                 </div>
                                             </li>
@@ -188,7 +188,7 @@ export default async function FeatureGate({ flag, lang }: FeatureGateProps) {
 
             {/* Owner-only reassurance note */}
             <div className="max-w-md w-full animate-fade-in-up-delay">
-                <div className="mx-auto flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-surface-0/60 border border-surface-2 text-center text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-0/80">
+                <div className="mx-auto flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-glass border border-sf-2 text-center text-tx-muted transition-colors hover:text-tx-sec hover:bg-glass-heavy">
                     <Info className="w-4 h-4 flex-shrink-0" />
                     <p className="text-xs font-medium tracking-wide">
                         {t('featureGate.ownerOnly')}

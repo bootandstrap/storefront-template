@@ -17,6 +17,12 @@ export interface PanelFeatureFlags {
     enable_pos?: boolean
     enable_traffic_expansion?: boolean
     enable_product_badges?: boolean
+    enable_seo?: boolean
+    enable_social_media?: boolean
+    enable_multi_language?: boolean
+    enable_automations?: boolean
+    enable_auth_advanced?: boolean
+    enable_sales_channels?: boolean
     owner_lite_enabled?: boolean
     owner_advanced_modules_enabled?: boolean
 }
@@ -42,6 +48,12 @@ export interface PanelSidebarLabels {
     reviews: string
     pos: string
     capacidad: string
+    seo: string
+    socialMedia: string
+    i18n: string
+    automations: string
+    authAdvanced: string
+    salesChannels: string
     ownerPanel: string
     backToStore: string
     groupOperations: string
@@ -60,7 +72,7 @@ export interface PanelNavItem {
 }
 
 interface AdvancedModuleDef {
-    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns' | 'crm' | 'reviews' | 'pos' | 'capacidad'
+    key: 'carousel' | 'whatsapp' | 'pages' | 'analytics' | 'badges' | 'chatbot' | 'returns' | 'crm' | 'reviews' | 'pos' | 'capacidad' | 'seo' | 'socialMedia' | 'i18n' | 'automations' | 'authAdvanced' | 'salesChannels'
     segment: string
     featureKey?: keyof PanelFeatureFlags
 }
@@ -89,6 +101,12 @@ export const ADVANCED_MODULES: AdvancedModuleDef[] = [
     { key: 'reviews', segment: 'resenas', featureKey: 'enable_reviews' },
     { key: 'pos', segment: 'pos', featureKey: 'enable_pos' },
     { key: 'capacidad', segment: 'capacidad', featureKey: 'enable_traffic_expansion' },
+    { key: 'seo', segment: 'seo', featureKey: 'enable_seo' },
+    { key: 'socialMedia', segment: 'redes-sociales', featureKey: 'enable_social_media' },
+    { key: 'i18n', segment: 'idiomas', featureKey: 'enable_multi_language' },
+    { key: 'automations', segment: 'automatizaciones', featureKey: 'enable_automations' },
+    { key: 'authAdvanced', segment: 'auth', featureKey: 'enable_auth_advanced' },
+    { key: 'salesChannels', segment: 'canales', featureKey: 'enable_sales_channels' },
 ]
 
 export const OWNER_LITE_MODE_DEFAULT = false
@@ -156,6 +174,7 @@ const GROUP_MAP: Record<string, NavGroup> = {
     pos: 'operations',
     crm: 'operations',
     returns: 'operations',
+    salesChannels: 'operations',
     // Content — product catalog & marketing
     catalog: 'content',
     carousel: 'content',
@@ -164,6 +183,8 @@ const GROUP_MAP: Record<string, NavGroup> = {
     chatbot: 'content',
     reviews: 'content',
     whatsapp: 'content',
+    seo: 'content',
+    socialMedia: 'content',
     // Settings — store configuration & infrastructure
     storeConfig: 'settings',
     shipping: 'settings',
@@ -171,6 +192,9 @@ const GROUP_MAP: Record<string, NavGroup> = {
     capacidad: 'settings',
     myProject: 'settings',
     modules: 'settings',
+    i18n: 'settings',
+    automations: 'settings',
+    authAdvanced: 'settings',
 }
 
 export interface GroupedNavigation {
@@ -256,6 +280,12 @@ const ADVANCED_ROUTES = new Set([
     'resenas',
     'pos',
     'capacidad',
+    'seo',
+    'redes-sociales',
+    'idiomas',
+    'automatizaciones',
+    'auth',
+    'canales',
 ])
 
 export type PanelRouteKey =
@@ -284,6 +314,12 @@ export type PanelRouteKey =
     | 'resenas'
     | 'pos'
     | 'capacidad'
+    | 'seo'
+    | 'redes-sociales'
+    | 'idiomas'
+    | 'automatizaciones'
+    | 'auth'
+    | 'canales'
 
 export function getPanelFallbackRoute(lang: string): string {
     return `/${lang}/panel`

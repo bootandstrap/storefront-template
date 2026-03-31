@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Star, Send, Loader2 } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Star, Send, Loader2, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import { getPublicMedusaUrl, getPublishableKey } from '@/lib/medusa/url'
+import RatingDistribution from './RatingDistribution'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,7 +53,7 @@ function StarRating({
                         size={size}
                         className={`transition-colors ${star <= value
                             ? 'fill-amber-400 text-amber-400'
-                            : 'fill-none text-surface-3'
+                            : 'fill-none text-sf-3'
                             }`}
                     />
                 </button>
@@ -79,6 +80,9 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     const [comment, setComment] = useState('')
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [sortBy, setSortBy] = useState<'newest' | 'highest' | 'lowest'>('newest')
+    const [reviewPage, setReviewPage] = useState(1)
+    const REVIEWS_PER_PAGE = 5
 
     const medusaUrl = getPublicMedusaUrl()
     const publishableKey = getPublishableKey()
@@ -149,6 +153,37 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         }
     }
 
+    // Compute rating distribution
+    const distribution = useMemo(() => {
+        const counts = [0, 0, 0, 0, 0]
+        for (const r of reviews) {
+            if (r.rating >= 1 && r.rating <= 5) counts[r.rating - 1]++
+        }
+        return counts
+    }, [reviews])
+
+    // Sort reviews
+    const sortedReviews = useMemo(() => {
+        const sorted = [...reviews]
+        switch (sortBy) {
+            case 'highest': return sorted.sort((a, b) => b.rating - a.rating)
+            case 'lowest': return sorted.sort((a, b) => a.rating - b.rating)
+            default: return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        }
+    }, [reviews, sortBy])
+
+    // Paginate
+    const totalReviewPages = Math.ceil(sortedReviews.length / REVIEWS_PER_PAGE)
+    const paginatedReviews = useMemo(() => {
+        const start = (reviewPage - 1) * REVIEWS_PER_PAGE
+        return sortedReviews.slice(start, start + REVIEWS_PER_PAGE)
+    }, [sortedReviews, reviewPage, REVIEWS_PER_PAGE])
+
+    // Reset page on sort change
+    useEffect(() => {
+        setReviewPage(1)
+    }, [sortBy])
+
     if (loading) {
         return (
             <div className="space-y-3 animate-pulse">
@@ -161,20 +196,11 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
     return (
         <section className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold font-display text-text-primary">
+                    <h2 className="text-xl font-bold font-display text-tx">
                         {t('reviews.title') || 'Customer Reviews'}
                     </h2>
-                    {reviews.length > 0 && (
-                        <div className="flex items-center gap-2 mt-1">
-                            <StarRating value={Math.round(avgRating)} readonly size={16} />
-                            <span className="text-sm text-text-muted">
-                                {avgRating.toFixed(1)} ({reviews.length})
-                            </span>
-                        </div>
-                    )}
                 </div>
                 <button
                     type="button"
@@ -184,6 +210,15 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     {t('reviews.writeReview') || 'Write a review'}
                 </button>
             </div>
+
+            {/* Rating Distribution Chart */}
+            {reviews.length > 0 && (
+                <RatingDistribution
+                    distribution={distribution}
+                    totalCount={reviews.length}
+                    avgRating={avgRating}
+                />
+            )}
 
             {/* Success message — note that reviews need owner approval */}
             {success && (
@@ -203,7 +238,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             {showForm && (
                 <form onSubmit={handleSubmit} className="glass rounded-xl p-5 space-y-4">
                     <div>
-                        <label className="text-sm font-medium text-text-secondary block mb-1">
+                        <label className="text-sm font-medium text-tx-sec block mb-1">
                             {t('reviews.yourName') || 'Your name'}
                         </label>
                         <input
@@ -216,13 +251,13 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                         />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-text-secondary block mb-1">
+                        <label className="text-sm font-medium text-tx-sec block mb-1">
                             {t('reviews.rating') || 'Rating'}
                         </label>
                         <StarRating value={rating} onChange={setRating} />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-text-secondary block mb-1">
+                        <label className="text-sm font-medium text-tx-sec block mb-1">
                             {t('reviews.comment') || 'Comment (optional)'}
                         </label>
                         <textarea
@@ -247,37 +282,88 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             {/* Reviews list */}
             {reviews.length === 0 ? (
                 <div className="glass rounded-xl p-8 text-center">
-                    <Star className="w-8 h-8 text-text-muted/30 mx-auto mb-2" />
-                    <p className="text-sm text-text-muted">
+                    <Star className="w-8 h-8 text-tx-faint mx-auto mb-2" />
+                    <p className="text-sm text-tx-muted">
                         {t('reviews.noReviews') || 'No reviews yet. Be the first!'}
                     </p>
                 </div>
             ) : (
-                <div className="space-y-3">
-                    {reviews.map((review) => (
+                <>
+                    {/* Sort controls */}
+                    <div className="flex items-center gap-2">
+                        <ArrowUpDown className="w-3.5 h-3.5 text-tx-muted" />
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as 'newest' | 'highest' | 'lowest')}
+                            className="text-xs border border-sf-3 rounded-lg px-2 py-1.5 bg-sf-0 text-tx-sec focus:outline-none focus:ring-1 focus:ring-brand"
+                        >
+                            <option value="newest">{t('reviews.sortNewest') || 'Newest'}</option>
+                            <option value="highest">{t('reviews.sortHighest') || 'Highest rated'}</option>
+                            <option value="lowest">{t('reviews.sortLowest') || 'Lowest rated'}</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-3">
+                        {paginatedReviews.map((review) => (
                         <div key={review.id} className="glass rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                    <div className="w-8 h-8 rounded-full bg-brand-subtle flex items-center justify-center text-brand text-xs font-bold">
                                         {review.author_name.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm font-medium text-text-primary">
+                                    <span className="text-sm font-medium text-tx">
                                         {review.author_name}
                                     </span>
                                 </div>
-                                <span className="text-xs text-text-muted">
+                                <span className="text-xs text-tx-muted">
                                     {new Date(review.created_at).toLocaleDateString()}
                                 </span>
                             </div>
                             <StarRating value={review.rating} readonly size={14} />
                             {review.comment && (
-                                <p className="text-sm text-text-secondary mt-2 leading-relaxed">
+                                <p className="text-sm text-tx-sec mt-2 leading-relaxed">
                                     {review.comment}
                                 </p>
                             )}
                         </div>
                     ))}
-                </div>
+                    </div>
+
+                    {/* Review pagination */}
+                    {totalReviewPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                            <button
+                                onClick={() => setReviewPage((p) => Math.max(1, p - 1))}
+                                disabled={reviewPage <= 1}
+                                className="p-1.5 rounded-lg border border-sf-3 disabled:opacity-30 hover:border-brand transition-colors"
+                                aria-label="Previous reviews"
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            {Array.from({ length: totalReviewPages }, (_, i) => i + 1).map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => setReviewPage(p)}
+                                    className={`w-7 h-7 text-xs rounded-lg border transition-all ${
+                                        reviewPage === p
+                                            ? 'bg-brand text-white border-brand'
+                                            : 'border-sf-3 hover:border-brand text-tx-sec'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setReviewPage((p) => Math.min(totalReviewPages, p + 1))}
+                                disabled={reviewPage >= totalReviewPages}
+                                className="p-1.5 rounded-lg border border-sf-3 disabled:opacity-30 hover:border-brand transition-colors"
+                                aria-label="Next reviews"
+                            >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </section>
     )

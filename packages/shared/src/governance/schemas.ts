@@ -151,6 +151,12 @@ export const FeatureFlagsSchema = z.object({
     enable_traffic_expansion: z.boolean(),
     enable_traffic_analytics: z.boolean(),
     enable_traffic_autoscale: z.boolean(),
+    // New module gates (Phase 4 — 2026-03)
+    enable_seo: z.boolean(),
+    enable_social_media: z.boolean(),
+    enable_automations: z.boolean(),
+    enable_auth_advanced: z.boolean(),
+    enable_sales_channels: z.boolean(),
 })
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>

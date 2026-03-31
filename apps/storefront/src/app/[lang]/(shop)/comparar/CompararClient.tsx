@@ -80,13 +80,13 @@ export default function CompararClient({ lang }: { lang: string }) {
         return (
             <div className="container-page py-12">
                 <div className="animate-pulse space-y-6">
-                    <div className="h-8 w-48 bg-surface-1 rounded" />
+                    <div className="h-8 w-48 bg-sf-1 rounded" />
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="space-y-3">
-                                <div className="aspect-square bg-surface-1 rounded-xl" />
-                                <div className="h-4 bg-surface-1 rounded w-3/4" />
-                                <div className="h-4 bg-surface-1 rounded w-1/2" />
+                                <div className="aspect-square bg-sf-1 rounded-xl" />
+                                <div className="h-4 bg-sf-1 rounded w-3/4" />
+                                <div className="h-4 bg-sf-1 rounded w-1/2" />
                             </div>
                         ))}
                     </div>
@@ -98,11 +98,11 @@ export default function CompararClient({ lang }: { lang: string }) {
     if (items.length === 0) {
         return (
             <div className="container-page py-16 text-center">
-                <Scale className="w-16 h-16 mx-auto text-text-muted mb-4" />
-                <h1 className="text-2xl font-bold font-display text-text-primary mb-2">
+                <Scale className="w-16 h-16 mx-auto text-tx-muted mb-4" />
+                <h1 className="text-2xl font-bold font-display text-tx mb-2">
                     {lang === 'es' ? 'Sin productos para comparar' : 'No products to compare'}
                 </h1>
-                <p className="text-text-muted mb-6">
+                <p className="text-tx-muted mb-6">
                     {lang === 'es'
                         ? 'Añade al menos 2 productos para compararlos.'
                         : 'Add at least 2 products to compare them.'}
@@ -126,20 +126,20 @@ export default function CompararClient({ lang }: { lang: string }) {
                 <div>
                     <Link
                         href={`/${lang}/productos`}
-                        className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-primary transition-colors mb-2"
+                        className="inline-flex items-center gap-1 text-sm text-tx-muted hover:text-brand transition-colors mb-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         {lang === 'es' ? 'Volver a productos' : 'Back to products'}
                     </Link>
-                    <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                        <Scale className="w-6 h-6 text-primary" />
+                    <h1 className="text-2xl font-bold font-display text-tx flex items-center gap-2">
+                        <Scale className="w-6 h-6 text-brand" />
                         {lang === 'es' ? 'Comparar productos' : 'Compare products'}
-                        <span className="text-sm font-normal text-text-muted">({products.length})</span>
+                        <span className="text-sm font-normal text-tx-muted">({products.length})</span>
                     </h1>
                 </div>
                 <button
                     onClick={clear}
-                    className="text-sm text-text-muted hover:text-red-500 transition-colors flex items-center gap-1"
+                    className="text-sm text-tx-muted hover:text-red-500 transition-colors flex items-center gap-1"
                 >
                     <Trash2 className="w-4 h-4" />
                     {lang === 'es' ? 'Limpiar todo' : 'Clear all'}
@@ -152,7 +152,7 @@ export default function CompararClient({ lang }: { lang: string }) {
                     {/* Product images + titles */}
                     <thead>
                         <tr>
-                            <th className="p-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider w-[120px]" />
+                            <th className="p-3 text-left text-xs font-semibold text-tx-muted uppercase tracking-wider w-[120px]" />
                             {products.map(p => (
                                 <th key={p.id} className="p-3 text-center min-w-[200px]">
                                     <div className="relative group">
@@ -164,7 +164,7 @@ export default function CompararClient({ lang }: { lang: string }) {
                                             <Trash2 className="w-3 h-3" />
                                         </button>
                                         <Link href={`/${lang}/productos/${p.handle}`}>
-                                            <div className="aspect-square w-full max-w-[160px] mx-auto rounded-xl overflow-hidden bg-surface-1 mb-3">
+                                            <div className="aspect-square w-full max-w-[160px] mx-auto rounded-xl overflow-hidden bg-sf-1 mb-3">
                                                 {p.thumbnail ? (
                                                     <Image
                                                         src={p.thumbnail}
@@ -174,12 +174,12 @@ export default function CompararClient({ lang }: { lang: string }) {
                                                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-text-muted">
+                                                    <div className="w-full h-full flex items-center justify-center text-tx-muted">
                                                         <ShoppingBag className="w-8 h-8" />
                                                     </div>
                                                 )}
                                             </div>
-                                            <p className="text-sm font-semibold text-text-primary hover:text-primary transition-colors">
+                                            <p className="text-sm font-semibold text-tx hover:text-brand transition-colors">
                                                 {p.title}
                                             </p>
                                         </Link>
@@ -190,8 +190,8 @@ export default function CompararClient({ lang }: { lang: string }) {
                     </thead>
                     <tbody className="divide-y divide-surface-3">
                         {/* Price */}
-                        <tr className="bg-surface-0">
-                            <td className="p-3 text-xs font-semibold text-text-muted uppercase">
+                        <tr className="bg-sf-0">
+                            <td className="p-3 text-xs font-semibold text-tx-muted uppercase">
                                 {lang === 'es' ? 'Precio' : 'Price'}
                             </td>
                             {products.map(p => {
@@ -199,11 +199,11 @@ export default function CompararClient({ lang }: { lang: string }) {
                                 return (
                                     <td key={p.id} className="p-3 text-center">
                                         {price ? (
-                                            <span className="text-lg font-bold text-primary">
+                                            <span className="text-lg font-bold text-brand">
                                                 {formatPrice(price.amount, price.currency)}
                                             </span>
                                         ) : (
-                                            <span className="text-text-muted">—</span>
+                                            <span className="text-tx-muted">—</span>
                                         )}
                                     </td>
                                 )
@@ -212,23 +212,23 @@ export default function CompararClient({ lang }: { lang: string }) {
 
                         {/* Category */}
                         <tr>
-                            <td className="p-3 text-xs font-semibold text-text-muted uppercase">
+                            <td className="p-3 text-xs font-semibold text-tx-muted uppercase">
                                 {lang === 'es' ? 'Categoría' : 'Category'}
                             </td>
                             {products.map(p => (
-                                <td key={p.id} className="p-3 text-center text-sm text-text-secondary">
+                                <td key={p.id} className="p-3 text-center text-sm text-tx-sec">
                                     {p.categories?.[0]?.name || '—'}
                                 </td>
                             ))}
                         </tr>
 
                         {/* Description */}
-                        <tr className="bg-surface-0">
-                            <td className="p-3 text-xs font-semibold text-text-muted uppercase">
+                        <tr className="bg-sf-0">
+                            <td className="p-3 text-xs font-semibold text-tx-muted uppercase">
                                 {lang === 'es' ? 'Descripción' : 'Description'}
                             </td>
                             {products.map(p => (
-                                <td key={p.id} className="p-3 text-center text-sm text-text-secondary">
+                                <td key={p.id} className="p-3 text-center text-sm text-tx-sec">
                                     <p className="line-clamp-3">
                                         {p.description || '—'}
                                     </p>
@@ -238,7 +238,7 @@ export default function CompararClient({ lang }: { lang: string }) {
 
                         {/* Variants / Options */}
                         <tr>
-                            <td className="p-3 text-xs font-semibold text-text-muted uppercase">
+                            <td className="p-3 text-xs font-semibold text-tx-muted uppercase">
                                 {lang === 'es' ? 'Opciones' : 'Options'}
                             </td>
                             {products.map(p => (
@@ -247,13 +247,13 @@ export default function CompararClient({ lang }: { lang: string }) {
                                         {p.variants?.map(v => (
                                             <span
                                                 key={v.id}
-                                                className="inline-block text-xs px-2 py-0.5 rounded-full bg-surface-1 text-text-secondary"
+                                                className="inline-block text-xs px-2 py-0.5 rounded-full bg-sf-1 text-tx-sec"
                                             >
                                                 {v.title}
                                             </span>
                                         ))}
                                         {(!p.variants || p.variants.length === 0) && (
-                                            <span className="text-text-muted text-sm">—</span>
+                                            <span className="text-tx-muted text-sm">—</span>
                                         )}
                                     </div>
                                 </td>
@@ -261,8 +261,8 @@ export default function CompararClient({ lang }: { lang: string }) {
                         </tr>
 
                         {/* Stock */}
-                        <tr className="bg-surface-0">
-                            <td className="p-3 text-xs font-semibold text-text-muted uppercase">
+                        <tr className="bg-sf-0">
+                            <td className="p-3 text-xs font-semibold text-tx-muted uppercase">
                                 {lang === 'es' ? 'Disponibilidad' : 'Availability'}
                             </td>
                             {products.map(p => {

@@ -121,19 +121,19 @@ export default function POSNumpad({
 
                 {/* Numpad panel */}
                 <motion.div
-                    className="relative w-full max-w-sm sm:mx-4 rounded-t-2xl sm:rounded-2xl bg-surface-0
-                               border border-surface-2 shadow-2xl overflow-hidden"
+                    className="relative w-full max-w-sm sm:mx-4 rounded-t-2xl sm:rounded-2xl bg-sf-0
+                               border border-sf-2 shadow-2xl overflow-hidden"
                     initial={{ opacity: 0, y: 100 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 100 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 >
                     {/* ── Header: Calculator display ── */}
-                    <div className="px-5 pt-5 pb-3 bg-surface-1/50">
-                        <p className="text-xs text-text-muted font-medium uppercase tracking-wider">
+                    <div className="px-5 pt-5 pb-3 bg-glass">
+                        <p className="text-xs text-tx-muted font-medium uppercase tracking-wider">
                             {title || posLabel('panel.pos.cashTendered', labels)}
                         </p>
-                        <p className="text-3xl font-black text-text-primary tabular-nums mt-1">
+                        <p className="text-3xl font-black text-tx tabular-nums mt-1">
                             {formatDisplay(value)}
                         </p>
 
@@ -156,8 +156,8 @@ export default function POSNumpad({
                             <button
                                 key={amount}
                                 onClick={() => handleQuickAmount(amount)}
-                                className="flex-1 py-2 rounded-lg bg-primary/8 text-primary text-xs font-bold
-                                           hover:bg-primary/15 active:scale-[0.95] transition-all duration-100"
+                                className="flex-1 py-2 rounded-lg bg-brand-subtle text-brand text-xs font-bold
+                                           hover:bg-brand-muted active:scale-[0.95] transition-all duration-100"
                             >
                                 {amount}
                             </button>
@@ -170,8 +170,8 @@ export default function POSNumpad({
                             <button
                                 key={d}
                                 onClick={() => handleDigit(d)}
-                                className="h-14 rounded-xl bg-surface-1 text-lg font-bold text-text-primary
-                                           hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                                className="h-14 rounded-xl bg-sf-1 text-lg font-bold text-tx
+                                           hover:bg-sf-2 active:bg-sf-3 active:scale-[0.96]
                                            transition-all duration-100"
                             >
                                 {d}
@@ -182,10 +182,10 @@ export default function POSNumpad({
                             onClick={handleDelete}
                             onDoubleClick={handleClear}
                             aria-label={posLabel('panel.pos.deleteHint', labels) || 'Delete digit'}
-                            className="h-14 rounded-xl bg-surface-1 flex items-center justify-center
-                                       text-text-secondary hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                            className="h-14 rounded-xl bg-sf-1 flex items-center justify-center
+                                       text-tx-sec hover:bg-sf-2 active:bg-sf-3 active:scale-[0.96]
                                        transition-all duration-100
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                             title={posLabel('panel.pos.deleteHint', labels) || 'Tap: borrar · Doble-tap: limpiar'}
                         >
                             <Delete className="w-5 h-5" />
@@ -197,9 +197,9 @@ export default function POSNumpad({
                         <button
                             onClick={onClose}
                             aria-label={posLabel('panel.pos.cancel', labels)}
-                            className="flex-1 py-3.5 rounded-xl bg-surface-1 text-sm font-semibold text-text-secondary min-h-[48px]
-                                       hover:bg-surface-2 transition-colors flex items-center justify-center gap-2
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                            className="flex-1 py-3.5 rounded-xl bg-sf-1 text-sm font-semibold text-tx-sec min-h-[48px]
+                                       hover:bg-sf-2 transition-colors flex items-center justify-center gap-2
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                         >
                             <X className="w-4 h-4" />
                             {posLabel('panel.pos.cancel', labels)}

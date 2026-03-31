@@ -1,6 +1,14 @@
+/**
+ * Shipping Page — Owner Panel
+ *
+ * Server component wraps ShippingClient with PanelPageHeader
+ * for SOTA header consistency and governance integration.
+ */
+
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { Truck } from 'lucide-react'
 import { withPanelGuard } from '@/lib/panel-guard'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Truck } from 'lucide-react'
 import ShippingClient from './ShippingClient'
 
 export const dynamic = 'force-dynamic'
@@ -24,15 +32,11 @@ export default async function ShippingPage({
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary flex items-center gap-2">
-                    <Truck className="w-6 h-6 text-primary" />
-                    {t('panel.shipping.title')}
-                </h1>
-                <p className="text-text-muted mt-1">
-                    {t('panel.shipping.subtitle')}
-                </p>
-            </div>
+            <PanelPageHeader
+                title={t('panel.shipping.title')}
+                subtitle={t('panel.shipping.subtitle')}
+                icon={<Truck className="w-5 h-5" />}
+            />
             <ShippingClient />
         </div>
     )

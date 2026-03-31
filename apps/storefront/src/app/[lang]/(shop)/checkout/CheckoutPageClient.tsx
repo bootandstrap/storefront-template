@@ -77,11 +77,11 @@ export default function CheckoutPageClient({
     if (items.length === 0) {
         return (
             <div className="container-page py-16 text-center">
-                <ShoppingBag className="w-12 h-12 text-text-muted mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-text-primary mb-2">
+                <ShoppingBag className="w-12 h-12 text-tx-muted mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-tx mb-2">
                     {t('checkout.noItems')}
                 </h2>
-                <p className="text-text-muted mb-6">
+                <p className="text-tx-muted mb-6">
                     {t('checkout.noItemsHint')}
                 </p>
                 <Link href={localizedHref('products')} className="btn btn-primary">
@@ -97,11 +97,11 @@ export default function CheckoutPageClient({
                 <div className="flex items-center gap-3 mb-8">
                     <Link
                         href={localizedHref('cart')}
-                        className="p-2 rounded-full hover:bg-surface-1 transition-colors"
+                        className="p-2 rounded-full hover:bg-sf-1 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl md:text-3xl font-bold font-display text-tx">
                         {t('checkout.finishOrder')}
                     </h1>
                 </div>
@@ -123,10 +123,10 @@ export default function CheckoutPageClient({
                             {t('checkout.summary')}
                         </h3>
                         <div className="flex justify-between text-sm mb-2">
-                            <span className="text-text-secondary">{t('cart.subtotal')}</span>
+                            <span className="text-tx-sec">{t('cart.subtotal')}</span>
                             <span className="font-medium">
                                 {displaySubtotal === null ? (
-                                    <div className="h-5 w-16 bg-surface-2 animate-pulse rounded"></div>
+                                    <div className="h-5 w-16 bg-sf-2 animate-pulse rounded"></div>
                                 ) : formatPrice(displaySubtotal)}
                             </span>
                         </div>
@@ -147,12 +147,12 @@ export default function CheckoutPageClient({
                                 />
                             </div>
                         )}
-                        <div className="border-t border-surface-3 mt-4 pt-4">
+                        <div className="border-t border-sf-3 mt-4 pt-4">
                             <div className="flex justify-between text-lg font-bold mb-4">
                                 <span>{t('cart.total')}</span>
-                                <span className="text-primary flex items-center gap-2">
+                                <span className="text-brand flex items-center gap-2">
                                     {displayTotal === null ? (
-                                        <div className="h-6 w-24 bg-surface-2 animate-pulse rounded"></div>
+                                        <div className="h-6 w-24 bg-sf-2 animate-pulse rounded"></div>
                                     ) : (
                                         <>
                                             {formatPrice(displayTotal)}
@@ -176,13 +176,13 @@ export default function CheckoutPageClient({
                                         <CreditCard className="w-5 h-5" />
                                         {t('checkout.proceedPayment')}
                                     </button>
-                                    <p className="text-xs text-text-muted text-center mt-3">
+                                    <p className="text-xs text-tx-muted text-center mt-3">
                                         {t('checkout.chooseMethod')}
                                     </p>
                                 </>
                             ) : (
                                 <div className="text-center py-4">
-                                    <p className="text-sm text-text-muted">
+                                    <p className="text-sm text-tx-muted">
                                         {t('checkout.noMethods')}
                                     </p>
                                 </div>

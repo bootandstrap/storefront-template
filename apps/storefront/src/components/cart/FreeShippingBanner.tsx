@@ -58,7 +58,7 @@ export default function FreeShippingBanner({
             )
         }
         return (
-            <div className="flex items-center gap-1.5 text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 text-xs text-tx-muted">
                 <Truck className="w-3.5 h-3.5" />
                 <span>
                     {t('cart.freeShipping.remaining').replace('{amount}', formatAmount(remaining))}
@@ -71,7 +71,7 @@ export default function FreeShippingBanner({
     return (
         <div className={`rounded-xl p-3 transition-all ${unlocked
                 ? 'bg-green-50 border border-green-200'
-                : 'bg-surface-1 border border-surface-3'
+                : 'bg-sf-1 border border-sf-3'
             }`}>
             {unlocked ? (
                 <div className="flex items-center gap-2">
@@ -90,19 +90,19 @@ export default function FreeShippingBanner({
             ) : (
                 <>
                     <div className="flex items-center gap-2 mb-2">
-                        <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-                        <p className="text-sm text-text-secondary">
+                        <Truck className="w-4 h-4 text-brand flex-shrink-0" />
+                        <p className="text-sm text-tx-sec">
                             {t('cart.freeShipping.remaining').replace('{amount}', formatAmount(remaining))}
                         </p>
                     </div>
                     {/* Progress bar */}
-                    <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-sf-3 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                            className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <p className="text-[10px] text-text-muted mt-1 text-right">
+                    <p className="text-[10px] text-tx-muted mt-1 text-right">
                         {formatAmount(subtotal)} / {formatAmount(threshold)}
                     </p>
                 </>

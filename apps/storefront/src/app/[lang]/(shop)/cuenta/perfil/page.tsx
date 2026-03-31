@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import AvatarUpload from '@/components/account/AvatarUpload'
 import ProfileForm from './ProfileForm'
+import ChangePasswordForm from '@/components/account/ChangePasswordForm'
+import DeleteAccountSection from '@/components/account/DeleteAccountSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +29,7 @@ export default async function ProfilePage({
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold font-display text-text-primary">
+            <h1 className="text-2xl font-bold font-display text-tx">
                 {t('profile.title')}
             </h1>
 
@@ -48,6 +50,17 @@ export default async function ProfilePage({
                 }}
                 userEmail={user.email ?? ''}
             />
+
+            {/* Security section */}
+            <div className="pt-2">
+                <h2 className="text-lg font-bold font-display text-tx mb-4">
+                    {t('profile.security') || 'Security'}
+                </h2>
+                <div className="space-y-6">
+                    <ChangePasswordForm />
+                    <DeleteAccountSection />
+                </div>
+            </div>
         </div>
     )
 }

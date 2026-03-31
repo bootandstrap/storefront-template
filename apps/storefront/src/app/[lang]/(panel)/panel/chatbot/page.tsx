@@ -8,6 +8,8 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Bot } from 'lucide-react'
 import { ChatbotPanelClient } from './ChatbotPanelClient'
 
 export const dynamic = 'force-dynamic'
@@ -36,14 +38,11 @@ export default async function ChatbotPage({
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-text-primary">
-                    {t('panel.chatbot.title')}
-                </h1>
-                <p className="text-text-muted mt-1">
-                    {t('panel.chatbot.subtitle')}
-                </p>
-            </div>
+            <PanelPageHeader
+                title={t('panel.chatbot.title')}
+                subtitle={t('panel.chatbot.subtitle')}
+                icon={<Bot className="w-5 h-5" />}
+            />
             <ChatbotPanelClient
                 locale={lang}
                 labels={{

@@ -61,7 +61,7 @@ export const styles = sortCx({
         },
         secondary: {
             root: [
-                "bg-primary text-secondary shadow-xs-skeumorphic ring-1 ring-primary ring-inset hover:bg-primary_hover hover:text-secondary_hover data-loading:bg-primary_hover",
+                "bg-brand text-sec shadow-xs-skeumorphic ring-1 ring-brand ring-inset hover:bg-brand_hover hover:text-sec_hover data-loading:bg-brand_hover",
                 // Disabled styles
                 "disabled:shadow-xs disabled:ring-disabled_subtle",
                 // Icon styles
@@ -70,7 +70,7 @@ export const styles = sortCx({
         },
         tertiary: {
             root: [
-                "text-tertiary hover:bg-primary_hover hover:text-tertiary_hover data-loading:bg-primary_hover",
+                "text-tertiary hover:bg-brand_hover hover:text-tertiary_hover data-loading:bg-brand_hover",
                 // Icon styles
                 "*:data-icon:text-fg-quaternary hover:*:data-icon:text-fg-quaternary_hover",
             ].join(" "),
@@ -106,9 +106,9 @@ export const styles = sortCx({
         },
         "secondary-destructive": {
             root: [
-                "bg-primary text-error-primary shadow-xs-skeumorphic ring-1 ring-error_subtle outline-error ring-inset hover:bg-error-primary hover:text-error-primary_hover data-loading:bg-error-primary",
+                "bg-brand text-error-primary shadow-xs-skeumorphic ring-1 ring-error_subtle outline-error ring-inset hover:bg-error-primary hover:text-error-primary_hover data-loading:bg-error-primary",
                 // Disabled styles
-                "disabled:bg-primary disabled:shadow-xs disabled:ring-disabled_subtle",
+                "disabled:bg-brand disabled:shadow-xs disabled:ring-disabled_subtle",
                 // Icon styles
                 "*:data-icon:text-fg-error-secondary hover:*:data-icon:text-fg-error-primary",
             ].join(" "),

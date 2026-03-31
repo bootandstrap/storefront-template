@@ -54,10 +54,10 @@ export class ErrorBoundary extends Component<Props, State> {
                     <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center mb-4">
                         <span className="text-xl">⚠️</span>
                     </div>
-                    <h3 className="text-lg font-bold text-text-primary mb-2">
+                    <h3 className="text-lg font-bold text-tx mb-2">
                         {labels.title || 'Something went wrong'}
                     </h3>
-                    <p className="text-sm text-text-muted mb-4 max-w-sm">
+                    <p className="text-sm text-tx-muted mb-4 max-w-sm">
                         {labels.description || 'An error occurred loading this section. Please try again.'}
                     </p>
                     <button onClick={this.reset} className="btn btn-secondary text-sm">

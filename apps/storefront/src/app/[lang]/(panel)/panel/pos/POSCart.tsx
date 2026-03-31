@@ -25,6 +25,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCartItem, POSDiscount, PaymentMethod } from '@/lib/pos/pos-config'
 import { POS_PAYMENT_CONFIG, posLabel } from '@/lib/pos/pos-i18n'
 import { getUpsellTooltip } from '@/lib/pos/pos-i18n'
+import { lazy, Suspense } from 'react'
+
+const POSCouponInput = lazy(() => import('./POSCouponInput'))
+const POSRecommendations = lazy(() => import('./POSRecommendations'))
 
 interface POSCartProps {
     items: POSCartItem[]
@@ -50,6 +54,15 @@ interface POSCartProps {
     onCharge: () => void
     onClear: () => void
     labels: Record<string, string>
+    /** Coupon integration props */
+    couponCode?: string
+    onCouponApply?: (discount: POSDiscount, code: string) => void
+    onCouponRemove?: () => void
+    /** Recommendations */
+    showRecommendations?: boolean
+    products?: any[]
+    onAddToCart?: (product: any) => void
+    defaultCurrency?: string
 }
 
 // ── Park/hold helpers ──
@@ -118,6 +131,13 @@ export default function POSCart({
     onCharge,
     onClear,
     labels,
+    couponCode,
+    onCouponApply,
+    onCouponRemove,
+    showRecommendations = false,
+    products = [],
+    onAddToCart,
+    defaultCurrency = 'EUR',
 }: POSCartProps) {
     const [showDiscountInput, setShowDiscountInput] = useState(false)
     const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')
@@ -219,7 +239,7 @@ export default function POSCart({
     }
 
     return (
-        <div className="flex flex-col h-full bg-surface-0">
+        <div className="flex flex-col h-full bg-sf-0">
             {/* ═══════════════════════════════════════════════ */}
             {/* Step Indicator (with animated progress bar)    */}
             {/* ═══════════════════════════════════════════════ */}
@@ -229,14 +249,14 @@ export default function POSCart({
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="border-b border-surface-2 overflow-hidden"
+                        className="border-b border-sf-2 overflow-hidden"
                     >
                         <div className="px-4 py-2 space-y-1.5">
                             {/* Step labels */}
                             <div className="flex items-center gap-1.5">
                                 {stepLabels.map((label, i) => (
                                     <div key={i} className="flex items-center gap-1.5">
-                                        {i > 0 && <ChevronRight className="w-3 h-3 text-text-muted/30 flex-shrink-0" />}
+                                        {i > 0 && <ChevronRight className="w-3 h-3 text-tx-faint flex-shrink-0" />}
                                         <span
                                             className="text-[10px] font-semibold transition-colors duration-300"
                                             style={{ color: i === stepIndex ? 'var(--color-primary)' : i < stepIndex ? '#10b981' : 'var(--color-text-muted, #999)' }}
@@ -247,7 +267,7 @@ export default function POSCart({
                                 ))}
                             </div>
                             {/* Animated progress bar */}
-                            <div className="h-0.5 bg-surface-2 rounded-full overflow-hidden">
+                            <div className="h-0.5 bg-sf-2 rounded-full overflow-hidden">
                                 <motion.div
                                     className="h-full rounded-full"
                                     style={{ background: 'linear-gradient(90deg, #10b981, var(--color-primary))' }}
@@ -275,10 +295,10 @@ export default function POSCart({
                         className="flex flex-col flex-1 min-h-0"
                     >
                         {/* ── Header ── */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-sf-2 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
                             <div className="flex items-center gap-2">
-                                <ShoppingCart className="w-4 h-4 text-text-muted" />
-                                <h2 className="text-sm font-bold text-text-primary">
+                                <ShoppingCart className="w-4 h-4 text-tx-muted" />
+                                <h2 className="text-sm font-bold text-tx">
                                     {posLabel('panel.pos.cart', labels)}
                                 </h2>
                                 {itemCount > 0 && (
@@ -286,7 +306,7 @@ export default function POSCart({
                                         key={itemCount}
                                         initial={{ scale: 0.5 }}
                                         animate={{ scale: 1 }}
-                                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-subtle text-brand font-bold"
                                     >
                                         {itemCount}
                                     </motion.span>
@@ -326,10 +346,10 @@ export default function POSCart({
                             disabled={!canCustomerSearch}
                             className={`mx-3 mt-2.5 flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 flex-shrink-0 min-h-[44px] ${
                                 !canCustomerSearch
-                                    ? 'border border-dashed border-surface-3 text-text-muted/40 cursor-not-allowed'
+                                    ? 'border border-dashed border-sf-3 text-tx-faint cursor-not-allowed'
                                     : customerName
-                                        ? 'bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10'
-                                        : 'border border-dashed border-surface-3 text-text-muted hover:border-primary/30 hover:text-primary'
+                                        ? 'bg-brand-subtle text-brand border border-brand-soft hover:bg-brand-subtle'
+                                        : 'border border-dashed border-sf-3 text-tx-muted hover:border-brand hover:text-brand'
                             }`}
                             title={canCustomerSearch
                                 ? (customerName || posLabel('panel.pos.addCustomer', labels))
@@ -342,7 +362,7 @@ export default function POSCart({
                                 : posLabel('panel.pos.addCustomer', labels)
                             }
                             {!canCustomerSearch && (
-                                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-text-muted/60 font-semibold">
+                                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">
                                     Enterprise
                                 </span>
                             )}
@@ -351,9 +371,9 @@ export default function POSCart({
                         {/* ── Items list (ONLY scrollable section) ── */}
                         <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1.5">
                             {items.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-text-muted gap-3 py-12">
+                                <div className="flex flex-col items-center justify-center h-full text-tx-muted gap-3 py-12">
                                     <motion.div
-                                        className="w-16 h-16 rounded-2xl bg-surface-1 flex items-center justify-center"
+                                        className="w-16 h-16 rounded-2xl bg-sf-1 flex items-center justify-center"
                                         initial={{ scale: 0.7, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ type: 'spring', damping: 12, stiffness: 150, delay: 0.1 }}
@@ -361,7 +381,7 @@ export default function POSCart({
                                         <ShoppingCart className="w-7 h-7 opacity-25" />
                                     </motion.div>
                                     <motion.p
-                                        className="text-sm text-text-muted/60 font-medium"
+                                        className="text-sm text-tx-faint font-medium"
                                         initial={{ opacity: 0, y: 4 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
@@ -369,7 +389,7 @@ export default function POSCart({
                                         {posLabel('panel.pos.emptyCart', labels)}
                                     </motion.p>
                                     <motion.p
-                                        className="text-[11px] text-text-muted/40 text-center max-w-[180px]"
+                                        className="text-[11px] text-tx-faint text-center max-w-[180px]"
                                         initial={{ opacity: 0, y: 4 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.3 }}
@@ -401,8 +421,8 @@ export default function POSCart({
                                                 onDragEnd={(_, info) => {
                                                     if (info.offset.x < -60) onRemoveItem(item.id)
                                                 }}
-                                                className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-1/60 group
-                                                           hover:bg-surface-1 transition-colors duration-150 min-h-[56px]
+                                                className="flex items-center gap-2.5 p-3 rounded-xl bg-glass group
+                                                           hover:bg-sf-1 transition-colors duration-150 min-h-[56px]
                                                            cursor-grab active:cursor-grabbing relative z-10"
                                                 style={{ background: 'var(--color-surface-1, #f8faf6)', touchAction: 'pan-y' }}
                                             >
@@ -414,16 +434,16 @@ export default function POSCart({
                                                         className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                                     />
                                                 ) : (
-                                                    <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
-                                                        <Package className="w-4 h-4 text-text-muted/30" />
+                                                    <div className="w-10 h-10 rounded-lg bg-sf-2 flex items-center justify-center flex-shrink-0">
+                                                        <Package className="w-4 h-4 text-tx-faint" />
                                                     </div>
                                                 )}
                                                 {/* Info */}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-medium text-text-primary truncate">
+                                                    <p className="text-xs font-medium text-tx truncate">
                                                         {item.title}
                                                     </p>
-                                                    <p className="text-[10px] text-text-muted">
+                                                    <p className="text-[10px] text-tx-muted">
                                                         {formatCurrency(item.unit_price, item.currency_code)}
                                                         {item.variant_title && ` · ${item.variant_title}`}
                                                     </p>
@@ -433,9 +453,9 @@ export default function POSCart({
                                                     <button
                                                         onClick={() => onUpdateQty(item.id, item.quantity - 1)}
                                                         aria-label={`Decrease quantity of ${item.title}`}
-                                                        className="w-[44px] h-[44px] rounded-xl bg-surface-2 hover:bg-surface-3
+                                                        className="w-[44px] h-[44px] rounded-xl bg-sf-2 hover:bg-sf-3
                                                                    flex items-center justify-center transition-colors
-                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-med"
                                                     >
                                                         <Minus className="w-4 h-4" />
                                                     </button>
@@ -450,22 +470,22 @@ export default function POSCart({
                                                     <button
                                                         onClick={() => onUpdateQty(item.id, item.quantity + 1)}
                                                         aria-label={`Increase quantity of ${item.title}`}
-                                                        className="w-[44px] h-[44px] rounded-xl bg-surface-2 hover:bg-surface-3
+                                                        className="w-[44px] h-[44px] rounded-xl bg-sf-2 hover:bg-sf-3
                                                                    flex items-center justify-center transition-colors
-                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-med"
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                                 {/* Item total + Remove */}
                                                 <div className="flex flex-col items-end gap-1">
-                                                    <span className="text-xs font-semibold text-text-primary tabular-nums">
+                                                    <span className="text-xs font-semibold text-tx tabular-nums">
                                                         {formatCurrency(item.unit_price * item.quantity, item.currency_code)}
                                                     </span>
                                                     <button
                                                         onClick={() => onRemoveItem(item.id)}
                                                         aria-label={`Remove ${item.title} from cart`}
-                                                        className="w-[36px] h-[36px] flex items-center justify-center text-text-muted/60
+                                                        className="w-[36px] h-[36px] flex items-center justify-center text-tx-faint
                                                                    hover:text-rose-500 hover:bg-rose-50 active:scale-90 rounded-lg transition-all"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -478,8 +498,23 @@ export default function POSCart({
                             )}
                         </div>
 
+                        {/* ── Recommendations (after cart items) ── */}
+                        {showRecommendations && items.length > 0 && onAddToCart && (
+                            <div className="px-3 py-2 border-t border-sf-2">
+                                <Suspense fallback={null}>
+                                    <POSRecommendations
+                                        cartItems={items}
+                                        allProducts={products as any}
+                                        onAddItem={(item) => onAddToCart?.(item)}
+                                        labels={labels}
+                                        defaultCurrency={defaultCurrency}
+                                    />
+                                </Suspense>
+                            </div>
+                        )}
+
                         {/* ── Pinned Footer: Totals + PAY ── */}
-                        <div className="border-t border-surface-2 px-4 py-3 space-y-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0">
+                        <div className="border-t border-sf-2 px-4 py-3 space-y-3 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
                             {/* Discount (grey-out if !canLineDiscounts) */}
                             {discount ? (
                                 <div className="flex items-center justify-between text-xs">
@@ -494,7 +529,7 @@ export default function POSCart({
                                         </span>
                                         <button
                                             onClick={() => onSetDiscount(null)}
-                                            className="text-text-muted hover:text-rose-500 transition-colors"
+                                            className="text-tx-muted hover:text-rose-500 transition-colors"
                                         >
                                             <X className="w-3 h-3" />
                                         </button>
@@ -506,8 +541,8 @@ export default function POSCart({
                                     disabled={!canLineDiscounts}
                                     className={`text-xs font-medium transition-colors ${
                                         canLineDiscounts
-                                            ? 'text-primary hover:text-primary-dark'
-                                            : 'text-text-muted/40 cursor-not-allowed'
+                                            ? 'text-brand hover:text-brand-dark'
+                                            : 'text-tx-faint cursor-not-allowed'
                                     }`}
                                     title={canLineDiscounts
                                         ? posLabel('panel.pos.addDiscount', labels)
@@ -516,18 +551,18 @@ export default function POSCart({
                                 >
                                     + {posLabel('panel.pos.addDiscount', labels)}
                                     {!canLineDiscounts && (
-                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-text-muted/60 font-semibold">
+                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">
                                             Enterprise
                                         </span>
                                     )}
                                 </button>
                             ) : (
                                 <div className="flex items-center gap-1.5">
-                                    <div className="flex rounded-lg overflow-hidden border border-surface-3">
+                                    <div className="flex rounded-lg overflow-hidden border border-sf-3">
                                         <button
                                             onClick={() => setDiscountType('percentage')}
                                             className={`px-2.5 py-2 text-xs transition-colors ${
-                                                discountType === 'percentage' ? 'bg-primary text-white' : 'bg-surface-1'
+                                                discountType === 'percentage' ? 'bg-brand text-white' : 'bg-sf-1'
                                             }`}
                                         >
                                             <Percent className="w-3 h-3" />
@@ -535,7 +570,7 @@ export default function POSCart({
                                         <button
                                             onClick={() => setDiscountType('fixed')}
                                             className={`px-2.5 py-2 text-xs transition-colors ${
-                                                discountType === 'fixed' ? 'bg-primary text-white' : 'bg-surface-1'
+                                                discountType === 'fixed' ? 'bg-brand text-white' : 'bg-sf-1'
                                             }`}
                                         >
                                             <DollarSign className="w-3 h-3" />
@@ -546,38 +581,52 @@ export default function POSCart({
                                         value={discountValue}
                                         onChange={e => setDiscountValue(e.target.value)}
                                         placeholder={discountType === 'percentage' ? '10' : '5.00'}
-                                        className="flex-1 px-2.5 py-2 text-xs border border-surface-3 rounded-lg bg-surface-0
-                                                   focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                        className="flex-1 px-2.5 py-2 text-xs border border-sf-3 rounded-lg bg-sf-0
+                                                   focus:outline-none focus:ring-1 focus:ring-soft"
                                         onKeyDown={e => e.key === 'Enter' && applyDiscount()}
                                     />
                                     <button
                                         onClick={applyDiscount}
-                                        className="px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                                        className="px-3 py-2 text-xs bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
                                     >
                                         OK
                                     </button>
                                     <button
                                         onClick={() => { setShowDiscountInput(false); setDiscountValue('') }}
-                                        className="text-text-muted hover:text-rose-500 transition-colors"
+                                        className="text-tx-muted hover:text-rose-500 transition-colors"
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             )}
 
+                            {/* ── Coupon Input (Pro+) ── */}
+                            {onCouponApply && (
+                                <Suspense fallback={null}>
+                                    <POSCouponInput
+                                        onApply={onCouponApply}
+                                        orderTotal={total}
+                                        currentCoupon={couponCode}
+                                        onRemove={onCouponRemove}
+                                        labels={labels}
+                                        defaultCurrency={defaultCurrency}
+                                    />
+                                </Suspense>
+                            )}
+
                             {/* ── Totals ── */}
                             <div className="space-y-1 text-xs">
-                                <div className="flex justify-between text-text-muted">
+                                <div className="flex justify-between text-tx-muted">
                                     <span>{posLabel('panel.pos.subtotal', labels)}</span>
                                     <span className="tabular-nums">{formatCurrency(subtotal)}</span>
                                 </div>
                                 {taxAmount > 0 && (
-                                    <div className="flex justify-between text-text-muted">
+                                    <div className="flex justify-between text-tx-muted">
                                         <span>{posLabel('panel.pos.tax', labels)}</span>
                                         <span className="tabular-nums">{formatCurrency(taxAmount)}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-baseline text-text-primary pt-2 mt-1 border-t border-surface-2">
+                                <div className="flex justify-between items-baseline text-tx pt-2 mt-1 border-t border-sf-2">
                                     <span className="text-sm font-bold">{posLabel('panel.pos.total', labels)}</span>
                                     <span className="text-xl font-black tabular-nums">{formatCurrency(total)}</span>
                                 </div>
@@ -622,18 +671,18 @@ export default function POSCart({
                         className="flex flex-col flex-1 min-h-0"
                     >
                         {/* ── Payment step header ── */}
-                        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-sf-2 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
                             <button
                                 onClick={goBack}
-                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-surface-1 text-text-secondary
+                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-sf-1 text-tx-sec
                                            flex items-center justify-center transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <span className="text-sm font-bold text-text-primary flex-1">
+                            <span className="text-sm font-bold text-tx flex-1">
                                 {posLabel('panel.pos.selectPayment', labels)}
                             </span>
-                            <span className="text-lg font-black tabular-nums text-text-primary">
+                            <span className="text-lg font-black tabular-nums text-tx">
                                 {formatCurrency(total)}
                             </span>
                         </div>
@@ -653,7 +702,7 @@ export default function POSCart({
                                                         transition-all duration-200 min-h-[72px] ${
                                                 isActive
                                                     ? pm.activeClass
-                                                    : 'bg-surface-1 text-text-secondary hover:bg-surface-2 border border-transparent'
+                                                    : 'bg-sf-1 text-tx-sec hover:bg-sf-2 border border-transparent'
                                             }`}
                                         >
                                             <Icon className="w-6 h-6" />
@@ -753,7 +802,7 @@ export default function POSCart({
                         </div>
 
                         {/* ── Pinned Footer: CONFIRM / NEXT ── */}
-                        <div className="border-t border-surface-2 px-4 py-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0">
+                        <div className="border-t border-sf-2 px-4 py-3 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
                             <button
                                 onClick={handleCharge}
                                 disabled={items.length === 0 || processing}
@@ -808,28 +857,28 @@ export default function POSCart({
                         className="flex flex-col flex-1 min-h-0"
                     >
                         {/* ── Numpad header ── */}
-                        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-2 bg-surface-0/80 backdrop-blur-sm flex-shrink-0">
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-sf-2 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
                             <button
                                 onClick={goBack}
-                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-surface-1 text-text-secondary
+                                className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-sf-1 text-tx-sec
                                            flex items-center justify-center transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <span className="text-sm font-bold text-text-primary flex-1">
+                            <span className="text-sm font-bold text-tx flex-1">
                                 {posLabel('panel.pos.cashTendered', labels)}
                             </span>
-                            <span className="text-xs text-text-muted">
-                                {posLabel('panel.pos.totalDue', labels) || 'Total'}: <span className="font-bold text-text-primary">{formatCurrency(total)}</span>
+                            <span className="text-xs text-tx-muted">
+                                {posLabel('panel.pos.totalDue', labels) || 'Total'}: <span className="font-bold text-tx">{formatCurrency(total)}</span>
                             </span>
                         </div>
 
                         {/* ── Calculator display ── */}
-                        <div className="px-5 pt-4 pb-2 bg-surface-1/30">
-                            <p className="text-3xl font-black text-text-primary tabular-nums text-right">
+                        <div className="px-5 pt-4 pb-2 bg-glass">
+                            <p className="text-3xl font-black text-tx tabular-nums text-right">
                                 {numpadValue
                                     ? formatCurrency(Math.round(parseFloat(numpadValue) * 100))
-                                    : <span className="text-text-muted/40">0.00</span>
+                                    : <span className="text-tx-faint">0.00</span>
                                 }
                             </p>
                             {/* Change / Short */}
@@ -858,8 +907,8 @@ export default function POSCart({
                                     className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all
                                                active:scale-[0.95] ${
                                         numpadValue === amount.toFixed(2)
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'bg-primary/8 text-primary hover:bg-primary/15'
+                                            ? 'bg-brand text-white shadow-sm'
+                                            : 'bg-brand-subtle text-brand hover:bg-brand-muted'
                                     }`}
                                 >
                                     {amount}
@@ -884,8 +933,8 @@ export default function POSCart({
                                 <button
                                     key={d}
                                     onClick={() => handleNumpadDigit(d)}
-                                    className="rounded-xl bg-surface-1 text-lg font-bold text-text-primary
-                                               hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                                    className="rounded-xl bg-sf-1 text-lg font-bold text-tx
+                                               hover:bg-sf-2 active:bg-sf-3 active:scale-[0.96]
                                                transition-all duration-100 min-h-[48px]"
                                 >
                                     {d}
@@ -895,8 +944,8 @@ export default function POSCart({
                             <button
                                 onClick={handleNumpadDelete}
                                 onDoubleClick={handleNumpadClear}
-                                className="rounded-xl bg-surface-1 flex items-center justify-center
-                                           text-text-secondary hover:bg-surface-2 active:bg-surface-3 active:scale-[0.96]
+                                className="rounded-xl bg-sf-1 flex items-center justify-center
+                                           text-tx-sec hover:bg-sf-2 active:bg-sf-3 active:scale-[0.96]
                                            transition-all duration-100 min-h-[48px]"
                                 title={posLabel('panel.pos.deleteHint', labels) || 'Tap: borrar · Doble-tap: limpiar'}
                             >
@@ -905,11 +954,11 @@ export default function POSCart({
                         </div>
 
                         {/* ── Confirm Button ── */}
-                        <div className="border-t border-surface-2 px-3 py-3 bg-surface-0/95 backdrop-blur-sm flex-shrink-0 flex gap-2">
+                        <div className="border-t border-sf-2 px-3 py-3 bg-glass-heavy backdrop-blur-sm flex-shrink-0 flex gap-2">
                             <button
                                 onClick={goBack}
-                                className="flex-1 h-[52px] rounded-2xl bg-surface-1 text-sm font-semibold text-text-secondary
-                                           hover:bg-surface-2 transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 h-[52px] rounded-2xl bg-sf-1 text-sm font-semibold text-tx-sec
+                                           hover:bg-sf-2 transition-colors flex items-center justify-center gap-2"
                             >
                                 <X className="w-4 h-4" />
                                 {posLabel('panel.pos.cancel', labels)}

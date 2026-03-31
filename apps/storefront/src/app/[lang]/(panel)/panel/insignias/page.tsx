@@ -8,6 +8,8 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Award } from 'lucide-react'
 import { getProductsWithBadges } from './actions'
 import BadgesClient from './BadgesClient'
 
@@ -28,6 +30,8 @@ export default async function ProductBadgesPage({
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
     const { featureFlags } = appConfig
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
 
     if (!featureFlags.enable_product_badges) {
         return <FeatureGate flag="enable_product_badges" lang={lang} />
@@ -37,6 +41,11 @@ export default async function ProductBadgesPage({
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.badges.title')}
+                subtitle={t('panel.badges.subtitle')}
+                icon={<Award className="w-5 h-5" />}
+            />
             <BadgesClient products={products} error={error} />
         </div>
     )

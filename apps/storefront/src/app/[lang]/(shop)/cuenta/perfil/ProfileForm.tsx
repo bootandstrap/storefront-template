@@ -50,13 +50,13 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
             {/* Form fields */}
             <div className="glass rounded-2xl p-6 space-y-4">
-                <h2 className="text-sm font-bold text-text-primary flex items-center gap-2 mb-4">
-                    <User className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-bold text-tx flex items-center gap-2 mb-4">
+                    <User className="w-4 h-4 text-brand" />
                     {t('profile.personalInfo')}
                 </h2>
 
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('profile.fullName')}
                     </label>
                     <input
@@ -69,26 +69,26 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 </div>
 
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('auth.email')}
                     </label>
                     <div className="flex items-center gap-2">
                         <div className="input w-full flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <Mail className="w-4 h-4 text-text-muted" />
+                            <Mail className="w-4 h-4 text-tx-muted" />
                             <span className="text-sm">{userEmail}</span>
                         </div>
                     </div>
-                    <p className="text-xs text-text-muted mt-1">
+                    <p className="text-xs text-tx-muted mt-1">
                         {t('profile.emailChangeHint')}
                     </p>
                 </div>
 
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('profile.phone')}
                     </label>
                     <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted pointer-events-none" />
                         <input
                             type="tel"
                             name="phone"

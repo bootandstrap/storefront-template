@@ -109,7 +109,7 @@ export default function PanelTable({
 export function PanelThead({ children, className = '', ...props }: HTMLAttributes<HTMLTableSectionElement>) {
     return (
         <thead
-            className={`bg-surface-0 dark:bg-surface-1 border-b border-surface-3 ${className}`}
+            className={`bg-sf-0 dark:bg-sf-1 border-b border-sf-3 ${className}`}
             {...props}
         >
             {children}
@@ -128,7 +128,7 @@ export function PanelTbody({ children, className = '', ...props }: HTMLAttribute
 export function PanelTr({ children, className = '', ...props }: HTMLAttributes<HTMLTableRowElement>) {
     return (
         <tr
-            className={`transition-colors hover:bg-surface-0/60 dark:hover:bg-surface-1/60 ${className}`}
+            className={`transition-colors hover:bg-glass dark:hover:bg-glass ${className}`}
             {...props}
         >
             {children}
@@ -144,7 +144,7 @@ export function PanelTh({ children, align = 'left', className = '', ...props }: 
     const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
     return (
         <th
-            className={`px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider ${alignClass} ${className}`}
+            className={`px-4 py-3 text-xs font-semibold text-tx-muted uppercase tracking-wider ${alignClass} ${className}`}
             {...props}
         >
             {children}
@@ -160,7 +160,7 @@ export function PanelTd({ children, align = 'left', className = '', ...props }: 
     const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
     return (
         <td
-            className={`px-4 py-3 text-text-primary whitespace-nowrap ${alignClass} ${className}`}
+            className={`px-4 py-3 text-tx whitespace-nowrap ${alignClass} ${className}`}
             {...props}
         >
             {children}

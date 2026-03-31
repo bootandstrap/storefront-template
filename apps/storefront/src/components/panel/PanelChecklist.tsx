@@ -97,13 +97,13 @@ export default function PanelChecklist({
         <div className={`glass rounded-2xl p-6 border transition-all duration-700 ${
             celebrating
                 ? 'border-green-500/40 shadow-lg shadow-green-500/10'
-                : 'border-primary/20'
+                : 'border-brand-soft'
         }`}>
             {/* Celebration overlay */}
             {celebrating && (
                 <div className="text-center py-4 animate-fade-in">
                     <p className="text-4xl mb-2">🎉</p>
-                    <p className="text-lg font-bold text-text-primary">
+                    <p className="text-lg font-bold text-tx">
                         {allDoneLabel || 'All done! Your store is fully set up!'}
                     </p>
                     <div className="flex justify-center gap-1 mt-3">
@@ -126,28 +126,28 @@ export default function PanelChecklist({
                     <div className="flex items-center gap-4 mb-5">
                         <div className="relative w-14 h-14 flex-shrink-0">
                             <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                                <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" className="text-surface-3" strokeWidth="4" />
+                                <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" className="text-sf-3" strokeWidth="4" />
                                 <circle
                                     cx="28"
                                     cy="28"
                                     r="24"
                                     fill="none"
                                     stroke="currentColor"
-                                    className="text-primary transition-all duration-700"
+                                    className="text-brand transition-all duration-700"
                                     strokeWidth="4"
                                     strokeLinecap="round"
                                     strokeDasharray={`${progress * 1.508} 150.8`}
                                 />
                             </svg>
-                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-text-primary">
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-tx">
                                 {completedCount}/{checks.length}
                             </span>
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold font-display text-text-primary">
+                            <h2 className="text-lg font-bold font-display text-tx">
                                 {title}
                             </h2>
-                            <p className="text-sm text-text-muted">
+                            <p className="text-sm text-tx-muted">
                                 {subtitle}
                             </p>
                         </div>
@@ -158,20 +158,20 @@ export default function PanelChecklist({
                                 key={check.id}
                                 href={check.actionHref}
                                 className={`flex items-center gap-3 p-3 rounded-xl transition-all ${check.done
-                                    ? 'bg-green-500/5 text-text-secondary'
-                                    : 'bg-surface-2/50 hover:bg-primary/5 text-text-primary'
+                                    ? 'bg-green-500/5 text-tx-sec'
+                                    : 'bg-glass hover:bg-brand-subtle text-tx'
                                     }`}
                             >
                                 {check.done ? (
                                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                                 ) : (
-                                    <Circle className="w-5 h-5 text-text-muted/40 flex-shrink-0" />
+                                    <Circle className="w-5 h-5 text-tx-faint flex-shrink-0" />
                                 )}
                                 <span className="text-sm mr-1">{check.emoji}</span>
                                 <span className={`text-sm font-medium flex-1 ${check.done ? 'line-through opacity-60' : ''}`}>
                                     {check.labelKey}
                                 </span>
-                                {!check.done && <ArrowRight className="w-4 h-4 text-text-muted" />}
+                                {!check.done && <ArrowRight className="w-4 h-4 text-tx-muted" />}
                             </Link>
                         ))}
                     </div>
@@ -179,7 +179,7 @@ export default function PanelChecklist({
                         <button
                             type="button"
                             onClick={handleSkip}
-                            className="text-xs text-text-muted hover:text-text-secondary transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-2/60"
+                            className="text-xs text-tx-muted hover:text-tx-sec transition-colors px-3 py-1.5 rounded-lg hover:bg-glass"
                         >
                             {skipLabel}
                         </button>

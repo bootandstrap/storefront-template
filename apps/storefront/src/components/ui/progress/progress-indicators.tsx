@@ -82,14 +82,14 @@ export const ProgressBar = ({ value, min = 0, max = 100, valueFormatter, labelPo
             return (
                 <div className="flex items-center gap-3">
                     {baseProgressBar}
-                    <span className="shrink-0 text-sm font-medium text-secondary tabular-nums">{formattedValue}</span>
+                    <span className="shrink-0 text-sm font-medium text-sec tabular-nums">{formattedValue}</span>
                 </div>
             );
         case "bottom":
             return (
                 <div className="flex flex-col items-end gap-2">
                     {baseProgressBar}
-                    <span className="text-sm font-medium text-secondary tabular-nums">{formattedValue}</span>
+                    <span className="text-sm font-medium text-sec tabular-nums">{formattedValue}</span>
                 </div>
             );
         case "top-floating":
@@ -98,9 +98,9 @@ export const ProgressBar = ({ value, min = 0, max = 100, valueFormatter, labelPo
                     {baseProgressBar}
                     <div
                         style={{ left: `${percentage}%` }}
-                        className="absolute -top-2 -translate-x-1/2 -translate-y-full rounded-lg bg-primary_alt px-3 py-2 shadow-lg ring-1 ring-secondary_alt"
+                        className="absolute -top-2 -translate-x-1/2 -translate-y-full rounded-lg bg-brand_alt px-3 py-2 shadow-lg ring-1 ring-secondary_alt"
                     >
-                        <div className="text-xs font-semibold text-secondary tabular-nums">{formattedValue}</div>
+                        <div className="text-xs font-semibold text-sec tabular-nums">{formattedValue}</div>
                     </div>
                 </div>
             );
@@ -110,9 +110,9 @@ export const ProgressBar = ({ value, min = 0, max = 100, valueFormatter, labelPo
                     {baseProgressBar}
                     <div
                         style={{ left: `${percentage}%` }}
-                        className="absolute -bottom-2 -translate-x-1/2 translate-y-full rounded-lg bg-primary_alt px-3 py-2 shadow-lg ring-1 ring-secondary_alt"
+                        className="absolute -bottom-2 -translate-x-1/2 translate-y-full rounded-lg bg-brand_alt px-3 py-2 shadow-lg ring-1 ring-secondary_alt"
                     >
-                        <div className="text-xs font-semibold text-secondary">{formattedValue}</div>
+                        <div className="text-xs font-semibold text-sec">{formattedValue}</div>
                     </div>
                 </div>
             );

@@ -52,10 +52,10 @@ export default async function ModuleDetailPage({
       <div className="space-y-6">
         <div className="glass rounded-2xl p-8 text-center">
           <div className="text-4xl mb-4">🔍</div>
-          <h2 className="text-xl font-bold text-text-primary">
+          <h2 className="text-xl font-bold text-tx">
             {t('panel.moduleConfig.notFound') || 'Módulo no encontrado'}
           </h2>
-          <p className="text-text-muted mt-2">
+          <p className="text-tx-muted mt-2">
             {t('panel.moduleConfig.notFoundDesc') || 'El módulo solicitado no existe o no está disponible.'}
           </p>
         </div>
@@ -77,16 +77,16 @@ export default async function ModuleDetailPage({
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-display text-text-primary">
+            <h1 className="text-2xl font-bold font-display text-tx">
               {configContext.module.name}
             </h1>
             {isActive && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-brand-subtle text-success">
                 ✓ {t('panel.modules.active') || 'Activo'}
               </span>
             )}
           </div>
-          <p className="text-text-muted mt-1">{configContext.module.description}</p>
+          <p className="text-tx-muted mt-1">{configContext.module.description}</p>
         </div>
       </div>
 

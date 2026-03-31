@@ -160,17 +160,10 @@ export default function CustomersClient({
 
     return (
         <PageEntrance className="space-y-5">
-            {/* Header */}
-            <PanelPageHeader
-                title={labels.title}
-                subtitle={labels.subtitle}
-                icon={<Users className="w-5 h-5" />}
-                badge={totalCount}
-            />
 
             {/* Search */}
             <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                 <input
                     type="text"
                     value={search}
@@ -178,7 +171,7 @@ export default function CustomersClient({
                     onKeyDown={(e) => { if (e.key === 'Enter') applySearch() }}
                     placeholder={labels.searchPlaceholder}
                     aria-label={labels.searchPlaceholder}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm text-tx placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-soft transition-all"
                 />
             </div>
 
@@ -191,12 +184,12 @@ export default function CustomersClient({
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Users className="w-8 h-8 text-text-muted" />
+                            <Users className="w-8 h-8 text-tx-muted" />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noCustomers}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed">
+                        <p className="text-sm text-tx-sec leading-relaxed">
                             {labels.noCustomersHint || 'Your customers will appear here as they create accounts and place orders.'}
                         </p>
                     </div>
@@ -204,7 +197,7 @@ export default function CustomersClient({
             ) : (
                 <div className="glass rounded-2xl overflow-hidden">
                     {/* Table header */}
-                    <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-surface-1/50 border-b border-surface-2 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-glass border-b border-sf-2 text-xs font-semibold text-tx-muted uppercase tracking-wider">
                         <div className="col-span-4">{labels.customer}</div>
                         <div className="col-span-4">{labels.email}</div>
                         <div className="col-span-2 text-center">{labels.orders}</div>
@@ -231,35 +224,35 @@ export default function CustomersClient({
                                         aria-expanded={isExpanded}
                                         aria-label={`${name} — ${customer.email}`}
                                         className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center px-5 py-4 min-h-[56px]
-                                                   border-b border-surface-2/50 last:border-0
-                                                   hover:bg-surface-1/30 transition-colors cursor-pointer
-                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+                                                   border-b border-sf-2 last:border-0
+                                                   hover:bg-glass transition-colors cursor-pointer
+                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                         onClick={() => toggleExpand(customer.id)}
                                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(customer.id) } }}
                                     >
                                         {/* Name with avatar */}
                                         <div className="col-span-4 flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary
+                                            <div className="w-9 h-9 rounded-full bg-brand-subtle text-brand
                                                             flex items-center justify-center text-sm font-bold shrink-0">
                                                 {initials}
                                             </div>
-                                            <span className="font-medium text-text-primary truncate">{name}</span>
+                                            <span className="font-medium text-tx truncate">{name}</span>
                                         </div>
 
                                         {/* Email */}
-                                        <div className="col-span-4 flex items-center gap-2 text-sm text-text-secondary truncate">
-                                            <Mail className="w-3.5 h-3.5 shrink-0 text-text-muted" />
+                                        <div className="col-span-4 flex items-center gap-2 text-sm text-tx-sec truncate">
+                                            <Mail className="w-3.5 h-3.5 shrink-0 text-tx-muted" />
                                             {customer.email}
                                         </div>
 
                                         {/* Order count */}
                                         <div className="col-span-2 flex items-center justify-center gap-1.5">
-                                            <ShoppingBag className="w-3.5 h-3.5 text-text-muted" />
-                                            <span className="text-sm text-text-secondary">{orderCount}</span>
+                                            <ShoppingBag className="w-3.5 h-3.5 text-tx-muted" />
+                                            <span className="text-sm text-tx-sec">{orderCount}</span>
                                         </div>
 
                                         {/* Joined date + expand toggle */}
-                                        <div className="col-span-2 flex items-center justify-end gap-1.5 text-sm text-text-muted">
+                                        <div className="col-span-2 flex items-center justify-end gap-1.5 text-sm text-tx-muted">
                                             <Calendar className="w-3.5 h-3.5 md:hidden" />
                                             {formatDate(customer.created_at)}
                                             <motion.div
@@ -273,20 +266,20 @@ export default function CustomersClient({
 
                                     {/* Expanded order history — animated */}
                                     <ExpandableSection isOpen={isExpanded}>
-                                        <div className="px-5 pb-4 bg-surface-1/20 border-b border-surface-2/50">
+                                        <div className="px-5 pb-4 bg-glass border-b border-sf-2">
                                             <div className="pl-12 pt-2 space-y-2">
                                                 {isLoadingOrders && !cachedOrders ? (
                                                     /* Shimmer skeleton for loading orders */
                                                     <div className="space-y-2">
                                                         {[1, 2, 3].map(i => (
-                                                            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-0/60">
+                                                            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-glass">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="h-4 w-12 rounded bg-surface-2 animate-pulse" />
-                                                                    <div className="h-5 w-16 rounded-full bg-surface-2 animate-pulse" />
+                                                                    <div className="h-4 w-12 rounded bg-sf-2 animate-pulse" />
+                                                                    <div className="h-5 w-16 rounded-full bg-sf-2 animate-pulse" />
                                                                 </div>
                                                                 <div className="flex items-center gap-4">
-                                                                    <div className="h-4 w-20 rounded bg-surface-2 animate-pulse" />
-                                                                    <div className="h-4 w-16 rounded bg-surface-2 animate-pulse" />
+                                                                    <div className="h-4 w-20 rounded bg-sf-2 animate-pulse" />
+                                                                    <div className="h-4 w-16 rounded bg-sf-2 animate-pulse" />
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -298,10 +291,10 @@ export default function CustomersClient({
                                                                 key={order.id}
                                                                 initial={{ opacity: 0, x: -8 }}
                                                                 animate={{ opacity: 1, x: 0 }}
-                                                                className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-0/60 text-sm"
+                                                                className="flex items-center justify-between py-2 px-3 rounded-lg bg-glass text-sm"
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <span className="font-mono text-text-muted">
+                                                                    <span className="font-mono text-tx-muted">
                                                                         #{order.display_id}
                                                                     </span>
                                                                     <PanelStatusBadge
@@ -311,7 +304,7 @@ export default function CustomersClient({
                                                                     />
                                                                 </div>
                                                                 <div className="flex items-center gap-4">
-                                                                    <span className="text-text-muted">{formatDate(order.created_at)}</span>
+                                                                    <span className="text-tx-muted">{formatDate(order.created_at)}</span>
                                                                     <span className="font-semibold">
                                                                         {formatPrice(order.total, order.currency_code)}
                                                                     </span>
@@ -320,7 +313,7 @@ export default function CustomersClient({
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <p className="py-3 text-sm text-text-muted">
+                                                    <p className="py-3 text-sm text-tx-muted">
                                                         {labels.noOrders || 'No orders yet'}
                                                     </p>
                                                 )}
@@ -328,12 +321,12 @@ export default function CustomersClient({
                                         </div>
 
                                         {/* Loyalty Card */}
-                                        <div className="px-5 pb-4 bg-surface-1/10">
+                                        <div className="px-5 pb-4 bg-glass">
                                             <div className="pl-12 pt-2">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-2">
-                                                        <Trophy className="w-3.5 h-3.5 text-primary" />
-                                                        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Loyalty</span>
+                                                        <Trophy className="w-3.5 h-3.5 text-brand" />
+                                                        <span className="text-xs font-semibold text-tx-muted uppercase tracking-wider">Loyalty</span>
                                                     </div>
                                                     <button
                                                         type="button"
@@ -342,8 +335,8 @@ export default function CustomersClient({
                                                             handleAddStamp(customer.id, name)
                                                         }}
                                                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg
-                                                                   bg-primary/10 text-primary hover:bg-primary/20 transition-colors
-                                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                                                   bg-brand-subtle text-brand hover:bg-brand-muted transition-colors
+                                                                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                     >
                                                         <Plus className="w-3 h-3" />
                                                         Sello

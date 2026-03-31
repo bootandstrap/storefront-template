@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/Toaster'
 import { Mail, Send, Clock, BarChart3, ShoppingCart, Star, Palette, Lock, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type AutomationConfig } from '@/lib/email-automations-shared'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 
@@ -112,12 +112,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
 
     return (
         <PageEntrance className="space-y-5">
-            {/* Header */}
-            <PanelPageHeader
-                title={labels.title}
-                subtitle={labels.subtitle}
-                icon={<Mail className="w-5 h-5" />}
-            />
+
 
             {/* Provider warning */}
             <AnimatePresence>
@@ -135,7 +130,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             </p>
                             <a
                                 href="/panel/tienda"
-                                className="text-sm text-primary hover:underline mt-1 inline-block"
+                                className="text-sm text-brand hover:underline mt-1 inline-block"
                             >
                                 {labels.providerWarningAction} →
                             </a>
@@ -154,18 +149,18 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             onClick={() => !tab.gated && setActiveTab(tab.key)}
                             aria-pressed={activeTab === tab.key}
                             aria-disabled={tab.gated}
-                            className={`relative px-4 py-2.5 min-h-[44px] text-sm font-medium flex items-center gap-2 transition-all rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                            className={`relative px-4 py-2.5 min-h-[44px] text-sm font-medium flex items-center gap-2 transition-all rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
                                 activeTab === tab.key
-                                    ? 'text-primary'
+                                    ? 'text-brand'
                                     : tab.gated
-                                        ? 'text-text-muted cursor-not-allowed opacity-50'
-                                        : 'text-text-secondary hover:text-text-primary'
+                                        ? 'text-tx-muted cursor-not-allowed opacity-50'
+                                        : 'text-tx-sec hover:text-tx'
                             }`}
                         >
                             {activeTab === tab.key && (
                                 <motion.div
                                     layoutId="email-tab-indicator"
-                                    className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                    className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
@@ -225,19 +220,19 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                 className="glass rounded-2xl px-5 py-4"
                             >
                                 <div className="flex items-center justify-between mb-2 text-xs">
-                                    <span className="text-text-muted">
+                                    <span className="text-tx-muted">
                                         {usagePercent}% · {labels.emailsRemaining}: {(stats.monthly_limit - stats.sent_this_month).toLocaleString()}
                                     </span>
-                                    <span className="font-semibold text-text-primary">
+                                    <span className="font-semibold text-tx">
                                         {stats.sent_this_month.toLocaleString()} / {stats.monthly_limit.toLocaleString()}
                                     </span>
                                 </div>
-                                <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                                <div className="h-2 bg-sf-2 rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${Math.min(usagePercent, 100)}%` }}
                                         transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-primary'}`}
+                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-brand'}`}
                                     />
                                 </div>
                             </motion.div>
@@ -267,8 +262,8 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                         <ShoppingCart className="w-5 h-5 text-orange-500" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-text-primary">{labels.abandonedCart}</h3>
-                                        <p className="text-xs text-text-muted">{labels.abandonedCartDesc}</p>
+                                        <h3 className="font-bold text-tx">{labels.abandonedCart}</h3>
+                                        <p className="text-xs text-tx-muted">{labels.abandonedCartDesc}</p>
                                     </div>
                                 </div>
                                 {flags.enable_abandoned_cart_emails ? (
@@ -278,15 +273,15 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                             abandoned_cart_enabled: !prev.abandoned_cart_enabled,
                                         }))}
                                         aria-pressed={automationConfig.abandoned_cart_enabled}
-                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.abandoned_cart_enabled
+                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${automationConfig.abandoned_cart_enabled
                                             ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                                            : 'border-surface-3 text-text-secondary'
+                                            : 'border-sf-3 text-tx-sec'
                                             }`}
                                     >
                                         {automationConfig.abandoned_cart_enabled ? labels.enabled : labels.disabled}
                                     </button>
                                 ) : (
-                                    <span className="text-xs text-text-muted flex items-center gap-1">
+                                    <span className="text-xs text-tx-muted flex items-center gap-1">
                                         <Lock className="w-3 h-3" /> {labels.upgradeRequired}
                                     </span>
                                 )}
@@ -299,8 +294,8 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                         exit={{ opacity: 0, height: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="mt-4 pt-4 border-t border-surface-2">
-                                            <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
+                                        <div className="mt-4 pt-4 border-t border-sf-2">
+                                            <label className="text-sm font-medium text-tx-sec block mb-2">{labels.delay}</label>
                                             <div className="flex gap-2">
                                                 {ABANDONED_CART_DELAY_OPTIONS.map(opt => (
                                                     <button
@@ -310,15 +305,15 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                                             abandoned_cart_delay_hours: opt.value,
                                                         }))}
                                                         aria-pressed={automationConfig.abandoned_cart_delay_hours === opt.value}
-                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.abandoned_cart_delay_hours === opt.value
+                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${automationConfig.abandoned_cart_delay_hours === opt.value
                                                             ? 'text-white'
-                                                            : 'border border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                            : 'border border-sf-3 text-tx-sec hover:bg-sf-1'
                                                             }`}
                                                     >
                                                         {automationConfig.abandoned_cart_delay_hours === opt.value && (
                                                             <motion.div
                                                                 layoutId="cart-delay-indicator"
-                                                                className="absolute inset-0 bg-primary rounded-xl"
+                                                                className="absolute inset-0 bg-brand rounded-xl"
                                                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                                             />
                                                         )}
@@ -346,8 +341,8 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                         <Star className="w-5 h-5 text-yellow-500" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-text-primary">{labels.reviewRequest}</h3>
-                                        <p className="text-xs text-text-muted">{labels.reviewRequestDesc}</p>
+                                        <h3 className="font-bold text-tx">{labels.reviewRequest}</h3>
+                                        <p className="text-xs text-tx-muted">{labels.reviewRequestDesc}</p>
                                     </div>
                                 </div>
                                 {flags.enable_email_notifications ? (
@@ -357,15 +352,15 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                             review_request_enabled: !prev.review_request_enabled,
                                         }))}
                                         aria-pressed={automationConfig.review_request_enabled}
-                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.review_request_enabled
+                                        className={`px-4 py-2 min-h-[40px] rounded-xl text-sm font-medium border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${automationConfig.review_request_enabled
                                             ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                                            : 'border-surface-3 text-text-secondary'
+                                            : 'border-sf-3 text-tx-sec'
                                             }`}
                                     >
                                         {automationConfig.review_request_enabled ? labels.enabled : labels.disabled}
                                     </button>
                                 ) : (
-                                    <span className="text-xs text-text-muted flex items-center gap-1">
+                                    <span className="text-xs text-tx-muted flex items-center gap-1">
                                         <Lock className="w-3 h-3" /> {labels.upgradeRequired}
                                     </span>
                                 )}
@@ -378,8 +373,8 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                         exit={{ opacity: 0, height: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="mt-4 pt-4 border-t border-surface-2">
-                                            <label className="text-sm font-medium text-text-secondary block mb-2">{labels.delay}</label>
+                                        <div className="mt-4 pt-4 border-t border-sf-2">
+                                            <label className="text-sm font-medium text-tx-sec block mb-2">{labels.delay}</label>
                                             <div className="flex gap-2">
                                                 {REVIEW_REQUEST_DELAY_OPTIONS.map(opt => (
                                                     <button
@@ -389,15 +384,15 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                                             review_request_delay_days: opt.value,
                                                         }))}
                                                         aria-pressed={automationConfig.review_request_delay_days === opt.value}
-                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${automationConfig.review_request_delay_days === opt.value
+                                                        className={`relative px-3 py-2 min-h-[40px] rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${automationConfig.review_request_delay_days === opt.value
                                                             ? 'text-white'
-                                                            : 'border border-surface-3 text-text-secondary hover:bg-surface-1'
+                                                            : 'border border-sf-3 text-tx-sec hover:bg-sf-1'
                                                             }`}
                                                     >
                                                         {automationConfig.review_request_delay_days === opt.value && (
                                                             <motion.div
                                                                 layoutId="review-delay-indicator"
-                                                                className="absolute inset-0 bg-primary rounded-xl"
+                                                                className="absolute inset-0 bg-brand rounded-xl"
                                                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                                             />
                                                         )}
@@ -418,7 +413,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             transition={{ delay: 0.2 }}
                             onClick={handleSave}
                             disabled={isPending}
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                         >
                             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                             {isPending ? '...' : labels.save}
@@ -437,9 +432,9 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                     >
                         <div className="empty-state">
                             <div className="empty-state-icon">
-                                <Palette className="w-8 h-8 text-text-muted" />
+                                <Palette className="w-8 h-8 text-tx-muted" />
                             </div>
-                            <p className="text-text-muted">{labels.templatesPlaceholder}</p>
+                            <p className="text-tx-muted">{labels.templatesPlaceholder}</p>
                         </div>
                     </motion.div>
                 )}
@@ -455,9 +450,9 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                     >
                         <div className="empty-state">
                             <div className="empty-state-icon">
-                                <Send className="w-8 h-8 text-text-muted" />
+                                <Send className="w-8 h-8 text-tx-muted" />
                             </div>
-                            <p className="text-text-muted">{labels.campaignsPlaceholder}</p>
+                            <p className="text-tx-muted">{labels.campaignsPlaceholder}</p>
                         </div>
                     </motion.div>
                 )}

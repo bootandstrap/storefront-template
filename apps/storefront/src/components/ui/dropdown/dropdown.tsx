@@ -52,8 +52,8 @@ const DropdownItem = ({ label, children, addon, icon: Icon, unstyled, ...props }
                 <div
                     className={cx(
                         "relative flex items-center rounded-md px-2.5 py-2 outline-focus-ring transition duration-100 ease-linear",
-                        !state.isDisabled && "group-hover:bg-primary_hover",
-                        state.isFocused && "bg-primary_hover",
+                        !state.isDisabled && "group-hover:bg-brand_hover",
+                        state.isFocused && "bg-brand_hover",
                         state.isFocusVisible && "outline-2 -outline-offset-2",
                     )}
                 >
@@ -67,8 +67,8 @@ const DropdownItem = ({ label, children, addon, icon: Icon, unstyled, ...props }
                     <span
                         className={cx(
                             "grow truncate text-sm font-semibold",
-                            state.isDisabled ? "text-disabled" : "text-secondary",
-                            state.isFocused && "text-secondary_hover",
+                            state.isDisabled ? "text-disabled" : "text-sec",
+                            state.isFocused && "text-sec_hover",
                         )}
                     >
                         {label || (typeof children === "function" ? children(state) : children)}
@@ -114,7 +114,7 @@ const DropdownPopover = (props: DropdownPopoverProps) => {
             {...props}
             className={(state) =>
                 cx(
-                    "w-62 origin-(--trigger-anchor-point) overflow-auto rounded-lg bg-primary shadow-lg ring-1 ring-secondary_alt will-change-transform",
+                    "w-62 origin-(--trigger-anchor-point) overflow-auto rounded-lg bg-brand shadow-lg ring-1 ring-secondary_alt will-change-transform",
                     state.isEntering &&
                         "duration-150 ease-out animate-in fade-in placement-right:slide-in-from-left-0.5 placement-top:slide-in-from-bottom-0.5 placement-bottom:slide-in-from-top-0.5",
                     state.isExiting &&
@@ -129,7 +129,7 @@ const DropdownPopover = (props: DropdownPopoverProps) => {
 };
 
 const DropdownSeparator = (props: AriaSeparatorProps) => {
-    return <AriaSeparator {...props} className={cx("my-1 h-px w-full bg-border-secondary", props.className)} />;
+    return <AriaSeparator {...props} className={cx("my-1 h-px w-full bg-border-sec", props.className)} />;
 };
 
 const DropdownDotsButton = (props: AriaButtonProps & RefAttributes<HTMLButtonElement>) => {

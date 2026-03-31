@@ -34,13 +34,13 @@ export default async function ReturnPolicyPage({
         <div className="container-page py-12">
             <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                        <RotateCcw className="w-7 h-7 text-primary" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-subtle mb-4">
+                        <RotateCcw className="w-7 h-7 text-brand" />
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold font-display text-text-primary mb-3">
+                    <h1 className="text-3xl md:text-4xl font-bold font-display text-tx mb-3">
                         {t('returnPolicy.title')}
                     </h1>
-                    <p className="text-text-muted text-lg">
+                    <p className="text-tx-muted text-lg">
                         {t('returnPolicy.subtitle')}
                     </p>
                 </div>
@@ -48,12 +48,12 @@ export default async function ReturnPolicyPage({
                 {/* Policy summary card */}
                 <div className="glass rounded-2xl p-8 mb-8 border border-white/5">
                     <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                        <AlertCircle className="w-5 h-5 text-brand mt-0.5 shrink-0" />
                         <div>
-                            <h2 className="font-semibold text-text-primary mb-2">
+                            <h2 className="font-semibold text-tx mb-2">
                                 {t('returnPolicy.summaryTitle')}
                             </h2>
-                            <p className="text-text-secondary leading-relaxed">
+                            <p className="text-tx-sec leading-relaxed">
                                 {t('returnPolicy.summaryText')}
                             </p>
                         </div>
@@ -61,7 +61,7 @@ export default async function ReturnPolicyPage({
                 </div>
 
                 {/* Steps */}
-                <h2 className="text-xl font-semibold text-text-primary mb-6">
+                <h2 className="text-xl font-semibold text-tx mb-6">
                     {t('returnPolicy.howItWorks')}
                 </h2>
                 <div className="space-y-4 mb-8">
@@ -69,14 +69,14 @@ export default async function ReturnPolicyPage({
                         const Icon = step.icon
                         return (
                             <div key={i} className="glass rounded-xl p-5 flex items-start gap-4 border border-white/5">
-                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                    <Icon className="w-5 h-5 text-primary" />
+                                <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center shrink-0">
+                                    <Icon className="w-5 h-5 text-brand" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-text-primary mb-1">
+                                    <h3 className="font-semibold text-tx mb-1">
                                         {i + 1}. {step.title}
                                     </h3>
-                                    <p className="text-sm text-text-muted">{step.desc}</p>
+                                    <p className="text-sm text-tx-muted">{step.desc}</p>
                                 </div>
                             </div>
                         )
@@ -85,20 +85,20 @@ export default async function ReturnPolicyPage({
 
                 {/* Conditions */}
                 <div className="glass rounded-2xl p-8 mb-8">
-                    <h2 className="font-semibold text-text-primary mb-4">
+                    <h2 className="font-semibold text-tx mb-4">
                         {t('returnPolicy.conditionsTitle')}
                     </h2>
-                    <ul className="space-y-2 text-sm text-text-secondary">
+                    <ul className="space-y-2 text-sm text-tx-sec">
                         <li className="flex items-start gap-2">
-                            <span className="text-primary mt-0.5">•</span>
+                            <span className="text-brand mt-0.5">•</span>
                             {t('returnPolicy.condition1')}
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-primary mt-0.5">•</span>
+                            <span className="text-brand mt-0.5">•</span>
                             {t('returnPolicy.condition2')}
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-primary mt-0.5">•</span>
+                            <span className="text-brand mt-0.5">•</span>
                             {t('returnPolicy.condition3')}
                         </li>
                     </ul>
@@ -107,7 +107,7 @@ export default async function ReturnPolicyPage({
                 {/* Contact CTA */}
                 {config.whatsapp_number && (
                     <div className="text-center glass rounded-2xl p-8">
-                        <p className="text-text-muted mb-4">
+                        <p className="text-tx-muted mb-4">
                             {t('returnPolicy.contactHint')}
                         </p>
                         <a

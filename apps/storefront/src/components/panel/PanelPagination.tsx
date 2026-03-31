@@ -40,7 +40,7 @@ export default function PanelPagination({
                 onClick={() => canGoPrev && onPageChange(currentPage - 1)}
                 disabled={!canGoPrev}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                           text-text-secondary hover:bg-surface-1 transition-colors
+                           text-tx-sec hover:bg-sf-1 transition-colors
                            disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <ChevronLeft className="w-4 h-4" />
@@ -51,7 +51,7 @@ export default function PanelPagination({
             <div className="flex items-center gap-1">
                 {pages.map((page, idx) => (
                     page === '...' ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-text-muted text-sm">
+                        <span key={`ellipsis-${idx}`} className="px-2 text-tx-muted text-sm">
                             …
                         </span>
                     ) : (
@@ -60,8 +60,8 @@ export default function PanelPagination({
                             onClick={() => onPageChange(page as number)}
                             className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
                                 page === currentPage
-                                    ? 'bg-primary text-white shadow-sm'
-                                    : 'text-text-muted hover:bg-surface-1 hover:text-text-primary'
+                                    ? 'bg-brand text-white shadow-sm'
+                                    : 'text-tx-muted hover:bg-sf-1 hover:text-tx'
                             }`}
                         >
                             {page}
@@ -75,7 +75,7 @@ export default function PanelPagination({
                 onClick={() => canGoNext && onPageChange(currentPage + 1)}
                 disabled={!canGoNext}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                           text-text-secondary hover:bg-surface-1 transition-colors
+                           text-tx-sec hover:bg-sf-1 transition-colors
                            disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <span className="hidden sm:inline">{labels.next ?? 'Siguiente'}</span>

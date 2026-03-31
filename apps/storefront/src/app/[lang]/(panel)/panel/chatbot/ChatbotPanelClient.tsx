@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { MessageSquare, Coins, Save, Loader2, Bot, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { PageSkeleton } from '@/components/panel/PanelSkeleton'
@@ -141,12 +141,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
 
     return (
         <PageEntrance className="space-y-6">
-            {/* Header */}
-            <PanelPageHeader
-                title="Chatbot IA"
-                subtitle={labels.model}
-                icon={<Bot className="w-5 h-5" />}
-            />
+
 
             {/* Summary Stats — StatCard */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,14 +184,14 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
             >
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h3 className="text-sm font-semibold text-text-primary">
+                        <h3 className="text-sm font-semibold text-tx">
                             {labels.usageChart}
                         </h3>
-                        <p className="text-xs text-text-muted mt-0.5">
+                        <p className="text-xs text-tx-muted mt-0.5">
                             {labels.today}
                         </p>
                     </div>
-                    <span className="text-xs font-mono text-text-muted">
+                    <span className="text-xs font-mono text-tx-muted">
                         {maxTokens.toLocaleString()} max
                     </span>
                 </div>
@@ -205,7 +200,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                     {/* Horizontal grid lines */}
                     <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
                         {[...Array(4)].map((_, i) => (
-                            <div key={i} className="w-full border-t border-surface-2" />
+                            <div key={i} className="w-full border-t border-sf-2" />
                         ))}
                     </div>
 
@@ -254,7 +249,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                     className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-visible"
                                 >
                                     <div className="flex justify-center">
-                                        <div className="bg-text-primary text-surface-0 text-[9px] font-semibold px-2 py-0.5 rounded whitespace-nowrap">
+                                        <div className="bg-text-brand text-sf-0 text-[9px] font-semibold px-2 py-0.5 rounded whitespace-nowrap">
                                             {paddedDaily[i]?.total_tokens.toLocaleString()} tokens
                                         </div>
                                     </div>
@@ -265,7 +260,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                 </div>
 
                 {/* X-axis */}
-                <div className="mt-3 flex justify-between text-[10px] text-text-muted">
+                <div className="mt-3 flex justify-between text-[10px] text-tx-muted">
                     <span>
                         {paddedDaily[0]?.date
                             ? new Date(paddedDaily[0].date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })
@@ -284,7 +279,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                 transition={{ delay: 0.4 }}
                 className="glass rounded-2xl p-6"
             >
-                <h3 className="text-sm font-semibold text-text-primary mb-6">
+                <h3 className="text-sm font-semibold text-tx mb-6">
                     {labels.settings}
                 </h3>
 
@@ -293,7 +288,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                     <div className="space-y-6">
                         {/* Model toggle */}
                         <div>
-                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+                            <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-3">
                                 {labels.aiModel}
                             </label>
                             <div className="inline-flex glass p-1 rounded-xl">
@@ -302,16 +297,16 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                         key={o.value}
                                         onClick={() => updateSetting('model', o.value)}
                                         disabled={saving === 'model'}
-                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
                                             settings.model === o.value
-                                                ? 'text-primary'
-                                                : 'text-text-muted hover:text-text-secondary'
+                                                ? 'text-brand'
+                                                : 'text-tx-muted hover:text-tx-sec'
                                         }`}
                                     >
                                         {settings.model === o.value && (
                                             <motion.div
                                                 layoutId="model-indicator"
-                                                className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                                className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
                                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                             />
                                         )}
@@ -328,7 +323,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
 
                         {/* Temperature toggle */}
                         <div>
-                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+                            <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-3">
                                 {labels.temperature}
                             </label>
                             <div className="inline-flex glass p-1 rounded-xl">
@@ -337,16 +332,16 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                         key={o.value}
                                         onClick={() => updateSetting('temperature', o.value)}
                                         disabled={saving === 'temperature'}
-                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex flex-col items-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                        className={`relative px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium transition-all flex flex-col items-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
                                             settings.temperature === o.value
-                                                ? 'text-primary'
-                                                : 'text-text-muted hover:text-text-secondary'
+                                                ? 'text-brand'
+                                                : 'text-tx-muted hover:text-tx-sec'
                                         }`}
                                     >
                                         {settings.temperature === o.value && (
                                             <motion.div
                                                 layoutId="temp-indicator"
-                                                className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                                className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
                                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                             />
                                         )}
@@ -359,7 +354,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
 
                         {/* Rate limits */}
                         <div>
-                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+                            <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-3">
                                 Mensajes / día
                             </label>
                             <div className="grid grid-cols-3 gap-3">
@@ -370,9 +365,9 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                 ].map(({ key, label, default: def }) => (
                                     <div
                                         key={key}
-                                        className="glass rounded-xl p-3 focus-within:ring-2 focus-within:ring-primary/30 transition-all"
+                                        className="glass rounded-xl p-3 focus-within:ring-2 focus-within:ring-soft transition-all"
                                     >
-                                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-text-muted mb-1">
+                                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-tx-muted mb-1">
                                             {label}
                                         </label>
                                         <div className="flex items-center gap-1">
@@ -382,12 +377,12 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                                 onChange={e =>
                                                     setSettings(prev => ({ ...prev, [key]: e.target.value }))
                                                 }
-                                                className="w-full bg-transparent text-base font-semibold text-text-primary outline-none appearance-none min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg"
+                                                className="w-full bg-transparent text-base font-semibold text-tx outline-none appearance-none min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft rounded-lg"
                                             />
                                             <button
                                                 onClick={() => updateSetting(key, settings[key] || def)}
                                                 disabled={saving === key}
-                                                className="w-7 h-7 min-h-[28px] rounded-lg flex items-center justify-center text-text-muted hover:text-primary transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                className="w-7 h-7 min-h-[28px] rounded-lg flex items-center justify-center text-tx-muted hover:text-brand transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             >
                                                 {saving === key
                                                     ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -404,10 +399,10 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                     {/* Right: Welcome message */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">
+                            <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide">
                                 {labels.welcomeMessage}
                             </label>
-                            <span className="text-[10px] text-text-muted uppercase tracking-wide">
+                            <span className="text-[10px] text-tx-muted uppercase tracking-wide">
                                 {locale.toUpperCase()}
                             </span>
                         </div>
@@ -422,7 +417,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                 }
                                 placeholder={labels.welcomePlaceholder}
                                 rows={5}
-                                className="w-full px-4 py-3 min-h-[44px] rounded-xl glass text-text-primary text-sm focus:ring-2 focus:ring-primary/30 transition-all outline-none resize-none"
+                                className="w-full px-4 py-3 min-h-[44px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none resize-none"
                             />
                             <button
                                 onClick={() =>
@@ -432,7 +427,7 @@ export function ChatbotPanelClient({ locale, labels }: { locale: string; labels:
                                     )
                                 }
                                 disabled={saving === `welcome_message_${locale}`}
-                                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-light transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-light transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             >
                                 {saving === `welcome_message_${locale}`
                                     ? <Loader2 className="w-3 h-3 animate-spin" />

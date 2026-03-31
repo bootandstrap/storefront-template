@@ -57,8 +57,8 @@ export default async function DireccionesPage({
     if (!featureFlags.enable_address_management) {
         return (
             <div className="glass rounded-xl p-8 text-center">
-                <ShieldX className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                <p className="text-text-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
+                <ShieldX className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                <p className="text-tx-muted text-sm">{t('common.featureDisabled') || 'This feature is not available on your current plan.'}</p>
             </div>
         )
     }

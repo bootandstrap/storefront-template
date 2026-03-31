@@ -6,13 +6,15 @@
 
 import { z } from 'zod';
 
-// ─── FeatureFlags (57 flags) ──────────────────────────────────────────────
+// ─── FeatureFlags (62 flags) ──────────────────────────────────────────────
 
 export const FeatureFlagsSchema = z.object({
     enable_abandoned_cart_emails: z.boolean(),
     enable_address_management: z.boolean(),
     enable_admin_api: z.boolean(),
     enable_analytics: z.boolean(),
+    enable_auth_advanced: z.boolean(),
+    enable_automations: z.boolean(),
     enable_bank_transfer: z.boolean(),
     enable_carousel: z.boolean(),
     enable_cash_on_delivery: z.boolean(),
@@ -54,8 +56,11 @@ export const FeatureFlagsSchema = z.object({
     enable_promotions: z.boolean(),
     enable_related_products: z.boolean(),
     enable_reviews: z.boolean(),
+    enable_sales_channels: z.boolean(),
     enable_self_service_returns: z.boolean(),
+    enable_seo: z.boolean(),
     enable_social_links: z.boolean(),
+    enable_social_media: z.boolean(),
     enable_traffic_analytics: z.boolean(),
     enable_traffic_autoscale: z.boolean(),
     enable_traffic_expansion: z.boolean(),

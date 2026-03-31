@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Package, ShoppingCart, Loader2, Check, Eye } from 'lucide-react'
 import { useState, useTransition, useCallback, lazy, Suspense } from 'react'
 import type { MedusaProduct } from '@/lib/medusa/client'
-import { getPrice, formatPrice } from '@/lib/medusa/price'
+import { getPrice, getOriginalPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
@@ -38,6 +38,8 @@ const BADGE_CLASSES: Record<string, string> = {
 export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false, quickAddEnabled = false, quickViewEnabled = true }: ProductCardProps) {
     const variant = product.variants?.[0]
     const resolved = getPrice(variant)
+    const originalPrice = getOriginalPrice(variant)
+    const hasDiscount = originalPrice && resolved && originalPrice.amount > resolved.amount
     const category = product.categories?.[0]
     const badges: string[] = badgesEnabled ? ((product.metadata?.badges as string[]) || []) : []
     const { t, localizedHref } = useI18n()
@@ -122,7 +124,7 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
 
                     {/* Category label */}
                     {category && (
-                        <span className="absolute bottom-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-sm text-text-secondary">
+                        <span className="absolute bottom-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-sm text-tx-sec">
                             {category.name}
                         </span>
                     )}
@@ -149,7 +151,7 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                             style={{ right: compareEnabled ? '2.75rem' : '0.75rem' }}
                             aria-label={t('product.quickView')}
                         >
-                            <Eye className="w-4 h-4 text-text-primary" />
+                            <Eye className="w-4 h-4 text-tx" />
                         </button>
                     )}
 
@@ -158,11 +160,11 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                         <button
                             onClick={handleQuickAdd}
                             disabled={isPending}
-                            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-primary text-white shadow-lg flex items-center justify-center
+                            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-brand text-white shadow-lg flex items-center justify-center
                             opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100
                             translate-y-2 group-hover:translate-y-0
                             transition-all duration-200 ease-out
-                            hover:bg-primary-light hover:scale-110 active:scale-95
+                            hover:bg-brand-light hover:scale-110 active:scale-95
                             disabled:opacity-50 disabled:cursor-not-allowed
                             touch-target"
                             aria-label={t('product.addToCart')}
@@ -170,7 +172,7 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                             {isPending ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : justAdded ? (
-                                <Check className="w-4 h-4" />
+                                <Check className="w-4 h-4 animate-check-bounce" />
                             ) : (
                                 <ShoppingCart className="w-4 h-4" />
                             )}
@@ -179,17 +181,28 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                 </div>
 
                 {/* Info */}
-                <div className="p-4">
-                    <h3 className="text-sm font-semibold text-text-primary line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                <div className="p-4 space-y-1.5">
+                    <h3 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors duration-200">
                         {product.title}
                     </h3>
+
+                    {/* Price — shows discount if calculated price differs */}
                     {resolved && (
-                        <p className="text-lg font-bold text-primary">
-                            {formatPrice(resolved.amount, resolved.currency)}
-                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-lg font-bold ${hasDiscount ? 'text-error' : 'text-brand'}`}>
+                                {formatPrice(resolved.amount, resolved.currency)}
+                            </span>
+                            {hasDiscount && originalPrice && (
+                                <span className="text-sm text-tx-muted line-through">
+                                    {formatPrice(originalPrice.amount, originalPrice.currency)}
+                                </span>
+                            )}
+                        </div>
                     )}
+
+                    {/* Variant count */}
                     {product.variants && product.variants.length > 1 && (
-                        <p className="text-xs text-text-muted mt-0.5">
+                        <p className="text-xs text-tx-muted">
                             {t('product.options', { count: String(product.variants.length) })}
                         </p>
                     )}

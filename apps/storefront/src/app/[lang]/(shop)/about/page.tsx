@@ -36,32 +36,32 @@ export default async function AboutPage({
             <div className="max-w-3xl mx-auto">
                 {/* Hero */}
                 <div className="text-center mb-12">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                        <Store className="w-7 h-7 text-primary" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-subtle mb-4">
+                        <Store className="w-7 h-7 text-brand" />
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold font-display text-text-primary mb-4">
+                    <h1 className="text-3xl md:text-4xl font-bold font-display text-tx mb-4">
                         {t('about.title')}
                     </h1>
-                    <p className="text-text-muted text-lg leading-relaxed">
+                    <p className="text-tx-muted text-lg leading-relaxed">
                         {t('about.intro')}
                     </p>
                 </div>
 
                 {/* Story */}
                 <div className="glass rounded-2xl p-8 mb-10">
-                    <h2 className="text-xl font-semibold text-text-primary mb-4">
+                    <h2 className="text-xl font-semibold text-tx mb-4">
                         {t('about.storyTitle')}
                     </h2>
-                    <p className="text-text-secondary leading-relaxed mb-4">
+                    <p className="text-tx-sec leading-relaxed mb-4">
                         {t('about.story1')}
                     </p>
-                    <p className="text-text-secondary leading-relaxed">
+                    <p className="text-tx-sec leading-relaxed">
                         {t('about.story2')}
                     </p>
                 </div>
 
                 {/* Values */}
-                <h2 className="text-xl font-semibold text-text-primary mb-6 text-center">
+                <h2 className="text-xl font-semibold text-tx mb-6 text-center">
                     {t('about.valuesTitle')}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
@@ -70,12 +70,12 @@ export default async function AboutPage({
                         return (
                             <div key={i} className="glass rounded-xl p-6 border border-white/5">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                        <Icon className="w-5 h-5 text-primary" />
+                                    <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center">
+                                        <Icon className="w-5 h-5 text-brand" />
                                     </div>
-                                    <h3 className="font-semibold text-text-primary">{v.title}</h3>
+                                    <h3 className="font-semibold text-tx">{v.title}</h3>
                                 </div>
-                                <p className="text-sm text-text-muted">{v.desc}</p>
+                                <p className="text-sm text-tx-muted">{v.desc}</p>
                             </div>
                         )
                     })}
@@ -84,7 +84,7 @@ export default async function AboutPage({
                 {/* Contact CTA */}
                 {config.whatsapp_number && (
                     <div className="text-center glass rounded-2xl p-8">
-                        <p className="text-text-muted mb-4">
+                        <p className="text-tx-muted mb-4">
                             {t('about.contactHint')}
                         </p>
                         <a

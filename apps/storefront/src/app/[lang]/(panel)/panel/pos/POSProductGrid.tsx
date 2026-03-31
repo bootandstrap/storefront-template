@@ -55,21 +55,21 @@ const gridConfig: Record<GridDensity, { cols: string; gap: string; imageAspect: 
 function ProductSkeleton({ density }: { density: GridDensity }) {
     const cfg = gridConfig[density]
     return (
-        <div className="flex flex-col bg-surface-0 rounded-xl border border-surface-2/50 overflow-hidden">
-            <div className={`${cfg.imageAspect} bg-surface-1 relative overflow-hidden`}>
+        <div className="flex flex-col bg-sf-0 rounded-xl border border-sf-2 overflow-hidden">
+            <div className={`${cfg.imageAspect} bg-sf-1 relative overflow-hidden`}>
                 <div
                     className="absolute inset-0 -translate-x-full animate-[shimmer-slide_1.5s_ease-in-out_infinite]"
                     style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
                 />
             </div>
             <div className="p-3 flex flex-col gap-2">
-                <div className="h-3 w-3/4 bg-surface-2/60 rounded relative overflow-hidden">
+                <div className="h-3 w-3/4 bg-glass rounded relative overflow-hidden">
                     <div
                         className="absolute inset-0 -translate-x-full animate-[shimmer-slide_1.5s_ease-in-out_infinite_0.1s]"
                         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }}
                     />
                 </div>
-                <div className="h-4 w-1/2 bg-surface-2/60 rounded relative overflow-hidden">
+                <div className="h-4 w-1/2 bg-glass rounded relative overflow-hidden">
                     <div
                         className="absolute inset-0 -translate-x-full animate-[shimmer-slide_1.5s_ease-in-out_infinite_0.2s]"
                         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }}
@@ -89,7 +89,7 @@ function LazyProductImage({ src, alt, className }: { src: string; alt: string; c
     return (
         <>
             {!loaded && (
-                <div className="absolute inset-0 bg-surface-1 overflow-hidden">
+                <div className="absolute inset-0 bg-sf-1 overflow-hidden">
                     <div
                         className="absolute inset-0 -translate-x-full animate-[shimmer-slide_1.5s_ease-in-out_infinite]"
                         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
@@ -218,25 +218,25 @@ export default function POSProductGrid({
             {/* ── Search bar + density toggle ── */}
             <div className="p-3 pb-2 flex gap-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-text-muted pointer-events-none" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-tx-muted pointer-events-none" />
                     <input
                         type="text"
                         data-pos-search="true"
                         placeholder={posLabel('panel.pos.search', labels)}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-11 pr-10 py-3 rounded-xl bg-surface-1 text-sm
-                                   placeholder:text-text-muted/60 border border-transparent
-                                   focus:outline-none focus:bg-surface-0 focus:ring-2 focus:ring-primary/30 focus:border-primary/40
+                        className="w-full pl-11 pr-10 py-3 rounded-xl bg-sf-1 text-sm
+                                   placeholder:text-tx-faint border border-transparent
+                                   focus:outline-none focus:bg-sf-0 focus:ring-2 focus:ring-soft focus:border-brand
                                    transition-all duration-200"
                     />
                     {search && (
                         <button
                             onClick={() => setSearch('')}
                             aria-label={posLabel('panel.pos.clearSearch', labels)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary
-                                       w-7 h-7 flex items-center justify-center rounded-full bg-surface-2
-                                       hover:bg-surface-3 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-tx-muted hover:text-tx
+                                       w-7 h-7 flex items-center justify-center rounded-full bg-sf-2
+                                       hover:bg-sf-3 transition-colors"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
@@ -248,10 +248,10 @@ export default function POSProductGrid({
                     onClick={() => setDensity(prev => prev === 'compact' ? 'default' : prev === 'default' ? 'spacious' : 'compact')}
                     aria-label="Toggle grid density"
                     title={density === 'compact' ? 'Compact' : density === 'default' ? 'Default' : 'Spacious'}
-                    className="min-w-[44px] h-[44px] rounded-xl bg-surface-1 border border-transparent
-                               hover:bg-surface-2 hover:border-surface-3 text-text-muted hover:text-text-primary
+                    className="min-w-[44px] h-[44px] rounded-xl bg-sf-1 border border-transparent
+                               hover:bg-sf-2 hover:border-sf-3 text-tx-muted hover:text-tx
                                flex items-center justify-center transition-all duration-200
-                               focus-visible:ring-2 focus-visible:ring-primary/40"
+                               focus-visible:ring-2 focus-visible:ring-med"
                 >
                     {density === 'compact' ? (
                         <Grid3X3 className="w-4.5 h-4.5" />
@@ -282,8 +282,8 @@ export default function POSProductGrid({
                         className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200
                                    min-h-[36px] ${
                             !activeCategory
-                                ? 'bg-primary text-white shadow-sm shadow-primary/25'
-                                : 'bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+                                ? 'bg-brand text-white shadow-sm shadow-brand-soft'
+                                : 'bg-sf-1 text-tx-sec hover:bg-sf-2 hover:text-tx'
                         }`}
                     >
                         {posLabel('panel.pos.allCategories', labels)}
@@ -295,8 +295,8 @@ export default function POSProductGrid({
                             className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200
                                        min-h-[36px] ${
                                 activeCategory === cat.id
-                                    ? 'bg-primary text-white shadow-sm shadow-primary/25'
-                                    : 'bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+                                    ? 'bg-brand text-white shadow-sm shadow-brand-soft'
+                                    : 'bg-sf-1 text-tx-sec hover:bg-sf-2 hover:text-tx'
                             }`}
                         >
                             {cat.name}
@@ -308,7 +308,7 @@ export default function POSProductGrid({
             {/* ── Filter result count — subtle feedback ── */}
             {(search || activeCategory) && !loading && filtered.length > 0 && (
                 <div className="px-4 py-1">
-                    <span className="text-[11px] font-medium text-text-muted tabular-nums">
+                    <span className="text-[11px] font-medium text-tx-muted tabular-nums">
                         {filtered.length} {filtered.length === 1 ? 'product' : 'products'}
                     </span>
                 </div>
@@ -323,9 +323,9 @@ export default function POSProductGrid({
                         ))}
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-text-muted gap-3">
+                    <div className="flex flex-col items-center justify-center h-full text-tx-muted gap-3">
                         <motion.div
-                            className="w-16 h-16 rounded-2xl bg-surface-1 flex items-center justify-center"
+                            className="w-16 h-16 rounded-2xl bg-sf-1 flex items-center justify-center"
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ type: 'spring', damping: 15, stiffness: 200 }}
@@ -336,8 +336,8 @@ export default function POSProductGrid({
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
-                                className="text-xs text-primary font-medium hover:underline underline-offset-2
-                                           px-3 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
+                                className="text-xs text-brand font-medium hover:underline underline-offset-2
+                                           px-3 py-1.5 rounded-lg hover:bg-brand-subtle transition-colors"
                             >
                                 {posLabel('panel.pos.clearSearch', labels)}
                             </button>
@@ -354,13 +354,13 @@ export default function POSProductGrid({
                                     : { scale: 1 }
                                 }
                                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                                className="group flex flex-col bg-surface-0 rounded-xl border border-surface-2/80
-                                           hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5
+                                className="group flex flex-col bg-sf-0 rounded-xl border border-sf-2
+                                           hover:border-brand hover:shadow-lg hover:shadow-brand-soft
                                            active:scale-[0.96] active:shadow-none
                                            transition-all duration-150 overflow-hidden text-left cursor-pointer"
                             >
                                 {/* Product image — shimmer → reveal */}
-                                <div className={`${cfg.imageAspect} bg-surface-1 flex items-center justify-center relative overflow-hidden`}>
+                                <div className={`${cfg.imageAspect} bg-sf-1 flex items-center justify-center relative overflow-hidden`}>
                                     {product.thumbnail ? (
                                         <LazyProductImage
                                             src={product.thumbnail}
@@ -368,7 +368,7 @@ export default function POSProductGrid({
                                             className="group-hover:scale-105 transition-transform duration-300"
                                         />
                                     ) : (
-                                        <Package className="w-10 h-10 text-text-muted/20" />
+                                        <Package className="w-10 h-10 text-tx-faint" />
                                     )}
                                     {/* Variant count badge */}
                                     {(product.variants?.length ?? 0) > 1 && (
@@ -378,7 +378,7 @@ export default function POSProductGrid({
                                         </span>
                                     )}
                                     {/* Hover overlay */}
-                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors duration-200" />
+                                    <div className="absolute inset-0 bg-brand-subtle group-hover:bg-brand-subtle transition-colors duration-200" />
 
                                     {/* Add feedback flash */}
                                     <AnimatePresence>
@@ -404,10 +404,10 @@ export default function POSProductGrid({
                                 </div>
                                 {/* Product info */}
                                 <div className={`p-3 flex-1 flex flex-col justify-between gap-1 ${density === 'compact' ? 'p-2' : ''}`}>
-                                    <p className={`font-medium text-text-primary line-clamp-2 leading-snug ${density === 'compact' ? 'text-[11px]' : 'text-xs'}`}>
+                                    <p className={`font-medium text-tx line-clamp-2 leading-snug ${density === 'compact' ? 'text-[11px]' : 'text-xs'}`}>
                                         {product.title}
                                     </p>
-                                    <p className={`font-bold text-primary ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
+                                    <p className={`font-bold text-brand ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
                                         {formatPrice(product)}
                                     </p>
                                 </div>

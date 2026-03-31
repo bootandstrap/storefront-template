@@ -125,7 +125,7 @@ export default function FavoritosClient() {
         return (
             <div className="space-y-6">
                 <div className="glass rounded-xl p-6">
-                    <h1 className="text-2xl font-bold font-display text-text-primary">
+                    <h1 className="text-2xl font-bold font-display text-tx">
                         {t('account.wishlist') || 'Favoritos'}
                     </h1>
                 </div>
@@ -133,10 +133,10 @@ export default function FavoritosClient() {
                     <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
                         <Heart className="w-8 h-8 text-red-400" />
                     </div>
-                    <h2 className="text-lg font-semibold text-text-primary mb-2">
+                    <h2 className="text-lg font-semibold text-tx mb-2">
                         {t('wishlist.emptyTitle') || 'Tu lista de favoritos está vacía'}
                     </h2>
-                    <p className="text-text-muted text-sm mb-6 max-w-sm mx-auto">
+                    <p className="text-tx-muted text-sm mb-6 max-w-sm mx-auto">
                         {t('wishlist.emptyDescription') || 'Explora nuestro catálogo y guarda los productos que más te gusten.'}
                     </p>
                     <Link
@@ -156,10 +156,10 @@ export default function FavoritosClient() {
         <div className="space-y-6">
             {/* Header */}
             <div className="glass rounded-xl p-6">
-                <h1 className="text-2xl font-bold font-display text-text-primary">
+                <h1 className="text-2xl font-bold font-display text-tx">
                     {t('account.wishlist') || 'Favoritos'}
                 </h1>
-                <p className="text-text-muted text-sm mt-1">
+                <p className="text-tx-muted text-sm mt-1">
                     {items.length} {items.length === 1
                         ? (t('wishlist.itemSingular') || 'producto guardado')
                         : (t('wishlist.itemPlural') || 'productos guardados')}
@@ -174,7 +174,7 @@ export default function FavoritosClient() {
                         className="glass rounded-xl overflow-hidden group hover:shadow-lg transition-shadow"
                     >
                         {/* Image + Remove button */}
-                        <div className="relative aspect-square bg-surface-1">
+                        <div className="relative aspect-square bg-sf-1">
                             {product.thumbnail ? (
                                 <Image
                                     src={product.thumbnail}
@@ -185,12 +185,12 @@ export default function FavoritosClient() {
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Package className="w-12 h-12 text-text-muted/30" />
+                                    <Package className="w-12 h-12 text-tx-faint" />
                                 </div>
                             )}
                             <button
                                 onClick={() => removeItem(product.id)}
-                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface-0/90 dark:bg-surface-2/90 backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm hover:shadow-md"
+                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-glass-heavy dark:bg-glass-heavy backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm hover:shadow-md"
                                 aria-label={t('wishlist.remove') || 'Quitar de favoritos'}
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -199,17 +199,17 @@ export default function FavoritosClient() {
 
                         {/* Info */}
                         <div className="p-4">
-                            <h3 className="font-semibold text-text-primary text-sm line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                            <h3 className="font-semibold text-tx text-sm line-clamp-2 mb-1 group-hover:text-brand transition-colors">
                                 {product.title}
                             </h3>
                             {displayPrice(product) && (
-                                <p className="text-lg font-bold text-primary">
+                                <p className="text-lg font-bold text-brand">
                                     {displayPrice(product)}
                                 </p>
                             )}
                             <Link
                                 href={`${localizedHref('products')}/${product.handle}`}
-                                className="mt-3 flex items-center gap-1.5 text-xs text-primary hover:underline"
+                                className="mt-3 flex items-center gap-1.5 text-xs text-brand hover:underline"
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />
                                 {t('wishlist.viewProduct') || 'Ver producto'}
@@ -224,11 +224,11 @@ export default function FavoritosClient() {
                         key={missingId}
                         className="glass rounded-xl overflow-hidden opacity-60"
                     >
-                        <div className="aspect-square bg-surface-1 flex items-center justify-center">
-                            <Package className="w-12 h-12 text-text-muted/20" />
+                        <div className="aspect-square bg-sf-1 flex items-center justify-center">
+                            <Package className="w-12 h-12 text-tx-faint" />
                         </div>
                         <div className="p-4 flex items-center justify-between">
-                            <p className="text-xs text-text-muted">
+                            <p className="text-xs text-tx-muted">
                                 {t('wishlist.productUnavailable') || 'Producto no disponible'}
                             </p>
                             <button

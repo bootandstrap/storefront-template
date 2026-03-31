@@ -93,7 +93,7 @@ export default function PanelTopbar({
     const initial = (ownerName || businessName || 'U')[0].toUpperCase()
 
     return (
-        <header data-panel-topbar className="sticky top-0 z-40 bg-surface-0/80 backdrop-blur-md border-b border-surface-2">
+        <header data-panel-topbar className="sticky top-0 z-40 bg-glass-heavy backdrop-blur-md border-b border-sf-2">
             <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-4">
                 {/* Left: hamburger (mobile) + greeting + breadcrumb */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -101,16 +101,16 @@ export default function PanelTopbar({
                         type="button"
                         onClick={onMenuClick}
                         aria-label="Open panel menu"
-                        className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-surface-3 text-text-primary hover:bg-surface-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-sf-3 text-tx hover:bg-sf-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                     >
                         <Menu className="w-5 h-5" />
                     </button>
 
                     <div className="min-w-0">
                         {/* Greeting (desktop) */}
-                        <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-tx">
                             <span className="truncate">
-                                {greeting}, <span className="text-primary">{ownerName || businessName}</span>
+                                {greeting}, <span className="text-brand">{ownerName || businessName}</span>
                             </span>
                             {setupNudge && (
                                 <a
@@ -123,16 +123,16 @@ export default function PanelTopbar({
                             )}
                         </div>
                         {/* Mobile: business name */}
-                        <div className="md:hidden text-sm font-semibold text-text-primary truncate">
+                        <div className="md:hidden text-sm font-semibold text-tx truncate">
                             {businessName}
                         </div>
                         {/* Breadcrumb */}
-                        <div className="flex items-center gap-1 text-[11px] text-text-muted">
+                        <div className="flex items-center gap-1 text-[11px] text-tx-muted">
                             <span>{labels.ownerPanel}</span>
                             {currentSection && (
                                 <>
                                     <ChevronRight className="w-3 h-3" />
-                                    <span className="font-medium text-text-secondary">{currentSection}</span>
+                                    <span className="font-medium text-tx-sec">{currentSection}</span>
                                 </>
                             )}
                         </div>
@@ -148,7 +148,7 @@ export default function PanelTopbar({
                         <button
                             type="button"
                             onClick={() => setAvatarOpen(!avatarOpen)}
-                            className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center hover:bg-primary/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                            className="w-8 h-8 rounded-full bg-brand-muted text-brand font-bold text-sm flex items-center justify-center hover:bg-brand-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             aria-label="User menu"
                             aria-expanded={avatarOpen}
                         >
@@ -156,16 +156,16 @@ export default function PanelTopbar({
                         </button>
 
                         {avatarOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface-1 border border-surface-3 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-sf-1 border border-sf-3 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
                                 {/* User info */}
-                                <div className="px-4 py-3 border-b border-surface-2">
+                                <div className="px-4 py-3 border-b border-sf-2">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center">
+                                        <div className="w-8 h-8 rounded-full bg-brand-muted text-brand font-bold text-xs flex items-center justify-center">
                                             {initial}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-text-primary truncate">{ownerName || businessName}</p>
-                                            <p className="text-[11px] text-text-muted truncate">{businessName}</p>
+                                            <p className="text-sm font-semibold text-tx truncate">{ownerName || businessName}</p>
+                                            <p className="text-[11px] text-tx-muted truncate">{businessName}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -173,7 +173,7 @@ export default function PanelTopbar({
                                 <div className="py-1">
                                     <a
                                         href={`/${lang}`}
-                                        className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-text-secondary hover:bg-surface-2/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+                                        className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-tx-sec hover:bg-glass transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                     >
                                         <Store className="w-4 h-4" />
                                         {labels.backToStore}

@@ -99,29 +99,29 @@ export default function ReturnRequestForm({ orderId, items, lang, dict }: Return
                 <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
                     <Check className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">{dict.success}</p>
+                <p className="text-sm font-medium text-tx">{dict.success}</p>
             </div>
         )
     }
 
     return (
         <div className="glass rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-tx mb-4 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-brand" />
                 {dict.title}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Reason select */}
                 <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    <label className="block text-xs font-medium text-tx-muted mb-1.5">
                         {dict.reason}
                     </label>
                     <select
                         value={reason}
                         onChange={e => setReason(e.target.value as ReturnReason)}
                         required
-                        className="w-full px-3 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        className="w-full px-3 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all"
                     >
                         <option value="">—</option>
                         {(['defective', 'wrong_item', 'changed_mind', 'other'] as const).map(r => (
@@ -132,7 +132,7 @@ export default function ReturnRequestForm({ orderId, items, lang, dict }: Return
 
                 {/* Item checkboxes */}
                 <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    <label className="block text-xs font-medium text-tx-muted mb-1.5">
                         {dict.selectItems}
                     </label>
                     <div className="space-y-2">
@@ -140,23 +140,23 @@ export default function ReturnRequestForm({ orderId, items, lang, dict }: Return
                             <label
                                 key={item.id}
                                 className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all ${selectedItems.includes(item.id)
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-surface-3 hover:border-primary/30'
+                                        ? 'border-brand bg-brand-subtle'
+                                        : 'border-sf-3 hover:border-brand'
                                     }`}
                             >
                                 <input
                                     type="checkbox"
                                     checked={selectedItems.includes(item.id)}
                                     onChange={() => toggleItem(item.id)}
-                                    className="rounded border-surface-3 text-primary focus:ring-primary/30"
+                                    className="rounded border-sf-3 text-brand focus:ring-soft"
                                 />
-                                <span className="text-sm text-text-primary flex-1 truncate">
+                                <span className="text-sm text-tx flex-1 truncate">
                                     {item.title}
                                     {item.variant_title && item.variant_title !== 'Default' && (
-                                        <span className="text-text-muted"> · {item.variant_title}</span>
+                                        <span className="text-tx-muted"> · {item.variant_title}</span>
                                     )}
                                 </span>
-                                <span className="text-xs text-text-muted">×{item.quantity}</span>
+                                <span className="text-xs text-tx-muted">×{item.quantity}</span>
                             </label>
                         ))}
                     </div>
@@ -164,7 +164,7 @@ export default function ReturnRequestForm({ orderId, items, lang, dict }: Return
 
                 {/* Description */}
                 <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    <label className="block text-xs font-medium text-tx-muted mb-1.5">
                         {dict.description}
                     </label>
                     <textarea
@@ -172,7 +172,7 @@ export default function ReturnRequestForm({ orderId, items, lang, dict }: Return
                         onChange={e => setDescription(e.target.value)}
                         placeholder={dict.descriptionPlaceholder}
                         rows={3}
-                        className="w-full px-3 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                        className="w-full px-3 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all resize-none"
                     />
                 </div>
 

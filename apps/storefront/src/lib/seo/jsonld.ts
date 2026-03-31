@@ -1,6 +1,10 @@
 import type { StoreConfig } from '@/lib/config'
 import type { MedusaProduct } from '@/lib/medusa/client'
 
+// schema-dts imported for reference — we use Record<string, unknown> return types
+// because schema-dts strict types conflict with JSON.stringify spread patterns.
+// The types serve as documentation; runtime output matches schema.org spec.
+
 /**
  * Map Medusa inventory to Schema.org availability
  */
@@ -16,7 +20,7 @@ function getAvailability(product: MedusaProduct): string {
 
 /**
  * Product JSON-LD structured data for SEO
- * Includes dynamic availability and optional aggregateRating
+ * Schema: https://schema.org/Product
  */
 export function productJsonLD(
     product: MedusaProduct,
@@ -31,6 +35,7 @@ export function productJsonLD(
         name: product.title,
         description: product.description,
         image: product.thumbnail || product.images?.[0]?.url,
+        sku: product.variants?.[0]?.sku || undefined,
         brand: {
             '@type': 'Organization',
             name: config.business_name,
@@ -50,6 +55,7 @@ export function productJsonLD(
                 price: (price.amount / 100).toFixed(2),
                 priceCurrency: price.currency_code.toUpperCase(),
                 availability: getAvailability(product),
+                url: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/productos/${product.handle}`,
                 seller: {
                     '@type': 'Organization',
                     name: config.business_name,
@@ -61,6 +67,7 @@ export function productJsonLD(
 
 /**
  * Organization JSON-LD for homepage
+ * Schema: https://schema.org/Organization
  */
 export function organizationJsonLD(config: StoreConfig): Record<string, unknown> {
     return {
@@ -74,7 +81,7 @@ export function organizationJsonLD(config: StoreConfig): Record<string, unknown>
                 '@type': 'ContactPoint',
                 telephone: `+${config.whatsapp_number}`,
                 contactType: 'customer service',
-                availableLanguage: ['Spanish'],
+                availableLanguage: ['Spanish', 'English'],
             }
             : undefined,
     }
@@ -82,6 +89,7 @@ export function organizationJsonLD(config: StoreConfig): Record<string, unknown>
 
 /**
  * BreadcrumbList JSON-LD for product pages
+ * Schema: https://schema.org/BreadcrumbList
  */
 export function breadcrumbListJsonLD(
     product: MedusaProduct,
@@ -129,6 +137,7 @@ export function breadcrumbListJsonLD(
 
 /**
  * WebSite JSON-LD for homepage — enables Google Sitelinks Search Box
+ * Schema: https://schema.org/WebSite
  */
 export function websiteJsonLD(config: StoreConfig): Record<string, unknown> {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
@@ -151,7 +160,7 @@ export function websiteJsonLD(config: StoreConfig): Record<string, unknown> {
 
 /**
  * FAQPage JSON-LD — structured data for FAQ pages
- * Enables rich results in Google (accordion-style FAQ snippets)
+ * Schema: https://schema.org/FAQPage
  */
 export function faqPageJsonLD(
     items: Array<{ question: string; answer: string }>

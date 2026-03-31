@@ -6,10 +6,13 @@
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getAdminOrders } from '@/lib/medusa/admin'
+import { getAdminOrders, getOrdersThisMonth } from '@/lib/medusa/admin'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
+import { getConfigForTenant } from '@/lib/config'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { ShoppingBag } from 'lucide-react'
 import OrdersClient from './OrdersClient'
 
 export const dynamic = 'force-dynamic'
@@ -33,24 +36,44 @@ export default async function OrdersPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Resolve tenant scope — all admin queries MUST be scoped
     const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
+    const { config } = await getConfigForTenant(tenantId)
 
     const query = parsePanelListQuery(rawSearchParams, {
         defaultLimit: 20,
         allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
     })
 
-    const { orders, count } = await getAdminOrders({
-        limit: query.limit,
-        offset: query.offset,
-        q: query.q,
-        status: query.status,
-    }, scope)
+    const [{ orders, count }, ordersThisMonth] = await Promise.all([
+        getAdminOrders({
+            limit: query.limit,
+            offset: query.offset,
+            q: query.q,
+            status: query.status,
+        }, scope),
+        getOrdersThisMonth(scope),
+    ])
+
+    // Compute order stats for StatGrid
+    const pendingCount = orders.filter(o => o.status === 'pending').length
+    const completedCount = orders.filter(o => o.status === 'completed').length
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.total ?? 0), 0)
+    const currency = config.default_currency || orders[0]?.currency_code || 'usd'
+    const formattedRevenue = new Intl.NumberFormat(lang, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+    }).format(totalRevenue / 100)
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.orders.title')}
+                subtitle={t('panel.orders.subtitle')}
+                icon={<ShoppingBag className="w-5 h-5" />}
+                badge={count}
+            />
             <OrdersClient
                 orders={orders}
                 totalCount={count}

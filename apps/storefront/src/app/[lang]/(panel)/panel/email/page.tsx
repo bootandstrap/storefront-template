@@ -12,9 +12,12 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { getConfigForTenant } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Mail } from 'lucide-react'
 import EmailClient from './EmailClient'
 import { DEFAULT_AUTOMATION_CONFIG, type AutomationConfig } from '@/lib/email-automations-shared'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { saveAutomationConfig } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -168,33 +171,15 @@ export default async function EmailMarketingPage({
         campaignsPlaceholder: t('panel.email.campaignsPlaceholder'),
     }
 
-    // Server action for saving config
-    async function saveAutomationConfig(config: AutomationConfig) {
-        'use server'
-        const supabase = createAdminClient()
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
-        const { error } = await (supabase as any)
-            .from('email_automation_config')
-            .upsert({
-                tenant_id: tenantId,
-                abandoned_cart_enabled: config.abandoned_cart_enabled,
-                abandoned_cart_delay_hours: config.abandoned_cart_delay_hours,
-                review_request_enabled: config.review_request_enabled,
-                review_request_delay_days: config.review_request_delay_days,
-                updated_at: new Date().toISOString(),
-            }, { onConflict: 'tenant_id' })
-
-        if (error) {
-            console.error(`[email] Failed to save automation config for tenant ${tenantId}:`, error.message)
-            return { success: false, error: error.message }
-        }
-
-        return { success: true }
-    }
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={labels.title}
+                subtitle={labels.subtitle}
+                icon={<Mail className="w-5 h-5" />}
+            />
             <EmailClient
                 config={automationConfig}
                 stats={stats}

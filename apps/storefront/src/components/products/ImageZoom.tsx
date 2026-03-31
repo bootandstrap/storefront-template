@@ -1,8 +1,19 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
+import { ZoomIn, Package } from 'lucide-react'
+import Lightbox from 'yet-another-react-lightbox'
+import Zoom from 'yet-another-react-lightbox/plugins/zoom'
+import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails'
+import Counter from 'yet-another-react-lightbox/plugins/counter'
+import 'yet-another-react-lightbox/styles.css'
+import 'yet-another-react-lightbox/plugins/thumbnails.css'
+import 'yet-another-react-lightbox/plugins/counter.css'
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface ImageZoomProps {
     src: string
@@ -10,18 +21,26 @@ interface ImageZoomProps {
     width: number
     height: number
     className?: string
-    /** All images for fullscreen gallery navigation */
+    /** All images for lightbox gallery navigation */
     images?: { url: string; alt?: string }[]
     /** Index of this image within the images array */
     imageIndex?: number
 }
 
+// ---------------------------------------------------------------------------
+// Component — Hover lens zoom + click-to-lightbox
+// ---------------------------------------------------------------------------
+
 /**
- * ImageZoom — hover lens zoom + click-to-fullscreen gallery
+ * ImageZoom — hover lens zoom (desktop) + click to open YARL lightbox
  *
- * Hover: magnified lens follows cursor position (desktop only)
- * Click: fullscreen overlay with left/right navigation
- * Touch: tap to open fullscreen, swipe to navigate
+ * Replaces custom fullscreen with `yet-another-react-lightbox`:
+ * - Pinch-to-zoom on mobile
+ * - Swipe navigation
+ * - Thumbnail strip
+ * - Image counter
+ * - Keyboard navigation (arrows, Escape)
+ * - Smooth zoom animations
  */
 export default function ImageZoom({
     src,
@@ -35,8 +54,8 @@ export default function ImageZoom({
     const containerRef = useRef<HTMLDivElement>(null)
     const [isHovering, setIsHovering] = useState(false)
     const [lensPosition, setLensPosition] = useState({ x: 50, y: 50 })
-    const [isFullscreen, setIsFullscreen] = useState(false)
-    const [fullscreenIndex, setFullscreenIndex] = useState(imageIndex)
+    const [lightboxOpen, setLightboxOpen] = useState(false)
+    const [lightboxIndex, setLightboxIndex] = useState(imageIndex)
 
     const ZOOM_FACTOR = 2.5
 
@@ -51,41 +70,15 @@ export default function ImageZoom({
     const handleMouseEnter = useCallback(() => setIsHovering(true), [])
     const handleMouseLeave = useCallback(() => setIsHovering(false), [])
 
-    const openFullscreen = useCallback(() => {
-        setFullscreenIndex(imageIndex)
-        setIsFullscreen(true)
+    const openLightbox = useCallback(() => {
+        setLightboxIndex(imageIndex)
+        setLightboxOpen(true)
     }, [imageIndex])
 
-    const closeFullscreen = useCallback(() => setIsFullscreen(false), [])
-
-    const navigateFullscreen = useCallback((direction: 'prev' | 'next') => {
-        if (images.length <= 1) return
-        setFullscreenIndex((prev) =>
-            direction === 'next'
-                ? (prev + 1) % images.length
-                : (prev - 1 + images.length) % images.length
-        )
-    }, [images.length])
-
-    // Keyboard navigation in fullscreen
-    useEffect(() => {
-        if (!isFullscreen) return
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') closeFullscreen()
-            if (e.key === 'ArrowLeft') navigateFullscreen('prev')
-            if (e.key === 'ArrowRight') navigateFullscreen('next')
-        }
-        window.addEventListener('keydown', handler)
-        document.body.style.overflow = 'hidden'
-        return () => {
-            window.removeEventListener('keydown', handler)
-            document.body.style.overflow = ''
-        }
-    }, [isFullscreen, closeFullscreen, navigateFullscreen])
-
-    const currentFullscreenImage = images.length > 0
-        ? images[fullscreenIndex]
-        : { url: src, alt }
+    // Build slides array for YARL
+    const slides = images.length > 0
+        ? images.map(img => ({ src: img.url, alt: img.alt || alt }))
+        : [{ src, alt }]
 
     return (
         <>
@@ -96,11 +89,11 @@ export default function ImageZoom({
                 onMouseMove={handleMouseMove}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onClick={openFullscreen}
+                onClick={openLightbox}
                 role="button"
                 tabIndex={0}
                 aria-label={`Zoom image: ${alt}`}
-                onKeyDown={(e) => e.key === 'Enter' && openFullscreen()}
+                onKeyDown={(e) => e.key === 'Enter' && openLightbox()}
             >
                 <Image
                     src={src}
@@ -129,77 +122,52 @@ export default function ImageZoom({
                 </div>
             </div>
 
-            {/* Fullscreen overlay */}
-            {isFullscreen && (
-                <div
-                    className="image-zoom-fullscreen"
-                    onClick={closeFullscreen}
-                >
-                    {/* Close button */}
-                    <button
-                        className="image-zoom-close"
-                        onClick={closeFullscreen}
-                        aria-label="Close fullscreen"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-
-                    {/* Image */}
-                    <div
-                        className="image-zoom-fullscreen-image"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Image
-                            src={currentFullscreenImage.url}
-                            alt={currentFullscreenImage.alt || alt}
-                            fill
-                            className="object-contain"
-                            sizes="100vw"
-                        />
-                    </div>
-
-                    {/* Navigation arrows */}
-                    {images.length > 1 && (
-                        <>
-                            <button
-                                className="image-zoom-nav image-zoom-nav-prev"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    navigateFullscreen('prev')
-                                }}
-                                aria-label="Previous image"
-                            >
-                                <ChevronLeft className="w-6 h-6" />
-                            </button>
-                            <button
-                                className="image-zoom-nav image-zoom-nav-next"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    navigateFullscreen('next')
-                                }}
-                                aria-label="Next image"
-                            >
-                                <ChevronRight className="w-6 h-6" />
-                            </button>
-
-                            {/* Dots indicator */}
-                            <div className="image-zoom-dots">
-                                {images.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        className={`image-zoom-dot ${i === fullscreenIndex ? 'active' : ''}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setFullscreenIndex(i)
-                                        }}
-                                        aria-label={`Go to image ${i + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-            )}
+            {/* YARL Lightbox — replaces custom fullscreen */}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                index={lightboxIndex}
+                slides={slides}
+                plugins={[Zoom, Thumbnails, Counter]}
+                zoom={{
+                    maxZoomPixelRatio: 4,
+                    zoomInMultiplier: 2,
+                    doubleTapDelay: 300,
+                    doubleClickDelay: 300,
+                    doubleClickMaxStops: 2,
+                    keyboardMoveDistance: 50,
+                    wheelZoomDistanceFactor: 100,
+                    pinchZoomDistanceFactor: 100,
+                    scrollToZoom: true,
+                }}
+                thumbnails={{
+                    position: 'bottom',
+                    width: 80,
+                    height: 80,
+                    border: 2,
+                    borderRadius: 8,
+                    gap: 8,
+                    padding: 0,
+                }}
+                counter={{
+                    container: { style: { top: 'unset', bottom: 0, left: '50%', transform: 'translateX(-50%)' } },
+                }}
+                styles={{
+                    container: { backgroundColor: 'rgba(0, 0, 0, 0.92)' },
+                    button: { filter: 'none' },
+                }}
+                animation={{
+                    fade: 300,
+                    swipe: 300,
+                }}
+                carousel={{
+                    finite: false,
+                    preload: 2,
+                }}
+                controller={{
+                    closeOnBackdropClick: true,
+                }}
+            />
         </>
     )
 }

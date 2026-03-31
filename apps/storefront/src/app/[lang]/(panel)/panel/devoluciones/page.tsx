@@ -83,12 +83,12 @@ export default async function PanelReturnsPage({
                 <div className="glass rounded-2xl">
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <PackageX className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <PackageX className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                        <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {t('panel.returns.noRequests')}
                         </h3>
-                        <p className="text-sm text-text-secondary leading-relaxed">
+                        <p className="text-sm text-tx-sec leading-relaxed">
                             {t('panel.returns.noRequestsHint') || 'When customers request returns, they will appear here for review.'}
                         </p>
                     </div>
@@ -116,7 +116,7 @@ export default async function PanelReturnsPage({
                                                 {ret.items?.length || 0} item{(ret.items?.length || 0) !== 1 ? 's' : ''}
                                             </PanelBadge>
                                         </PanelTd>
-                                        <PanelTd className="text-text-muted">
+                                        <PanelTd className="text-tx-muted">
                                             {new Date(ret.created_at).toLocaleDateString(
                                                 intlLocale,
                                                 { day: 'numeric', month: 'short', year: 'numeric' }

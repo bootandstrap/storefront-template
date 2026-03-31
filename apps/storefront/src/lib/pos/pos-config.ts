@@ -147,7 +147,38 @@ export interface POSShift {
     status: 'open' | 'closed'
 }
 
-export type POSPanelView = 'history' | 'dashboard' | 'shift' | 'customer' | 'refund' | 'parkedSales' | 'printerSettings' | null
+// ---------------------------------------------------------------------------
+// Split Payment types (Phase 6)
+// ---------------------------------------------------------------------------
+
+export interface SplitPaymentEntry {
+    method: PaymentMethod
+    amount: number        // minor units
+}
+
+export interface SplitPaymentState {
+    entries: SplitPaymentEntry[]
+    remaining: number     // minor units — how much still unassigned
+    total: number         // the cart total being split
+}
+
+// ---------------------------------------------------------------------------
+// Coupon types (Phase 6)
+// ---------------------------------------------------------------------------
+
+export interface POSCoupon {
+    code: string
+    type: 'percentage' | 'fixed' | 'free_product'
+    value: number                    // percentage (0-100) or fixed in minor units
+    minOrderAmount?: number          // optional minimum order in minor units
+    maxUses?: number
+    usedCount: number
+    expiresAt?: string               // ISO
+    productId?: string               // for free_product type
+    active: boolean
+}
+
+export type POSPanelView = 'history' | 'dashboard' | 'shift' | 'customer' | 'refund' | 'parkedSales' | 'printerSettings' | 'splitPayment' | 'loyalty' | 'endOfDay' | null
 
 // ---------------------------------------------------------------------------
 // Customer management types (Sprint 5)

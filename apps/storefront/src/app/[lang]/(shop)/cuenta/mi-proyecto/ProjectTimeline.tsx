@@ -206,11 +206,11 @@ export function ProjectTimeline({ project }: Props) {
     if (!project) {
         return (
             <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mx-auto mb-6">
+                <div className="w-20 h-20 rounded-2xl bg-brand-subtle flex items-center justify-center text-4xl mx-auto mb-6">
                     🏗️
                 </div>
-                <h2 className="text-2xl font-black text-text-primary mb-3">{t('title')}</h2>
-                <p className="text-text-muted text-lg">{t('noProject')}</p>
+                <h2 className="text-2xl font-black text-tx mb-3">{t('title')}</h2>
+                <p className="text-tx-muted text-lg">{t('noProject')}</p>
             </div>
         )
     }
@@ -223,19 +223,19 @@ export function ProjectTimeline({ project }: Props) {
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
             {/* Header */}
             <div className="text-center">
-                <h1 className="text-3xl font-black text-text-primary mb-2">{t('title')}</h1>
-                <p className="text-text-muted">{t('subtitle')}</p>
+                <h1 className="text-3xl font-black text-tx mb-2">{t('title')}</h1>
+                <p className="text-tx-muted">{t('subtitle')}</p>
             </div>
 
             {/* Progress card */}
             <div className="glass rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-text-primary">{t('progress')}</span>
-                    <span className="text-2xl font-black text-primary">{progress}%</span>
+                    <span className="text-sm font-bold text-tx">{t('progress')}</span>
+                    <span className="text-2xl font-black text-brand">{progress}%</span>
                 </div>
-                <div className="h-4 bg-surface-2 rounded-full overflow-hidden">
+                <div className="h-4 bg-sf-2 rounded-full overflow-hidden">
                     <div
-                        className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-primary via-violet-500 to-emerald-500"
+                        className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-brand via-violet-500 to-emerald-500"
                         style={{ width: `${progress}%` }}
                     />
                 </div>
@@ -243,12 +243,12 @@ export function ProjectTimeline({ project }: Props) {
                 {/* Estimated launch date */}
                 {launchInfo && (
                     <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-                        <span className="text-text-muted">{t('estimatedLaunch')}:</span>
-                        <span className="font-bold text-text-primary">
+                        <span className="text-tx-muted">{t('estimatedLaunch')}:</span>
+                        <span className="font-bold text-tx">
                             {launchInfo.formattedDate}
                         </span>
                         {launchInfo.daysLeft > 0 && (
-                            <span className="text-xs text-primary font-medium">({launchInfo.daysLeft} {t('daysLeft')})</span>
+                            <span className="text-xs text-brand font-medium">({launchInfo.daysLeft} {t('daysLeft')})</span>
                         )}
                     </div>
                 )}
@@ -275,8 +275,8 @@ export function ProjectTimeline({ project }: Props) {
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all shrink-0 ${isCompleted
                                             ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
                                             : isActive
-                                                ? 'bg-surface-0 border-[3px] shadow-lg ring-4 ring-primary/10'
-                                                : 'bg-surface-2 border-2 border-surface-3'
+                                                ? 'bg-sf-0 border-[3px] shadow-lg ring-4 ring-soft'
+                                                : 'bg-sf-2 border-2 border-sf-3'
                                             }`}
                                         style={isActive ? { borderColor: config.color } : undefined}
                                     >
@@ -284,26 +284,26 @@ export function ProjectTimeline({ project }: Props) {
                                     </div>
                                     {/* Connector line */}
                                     {i < PROJECT_PHASES.length - 1 && (
-                                        <div className={`w-0.5 flex-1 min-h-[24px] ${isCompleted ? 'bg-emerald-400' : 'bg-surface-3'}`} />
+                                        <div className={`w-0.5 flex-1 min-h-[24px] ${isCompleted ? 'bg-emerald-400' : 'bg-sf-3'}`} />
                                     )}
                                 </div>
 
                                 {/* Phase content */}
                                 <div className={`pb-6 flex-1 ${isFuture ? 'opacity-40' : ''}`}>
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        <h3 className={`font-bold text-base ${isActive ? 'text-primary' : isCompleted ? 'text-text-primary' : 'text-text-muted'}`}>
+                                        <h3 className={`font-bold text-base ${isActive ? 'text-brand' : isCompleted ? 'text-tx' : 'text-tx-muted'}`}>
                                             {config.label[lang] || config.label['en']}
                                         </h3>
                                         {isActive && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary animate-pulse">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-subtle text-brand animate-pulse">
                                                 ● {t('inProgress')}
                                             </span>
                                         )}
                                         {isFuture && (
-                                            <span className="text-[10px] text-text-muted">{t('pending')}</span>
+                                            <span className="text-[10px] text-tx-muted">{t('pending')}</span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-text-muted mb-1">
+                                    <p className="text-sm text-tx-muted mb-1">
                                         {config.description[lang] || config.description['en']}
                                     </p>
                                     {/* Dates */}
@@ -313,7 +313,7 @@ export function ProjectTimeline({ project }: Props) {
                                         </p>
                                     )}
                                     {startedAt && !completedAt && isActive && (
-                                        <p className="text-xs text-primary font-medium">
+                                        <p className="text-xs text-brand font-medium">
                                             {t('since')} {new Date(startedAt).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US')}
                                         </p>
                                     )}

@@ -28,7 +28,7 @@ export default function PanelLoading() {
                 {Array.from({ length: 6 }).map((_, i) => (
                     <div
                         key={i}
-                        className="rounded-2xl border border-surface-2 p-4 space-y-3"
+                        className="rounded-2xl border border-sf-2 p-4 space-y-3"
                     >
                         <SkeletonPulse width="w-3/4" height="h-5" />
                         <SkeletonPulse width="w-1/2" height="h-4" />

@@ -14,6 +14,8 @@ import { getAdminCustomers } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Users } from 'lucide-react'
 import CRMClient from './CRMClient'
 
 export const dynamic = 'force-dynamic'
@@ -60,6 +62,12 @@ export default async function CRMPage({
 
     return (
         <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.crm.title')}
+                subtitle={t('panel.crm.subtitle')}
+                icon={<Users className="w-5 h-5" />}
+                badge={count}
+            />
             <CRMClient
                 segments={segments}
                 totalCustomers={count}

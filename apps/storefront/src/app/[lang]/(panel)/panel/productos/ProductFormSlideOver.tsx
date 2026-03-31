@@ -342,9 +342,9 @@ export default function ProductFormSlideOver({
     // Styles
     // -----------------------------------------------------------------------
 
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
-    const labelClass = 'block text-sm font-medium text-text-secondary mb-1.5'
-    const sectionClass = 'rounded-2xl border border-surface-3 bg-surface-0/50 p-5 space-y-4'
+    const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all'
+    const labelClass = 'block text-sm font-medium text-tx-sec mb-1.5'
+    const sectionClass = 'rounded-2xl border border-sf-3 bg-glass p-5 space-y-4'
 
     return (
         <>
@@ -355,23 +355,23 @@ export default function ProductFormSlideOver({
             />
 
             {/* Slide-over panel */}
-            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-surface-0/95 backdrop-blur-2xl shadow-2xl flex flex-col animate-slide-in-right">
+            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-glass-heavy backdrop-blur-2xl shadow-2xl flex flex-col animate-slide-in-right">
 
                 {/* ── Sticky Header ── */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-3 bg-surface-0/80 backdrop-blur-xl sticky top-0 z-10">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-sf-3 bg-glass-heavy backdrop-blur-xl sticky top-0 z-10">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <PackagePlus className="w-4 h-4 text-primary" />
+                        <div className="w-8 h-8 rounded-xl bg-brand-subtle flex items-center justify-center">
+                            <PackagePlus className="w-4 h-4 text-brand" />
                         </div>
-                        <h2 className="text-lg font-bold text-text-primary">
+                        <h2 className="text-lg font-bold text-tx">
                             {isEditing ? labels.editProduct : labels.createProduct}
                         </h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-xl hover:bg-surface-1 transition-colors"
+                        className="p-2 rounded-xl hover:bg-sf-1 transition-colors"
                     >
-                        <X className="w-5 h-5 text-text-muted" />
+                        <X className="w-5 h-5 text-tx-muted" />
                     </button>
                 </div>
 
@@ -380,8 +380,8 @@ export default function ProductFormSlideOver({
 
                     {/* ═══ MEDIA SECTION ═══ */}
                     <div className={sectionClass}>
-                        <h3 className="font-semibold text-text-primary flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold text-tx flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-brand" />
                             {labels.media}
                         </h3>
 
@@ -394,8 +394,8 @@ export default function ProductFormSlideOver({
                             className={`
                                 relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all
                                 ${dragOver
-                                    ? 'border-primary bg-primary/5 scale-[1.01]'
-                                    : 'border-surface-3 hover:border-primary/40 hover:bg-surface-1/50'
+                                    ? 'border-brand bg-brand-subtle scale-[1.01]'
+                                    : 'border-sf-3 hover:border-brand hover:bg-glass'
                                 }
                                 ${images.length >= maxImagesPerProduct ? 'opacity-50 pointer-events-none' : ''}
                             `}
@@ -408,16 +408,16 @@ export default function ProductFormSlideOver({
                                 onChange={handleFileInput}
                                 className="hidden"
                             />
-                            <Upload className="w-8 h-8 mx-auto text-text-muted mb-2" />
-                            <p className="text-sm font-medium text-text-secondary">{labels.dragDrop}</p>
-                            <p className="text-xs text-text-muted mt-1">{labels.orClick} · {labels.maxSize}</p>
+                            <Upload className="w-8 h-8 mx-auto text-tx-muted mb-2" />
+                            <p className="text-sm font-medium text-tx-sec">{labels.dragDrop}</p>
+                            <p className="text-xs text-tx-muted mt-1">{labels.orClick} · {labels.maxSize}</p>
                         </div>
 
                         {/* Image Thumbnails */}
                         {images.length > 0 && (
                             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                                 {images.map((img, idx) => (
-                                    <div key={img.url + idx} className="relative group aspect-square rounded-xl overflow-hidden border border-surface-3 bg-surface-1">
+                                    <div key={img.url + idx} className="relative group aspect-square rounded-xl overflow-hidden border border-sf-3 bg-sf-1">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={img.url}
@@ -425,7 +425,7 @@ export default function ProductFormSlideOver({
                                             className="w-full h-full object-cover"
                                         />
                                         {idx === 0 && (
-                                            <span className="absolute top-1 left-1 text-[10px] font-bold bg-primary text-white px-1.5 py-0.5 rounded-md">
+                                            <span className="absolute top-1 left-1 text-[10px] font-bold bg-brand text-white px-1.5 py-0.5 rounded-md">
                                                 THUMB
                                             </span>
                                         )}
@@ -446,7 +446,7 @@ export default function ProductFormSlideOver({
                         )}
 
                         {uploadingImage && (
-                            <p className="text-xs text-primary flex items-center gap-2">
+                            <p className="text-xs text-brand flex items-center gap-2">
                                 <Loader2 className="w-3 h-3 animate-spin" />
                                 {labels.uploadingImage}
                             </p>
@@ -455,8 +455,8 @@ export default function ProductFormSlideOver({
 
                     {/* ═══ BASIC INFO SECTION ═══ */}
                     <div className={sectionClass}>
-                        <h3 className="font-semibold text-text-primary flex items-center gap-2">
-                            <Tag className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold text-tx flex items-center gap-2">
+                            <Tag className="w-4 h-4 text-brand" />
                             {labels.basicInfo}
                         </h3>
 
@@ -492,7 +492,7 @@ export default function ProductFormSlideOver({
                                     className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
                                         status === 'published'
                                             ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 shadow-sm'
-                                            : 'border-surface-3 text-text-secondary hover:bg-surface-1'
+                                            : 'border-sf-3 text-tx-sec hover:bg-sf-1'
                                     }`}
                                 >
                                     <Eye className="w-4 h-4" />
@@ -504,7 +504,7 @@ export default function ProductFormSlideOver({
                                     className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
                                         status === 'draft'
                                             ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 shadow-sm'
-                                            : 'border-surface-3 text-text-secondary hover:bg-surface-1'
+                                            : 'border-sf-3 text-tx-sec hover:bg-sf-1'
                                     }`}
                                 >
                                     📝 {labels.draft}
@@ -515,7 +515,7 @@ export default function ProductFormSlideOver({
 
                     {/* ═══ PRICING SECTION ═══ */}
                     <div className={sectionClass}>
-                        <h3 className="font-semibold text-text-primary flex items-center gap-2">
+                        <h3 className="font-semibold text-tx flex items-center gap-2">
                             💰 {labels.pricingVariants}
                         </h3>
 
@@ -525,7 +525,7 @@ export default function ProductFormSlideOver({
                                     {labels.price} ({defaultCurrency.toUpperCase()}) *
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-tx-muted">
                                         {defaultCurrency === 'eur' ? '€' : defaultCurrency === 'usd' ? '$' : defaultCurrency.toUpperCase()}
                                     </span>
                                     <input
@@ -568,7 +568,7 @@ export default function ProductFormSlideOver({
 
                     {/* ═══ DETAILS SECTION ═══ */}
                     <div className={sectionClass}>
-                        <h3 className="font-semibold text-text-primary flex items-center gap-2">
+                        <h3 className="font-semibold text-tx flex items-center gap-2">
                             📋 {labels.details}
                         </h3>
 
@@ -598,7 +598,7 @@ export default function ProductFormSlideOver({
                                         className={`${inputClass} pr-12`}
                                         placeholder="0"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted">
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-tx-muted">
                                         {labels.weightUnit || 'kg'}
                                     </span>
                                 </div>
@@ -612,7 +612,7 @@ export default function ProductFormSlideOver({
                                 {tags.map(tag => (
                                     <span
                                         key={tag}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-subtle text-brand text-xs font-medium"
                                     >
                                         {tag}
                                         <button
@@ -638,7 +638,7 @@ export default function ProductFormSlideOver({
                                 <button
                                     onClick={addTag}
                                     disabled={!tagInput.trim()}
-                                    className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-40"
+                                    className="px-3 py-2 rounded-xl bg-brand-subtle text-brand text-sm font-medium hover:bg-brand-muted transition-colors disabled:opacity-40"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
@@ -652,13 +652,13 @@ export default function ProductFormSlideOver({
                             onClick={() => setSeoOpen(!seoOpen)}
                             className="w-full flex items-center justify-between"
                         >
-                            <h3 className="font-semibold text-text-primary flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-primary" />
+                            <h3 className="font-semibold text-tx flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-brand" />
                                 {labels.seo}
                             </h3>
                             {seoOpen
-                                ? <ChevronUp className="w-4 h-4 text-text-muted" />
-                                : <ChevronDown className="w-4 h-4 text-text-muted" />
+                                ? <ChevronUp className="w-4 h-4 text-tx-muted" />
+                                : <ChevronDown className="w-4 h-4 text-tx-muted" />
                             }
                         </button>
 
@@ -673,7 +673,7 @@ export default function ProductFormSlideOver({
                                         placeholder={title || labels.metaTitle}
                                         maxLength={70}
                                     />
-                                    <p className="text-xs text-text-muted mt-1 text-right">{metaTitle.length}/70</p>
+                                    <p className="text-xs text-tx-muted mt-1 text-right">{metaTitle.length}/70</p>
                                 </div>
                                 <div>
                                     <label className={labelClass}>{labels.metaDescription}</label>
@@ -685,12 +685,12 @@ export default function ProductFormSlideOver({
                                         maxLength={160}
                                         rows={2}
                                     />
-                                    <p className="text-xs text-text-muted mt-1 text-right">{metaDescription.length}/160</p>
+                                    <p className="text-xs text-tx-muted mt-1 text-right">{metaDescription.length}/160</p>
                                 </div>
                                 <div>
                                     <label className={labelClass}>{labels.urlHandle}</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-text-muted">/productos/</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-tx-muted">/productos/</span>
                                         <input
                                             value={handle}
                                             onChange={e => setHandle(slugify(e.target.value))}
@@ -701,8 +701,8 @@ export default function ProductFormSlideOver({
 
                                 {/* SEO Preview */}
                                 {(metaTitle || title) && (
-                                    <div className="rounded-xl bg-surface-1 p-4 space-y-1">
-                                        <p className="text-xs text-text-muted">Vista previa</p>
+                                    <div className="rounded-xl bg-sf-1 p-4 space-y-1">
+                                        <p className="text-xs text-tx-muted">Vista previa</p>
                                         <p className="text-sm font-medium text-[#1a0dab] truncate">
                                             {metaTitle || title}
                                         </p>
@@ -710,7 +710,7 @@ export default function ProductFormSlideOver({
                                             tienda.com/productos/{handle || slugify(title)}
                                         </p>
                                         {(metaDescription || description) && (
-                                            <p className="text-xs text-text-muted line-clamp-2">
+                                            <p className="text-xs text-tx-muted line-clamp-2">
                                                 {metaDescription || description}
                                             </p>
                                         )}
@@ -722,7 +722,7 @@ export default function ProductFormSlideOver({
                 </div>
 
                 {/* ── Sticky Footer ── */}
-                <div className="border-t border-surface-3 px-6 py-4 bg-surface-0/80 backdrop-blur-xl flex items-center gap-3">
+                <div className="border-t border-sf-3 px-6 py-4 bg-glass-heavy backdrop-blur-xl flex items-center gap-3">
                     {isEditing && (
                         <button
                             onClick={handleDelete}
@@ -739,7 +739,7 @@ export default function ProductFormSlideOver({
                     <button
                         onClick={() => handleSubmit('draft')}
                         disabled={isPending || !title.trim()}
-                        className="px-5 py-2.5 rounded-xl border border-surface-3 text-sm font-medium text-text-secondary hover:bg-surface-1 transition-all disabled:opacity-40 flex items-center gap-2"
+                        className="px-5 py-2.5 rounded-xl border border-sf-3 text-sm font-medium text-tx-sec hover:bg-sf-1 transition-all disabled:opacity-40 flex items-center gap-2"
                     >
                         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {labels.saveDraft}
@@ -748,7 +748,7 @@ export default function ProductFormSlideOver({
                     <button
                         onClick={() => handleSubmit('published')}
                         disabled={isPending || !title.trim()}
-                        className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 shadow-lg shadow-primary/20 flex items-center gap-2"
+                        className="px-5 py-2.5 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand transition-all disabled:opacity-40 shadow-lg shadow-brand-soft flex items-center gap-2"
                     >
                         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                         {labels.publish}

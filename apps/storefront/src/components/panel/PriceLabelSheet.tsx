@@ -147,7 +147,7 @@ export default function PriceLabelSheet({
 
     if (items.length === 0) {
         return (
-            <div className="text-center py-12 text-text-muted">
+            <div className="text-center py-12 text-tx-muted">
                 <Barcode className="w-8 h-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">{l.noProducts}</p>
             </div>
@@ -158,13 +158,13 @@ export default function PriceLabelSheet({
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex items-center justify-between">
-                <p className="text-sm text-text-muted">
+                <p className="text-sm text-tx-muted">
                     {l.count.replace('{{count}}', String(items.length))}
                 </p>
                 <button
                     type="button"
                     onClick={handlePrint}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-dark transition-colors"
                 >
                     <Printer className="w-4 h-4" />
                     {l.print}

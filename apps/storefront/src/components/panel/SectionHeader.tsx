@@ -34,23 +34,23 @@ export default function SectionHeader({
         <div className={`flex items-start justify-between gap-4 mb-5 ${className}`}>
             <div className="flex items-center gap-3 min-w-0">
                 {icon && (
-                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/5 flex items-center justify-center text-primary">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-brand-subtle to-brand-subtle flex items-center justify-center text-brand">
                         {icon}
                     </div>
                 )}
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-semibold font-display text-text-primary truncate">
+                        <h2 className="text-lg font-semibold font-display text-tx truncate">
                             {title}
                         </h2>
                         {badge !== undefined && badge !== null && (
-                            <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                            <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-brand-subtle text-brand text-xs font-bold">
                                 {badge}
                             </span>
                         )}
                     </div>
                     {description && (
-                        <p className="text-sm text-text-muted mt-0.5 truncate">
+                        <p className="text-sm text-tx-muted mt-0.5 truncate">
                             {description}
                         </p>
                     )}

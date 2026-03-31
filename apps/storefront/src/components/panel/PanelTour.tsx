@@ -154,18 +154,18 @@ export default function PanelTour({ steps, onComplete, t, isReplay = false }: Pa
             <div
                 ref={tooltipRef}
                 style={tooltipStyle}
-                className={`w-72 bg-surface-1 rounded-xl shadow-2xl border border-surface-3 overflow-hidden transition-all duration-300 pointer-events-auto ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+                className={`w-72 bg-sf-1 rounded-xl shadow-2xl border border-sf-3 overflow-hidden transition-all duration-300 pointer-events-auto ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
                     }`}
             >
                 {/* Step counter + skip */}
                 <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                    <span className="text-xs text-text-muted font-medium">
+                    <span className="text-xs text-tx-muted font-medium">
                         {currentStep + 1} {t('tour.of') || 'of'} {steps.length}
                     </span>
                     <button
                         type="button"
                         onClick={handleSkip}
-                        className="text-text-muted/50 hover:text-text-muted transition-colors"
+                        className="text-tx-faint hover:text-tx-muted transition-colors"
                         aria-label={t('tour.skip') || 'Skip tour'}
                     >
                         <X className="w-4 h-4" />
@@ -174,29 +174,29 @@ export default function PanelTour({ steps, onComplete, t, isReplay = false }: Pa
 
                 {/* Content */}
                 <div className="px-4 pb-3">
-                    <h3 className="text-sm font-bold text-text-primary mb-1">
+                    <h3 className="text-sm font-bold text-tx mb-1">
                         {step?.title}
                     </h3>
-                    <p className="text-xs text-text-muted leading-relaxed">
+                    <p className="text-xs text-tx-muted leading-relaxed">
                         {step?.description}
                     </p>
                 </div>
 
                 {/* Progress bar */}
-                <div className="h-0.5 bg-surface-3">
+                <div className="h-0.5 bg-sf-3">
                     <div
-                        className="h-full bg-primary transition-all duration-500"
+                        className="h-full bg-brand transition-all duration-500"
                         style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
                     />
                 </div>
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-surface-2/50">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-glass">
                     <button
                         type="button"
                         onClick={goBack}
                         disabled={currentStep === 0}
-                        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 text-xs text-tx-muted hover:text-tx disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                         <ChevronLeft className="w-3 h-3" />
                         {t('tour.prev') || 'Back'}
@@ -205,7 +205,7 @@ export default function PanelTour({ steps, onComplete, t, isReplay = false }: Pa
                     <button
                         type="button"
                         onClick={goNext}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark transition-colors"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:text-brand-dark transition-colors"
                     >
                         {isLast ? (t('tour.finish') || 'Got it!') : (t('tour.next') || 'Next')}
                         {!isLast && <ChevronRight className="w-3 h-3" />}
@@ -230,7 +230,7 @@ export default function PanelTour({ steps, onComplete, t, isReplay = false }: Pa
                 <div className="fixed inset-0 z-[70] pointer-events-none flex items-center justify-center">
                     <div className="text-center animate-fade-in">
                         <p className="text-4xl mb-2">🎉</p>
-                        <p className="text-lg font-bold text-text-primary">
+                        <p className="text-lg font-bold text-tx">
                             {isReplay
                                 ? (t('tour.replayDone') || 'Tour revisited!')
                                 : (t('tour.congrats') || 'Tour complete!')}

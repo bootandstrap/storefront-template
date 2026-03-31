@@ -75,17 +75,17 @@ function LanguageSelector({
 }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md bg-surface-1 rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+            <div className="w-full max-w-md bg-sf-1 rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
                 <div className="px-8 pt-8 pb-4">
                     <div className="flex items-center gap-3 mb-1">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center">
                             <span className="text-xl">🌍</span>
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold font-display text-text-primary">
+                            <h2 className="text-xl font-bold font-display text-tx">
                                 {t('onboarding.language.title') || 'Language Preferences'}
                             </h2>
-                            <p className="text-xs text-text-muted">
+                            <p className="text-xs text-tx-muted">
                                 {t('onboarding.language.subtitle') || 'Choose your preferred languages'}
                             </p>
                         </div>
@@ -94,10 +94,10 @@ function LanguageSelector({
 
                 {/* Panel Language */}
                 <div className="px-8 pb-4">
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">
+                    <label className="block text-sm font-semibold text-tx-sec mb-2">
                         🖥️ {t('onboarding.language.panel') || 'Panel Language'}
                     </label>
-                    <p className="text-xs text-text-muted mb-3">
+                    <p className="text-xs text-tx-muted mb-3">
                         {t('onboarding.language.panelDesc') || 'Language for your control panel'}
                     </p>
                     <div className="grid grid-cols-5 gap-2">
@@ -108,12 +108,12 @@ function LanguageSelector({
                                 onClick={() => onPanelLangChange(lang.code)}
                                 className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
                                     panelLang === lang.code
-                                        ? 'border-primary bg-primary/5 shadow-sm shadow-primary/20'
-                                        : 'border-surface-3 hover:border-surface-4 hover:bg-surface-2'
+                                        ? 'border-brand bg-brand-subtle shadow-sm shadow-brand-soft'
+                                        : 'border-sf-3 hover:border-sf-4 hover:bg-sf-2'
                                 }`}
                             >
                                 <span className="text-2xl">{lang.flag}</span>
-                                <span className="text-[10px] font-medium text-text-muted">{lang.label}</span>
+                                <span className="text-[10px] font-medium text-tx-muted">{lang.label}</span>
                             </button>
                         ))}
                     </div>
@@ -121,10 +121,10 @@ function LanguageSelector({
 
                 {/* Storefront Language */}
                 <div className="px-8 pb-4">
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">
+                    <label className="block text-sm font-semibold text-tx-sec mb-2">
                         🛍️ {t('onboarding.language.storefront') || 'Storefront Language'}
                     </label>
-                    <p className="text-xs text-text-muted mb-3">
+                    <p className="text-xs text-tx-muted mb-3">
                         {t('onboarding.language.storefrontDesc') || 'Default language your customers will see'}
                     </p>
                     <div className="grid grid-cols-5 gap-2">
@@ -135,20 +135,20 @@ function LanguageSelector({
                                 onClick={() => onStorefrontLangChange(lang.code)}
                                 className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
                                     storefrontLang === lang.code
-                                        ? 'border-primary bg-primary/5 shadow-sm shadow-primary/20'
-                                        : 'border-surface-3 hover:border-surface-4 hover:bg-surface-2'
+                                        ? 'border-brand bg-brand-subtle shadow-sm shadow-brand-soft'
+                                        : 'border-sf-3 hover:border-sf-4 hover:bg-sf-2'
                                 }`}
                             >
                                 <span className="text-2xl">{lang.flag}</span>
-                                <span className="text-[10px] font-medium text-text-muted">{lang.label}</span>
+                                <span className="text-[10px] font-medium text-tx-muted">{lang.label}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* More languages upsell */}
-                <div className="mx-8 mb-4 p-3 rounded-xl bg-primary/5 border border-primary/10">
-                    <p className="text-xs text-text-muted">
+                <div className="mx-8 mb-4 p-3 rounded-xl bg-brand-subtle border border-brand-soft">
+                    <p className="text-xs text-tx-muted">
                         💡 {t('onboarding.language.upsell') || 'Need more languages? Enable the Multi-Language module from your control center.'}
                     </p>
                 </div>

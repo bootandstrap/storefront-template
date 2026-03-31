@@ -307,6 +307,65 @@ export const POS_DEFAULT_LABELS: Record<string, string> = {
     'panel.pos.refundReceipt': 'Comprobante de devolución',
     'panel.pos.originalOrder': 'Pedido original',
     'panel.pos.close': 'Cerrar',
+
+    // ── Phase 6: Split Payment ──
+    'panel.pos.splitPayment': 'Pago dividido',
+    'panel.pos.addMethod': 'Añadir método',
+    'panel.pos.splitEvenly': 'Dividir igual',
+    'panel.pos.fullyAllocated': '✓ Totalmente asignado',
+    'panel.pos.overage': 'Excede el total',
+    'panel.pos.remaining': 'Restante',
+    'panel.pos.confirmSplit': 'Confirmar pago',
+
+    // ── Phase 6: Loyalty Program ──
+    'panel.pos.loyaltyCard': 'Tarjeta de fidelidad',
+    'panel.pos.loyaltyProgram': 'Programa de fidelidad',
+    'panel.pos.loyaltySubtitle': 'Sellos y recompensas',
+    'panel.pos.stampCard': 'Tarjeta',
+    'panel.pos.noCustomer': 'Sin cliente seleccionado',
+    'panel.pos.selectCustomerLoyalty': 'Selecciona un cliente para ver su tarjeta de fidelidad',
+    'panel.pos.rewardsRedeemed': 'recompensas canjeadas',
+    'panel.pos.almostThere': '¡Casi!',
+    'panel.pos.reward': 'Recompensa',
+    'panel.pos.addStamp': 'Añadir sello',
+    'panel.pos.stamped': '✓ Sellado',
+    'panel.pos.redeemReward': '¡Canjear!',
+    'panel.pos.rewardRedeemed': '¡Recompensa canjeada!',
+    'panel.pos.noRedemptions': 'Sin canjes anteriores',
+    'panel.pos.stampAdded': 'Sello añadido',
+
+    // ── Phase 6: End-of-Day Report ──
+    'panel.pos.endOfDayReport': 'Cierre del día',
+    'panel.pos.summary': 'Resumen',
+    'panel.pos.shifts': 'Turnos',
+    'panel.pos.paymentBreakdown': 'Desglose por método',
+    'panel.pos.peakHour': 'Hora punta',
+    'panel.pos.exportCSV': 'Exportar CSV',
+    'panel.pos.exportReport': 'Exportar CSV',
+    'panel.pos.noShifts': 'Sin turnos registrados hoy',
+    'panel.pos.cashVariance': 'Variación de caja',
+    'panel.pos.expected': 'Esperado',
+    'panel.pos.actual': 'Real',
+    'panel.pos.open': 'Abierto',
+    'panel.pos.closed': 'Cerrado',
+    'panel.pos.bestDay': 'Mejor día',
+    'panel.pos.worstDay': 'Día más bajo',
+    'panel.pos.weekOverview': 'Semana',
+    'panel.pos.weeklyTrend': 'Tendencia semanal',
+    'panel.pos.previousDay': 'Día anterior',
+    'panel.pos.nextDay': 'Día siguiente',
+    'panel.pos.noData': 'No hay datos para esta semana',
+
+    // ── Phase 6: Coupon Codes ──
+    'panel.pos.enterCoupon': 'Código cupón',
+    'panel.pos.apply': 'Aplicar',
+    'panel.pos.invalidCoupon': 'Cupón no válido',
+    'panel.pos.freeProduct': 'Producto gratis',
+
+    // ── Phase 6: Recommendations ──
+    'panel.pos.suggestions': 'Sugerencias',
+    'panel.pos.boughtWith': 'Comprado con',
+    'panel.pos.add': 'Añadir',
 }
 
 // ---------------------------------------------------------------------------

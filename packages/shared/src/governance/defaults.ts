@@ -139,6 +139,12 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_traffic_expansion: false,
         enable_traffic_analytics: false,
         enable_traffic_autoscale: false,
+        // New module gates (Phase 4)
+        enable_seo: false,
+        enable_social_media: false,
+        enable_automations: false,
+        enable_auth_advanced: false,
+        enable_sales_channels: false,
     },
     planLimits: {
         // MINIMUM VALUES — no capacity granted during degradation

@@ -117,7 +117,7 @@ export default function POSOfflineBanner({
                     <button
                         onClick={onSyncNow}
                         aria-label={labels['panel.pos.retry'] || 'Retry sync'}
-                        className="px-3 py-1.5 rounded-md bg-white/20 hover:bg-white/30 min-h-[36px]
+                        className="px-3 py-1.5 rounded-md bg-white/20 hover:bg-glass min-h-[36px]
                                    text-xs font-medium transition-colors
                                    focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                     >

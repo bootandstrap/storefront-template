@@ -36,14 +36,14 @@ export default function UsageMeter({
     return (
         <div className={`glass rounded-xl p-4 transition-all duration-300 ${isCritical ? 'usage-critical' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-text-secondary">{label}</span>
+                <span className="text-sm font-medium text-tx-sec">{label}</span>
                 <span className={`text-sm font-bold ${textColor}`}>
                     {result.current}{unit} / {result.limit}{unit}
                 </span>
             </div>
 
             {/* Progress bar with animated width */}
-            <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+            <div className="h-2 bg-sf-2 rounded-full overflow-hidden">
                 <div
                     className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
                     style={{ width: `${Math.min(result.percentage, 100)}%` }}
@@ -52,7 +52,7 @@ export default function UsageMeter({
 
             {/* Status row */}
             <div className="flex items-center justify-between mt-1.5">
-                <span className="text-xs text-text-muted">
+                <span className="text-xs text-tx-muted">
                     {result.remaining} {unit} remaining
                 </span>
                 <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export default function UsageMeter({
                             href={upgradeHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] font-semibold text-primary hover:underline"
+                            className="text-[10px] font-semibold text-brand hover:underline"
                         >
                             {upgradeLabel} →
                         </a>

@@ -49,7 +49,7 @@ export default function SocialShare({ url, title, description }: SocialShareProp
 
     return (
         <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted mr-1">{t('share.label')}</span>
+            <span className="text-xs text-tx-muted mr-1">{t('share.label')}</span>
 
             {/* WhatsApp */}
             <a
@@ -65,13 +65,13 @@ export default function SocialShare({ url, title, description }: SocialShareProp
             {/* Copy link */}
             <button
                 onClick={handleCopy}
-                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-glass flex items-center justify-center transition-colors"
                 aria-label={copied ? t('share.copied') : t('share.copyLink')}
             >
                 {copied ? (
                     <Check className="w-4 h-4 text-green-400" />
                 ) : (
-                    <Copy className="w-4 h-4 text-text-muted" />
+                    <Copy className="w-4 h-4 text-tx-muted" />
                 )}
             </button>
 
@@ -79,10 +79,10 @@ export default function SocialShare({ url, title, description }: SocialShareProp
             {supportsNativeShare && (
                 <button
                     onClick={handleNativeShare}
-                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-glass flex items-center justify-center transition-colors"
                     aria-label={t('share.native')}
                 >
-                    <Share2 className="w-4 h-4 text-text-muted" />
+                    <Share2 className="w-4 h-4 text-tx-muted" />
                 </button>
             )}
         </div>

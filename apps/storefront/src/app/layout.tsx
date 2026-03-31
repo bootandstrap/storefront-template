@@ -10,9 +10,16 @@ import { CartProvider } from '@/contexts/CartContext'
 import { WishlistProvider } from '@/contexts/WishlistContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { ToastProvider } from '@/components/ui/Toaster'
+import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import AnalyticsTracker from '@/components/ui/AnalyticsTracker'
 import ServiceWorkerRegister from '@/components/ui/ServiceWorkerRegister'
+import NextTopLoader from 'nextjs-toploader'
+import { initOpenFeature } from '@/lib/openfeature'
 import './globals.css'
+
+// Initialize OpenFeature SDK with BootandStrap governance provider.
+// Must happen at module level so it's ready before any component renders.
+initOpenFeature()
 
 // ---------------------------------------------------------------------------
 // Fonts
@@ -36,13 +43,24 @@ const outfit = Outfit({
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getConfig()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+
   return {
+    metadataBase: siteUrl ? new URL(siteUrl) : undefined,
     title: {
       default: config.meta_title || config.business_name,
       template: `%s | ${config.business_name}`,
     },
     description: config.meta_description || `Online store — ${config.business_name}`,
     icons: config.favicon_url ? { icon: config.favicon_url } : undefined,
+    alternates: siteUrl ? {
+      canonical: siteUrl,
+      languages: {
+        'es': `${siteUrl}/es`,
+        'en': `${siteUrl}/en`,
+        'x-default': `${siteUrl}/es`,
+      },
+    } : undefined,
   }
 }
 
@@ -76,19 +94,18 @@ export default async function RootLayout({
   const secondaryLight = lightenHex(colors.secondary, 15)
   const accentLight = lightenHex(colors.accent, 15)
 
-  // Resolve theme mode
+  // Resolve theme mode — default from config, client can override via next-themes
   const themeMode = config.theme_mode || 'light'
   const htmlClasses = [
     inter.variable,
     outfit.variable,
-    themeMode === 'dark' ? 'dark' : '',
   ].filter(Boolean).join(' ')
 
   return (
     <html
       lang={htmlLang}
       className={htmlClasses}
-      data-theme={themeMode}
+      suppressHydrationWarning
       style={{
         '--config-primary': colors.primary,
         '--config-primary-light': primaryLight,
@@ -116,21 +133,34 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={colors.primary} />
-        <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
+        {/* PWA */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen flex flex-col antialiased">
+        <NextTopLoader
+          color="var(--color-brand)"
+          height={2}
+          showSpinner={false}
+          shadow={false}
+        />
         <RuntimeEnvScript />
-        <CartProvider>
-          <WishlistProvider isAuthenticated={isAuthenticated}>
-            <CompareProvider>
-              <ToastProvider>
-                {children}
-                <AnalyticsTracker enabled={featureFlags.enable_analytics} />
-                <ServiceWorkerRegister />
-              </ToastProvider>
-            </CompareProvider>
-          </WishlistProvider>
-        </CartProvider>
+        <ThemeProvider defaultTheme={themeMode}>
+          <CartProvider>
+            <WishlistProvider isAuthenticated={isAuthenticated}>
+              <CompareProvider>
+                <ToastProvider>
+                  {children}
+                  <AnalyticsTracker enabled={featureFlags.enable_analytics} />
+                  <ServiceWorkerRegister />
+                </ToastProvider>
+              </CompareProvider>
+            </WishlistProvider>
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

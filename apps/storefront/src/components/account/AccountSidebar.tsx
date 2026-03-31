@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, Search, LogOut } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import type { FeatureFlags } from '@/lib/config'
 
@@ -34,6 +34,7 @@ export default function AccountSidebar({
         ...(featureFlags.enable_wishlist
             ? [{ href: `/${lang}/cuenta/favoritos`, label: t('account.wishlist') || 'Favorites', icon: Heart, exact: false, flag: true }]
             : []),
+        { href: `/${lang}/cuenta/buscar-pedido`, label: t('guestOrder.title') || 'Track Order', icon: Search, exact: false, flag: true },
     ]
 
     function isActive(href: string, exact: boolean) {
@@ -45,12 +46,12 @@ export default function AccountSidebar({
         <aside className="space-y-6">
             {/* User info */}
             <div className="glass rounded-xl p-4 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-lg font-bold">
+                <div className="w-12 h-12 rounded-full bg-brand-subtle flex items-center justify-center text-brand text-lg font-bold">
                     {displayName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                    <p className="text-sm font-semibold text-text-primary truncate">{displayName}</p>
-                    <p className="text-xs text-text-muted truncate">{email}</p>
+                    <p className="text-sm font-semibold text-tx truncate">{displayName}</p>
+                    <p className="text-xs text-tx-muted truncate">{email}</p>
                 </div>
             </div>
 
@@ -62,9 +63,9 @@ export default function AccountSidebar({
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 text-sm transition-all border-b border-surface-3 last:border-b-0 ${active
-                                ? 'bg-primary/10 text-primary font-medium border-l-2 border-l-primary'
-                                : 'text-text-secondary hover:bg-surface-2 hover:text-primary'
+                            className={`flex items-center gap-3 px-4 py-3 text-sm transition-all border-b border-sf-3 last:border-b-0 ${active
+                                ? 'bg-brand-subtle text-brand font-medium border-l-2 border-l-primary'
+                                : 'text-tx-sec hover:bg-sf-2 hover:text-brand'
                                 }`}
                         >
                             <item.icon className="w-4 h-4" />

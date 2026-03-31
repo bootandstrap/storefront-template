@@ -126,7 +126,7 @@ export default function POSReceipt({
 
                 {/* Card */}
                 <motion.div
-                    className="relative bg-surface-0 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                    className="relative bg-sf-0 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
                     initial={{ opacity: 0, scale: 0.85, y: 40 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ type: 'spring', damping: 22, stiffness: 280, delay: 0.1 }}
@@ -167,10 +167,10 @@ export default function POSReceipt({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.35 }}
                     >
-                        <div className="text-center text-xs text-text-muted font-mono">{businessName}</div>
+                        <div className="text-center text-xs text-tx-muted font-mono">{businessName}</div>
 
                         {/* Items */}
-                        <div className="space-y-1.5 border-y border-dashed border-surface-3 py-3">
+                        <div className="space-y-1.5 border-y border-dashed border-sf-3 py-3">
                             {sale.items.map((item, idx) => (
                                 <motion.div
                                     key={item.id}
@@ -179,10 +179,10 @@ export default function POSReceipt({
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.4 + idx * 0.05 }}
                                 >
-                                    <span className="text-text-primary">
+                                    <span className="text-tx">
                                         {item.quantity}× {item.title}
                                     </span>
-                                    <span className="font-medium text-text-primary">
+                                    <span className="font-medium text-tx">
                                         {formatCurrency(item.unit_price * item.quantity)}
                                     </span>
                                 </motion.div>
@@ -191,7 +191,7 @@ export default function POSReceipt({
 
                         {/* Totals */}
                         <div className="space-y-1 text-xs">
-                            <div className="flex justify-between text-text-secondary">
+                            <div className="flex justify-between text-tx-sec">
                                 <span>{posLabel('panel.pos.subtotal', labels)}</span>
                                 <span>{formatCurrency(sale.subtotal)}</span>
                             </div>
@@ -202,13 +202,13 @@ export default function POSReceipt({
                                 </div>
                             )}
                             {sale.tax_amount > 0 && (
-                                <div className="flex justify-between text-text-secondary">
+                                <div className="flex justify-between text-tx-sec">
                                     <span>{posLabel('panel.pos.tax', labels)}</span>
                                     <span>{formatCurrency(sale.tax_amount)}</span>
                                 </div>
                             )}
                             <motion.div
-                                className="flex justify-between text-base font-bold text-text-primary pt-2 border-t border-surface-2"
+                                className="flex justify-between text-base font-bold text-tx pt-2 border-t border-sf-2"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.6 }}
@@ -219,19 +219,19 @@ export default function POSReceipt({
                         </div>
 
                         {/* Payment info */}
-                        <div className="flex justify-between text-xs text-text-secondary bg-surface-1 rounded-lg p-2">
+                        <div className="flex justify-between text-xs text-tx-sec bg-sf-1 rounded-lg p-2">
                             <span>{posLabel('panel.pos.paymentMethod', labels)}</span>
                             <span className="font-medium">{paymentLabel}</span>
                         </div>
 
                         {sale.customer_name && (
-                            <div className="flex justify-between text-xs text-text-secondary bg-surface-1 rounded-lg p-2">
+                            <div className="flex justify-between text-xs text-tx-sec bg-sf-1 rounded-lg p-2">
                                 <span>{posLabel('panel.pos.customer', labels)}</span>
                                 <span className="font-medium">{sale.customer_name}</span>
                             </div>
                         )}
 
-                        <p className="text-center text-xs text-text-muted italic mt-2">
+                        <p className="text-center text-xs text-tx-muted italic mt-2">
                             {posLabel('panel.pos.thankYou', labels)}
                         </p>
                     </motion.div>
@@ -249,8 +249,8 @@ export default function POSReceipt({
                             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium
                                        transition-colors ${
                                 printMode === 'ticket'
-                                    ? 'bg-primary/10 text-primary border border-primary/30'
-                                    : 'text-text-muted hover:bg-surface-1 border border-transparent'
+                                    ? 'bg-brand-subtle text-brand border border-brand'
+                                    : 'text-tx-muted hover:bg-sf-1 border border-transparent'
                             }`}
                         >
                             <Receipt className="w-3.5 h-3.5" />
@@ -262,8 +262,8 @@ export default function POSReceipt({
                             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium
                                        transition-colors ${
                                 printMode === 'invoice'
-                                    ? 'bg-primary/10 text-primary border border-primary/30'
-                                    : 'text-text-muted hover:bg-surface-1 border border-transparent'
+                                    ? 'bg-brand-subtle text-brand border border-brand'
+                                    : 'text-tx-muted hover:bg-sf-1 border border-transparent'
                             }`}
                         >
                             <FileText className="w-3.5 h-3.5" />
@@ -283,12 +283,12 @@ export default function POSReceipt({
                             disabled={!canThermalPrint}
                             aria-label={posLabel('panel.pos.printReceipt', labels)}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl min-h-[44px]
-                                       border border-surface-3 text-sm font-medium
+                                       border border-sf-3 text-sm font-medium
                                        transition-colors active:scale-[0.97]
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 canThermalPrint
-                                    ? 'text-text-secondary hover:bg-surface-1'
-                                    : 'text-text-muted/40 cursor-not-allowed'
+                                    ? 'text-tx-sec hover:bg-sf-1'
+                                    : 'text-tx-faint cursor-not-allowed'
                             }`}
                             title={canThermalPrint
                                 ? posLabel('panel.pos.printReceipt', labels)
@@ -298,7 +298,7 @@ export default function POSReceipt({
                             <Printer className="w-4 h-4" />
                             {posLabel('panel.pos.printReceipt', labels)}
                             {!canThermalPrint && (
-                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-text-muted/60 font-semibold">
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">
                                     Enterprise
                                 </span>
                             )}
@@ -314,9 +314,9 @@ export default function POSReceipt({
                                 }}
                                 aria-label={posLabel('panel.pos.shareReceipt', labels) || 'Share receipt'}
                                 className="w-[44px] flex items-center justify-center rounded-xl min-h-[44px]
-                                           border border-surface-3 text-text-secondary hover:bg-surface-1
+                                           border border-sf-3 text-tx-sec hover:bg-sf-1
                                            transition-colors active:scale-[0.97]
-                                           focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                           focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                                 title={posLabel('panel.pos.shareReceipt', labels) || 'Share receipt'}
                             >
                                 <Share2 className="w-4 h-4" />
@@ -326,8 +326,8 @@ export default function POSReceipt({
                             onClick={onNewSale}
                             aria-label={posLabel('panel.pos.newSale', labels)}
                             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl min-h-[44px]
-                                       bg-primary text-white text-sm font-bold
-                                       hover:bg-primary-dark transition-colors active:scale-[0.97]
+                                       bg-brand text-white text-sm font-bold
+                                       hover:bg-brand-dark transition-colors active:scale-[0.97]
                                        focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
                         >
                             <Plus className="w-4 h-4" />

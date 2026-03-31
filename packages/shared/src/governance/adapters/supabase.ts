@@ -66,16 +66,34 @@ export class SupabaseAdapter implements GovernanceAdapter {
         const sb = this.ensureClient()
         const { data, error } = await sb
             .from('module_orders')
-            .select('id, module_key, tier_name, status')
+            .select(`
+                id, status,
+                module_order_items (
+                    module_key,
+                    tier_name
+                )
+            `)
             .eq('tenant_id', tenantId)
+            .in('status', ['active', 'paid', 'completed', 'confirmed'])
         if (error || !data) return []
 
-        return (data as any[]).map((row) => ({
-            moduleKey: row.module_key,
-            tierName: row.tier_name,
-            status: row.status,
-            orderId: row.id,
-        }))
+        const modules: ActiveModule[] = []
+        for (const order of data as any[]) {
+            const items = Array.isArray(order.module_order_items)
+                ? order.module_order_items
+                : order.module_order_items ? [order.module_order_items] : []
+            for (const item of items) {
+                if (item.module_key) {
+                    modules.push({
+                        moduleKey: item.module_key,
+                        tierName: item.tier_name,
+                        status: order.status,
+                        orderId: order.id,
+                    })
+                }
+            }
+        }
+        return modules
     }
 
     async getConfig(tenantId: string): Promise<StoreConfig | null> {

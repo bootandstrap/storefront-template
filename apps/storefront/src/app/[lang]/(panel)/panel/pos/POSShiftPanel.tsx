@@ -130,37 +130,37 @@ export default function POSShiftPanel({
 
             {/* Modal */}
             <motion.div
-                className="relative bg-surface-0 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-surface-2"
+                className="relative bg-sf-0 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-sf-2"
                 initial={{ opacity: 0, scale: 0.9, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-sf-2">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 flex items-center justify-center">
                             <Clock className="w-5 h-5 text-indigo-600" />
                         </div>
-                        <h2 className="font-bold text-text-primary text-base">
+                        <h2 className="font-bold text-tx text-base">
                             {labels['panel.pos.shift'] || 'Turno'}
                         </h2>
                     </div>
                     <button
                         onClick={onClose}
                         aria-label={labels['panel.pos.close'] || 'Close'}
-                        className="p-2 rounded-xl hover:bg-surface-1 transition-colors min-h-[44px] min-w-[44px]
+                        className="p-2 rounded-xl hover:bg-sf-1 transition-colors min-h-[44px] min-w-[44px]
                                    flex items-center justify-center
-                                   focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                     >
-                        <X className="w-4 h-4 text-text-muted" />
+                        <X className="w-4 h-4 text-tx-muted" />
                     </button>
                 </div>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <div className="space-y-3 w-full px-5">
-                            <div className="h-24 rounded-2xl bg-surface-1 animate-pulse" />
-                            <div className="h-12 rounded-2xl bg-surface-1 animate-pulse" />
+                            <div className="h-24 rounded-2xl bg-sf-1 animate-pulse" />
+                            <div className="h-12 rounded-2xl bg-sf-1 animate-pulse" />
                         </div>
                     </div>
                 ) : (
@@ -224,14 +224,14 @@ export default function POSShiftPanel({
                                 ) : (
                                     <>
                                         <div className="text-center py-6">
-                                            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-surface-1 border border-surface-2
+                                            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-sf-1 border border-sf-2
                                                             flex items-center justify-center">
-                                                <Clock className="w-7 h-7 text-text-muted" />
+                                                <Clock className="w-7 h-7 text-tx-muted" />
                                             </div>
-                                            <p className="text-sm text-text-secondary font-medium">
+                                            <p className="text-sm text-tx-sec font-medium">
                                                 {labels['panel.pos.noActiveShift'] || 'No hay turno activo'}
                                             </p>
-                                            <p className="text-xs text-text-muted mt-1">
+                                            <p className="text-xs text-tx-muted mt-1">
                                                 {labels['panel.pos.openShiftHint'] || 'Abre un turno para comenzar a registrar ventas'}
                                             </p>
                                         </div>
@@ -239,10 +239,10 @@ export default function POSShiftPanel({
                                         <button
                                             onClick={() => { setView('open'); setCashInput('') }}
                                             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl min-h-[48px]
-                                                       bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20
-                                                       hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5
+                                                       bg-brand text-white font-bold text-sm shadow-lg shadow-brand-soft
+                                                       hover:shadow-xl hover:shadow-brand-soft hover:-translate-y-0.5
                                                        transition-all duration-300
-                                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                                         >
                                             <Play className="w-4 h-4" />
                                             {labels['panel.pos.openShift'] || 'Abrir turno'}
@@ -252,29 +252,29 @@ export default function POSShiftPanel({
 
                                 {/* Past shifts */}
                                 {shiftHistory.length > 0 && (
-                                    <div className="border-t border-surface-2 pt-4">
-                                        <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-3">
+                                    <div className="border-t border-sf-2 pt-4">
+                                        <h3 className="text-xs font-bold text-tx-sec uppercase tracking-wider mb-3">
                                             {labels['panel.pos.pastShifts'] || 'Turnos anteriores'}
                                         </h3>
                                         <div className="space-y-2 max-h-36 overflow-y-auto">
                                             {shiftHistory.filter(s => s.status === 'closed').slice(0, 3).map(shift => (
                                                 <div key={shift.id} className="flex items-center justify-between text-xs
-                                                                              rounded-xl bg-surface-1/70 border border-surface-2 p-3">
+                                                                              rounded-xl bg-glass-heavy border border-sf-2 p-3">
                                                     <div className="flex items-center gap-2">
-                                                        <TrendingUp className="w-3.5 h-3.5 text-text-muted" />
+                                                        <TrendingUp className="w-3.5 h-3.5 text-tx-muted" />
                                                         <div>
-                                                            <span className="text-text-primary font-semibold">
+                                                            <span className="text-tx font-semibold">
                                                                 {new Date(shift.opened_at).toLocaleDateString([], {
                                                                     day: '2-digit', month: 'short'
                                                                 })}
                                                             </span>
-                                                            <span className="text-text-muted ml-1.5">
+                                                            <span className="text-tx-muted ml-1.5">
                                                                 {shift.total_sales} ventas
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="font-bold text-text-primary">
+                                                        <span className="font-bold text-tx">
                                                             {formatCurrency(shift.total_revenue)}
                                                         </span>
                                                         {shift.cash_difference !== undefined && shift.cash_difference !== 0 && (
@@ -299,19 +299,19 @@ export default function POSShiftPanel({
                         {view === 'open' && (
                             <div className="space-y-5">
                                 <div className="text-center">
-                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                        <DollarSign className="w-7 h-7 text-primary" />
+                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-subtle flex items-center justify-center">
+                                        <DollarSign className="w-7 h-7 text-brand" />
                                     </div>
-                                    <h3 className="font-bold text-text-primary text-lg">
+                                    <h3 className="font-bold text-tx text-lg">
                                         {labels['panel.pos.openShift'] || 'Abrir turno'}
                                     </h3>
-                                    <p className="text-xs text-text-muted mt-1.5">
+                                    <p className="text-xs text-tx-muted mt-1.5">
                                         {labels['panel.pos.countCash'] || 'Cuenta el efectivo en caja'}
                                     </p>
                                 </div>
 
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-text-muted font-semibold uppercase tracking-wider">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-tx-muted font-semibold uppercase tracking-wider">
                                         {defaultCurrency}
                                     </span>
                                     <input
@@ -322,25 +322,25 @@ export default function POSShiftPanel({
                                         onChange={e => setCashInput(e.target.value)}
                                         placeholder="0.00"
                                         autoFocus
-                                        className="w-full pl-16 pr-4 py-4 rounded-2xl bg-surface-1 text-xl font-bold
-                                                   text-center border border-surface-2 focus:border-primary focus:ring-2
-                                                   focus:ring-primary/10 focus:outline-none transition-all"
+                                        className="w-full pl-16 pr-4 py-4 rounded-2xl bg-sf-1 text-xl font-bold
+                                                   text-center border border-sf-2 focus:border-brand focus:ring-2
+                                                   focus:ring-soft focus:outline-none transition-all"
                                     />
                                 </div>
 
                                 <div className="flex gap-2.5">
                                     <button
                                         onClick={() => setView('status')}
-                                        className="flex-1 py-3 rounded-2xl border border-surface-2
-                                                   text-text-secondary text-sm font-medium hover:bg-surface-1 transition-colors"
+                                        className="flex-1 py-3 rounded-2xl border border-sf-2
+                                                   text-tx-sec text-sm font-medium hover:bg-sf-1 transition-colors"
                                     >
                                         {labels['panel.pos.cancel'] || 'Cancelar'}
                                     </button>
                                     <button
                                         onClick={handleOpenShift}
                                         disabled={!cashInput || parseFloat(cashInput) < 0}
-                                        className="flex-1 py-3 rounded-2xl bg-primary text-white text-sm font-bold
-                                                   shadow-lg shadow-primary/20 hover:shadow-xl
+                                        className="flex-1 py-3 rounded-2xl bg-brand text-white text-sm font-bold
+                                                   shadow-lg shadow-brand-soft hover:shadow-xl
                                                    disabled:opacity-40 disabled:shadow-none transition-all"
                                     >
                                         {labels['panel.pos.confirm'] || 'Confirmar'}
@@ -356,36 +356,36 @@ export default function POSShiftPanel({
                                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-rose-500/10 flex items-center justify-center">
                                         <ArrowUpDown className="w-7 h-7 text-rose-500" />
                                     </div>
-                                    <h3 className="font-bold text-text-primary text-lg">
+                                    <h3 className="font-bold text-tx text-lg">
                                         {labels['panel.pos.closeShift'] || 'Cerrar turno'}
                                     </h3>
-                                    <p className="text-xs text-text-muted mt-1.5">
+                                    <p className="text-xs text-tx-muted mt-1.5">
                                         {labels['panel.pos.closingCount'] || 'Cuenta el efectivo final en caja'}
                                     </p>
                                 </div>
 
                                 {/* Shift summary */}
-                                <div className="rounded-2xl bg-surface-1/70 border border-surface-2 p-4 space-y-2 text-xs">
+                                <div className="rounded-2xl bg-glass-heavy border border-sf-2 p-4 space-y-2 text-xs">
                                     <div className="flex justify-between">
-                                        <span className="text-text-muted">{labels['panel.pos.duration'] || 'Duración'}</span>
-                                        <span className="font-semibold text-text-primary">{durationStr}</span>
+                                        <span className="text-tx-muted">{labels['panel.pos.duration'] || 'Duración'}</span>
+                                        <span className="font-semibold text-tx">{durationStr}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-text-muted">{labels['panel.pos.sales'] || 'Ventas'}</span>
-                                        <span className="font-semibold text-text-primary">{currentShift.total_sales}</span>
+                                        <span className="text-tx-muted">{labels['panel.pos.sales'] || 'Ventas'}</span>
+                                        <span className="font-semibold text-tx">{currentShift.total_sales}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-text-muted">{labels['panel.pos.openingCash'] || 'Apertura'}</span>
-                                        <span className="font-semibold text-text-primary">{formatCurrency(currentShift.opening_cash)}</span>
+                                        <span className="text-tx-muted">{labels['panel.pos.openingCash'] || 'Apertura'}</span>
+                                        <span className="font-semibold text-tx">{formatCurrency(currentShift.opening_cash)}</span>
                                     </div>
-                                    <div className="flex justify-between font-bold border-t border-surface-2 pt-2 text-sm">
-                                        <span className="text-text-primary">{labels['panel.pos.expectedCash'] || 'Esperado'}</span>
-                                        <span className="text-text-primary">{formatCurrency(currentShift.opening_cash + currentShift.total_revenue)}</span>
+                                    <div className="flex justify-between font-bold border-t border-sf-2 pt-2 text-sm">
+                                        <span className="text-tx">{labels['panel.pos.expectedCash'] || 'Esperado'}</span>
+                                        <span className="text-tx">{formatCurrency(currentShift.opening_cash + currentShift.total_revenue)}</span>
                                     </div>
                                 </div>
 
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-text-muted font-semibold uppercase tracking-wider">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-tx-muted font-semibold uppercase tracking-wider">
                                         {defaultCurrency}
                                     </span>
                                     <input
@@ -396,9 +396,9 @@ export default function POSShiftPanel({
                                         onChange={e => setCashInput(e.target.value)}
                                         placeholder="0.00"
                                         autoFocus
-                                        className="w-full pl-16 pr-4 py-4 rounded-2xl bg-surface-1 text-xl font-bold
-                                                   text-center border border-surface-2 focus:border-primary focus:ring-2
-                                                   focus:ring-primary/10 focus:outline-none transition-all"
+                                        className="w-full pl-16 pr-4 py-4 rounded-2xl bg-sf-1 text-xl font-bold
+                                                   text-center border border-sf-2 focus:border-brand focus:ring-2
+                                                   focus:ring-soft focus:outline-none transition-all"
                                     />
                                 </div>
 
@@ -415,8 +415,8 @@ export default function POSShiftPanel({
                                 <div className="flex gap-2.5">
                                     <button
                                         onClick={() => setView('status')}
-                                        className="flex-1 py-3 rounded-2xl border border-surface-2
-                                                   text-text-secondary text-sm font-medium hover:bg-surface-1 transition-colors"
+                                        className="flex-1 py-3 rounded-2xl border border-sf-2
+                                                   text-tx-sec text-sm font-medium hover:bg-sf-1 transition-colors"
                                     >
                                         {labels['panel.pos.cancel'] || 'Cancelar'}
                                     </button>

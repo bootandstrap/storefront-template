@@ -94,10 +94,10 @@ export default function OrderNotifications() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={handleToggle}
-                className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+                className="relative p-2 rounded-lg hover:bg-glass transition-colors"
                 aria-label={t('panel.orders.notifications')}
             >
-                <Bell className="w-5 h-5 text-text-muted" />
+                <Bell className="w-5 h-5 text-tx-muted" />
                 {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -108,13 +108,13 @@ export default function OrderNotifications() {
             {isOpen && (
                 <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto glass rounded-xl shadow-xl border border-border z-50">
                     <div className="p-3 border-b border-border flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-text-primary">
+                        <h3 className="text-sm font-semibold text-tx">
                             {t('panel.orders.recentOrders')}
                         </h3>
                         {notifications.length > 0 && (
                             <button
                                 onClick={() => setNotifications([])}
-                                className="text-xs text-text-muted hover:text-text-secondary"
+                                className="text-xs text-tx-muted hover:text-tx-sec"
                             >
                                 {t('common.clearAll')}
                             </button>
@@ -123,8 +123,8 @@ export default function OrderNotifications() {
 
                     {notifications.length === 0 ? (
                         <div className="p-6 text-center">
-                            <Package className="w-8 h-8 text-text-muted mx-auto mb-2" />
-                            <p className="text-sm text-text-muted">
+                            <Package className="w-8 h-8 text-tx-muted mx-auto mb-2" />
+                            <p className="text-sm text-tx-muted">
                                 {t('panel.orders.noNew')}
                             </p>
                         </div>
@@ -132,25 +132,25 @@ export default function OrderNotifications() {
                         <div className="divide-y divide-border">
                             {notifications.map(notif => (
                                 <div key={notif.id} className="p-3 flex items-start gap-3 hover:bg-white/3 transition-colors">
-                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Package className="w-4 h-4 text-primary" />
+                                    <div className="w-8 h-8 rounded-lg bg-brand-subtle flex items-center justify-center shrink-0 mt-0.5">
+                                        <Package className="w-4 h-4 text-brand" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-text-primary truncate">
+                                        <p className="text-sm font-medium text-tx truncate">
                                             #{notif.orderId}
                                         </p>
-                                        <p className="text-xs text-text-muted truncate">
+                                        <p className="text-xs text-tx-muted truncate">
                                             {notif.customerName} · {notif.total}
                                         </p>
-                                        <p className="text-[10px] text-text-muted mt-1">
+                                        <p className="text-[10px] text-tx-muted mt-1">
                                             {notif.timestamp.toLocaleTimeString()}
                                         </p>
                                     </div>
                                     <button
                                         onClick={() => handleDismiss(notif.id)}
-                                        className="p-1 hover:bg-white/5 rounded"
+                                        className="p-1 hover:bg-glass rounded"
                                     >
-                                        <X className="w-3 h-3 text-text-muted" />
+                                        <X className="w-3 h-3 text-tx-muted" />
                                     </button>
                                 </div>
                             ))}

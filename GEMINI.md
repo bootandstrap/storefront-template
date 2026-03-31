@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-25 (36+ panel components, utilities page, persistent onboarding).
+> Last updated: 2026-03-29 (A+D @theme inline CSS architecture, Turbopack cache protocol).
 
 ## 0. Local Development Setup
 
@@ -117,15 +117,12 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 
 1. **Logo**: Replace `public/logo.svg` (or `.png`). Update `<Header>` if filename changes.
 2. **Favicon**: Replace `src/app/favicon.ico` + add `public/icons/` set if needed.
-3. **Colors**: Edit CSS custom properties in `globals.css`:
-   ```css
-   :root {
-     --color-primary: #your-color;
-     --color-primary-dark: #darker;
-     --color-accent: #accent;
-   }
-   ```
-   > Color presets from the SaaS control plane are injected via `layout.tsx`. Your CSS vars override them.
+3. **Colors**: The storefront uses the **A+D Architecture** (Tailwind v4 `@theme inline`). ALL colors are defined as flat hex values in `globals.css`:
+   - **Brand scale**: `bg-brand`, `bg-brand-light`, `bg-brand-dark`, `bg-brand-50`–`bg-brand-950`
+   - **Semantic tokens**: `bg-sec`, `bg-accent`, `text-tx`, `bg-sf-0`–`bg-sf-3`
+   - **UUI scale**: `bg-brand-50`–`bg-brand-950` (mapped to green brand scale)
+   > ⚠️ `@theme inline` **replaces ALL default Tailwind palettes**. Standard colors like `emerald-500`, `rose-500`, etc. DO NOT WORK unless explicitly added to the `@theme inline` block.
+   > ⚠️ After changing tokens: stop `./dev.sh` → `rm -rf apps/storefront/.next` → restart → DevTools: "Disable cache" + Cmd+Shift+R.
 4. **Fonts**: Add font files to `public/fonts/` or import from Google Fonts in `layout.tsx`.
 5. **Typography**: Update font-family in `globals.css`.
 

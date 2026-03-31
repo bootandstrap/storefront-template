@@ -13,7 +13,7 @@ describe('getPrice', () => {
             id: 'v1',
             title: 'Default',
             sku: null,
-            calculated_price: { calculated_amount: 999, currency_code: 'eur' },
+            calculated_price: { calculated_amount: 999, original_amount: 1299, currency_code: 'eur' },
             prices: [{ amount: 1299, currency_code: 'eur' }],
             options: [],
         }

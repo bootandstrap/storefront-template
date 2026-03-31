@@ -44,16 +44,16 @@ async function DashboardStats({ lang }: { lang: string }) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="glass rounded-xl p-5 text-center">
-                <p className="text-2xl font-bold text-primary">{totalOrders}</p>
-                <p className="text-xs text-text-muted mt-1">{t('account.totalOrders')}</p>
+                <p className="text-2xl font-bold text-brand">{totalOrders}</p>
+                <p className="text-xs text-tx-muted mt-1">{t('account.totalOrders')}</p>
             </div>
             <div className="glass rounded-xl p-5 text-center">
                 <p className="text-2xl font-bold text-amber-500">{pendingOrders}</p>
-                <p className="text-xs text-text-muted mt-1">{t('account.pendingOrders')}</p>
+                <p className="text-xs text-tx-muted mt-1">{t('account.pendingOrders')}</p>
             </div>
             <div className="glass rounded-xl p-5 text-center">
-                <p className="text-2xl font-bold text-text-primary">{lastOrder}</p>
-                <p className="text-xs text-text-muted mt-1">{t('account.lastOrder')}</p>
+                <p className="text-2xl font-bold text-tx">{lastOrder}</p>
+                <p className="text-xs text-tx-muted mt-1">{t('account.lastOrder')}</p>
             </div>
         </div>
     )
@@ -83,12 +83,12 @@ async function RecentOrders({ lang }: { lang: string }) {
     if (orders.length === 0) {
         return (
             <div className="glass rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-text-primary mb-4">
+                <h2 className="text-lg font-semibold text-tx mb-4">
                     {t('account.recentOrders')}
                 </h2>
                 <div className="text-center py-8">
-                    <Package className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                    <p className="text-text-muted text-sm mb-4">{t('account.noOrders')}</p>
+                    <Package className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                    <p className="text-tx-muted text-sm mb-4">{t('account.noOrders')}</p>
                     <Link href={`/${lang}/productos`} className="btn btn-primary text-sm">
                         <ShoppingBag className="w-4 h-4" />
                         {t('account.explore')}
@@ -100,7 +100,7 @@ async function RecentOrders({ lang }: { lang: string }) {
 
     return (
         <div className="glass rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">
+            <h2 className="text-lg font-semibold text-tx mb-4">
                 {t('account.recentOrders')}
             </h2>
             <div className="space-y-3">
@@ -121,7 +121,7 @@ async function RecentOrders({ lang }: { lang: string }) {
                             className="flex items-center justify-between p-4 rounded-lg bg-surface/50 hover:bg-surface/80 transition-colors border border-white/5"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center">
                                     {order.status === 'completed' ? (
                                         <CheckCircle className="w-5 h-5 text-green-500" />
                                     ) : (
@@ -129,18 +129,18 @@ async function RecentOrders({ lang }: { lang: string }) {
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-text-primary">
+                                    <p className="text-sm font-medium text-tx">
                                         #{order.display_id ?? order.id.slice(-6)}
                                     </p>
-                                    <p className="text-xs text-text-muted">
+                                    <p className="text-xs text-tx-muted">
                                         {date} · {itemCount} {itemCount === 1 ? t('order.item') : t('order.items')}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
                                 <StatusBadge status={order.status} t={t} />
-                                <span className="text-sm font-semibold text-text-primary">{total}</span>
-                                <ArrowRight className="w-4 h-4 text-text-muted" />
+                                <span className="text-sm font-semibold text-tx">{total}</span>
+                                <ArrowRight className="w-4 h-4 text-tx-muted" />
                             </div>
                         </Link>
                     )
@@ -194,10 +194,10 @@ export default async function CuentaPage({
         <div className="space-y-8">
             {/* Welcome */}
             <div className="glass rounded-xl p-6">
-                <h1 className="text-2xl font-bold font-display text-text-primary mb-1">
+                <h1 className="text-2xl font-bold font-display text-tx mb-1">
                     {t('account.welcomeMessage', { name: displayName })}
                 </h1>
-                <p className="text-text-muted text-sm">
+                <p className="text-tx-muted text-sm">
                     {t('account.welcomeHint')}
                 </p>
             </div>
@@ -215,7 +215,7 @@ export default async function CuentaPage({
             {/* View all orders link */}
             <Link
                 href={`/${lang}/cuenta/pedidos`}
-                className="flex items-center gap-2 text-sm text-primary hover:underline"
+                className="flex items-center gap-2 text-sm text-brand hover:underline"
             >
                 {t('account.viewAllOrders')}
                 <ArrowRight className="w-4 h-4" />

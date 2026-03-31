@@ -28,12 +28,12 @@ export default function CheckoutInfoStep({
     return (
         <div className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 mb-4">
-                <User className="w-5 h-5 text-primary" />
+                <User className="w-5 h-5 text-brand" />
                 <h3 className="font-bold">{t('checkout.steps.info')}</h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.firstName') || 'Nombre'} *
                     </label>
                     <input
@@ -46,7 +46,7 @@ export default function CheckoutInfoStep({
                     />
                 </div>
                 <div>
-                    <label className="text-sm text-text-secondary block mb-1">
+                    <label className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.lastName') || 'Apellido'} *
                     </label>
                     <input
@@ -60,7 +60,7 @@ export default function CheckoutInfoStep({
                 </div>
             </div>
             <div>
-                <label className="text-sm text-text-secondary block mb-1">
+                <label className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.email')}
                 </label>
                 <input
@@ -72,7 +72,7 @@ export default function CheckoutInfoStep({
                 />
             </div>
             <div>
-                <label className="text-sm text-text-secondary block mb-1">
+                <label className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.phone')}
                 </label>
                 <input

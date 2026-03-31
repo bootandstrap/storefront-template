@@ -20,7 +20,7 @@ import { toggleBadge } from './actions'
 import { AVAILABLE_BADGES, type BadgeId } from './badges'
 import { Award, Package, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 
 interface ProductWithBadges {
@@ -59,11 +59,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
 
     return (
         <PageEntrance className="space-y-5">
-            <PanelPageHeader
-                title={t('panel.badges.title')}
-                subtitle={t('panel.badges.subtitle')}
-                icon={<Award className="w-5 h-5" />}
-            />
+
 
             {/* Badge legend */}
             <motion.div
@@ -72,7 +68,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                 transition={{ delay: 0.1 }}
                 className="glass rounded-2xl p-4"
             >
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2">
                     {t('panel.badges.available')}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -98,13 +94,13 @@ export default function BadgesClient({ products, error: initialError }: Props) {
 
             {/* Search */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                 <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t('panel.badges.searchProducts')}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all"
                 />
             </div>
 
@@ -116,9 +112,9 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <Award className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                            <Award className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
-                        <p className="text-text-muted text-lg">
+                        <p className="text-tx-muted text-lg">
                             {products.length === 0
                                 ? t('panel.badges.connectMedusa')
                                 : t('panel.badges.noResults')}
@@ -135,7 +131,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Thumbnail */}
-                                    <div className="w-12 h-12 rounded-xl bg-surface-1 flex-shrink-0 overflow-hidden relative">
+                                    <div className="w-12 h-12 rounded-xl bg-sf-1 flex-shrink-0 overflow-hidden relative">
                                         {product.thumbnail ? (
                                             <Image
                                                 src={product.thumbnail}
@@ -145,7 +141,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                                                 sizes="48px"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-text-muted">
+                                            <div className="w-full h-full flex items-center justify-center text-tx-muted">
                                                 <Package className="w-5 h-5" />
                                             </div>
                                         )}
@@ -153,23 +149,23 @@ export default function BadgesClient({ products, error: initialError }: Props) {
 
                                     {/* Title */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-medium text-text-primary truncate">
+                                        <h3 className="font-medium text-tx truncate">
                                             {product.title}
                                         </h3>
-                                        <p className="text-xs text-text-muted">{product.handle}</p>
+                                        <p className="text-xs text-tx-muted">{product.handle}</p>
                                     </div>
 
                                     {/* Status */}
                                     <span className={`text-xs px-2.5 py-1 rounded-full flex-shrink-0 font-medium ${product.status === 'published'
                                         ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                                        : 'bg-surface-2 text-text-muted'
+                                        : 'bg-sf-2 text-tx-muted'
                                     }`}>
                                         {product.status}
                                     </span>
                                 </div>
 
                                 {/* Badge toggles */}
-                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-surface-2">
+                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-sf-2">
                                     {AVAILABLE_BADGES.map((badge) => {
                                         const isEnabled = product.badges.includes(badge.id)
                                         return (
@@ -180,9 +176,9 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                                                 whileTap={{ scale: 0.92 }}
                                                 aria-pressed={isEnabled}
                                                 aria-label={`${badge.label}: ${isEnabled ? 'enabled' : 'disabled'}`}
-                                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-full text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${isEnabled
+                                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-full text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${isEnabled
                                                     ? badge.color + ' ring-2 ring-offset-1 ring-current/20 shadow-sm'
-                                                    : 'bg-surface-1 text-text-muted hover:bg-surface-2'
+                                                    : 'bg-sf-1 text-tx-muted hover:bg-sf-2'
                                                 } ${isPending ? 'opacity-50' : ''}`}
                                             >
                                                 {badge.emoji} {badge.label}

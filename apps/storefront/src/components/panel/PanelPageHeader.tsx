@@ -33,23 +33,23 @@ export default function PanelPageHeader({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
                 {icon && (
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 text-primary shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle text-brand shrink-0">
                         {icon}
                     </div>
                 )}
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-xl sm:text-2xl font-bold font-display text-text-primary truncate">
+                        <h1 className="text-xl sm:text-2xl font-bold font-display text-tx truncate">
                             {title}
                         </h1>
                         {badge != null && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-subtle text-brand">
                                 {badge}
                             </span>
                         )}
                     </div>
                     {subtitle && (
-                        <p className="text-sm text-text-muted mt-0.5 truncate">
+                        <p className="text-sm text-tx-muted mt-0.5 truncate">
                             {subtitle}
                         </p>
                     )}
@@ -113,7 +113,7 @@ export function PanelSearchInput({
     return (
         <div className="relative flex-1 min-w-[200px]">
             {icon && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-tx-muted">
                     {icon}
                 </div>
             )}
@@ -123,7 +123,7 @@ export function PanelSearchInput({
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && onSubmit?.()}
                 placeholder={placeholder}
-                className={`w-full py-2.5 rounded-xl border border-surface-3 bg-surface-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all ${icon ? 'pl-10 pr-4' : 'px-4'}`}
+                className={`w-full py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all ${icon ? 'pl-10 pr-4' : 'px-4'}`}
             />
         </div>
     )
@@ -149,8 +149,8 @@ export function PanelStatusTabs<T extends string>({
                     onClick={() => onChange(tab.id)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         active === tab.id
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'text-text-muted hover:bg-surface-1 hover:text-text-primary'
+                            ? 'bg-brand text-white shadow-sm'
+                            : 'text-tx-muted hover:bg-sf-1 hover:text-tx'
                     }`}
                 >
                     {tab.label}
@@ -183,9 +183,9 @@ export function PanelActionButton({
     }`
 
     const variants = {
-        primary: 'bg-primary text-white hover:bg-primary-light shadow-sm hover:shadow-md',
-        secondary: 'bg-surface-1 text-text-primary border border-surface-3 hover:bg-surface-2',
-        danger: 'bg-error/10 text-error hover:bg-error/20 border border-error/20',
+        primary: 'bg-brand text-white hover:bg-brand-light shadow-sm hover:shadow-md',
+        secondary: 'bg-sf-1 text-tx border border-sf-3 hover:bg-sf-2',
+        danger: 'bg-brand-subtle text-error hover:bg-brand-muted border border-error',
     }
 
     const cls = `${base} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`
@@ -218,13 +218,13 @@ export function PanelEmptyState({
     return (
         <div className="glass rounded-2xl p-12 text-center">
             {icon && (
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-1 text-text-muted mb-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sf-1 text-tx-muted mb-4">
                     {icon}
                 </div>
             )}
-            <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
+            <h3 className="text-lg font-semibold text-tx">{title}</h3>
             {description && (
-                <p className="text-sm text-text-muted mt-1 max-w-md mx-auto">{description}</p>
+                <p className="text-sm text-tx-muted mt-1 max-w-md mx-auto">{description}</p>
             )}
             {action && <div className="mt-4">{action}</div>}
         </div>
@@ -247,7 +247,7 @@ export function PanelTable({ children, className = '' }: { children: ReactNode; 
 export function PanelTHead({ children }: { children: ReactNode }) {
     return (
         <thead>
-            <tr className="border-b border-surface-3 text-text-muted bg-surface-1/30">
+            <tr className="border-b border-sf-3 text-tx-muted bg-glass">
                 {children}
             </tr>
         </thead>

@@ -88,14 +88,14 @@ export default function AddressModal({
             {/* Modal */}
             <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold font-display text-text-primary">
+                    <h2 className="text-lg font-bold font-display text-tx">
                         {mode === 'create' ? t('address.addNew') : t('address.edit')}
                     </h2>
                     <button
                         onClick={onClose}
                         className="p-1 rounded-lg hover:bg-surface/50 transition-colors"
                     >
-                        <X className="w-5 h-5 text-text-muted" />
+                        <X className="w-5 h-5 text-tx-muted" />
                     </button>
                 </div>
 
@@ -103,7 +103,7 @@ export default function AddressModal({
                     {/* Name row */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.firstName')} *
                             </label>
                             <input
@@ -115,7 +115,7 @@ export default function AddressModal({
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.lastName')} *
                             </label>
                             <input
@@ -130,7 +130,7 @@ export default function AddressModal({
 
                     {/* Company */}
                     <div>
-                        <label className="block text-xs text-text-muted mb-1">
+                        <label className="block text-xs text-tx-muted mb-1">
                             {t('address.company')}
                         </label>
                         <input
@@ -143,7 +143,7 @@ export default function AddressModal({
 
                     {/* Address 1 */}
                     <div>
-                        <label className="block text-xs text-text-muted mb-1">
+                        <label className="block text-xs text-tx-muted mb-1">
                             {t('address.address1')} *
                         </label>
                         <input
@@ -157,7 +157,7 @@ export default function AddressModal({
 
                     {/* Address 2 */}
                     <div>
-                        <label className="block text-xs text-text-muted mb-1">
+                        <label className="block text-xs text-tx-muted mb-1">
                             {t('address.address2')}
                         </label>
                         <input
@@ -171,7 +171,7 @@ export default function AddressModal({
                     {/* City + Postal code */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.city')} *
                             </label>
                             <input
@@ -183,7 +183,7 @@ export default function AddressModal({
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.postalCode')} *
                             </label>
                             <input
@@ -199,7 +199,7 @@ export default function AddressModal({
                     {/* Province + Country */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.province')}
                             </label>
                             <input
@@ -210,7 +210,7 @@ export default function AddressModal({
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-text-muted mb-1">
+                            <label className="block text-xs text-tx-muted mb-1">
                                 {t('address.country')} *
                             </label>
                             <input
@@ -227,7 +227,7 @@ export default function AddressModal({
 
                     {/* Phone */}
                     <div>
-                        <label className="block text-xs text-text-muted mb-1">
+                        <label className="block text-xs text-tx-muted mb-1">
                             {t('address.phone')}
                         </label>
                         <input

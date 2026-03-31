@@ -198,25 +198,25 @@ export function SlideOver({ isOpen, onClose, title, subtitle, children, width = 
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ duration: 0.3, ease: EASE_EXPO_OUT }}
-                        className={`fixed inset-y-0 right-0 z-50 w-full ${widthMap[width]} bg-surface-0 shadow-2xl flex flex-col`}
+                        className={`fixed inset-y-0 right-0 z-50 w-full ${widthMap[width]} bg-sf-0 shadow-2xl flex flex-col`}
                     >
                         {/* Header — 56px aligned with panel topbar for visual harmony */}
-                        <div className="flex items-center justify-between px-6 h-14 border-b border-surface-2 flex-shrink-0">
+                        <div className="flex items-center justify-between px-6 h-14 border-b border-sf-2 flex-shrink-0">
                             <div className="min-w-0">
-                                <h2 className="text-base font-bold font-display text-text-primary truncate">
+                                <h2 className="text-base font-bold font-display text-tx truncate">
                                     {title}
                                 </h2>
                                 {subtitle && (
-                                    <p className="text-xs text-text-muted mt-0.5 truncate">{subtitle}</p>
+                                    <p className="text-xs text-tx-muted mt-0.5 truncate">{subtitle}</p>
                                 )}
                             </div>
                             <button
                                 ref={closeButtonRef}
                                 onClick={onClose}
                                 aria-label="Close panel"
-                                className="ml-3 p-2 rounded-xl hover:bg-surface-1 text-text-muted
-                                           hover:text-text-primary transition-colors flex-shrink-0
-                                           focus-visible:ring-2 focus-visible:ring-primary/40"
+                                className="ml-3 p-2 rounded-xl hover:bg-sf-1 text-tx-muted
+                                           hover:text-tx transition-colors flex-shrink-0
+                                           focus-visible:ring-2 focus-visible:ring-med"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -326,7 +326,7 @@ export function SkeletonPulse({
 }: SkeletonPulseProps) {
     return (
         <div
-            className={`${width} ${height} ${rounded} ${className} bg-surface-2/60 relative overflow-hidden`}
+            className={`${width} ${height} ${rounded} ${className} bg-glass relative overflow-hidden`}
             aria-hidden="true"
         >
             <div
@@ -345,7 +345,7 @@ export function SkeletonPulse({
  */
 export function SkeletonCard({ className = '' }: { className?: string }) {
     return (
-        <div className={`bg-surface-0 rounded-xl border border-surface-2/50 overflow-hidden ${className}`} aria-hidden="true">
+        <div className={`bg-sf-0 rounded-xl border border-sf-2 overflow-hidden ${className}`} aria-hidden="true">
             <SkeletonPulse width="w-full" height="h-0" className="!pb-[75%]" rounded="rounded-none" />
             <div className="p-3 space-y-2">
                 <SkeletonPulse width="w-3/4" height="h-3" />

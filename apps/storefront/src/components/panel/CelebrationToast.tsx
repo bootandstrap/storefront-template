@@ -99,7 +99,7 @@ function SingleToast({
     <div
       className={`
         relative flex items-start gap-3 p-4 rounded-xl
-        bg-surface-1 border border-primary/30 shadow-lg shadow-primary/10
+        bg-sf-1 border border-brand shadow-lg shadow-brand-soft
         max-w-sm w-full
         ${exiting ? 'animate-slide-out-right' : 'celebrate-toast-enter'}
       `}
@@ -114,13 +114,13 @@ function SingleToast({
 
       {/* Content */}
       <div className="flex-1 min-w-0 relative z-10">
-        <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
+        <div className="text-xs font-semibold text-brand uppercase tracking-wider mb-0.5">
           🏆 {unlockLabel || 'Achievement Unlocked!'}
         </div>
-        <h4 className="text-sm font-bold text-text-primary truncate">
+        <h4 className="text-sm font-bold text-tx truncate">
           {item.title}
         </h4>
-        <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
+        <p className="text-xs text-tx-muted mt-0.5 line-clamp-2">
           {item.description}
         </p>
       </div>
@@ -129,16 +129,16 @@ function SingleToast({
       <button
         type="button"
         onClick={handleClose}
-        className="flex-shrink-0 text-text-muted/50 hover:text-text-muted transition-colors relative z-10"
+        className="flex-shrink-0 text-tx-faint hover:text-tx-muted transition-colors relative z-10"
         aria-label="Dismiss"
       >
         <X className="w-4 h-4" />
       </button>
 
       {/* Progress bar countdown */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-surface-3 rounded-b-xl overflow-hidden">
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sf-3 rounded-b-xl overflow-hidden">
         <div
-          className="h-full bg-primary/40 toast-progress-bar"
+          className="h-full bg-brand-emphasis toast-progress-bar"
           style={{ animationDuration: `${5 + index * 0.8}s` }}
         />
       </div>

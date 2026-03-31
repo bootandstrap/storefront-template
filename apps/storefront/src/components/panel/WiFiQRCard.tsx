@@ -277,19 +277,19 @@ export default function WiFiQRCard({
         printWindow.document.close()
     }, [businessName, selected])
 
-    const inputClass = 'w-full px-3 py-2 rounded-lg bg-surface-0 border border-surface-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/40'
+    const inputClass = 'w-full px-3 py-2 rounded-lg bg-sf-0 border border-sf-3 text-sm text-tx placeholder:text-tx-faint focus:outline-none focus:ring-2 focus:ring-med'
 
     return (
-        <div ref={cardRef} className="bg-surface-1 border border-surface-3 rounded-2xl p-5 space-y-4">
+        <div ref={cardRef} className="bg-sf-1 border border-sf-3 rounded-2xl p-5 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-primary/10">
-                        <Wifi className="w-5 h-5 text-primary" />
+                    <div className="p-2 rounded-xl bg-brand-subtle">
+                        <Wifi className="w-5 h-5 text-brand" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-text-primary">{l.title}</h3>
-                        <p className="text-xs text-text-muted">
+                        <h3 className="text-sm font-bold text-tx">{l.title}</h3>
+                        <p className="text-xs text-tx-muted">
                             {networks.length > 0
                                 ? `${networks.length} ${networks.length === 1 ? 'network' : 'networks'}`
                                 : l.noNetworks}
@@ -302,7 +302,7 @@ export default function WiFiQRCard({
                         <button
                             type="button"
                             onClick={handleUseLast}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-surface-2 transition-colors border border-surface-3"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-tx-sec hover:bg-sf-2 transition-colors border border-sf-3"
                         >
                             <Star className="w-3 h-3" />
                             {l.useLast}
@@ -312,7 +312,7 @@ export default function WiFiQRCard({
                         <button
                             type="button"
                             onClick={() => setShowForm(true)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-brand hover:bg-brand-subtle transition-colors"
                         >
                             <Plus className="w-3.5 h-3.5" />
                             {l.add}
@@ -326,10 +326,10 @@ export default function WiFiQRCard({
                 <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="flex items-start gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10"
+                    className="flex items-start gap-2 p-3 rounded-xl bg-brand-subtle border border-brand-soft"
                 >
-                    <Wifi className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                    <p className="text-xs text-primary">{l.detectHint}</p>
+                    <Wifi className="w-4 h-4 text-brand mt-0.5 shrink-0" />
+                    <p className="text-xs text-brand">{l.detectHint}</p>
                 </motion.div>
             )}
 
@@ -356,23 +356,23 @@ export default function WiFiQRCard({
                             className={`
                                 flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all
                                 ${selectedId === net.id
-                                    ? 'bg-primary/10 border border-primary/20 ring-1 ring-primary/10'
-                                    : 'bg-surface-0 border border-surface-3 hover:border-primary/30'}
+                                    ? 'bg-brand-subtle border border-brand-soft ring-1 ring-soft'
+                                    : 'bg-sf-0 border border-sf-3 hover:border-brand'}
                             `}
                             onClick={() => setSelectedId(net.id)}
                         >
                             {/* WiFi icon or star if default */}
-                            <div className={`p-1.5 rounded-lg ${net.isDefault ? 'bg-amber-100 dark:bg-amber-500/10' : 'bg-surface-2'}`}>
+                            <div className={`p-1.5 rounded-lg ${net.isDefault ? 'bg-amber-100 dark:bg-amber-500/10' : 'bg-sf-2'}`}>
                                 {net.isDefault
                                     ? <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="currentColor" />
-                                    : <Wifi className="w-3.5 h-3.5 text-text-muted" />
+                                    : <Wifi className="w-3.5 h-3.5 text-tx-muted" />
                                 }
                             </div>
 
                             {/* Network info */}
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-text-primary truncate">{net.ssid}</p>
-                                <p className="text-[10px] text-text-muted">
+                                <p className="text-sm font-semibold text-tx truncate">{net.ssid}</p>
+                                <p className="text-[10px] text-tx-muted">
                                     {net.encryption === 'nopass' ? 'Open' : net.encryption}
                                     {net.isDefault && ` · ⭐ ${l.setDefault}`}
                                 </p>
@@ -384,7 +384,7 @@ export default function WiFiQRCard({
                                     <button
                                         type="button"
                                         onClick={() => handleSetDefault(net.id)}
-                                        className="p-1.5 rounded-lg text-text-muted hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                        className="p-1.5 rounded-lg text-tx-muted hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
                                         title={l.setDefault}
                                     >
                                         <Star className="w-3.5 h-3.5" />
@@ -393,7 +393,7 @@ export default function WiFiQRCard({
                                 <button
                                     type="button"
                                     onClick={() => handleDeleteNetwork(net.id)}
-                                    className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                    className="p-1.5 rounded-lg text-tx-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                     title={l.delete}
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -413,9 +413,9 @@ export default function WiFiQRCard({
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                     >
-                        <div className="space-y-3 p-3 rounded-xl bg-surface-0 border border-dashed border-primary/30">
+                        <div className="space-y-3 p-3 rounded-xl bg-sf-0 border border-dashed border-brand">
                             <div>
-                                <label className="text-xs font-medium text-text-muted mb-1 block">
+                                <label className="text-xs font-medium text-tx-muted mb-1 block">
                                     {l.ssid}
                                 </label>
                                 <input
@@ -430,7 +430,7 @@ export default function WiFiQRCard({
 
                             <div className="flex gap-3">
                                 <div className="flex-1">
-                                    <label className="text-xs font-medium text-text-muted mb-1 block">
+                                    <label className="text-xs font-medium text-tx-muted mb-1 block">
                                         {l.password}
                                     </label>
                                     <div className="relative">
@@ -445,7 +445,7 @@ export default function WiFiQRCard({
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tx-muted hover:text-tx transition-colors"
                                         >
                                             {showPassword
                                                 ? <EyeOff className="w-3.5 h-3.5" />
@@ -456,7 +456,7 @@ export default function WiFiQRCard({
                                 </div>
 
                                 <div className="w-24">
-                                    <label className="text-xs font-medium text-text-muted mb-1 block">{l.encryption}</label>
+                                    <label className="text-xs font-medium text-tx-muted mb-1 block">{l.encryption}</label>
                                     <select
                                         value={formEncryption}
                                         onChange={e => setFormEncryption(e.target.value as WifiEncryption)}
@@ -474,7 +474,7 @@ export default function WiFiQRCard({
                                     type="button"
                                     onClick={handleSaveNetwork}
                                     disabled={!formSsid.trim()}
-                                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-40"
+                                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-dark transition-colors disabled:opacity-40"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
                                     {l.save}
@@ -483,7 +483,7 @@ export default function WiFiQRCard({
                                     <button
                                         type="button"
                                         onClick={() => setShowForm(false)}
-                                        className="px-3 py-2 rounded-lg border border-surface-3 text-text-secondary text-sm font-medium hover:bg-surface-1 transition-colors"
+                                        className="px-3 py-2 rounded-lg border border-sf-3 text-tx-sec text-sm font-medium hover:bg-sf-1 transition-colors"
                                     >
                                         ✕
                                     </button>
@@ -498,7 +498,7 @@ export default function WiFiQRCard({
             {selected && qrValue && (
                 <>
                     <div className="flex flex-col items-center py-4">
-                        <div className="qr-container p-4 bg-white rounded-2xl shadow-sm border border-surface-3">
+                        <div className="qr-container p-4 bg-white rounded-2xl shadow-sm border border-sf-3">
                             <QRCodeSVG
                                 value={qrValue}
                                 size={160}
@@ -506,12 +506,12 @@ export default function WiFiQRCard({
                                 includeMargin={false}
                             />
                         </div>
-                        <p className="text-xs text-text-muted mt-2 font-medium">{selected.ssid}</p>
+                        <p className="text-xs text-tx-muted mt-2 font-medium">{selected.ssid}</p>
                         {selected.password && selected.encryption !== 'nopass' && (
                             <button
                                 type="button"
                                 onClick={handleCopyPassword}
-                                className="mt-1 inline-flex items-center gap-1 text-[10px] text-text-muted hover:text-text-primary transition-colors"
+                                className="mt-1 inline-flex items-center gap-1 text-[10px] text-tx-muted hover:text-tx transition-colors"
                             >
                                 {copied
                                     ? <><Check className="w-3 h-3 text-emerald-500" /> ✓</>
@@ -526,7 +526,7 @@ export default function WiFiQRCard({
                         <button
                             type="button"
                             onClick={handlePrint}
-                            className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+                            className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand-dark transition-colors"
                         >
                             <Printer className="w-4 h-4" />
                             {l.print}
@@ -544,7 +544,7 @@ export default function WiFiQRCard({
                                 a.click()
                                 URL.revokeObjectURL(url)
                             }}
-                            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-surface-3 text-text-secondary text-sm font-medium hover:bg-surface-1 transition-colors"
+                            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-sf-3 text-tx-sec text-sm font-medium hover:bg-sf-1 transition-colors"
                         >
                             <Download className="w-4 h-4" />
                         </button>

@@ -38,26 +38,26 @@ export default function CarritoPage() {
             <div className="flex items-center gap-3 mb-8">
                 <Link
                     href={localizedHref('products')}
-                    className="p-2 rounded-full hover:bg-surface-1 transition-colors"
+                    className="p-2 rounded-full hover:bg-sf-1 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </Link>
-                <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary">
+                <h1 className="text-2xl md:text-3xl font-bold font-display text-tx">
                     {t('cart.title')}
                 </h1>
             </div>
 
             {isLoading ? (
                 <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <Loader2 className="w-8 h-8 animate-spin text-brand" />
                 </div>
             ) : items.length === 0 ? (
                 <div className="text-center py-20">
-                    <ShoppingBag className="w-12 h-12 text-text-muted mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-text-primary mb-2">
+                    <ShoppingBag className="w-12 h-12 text-tx-muted mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-tx mb-2">
                         {t('cart.empty')}
                     </h2>
-                    <p className="text-text-muted mb-6">
+                    <p className="text-tx-muted mb-6">
                         {t('cart.emptyHint')}
                     </p>
                     <Link href={localizedHref('products')} className="btn btn-primary">
@@ -81,23 +81,23 @@ export default function CarritoPage() {
 
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-text-secondary">
+                                <span className="text-tx-sec">
                                     {t('nav.products')} ({itemCount})
                                 </span>
                                 <span className="font-medium">{formatPrice(subtotal)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-text-secondary">{t('cart.shipping')}</span>
-                                <span className="text-text-muted text-xs">
+                                <span className="text-tx-sec">{t('cart.shipping')}</span>
+                                <span className="text-tx-muted text-xs">
                                     {t('cart.shippingCalc')}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="border-t border-surface-3 mt-4 pt-4">
+                        <div className="border-t border-sf-3 mt-4 pt-4">
                             <div className="flex justify-between text-lg font-bold">
                                 <span>{t('cart.total')}</span>
-                                <span className="text-primary">{formatPrice(subtotal)}</span>
+                                <span className="text-brand">{formatPrice(subtotal)}</span>
                             </div>
                         </div>
 

@@ -42,28 +42,28 @@ export default function CashOnDeliveryFlow({
     return (
         <div className="space-y-4">
             <div className="text-center mb-2">
-                <Banknote className="w-8 h-8 text-primary mx-auto mb-2" />
-                <h3 className="text-base font-bold text-text-primary">
+                <Banknote className="w-8 h-8 text-brand mx-auto mb-2" />
+                <h3 className="text-base font-bold text-tx">
                     {t('checkout.cod.title')}
                 </h3>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-tx-sec mt-1">
                     {t('checkout.cod.description')}
                 </p>
             </div>
 
             {/* Address recap */}
             <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/8">
-                <MapPin className="w-5 h-5 text-text-muted mt-0.5 shrink-0" />
+                <MapPin className="w-5 h-5 text-tx-muted mt-0.5 shrink-0" />
                 <div>
-                    <span className="text-xs text-text-muted block">{t('checkout.steps.address')}</span>
-                    <span className="text-sm text-text-primary">{deliveryAddress || t('checkout.cod.noAddress')}</span>
+                    <span className="text-xs text-tx-muted block">{t('checkout.steps.address')}</span>
+                    <span className="text-sm text-tx">{deliveryAddress || t('checkout.cod.noAddress')}</span>
                 </div>
             </div>
 
             {/* Total reminder */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
-                <span className="text-sm text-text-secondary">{t('checkout.cod.totalOnDelivery')}</span>
-                <span className="text-base font-bold text-primary">{totalFormatted}</span>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-brand-subtle border border-brand-soft">
+                <span className="text-sm text-tx-sec">{t('checkout.cod.totalOnDelivery')}</span>
+                <span className="text-base font-bold text-brand">{totalFormatted}</span>
             </div>
 
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">

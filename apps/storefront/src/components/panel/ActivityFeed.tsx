@@ -46,7 +46,7 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
 }
 
 function getEventIcon(type: string) {
-    return EVENT_ICONS[type] ?? <Activity className="w-4 h-4 text-text-muted" />
+    return EVENT_ICONS[type] ?? <Activity className="w-4 h-4 text-tx-muted" />
 }
 
 function relativeTime(dateStr: string, lang: string): string {
@@ -85,9 +85,9 @@ export default function ActivityFeed({ events, labels, lang }: ActivityFeedProps
     if (events.length === 0) {
         return (
             <div className="glass rounded-2xl p-6 text-center">
-                <Activity className="w-8 h-8 text-text-muted mx-auto mb-2" />
-                <p className="text-sm font-medium text-text-primary">{labels.noActivity}</p>
-                <p className="text-xs text-text-muted mt-1">{labels.noActivityDesc}</p>
+                <Activity className="w-8 h-8 text-tx-muted mx-auto mb-2" />
+                <p className="text-sm font-medium text-tx">{labels.noActivity}</p>
+                <p className="text-xs text-tx-muted mt-1">{labels.noActivityDesc}</p>
             </div>
         )
     }
@@ -98,17 +98,17 @@ export default function ActivityFeed({ events, labels, lang }: ActivityFeedProps
                 {events.map((event, i) => (
                     <div
                         key={event.id}
-                        className="flex items-start gap-3 px-4 py-3 hover:bg-surface-0/50 transition-colors"
+                        className="flex items-start gap-3 px-4 py-3 hover:bg-glass transition-colors"
                         style={{ animationDelay: `${i * 80}ms` }}
                     >
-                        <div className="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-surface-1 flex items-center justify-center">
+                        <div className="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-sf-1 flex items-center justify-center">
                             {getEventIcon(event.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm text-text-primary leading-snug">
+                            <p className="text-sm text-tx leading-snug">
                                 {event.description}
                             </p>
-                            <p className="text-xs text-text-muted mt-0.5">
+                            <p className="text-xs text-tx-muted mt-0.5">
                                 {relativeTime(event.timestamp, lang)}
                             </p>
                         </div>

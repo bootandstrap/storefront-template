@@ -11,10 +11,10 @@ export default function ProductsError({
     return (
         <div className="container-page py-16 text-center">
             <p className="text-4xl mb-4">📦</p>
-            <h2 className="text-xl font-bold font-display text-text-primary mb-2">
+            <h2 className="text-xl font-bold font-display text-tx mb-2">
                 Error al cargar productos
             </h2>
-            <p className="text-text-muted mb-6">
+            <p className="text-tx-muted mb-6">
                 No pudimos cargar los productos. Puede que los datos en caché estén
                 disponibles — intenta recargar.
             </p>

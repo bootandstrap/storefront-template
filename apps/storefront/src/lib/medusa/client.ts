@@ -65,6 +65,7 @@ export interface MedusaVariant {
     sku: string | null
     calculated_price?: {
         calculated_amount: number
+        original_amount: number
         currency_code: string
     }
     prices: { amount: number; currency_code: string }[]

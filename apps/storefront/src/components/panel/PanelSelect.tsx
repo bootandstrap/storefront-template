@@ -59,7 +59,7 @@ const PanelSelect = forwardRef<HTMLSelectElement, PanelSelectProps>(
                 {label && (
                     <label
                         htmlFor={selectId}
-                        className="text-sm font-medium text-text-secondary mb-1.5 block"
+                        className="text-sm font-medium text-tx-sec mb-1.5 block"
                     >
                         {label}
                     </label>
@@ -70,14 +70,14 @@ const PanelSelect = forwardRef<HTMLSelectElement, PanelSelectProps>(
                         id={selectId}
                         className={`
                             appearance-none rounded-xl
-                            bg-surface-0 text-text-primary
-                            border border-surface-3
+                            bg-sf-0 text-tx
+                            border border-sf-3
                             transition-colors duration-150
                             cursor-pointer
                             focus-visible:outline-none
-                            focus-visible:ring-2 focus-visible:ring-primary/40
-                            focus-visible:border-primary
-                            hover:border-surface-4
+                            focus-visible:ring-2 focus-visible:ring-med
+                            focus-visible:border-brand
+                            hover:border-sf-4
                             disabled:opacity-50 disabled:cursor-not-allowed
                             ${error ? 'border-error-500 focus-visible:ring-error-500/40' : ''}
                             ${sizeStyles[size]}
@@ -89,14 +89,14 @@ const PanelSelect = forwardRef<HTMLSelectElement, PanelSelectProps>(
                         {children}
                     </select>
                     <ChevronDown
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted"
                         aria-hidden="true"
                     />
                 </div>
                 {helperText && (
                     <p
                         className={`text-xs mt-1.5 ${
-                            error ? 'text-error-500' : 'text-text-muted'
+                            error ? 'text-error-500' : 'text-tx-muted'
                         }`}
                     >
                         {helperText}

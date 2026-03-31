@@ -165,7 +165,7 @@ export default function WelcomeModal({
 
     return (
         <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-            <div className={`relative w-full max-w-lg bg-surface-1 rounded-2xl shadow-2xl overflow-hidden transition-all duration-700 ${visible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+            <div className={`relative w-full max-w-lg bg-sf-1 rounded-2xl shadow-2xl overflow-hidden transition-all duration-700 ${visible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                 {/* ── Phase: Animated Branding Splash ── */}
                 {phase === 'branding' && (
                     <div className="relative flex flex-col items-center justify-center px-8 py-16 min-h-[380px] overflow-hidden">
@@ -183,11 +183,11 @@ export default function WelcomeModal({
                         </div>
 
                         {/* Radial glow */}
-                        <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-radial from-brand-subtle via-transparent to-transparent" />
 
                         {/* BootandStrap logo */}
                         <div className="relative mb-6 animate-bounce-slow">
-                            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-lg shadow-primary/10">
+                            <div className="w-20 h-20 rounded-2xl bg-brand-subtle border border-brand-soft flex items-center justify-center shadow-lg shadow-brand-soft">
                                 <Image
                                     src="/bootandstrap-logo.png"
                                     alt="BootandStrap"
@@ -202,15 +202,15 @@ export default function WelcomeModal({
                         </div>
 
                         {/* Thank you message */}
-                        <h1 className="text-2xl md:text-3xl font-bold font-display text-text-primary text-center mb-1 animate-fade-in-up">
+                        <h1 className="text-2xl md:text-3xl font-bold font-display text-tx text-center mb-1 animate-fade-in-up">
                             {t('welcome.thankYou') || '¡Gracias por confiar en nosotros!'}
                         </h1>
                         {/* Typewriter store name */}
-                        <p className="text-lg font-bold text-primary text-center mb-3 h-7">
+                        <p className="text-lg font-bold text-brand text-center mb-3 h-7">
                             {typedName}
-                            <span className="inline-block w-0.5 h-5 bg-primary ml-0.5 animate-pulse align-middle" />
+                            <span className="inline-block w-0.5 h-5 bg-brand ml-0.5 animate-pulse align-middle" />
                         </p>
-                        <p className="text-text-muted text-center text-sm max-w-sm animate-fade-in-up-delay">
+                        <p className="text-tx-muted text-center text-sm max-w-sm animate-fade-in-up-delay">
                             {t('welcome.poweredBy') || 'Tu tienda está potenciada por BootandStrap'}
                         </p>
 
@@ -219,7 +219,7 @@ export default function WelcomeModal({
                             {[0, 1, 2].map((i) => (
                                 <div
                                     key={i}
-                                    className="w-2 h-2 rounded-full bg-primary animate-pulse"
+                                    className="w-2 h-2 rounded-full bg-brand animate-pulse"
                                     style={{ animationDelay: `${i * 300}ms` }}
                                 />
                             ))}
@@ -229,7 +229,7 @@ export default function WelcomeModal({
                         <button
                             type="button"
                             onClick={() => setPhase('readiness')}
-                            className="absolute top-4 right-4 text-text-muted/40 hover:text-text-muted transition-colors"
+                            className="absolute top-4 right-4 text-tx-faint hover:text-tx-muted transition-colors"
                             aria-label="Skip"
                         >
                             <X className="w-5 h-5" />
@@ -243,14 +243,14 @@ export default function WelcomeModal({
                         {/* Header */}
                         <div className="px-8 pt-8 pb-4">
                             <div className="flex items-center gap-3 mb-1">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                    <Sparkles className="w-5 h-5 text-primary" />
+                                <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center">
+                                    <Sparkles className="w-5 h-5 text-brand" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold font-display text-text-primary">
+                                    <h2 className="text-xl font-bold font-display text-tx">
                                         {t('welcome.title') || `Welcome, ${storeName}!`}
                                     </h2>
-                                    <p className="text-xs text-text-muted">
+                                    <p className="text-xs text-tx-muted">
                                         {t('welcome.subtitle') || "Your store is ready. Here's what's been set up:"}
                                     </p>
                                 </div>
@@ -265,7 +265,7 @@ export default function WelcomeModal({
                                     <div
                                         key={item.label}
                                         className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all opacity-0 animate-fade-in-up ${item.done
-                                            ? 'bg-green-500/5 text-text-secondary'
+                                            ? 'bg-green-500/5 text-tx-sec'
                                             : 'bg-amber-500/5 text-amber-600'
                                             }`}
                                         style={{ animationDelay: `${idx * 120}ms`, animationFillMode: 'forwards' }}
@@ -289,9 +289,9 @@ export default function WelcomeModal({
                         </div>
 
                         {/* Progress summary */}
-                        <div className="mx-8 h-1.5 bg-surface-3 rounded-full overflow-hidden mb-6">
+                        <div className="mx-8 h-1.5 bg-sf-3 rounded-full overflow-hidden mb-6">
                             <div
-                                className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full transition-all duration-700"
+                                className="h-full bg-gradient-to-r from-brand to-green-500 rounded-full transition-all duration-700"
                                 style={{ width: `${(doneCount / readinessItems.length) * 100}%` }}
                             />
                         </div>
@@ -309,7 +309,7 @@ export default function WelcomeModal({
                             <button
                                 type="button"
                                 onClick={onSkip}
-                                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium text-text-muted hover:text-text-primary rounded-xl border border-surface-3 hover:bg-surface-2 transition-all"
+                                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium text-tx-muted hover:text-tx rounded-xl border border-sf-3 hover:bg-sf-2 transition-all"
                             >
                                 {t('welcome.skip') || 'Skip to Dashboard'}
                             </button>

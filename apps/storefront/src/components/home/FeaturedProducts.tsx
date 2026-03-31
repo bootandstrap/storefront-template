@@ -28,7 +28,7 @@ export default async function FeaturedProducts({ dictionary, lang }: FeaturedPro
         return (
             <section className="py-12 md:py-16">
                 <div className="container-page text-center">
-                    <p className="text-text-muted">{t('product.noProducts')}</p>
+                    <p className="text-tx-muted">{t('product.noProducts')}</p>
                 </div>
             </section>
         )
@@ -37,20 +37,26 @@ export default async function FeaturedProducts({ dictionary, lang }: FeaturedPro
     return (
         <section className="py-12 md:py-16">
             <div className="container-page">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl md:text-3xl font-bold font-display text-text-primary">
-                        {t('product.featured')}
-                    </h2>
+                <div className="flex items-end justify-between mb-8">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-display text-tx">
+                            {t('product.featured')}
+                        </h2>
+                        <div className="w-12 h-1 bg-brand rounded-full mt-2" />
+                    </div>
                     <Link
                         href={localizedHref(lang as Locale, 'products', dictionary)}
-                        className="text-sm font-medium text-primary hover:text-primary-light transition-colors hidden sm:block"
+                        className="group text-sm font-medium text-brand hover:text-brand-light transition-colors hidden sm:flex items-center gap-1"
                     >
-                        {t('account.viewAll')} →
+                        {t('account.viewAll')}
+                        <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
                     </Link>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    {products.map((product) => (
-                        <ProductCard key={product.id} product={product} badgesEnabled={featureFlags.enable_product_badges} />
+                    {products.map((product, i) => (
+                        <div key={product.id} className={`animate-slide-up-stagger stagger-${Math.min(i + 1, 8)}`}>
+                            <ProductCard product={product} badgesEnabled={featureFlags.enable_product_badges} />
+                        </div>
                     ))}
                 </div>
                 <div className="mt-8 text-center sm:hidden">

@@ -193,18 +193,21 @@ export async function proxy(request: NextRequest) {
         return response
     }
 
-    // ── Rate limiting ──────────────────────────
-    const ip = (await import('@/lib/security/get-client-ip')).getClientIp(request)
-    const isApi = path.startsWith('/api/')
+    // ── Rate limiting (production only) ──────
+    // In dev, all requests come from 127.0.0.1 which hits the per-IP limit trivially
+    if (process.env.NODE_ENV !== 'development') {
+        const ip = (await import('@/lib/security/get-client-ip')).getClientIp(request)
+        const isApi = path.startsWith('/api/')
 
-    if (await isRateLimited(ip, isApi)) {
-        return NextResponse.json(
-            { error: 'Too many requests' },
-            {
-                status: 429,
-                headers: { 'Retry-After': '60' },
-            }
-        )
+        if (await isRateLimited(ip, isApi)) {
+            return NextResponse.json(
+                { error: 'Too many requests' },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': '60' },
+                }
+            )
+        }
     }
 
     // ── Exempt health + webhook from auth ──────

@@ -78,8 +78,8 @@ export default function ModuleCheckoutButton({
     }, [moduleKey, tierKey, locale, loading, disabled])
 
     const baseClass = variant === 'activate'
-        ? `bg-gradient-to-r ${colorGradient || 'from-primary to-accent'} text-white hover:opacity-90`
-        : 'bg-accent/10 text-accent hover:bg-accent/20'
+        ? `bg-gradient-to-r ${colorGradient || 'from-brand to-accent'} text-white hover:opacity-90`
+        : 'bg-brand-subtle text-accent hover:bg-brand-muted'
 
     return (
         <div className="relative">

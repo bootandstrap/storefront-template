@@ -8,6 +8,8 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
+import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import { Gauge } from 'lucide-react'
 import CapacidadClient from './CapacidadClient'
 
 export const dynamic = 'force-dynamic'
@@ -37,7 +39,13 @@ export default async function CapacidadPage({
     const t = createTranslator(dictionary)
 
     return (
-        <CapacidadClient
+        <div className="space-y-6">
+            <PanelPageHeader
+                title={t('panel.capacidad.title') || 'Capacidad'}
+                subtitle={t('panel.capacidad.subtitle') || 'Traffic & hosting capacity'}
+                icon={<Gauge className="w-5 h-5" />}
+            />
+            <CapacidadClient
             lang={lang}
             businessName={config.business_name || ''}
             featureFlags={{
@@ -65,6 +73,7 @@ export default async function CapacidadPage({
                 comingSoon: t('common.comingSoon') || 'Coming Soon',
                 upgradeModule: t('featureGate.upgradeModule') || 'Upgrade',
             }}
-        />
+            />
+        </div>
     )
 }

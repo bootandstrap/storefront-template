@@ -24,7 +24,7 @@ export default function PanelToaster() {
             toastOptions={{
                 style: {
                     background: 'var(--color-surface-1)',
-                    color: 'var(--color-text-primary)',
+                    color: 'var(--color-text-brand)',
                     border: '1px solid var(--color-surface-3)',
                     borderRadius: '12px',
                     fontSize: '13px',

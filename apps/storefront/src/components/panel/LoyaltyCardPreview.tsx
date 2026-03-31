@@ -68,7 +68,7 @@ export default function LoyaltyCardPreview({
             className={`
                 relative overflow-hidden rounded-2xl border
                 ${isCompact
-                    ? 'bg-surface-1 border-surface-3 p-4'
+                    ? 'bg-sf-1 border-sf-3 p-4'
                     : 'bg-white border-gray-200 p-6 max-w-[80mm] mx-auto print:shadow-none'
                 }
             `}
@@ -77,15 +77,15 @@ export default function LoyaltyCardPreview({
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <div>
-                    <h3 className={`font-bold font-display ${isCompact ? 'text-sm text-text-primary' : 'text-base text-gray-900'}`}>
+                    <h3 className={`font-bold font-display ${isCompact ? 'text-sm text-tx' : 'text-base text-gray-900'}`}>
                         {config.businessName || 'Loyalty Card'}
                     </h3>
-                    <p className={`text-xs ${isCompact ? 'text-text-muted' : 'text-gray-500'}`}>
+                    <p className={`text-xs ${isCompact ? 'text-tx-muted' : 'text-gray-500'}`}>
                         {customer.customerName}
                     </p>
                 </div>
-                <div className={`p-2 rounded-xl ${isCompact ? 'bg-primary/10' : 'bg-amber-50'}`}>
-                    <Trophy className={`w-5 h-5 ${isCompact ? 'text-primary' : 'text-amber-600'}`} />
+                <div className={`p-2 rounded-xl ${isCompact ? 'bg-brand-subtle' : 'bg-amber-50'}`}>
+                    <Trophy className={`w-5 h-5 ${isCompact ? 'text-brand' : 'text-amber-600'}`} />
                 </div>
             </div>
 
@@ -98,10 +98,10 @@ export default function LoyaltyCardPreview({
                             flex items-center justify-center aspect-square rounded-lg transition-all duration-300
                             ${i < customer.stamps
                                 ? isCompact
-                                    ? 'bg-primary/15 text-primary scale-100'
+                                    ? 'bg-brand-muted text-brand scale-100'
                                     : 'bg-amber-100 text-amber-600 scale-100'
                                 : isCompact
-                                    ? 'bg-surface-2 text-text-muted/30'
+                                    ? 'bg-sf-2 text-tx-faint'
                                     : 'bg-gray-100 text-gray-300'
                             }
                         `}
@@ -116,16 +116,16 @@ export default function LoyaltyCardPreview({
 
             {/* Progress */}
             <div className="mb-3">
-                <div className={`flex items-center justify-between text-xs mb-1 ${isCompact ? 'text-text-muted' : 'text-gray-500'}`}>
+                <div className={`flex items-center justify-between text-xs mb-1 ${isCompact ? 'text-tx-muted' : 'text-gray-500'}`}>
                     <span>{progress.current}/{progress.required} {l.stamps}</span>
                     <span>{progress.percentage}%</span>
                 </div>
-                <div className={`h-1.5 rounded-full overflow-hidden ${isCompact ? 'bg-surface-2' : 'bg-gray-100'}`}>
+                <div className={`h-1.5 rounded-full overflow-hidden ${isCompact ? 'bg-sf-2' : 'bg-gray-100'}`}>
                     <div
                         className={`h-full rounded-full transition-all duration-500 ${
                             progress.isComplete
                                 ? 'bg-emerald-500'
-                                : isCompact ? 'bg-primary' : 'bg-amber-500'
+                                : isCompact ? 'bg-brand' : 'bg-amber-500'
                         }`}
                         style={{ width: `${progress.percentage}%` }}
                     />
@@ -140,7 +140,7 @@ export default function LoyaltyCardPreview({
                         ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                         : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     : isCompact
-                        ? 'bg-surface-2 text-text-muted'
+                        ? 'bg-sf-2 text-tx-muted'
                         : 'bg-gray-50 text-gray-500'
                 }
             `}>
@@ -181,7 +181,7 @@ export default function LoyaltyCardPreview({
             {/* Total redeemed badge */}
             {customer.totalRedeemed > 0 && (
                 <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    isCompact ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'
+                    isCompact ? 'bg-brand-subtle text-brand' : 'bg-amber-100 text-amber-700'
                 }`}>
                     ×{customer.totalRedeemed}
                 </div>

@@ -96,6 +96,34 @@ for PORT in "$STOREFRONT_PORT" 3001 9000; do
     fi
 done
 
+# ── Kill orphaned Medusa / Next workers by name ──
+# Zombie pattern: @medusajs/cli spawns child processes (--types workers)
+# that survive after parent dies. They don't bind ports, so lsof misses them.
+for pattern in "@medusajs/cli" "next-server" "next dev"; do
+    ORPHANS="$(pgrep -f "$pattern" 2>/dev/null || true)"
+    if [[ -n "$ORPHANS" ]]; then
+        while IFS= read -r pid; do
+            [[ -z "$pid" ]] && continue
+            echo -e "  ${YELLOW}→${NC} Killing orphan ${pattern} (PID: ${pid})"
+            kill "$pid" 2>/dev/null || true
+            STOPPED=$((STOPPED + 1))
+        done <<< "$ORPHANS"
+    fi
+done
+
+# Wait and force-kill any survivors
+sleep 0.5
+for pattern in "@medusajs/cli" "next-server" "next dev"; do
+    STALE="$(pgrep -f "$pattern" 2>/dev/null || true)"
+    if [[ -n "$STALE" ]]; then
+        while IFS= read -r pid; do
+            [[ -z "$pid" ]] && continue
+            echo -e "  ${RED}→${NC} Force-killing orphan ${pattern} (PID: ${pid})"
+            kill -9 "$pid" 2>/dev/null || true
+        done <<< "$STALE"
+    fi
+done
+
 # ── Stop local redis started by dev.sh ───────
 if [[ -f "$DEV_REDIS_PID_FILE" ]]; then
     REDIS_PID="$(cat "$DEV_REDIS_PID_FILE" 2>/dev/null || true)"

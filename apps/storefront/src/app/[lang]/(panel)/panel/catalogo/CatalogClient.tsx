@@ -350,8 +350,8 @@ export default function CatalogClient({
     }
 
     // ── Shared styles ──
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
-    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
+    const inputClass = 'w-full px-4 py-2.5 rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     // ── Tabs config ──
     const tabs = [
@@ -380,16 +380,16 @@ export default function CatalogClient({
                                 updateQuery({ tab: tab.key })
                             }}
                             aria-pressed={activeTab === tab.key}
-                            className={`px-5 py-2.5 min-h-[44px] text-sm font-medium transition-colors flex items-center gap-2 rounded-lg relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${
+                            className={`px-5 py-2.5 min-h-[44px] text-sm font-medium transition-colors flex items-center gap-2 rounded-lg relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-1 ${
                                 activeTab === tab.key
                                     ? 'text-white'
-                                    : 'text-text-secondary hover:bg-surface-1'
+                                    : 'text-tx-sec hover:bg-sf-1'
                             }`}
                         >
                             {activeTab === tab.key && (
                                 <motion.div
                                     layoutId="catalog-tab-active"
-                                    className="absolute inset-0 bg-primary rounded-lg"
+                                    className="absolute inset-0 bg-brand rounded-lg"
                                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                 />
                             )}
@@ -418,13 +418,13 @@ export default function CatalogClient({
                     >
                         {/* Toolbar */}
                         <div className="flex items-center justify-between flex-wrap gap-3">
-                            <p className="text-xs text-text-muted">
+                            <p className="text-xs text-tx-muted">
                                 {productCount} / {maxProducts} {labels.products}
                                 {!canAddProduct && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
                             </p>
                             <div className="flex items-center gap-2">
                                 <button
-                                    className="btn glass flex items-center gap-2 min-h-[44px] text-sm font-medium text-text-secondary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                    className="btn glass flex items-center gap-2 min-h-[44px] text-sm font-medium text-tx-sec hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                                     disabled={products.length === 0}
                                     onClick={() => setShowLabels(true)}
                                     title="Print price labels"
@@ -433,7 +433,7 @@ export default function CatalogClient({
                                     <span className="hidden sm:inline">Labels</span>
                                 </button>
                                 <button
-                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                                     disabled={!canAddProduct || isPending}
                                     onClick={() => { resetProductForm(); setShowProductForm(true) }}
                                 >
@@ -446,7 +446,7 @@ export default function CatalogClient({
                         {/* Filters */}
                         <div className="flex gap-3 flex-wrap">
                             <div className="relative flex-1 min-w-[200px]">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                                 <input
                                     type="text"
                                     placeholder={labels.searchPlaceholder}
@@ -466,14 +466,14 @@ export default function CatalogClient({
                                             updateQuery({ status: s === 'all' ? undefined : s, page: '1', tab: 'productos' })
                                         }}
                                         aria-pressed={statusFilter === s}
-                                        className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                                            statusFilter === s ? 'text-white' : 'text-text-secondary hover:bg-surface-1'
+                                        className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
+                                            statusFilter === s ? 'text-white' : 'text-tx-sec hover:bg-sf-1'
                                         }`}
                                     >
                                         {statusFilter === s && (
                                             <motion.div
                                                 layoutId="catalog-status-filter"
-                                                className="absolute inset-0 bg-primary rounded-lg"
+                                                className="absolute inset-0 bg-brand rounded-lg"
                                                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                             />
                                         )}
@@ -507,12 +507,12 @@ export default function CatalogClient({
                             <div className="glass rounded-2xl">
                                 <div className="empty-state">
                                     <div className="empty-state-icon">
-                                        <Package className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                                        <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                                     </div>
-                                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                                    <h3 className="text-lg font-bold font-display text-tx mb-2">
                                         {labels.noProducts}
                                     </h3>
-                                    <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                                    <p className="text-sm text-tx-sec leading-relaxed mb-6">
                                         {labels.noProducts}
                                     </p>
                                     <button
@@ -538,12 +538,12 @@ export default function CatalogClient({
                                                 className="glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
                                             >
                                                 {/* Thumbnail */}
-                                                <div className="aspect-[4/3] bg-surface-1 relative flex items-center justify-center cursor-pointer" onClick={() => openEditProduct(product)}>
+                                                <div className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer" onClick={() => openEditProduct(product)}>
                                                     {product.thumbnail ? (
                                                         // eslint-disable-next-line @next/next/no-img-element
                                                         <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <Package className="w-10 h-10 text-text-muted/40" />
+                                                        <Package className="w-10 h-10 text-tx-faint" />
                                                     )}
                                                     <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${
                                                         product.status === 'published'
@@ -570,23 +570,23 @@ export default function CatalogClient({
 
                                                 {/* Info */}
                                                 <div className="p-4">
-                                                    <h3 className="font-bold text-text-primary truncate cursor-pointer hover:text-primary transition-colors" onClick={() => openEditProduct(product)}>{product.title}</h3>
+                                                    <h3 className="font-bold text-tx truncate cursor-pointer hover:text-brand transition-colors" onClick={() => openEditProduct(product)}>{product.title}</h3>
                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-lg font-bold text-primary">{getPrice(product)}</span>
-                                                        <span className="text-xs text-text-muted">
+                                                        <span className="text-lg font-bold text-brand">{getPrice(product)}</span>
+                                                        <span className="text-xs text-tx-muted">
                                                             {product.categories?.[0]?.name || labels.noCategory}
                                                         </span>
                                                     </div>
 
                                                     {/* Badge toggles (collapsible) */}
-                                                    <div className="mt-3 pt-3 border-t border-surface-2">
+                                                    <div className="mt-3 pt-3 border-t border-sf-2">
                                                         <button
                                                             onClick={() => setExpandedBadges(isExpanded ? null : product.id)}
-                                                            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors w-full"
+                                                            className="flex items-center gap-1.5 text-xs text-tx-muted hover:text-tx-sec transition-colors w-full"
                                                         >
                                                             <Tag className="w-3 h-3" />
                                                             {labels.badgesLabel}
-                                                            <span className="text-text-muted/60">({productBadges.length})</span>
+                                                            <span className="text-tx-faint">({productBadges.length})</span>
                                                             {isExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
                                                         </button>
                                                         <AnimatePresence>
@@ -610,7 +610,7 @@ export default function CatalogClient({
                                                                                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                                                                                         isEnabled
                                                                                             ? badge.color + ' ring-1 ring-offset-1 ring-current/20'
-                                                                                            : 'bg-surface-1 text-text-muted hover:bg-surface-2'
+                                                                                            : 'bg-sf-1 text-tx-muted hover:bg-sf-2'
                                                                                     } ${isPending ? 'opacity-50' : ''}`}
                                                                                 >
                                                                                     {badge.emoji} {badge.label}
@@ -624,11 +624,11 @@ export default function CatalogClient({
                                                     </div>
 
                                                     {/* Actions */}
-                                                    <div className="flex gap-1 mt-3 pt-3 border-t border-surface-2">
+                                                    <div className="flex gap-1 mt-3 pt-3 border-t border-sf-2">
                                                         <motion.button
                                                             whileTap={{ scale: 0.93 }}
                                                             onClick={() => handleToggleStatus(product)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                             disabled={isPending}
                                                             aria-label={product.status === 'published' ? labels.draft : labels.published}
                                                         >
@@ -640,7 +640,7 @@ export default function CatalogClient({
                                                         <motion.button
                                                             whileTap={{ scale: 0.93 }}
                                                             onClick={() => openEditProduct(product)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                             disabled={isPending}
                                                             aria-label={labels.edit}
                                                         >
@@ -649,7 +649,7 @@ export default function CatalogClient({
                                                         <motion.button
                                                             whileTap={{ scale: 0.93 }}
                                                             onClick={() => handleDeleteProduct(product.id)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                                             disabled={isPending}
                                                             aria-label={labels.delete}
                                                         >
@@ -676,7 +676,7 @@ export default function CatalogClient({
                                     <ChevronLeft className="w-4 h-4" />
                                     {labels.previous}
                                 </motion.button>
-                                <p className="text-sm text-text-muted tabular-nums">
+                                <p className="text-sm text-tx-muted tabular-nums">
                                     {currentPage} / {totalPages}
                                 </p>
                                 <motion.button
@@ -707,7 +707,7 @@ export default function CatalogClient({
                     >
                         {/* Toolbar */}
                         <div className="flex items-center justify-between flex-wrap gap-3">
-                            <p className="text-xs text-text-muted">
+                            <p className="text-xs text-tx-muted">
                                 {categoryCount} / {maxCategories} {labels.categories}
                                 {!canAddCategory && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
                             </p>
@@ -743,12 +743,12 @@ export default function CatalogClient({
                             <div className="glass rounded-2xl">
                                 <div className="empty-state">
                                     <div className="empty-state-icon">
-                                        <Layers className="w-8 h-8 text-text-muted" strokeWidth={1.5} />
+                                        <Layers className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                                     </div>
-                                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">
+                                    <h3 className="text-lg font-bold font-display text-tx mb-2">
                                         {labels.noCategories}
                                     </h3>
-                                    <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                                    <p className="text-sm text-tx-sec leading-relaxed mb-6">
                                         {labels.noCategories}
                                     </p>
                                     <button
@@ -771,23 +771,23 @@ export default function CatalogClient({
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                                                    <div className="p-2.5 rounded-xl bg-brand-subtle text-brand">
                                                         <Layers className="w-5 h-5" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-bold text-text-primary">{cat.name}</h3>
-                                                        <p className="text-xs text-text-muted mt-0.5">/{cat.handle}</p>
+                                                        <h3 className="font-bold text-tx">{cat.name}</h3>
+                                                        <p className="text-xs text-tx-muted mt-0.5">/{cat.handle}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             {cat.description && (
-                                                <p className="text-sm text-text-muted mt-3 line-clamp-2">{cat.description}</p>
+                                                <p className="text-sm text-tx-muted mt-3 line-clamp-2">{cat.description}</p>
                                             )}
-                                            <div className="flex gap-1 mt-4 pt-3 border-t border-surface-2">
+                                            <div className="flex gap-1 mt-4 pt-3 border-t border-sf-2">
                                                 <motion.button
                                                     whileTap={{ scale: 0.93 }}
                                                     onClick={() => openEditCategory(cat)}
-                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-surface-1 text-text-muted hover:text-primary transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                                     disabled={isPending}
                                                     aria-label={`${labels.edit} ${cat.name}`}
                                                 >
@@ -796,7 +796,7 @@ export default function CatalogClient({
                                                 <motion.button
                                                     whileTap={{ scale: 0.93 }}
                                                     onClick={() => handleDeleteCategory(cat.id)}
-                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-text-muted hover:text-red-500 transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                                     disabled={isPending}
                                                     aria-label={`${labels.delete} ${cat.name}`}
                                                 >
@@ -847,7 +847,7 @@ export default function CatalogClient({
                                 className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
                                     formStatus === 'published'
                                         ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-300 dark:ring-emerald-800'
-                                        : 'glass text-text-secondary hover:bg-surface-1'
+                                        : 'glass text-tx-sec hover:bg-sf-1'
                                 }`}
                             >
                                 <Eye className="w-4 h-4" />
@@ -859,7 +859,7 @@ export default function CatalogClient({
                                 className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
                                     formStatus === 'draft'
                                         ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800'
-                                        : 'glass text-text-secondary hover:bg-surface-1'
+                                        : 'glass text-tx-sec hover:bg-sf-1'
                                 }`}
                             >
                                 <EyeOff className="w-4 h-4" />
@@ -895,7 +895,7 @@ export default function CatalogClient({
                                 onDragLeave={() => setDragOver(false)}
                                 onDrop={handleDrop}
                                 className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
-                                    dragOver ? 'border-primary bg-primary/5' : 'border-surface-3 hover:border-primary/40'
+                                    dragOver ? 'border-brand bg-brand-subtle' : 'border-sf-3 hover:border-brand'
                                 } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
                             >
                                 <input
@@ -905,28 +905,28 @@ export default function CatalogClient({
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     disabled={isUploading}
                                 />
-                                <Upload className="w-6 h-6 mx-auto text-text-muted mb-1" />
-                                <p className="text-sm text-text-secondary">
+                                <Upload className="w-6 h-6 mx-auto text-tx-muted mb-1" />
+                                <p className="text-sm text-tx-sec">
                                     {isUploading ? labels.uploading : labels.dropzone}
                                 </p>
-                                <p className="text-xs text-text-muted mt-0.5">{labels.dropzoneHint}</p>
+                                <p className="text-xs text-tx-muted mt-0.5">{labels.dropzoneHint}</p>
                             </div>
                         </div>
                     )}
 
                     {!editingProduct && (
-                        <p className="text-xs text-text-muted flex items-center gap-1.5">
+                        <p className="text-xs text-tx-muted flex items-center gap-1.5">
                             <ImageIcon className="w-3.5 h-3.5" />
                             {labels.saveFirst}
                         </p>
                     )}
 
                     <div className="flex gap-3 pt-2">
-                        <button onClick={handleProductSubmit} disabled={isPending || !formTitle.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                        <button onClick={handleProductSubmit} disabled={isPending || !formTitle.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                             {isPending ? '...' : editingProduct ? labels.save : labels.create}
                         </button>
-                        <button onClick={resetProductForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
+                        <button onClick={resetProductForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
                     </div>
                 </div>
             </SlideOver>
@@ -943,11 +943,11 @@ export default function CatalogClient({
                         <textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} className={`${inputClass} min-h-[60px] resize-y`} rows={2} />
                     </div>
                     <div className="flex gap-3 pt-2">
-                        <button onClick={handleCategorySubmit} disabled={isPending || !catName.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                        <button onClick={handleCategorySubmit} disabled={isPending || !catName.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                             {isPending ? '...' : editingCategory ? labels.save : labels.create}
                         </button>
-                        <button onClick={resetCategoryForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{labels.cancel}</button>
+                        <button onClick={resetCategoryForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
                     </div>
                 </div>
             </SlideOver>

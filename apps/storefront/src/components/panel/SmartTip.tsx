@@ -62,12 +62,12 @@ export default function SmartTip({ tipId, emoji, message, actionLabel, actionHre
       <div className="flex items-start gap-3 pr-6">
         <span className="text-xl flex-shrink-0">{emoji}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-text-primary font-medium leading-snug">
+          <p className="text-sm text-tx font-medium leading-snug">
             {message}
           </p>
           <a
             href={`/${lang}${actionHref}`}
-            className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-primary hover:text-primary-light transition-colors"
+            className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-brand hover:text-brand-light transition-colors"
           >
             {actionLabel}
             <ArrowRight className="w-3 h-3" />

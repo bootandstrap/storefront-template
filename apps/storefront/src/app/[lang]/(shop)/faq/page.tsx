@@ -47,13 +47,13 @@ export default async function FaqPage({
 
             <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                        <HelpCircle className="w-7 h-7 text-primary" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-subtle mb-4">
+                        <HelpCircle className="w-7 h-7 text-brand" />
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold font-display text-text-primary mb-3">
+                    <h1 className="text-3xl md:text-4xl font-bold font-display text-tx mb-3">
                         {t('faq.title')}
                     </h1>
-                    <p className="text-text-muted text-lg">
+                    <p className="text-tx-muted text-lg">
                         {t('faq.subtitle')}
                     </p>
                 </div>
@@ -65,12 +65,12 @@ export default async function FaqPage({
                             className="group glass rounded-xl border border-white/5 overflow-hidden"
                         >
                             <summary className="flex items-center justify-between p-5 cursor-pointer select-none hover:bg-white/[0.03] transition-colors">
-                                <span className="font-medium text-text-primary pr-4">
+                                <span className="font-medium text-tx pr-4">
                                     {item.question}
                                 </span>
-                                <ChevronDown className="w-5 h-5 text-text-muted shrink-0 transition-transform duration-200 group-open:rotate-180" />
+                                <ChevronDown className="w-5 h-5 text-tx-muted shrink-0 transition-transform duration-200 group-open:rotate-180" />
                             </summary>
-                            <div className="px-5 pb-5 text-text-secondary leading-relaxed">
+                            <div className="px-5 pb-5 text-tx-sec leading-relaxed">
                                 {item.answer}
                             </div>
                         </details>
@@ -80,7 +80,7 @@ export default async function FaqPage({
                 {/* Contact CTA */}
                 {config.whatsapp_number && (
                     <div className="mt-10 text-center glass rounded-2xl p-8">
-                        <p className="text-text-muted mb-4">
+                        <p className="text-tx-muted mb-4">
                             {t('faq.contactHint')}
                         </p>
                         <a

@@ -74,18 +74,18 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
             />
 
             {/* Drawer */}
-            <div className="absolute top-0 right-0 h-full w-full max-w-md bg-surface-0 shadow-2xl flex flex-col animate-slide-right">
+            <div className="absolute top-0 right-0 h-full w-full max-w-md bg-sf-0 shadow-2xl flex flex-col animate-slide-right">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-surface-3">
+                <div className="flex items-center justify-between p-4 border-b border-sf-3">
                     <div className="flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-primary" />
+                        <ShoppingBag className="w-5 h-5 text-brand" />
                         <h2 className="text-lg font-bold font-display">
                             {t('cart.title')} (<span aria-live="polite">{itemCount}</span>)
                         </h2>
                     </div>
                     <button
                         onClick={closeDrawer}
-                        className="p-2 rounded-full hover:bg-surface-1 transition-colors"
+                        className="p-2 rounded-full hover:bg-sf-1 transition-colors"
                         aria-label={t('common.close')}
                     >
                         <X className="w-5 h-5" />
@@ -96,15 +96,15 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <Loader2 className="w-6 h-6 animate-spin text-brand" />
                         </div>
                     ) : items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <ShoppingBag className="w-10 h-10 text-text-muted mb-4" strokeWidth={1.5} />
-                            <h3 className="text-lg font-semibold text-text-primary mb-2">
+                            <ShoppingBag className="w-10 h-10 text-tx-muted mb-4" strokeWidth={1.5} />
+                            <h3 className="text-lg font-semibold text-tx mb-2">
                                 {t('cart.empty')}
                             </h3>
-                            <p className="text-sm text-text-muted mb-6">
+                            <p className="text-sm text-tx-muted mb-6">
                                 {t('cart.emptyHint')}
                             </p>
                             <button
@@ -121,10 +121,10 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
 
                 {/* Footer — flag-gated buttons */}
                 {items.length > 0 && (
-                    <div className="border-t border-surface-3 p-4 space-y-3">
+                    <div className="border-t border-sf-3 p-4 space-y-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-secondary">{t('cart.subtotal')}</span>
-                            <span className="font-bold text-text-primary">{formattedSubtotal}</span>
+                            <span className="text-tx-sec">{t('cart.subtotal')}</span>
+                            <span className="font-bold text-tx">{formattedSubtotal}</span>
                         </div>
 
                         {/* Free shipping progress */}

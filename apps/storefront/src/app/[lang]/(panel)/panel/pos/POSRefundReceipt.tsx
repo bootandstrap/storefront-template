@@ -80,22 +80,22 @@ export default function POSRefundReceipt({ refund, businessName, businessAddress
                     {/* Receipt body */}
                     <div className="px-6 py-4 space-y-3">
                         {/* Meta */}
-                        <div className="flex justify-between text-[11px] text-text-muted">
+                        <div className="flex justify-between text-[11px] text-tx-muted">
                             <span>Ref: {refund.id.slice(0, 12)}</span>
                             <span>{date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
 
                         {/* Dashed separator */}
-                        <div className="border-t border-dashed border-surface-3" />
+                        <div className="border-t border-dashed border-sf-3" />
 
                         {/* Items */}
                         <div className="space-y-2">
                             {refund.items.map((item, i) => (
                                 <div key={i} className="flex justify-between text-sm">
-                                    <span className="text-text-primary">
+                                    <span className="text-tx">
                                         {item.title}
                                         {item.quantity > 1 && (
-                                            <span className="text-text-muted ml-1">×{item.quantity}</span>
+                                            <span className="text-tx-muted ml-1">×{item.quantity}</span>
                                         )}
                                     </span>
                                     <span className="font-medium text-rose-600">
@@ -105,26 +105,26 @@ export default function POSRefundReceipt({ refund, businessName, businessAddress
                             ))}
                         </div>
 
-                        <div className="border-t border-dashed border-surface-3" />
+                        <div className="border-t border-dashed border-sf-3" />
 
                         {/* Reason */}
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-muted">{posLabel('panel.pos.refundReason', labels)}</span>
-                            <span className="text-text-primary font-medium">
+                            <span className="text-tx-muted">{posLabel('panel.pos.refundReason', labels)}</span>
+                            <span className="text-tx font-medium">
                                 {posLabel(REASON_LABEL_KEYS[refund.reason] || 'panel.pos.refundOther', labels)}
                             </span>
                         </div>
                         {refund.reason_note && (
-                            <p className="text-xs text-text-muted bg-surface-1 px-3 py-2 rounded-lg">
+                            <p className="text-xs text-tx-muted bg-sf-1 px-3 py-2 rounded-lg">
                                 {refund.reason_note}
                             </p>
                         )}
 
-                        <div className="border-t border-dashed border-surface-3" />
+                        <div className="border-t border-dashed border-sf-3" />
 
                         {/* Total */}
                         <div className="flex justify-between items-center">
-                            <span className="text-base font-bold text-text-primary">
+                            <span className="text-base font-bold text-tx">
                                 {labels['panel.pos.total'] || 'Total reembolso'}
                             </span>
                             <span className="text-xl font-bold text-rose-600">
@@ -133,20 +133,20 @@ export default function POSRefundReceipt({ refund, businessName, businessAddress
                         </div>
 
                         {/* Order reference */}
-                        <p className="text-[11px] text-text-muted text-center">
+                        <p className="text-[11px] text-tx-muted text-center">
                             {posLabel('panel.pos.originalOrder', labels)}: {refund.order_id.slice(0, 16)}
                         </p>
                     </div>
 
                     {/* Actions */}
-                    <div className="px-6 py-4 border-t border-surface-2 flex gap-2">
+                    <div className="px-6 py-4 border-t border-sf-2 flex gap-2">
                         <button
                             onClick={() => handlePrint()}
                             aria-label={labels['panel.pos.printReceipt'] || 'Print receipt'}
                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl min-h-[44px]
-                                       bg-surface-1 text-text-secondary text-sm font-medium
-                                       hover:bg-surface-2 transition-colors
-                                       focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                       bg-sf-1 text-tx-sec text-sm font-medium
+                                       hover:bg-sf-2 transition-colors
+                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                         >
                             <Printer className="w-4 h-4" />
                             {labels['panel.pos.printReceipt'] || 'Imprimir'}
@@ -154,8 +154,8 @@ export default function POSRefundReceipt({ refund, businessName, businessAddress
                         <button
                             onClick={onClose}
                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl min-h-[44px]
-                                       bg-primary text-white text-sm font-medium
-                                       hover:bg-primary/90 transition-colors
+                                       bg-brand text-white text-sm font-medium
+                                       hover:bg-brand transition-colors
                                        focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
                         >
                             <X className="w-4 h-4" />

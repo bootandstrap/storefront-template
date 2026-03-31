@@ -43,10 +43,10 @@ export default async function CheckoutPage({
             <div className="min-h-[60vh] flex items-center justify-center px-4">
                 <div className="glass-strong rounded-2xl p-8 text-center max-w-md">
                     <div className="text-4xl mb-4">⚠️</div>
-                    <h2 className="text-xl font-bold text-text-primary mb-2">
+                    <h2 className="text-xl font-bold text-tx mb-2">
                         {t('limits.planExpired')}
                     </h2>
-                    <p className="text-text-muted">
+                    <p className="text-tx-muted">
                         {t('limits.planExpiredDesc')}
                     </p>
                 </div>

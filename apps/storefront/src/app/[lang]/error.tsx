@@ -21,14 +21,14 @@ export default function LangError({
                 <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center mx-auto mb-6">
                     <span className="text-3xl">⚠️</span>
                 </div>
-                <h1 className="text-2xl font-bold font-display text-text-primary mb-3">
+                <h1 className="text-2xl font-bold font-display text-tx mb-3">
                     {strings.title}
                 </h1>
-                <p className="text-text-muted mb-6">
+                <p className="text-tx-muted mb-6">
                     {strings.description}
                 </p>
                 {error.digest && (
-                    <p className="text-xs text-text-muted mb-4 font-mono">
+                    <p className="text-xs text-tx-muted mb-4 font-mono">
                         Ref: {error.digest}
                     </p>
                 )}

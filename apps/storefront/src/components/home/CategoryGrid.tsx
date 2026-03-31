@@ -73,22 +73,22 @@ export default async function CategoryGrid({ dictionary, lang }: CategoryGridPro
     return (
         <section data-testid="category-grid" className="py-12 md:py-16">
             <div className="container-page">
-                <h2 className="text-2xl md:text-3xl font-bold font-display text-text-primary mb-8 text-center">
+                <h2 className="text-2xl md:text-3xl font-bold font-display text-tx mb-8 text-center">
                     {t('product.categories')}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6">
-                    {categories.slice(0, 10).map((cat) => {
+                    {categories.slice(0, 10).map((cat, i) => {
                         const Icon = getCategoryIcon(cat.handle)
                         return (
                             <Link
                                 key={cat.id}
                                 href={`${localizedHref(lang as Locale, 'products', dictionary)}?category=${cat.handle}`}
-                                className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-surface-1 card-lift"
+                                className={`group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-sf-1 hover-lift animate-slide-up-stagger stagger-${Math.min(i + 1, 8)}`}
                             >
-                                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-all duration-300">
-                                    <Icon className="w-7 h-7 md:w-8 md:h-8 text-primary" strokeWidth={1.5} />
+                                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-sf-2 flex items-center justify-center group-hover:bg-brand/10 group-hover:scale-110 transition-all duration-300">
+                                    <Icon className="w-7 h-7 md:w-8 md:h-8 text-brand" strokeWidth={1.5} />
                                 </div>
-                                <span className="text-sm font-medium text-text-secondary group-hover:text-primary transition-colors text-center">
+                                <span className="text-sm font-medium text-tx-sec group-hover:text-brand transition-colors duration-200 text-center">
                                     {cat.name}
                                 </span>
                             </Link>

@@ -24,6 +24,7 @@ export interface OwnerModuleInfo {
   is_purchasable: boolean
   has_free_tier: boolean
   requires: string[]
+  payment_type: 'subscription' | 'one_time' | 'extension'
   sort_order: number
   tiers: OwnerTierInfo[]
 }
@@ -90,7 +91,7 @@ async function fetchModuleCatalog(
       tagline, tagline_en, tagline_de, tagline_fr, tagline_it,
       emoji, icon_name, category,
       color_gradient, text_color, icon_color,
-      is_purchasable, has_free_tier, requires, sort_order,
+      is_purchasable, has_free_tier, requires, sort_order, payment_type,
       module_tiers (
         id, key, tier_name, tier_name_en, tier_name_de, tier_name_fr, tier_name_it,
         price, features, is_recommended, stripe_price_id, sort_order
@@ -116,6 +117,7 @@ async function fetchModuleCatalog(
     is_purchasable: m.is_purchasable ?? true,
     has_free_tier: m.has_free_tier ?? false,
     requires: parseRequires(m.requires),
+    payment_type: (['one_time', 'extension'].includes(m.payment_type || '') ? m.payment_type : 'subscription') as OwnerModuleInfo['payment_type'],
     sort_order: m.sort_order ?? 0,
     tiers: (m.module_tiers || [])
       .sort((a: { sort_order?: number }, b: { sort_order?: number }) =>
@@ -136,16 +138,102 @@ async function fetchActiveModules(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string,
 ): Promise<Record<string, { tierKey: string }>> {
+  const active: Record<string, { tierKey: string }> = {}
+
+  // ── Source 0: Feature flags (governance truth — Stripe Entitlements synced) ──
+  // feature_flags are always fresh: written by Stripe webhook or materializer.
+  // We derive which modules are active from enabled flags.
+  try {
+    const { data: flagRow } = await supabase
+      .from('feature_flags')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .single()
+
+    if (flagRow) {
+      // Import the derive function dynamically to avoid circular deps
+      const { deriveActiveModulesFromFlags } = await import('@/lib/governance/derive-modules')
+      const flagModules = deriveActiveModulesFromFlags(flagRow as Record<string, boolean | null | undefined>)
+
+      // We know which modules are active from flags, but we need tier info
+      // from module_orders (Source 1) below. Mark them with default tier for now.
+      for (const moduleKey of flagModules) {
+        active[moduleKey] = { tierKey: 'basic' }
+      }
+    }
+  } catch {
+    // Non-fatal — fall through to Source 1
+  }
+
+  // ── Source 1: Commercial truth (Stripe-backed module_orders + items) ──
+  // module_orders has no module_key column — real data lives in module_order_items
   const { data: orders } = await supabase
     .from('module_orders')
-    .select('module_key, tier_key, status')
+    .select(`
+      id, status,
+      module_order_items (
+        module_key,
+        tier_name
+      )
+    `)
     .eq('tenant_id', tenantId)
-    .eq('status', 'active')
+    .in('status', ['active', 'paid', 'completed', 'confirmed'])
 
-  const active: Record<string, { tierKey: string }> = {}
   if (orders) {
-    for (const order of orders) {
-      active[order.module_key] = { tierKey: order.tier_key }
+    for (const order of orders as Array<{
+      id: string
+      status: string
+      module_order_items: Array<{ module_key: string; tier_name: string | null }> | { module_key: string; tier_name: string | null } | null
+    }>) {
+      const items = Array.isArray(order.module_order_items)
+        ? order.module_order_items
+        : order.module_order_items ? [order.module_order_items] : []
+      for (const item of items) {
+        if (item.module_key) {
+          // Orders provide tier info — upgrade the default tier from Source 0
+          active[item.module_key] = { tierKey: item.tier_name || 'basic' }
+        }
+      }
+    }
+  }
+
+  // ── Source 2: Governance fallback (demo/bundle provisioned tenants) ──
+  // When applyModuleBundle() materializes module_orders, this fallback
+  // catches the gap for older demo tenants that only have capability_overrides.
+  if (Object.keys(active).length === 0) {
+    const { data: overrides } = await supabase
+      .from('capability_overrides')
+      .select('key, value, reason')
+      .eq('tenant_id', tenantId)
+      .like('reason', 'bundle:%')
+
+    if (overrides && overrides.length > 0) {
+      // Overrides exist from a bundle — derive module list from flag keys
+      // e.g. key 'enable_ecommerce' → module 'ecommerce'
+      // We map known flag prefixes to module keys
+      const FLAG_MODULE_REVERSE: Record<string, string> = {
+        enable_ecommerce: 'ecommerce',
+        enable_online_payments: 'sales_channels',
+        enable_whatsapp_checkout: 'sales_channels',
+        enable_chatbot: 'chatbot',
+        enable_crm: 'crm',
+        enable_analytics: 'seo',
+        enable_newsletter: 'email_marketing',
+        enable_multi_language: 'i18n',
+        enable_email_campaigns: 'email_marketing',
+        enable_abandoned_cart_emails: 'automation',
+        enable_google_auth: 'auth_advanced',
+        enable_reviews: 'ecommerce',
+        enable_wishlist: 'ecommerce',
+        enable_promotions: 'ecommerce',
+        enable_social_links: 'rrss',
+      }
+      for (const ov of overrides) {
+        const moduleKey = FLAG_MODULE_REVERSE[ov.key]
+        if (moduleKey && ov.value === true && !active[moduleKey]) {
+          active[moduleKey] = { tierKey: 'enterprise' } // bundles apply max tier
+        }
+      }
     }
   }
 
@@ -205,6 +293,9 @@ function mapRpcToOwnerModule(row: Record<string, unknown>): OwnerModuleInfo {
     is_purchasable: row.is_purchasable as boolean,
     has_free_tier: row.has_free_tier as boolean,
     requires: parseRequires(row.requires),
+    payment_type: (['one_time', 'extension'].includes(row.payment_type as string || '') 
+      ? row.payment_type as OwnerModuleInfo['payment_type'] 
+      : 'subscription') as OwnerModuleInfo['payment_type'],
     sort_order: (row.sort_order as number) || 0,
     tiers: ((row.tiers as Record<string, unknown>[]) || []).map(t => ({
       key: t.key as string,

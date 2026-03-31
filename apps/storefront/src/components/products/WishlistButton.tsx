@@ -25,7 +25,7 @@ export default function WishlistButton({ productId, size = 'md', className = '' 
             className={`group/wish inline-flex items-center justify-center rounded-full transition-all duration-200 ${size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
                 } ${active
                     ? 'bg-red-50 dark:bg-red-900/20 text-red-500 scale-110'
-                    : 'bg-white/80 dark:bg-surface-2/80 backdrop-blur-sm text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    : 'bg-white/80 dark:bg-glass-heavy backdrop-blur-sm text-tx-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                 } shadow-sm hover:shadow-md ${className}`}
             aria-label={active ? 'Remove from wishlist' : 'Add to wishlist'}
         >

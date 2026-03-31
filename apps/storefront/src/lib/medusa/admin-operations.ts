@@ -36,7 +36,7 @@ export async function getAdminReturns(
 ): Promise<{ returns: AdminReturn[]; count: number }> {
     const { limit, offset } = normalizeAdminListParams(params)
     const res = await adminFetch<{ returns: AdminReturn[]; count: number }>(
-        `/admin/returns?limit=${limit}&offset=${offset}&order=-created_at&fields=*order`,
+        `/admin/returns?limit=${limit}&offset=${offset}&order=-created_at`,
         {},
         scope
     )

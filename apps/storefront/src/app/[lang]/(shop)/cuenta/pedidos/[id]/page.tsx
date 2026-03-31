@@ -7,6 +7,7 @@ import { getConfig } from '@/lib/config'
 import ReturnRequestForm from '@/components/returns/ReturnRequestForm'
 import ReturnStatusBadge from '@/components/returns/ReturnStatusBadge'
 import ReorderButton from '@/components/account/ReorderButton'
+import DownloadInvoiceButton from '@/components/account/DownloadInvoiceButton'
 import {
     ArrowLeft, Clock, CheckCircle2, Package,
     Truck, XCircle, MapPin, CreditCard,
@@ -48,14 +49,14 @@ async function OrderDetail({
             <div className="space-y-6">
                 <Link
                     href={`/${lang}/cuenta/pedidos`}
-                    className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                    className="inline-flex items-center gap-2 text-sm text-brand hover:underline"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     {t('order.backToOrders')}
                 </Link>
                 <div className="glass rounded-xl p-8 text-center">
-                    <Package className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                    <p className="text-text-muted">{t('order.notFound')}</p>
+                    <Package className="w-12 h-12 text-tx-faint mx-auto mb-3" />
+                    <p className="text-tx-muted">{t('order.notFound')}</p>
                 </div>
             </div>
         )
@@ -74,7 +75,7 @@ async function OrderDetail({
             {/* Back link */}
             <Link
                 href={`/${lang}/cuenta/pedidos`}
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-brand hover:underline"
             >
                 <ArrowLeft className="w-4 h-4" />
                 {t('order.backToOrders')}
@@ -84,22 +85,52 @@ async function OrderDetail({
             <div className="glass rounded-xl p-6">
                 <div className="flex items-start justify-between flex-wrap gap-4">
                     <div>
-                        <h1 className="text-xl font-bold font-display text-text-primary">
+                        <h1 className="text-xl font-bold font-display text-tx">
                             {t('order.number')}#{order.display_id ?? order.id.slice(-6)}
                         </h1>
-                        <p className="text-sm text-text-muted mt-1">{date}</p>
+                        <p className="text-sm text-tx-muted mt-1">{date}</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         {isCanceled ? (
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                                 <XCircle className="w-3.5 h-3.5" />
                                 {t('order.cancelled')}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-subtle text-brand">
                                 {t(`order.${order.status}`) || order.status}
                             </span>
                         )}
+                        {/* PDF Invoice download */}
+                        <DownloadInvoiceButton
+                            orderId={order.id}
+                            orderNumber={String(order.display_id ?? order.id.slice(-6))}
+                            orderDate={date}
+                            customerName={order.shipping_address ? `${order.shipping_address.first_name || ''} ${order.shipping_address.last_name || ''}`.trim() : order.email || ''}
+                            customerEmail={order.email || ''}
+                            shippingAddress={order.shipping_address ? {
+                                line1: order.shipping_address.address_1 || '',
+                                line2: order.shipping_address.address_2 || undefined,
+                                city: order.shipping_address.city || '',
+                                postalCode: order.shipping_address.postal_code || '',
+                                country: order.shipping_address.country_code?.toUpperCase() || '',
+                                phone: order.shipping_address.phone || undefined,
+                            } : undefined}
+                            items={(order.items || []).map(item => ({
+                                title: item.title,
+                                variantTitle: item.variant_title || undefined,
+                                quantity: item.quantity,
+                                unitPrice: item.unit_price || 0,
+                                lineTotal: (item.unit_price || 0) * item.quantity,
+                            }))}
+                            subtotal={order.subtotal || 0}
+                            shippingTotal={order.shipping_total || 0}
+                            taxTotal={order.tax_total || 0}
+                            discountTotal={order.discount_total || 0}
+                            total={order.total || 0}
+                            currency={currency}
+                            storeName={t('common.storeName') || 'Store'}
+                        />
                     </div>
                 </div>
             </div>
@@ -107,7 +138,7 @@ async function OrderDetail({
             {/* Timeline */}
             {!isCanceled && (
                 <div className="glass rounded-xl p-6">
-                    <h2 className="text-sm font-semibold text-text-primary mb-4">
+                    <h2 className="text-sm font-semibold text-tx mb-4">
                         {t('order.timeline')}
                     </h2>
                     <div className="flex items-center justify-between">
@@ -119,23 +150,23 @@ async function OrderDetail({
                                 <div key={step.status} className="flex flex-col items-center flex-1">
                                     <div className="flex items-center w-full">
                                         {i > 0 && (
-                                            <div className={`h-0.5 flex-1 ${i <= currentStep ? 'bg-primary' : 'bg-text-muted/20'}`} />
+                                            <div className={`h-0.5 flex-1 ${i <= currentStep ? 'bg-brand' : 'bg-text-muted/20'}`} />
                                         )}
                                         <div
                                             className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all ${isCurrent
-                                                ? 'bg-primary text-white ring-4 ring-primary/20'
+                                                ? 'bg-brand text-white ring-4 ring-soft'
                                                 : isActive
-                                                    ? 'bg-primary/20 text-primary'
-                                                    : 'bg-text-muted/10 text-text-muted/40'
+                                                    ? 'bg-brand-muted text-brand'
+                                                    : 'bg-text-muted/10 text-tx-faint'
                                                 }`}
                                         >
                                             <Icon className="w-4 h-4" />
                                         </div>
                                         {i < TIMELINE_STEPS.length - 1 && (
-                                            <div className={`h-0.5 flex-1 ${i < currentStep ? 'bg-primary' : 'bg-text-muted/20'}`} />
+                                            <div className={`h-0.5 flex-1 ${i < currentStep ? 'bg-brand' : 'bg-text-muted/20'}`} />
                                         )}
                                     </div>
-                                    <span className={`text-[10px] mt-2 text-center ${isActive ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
+                                    <span className={`text-[10px] mt-2 text-center ${isActive ? 'text-tx font-medium' : 'text-tx-muted'}`}>
                                         {t(step.key)}
                                     </span>
                                 </div>
@@ -147,7 +178,7 @@ async function OrderDetail({
 
             {/* Order items */}
             <div className="glass rounded-xl p-6">
-                <h2 className="text-sm font-semibold text-text-primary mb-4">
+                <h2 className="text-sm font-semibold text-tx mb-4">
                     {t('order.items')} ({order.items?.length ?? 0})
                 </h2>
                 <div className="divide-y divide-white/5">
@@ -172,21 +203,21 @@ async function OrderDetail({
                                             sizes="56px"
                                         />
                                     ) : (
-                                        <Package className="w-6 h-6 text-text-muted/40" />
+                                        <Package className="w-6 h-6 text-tx-faint" />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-text-primary truncate">
+                                    <p className="text-sm font-medium text-tx truncate">
                                         {item.title}
                                     </p>
                                     {item.variant_title && item.variant_title !== 'Default' && (
-                                        <p className="text-xs text-text-muted">{item.variant_title}</p>
+                                        <p className="text-xs text-tx-muted">{item.variant_title}</p>
                                     )}
-                                    <p className="text-xs text-text-muted">
+                                    <p className="text-xs text-tx-muted">
                                         {price} × {item.quantity}
                                     </p>
                                 </div>
-                                <p className="text-sm font-semibold text-text-primary">
+                                <p className="text-sm font-semibold text-tx">
                                     {lineTotal}
                                 </p>
                             </div>
@@ -198,31 +229,31 @@ async function OrderDetail({
                 <div className="border-t border-white/5 mt-4 pt-4 space-y-2">
                     {order.subtotal != null && (
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-muted">{t('order.subtotal')}</span>
-                            <span className="text-text-primary">{formatPrice(order.subtotal, currency, lang as Locale)}</span>
+                            <span className="text-tx-muted">{t('order.subtotal')}</span>
+                            <span className="text-tx">{formatPrice(order.subtotal, currency, lang as Locale)}</span>
                         </div>
                     )}
                     {order.shipping_total != null && order.shipping_total > 0 && (
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-muted">{t('order.shipping')}</span>
-                            <span className="text-text-primary">{formatPrice(order.shipping_total, currency, lang as Locale)}</span>
+                            <span className="text-tx-muted">{t('order.shipping')}</span>
+                            <span className="text-tx">{formatPrice(order.shipping_total, currency, lang as Locale)}</span>
                         </div>
                     )}
                     {order.tax_total != null && order.tax_total > 0 && (
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-muted">{t('order.tax')}</span>
-                            <span className="text-text-primary">{formatPrice(order.tax_total, currency, lang as Locale)}</span>
+                            <span className="text-tx-muted">{t('order.tax')}</span>
+                            <span className="text-tx">{formatPrice(order.tax_total, currency, lang as Locale)}</span>
                         </div>
                     )}
                     {order.discount_total != null && order.discount_total > 0 && (
                         <div className="flex justify-between text-sm">
-                            <span className="text-text-muted">{t('order.discount')}</span>
+                            <span className="text-tx-muted">{t('order.discount')}</span>
                             <span className="text-green-500">-{formatPrice(order.discount_total, currency, lang as Locale)}</span>
                         </div>
                     )}
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-white/5">
-                        <span className="text-text-primary">{t('order.total')}</span>
-                        <span className="text-primary">{formatPrice(order.total || 0, currency, lang as Locale)}</span>
+                        <span className="text-tx">{t('order.total')}</span>
+                        <span className="text-brand">{formatPrice(order.total || 0, currency, lang as Locale)}</span>
                     </div>
                 </div>
             </div>
@@ -230,12 +261,12 @@ async function OrderDetail({
             {/* Shipping address */}
             {order.shipping_address && (
                 <div className="glass rounded-xl p-6">
-                    <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary" />
+                    <h2 className="text-sm font-semibold text-tx mb-3 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-brand" />
                         {t('order.shippingAddress')}
                     </h2>
-                    <div className="text-sm text-text-muted space-y-0.5">
-                        <p className="text-text-primary font-medium">
+                    <div className="text-sm text-tx-muted space-y-0.5">
+                        <p className="text-tx font-medium">
                             {order.shipping_address.first_name} {order.shipping_address.last_name}
                         </p>
                         <p>{order.shipping_address.address_1}</p>
@@ -255,16 +286,16 @@ async function OrderDetail({
             {/* Payment info */}
             {order.payments && order.payments.length > 0 && (
                 <div className="glass rounded-xl p-6">
-                    <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-primary" />
+                    <h2 className="text-sm font-semibold text-tx mb-3 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-brand" />
                         {t('order.paymentInfo')}
                     </h2>
-                    <div className="text-sm text-text-muted">
+                    <div className="text-sm text-tx-muted">
                         {order.payments.map((payment, i) => (
                             <div key={i} className="flex items-center gap-2">
                                 <span className="capitalize">{payment.provider_id?.replace(/_/g, ' ') || t('order.payment')}</span>
                                 {payment.amount && (
-                                    <span className="text-text-primary font-medium">
+                                    <span className="text-tx font-medium">
                                         {formatPrice(payment.amount, payment.currency_code || currency, lang as Locale)}
                                     </span>
                                 )}
@@ -300,8 +331,8 @@ async function OrderDetail({
                     }
                     return (
                         <div className="glass rounded-xl p-6">
-                            <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-                                <RotateCcw className="w-4 h-4 text-primary" />
+                            <h2 className="text-sm font-semibold text-tx mb-3 flex items-center gap-2">
+                                <RotateCcw className="w-4 h-4 text-brand" />
                                 {t('returns.existingRequest')}
                             </h2>
                             <ReturnStatusBadge

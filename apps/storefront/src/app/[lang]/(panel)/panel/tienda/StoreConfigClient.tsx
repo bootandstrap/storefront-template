@@ -67,8 +67,8 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     }
 
     const inputClass =
-        'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all'
-    const labelClass = 'block text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5'
+        'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     const tabContent: Record<Tab, React.ReactNode> = {
         general: (
@@ -116,8 +116,8 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                         tabIndex={0}
                         onClick={() => update('announcement_bar_enabled', !(formData.announcement_bar_enabled ?? false))}
                         onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') update('announcement_bar_enabled', !(formData.announcement_bar_enabled ?? false)) }}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ${
-                            formData.announcement_bar_enabled ? 'bg-primary' : 'bg-surface-3'
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${
+                            formData.announcement_bar_enabled ? 'bg-brand' : 'bg-sf-3'
                         }`}
                     >
                         <motion.span
@@ -128,7 +128,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                             }`}
                         />
                     </div>
-                    <label className="text-sm font-medium text-text-secondary cursor-pointer" onClick={() => update('announcement_bar_enabled', !(formData.announcement_bar_enabled ?? false))}>
+                    <label className="text-sm font-medium text-tx-sec cursor-pointer" onClick={() => update('announcement_bar_enabled', !(formData.announcement_bar_enabled ?? false))}>
                         {t('panel.config.announcementBarEnabled')}
                     </label>
                 </div>
@@ -153,28 +153,28 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
             <div className="space-y-5">
                 <div>
                     <label className={labelClass}>{t('panel.config.metaTitle')}</label>
-                    <p className="text-[11px] text-text-muted/70 mb-1.5">{t('panel.config.metaTitleDesc')}</p>
+                    <p className="text-[11px] text-tx-faint mb-1.5">{t('panel.config.metaTitleDesc')}</p>
                     <input className={inputClass} value={formData.meta_title ?? ''} onChange={(e) => update('meta_title', e.target.value)} />
-                    <p className={`text-[10px] mt-1 tabular-nums ${(formData.meta_title?.length ?? 0) > 60 ? 'text-rose-500 font-semibold' : 'text-text-muted/50'}`}>
+                    <p className={`text-[10px] mt-1 tabular-nums ${(formData.meta_title?.length ?? 0) > 60 ? 'text-rose-500 font-semibold' : 'text-tx-faint'}`}>
                         {formData.meta_title?.length ?? 0} / 60
                     </p>
                 </div>
                 <div>
                     <label className={labelClass}>{t('panel.config.metaDescription')}</label>
-                    <p className="text-[11px] text-text-muted/70 mb-1.5">{t('panel.config.metaDescriptionDesc')}</p>
+                    <p className="text-[11px] text-tx-faint mb-1.5">{t('panel.config.metaDescriptionDesc')}</p>
                     <textarea className={inputClass + ' resize-none'} rows={3} value={formData.meta_description ?? ''} onChange={(e) => update('meta_description', e.target.value)} />
-                    <p className={`text-[10px] mt-1 tabular-nums ${(formData.meta_description?.length ?? 0) > 160 ? 'text-rose-500 font-semibold' : 'text-text-muted/50'}`}>
+                    <p className={`text-[10px] mt-1 tabular-nums ${(formData.meta_description?.length ?? 0) > 160 ? 'text-rose-500 font-semibold' : 'text-tx-faint'}`}>
                         {formData.meta_description?.length ?? 0} / 160
                     </p>
                 </div>
                 <div>
                     <label className={labelClass}>{t('panel.config.googleAnalyticsId')}</label>
-                    <p className="text-[11px] text-text-muted/70 mb-1.5">{t('panel.config.googleAnalyticsIdDesc')}</p>
+                    <p className="text-[11px] text-tx-faint mb-1.5">{t('panel.config.googleAnalyticsIdDesc')}</p>
                     <input className={inputClass} value={formData.google_analytics_id ?? ''} onChange={(e) => update('google_analytics_id', e.target.value)} placeholder="G-XXXXXXXXXX" />
                 </div>
                 <div>
                     <label className={labelClass}>{t('panel.config.facebookPixelId')}</label>
-                    <p className="text-[11px] text-text-muted/70 mb-1.5">{t('panel.config.facebookPixelIdDesc')}</p>
+                    <p className="text-[11px] text-tx-faint mb-1.5">{t('panel.config.facebookPixelIdDesc')}</p>
                     <input className={inputClass} value={formData.facebook_pixel_id ?? ''} onChange={(e) => update('facebook_pixel_id', e.target.value)} />
                 </div>
             </div>
@@ -259,16 +259,16 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             aria-pressed={activeTab === tab.id}
-                            className={`relative px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${
+                            className={`relative px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-1 ${
                                 activeTab === tab.id
-                                    ? 'text-primary'
-                                    : 'text-text-muted hover:text-text-primary'
+                                    ? 'text-brand'
+                                    : 'text-tx-muted hover:text-tx'
                             }`}
                         >
                             {activeTab === tab.id && (
                                 <motion.div
                                     layoutId="config-tab-indicator"
-                                    className="absolute inset-0 bg-white dark:bg-surface-2 rounded-lg shadow-sm"
+                                    className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
@@ -305,7 +305,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                 <button
                     onClick={handleSave}
                     disabled={isPending}
-                    className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+                    className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                 >
                     {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isPending ? t('common.saving') : t('common.saveChanges')}

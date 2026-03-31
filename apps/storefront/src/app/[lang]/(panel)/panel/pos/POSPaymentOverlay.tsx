@@ -64,22 +64,22 @@ export default function POSPaymentOverlay({ state, onCancel, onRetry, labels }: 
 
                 {/* Modal */}
                 <motion.div
-                    className="relative bg-surface-0 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+                    className="relative bg-sf-0 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
                     initial={{ opacity: 0, scale: 0.9, y: 30 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 30 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-surface-2">
-                        <h3 className="text-lg font-bold text-text-primary">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-sf-2">
+                        <h3 className="text-lg font-bold text-tx">
                             {getTitle(state, labels)}
                         </h3>
                         {canCancel(state) && (
                             <button
                                 onClick={onCancel}
-                                className="p-2 rounded-lg hover:bg-surface-1 text-text-muted transition-colors
-                                           focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                className="p-2 rounded-lg hover:bg-sf-1 text-tx-muted transition-colors
+                                           focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                                 aria-label={posLabel('panel.pos.cancel', labels)}
                             >
                                 <X className="w-5 h-5" />
@@ -119,13 +119,13 @@ export default function POSPaymentOverlay({ state, onCancel, onRetry, labels }: 
                     </div>
 
                     {/* Footer */}
-                    <div className="px-6 py-4 border-t border-surface-2 flex gap-3">
+                    <div className="px-6 py-4 border-t border-sf-2 flex gap-3">
                         {canCancel(state) && (
                             <button
                                 onClick={onCancel}
-                                className="flex-1 py-3 rounded-xl text-text-secondary font-medium min-h-[44px]
-                                           bg-surface-1 hover:bg-surface-2 transition-colors
-                                           focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                                className="flex-1 py-3 rounded-xl text-tx-sec font-medium min-h-[44px]
+                                           bg-sf-1 hover:bg-sf-2 transition-colors
+                                           focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
                             >
                                 {posLabel('panel.pos.cancel', labels)}
                             </button>
@@ -134,8 +134,8 @@ export default function POSPaymentOverlay({ state, onCancel, onRetry, labels }: 
                         {(state.status === 'failed') && onRetry && (
                             <button
                                 onClick={onRetry}
-                                className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold min-h-[44px]
-                                           hover:bg-primary/90 transition-colors flex items-center justify-center gap-2
+                                className="flex-1 py-3 rounded-xl bg-brand text-white font-semibold min-h-[44px]
+                                           hover:bg-brand transition-colors flex items-center justify-center gap-2
                                            focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
                             >
                                 <RefreshCw className="w-4 h-4" />
@@ -159,11 +159,11 @@ function StatusIcon({ state }: { state: PaymentProcessingState }) {
         case 'processing':
             return (
                 <motion.div
-                    className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center"
+                    className="w-20 h-20 rounded-full bg-brand-subtle flex items-center justify-center"
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                    <Loader2 className="w-10 h-10 text-brand animate-spin" />
                 </motion.div>
             )
         case 'awaiting_card':
@@ -248,7 +248,7 @@ function StatusMessage({
             className={`text-center text-sm font-medium ${
                 state.status === 'succeeded' ? 'text-emerald-600'
                     : state.status === 'failed' || state.status === 'cancelled' ? 'text-rose-600'
-                        : 'text-text-secondary'
+                        : 'text-tx-sec'
             }`}
         >
             {getMessage()}
@@ -315,13 +315,13 @@ function TwintQRDisplay({
                     className="rounded-lg"
                 />
             </div>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
+            <div className="flex items-center gap-2 text-xs text-tx-muted">
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>{posLabel('panel.pos.twintScanHint', labels) || 'Abra la app Twint y escanee'}</span>
             </div>
             <div className="flex items-center gap-2">
                 <CircularProgress progress={progress / 100} size={24} strokeWidth={3} color="#8b5cf6" />
-                <span className="text-xs font-mono text-text-muted">
+                <span className="text-xs font-mono text-tx-muted">
                     {timeLeft}
                 </span>
             </div>
