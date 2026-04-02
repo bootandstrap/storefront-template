@@ -11,10 +11,8 @@ interface ImageLoaderParams {
 }
 
 export default function supabaseImageLoader({ src, width, quality }: ImageLoaderParams): string {
-    // Only transform Supabase Storage URLs
+    // 1. Supabase Storage Transformation
     if (src.includes('.supabase.co/storage/v1/object/public/')) {
-        // Supabase Image Transformation URL format:
-        // /storage/v1/render/image/public/{bucket}/{path}?width=X&quality=Y
         const transformed = src.replace(
             '/storage/v1/object/public/',
             '/storage/v1/render/image/public/'
@@ -26,6 +24,17 @@ export default function supabaseImageLoader({ src, width, quality }: ImageLoader
         return `${transformed}?${params.toString()}`
     }
 
-    // Non-Supabase images: return as-is
+    // 2. Unsplash Image Optimization
+    if (src.includes('images.unsplash.com')) {
+        // Unsplash accepts w (width) and q (quality) parameters
+        // We ensure we only append if not already present or replace them
+        const url = new URL(src)
+        url.searchParams.set('w', String(width))
+        url.searchParams.set('q', String(quality || 75))
+        url.searchParams.set('auto', 'format') // Force modern formats
+        return url.toString()
+    }
+
+    // 3. Fallback: Return as-is
     return src
 }

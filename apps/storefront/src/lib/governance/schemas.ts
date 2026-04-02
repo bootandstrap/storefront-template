@@ -67,6 +67,42 @@ export const StoreConfigSchema = z.object({
     free_shipping_threshold: z.number(),
     tax_display_mode: z.enum(['tax_included', 'tax_excluded']),
     onboarding_completed: z.boolean(),
+    // Module-specific config (Phase 6 — migration: 20260331_onboarding_config_fields.sql)
+    chatbot_name: z.string().nullable().default(null),
+    chatbot_tone: z.enum(['formal', 'friendly', 'casual']).default('friendly'),
+    chatbot_welcome_message: z.string().nullable().default(null),
+    pos_receipt_header: z.string().nullable().default(null),
+    pos_receipt_footer: z.string().nullable().default(null),
+    pos_default_payment_method: z.enum(['cash', 'card', 'transfer']).default('cash'),
+    pos_tax_display: z.enum(['tax_included', 'tax_excluded']).default('tax_included'),
+    pos_enable_tips: z.boolean().default(false),
+    pos_tip_percentages: z.string().default('5,10,15'),
+    pos_sound_enabled: z.boolean().default(true),
+    webhook_notification_email: z.string().nullable().default(null),
+    // Chatbot expansion
+    chatbot_auto_open_delay: z.number().default(0),
+    chatbot_knowledge_scope: z.enum(['products_only', 'products_and_faq', 'full_catalog']).default('products_and_faq'),
+    // Capacity expansion
+    traffic_alert_email: z.string().nullable().default(null),
+    traffic_alert_threshold_pct: z.number().default(80),
+    capacity_warning_threshold_pct: z.number().default(70),
+    capacity_critical_threshold_pct: z.number().default(90),
+    capacity_auto_upgrade_interest: z.boolean().default(false),
+    // CRM expansion
+    crm_auto_tag_customers: z.boolean().default(true),
+    crm_new_customer_tag: z.string().default('nuevo'),
+    crm_notify_new_contact: z.boolean().default(false),
+    crm_export_format: z.enum(['csv', 'excel']).default('csv'),
+    // Sales Channels expansion
+    sales_whatsapp_greeting: z.string().nullable().default(null),
+    sales_preferred_contact: z.enum(['whatsapp', 'phone', 'email']).default('whatsapp'),
+    sales_business_hours_display: z.enum(['not_shown', 'weekdays', 'full_week', 'custom']).default('not_shown'),
+    sales_highlight_free_shipping: z.boolean().default(false),
+    // Email Marketing expansion
+    email_sender_name: z.string().nullable().default(null),
+    email_reply_to: z.string().nullable().default(null),
+    email_footer_text: z.string().nullable().default(null),
+    email_abandoned_cart_delay: z.enum(['1h', '3h', '24h']).default('3h'),
     // Gamification (Phase 5 — migration: 20260319_gamification_fields.sql)
     achievements_unlocked: z.array(z.string()).default([]),
     dismissed_tips: z.array(z.string()).default([]),

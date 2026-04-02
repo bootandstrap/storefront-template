@@ -12,7 +12,7 @@
  * - whileTap on action buttons
  */
 
-import { useState, useTransition, lazy, Suspense } from 'react'
+import { useState, useTransition, useOptimistic, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { Package, Plus, Search, X, Download, CheckSquare, Square, Trash2, Loader2, Pencil, Eye, EyeOff } from 'lucide-react'
@@ -22,6 +22,7 @@ import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 const ProductFormSlideOver = lazy(() => import('./ProductFormSlideOver'))
 
@@ -92,6 +93,17 @@ export default function ProductsClient({
     const [editingProduct, setEditingProduct] = useState<AdminProductFull | null>(null)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
+    // ── Gate state ──
+    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
+
     const deleteDialog = useConfirmDialog({
         title: labels.confirmDelete,
         description: labels.confirmDelete,
@@ -106,9 +118,24 @@ export default function ProductsClient({
         variant: 'danger',
     })
 
+    // ── useOptimistic: instant status toggle feedback ──
+    // Tracks status overrides per product ID for instant UI updates
+    const [optimisticStatuses, addOptimisticStatus] = useOptimistic(
+        {} as Record<string, string>,
+        (current: Record<string, string>, update: { id: string; status: string }) => ({
+            ...current,
+            [update.id]: update.status,
+        })
+    )
+
+    // Helper: get effective status (optimistic override or original)
+    const getEffectiveStatus = (product: AdminProductFull) =>
+        optimisticStatuses[product.id] || product.status
+
     const filtered = products.filter(p => {
         const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase())
-        const matchesStatus = statusFilter === 'all' || p.status === statusFilter
+        const effectiveStatus = getEffectiveStatus(p)
+        const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter
         return matchesSearch && matchesStatus
     })
 
@@ -184,10 +211,18 @@ export default function ProductsClient({
     }
 
     const handleToggleStatus = (product: AdminProductFull) => {
+        const newStatus = getEffectiveStatus(product) === 'published' ? 'draft' : 'published'
+        // Optimistic: update badge immediately
+        addOptimisticStatus({ id: product.id, status: newStatus })
+
         startTransition(async () => {
-            const newStatus = product.status === 'published' ? 'draft' : 'published'
             const result = await updateProduct(product.id, { status: newStatus })
-            if (result.success) router.refresh()
+            if (result.success) {
+                router.refresh()
+            } else {
+                // useOptimistic auto-reverts when transition ends
+                toast.error('Error updating status')
+            }
         })
     }
 
@@ -249,6 +284,11 @@ export default function ProductsClient({
 
     return (
         <PageEntrance className="space-y-5">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
             <PanelPageHeader
                 title={labels.title}
                 subtitle={`${labels.subtitle} · ${productCount} / ${maxProducts} ${labels.products}`}
@@ -257,8 +297,8 @@ export default function ProductsClient({
                 action={
                     <button
                         className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={!canAdd || isPending}
-                        onClick={openCreate}
+                        disabled={isPending}
+                        onClick={() => handleFeatureClick(canAdd, 'max_products_limit', openCreate)}
                     >
                         <Plus className="w-4 h-4" />
                         {labels.addProduct}
@@ -402,8 +442,8 @@ export default function ProductsClient({
                         </p>
                         <button
                             className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={!canAdd || isPending}
-                            onClick={openCreate}
+                            disabled={isPending}
+                            onClick={() => handleFeatureClick(canAdd, 'max_products_limit', openCreate)}
                         >
                             <Plus className="w-4 h-4" />
                             {labels.addProduct}
@@ -444,11 +484,11 @@ export default function ProductsClient({
                                             {product.images.length} imgs
                                         </span>
                                     )}
-                                    <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${product.status === 'published'
+                                    <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${getEffectiveStatus(product) === 'published'
                                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                         : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                         }`}>
-                                        {product.status === 'published' ? labels.published : labels.draft}
+                                        {getEffectiveStatus(product) === 'published' ? labels.published : labels.draft}
                                     </span>
                                 </div>
                                 {/* Info */}
@@ -480,9 +520,9 @@ export default function ProductsClient({
                                             onClick={() => handleToggleStatus(product)}
                                             className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             disabled={isPending}
-                                            aria-label={product.status === 'published' ? labels.draft : labels.published}
+                                            aria-label={getEffectiveStatus(product) === 'published' ? labels.draft : labels.published}
                                         >
-                                            {product.status === 'published'
+                                            {getEffectiveStatus(product) === 'published'
                                                 ? <><EyeOff className="w-3.5 h-3.5" /> {labels.draft}</>
                                                 : <><Eye className="w-3.5 h-3.5" /> {labels.published}</>
                                             }

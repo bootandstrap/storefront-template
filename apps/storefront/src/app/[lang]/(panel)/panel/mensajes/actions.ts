@@ -3,6 +3,8 @@
 import { revalidatePanel } from '@/lib/revalidate'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { TemplateInputSchema, TemplateUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
@@ -38,7 +40,7 @@ export async function createTemplate(
 
         const limitCheck = checkLimit(appConfig.planLimits, 'max_whatsapp_templates', count ?? 0)
         if (!limitCheck.allowed) {
-            return { success: false, error: 'WhatsApp template limit reached' }
+            return { success: false, error: buildLimitError('max_whatsapp_templates', limitCheck) }
         }
 
         // If this is the default, unset other defaults for this tenant
@@ -66,6 +68,7 @@ export async function createTemplate(
         }
 
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'whatsapp.create_template', { name: validInput.name, isDefault: validInput.is_default })
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)
@@ -105,6 +108,7 @@ export async function updateTemplate(
         }
 
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'whatsapp.update_template', { templateId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)
@@ -130,6 +134,7 @@ export async function deleteTemplate(
         }
 
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'whatsapp.delete_template', { templateId: id })
         return { success: true }
     } catch (err) {
         console.error('[panel/messages] Error:', err)

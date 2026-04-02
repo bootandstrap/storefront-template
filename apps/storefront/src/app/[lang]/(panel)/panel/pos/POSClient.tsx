@@ -10,7 +10,7 @@
  * - History derived from enable_pos_shifts, Dashboard from enable_pos_thermal_printer
  */
 
-import { useReducer, useCallback, useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
+import { useReducer, useCallback, useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Maximize, Minimize, Wifi, WifiOff, CloudUpload, Receipt, BarChart3, Clock, User, RotateCcw, PauseCircle, ShoppingCart, X as XIcon, LogOut, Printer, Heart, FileText, Split } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -18,6 +18,7 @@ import {
     cartReducer,
     INITIAL_CART,
     calculateCartTotals,
+    safeVariantPrice,
     type POSCartItem,
     type POSSale,
     type PaymentMethod,
@@ -37,24 +38,14 @@ import { getEnabledPOSPaymentMethods, isPOSHistoryAvailable, isPOSDashboardAvail
 import { getUpsellTooltip, posLabel } from '@/lib/pos/pos-i18n'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { createPOSSale, searchPOSProducts } from './actions'
-import POSProductGrid from './POSProductGrid'
-import POSCart from './POSCart'
-import POSPaymentOverlay from './POSPaymentOverlay'
-import POSOfflineBanner from './POSOfflineBanner'
-import { getParkedSales } from './POSParkedSales'
-
-const POSReceipt = lazy(() => import('./POSReceipt'))
-const POSSalesHistory = lazy(() => import('./POSSalesHistory'))
-const POSDashboard = lazy(() => import('./POSDashboard'))
-const POSShiftPanel = lazy(() => import('./POSShiftPanel'))
-const POSCustomerModal = lazy(() => import('./POSCustomerModal'))
-const POSRefundModal = lazy(() => import('./POSRefundModal'))
-const POSRefundReceipt = lazy(() => import('./POSRefundReceipt'))
-const POSParkedSales = lazy(() => import('./POSParkedSales'))
-const POSPrinterSettings = lazy(() => import('./POSPrinterSettings'))
-const POSSplitPayment = lazy(() => import('./POSSplitPayment'))
-const POSLoyaltyCard = lazy(() => import('./POSLoyaltyCard'))
-const POSEndOfDayReport = lazy(() => import('./POSEndOfDayReport'))
+import {
+    POSProductGrid, POSCart, POSPaymentOverlay, POSOfflineBanner,
+    POSToolbar, getParkedSales,
+    POSReceipt, POSSalesHistory, POSDashboard, POSShiftPanel,
+    POSCustomerModal, POSRefundModal, POSRefundReceipt,
+    POSParkedSales, POSPrinterSettings, POSSplitPayment,
+    POSLoyaltyCard, POSEndOfDayReport, POSSettingsDrawer,
+} from './pos-components'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +57,8 @@ interface POSClientProps {
     labels: Record<string, string>
     featureFlags: FeatureFlags
     planLimits: PlanLimits
+    /** POS-specific config values from governance config table */
+    posConfig?: Record<string, unknown>
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -78,6 +71,7 @@ export default function POSClient({
     labels,
     featureFlags,
     planLimits,
+    posConfig = {},
 }: POSClientProps) {
     // ── State ──
     const [cart, dispatch] = useReducer(cartReducer, INITIAL_CART)
@@ -159,6 +153,11 @@ export default function POSClient({
             try {
                 const parsed = JSON.parse(saved)
                 if (parsed.items?.length > 0) {
+                    // Sanitize any corrupted unit_price values from previous sessions
+                    parsed.items = parsed.items.map((i: any) => ({
+                        ...i,
+                        unit_price: typeof i.unit_price === 'number' && !isNaN(i.unit_price) ? i.unit_price : 0,
+                    }))
                     dispatch({ type: 'RESTORE_CART', cart: parsed })
                 }
             } catch { /* ignore corrupt data */ }
@@ -218,8 +217,7 @@ export default function POSClient({
         if (localMatch) {
             const variant = localMatch.variants.find((v: any) => v.sku === barcode || v.barcode === barcode)
             if (variant) {
-                const calcPrice = (variant as any).calculated_price
-                const fallbackPrice = variant.prices?.[0]
+                const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
                 handleAddToCart({
                     id: variant.id,
                     product_id: localMatch.id,
@@ -227,9 +225,9 @@ export default function POSClient({
                     variant_title: localMatch.variants.length > 1 ? variant.title : null,
                     thumbnail: localMatch.thumbnail,
                     sku: variant.sku || null,
-                    unit_price: calcPrice?.calculated_amount ?? fallbackPrice?.amount ?? 0,
+                    unit_price,
                     quantity: 1,
-                    currency_code: calcPrice?.currency_code ?? fallbackPrice?.currency_code ?? defaultCurrency,
+                    currency_code,
                 })
             }
         } else if (isOnline) {
@@ -241,8 +239,7 @@ export default function POSClient({
                     const product = results[0]
                     const variant = product.variants?.[0]
                     if (variant) {
-                        const calcPrice = (variant as any).calculated_price
-                        const fallbackPrice = variant.prices?.[0]
+                        const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
                         handleAddToCart({
                             id: variant.id,
                             product_id: product.id,
@@ -250,9 +247,9 @@ export default function POSClient({
                             variant_title: product.variants.length > 1 ? variant.title : null,
                             thumbnail: product.thumbnail,
                             sku: variant.sku || null,
-                            unit_price: calcPrice?.calculated_amount ?? fallbackPrice?.amount ?? 0,
+                            unit_price,
                             quantity: 1,
-                            currency_code: calcPrice?.currency_code ?? fallbackPrice?.currency_code ?? defaultCurrency,
+                            currency_code,
                         })
                     }
                 } else {
@@ -651,247 +648,27 @@ export default function POSClient({
     return (
         <PageEntrance className="h-full max-h-full flex flex-col overflow-hidden bg-sf-0 print:hidden">
             {/* ── POS Toolbar ── */}
-            <div className="flex items-center justify-between px-3 md:px-5 py-2.5 border-b border-sf-2 bg-glass-heavy backdrop-blur-xl flex-shrink-0">
-                {/* Left: Exit + Title + Status */}
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleExitPOS}
-                        className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-sf-1 text-tx-sec
-                                   flex items-center justify-center transition-colors
-                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none"
-                        title={posLabel('panel.pos.exitPOS', labels) || 'Salir del POS'}
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
-                    <h1 className="text-sm font-bold text-tx tracking-tight uppercase">
-                        ⚡ {posLabel('panel.pos.title', labels)}
-                    </h1>
-
-                    {/* Status orbs */}
-                    <div className="flex items-center gap-1.5">
-                        {/* Online/Offline */}
-                        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-semibold transition-colors ${
-                            isOnline
-                                ? 'bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-600 ring-1 ring-rose-500/20'
-                        }`}>
-                            {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                            {isOnline ? posLabel('panel.pos.online', labels) : posLabel('panel.pos.offline', labels)}
-                        </span>
-
-                        {/* Pending sync */}
-                        <AnimatePresence>
-                            {pendingCount > 0 && (
-                                <motion.span
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full
-                                                 bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20 font-semibold"
-                                >
-                                    <CloudUpload className="w-3 h-3" />
-                                    {pendingCount}
-                                </motion.span>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Current shift */}
-                        {currentShift && (
-                            <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full
-                                             bg-blue-500/10 text-blue-600 ring-1 ring-blue-500/20 font-semibold">
-                                <Clock className="w-3 h-3" />
-                                {currentShift.total_sales} {posLabel('panel.pos.historySales', labels)}
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right: Panel nav + Kiosk */}
-                <div className="flex items-center gap-1">
-                    {/* Last sync */}
-                    {lastSyncTime && (
-                        <span className="hidden lg:flex items-center text-[10px] text-tx-muted mr-2">
-                            {posLabel('panel.pos.lastSync', labels)}: {lastSyncTime.toLocaleTimeString()}
-                        </span>
-                    )}
-
-                    {/* Panel nav buttons */}
-                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-glass">
-                        {/* History (Pro — derived from shifts) */}
-                        <button
-                            onClick={() => canAccessHistory && setPanelView(v => v === 'history' ? null : 'history')}
-                            disabled={!canAccessHistory}
-                            aria-label={posLabel('panel.pos.history', labels)}
-                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                !canAccessHistory
-                                    ? 'text-tx-faint cursor-not-allowed'
-                                    : panelView === 'history'
-                                        ? 'bg-brand text-white shadow-sm'
-                                        : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={canAccessHistory
-                                ? `${posLabel('panel.pos.history', labels)}${canShortcuts ? ' (F3)' : ''}`
-                                : getUpsellTooltip('enable_pos_shifts', labels)
-                            }
-                        >
-                            <Receipt className="w-4 h-4" />
-                        </button>
-
-                        {/* Dashboard (Enterprise — derived from thermal printer) */}
-                        <button
-                            onClick={() => canAccessDashboard && setPanelView(v => v === 'dashboard' ? null : 'dashboard')}
-                            disabled={!canAccessDashboard}
-                            aria-label={posLabel('panel.pos.dashboard', labels)}
-                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                !canAccessDashboard
-                                    ? 'text-tx-faint cursor-not-allowed'
-                                    : panelView === 'dashboard'
-                                        ? 'bg-brand text-white shadow-sm'
-                                        : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={canAccessDashboard
-                                ? `${posLabel('panel.pos.dashboard', labels)}${canShortcuts ? ' (F5)' : ''}`
-                                : getUpsellTooltip('enable_pos_thermal_printer', labels)
-                            }
-                        >
-                            <BarChart3 className="w-4 h-4" />
-                        </button>
-
-                        {/* Shifts (Pro) */}
-                        <button
-                            onClick={() => canAccessShifts && setPanelView(v => v === 'shift' ? null : 'shift')}
-                            disabled={!canAccessShifts}
-                            aria-label={posLabel('panel.pos.shift', labels)}
-                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                !canAccessShifts
-                                    ? 'text-tx-faint cursor-not-allowed'
-                                    : panelView === 'shift'
-                                        ? 'bg-brand text-white shadow-sm'
-                                        : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={canAccessShifts
-                                ? posLabel('panel.pos.shift', labels)
-                                : getUpsellTooltip('enable_pos_shifts', labels)
-                            }
-                        >
-                            <Clock className="w-4 h-4" />
-                        </button>
-                        {/* Parked Sales */}
-                        <button
-                            onClick={() => setPanelView(v => v === 'parkedSales' ? null : 'parkedSales')}
-                            aria-label={posLabel('panel.pos.parkedSales', labels)}
-                            className={`relative p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                panelView === 'parkedSales'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={posLabel('panel.pos.parkedSales', labels)}
-                        >
-                            <PauseCircle className="w-4 h-4" />
-                            {parkedSalesCount > 0 && (
-                                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center
-                                                   text-[9px] font-bold bg-amber-500 text-white rounded-full px-1">
-                                    {parkedSalesCount}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* Loyalty (Pro+) */}
-                        <button
-                            onClick={() => canLoyalty && setPanelView(v => v === 'loyalty' ? null : 'loyalty')}
-                            disabled={!canLoyalty}
-                            aria-label={posLabel('panel.pos.loyaltyCard', labels)}
-                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                !canLoyalty
-                                    ? 'text-tx-faint cursor-not-allowed'
-                                    : panelView === 'loyalty'
-                                        ? 'bg-brand text-white shadow-sm'
-                                        : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={canLoyalty
-                                ? posLabel('panel.pos.loyaltyCard', labels)
-                                : getUpsellTooltip('enable_pos_shifts', labels)
-                            }
-                        >
-                            <Heart className="w-4 h-4" />
-                        </button>
-
-                        {/* End-of-Day Report (Enterprise) */}
-                        <button
-                            onClick={() => canEndOfDay && setPanelView(v => v === 'endOfDay' ? null : 'endOfDay')}
-                            disabled={!canEndOfDay}
-                            aria-label={posLabel('panel.pos.endOfDayReport', labels)}
-                            className={`p-2 rounded-md text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                !canEndOfDay
-                                    ? 'text-tx-faint cursor-not-allowed'
-                                    : panelView === 'endOfDay'
-                                        ? 'bg-brand text-white shadow-sm'
-                                        : 'text-tx-sec hover:bg-glass-heavy'
-                            }`}
-                            title={canEndOfDay
-                                ? posLabel('panel.pos.endOfDayReport', labels)
-                                : getUpsellTooltip('enable_pos_thermal_printer', labels)
-                            }
-                        >
-                            <FileText className="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    {/* Keyboard hints (only if shortcuts enabled) */}
-                    {canShortcuts && (
-                        <div className="hidden xl:flex items-center gap-1 text-[10px] text-tx-muted ml-2">
-                            <kbd className="px-1.5 py-0.5 rounded bg-sf-2 font-mono text-[9px]">F2</kbd>
-                            <span>{posLabel('panel.pos.search', labels).split('…')[0]}</span>
-                            <span className="mx-0.5 opacity-40">·</span>
-                            <kbd className="px-1.5 py-0.5 rounded bg-sf-2 font-mono text-[9px]">F3</kbd>
-                            <span>{posLabel('panel.pos.history', labels)}</span>
-                        </div>
-                    )}
-
-                    {/* Divider + Kiosk (gated) */}
-                    <div className="w-px h-5 bg-sf-3 mx-1.5" />
-                    <button
-                        onClick={toggleKiosk}
-                        disabled={!canKiosk}
-                        aria-label={posLabel('panel.pos.kioskMode', labels)}
-                        className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center
-                                   focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                            !canKiosk
-                                ? 'text-tx-faint cursor-not-allowed'
-                                : 'hover:bg-sf-1 text-tx-sec'
-                        }`}
-                        title={canKiosk
-                            ? `${posLabel('panel.pos.kioskMode', labels)}${canShortcuts ? ' (F11)' : ''}`
-                            : getUpsellTooltip('enable_pos_kiosk', labels)
-                        }
-                    >
-                        {isKiosk ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                    </button>
-
-                    {/* Printer settings (gated) */}
-                    {canThermalPrint && (
-                        <button
-                            onClick={() => setPanelView(v => v === 'printerSettings' ? null : 'printerSettings')}
-                            aria-label={posLabel('panel.pos.printerSettings', labels) || 'Printer settings'}
-                            className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center
-                                       focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
-                                panelView === 'printerSettings'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'hover:bg-sf-1 text-tx-sec'
-                            }`}
-                            title={posLabel('panel.pos.printerSettings', labels) || 'Printer settings'}
-                        >
-                            <Printer className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            </div>
+            <POSToolbar
+                labels={labels}
+                isOnline={isOnline}
+                pendingCount={pendingCount}
+                lastSyncTime={lastSyncTime}
+                currentShift={currentShift}
+                panelView={panelView}
+                setPanelView={(v: POSPanelView | null) => setPanelView(v as unknown as POSPanelView)}
+                canAccessHistory={canAccessHistory}
+                canAccessDashboard={canAccessDashboard}
+                canAccessShifts={canAccessShifts}
+                canShortcuts={canShortcuts}
+                canKiosk={canKiosk}
+                canThermalPrint={canThermalPrint}
+                canLoyalty={canLoyalty}
+                canEndOfDay={canEndOfDay}
+                isKiosk={isKiosk}
+                toggleKiosk={toggleKiosk}
+                parkedSalesCount={parkedSalesCount}
+                handleExitPOS={handleExitPOS}
+            />
 
             {/* Offline banner (gated) */}
             {canOffline && (
@@ -905,20 +682,11 @@ export default function POSClient({
                 />
             )}
 
-            {/* ── Main split panel (responsive: grid on md+, stacked on mobile) ── */}
+            {/* ── Main split panel (responsive: pos-grid handles 1-col mobile / 2-col desktop) ── */}
             <div className="flex-1 min-h-0 overflow-hidden relative">
-                <div
-                    className="h-full pos-main-grid"
-                    style={{ display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}
-                >
-                    {/* Responsive grid: 1 col on mobile, 65%/35% on desktop */}
-                    <style>{`
-                        @media (min-width: 768px) {
-                            .pos-main-grid { grid-template-columns: 1fr minmax(320px, 35%) !important; }
-                        }
-                    `}</style>
-                    {/* Product Grid — fills full width on mobile, 65% on desktop */}
-                    <div style={{ minHeight: 0, overflowY: 'auto', minWidth: 0, borderRight: '1px solid var(--color-surface-2, #e5e7eb)' }}>
+                <div className="h-full pos-grid">
+                    {/* Product Grid — fills full width on mobile, ~62% on desktop */}
+                    <div className="pos-products-panel border-r border-sf-2">
                         <POSProductGrid
                             products={mergedProducts}
                             categories={categories}
@@ -929,10 +697,7 @@ export default function POSClient({
                     </div>
 
                     {/* Cart sidebar — DESKTOP ONLY (hidden on mobile) */}
-                    <div
-                        className="hidden md:flex"
-                        style={{ flexDirection: 'column', minHeight: 0, overflow: 'hidden', background: 'var(--color-surface-0, #fff)' }}
-                    >
+                    <div className="hidden md:flex pos-cart-sidebar">
                         <POSCart
                             items={cart.items}
                             discount={cart.discount}
@@ -972,10 +737,10 @@ export default function POSClient({
                         <button
                             onClick={() => setMobileCartOpen(true)}
                             aria-label={`${posLabel('panel.pos.cart', labels)} — ${cart.items.reduce((s, i) => s + i.quantity, 0)} ${posLabel('panel.pos.items', labels) || 'items'}`}
-                            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 min-h-[48px]
+                            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 min-h-[52px]
                                        text-white rounded-2xl active:scale-[0.98] transition-transform
-                                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2"
-                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 10px 25px rgba(16,185,129,0.3)' }}
+                                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2
+                                       bg-brand shadow-xl shadow-brand/20"
                         >
                             <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
@@ -1017,8 +782,8 @@ export default function POSClient({
                                 aria-modal="true"
                                 aria-label={posLabel('panel.pos.cart', labels)}
                                 className="md:hidden fixed inset-x-0 bottom-0 z-50
-                                           bg-sf-0 rounded-t-3xl shadow-2xl flex flex-col"
-                                style={{ maxHeight: '90dvh' }}
+                                           bg-sf-0 rounded-t-3xl flex flex-col"
+                                style={{ maxHeight: '90dvh', boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.12)' }}
                             >
                                 <div className="flex items-center justify-center pt-2 pb-1">
                                     <div className="w-10 h-1 rounded-full bg-sf-3" />
@@ -1090,6 +855,7 @@ export default function POSClient({
                         canThermalPrint={canThermalPrint}
                         onNewSale={handleNewSale}
                         labels={labels}
+                        posConfig={posConfig}
                     />
                 </Suspense>
             )}
@@ -1202,6 +968,16 @@ export default function POSClient({
                         labels={labels}
                         defaultCurrency={defaultCurrency}
                         shifts={shiftHistory}
+                    />
+                </Suspense>
+            )}
+            {panelView === 'posSettings' && (
+                <Suspense fallback={null}>
+                    <POSSettingsDrawer
+                        isOpen={true}
+                        onClose={() => setPanelView(null)}
+                        initialValues={posConfig}
+                        labels={labels}
                     />
                 </Suspense>
             )}

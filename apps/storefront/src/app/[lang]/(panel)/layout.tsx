@@ -18,6 +18,7 @@ import AchievementProvider from '@/components/panel/AchievementProvider'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, type AchievementContext } from '@/lib/achievements'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { buildModuleInfoList } from '@/lib/governance/build-module-info'
 import {
     getProductCount,
     getCategoryCount,
@@ -71,8 +72,8 @@ export default async function PanelLayout({
     const pathname = headersList.get('x-invoke-path') || headersList.get('x-middleware-invoke') || ''
     const pathSegments = pathname.split('/').filter(Boolean)
     const panelIndex = pathSegments.indexOf('panel')
-    if (panelIndex !== -1 && pathSegments[panelIndex + 1]) {
-        const routeSegment = pathSegments[panelIndex + 1]
+    const routeSegment = (panelIndex !== -1 && pathSegments[panelIndex + 1]) ? pathSegments[panelIndex + 1] : undefined
+    if (routeSegment) {
         if (!shouldAllowPanelRoute(routeSegment as import('@/lib/panel-policy').PanelRouteKey, featureFlags)) {
             redirect(`/${lang}/panel`)
         }
@@ -354,8 +355,8 @@ export default async function PanelLayout({
                 href: `/${lang}/panel`,
             } : null}
         >
-            {/* Onboarding — welcome + guided tour on first panel access */}
-            {!config.onboarding_completed && (
+            {/* Onboarding — SOTA wizard on first panel access (suppressed on immersive routes like POS) */}
+            {!config.onboarding_completed && routeSegment !== 'pos' && (
                 <PanelOnboarding
                     storeName={config.business_name}
                     storeUrl={storeUrl}
@@ -363,12 +364,24 @@ export default async function PanelLayout({
                     domain={process.env.NEXT_PUBLIC_STORE_DOMAIN || null}
                     currency={config.default_currency || 'EUR'}
                     language={config.language || 'en'}
-                    moduleCount={activeModuleCount}
-                    hasLogo={!!config.logo_url}
-                    hasContact={!!config.whatsapp_number || !!config.store_email}
+                    modules={buildModuleInfoList(featureFlags, planLimits as Record<string, number | string | null>)}
+                    featureFlags={featureFlags}
+                    planLimits={planLimits as Record<string, number | string | null>}
+                    config={config as unknown as Record<string, unknown>}
+                    hasMultiLanguage={!!featureFlags.enable_multi_language}
+                    maxLanguages={typeof planLimits.max_languages === 'number' ? planLimits.max_languages : 1}
+                    activeLanguages={
+                        Array.isArray((config as Record<string, unknown>).active_languages)
+                            ? (config as Record<string, unknown>).active_languages as string[]
+                            : [config.language || 'es']
+                    }
                     translations={Object.fromEntries(
                         Object.keys(dictionary)
-                            .filter(k => k.startsWith('welcome.') || k.startsWith('tour.') || k.startsWith('onboarding.'))
+                            .filter(k =>
+                                k.startsWith('welcome.') ||
+                                k.startsWith('tour.') ||
+                                k.startsWith('onboarding.')
+                            )
                             .map(k => [k, (dictionary as Record<string, string>)[k]])
                     )}
                 />

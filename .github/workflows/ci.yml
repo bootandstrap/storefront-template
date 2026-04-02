@@ -36,6 +36,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── Architectural Gate (Sentrux) ────────────────
+      - name: Install Sentrux
+        run: curl -fsSL https://raw.githubusercontent.com/sentrux/sentrux/main/install.sh | sh
+
+      - name: Architecture check (Sentrux)
+        run: ~/.local/bin/sentrux gate .
+
       # ── Governance SSOT Checks ──
       - name: Shared package contract tests
         run: pnpm --filter=@bootandstrap/shared test:run

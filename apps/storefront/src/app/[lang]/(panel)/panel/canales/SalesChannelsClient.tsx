@@ -18,6 +18,7 @@ import {
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,7 +92,17 @@ const CHANNELS = [
 
 type TabId = 'channels' | 'performance' | 'settings'
 
-export default function SalesChannelsClient({ labels, lang }: { labels: Labels; lang: string }) {
+export default function SalesChannelsClient({ labels, lang, salesConfig }: { labels: Labels; lang: string; salesConfig?: Record<string, unknown> }) {
+    const salesConfigFields: ConfigFieldDef[] = [
+        { key: 'sales_whatsapp_greeting', label: 'WhatsApp greeting message', type: 'textarea', placeholder: 'Hi! Thanks for reaching out...' },
+        { key: 'sales_preferred_contact', label: 'Preferred contact method', type: 'select', options: [
+            { value: 'whatsapp', label: 'WhatsApp' },
+            { value: 'email', label: 'Email' },
+            { value: 'phone', label: 'Phone' },
+        ] },
+        { key: 'sales_business_hours_display', label: 'Show business hours', type: 'toggle' },
+        { key: 'sales_highlight_free_shipping', label: 'Highlight free shipping', type: 'toggle' },
+    ]
     const [activeTab, setActiveTab] = useState<TabId>('channels')
 
     const tabs: { id: TabId; label: string }[] = [
@@ -309,36 +320,20 @@ export default function SalesChannelsClient({ labels, lang }: { labels: Labels; 
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <div className="bg-white rounded-2xl border border-[var(--color-gray-200,#e5e7eb)] p-6">
-                            <h3 className="text-base font-semibold text-[var(--color-gray-800,#1f2937)] mb-4">
-                                {labels.tabSettings}
-                            </h3>
-                            <div className="space-y-1">
-                                {[
-                                    { label: 'Sincronizar inventario entre canales', desc: 'Los productos se comparten en todos los canales activos', enabled: true },
-                                    { label: 'Precios unificados', desc: 'Mismo precio en todos los canales', enabled: true },
-                                    { label: 'Promociones multi-canal', desc: 'Las promociones aplican en todos los canales', enabled: false },
-                                ].map((setting, i) => (
-                                    <div key={i} className="flex items-center justify-between py-4 border-b border-[var(--color-gray-100,#f3f4f6)] last:border-0">
-                                        <div>
-                                            <p className="text-sm font-medium text-[var(--color-gray-700,#374151)]">
-                                                {setting.label}
-                                            </p>
-                                            <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
-                                                {setting.desc}
-                                            </p>
-                                        </div>
-                                        <div className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors ${
-                                            setting.enabled ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
-                                        }`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                                                setting.enabled ? 'translate-x-5' : 'translate-x-1'
-                                            }`} />
-                                        </div>
-                                    </div>
-                                ))}
+                        {salesConfig ? (
+                            <ModuleConfigSection
+                                fields={salesConfigFields}
+                                initialValues={salesConfig}
+                                title="Sales Channel Settings"
+                            />
+                        ) : (
+                            <div className="bg-white rounded-2xl border border-[var(--color-gray-200,#e5e7eb)] p-6">
+                                <h3 className="text-base font-semibold text-[var(--color-gray-800,#1f2937)] mb-4">
+                                    {labels.tabSettings}
+                                </h3>
+                                <p className="text-sm text-[var(--color-gray-500,#6b7280)]">No configuration available.</p>
                             </div>
-                        </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

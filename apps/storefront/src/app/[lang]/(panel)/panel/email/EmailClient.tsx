@@ -21,6 +21,7 @@ import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type Automa
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
+import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -71,6 +72,7 @@ interface Props {
     hasProvider: boolean
     labels: Labels
     saveAction: (config: AutomationConfig) => Promise<{ success: boolean; error?: string }>
+    emailSenderConfig?: Record<string, unknown>
 }
 
 type TabKey = 'dashboard' | 'automations' | 'templates' | 'campaigns'
@@ -79,7 +81,12 @@ type TabKey = 'dashboard' | 'automations' | 'templates' | 'campaigns'
 // Component
 // ---------------------------------------------------------------------------
 
-export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction }: Props) {
+export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction, emailSenderConfig }: Props) {
+    const emailConfigFields: ConfigFieldDef[] = [
+        { key: 'email_sender_name', label: 'Sender name', type: 'text', placeholder: 'Your Store' },
+        { key: 'email_reply_to', label: 'Reply-to email', type: 'email', placeholder: 'hello@yourstore.com' },
+        { key: 'email_footer_text', label: 'Email footer text', type: 'textarea', placeholder: '© 2026 Your Store. All rights reserved.' },
+    ]
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
@@ -457,6 +464,15 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                     </motion.div>
                 )}
             </AnimatePresence>
+            {/* Email Sender Config Section */}
+            {emailSenderConfig && (
+                <ModuleConfigSection
+                    fields={emailConfigFields}
+                    initialValues={emailSenderConfig}
+                    title="Email Sender Settings"
+                    collapsible
+                />
+            )}
         </PageEntrance>
     )
 }

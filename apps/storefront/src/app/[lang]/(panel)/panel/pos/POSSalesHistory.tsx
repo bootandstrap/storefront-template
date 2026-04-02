@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSSaleRecord, PaymentMethod, POSSalesFilter } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 
 interface POSSalesHistoryProps {
     onClose: () => void
@@ -61,10 +62,7 @@ export default function POSSalesHistory({
     const PAGE_SIZE = 20
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const buildDateRange = useCallback((preset: string): { from?: string; to?: string } => {

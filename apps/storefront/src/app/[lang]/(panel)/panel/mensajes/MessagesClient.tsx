@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -108,6 +109,17 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
     const [error, setError] = useState<string | null>(null)
     const [showPreview, setShowPreview] = useState(true)
     const [copiedId, setCopiedId] = useState<string | null>(null)
+
+    // Gate state
+    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
 
     // Form state
     const [name, setName] = useState('')
@@ -207,6 +219,11 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
 
     return (
         <PageEntrance className="space-y-5">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
             {/* Header */}
             <PanelPageHeader
                 title={t('panel.messages.title')}
@@ -215,8 +232,8 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                 action={
                     <button
                         className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={!canAdd || isPending}
-                        onClick={() => { resetForm(); setShowForm(true) }}
+                        disabled={isPending}
+                        onClick={() => handleFeatureClick(canAdd, 'max_templates_limit', () => { resetForm(); setShowForm(true) })}
                     >
                         <Plus className="w-4 h-4" />
                         {t('panel.messages.addTemplate')}

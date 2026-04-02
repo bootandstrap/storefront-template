@@ -53,6 +53,17 @@ export default async function POSPage({
         }
     }
 
+    // Extract POS-specific config for the settings drawer
+    const cfg = config as unknown as Record<string, unknown>
+    const posConfig: Record<string, unknown> = {}
+    const posConfigKeys = [
+        'pos_receipt_header', 'pos_receipt_footer', 'pos_default_payment_method',
+        'pos_tax_display', 'pos_enable_tips', 'pos_tip_percentages', 'pos_sound_enabled',
+    ]
+    for (const key of posConfigKeys) {
+        if (cfg[key] !== undefined) posConfig[key] = cfg[key]
+    }
+
     return (
         <POSClient
             products={productsData.products}
@@ -65,6 +76,7 @@ export default async function POSPage({
             labels={posLabels}
             featureFlags={featureFlags}
             planLimits={planLimits}
+            posConfig={posConfig}
         />
     )
 }

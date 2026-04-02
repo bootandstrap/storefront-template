@@ -11,7 +11,7 @@
  * - Animated moderation feedback
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useOptimistic } from 'react'
 import { Star, Check, XCircle, Trash2, Clock, Filter } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
 import { moderateReviewAction, deleteReviewAction } from './actions'
@@ -41,6 +41,11 @@ interface ReviewStats {
     approved: number
     rejected: number
 }
+
+// ── Optimistic action types ──
+type OptimisticAction =
+    | { type: 'moderate'; id: string; newStatus: ReviewStatus }
+    | { type: 'delete'; id: string }
 
 function StarRating({ value }: { value: number }) {
     return (
@@ -98,6 +103,26 @@ export default function ReviewsClient({
     const [filter, setFilter] = useState<ReviewStatus | 'all'>('all')
     const [isPending, startTransition] = useTransition()
 
+    // ── useOptimistic: instant UI feedback on moderate/delete ──
+    const [optimisticReviews, addOptimistic] = useOptimistic(
+        reviews,
+        (current: Review[], action: OptimisticAction) => {
+            if (action.type === 'moderate') {
+                return current.map(r =>
+                    r.id === action.id ? { ...r, status: action.newStatus } : r
+                )
+            }
+            if (action.type === 'delete') {
+                return current.filter(r => r.id !== action.id)
+            }
+            return current
+        }
+    )
+
+    const filteredReviews = filter === 'all'
+        ? optimisticReviews
+        : optimisticReviews.filter(r => r.status === filter)
+
     const confirmDialog = useConfirmDialog({
         title: t('panel.reviews.confirmDelete') || '¿Eliminar reseña?',
         description: t('panel.reviews.confirmDeleteMessage') || 'Esta acción no se puede deshacer.',
@@ -105,25 +130,29 @@ export default function ReviewsClient({
         variant: 'danger',
     })
 
-    const filteredReviews = filter === 'all'
-        ? reviews
-        : reviews.filter(r => r.status === filter)
+
+
+    /** Helper: update stats counters after a moderation or deletion */
+    function updateStats(oldStatus: ReviewStatus, newStatus?: ReviewStatus) {
+        setStats(prev => {
+            const next = { ...prev, [oldStatus]: (prev[oldStatus] as number) - 1 }
+            if (newStatus) next[newStatus] = (prev[newStatus] as number) + 1
+            else next.total -= 1
+            return next
+        })
+    }
 
     function handleModerate(reviewId: string, newStatus: 'approved' | 'rejected') {
+        const oldStatus = reviews.find(r => r.id === reviewId)?.status
+        addOptimistic({ type: 'moderate', id: reviewId, newStatus })
+
         startTransition(async () => {
             const result = await moderateReviewAction(reviewId, newStatus)
             if (result.success) {
                 setReviews(prev => prev.map(r =>
                     r.id === reviewId ? { ...r, status: newStatus } : r
                 ))
-                const old = reviews.find(r => r.id === reviewId)
-                if (old) {
-                    setStats(prev => ({
-                        ...prev,
-                        [old.status]: prev[old.status as keyof ReviewStats] as number - 1,
-                        [newStatus]: prev[newStatus as keyof ReviewStats] as number + 1,
-                    }))
-                }
+                if (oldStatus) updateStats(oldStatus, newStatus)
                 success(newStatus === 'approved'
                     ? (t('panel.reviews.approved') || 'Review approved')
                     : (t('panel.reviews.rejected') || 'Review rejected')
@@ -136,18 +165,14 @@ export default function ReviewsClient({
 
     function handleDelete(reviewId: string) {
         confirmDialog.confirm(() => {
+            const oldStatus = reviews.find(r => r.id === reviewId)?.status
+            addOptimistic({ type: 'delete', id: reviewId })
+
             startTransition(async () => {
                 const result = await deleteReviewAction(reviewId)
                 if (result.success) {
-                    const old = reviews.find(r => r.id === reviewId)
                     setReviews(prev => prev.filter(r => r.id !== reviewId))
-                    if (old) {
-                        setStats(prev => ({
-                            ...prev,
-                            total: prev.total - 1,
-                            [old.status]: prev[old.status as keyof ReviewStats] as number - 1,
-                        }))
-                    }
+                    if (oldStatus) updateStats(oldStatus)
                     success(t('panel.reviews.deleted') || 'Review deleted')
                 } else {
                     showError(t('common.error') || 'Operation failed')

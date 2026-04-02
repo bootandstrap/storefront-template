@@ -8,7 +8,7 @@ import { ComboBox as AriaComboBox, Group as AriaGroup, Input as AriaInput, ListB
 import { HintText } from "@/components/ui/input/hint-text";
 import { Label } from "@/components/ui/input/label";
 import { Popover } from "@/components/ui/select/popover";
-import { type CommonProps, SelectContext, type SelectItemType, sizes } from "@/components/ui/select/select";
+import { type CommonProps, SelectContext, type SelectItemType, sizes } from "@/components/ui/select/context";
 import { useResizeObserver } from "@/hooks/use-resize-observer";
 import { cx } from "@/lib/utils/cn";
 

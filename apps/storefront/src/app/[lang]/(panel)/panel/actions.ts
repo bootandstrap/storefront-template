@@ -136,8 +136,180 @@ export async function saveLanguagePreferencesAction(
     return { success: false, error: 'Unsupported language' }
   }
 
-  return updateConfig(tenantId, {
+  const result = await updateConfig(tenantId, {
     panel_language: panelLang,
     storefront_language: storefrontLang,
+    language: storefrontLang, // also set main language field
+    active_languages: [storefrontLang], // single language by default
   })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Multi-language persistence (active_languages array)
+// ---------------------------------------------------------------------------
+
+export async function saveActiveLanguagesAction(languages: string[]) {
+  const { tenantId } = await withPanelGuard()
+
+  const valid = languages.filter(l => SUPPORTED_LANGUAGES.includes(l))
+  if (valid.length === 0) return { success: false, error: 'No valid languages' }
+
+  const result = await updateConfig(tenantId, {
+    active_languages: valid,
+    language: valid[0], // first one is primary
+    storefront_language: valid[0],
+  })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Complete onboarding (server action — more reliable than fetch route handler)
+// ---------------------------------------------------------------------------
+
+export async function completeOnboardingAction() {
+  const { tenantId } = await withPanelGuard()
+  const result = await updateConfig(tenantId, { onboarding_completed: true })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Save onboarding config (batch update from module config step)
+// ---------------------------------------------------------------------------
+
+/** Allowed config keys that can be set during onboarding */
+const ONBOARDING_CONFIG_KEYS = new Set([
+  // General/contact
+  'store_email',
+  'store_phone',
+  'store_address',
+  'whatsapp_number',
+  // Social
+  'social_facebook',
+  'social_instagram',
+  'social_tiktok',
+  'social_twitter',
+  // SEO
+  'meta_title',
+  'meta_description',
+  'google_analytics_id',
+  'facebook_pixel_id',
+  // Appearance
+  'announcement_bar_text',
+  'announcement_bar_enabled',
+  // E-Commerce
+  'default_currency',
+  'tax_display_mode',
+  'stock_mode',
+  'free_shipping_threshold',
+  'min_order_amount',
+  'low_stock_threshold',
+  // Chatbot
+  'chatbot_name',
+  'chatbot_tone',
+  'chatbot_welcome_message',
+  'chatbot_auto_open_delay',
+  'chatbot_knowledge_scope',
+  // POS
+  'pos_receipt_header',
+  'pos_receipt_footer',
+  'pos_default_payment_method',
+  'pos_tax_display',
+  'pos_enable_tips',
+  'pos_tip_percentages',
+  'pos_sound_enabled',
+  // Automation
+  'webhook_notification_email',
+  // Capacity
+  'traffic_alert_email',
+  'capacity_warning_threshold_pct',
+  'capacity_critical_threshold_pct',
+  'capacity_auto_upgrade_interest',
+  // CRM expansion
+  'crm_auto_tag_customers',
+  'crm_new_customer_tag',
+  'crm_notify_new_contact',
+  'crm_export_format',
+  // Sales Channels expansion
+  'sales_whatsapp_greeting',
+  'sales_preferred_contact',
+  'sales_business_hours_display',
+  'sales_highlight_free_shipping',
+  // Email Marketing expansion
+  'email_sender_name',
+  'email_reply_to',
+  'email_footer_text',
+  'email_abandoned_cart_delay',
+])
+
+/** Keys that must be valid emails (basic format check) */
+const EMAIL_KEYS = new Set(['store_email', 'webhook_notification_email', 'traffic_alert_email', 'email_reply_to'])
+/** Keys that must be numeric */
+const NUMBER_KEYS = new Set(['free_shipping_threshold', 'min_order_amount', 'low_stock_threshold', 'capacity_warning_threshold_pct', 'capacity_critical_threshold_pct', 'chatbot_auto_open_delay'])
+/** Keys that are boolean toggles */
+const BOOLEAN_KEYS = new Set(['announcement_bar_enabled', 'pos_enable_tips', 'pos_sound_enabled', 'capacity_auto_upgrade_interest', 'crm_auto_tag_customers', 'crm_notify_new_contact', 'sales_highlight_free_shipping'])
+
+export async function saveOnboardingConfigAction(
+  updates: Record<string, unknown>,
+) {
+  const { tenantId } = await withPanelGuard()
+
+  // Filter to allowed keys only (defense in depth)
+  const safe: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(updates)) {
+    if (!ONBOARDING_CONFIG_KEYS.has(key)) continue
+
+    // Validate emails — skip invalid formats silently
+    if (EMAIL_KEYS.has(key) && typeof value === 'string' && value.length > 0) {
+      if (!value.includes('@') || !value.includes('.')) continue
+    }
+
+    // Coerce numbers
+    if (NUMBER_KEYS.has(key)) {
+      const num = Number(value)
+      if (isNaN(num)) continue
+      safe[key] = num
+      continue
+    }
+
+    // Coerce booleans
+    if (BOOLEAN_KEYS.has(key)) {
+      safe[key] = value === true || value === 'true'
+      continue
+    }
+
+    safe[key] = value
+  }
+
+  if (Object.keys(safe).length === 0) return { success: true }
+
+  const result = await updateConfig(tenantId, safe)
+  if (result.success) {
+    revalidatePath('/panel')
+
+    // ── 6B: Config change audit trail ──
+    // Non-blocking — audit logging should never break the save
+    try {
+      const adminClient = createAdminClient()
+      // audit_log is an operational table not in the generated schema
+      await (adminClient as any).from('audit_log').insert({
+        tenant_id: tenantId,
+        action: 'settings.config_update',
+        metadata: {
+          changed_keys: Object.keys(safe),
+          changes: safe,
+          severity: 'info',
+          timestamp: new Date().toISOString(),
+          source: 'owner_panel',
+        },
+      })
+    } catch {
+      // Non-blocking
+      console.warn('[audit] Failed to log config change')
+    }
+  }
+  return result
 }

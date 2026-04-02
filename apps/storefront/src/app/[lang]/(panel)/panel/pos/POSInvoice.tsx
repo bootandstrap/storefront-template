@@ -16,6 +16,8 @@
 import { forwardRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { POSSale } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
+import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface BusinessInfo {
     name: string
@@ -34,16 +36,12 @@ interface POSInvoiceProps {
 }
 
 function fmtPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat('es-ES', {
-        style: 'currency',
-        currency: currency?.toUpperCase() || 'EUR',
-        minimumFractionDigits: 2,
-    }).format(amount / 100)
+    return formatPOSCurrency(amount, currency?.toUpperCase() || 'EUR')
 }
 
 function fmtDate(iso: string): string {
     const d = new Date(iso)
-    return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 const POSInvoice = forwardRef<HTMLDivElement, POSInvoiceProps>(
@@ -102,10 +100,10 @@ const POSInvoice = forwardRef<HTMLDivElement, POSInvoiceProps>(
                             <div style={{ fontSize: '11px', color: '#666' }}>{business.address}</div>
                         )}
                         {business.nif && (
-                            <div style={{ fontSize: '11px', color: '#666' }}>NIF: {business.nif}</div>
+                            <div style={{ fontSize: '11px', color: '#666' }}>{posLabel('panel.pos.nif', labels)}: {business.nif}</div>
                         )}
                         {business.phone && (
-                            <div style={{ fontSize: '11px', color: '#666' }}>Tel: {business.phone}</div>
+                            <div style={{ fontSize: '11px', color: '#666' }}>{posLabel('panel.pos.tel', labels)}: {business.phone}</div>
                         )}
                         {business.email && (
                             <div style={{ fontSize: '11px', color: '#666' }}>{business.email}</div>
@@ -249,7 +247,7 @@ const POSInvoice = forwardRef<HTMLDivElement, POSInvoiceProps>(
                             includeMargin={false}
                         />
                         <div style={{ fontSize: '8px', color: '#999', marginTop: '2px' }}>
-                            Verificación digital
+                            {posLabel('panel.pos.digitalVerification', labels)}
                         </div>
                     </div>
                 </div>

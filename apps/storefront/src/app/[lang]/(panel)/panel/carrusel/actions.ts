@@ -3,6 +3,8 @@
 import { revalidatePanel } from '@/lib/revalidate'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { SlideInputSchema, SlideUpdateSchema } from '@/lib/owner-validation'
 
 // ---------------------------------------------------------------------------
@@ -43,7 +45,7 @@ export async function createSlide(
 
         const limitCheck = checkLimit(appConfig.planLimits, 'max_carousel_slides', count ?? 0)
         if (!limitCheck.allowed) {
-            return { success: false, error: 'Carousel slide limit reached' }
+            return { success: false, error: buildLimitError('max_carousel_slides', limitCheck) }
         }
 
         // Get next sort_order for this tenant
@@ -72,6 +74,7 @@ export async function createSlide(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'carousel.create', { type: validInput.type, title: validInput.title })
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -102,6 +105,7 @@ export async function updateSlide(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'carousel.update', { slideId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -127,6 +131,7 @@ export async function deleteSlide(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'carousel.delete', { slideId: id })
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Error:', err)
@@ -152,6 +157,7 @@ export async function reorderSlides(
         await Promise.all(updates)
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'carousel.reorder', { count: orderedIds.length })
         return { success: true }
     } catch (err) {
         console.error('[panel/carousel] Reorder error:', err)

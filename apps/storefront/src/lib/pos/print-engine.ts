@@ -12,6 +12,7 @@
  */
 
 import type { POSSale, POSRefund } from '@/lib/pos/pos-config'
+import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -21,6 +22,15 @@ export interface BusinessInfo {
     nif?: string
     phone?: string
     email?: string
+    logoUrl?: string | null
+}
+
+/** Governance-driven receipt config injected from posConfig */
+export interface ReceiptConfig {
+    /** Custom header text (replaces business name line) */
+    receiptHeader?: string
+    /** Custom footer text (replaces default "thank you" line) */
+    receiptFooter?: string
 }
 
 export interface PrintOptions {
@@ -29,6 +39,10 @@ export interface PrintOptions {
     openCashDrawer?: boolean
     /** Number of copies (thermal only) */
     copies?: number
+    /** i18n labels for receipt strings */
+    labels?: Record<string, string>
+    /** Governance receipt config */
+    receiptConfig?: ReceiptConfig
 }
 
 export type PrinterStatus =
@@ -155,11 +169,19 @@ export function createPrintEngine(): PrintEngine {
     }
 
     /**
-     * Encode a sale receipt to ESC/POS binary
+     * Encode a sale receipt to ESC/POS binary.
+     * Accepts i18n labels and governance receiptConfig for dynamic header/footer.
      */
-    function encodeSaleReceipt(sale: POSSale, business: BusinessInfo, paperWidth: '80mm' | '58mm'): Uint8Array {
+    function encodeSaleReceipt(
+        sale: POSSale,
+        business: BusinessInfo,
+        paperWidth: '80mm' | '58mm',
+        labels?: Record<string, string>,
+        receiptConfig?: ReceiptConfig,
+    ): Uint8Array {
         const ReceiptPrinterEncoder = encoderModule
         const charsPerLine = paperWidth === '58mm' ? 32 : 42
+        const l = (key: string) => posLabel(key, labels)
 
         const encoder = new ReceiptPrinterEncoder({
             language: 'esc-pos',
@@ -167,24 +189,25 @@ export function createPrintEngine(): PrintEngine {
             newline: '\n',
         })
 
-        // Header
+        // Header — use governance receiptHeader if set, else business name
+        const headerText = receiptConfig?.receiptHeader || business.name
         encoder
             .initialize()
             .align('center')
             .bold(true)
             .size(2, 2)
-            .line(business.name)
+            .line(headerText)
             .bold(false)
             .size(1, 1)
 
         if (business.address) encoder.line(business.address)
-        if (business.nif) encoder.line(`NIF: ${business.nif}`)
-        if (business.phone) encoder.line(`Tel: ${business.phone}`)
+        if (business.nif) encoder.line(`${l('panel.pos.nif')}: ${business.nif}`)
+        if (business.phone) encoder.line(`${l('panel.pos.tel')}: ${business.phone}`)
 
         encoder
             .newline()
-            .line(new Date(sale.created_at).toLocaleString('es-ES'))
-            .line(`Pedido: #${sale.draft_order_id?.slice(-6) || sale.order_id?.slice(-6) || '------'}`)
+            .line(new Date(sale.created_at).toLocaleString())
+            .line(`${l('panel.pos.order')}: #${sale.draft_order_id?.slice(-6) || sale.order_id?.slice(-6) || '------'}`)
             .align('left')
             .line('─'.repeat(charsPerLine))
 
@@ -200,12 +223,12 @@ export function createPrintEngine(): PrintEngine {
         encoder.line('─'.repeat(charsPerLine))
 
         // Totals
-        encoder.line(padLine('Subtotal', fmtAmount(sale.subtotal, sale.currency_code), charsPerLine))
+        encoder.line(padLine(l('panel.pos.subtotal'), fmtAmount(sale.subtotal, sale.currency_code), charsPerLine))
         if (sale.discount_amount > 0) {
-            encoder.line(padLine('Descuento', `-${fmtAmount(sale.discount_amount, sale.currency_code)}`, charsPerLine))
+            encoder.line(padLine(l('panel.pos.discount'), `-${fmtAmount(sale.discount_amount, sale.currency_code)}`, charsPerLine))
         }
         if (sale.tax_amount > 0) {
-            encoder.line(padLine('IVA', fmtAmount(sale.tax_amount, sale.currency_code), charsPerLine))
+            encoder.line(padLine(l('panel.pos.tax'), fmtAmount(sale.tax_amount, sale.currency_code), charsPerLine))
         }
 
         encoder
@@ -217,24 +240,25 @@ export function createPrintEngine(): PrintEngine {
             .size(1, 1)
             .line('─'.repeat(charsPerLine))
 
-        // Payment
-        const paymentName = sale.payment_method === 'cash' ? 'Efectivo'
-            : sale.payment_method === 'card_terminal' ? 'Tarjeta'
-                : sale.payment_method === 'manual_card' ? 'Tarjeta (m)'
-                    : 'Otro'
-        encoder.line(padLine('Pago', paymentName, charsPerLine))
+        // Payment — use i18n labels for payment method names
+        const paymentName = sale.payment_method === 'cash' ? l('panel.pos.cash')
+            : sale.payment_method === 'card_terminal' ? l('panel.pos.cardTerminal')
+                : sale.payment_method === 'manual_card' ? l('panel.pos.manualCard')
+                    : l('panel.pos.other')
+        encoder.line(padLine(l('panel.pos.payment'), paymentName, charsPerLine))
 
         if (sale.customer_name) {
-            encoder.line(padLine('Cliente', sale.customer_name, charsPerLine))
+            encoder.line(padLine(l('panel.pos.customer'), sale.customer_name, charsPerLine))
         }
 
-        // QR
+        // Footer — use governance receiptFooter if set, else default thank you
+        const footerText = receiptConfig?.receiptFooter || l('panel.pos.thankYou')
         encoder
             .newline()
             .align('center')
             .qrcode(`receipt:${sale.draft_order_id?.slice(-6) || '000000'}:${sale.total}`, 1, 4, 'm')
             .newline()
-            .line('¡Gracias por su compra!')
+            .line(footerText)
             .newline()
             .newline()
             .newline()
@@ -246,9 +270,16 @@ export function createPrintEngine(): PrintEngine {
     /**
      * Encode a refund receipt to ESC/POS binary
      */
-    function encodeRefundReceipt(refund: POSRefund, business: BusinessInfo, paperWidth: '80mm' | '58mm'): Uint8Array {
+    function encodeRefundReceipt(
+        refund: POSRefund,
+        business: BusinessInfo,
+        paperWidth: '80mm' | '58mm',
+        labels?: Record<string, string>,
+        receiptConfig?: ReceiptConfig,
+    ): Uint8Array {
         const ReceiptPrinterEncoder = encoderModule
         const charsPerLine = paperWidth === '58mm' ? 32 : 42
+        const l = (key: string) => posLabel(key, labels)
 
         const encoder = new ReceiptPrinterEncoder({
             language: 'esc-pos',
@@ -256,21 +287,22 @@ export function createPrintEngine(): PrintEngine {
             newline: '\n',
         })
 
+        const headerText = receiptConfig?.receiptHeader || business.name
         encoder
             .initialize()
             .align('center')
             .bold(true)
             .size(2, 2)
-            .line(business.name)
+            .line(headerText)
             .bold(false)
             .size(1, 1)
             .newline()
             .bold(true)
-            .line('*** DEVOLUCIÓN ***')
+            .line(l('panel.pos.refundBanner'))
             .bold(false)
             .newline()
-            .line(new Date(refund.created_at).toLocaleString('es-ES'))
-            .line(`Ref: ${refund.id.slice(0, 12)}`)
+            .line(new Date(refund.created_at).toLocaleString())
+            .line(`${l('panel.pos.ref')}: ${refund.id.slice(0, 12)}`)
             .align('left')
             .line('─'.repeat(charsPerLine))
 
@@ -292,8 +324,8 @@ export function createPrintEngine(): PrintEngine {
             .size(1, 1)
             .line('─'.repeat(charsPerLine))
 
-        encoder.line(padLine('Motivo', refund.reason, charsPerLine))
-        encoder.line(padLine('Pedido', refund.order_id.slice(0, 16), charsPerLine))
+        encoder.line(padLine(l('panel.pos.reason'), refund.reason, charsPerLine))
+        encoder.line(padLine(l('panel.pos.order'), refund.order_id.slice(0, 16), charsPerLine))
 
         encoder
             .newline()
@@ -355,7 +387,7 @@ export function createPrintEngine(): PrintEngine {
             try {
                 emit({ type: 'print-start' })
                 await loadModules()
-                const data = encodeSaleReceipt(sale, business, opts.paperWidth!)
+                const data = encodeSaleReceipt(sale, business, opts.paperWidth!, opts.labels, opts.receiptConfig)
 
                 for (let i = 0; i < (opts.copies || 1); i++) {
                     await printer.print(data)
@@ -388,7 +420,7 @@ export function createPrintEngine(): PrintEngine {
             try {
                 emit({ type: 'print-start' })
                 await loadModules()
-                const data = encodeRefundReceipt(refund, business, opts.paperWidth!)
+                const data = encodeRefundReceipt(refund, business, opts.paperWidth!, opts.labels, opts.receiptConfig)
                 await printer.print(data)
                 emit({ type: 'print-complete' })
             } catch (err) {

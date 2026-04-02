@@ -3,6 +3,8 @@
 import { revalidatePanel } from '@/lib/revalidate'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { PageInputSchema, PageUpdateSchema } from '@/lib/owner-validation'
 import { sanitizeHtml } from '@/lib/security/sanitize-html'
 
@@ -39,7 +41,7 @@ export async function createPage(
 
         const limitCheck = checkLimit(appConfig.planLimits, 'max_cms_pages', count ?? 0)
         if (!limitCheck.allowed) {
-            return { success: false, error: 'CMS page limit reached' }
+            return { success: false, error: buildLimitError('max_cms_pages', limitCheck) }
         }
 
         const { error } = await supabase
@@ -61,6 +63,7 @@ export async function createPage(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'page.create', { slug: validInput.slug, title: validInput.title })
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -99,6 +102,7 @@ export async function updatePage(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'page.update', { pageId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -124,6 +128,7 @@ export async function deletePage(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'page.delete', { pageId: id })
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)
@@ -150,6 +155,7 @@ export async function togglePagePublish(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'page.toggle_publish', { pageId: id, published })
         return { success: true }
     } catch (err) {
         console.error('[panel/pages] Error:', err)

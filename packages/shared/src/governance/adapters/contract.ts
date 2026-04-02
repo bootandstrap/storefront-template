@@ -6,7 +6,7 @@
  * Zero I/O — instant, deterministic, no Supabase dependency.
  */
 
-import type { GovernanceAdapter, ActiveModule } from '../adapter'
+import type { GovernanceAdapter, ActiveModule } from '../types'
 import type { StoreConfig } from '../schemas'
 import { FALLBACK_CONFIG } from '../defaults'
 

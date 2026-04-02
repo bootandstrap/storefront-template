@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCartItem } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 
 type CartItem = POSCartItem
 
@@ -93,10 +94,7 @@ export default function POSParkedSales({
     }, [onClose])
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const relativeTime = (iso: string) => {

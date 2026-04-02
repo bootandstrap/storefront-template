@@ -17,6 +17,8 @@
 import { forwardRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { POSSale, POSRefund } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
+import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -37,21 +39,21 @@ interface PrintableReceiptProps {
     paperWidth?: '80mm' | '58mm'
     showQR?: boolean
     labels: Record<string, string>
+    /** Governance: custom receipt header text */
+    receiptHeader?: string
+    /** Governance: custom receipt footer text */
+    receiptFooter?: string
 }
 
 // ── Helpers ────────────────────────────────────────────────────
 
 function fmtPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat('es-ES', {
-        style: 'currency',
-        currency: currency?.toUpperCase() || 'EUR',
-        minimumFractionDigits: 2,
-    }).format(amount / 100)
+    return formatPOSCurrency(amount, currency?.toUpperCase() || 'EUR')
 }
 
 function fmtDate(iso: string): string {
     const d = new Date(iso)
-    return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+    return `${d.toLocaleDateString()} ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
 }
 
 function paymentMethodLabel(method: string, labels: Record<string, string>): string {
@@ -67,7 +69,7 @@ function paymentMethodLabel(method: string, labels: Record<string, string>): str
 // ── Component ──────────────────────────────────────────────────
 
 const PrintableReceipt = forwardRef<HTMLDivElement, PrintableReceiptProps>(
-    function PrintableReceipt({ type, sale, refund, business, paperWidth = '80mm', showQR = true, labels }, ref) {
+    function PrintableReceipt({ type, sale, refund, business, paperWidth = '80mm', showQR = true, labels, receiptHeader, receiptFooter }, ref) {
         const isSale = type === 'sale' && sale
         const isRefund = type === 'refund' && refund
         if (!isSale && !isRefund) return null
@@ -121,16 +123,16 @@ const PrintableReceipt = forwardRef<HTMLDivElement, PrintableReceiptProps>(
                 {/* ── Header ── */}
                 <div style={{ textAlign: 'center', marginBottom: '4px' }}>
                     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>
-                        {business.name}
+                        {receiptHeader || business.name}
                     </div>
                     {business.address && (
                         <div style={{ fontSize: '9px' }}>{business.address}</div>
                     )}
                     {(business.nif || business.phone) && (
                         <div style={{ fontSize: '9px' }}>
-                            {business.nif && `NIF: ${business.nif}`}
+                            {business.nif && `${posLabel('panel.pos.nif', labels)}: ${business.nif}`}
                             {business.nif && business.phone && ' | '}
-                            {business.phone && `Tel: ${business.phone}`}
+                            {business.phone && `${posLabel('panel.pos.tel', labels)}: ${business.phone}`}
                         </div>
                     )}
                 </div>
@@ -145,12 +147,12 @@ const PrintableReceipt = forwardRef<HTMLDivElement, PrintableReceiptProps>(
                 <div style={{ textAlign: 'center', fontSize: '9px', marginBottom: '4px' }}>
                     {isRefund ? (
                         <>
-                            <strong style={{ color: '#c00', fontSize: '12px' }}>— DEVOLUCIÓN —</strong>
+                            <strong style={{ color: '#c00', fontSize: '12px' }}>— {posLabel('panel.pos.refundBanner', labels)} —</strong>
                             <br />
-                            Ref: {orderId}
+                            {posLabel('panel.pos.ref', labels)}: {orderId}
                         </>
                     ) : (
-                        <>Pedido: #{orderId}</>
+                        <>{posLabel('panel.pos.order', labels)}: #{orderId}</>
                     )}
                 </div>
 
@@ -263,14 +265,14 @@ const PrintableReceipt = forwardRef<HTMLDivElement, PrintableReceiptProps>(
                             includeMargin={false}
                         />
                         <div style={{ fontSize: '8px', marginTop: '2px', opacity: 0.6 }}>
-                            Recibo digital
+                            {posLabel('panel.pos.digitalReceipt', labels)}
                         </div>
                     </div>
                 )}
 
                 {/* ── Footer ── */}
                 <div style={{ textAlign: 'center', fontSize: '10px', marginTop: '4px' }}>
-                    {labels['panel.pos.thankYou'] || '¡Gracias por su compra!'}
+                    {receiptFooter || posLabel('panel.pos.thankYou', labels)}
                 </div>
                 {business.email && (
                     <div style={{ textAlign: 'center', fontSize: '8px', opacity: 0.6, marginTop: '2px' }}>

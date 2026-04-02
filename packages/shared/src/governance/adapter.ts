@@ -18,37 +18,16 @@
  * @module adapter
  */
 
-import type { FeatureFlags, PlanLimits, StoreConfig } from './schemas'
+// Re-export types from the dedicated types file (cycle-free)
+export type { GovernanceAdapter, ActiveModule, GovernanceModeEnv } from './types'
+export type { FeatureFlags, PlanLimits, StoreConfig } from './schemas'
 
-// ── Active module representation ───────────────────────────────────────────
-
-export interface ActiveModule {
-    moduleKey: string
-    tierName: string
-    status: string
-    orderId?: string
-}
-
-// ── Adapter Interface ──────────────────────────────────────────────────────
-
-export interface GovernanceAdapter {
-    /** Get all feature flags for a tenant */
-    getFlags(tenantId: string): Promise<Record<string, boolean>>
-    /** Get all plan limits for a tenant */
-    getLimits(tenantId: string): Promise<Record<string, number | string>>
-    /** Get active modules for a tenant */
-    getModules(tenantId: string): Promise<ActiveModule[]>
-    /** Get store config for a tenant */
-    getConfig(tenantId: string): Promise<StoreConfig | null>
-    /** Subscribe to governance changes (optional — not all environments support it) */
-    subscribe?(tenantId: string, cb: () => void): () => void
-    /** Name of this adapter (for logging) */
-    readonly name: string
-}
+import type { GovernanceAdapter, GovernanceModeEnv } from './types'
+import { ContractAdapter } from './adapters/contract'
+import { OfflineAdapter } from './adapters/offline'
+import { SupabaseAdapter } from './adapters/supabase'
 
 // ── Factory ────────────────────────────────────────────────────────────────
-
-export type GovernanceModeEnv = 'supabase' | 'contract' | 'offline'
 
 /**
  * Create governance adapter based on GOVERNANCE_MODE env var.
@@ -58,20 +37,11 @@ export function createGovernanceAdapter(mode?: GovernanceModeEnv): GovernanceAda
     const resolved = mode ?? (process.env.GOVERNANCE_MODE as GovernanceModeEnv) ?? 'supabase'
 
     switch (resolved) {
-        case 'contract': {
-            const { ContractAdapter } = require('./adapters/contract')
+        case 'contract':
             return new ContractAdapter()
-        }
-        case 'offline': {
-            const { OfflineAdapter } = require('./adapters/offline')
+        case 'offline':
             return new OfflineAdapter()
-        }
-        default: {
-            const { SupabaseAdapter } = require('./adapters/supabase')
+        default:
             return new SupabaseAdapter()
-        }
     }
 }
-
-// Re-export adapter types
-export type { FeatureFlags, PlanLimits, StoreConfig }

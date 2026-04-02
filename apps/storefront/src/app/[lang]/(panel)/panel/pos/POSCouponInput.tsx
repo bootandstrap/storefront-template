@@ -11,6 +11,7 @@ import { useState, useCallback, useRef } from 'react'
 import { Tag, X, Check, Loader2, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCoupon, POSDiscount } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Local coupon storage ──
@@ -125,8 +126,7 @@ export default function POSCouponInput({
     const inputRef = useRef<HTMLInputElement>(null)
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, { style: 'currency', currency: defaultCurrency })
-            .format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const handleSubmit = useCallback(() => {

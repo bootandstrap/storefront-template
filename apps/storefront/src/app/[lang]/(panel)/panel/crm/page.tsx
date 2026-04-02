@@ -34,7 +34,7 @@ export default async function CRMPage({
 }) {
     const { lang } = await params
     const { tenantId, appConfig } = await withPanelGuard()
-    const { featureFlags, planLimits } = appConfig
+    const { featureFlags, planLimits, config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -60,6 +60,9 @@ export default async function CRMPage({
         }).length,
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfgAny = config as unknown as Record<string, unknown>
+
     return (
         <div className="space-y-6">
             <PanelPageHeader
@@ -74,6 +77,12 @@ export default async function CRMPage({
                 maxContacts={planLimits.max_crm_contacts}
                 enableSegmentation={featureFlags.enable_crm_segmentation}
                 enableExport={featureFlags.enable_crm_export}
+                crmConfig={{
+                    crm_auto_tag_customers: cfgAny.crm_auto_tag_customers ?? false,
+                    crm_new_customer_tag: cfgAny.crm_new_customer_tag ?? '',
+                    crm_notify_new_contact: cfgAny.crm_notify_new_contact ?? false,
+                    crm_export_format: cfgAny.crm_export_format ?? 'csv',
+                }}
                 customers={customers.map(c => ({
                     id: c.id,
                     email: c.email,

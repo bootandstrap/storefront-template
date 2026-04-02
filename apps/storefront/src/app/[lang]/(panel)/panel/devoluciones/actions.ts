@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import {
     getAdminReturns,
     receiveAdminReturn,
@@ -46,6 +47,7 @@ export async function approveReturnAction(
             return { success: false, error: result.error }
         }
         revalidatePath('/panel/devoluciones')
+        logOwnerAction(tenantId, 'return.approve', { returnId, itemCount: items.length })
         return { success: true }
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
@@ -66,6 +68,7 @@ export async function rejectReturnAction(
             return { success: false, error: result.error }
         }
         revalidatePath('/panel/devoluciones')
+        logOwnerAction(tenantId, 'return.reject', { returnId })
         return { success: true }
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }

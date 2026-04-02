@@ -79,7 +79,7 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_social_media:        ['rrss', 'socialMedia'],
     // ── POS ───────────────────────────────────────────────────
     enable_pos:                 ['pos', 'pos'],
-    enable_pos_kiosk:           ['pos', 'posKiosk'],
+    enable_pos_kiosk:           ['pos_kiosk', 'posKiosk'],
     enable_pos_keyboard_shortcuts:['pos', 'posKeyboardShortcuts'],
     enable_pos_quick_sale:      ['pos', 'posQuickSale'],
     enable_pos_offline_cart:    ['pos', 'posOfflineCart'],
@@ -115,6 +115,7 @@ const MODULE_SLUGS: Record<string, Record<string, string>> = {
     auth_advanced:  { es: 'auth-avanzada', en: 'advanced-auth', de: 'erweiterte-auth', fr: 'auth-avancee', it: 'auth-avanzata' },
     rrss:           { es: 'redes-sociales', en: 'social-media', de: 'soziale-medien', fr: 'reseaux-sociaux', it: 'social-media' },
     pos:            { es: 'punto-de-venta', en: 'point-of-sale', de: 'kassensystem', fr: 'point-de-vente', it: 'punto-vendita' },
+    pos_kiosk:      { es: 'modo-kiosco', en: 'kiosk-mode', de: 'kiosk-modus', fr: 'mode-kiosque', it: 'modalita-chiosco' },
     automation:     { es: 'automatizacion', en: 'automation', de: 'automatisierung', fr: 'automatisation', it: 'automazione' },
     capacidad:      { es: 'capacidad', en: 'capacity', de: 'kapazitaet', fr: 'capacite', it: 'capacita' },
 }

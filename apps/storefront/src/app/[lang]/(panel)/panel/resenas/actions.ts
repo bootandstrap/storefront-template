@@ -3,6 +3,7 @@
 import { adminFetch } from '@/lib/medusa/admin-core'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { revalidatePath } from 'next/cache'
 
 // ─── Fetch all reviews ────────────────────────────────────────
@@ -52,6 +53,7 @@ export async function moderateReviewAction(reviewId: string, status: 'approved' 
     }
 
     revalidatePath('/[lang]/panel/resenas', 'page')
+    logOwnerAction(tenantId, 'review.moderate', { reviewId, status })
     return { success: true }
 }
 
@@ -71,5 +73,6 @@ export async function deleteReviewAction(reviewId: string) {
     }
 
     revalidatePath('/[lang]/panel/resenas', 'page')
+    logOwnerAction(tenantId, 'review.delete', { reviewId })
     return { success: true }
 }

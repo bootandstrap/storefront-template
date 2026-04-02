@@ -220,6 +220,13 @@ export async function proxy(request: NextRequest) {
     const lang = localeMatch?.[1]
 
     if (lang && SUPPORTED_LOCALES.includes(lang)) {
+        // Explicit permanent redirect from old manual shop route to catalog
+        if (path.endsWith('/tienda') || path.includes('/tienda/')) {
+            const redirectedUrl = request.nextUrl.clone()
+            redirectedUrl.pathname = path.replace('/tienda', '/productos')
+            return NextResponse.redirect(redirectedUrl, 308)
+        }
+
         // Rewrite localized slugs to canonical paths
         const rewritten = rewriteLocalizedPath(path, lang)
         if (rewritten) {

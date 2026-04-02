@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { PaymentMethod, SplitPaymentEntry } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface POSSplitPaymentProps {
@@ -69,10 +70,7 @@ export default function POSSplitPayment({
     const [editValue, setEditValue] = useState('')
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const assigned = useMemo(() => splits.reduce((s, e) => s + e.amount, 0), [splits])

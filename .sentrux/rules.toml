@@ -1,0 +1,36 @@
+[constraints]
+max_cycles = 0
+no_god_files = true
+
+# ── Boundary Rules ─────────────────────────────────────────
+# Focus on hard architectural boundaries, not layering within the same app.
+
+# Storefront CANNOT import Medusa internals (API only)
+[[boundaries]]
+from = "apps/storefront/*"
+to = "apps/medusa/*"
+reason = "Backend y Storefront están estrictamente separados. Storefront solo se comunica vía API."
+
+# Medusa CANNOT import storefront
+[[boundaries]]
+from = "apps/medusa/*"
+to = "apps/storefront/*"
+reason = "El backend de Medusa no puede depender del storefront."
+
+# Shared package CANNOT import app code
+[[boundaries]]
+from = "packages/shared/*"
+to = "apps/*"
+reason = "El paquete shared no puede importar código de las apps. Las dependencias van de apps → shared."
+
+# Public routes CANNOT import panel internals
+[[boundaries]]
+from = "apps/storefront/src/app/[lang]/(main)/*"
+to = "apps/storefront/src/app/[lang]/(panel)/*"
+reason = "Las rutas públicas no deben importar lógica del panel de propietario."
+
+# Lib CANNOT import components
+[[boundaries]]
+from = "apps/storefront/src/lib/*"
+to = "apps/storefront/src/components/*"
+reason = "La capa lib (servicios, utilidades) no debe importar componentes UI."

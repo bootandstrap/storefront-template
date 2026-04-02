@@ -52,7 +52,20 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${config.business_name}`,
     },
     description: config.meta_description || `Online store — ${config.business_name}`,
+    keywords: ['ecommerce', config.business_name, 'online store', 'shopping'],
+    authors: [{ name: config.business_name }],
     icons: config.favicon_url ? { icon: config.favicon_url } : undefined,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     alternates: siteUrl ? {
       canonical: siteUrl,
       languages: {
@@ -62,6 +75,17 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     } : undefined,
   }
+}
+
+export async function generateViewport(): Promise<any> {
+    const { config } = await getConfig()
+    const colors = resolveThemeColors(config)
+    return {
+        themeColor: colors.primary,
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 5,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -131,8 +155,6 @@ export default async function RootLayout({
         {/* eslint-disable-next-line @next/next/google-font-preconnect -- preconnect already above */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content={colors.primary} />
         {/* PWA */}
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

@@ -3,6 +3,8 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { revalidatePanel } from '@/lib/revalidate'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
     getCategoryCount,
@@ -39,7 +41,7 @@ export async function createCategory(data: {
     const categoryCount = await getCategoryCount(scope)
     const limitCheck = checkLimit(appConfig.planLimits, 'max_categories', categoryCount)
     if (!limitCheck.allowed) {
-        return { success: false, error: 'Límite de categorías alcanzado' }
+        return { success: false, error: buildLimitError('max_categories', limitCheck) }
     }
 
     const input: CreateCategoryInput = {
@@ -56,6 +58,7 @@ export async function createCategory(data: {
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.create_category', { name: data.name })
 
     return { success: true }
 }
@@ -86,6 +89,7 @@ export async function editCategory(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.update_category', { categoryId: id, fields: Object.keys(data) })
 
     return { success: true }
 }
@@ -99,6 +103,7 @@ export async function removeCategory(id: string): Promise<ActionResult> {
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.delete_category', { categoryId: id })
 
     return { success: true }
 }

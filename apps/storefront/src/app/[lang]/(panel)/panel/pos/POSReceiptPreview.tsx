@@ -16,6 +16,7 @@
 import { useState, useMemo } from 'react'
 import { X, Printer, Maximize2, Minimize2 } from 'lucide-react'
 import type { POSSale } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 
 // ── Only render in development ─────────────────────────────────
 const IS_DEV = process.env.NODE_ENV === 'development'
@@ -33,11 +34,7 @@ interface POSReceiptPreviewProps {
 type PaperWidth = 48 | 32 // chars: 80mm = 48, 58mm = 32
 
 function formatPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat('es-ES', {
-        style: 'currency',
-        currency: currency?.toUpperCase() || 'EUR',
-        minimumFractionDigits: 2,
-    }).format(amount / 100)
+    return formatPOSCurrency(amount, currency?.toUpperCase() || 'EUR')
 }
 
 function ReceiptLine({ left, right, bold = false, width }: {

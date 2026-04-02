@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { getProducts } from '@/lib/medusa/client'
-import { getConfig } from '@/lib/config'
+import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getActiveLocales, CANONICAL_ROUTES } from '@/lib/i18n'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
@@ -83,6 +84,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
     } catch {
         // Products unavailable — return static pages only
+    }
+
+    // Published CMS pages (paginas/[slug]) — from Supabase
+    try {
+        const tenantId = getRequiredTenantId()
+        const supabase = createAdminClient()
+        const { data } = await supabase
+            .from('cms_pages')
+            .select('slug, updated_at')
+            .eq('tenant_id', tenantId)
+            .eq('published', true)
+
+        const cmsPages = (data || []) as Array<{ slug: string; updated_at: string | null }>
+
+        for (const locale of activeLocales) {
+            const prefix = `${baseUrl}/${locale}`
+            for (const page of cmsPages || []) {
+                const pagePath = `/paginas/${page.slug}`
+                entries.push({
+                    url: `${prefix}${pagePath}`,
+                    lastModified: page.updated_at ? new Date(page.updated_at) : new Date(),
+                    changeFrequency: 'monthly' as const,
+                    priority: 0.6,
+                    alternates: buildAlternates(pagePath),
+                })
+            }
+        }
+    } catch {
+        // CMS pages unavailable — skip section
     }
 
     return entries

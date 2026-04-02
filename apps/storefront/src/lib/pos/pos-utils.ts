@@ -47,17 +47,35 @@ export function getEnabledPOSPaymentMethods(
 /**
  * Format a minor-unit amount (cents) as a currency string.
  * Uses Intl.NumberFormat for locale-aware formatting.
+ * Derives locale from currency code for proper symbol placement.
  */
+const CURRENCY_LOCALE_MAP: Record<string, string> = {
+    eur: 'de-DE',
+    chf: 'de-CH',
+    usd: 'en-US',
+    gbp: 'en-GB',
+    sek: 'sv-SE',
+    dkk: 'da-DK',
+    nok: 'nb-NO',
+    pln: 'pl-PL',
+    czk: 'cs-CZ',
+    mxn: 'es-MX',
+    cop: 'es-CO',
+    brl: 'pt-BR',
+}
+
 export function formatPOSCurrency(
     amount: number,
     currencyCode = 'EUR',
-    locale = 'de-CH',
+    locale?: string,
 ): string {
-    return new Intl.NumberFormat(locale, {
+    const effectiveLocale = locale || CURRENCY_LOCALE_MAP[currencyCode.toLowerCase()] || 'de-DE'
+    const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0
+    return new Intl.NumberFormat(effectiveLocale, {
         style: 'currency',
         currency: currencyCode.toUpperCase(),
         minimumFractionDigits: 2,
-    }).format(amount / 100)
+    }).format(safeAmount / 100)
 }
 
 // ---------------------------------------------------------------------------

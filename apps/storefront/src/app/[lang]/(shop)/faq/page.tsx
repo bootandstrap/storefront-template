@@ -1,6 +1,6 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
-import { faqPageJsonLD } from '@/lib/seo/jsonld'
+import { faqPageJsonLD, safeJsonLd } from '@/lib/seo/jsonld'
 import { ChevronDown, HelpCircle } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -42,7 +42,7 @@ export default async function FaqPage({
             {/* FAQPage JSON-LD for Google rich results */}
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />
 
             <div className="max-w-3xl mx-auto">

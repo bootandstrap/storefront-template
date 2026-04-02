@@ -3,7 +3,9 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { revalidatePanel } from '@/lib/revalidate'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
 import { estimateTenantStorageUsage, canUploadFile } from '@/lib/storage-usage'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import {
     getProductCount,
@@ -50,7 +52,7 @@ export async function createProduct(data: {
     const productCount = await getProductCount(scope)
     const limitCheck = checkLimit(appConfig.planLimits, 'max_products', productCount)
     if (!limitCheck.allowed) {
-        return { success: false, error: 'Límite de productos alcanzado' }
+        return { success: false, error: buildLimitError('max_products', limitCheck) }
     }
 
     const manageInventory = appConfig.config.stock_mode === 'managed'
@@ -76,6 +78,7 @@ export async function createProduct(data: {
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.create', { title: data.title, status: data.status, price: data.price })
 
     return { success: true }
 }
@@ -127,6 +130,7 @@ export async function updateProduct(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.update', { productId: id, fields: Object.keys(data) })
 
     return { success: true }
 }
@@ -143,6 +147,7 @@ export async function removeProduct(id: string): Promise<ActionResult> {
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.delete', { productId: id })
 
     return { success: true }
 }
@@ -187,7 +192,7 @@ export async function uploadProductImage(
     const existingImages = (product.images ?? []).map(img => ({ url: img.url }))
     const imageLimit = checkLimit(appConfig.planLimits, 'max_images_per_product', existingImages.length)
     if (!imageLimit.allowed) {
-        return { success: false, error: `Límite de imágenes alcanzado (${imageLimit.limit} por producto)` }
+        return { success: false, error: buildLimitError('max_images_per_product', imageLimit) }
     }
 
     // Storage limit enforcement — check tenant-wide storage before upload
@@ -222,6 +227,7 @@ export async function uploadProductImage(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.upload_image', { productId, fileSize: file.size, fileType: file.type })
     return { success: true }
 }
 
@@ -240,6 +246,7 @@ export async function removeProductImage(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.delete_image', { productId, imageUrl })
     return { success: true }
 }
 
@@ -271,6 +278,7 @@ export async function updateProductStock(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'inventory.update_stock', { productId, variantId, quantity })
     return { success: true }
 }
 
@@ -300,6 +308,7 @@ export async function bulkUpdateStatus(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.bulk_update_status', { count: updated, status, totalRequested: ids.length })
     return {
         success: errors.length === 0,
         updated,
@@ -328,6 +337,7 @@ export async function bulkDeleteProducts(
     }
 
     revalidatePanel('all')
+    logOwnerAction(tenantId, 'product.bulk_delete', { count: deleted, totalRequested: ids.length })
     return {
         success: errors.length === 0,
         deleted,

@@ -11,6 +11,7 @@
  */
 
 import { MessageCircle } from 'lucide-react'
+import type { Metadata } from 'next'
 import { getConfig } from '@/lib/config'
 import { getCategories } from '@/lib/medusa/client'
 import { getCurrency } from '@/lib/i18n/currencies'
@@ -26,6 +27,38 @@ import CompareBarWrapper from '@/components/products/CompareBar'
 import { createClient } from '@/lib/supabase/server'
 import type { ChatTier } from '@/lib/chat/client-config'
 import Script from 'next/script'
+
+/**
+ * Shop layout metadata — provides title.template so every child page
+ * automatically gets " | BusinessName" appended to its title.
+ * Also sets OpenGraph siteName + locale for consistent social sharing.
+ */
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+    const { lang } = await params
+    const { config } = await getConfig()
+    const businessName = config.business_name || 'Store'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+
+    return {
+        title: {
+            template: `%s | ${businessName}`,
+            default: config.meta_title || businessName,
+        },
+        openGraph: {
+            siteName: businessName,
+            locale: lang === 'es' ? 'es_ES' : 'en_US',
+            url: siteUrl,
+        },
+        twitter: {
+            card: 'summary_large_image',
+        },
+    }
+}
+
 
 export default async function ShopLayout({
     children,
@@ -143,7 +176,7 @@ export default async function ShopLayout({
             {/* WhatsApp floating CTA — gated by enable_whatsapp_contact (NOT checkout) */}
             {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
                 <a
-                    href={`https://wa.me/${config.whatsapp_number}`}
+                    href={`https://wa.me/${config.whatsapp_number}${(config as unknown as Record<string, string>).sales_whatsapp_greeting ? `?text=${encodeURIComponent((config as unknown as Record<string, string>).sales_whatsapp_greeting)}` : ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="whatsapp-float"
@@ -161,6 +194,9 @@ export default async function ShopLayout({
                     tier={chatTier}
                     businessName={config.business_name}
                     planMessageLimit={planLimits.max_chatbot_messages_month}
+                    chatbotName={(config as unknown as Record<string, string>).chatbot_name || undefined}
+                    chatbotWelcomeMessage={(config as unknown as Record<string, string>).chatbot_welcome_message || undefined}
+                    autoOpenDelay={Number((config as unknown as Record<string, unknown>).chatbot_auto_open_delay) || undefined}
                 />
             )}
 

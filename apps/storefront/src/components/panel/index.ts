@@ -68,3 +68,13 @@ export { PanelBatchProvider, useBatchProgress } from './PanelBatchProgress'
 export { default as PanelBulkBar } from './PanelBulkBar'
 export { default as PanelEmptyState2 } from './PanelEmptyState'
 export { PanelConfirmProvider, useConfirm } from './PanelConfirmDialog'
+
+// ─── Dashboard Components ───────────────────────────────────────────────────
+export { default as UsageMeter } from './UsageMeter'
+export { default as SetupProgress } from './SetupProgress'
+export { default as StoreHealthCard } from './StoreHealthCard'
+export { default as SmartTip } from './SmartTip'
+export { default as SectionHeader } from './SectionHeader'
+export { default as ActivityFeed } from './ActivityFeed'
+export type { ActivityEvent } from './ActivityFeed'
+export { default as PanelTableLegacy, PanelThead, PanelTbody, PanelTr, PanelTh as PanelThCell, PanelTd } from './PanelTable'

@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 interface CMSPage {
     id: string
@@ -45,6 +46,17 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+
+    // Gate state
+    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
 
     const confirmDialog = useConfirmDialog({
         title: t('common.confirmDelete'),
@@ -114,6 +126,11 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
 
     return (
         <PageEntrance className="space-y-5">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
             <PanelPageHeader
                 title={t('panel.pages.title')}
                 subtitle={t('panel.pages.subtitle')}
@@ -122,8 +139,8 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                 action={
                     <button
                         className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={!canAdd || isPending}
-                        onClick={() => { resetForm(); setShowForm(true) }}
+                        disabled={isPending}
+                        onClick={() => handleFeatureClick(canAdd, 'max_pages_limit', () => { resetForm(); setShowForm(true) })}
                     >
                         <Plus className="w-4 h-4" />
                         {t('panel.pages.addPage')}
@@ -229,8 +246,8 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                         </p>
                         <button
                             className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={!canAdd || isPending}
-                            onClick={() => { resetForm(); setShowForm(true) }}
+                            disabled={isPending}
+                            onClick={() => handleFeatureClick(canAdd, 'max_pages_limit', () => { resetForm(); setShowForm(true) })}
                         >
                             <Plus className="w-4 h-4" />
                             {t('panel.pages.addPage')}

@@ -17,12 +17,14 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
+import { useLimitGuard } from '@/hooks/useLimitGuard'
 import { createCategory, editCategory, removeCategory } from './actions'
 import { FolderTree, Plus, Pencil, Trash2, Loader2, Tag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 interface Category {
     id: string
@@ -64,9 +66,21 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
+    const { handleLimitError } = useLimitGuard()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+
+    // ── Gate state ──
+    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
 
     const confirmDialog = useConfirmDialog({
         title: labels.confirmDelete,
@@ -100,7 +114,11 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                 ? await editCategory(editingId, { name, description: description || undefined })
                 : await createCategory({ name, description: description || undefined })
             if (result.success) { resetForm(); router.refresh(); toast.success('✓') }
-            else { setError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+            else {
+                const err = result.error ?? 'Error'
+                setError(err)
+                if (!handleLimitError(err, (k) => k)) toast.error(err)
+            }
         })
     }
 
@@ -119,6 +137,11 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
 
     return (
         <PageEntrance className="space-y-5">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
             <PanelPageHeader
                 title={labels.title}
                 subtitle={labels.subtitle}
@@ -127,8 +150,8 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                 action={
                     <button
                         className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={!canAdd || isPending}
-                        onClick={() => { resetForm(); setShowForm(true) }}
+                        disabled={isPending}
+                        onClick={() => handleFeatureClick(canAdd, 'max_categories_limit', () => { resetForm(); setShowForm(true) })}
                     >
                         <Plus className="w-4 h-4" />
                         {labels.addCategory}
@@ -206,8 +229,8 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                         </p>
                         <button
                             className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={!canAdd}
-                            onClick={() => { resetForm(); setShowForm(true) }}
+                            disabled={isPending}
+                            onClick={() => handleFeatureClick(canAdd, 'max_categories_limit', () => { resetForm(); setShowForm(true) })}
                         >
                             <Plus className="w-4 h-4" />
                             {labels.addCategory}

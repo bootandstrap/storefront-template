@@ -10,6 +10,7 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePanel } from '@/lib/revalidate'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import type { AutomationConfig } from '@/lib/email-automations-shared'
 
 interface ActionResult {
@@ -42,5 +43,9 @@ export async function saveAutomationConfig(config: AutomationConfig): Promise<Ac
     }
 
     revalidatePanel('panel')
+    logOwnerAction(tenantId, 'email.save_automation', {
+        abandonedCartEnabled: config.abandoned_cart_enabled,
+        reviewRequestEnabled: config.review_request_enabled,
+    })
     return { success: true }
 }

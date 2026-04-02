@@ -12,6 +12,8 @@ import { X, Package } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 import type { POSCartItem } from '@/lib/pos/pos-config'
+import { safeVariantPrice } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface POSVariantPickerProps {
@@ -38,18 +40,16 @@ export default function POSVariantPicker({
         return () => window.removeEventListener('keydown', handler)
     }, [onClose])
 
-    const formatPrice = (amount: number, currency: string) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency,
-        }).format(amount / 100)
+    const formatPrice = (amount: number, currency: string) => {
+        const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0
+        return formatPOSCurrency(safeAmount, currency)
+    }
 
     const handleVariantSelect = (variantIndex: number) => {
         const variant = product.variants[variantIndex]
         if (!variant) return
 
-        const calcPrice = (variant as any).calculated_price
-        const fallbackPrice = variant.prices?.[0]
+        const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
         onSelect({
             id: variant.id,
             product_id: product.id,
@@ -57,9 +57,9 @@ export default function POSVariantPicker({
             variant_title: variant.title,
             thumbnail: product.thumbnail,
             sku: variant.sku || null,
-            unit_price: calcPrice?.calculated_amount ?? fallbackPrice?.amount ?? 0,
+            unit_price,
             quantity: 1,
-            currency_code: calcPrice?.currency_code ?? fallbackPrice?.currency_code ?? defaultCurrency,
+            currency_code,
         })
     }
 
@@ -128,8 +128,7 @@ export default function POSVariantPicker({
                     <div className="p-4 max-h-[60vh] overflow-y-auto">
                         <div className="grid grid-cols-2 gap-2.5">
                             {product.variants.map((variant, idx) => {
-                                const calcPrice = (variant as any).calculated_price
-                                const fallbackPrice = variant.prices?.[0]
+                                const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
                                 const isInStock = variant.manage_inventory
                                     ? (variant.inventory_quantity ?? 0) > 0
                                     : true
@@ -142,10 +141,7 @@ export default function POSVariantPicker({
                                         initial={{ opacity: 0, scale: 0.92 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: 0.15 + idx * 0.04, type: 'spring', damping: 20, stiffness: 250 }}
-                                        aria-label={`${variant.title || `Variant ${idx + 1}`} — ${formatPrice(
-                                            calcPrice?.calculated_amount ?? fallbackPrice?.amount ?? 0,
-                                            calcPrice?.currency_code ?? fallbackPrice?.currency_code ?? defaultCurrency
-                                        )}`}
+                                        aria-label={`${variant.title || `Variant ${idx + 1}`} — ${formatPrice(unit_price, currency_code)}`}
                                         className={`relative flex flex-col items-center gap-2 p-4 rounded-xl
                                                    border-2 text-center transition-all duration-150
                                                    min-h-[80px]
@@ -163,12 +159,9 @@ export default function POSVariantPicker({
                                                 {variant.sku}
                                             </span>
                                         )}
-                                        {(calcPrice || fallbackPrice) && (
+                                        {unit_price > 0 && (
                                             <span className="text-sm font-bold text-brand">
-                                                {formatPrice(
-                                                    calcPrice?.calculated_amount ?? fallbackPrice?.amount ?? 0,
-                                                    calcPrice?.currency_code ?? fallbackPrice?.currency_code ?? defaultCurrency
-                                                )}
+                                                {formatPrice(unit_price, currency_code)}
                                             </span>
                                         )}
                                         {!isInStock && (

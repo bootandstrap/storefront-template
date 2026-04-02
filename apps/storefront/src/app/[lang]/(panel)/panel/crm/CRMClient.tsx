@@ -19,6 +19,7 @@ import { motion } from 'framer-motion'
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 import { exportCrmCsv } from './actions'
 
 // ---------------------------------------------------------------------------
@@ -78,6 +79,7 @@ interface Props {
     customers: CustomerRow[]
     lang: string
     labels: Labels
+    crmConfig?: Record<string, unknown>
 }
 
 type Segment = 'all' | 'withOrders' | 'recent'
@@ -95,7 +97,18 @@ export default function CRMClient({
     customers,
     lang,
     labels,
+    crmConfig,
 }: Props) {
+    const crmConfigFields: ConfigFieldDef[] = [
+        { key: 'crm_auto_tag_customers', label: 'Auto-tag new customers', type: 'toggle' },
+        { key: 'crm_new_customer_tag', label: 'Default tag for new customers', type: 'text', placeholder: 'e.g. new-lead' },
+        { key: 'crm_notify_new_contact', label: 'Notify on new contact', type: 'toggle' },
+        { key: 'crm_export_format', label: 'Export format', type: 'select', options: [
+            { value: 'csv', label: 'CSV' },
+            { value: 'xlsx', label: 'Excel (XLSX)' },
+            { value: 'json', label: 'JSON' },
+        ] },
+    ]
     const [searchQuery, setSearchQuery] = useState('')
     const [activeSegment, setActiveSegment] = useState<Segment>('all')
     const [isExporting, startExport] = useTransition()
@@ -427,6 +440,15 @@ export default function CRMClient({
                     </div>
                 </motion.div>
             </div>
+            {/* Module Config Section */}
+            {crmConfig && (
+                <ModuleConfigSection
+                    fields={crmConfigFields}
+                    initialValues={crmConfig}
+                    title="CRM Settings"
+                    collapsible
+                />
+            )}
         </PageEntrance>
     )
 }

@@ -140,3 +140,64 @@ export async function POST(request: Request): Promise<Response> {
         )
     }
 }
+
+/**
+ * GET /api/orders/lookup — Administrative order polling
+ * 
+ * Used by the Owner Panel (OrderNotifications.tsx) to check for new orders.
+ * Uses since query parameter to filter by created_at.
+ * Restricted to authenticated owners only.
+ */
+import { withPanelGuard } from '@/lib/panel-guard'
+
+export async function GET(request: Request): Promise<Response> {
+    try {
+        // Auth: Restricted to authenticated owners
+        await withPanelGuard()
+
+        const { searchParams } = new URL(request.url)
+        const since = searchParams.get('since')
+
+        const params = new URLSearchParams({
+            limit: '10',
+            offset: '0',
+            fields: 'id,display_id,email,total,currency_code,created_at,status',
+            order: '-created_at',
+        })
+
+        // Query Medusa for recent orders
+        const medusaRes = await fetch(
+            `${MEDUSA_BACKEND_URL}/store/orders?${params.toString()}`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(PUBLISHABLE_KEY && { 'x-publishable-api-key': PUBLISHABLE_KEY }),
+                },
+            }
+        )
+
+        if (!medusaRes.ok) {
+            return Response.json(
+                { error: 'Medusa service unavailable' },
+                { status: 502 }
+            )
+        }
+
+        const data = await medusaRes.json()
+        let orders = data.orders ?? []
+
+        // If 'since' provided, filter for only newer orders manually (Medusa filter is complex for created_at in some versions)
+        if (since) {
+            const sinceDate = new Date(since).getTime()
+            orders = orders.filter((o: { created_at: string }) => new Date(o.created_at).getTime() > sinceDate)
+        }
+
+        return Response.json({ orders })
+    } catch (error) {
+        // withPanelGuard throws if unauthorized
+        return Response.json(
+            { error: error instanceof Error ? error.message : 'Unauthorized' },
+            { status: 401 }
+        )
+    }
+}

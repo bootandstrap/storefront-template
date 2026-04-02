@@ -11,7 +11,7 @@
  * - Pinned footer with ALWAYS-visible prominent PAGAR button (56px)
  * - 44px minimum touch targets on quantity controls (WCAG)
  * - Payment methods pre-filtered by plan limits
- * - Grey-out pattern for unavailable features (disabled + tooltip)
+ * - SaaS feature gating intercepted securely with ClientFeatureGate
  * - All labels use posLabel() with fallback
  */
 
@@ -19,13 +19,15 @@ import { useState, useCallback } from 'react'
 import {
     Minus, Plus, Trash2, User, Percent, DollarSign, X,
     Package, PauseCircle, ArrowLeft, ShoppingCart, CreditCard,
-    Banknote, Smartphone, Delete, Check, ChevronRight,
+    Banknote, Smartphone, Delete, Check, ChevronRight, Tag, ChevronDown,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCartItem, POSDiscount, PaymentMethod } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { POS_PAYMENT_CONFIG, posLabel } from '@/lib/pos/pos-i18n'
 import { getUpsellTooltip } from '@/lib/pos/pos-i18n'
 import { lazy, Suspense } from 'react'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 const POSCouponInput = lazy(() => import('./POSCouponInput'))
 const POSRecommendations = lazy(() => import('./POSRecommendations'))
@@ -144,15 +146,22 @@ export default function POSCart({
     const [discountValue, setDiscountValue] = useState('')
     const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart')
 
+    // ── SaaS Gating State ──
+    const [gateData, setGateData] = useState<{isOpen: boolean, flag: string}>({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
+
     // ── Cash numpad state ──
     const [numpadValue, setNumpadValue] = useState('')
 
-    const formatCurrency = (amount: number, currency = 'EUR') => {
-        return new Intl.NumberFormat('de-CH', {
-            style: 'currency',
-            currency,
-        }).format(amount / 100)
-    }
+    const formatCurrency = (amount: number, currency?: string) =>
+        formatPOSCurrency(amount, currency || defaultCurrency)
 
     const applyDiscount = () => {
         const val = parseFloat(discountValue)
@@ -240,6 +249,12 @@ export default function POSCart({
 
     return (
         <div className="flex flex-col h-full bg-sf-0">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
+
             {/* ═══════════════════════════════════════════════ */}
             {/* Step Indicator (with animated progress bar)    */}
             {/* ═══════════════════════════════════════════════ */}
@@ -258,8 +273,7 @@ export default function POSCart({
                                     <div key={i} className="flex items-center gap-1.5">
                                         {i > 0 && <ChevronRight className="w-3 h-3 text-tx-faint flex-shrink-0" />}
                                         <span
-                                            className="text-[10px] font-semibold transition-colors duration-300"
-                                            style={{ color: i === stepIndex ? 'var(--color-primary)' : i < stepIndex ? '#10b981' : 'var(--color-text-muted, #999)' }}
+                                            className={`text-[10px] font-semibold transition-colors duration-300 ${i === stepIndex ? 'text-brand' : i < stepIndex ? 'text-brand-dark' : 'text-tx-muted'}`}
                                         >
                                             {label}
                                         </span>
@@ -269,8 +283,7 @@ export default function POSCart({
                             {/* Animated progress bar */}
                             <div className="h-0.5 bg-sf-2 rounded-full overflow-hidden">
                                 <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ background: 'linear-gradient(90deg, #10b981, var(--color-primary))' }}
+                                    className="h-full rounded-full bg-gradient-to-r from-brand to-brand-dark"
                                     initial={{ width: '0%' }}
                                     animate={{ width: `${((stepIndex + 1) / stepLabels.length) * 100}%` }}
                                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -340,15 +353,14 @@ export default function POSCart({
                             </div>
                         </div>
 
-                        {/* ── Customer pill (grey-out if !canCustomerSearch) ── */}
+                        {/* ── Customer pill (compact inline) ── */}
                         <button
-                            onClick={() => canCustomerSearch && onSetCustomer()}
-                            disabled={!canCustomerSearch}
-                            className={`mx-3 mt-2.5 flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 flex-shrink-0 min-h-[44px] ${
+                            onClick={() => handleFeatureClick(canCustomerSearch, 'enable_pos_customer_search', onSetCustomer)}
+                            className={`mx-3 mt-2 mb-0.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 flex-shrink-0 ${
                                 !canCustomerSearch
-                                    ? 'border border-dashed border-sf-3 text-tx-faint cursor-not-allowed'
+                                    ? 'border border-dashed border-sf-3 text-tx-faint hover:bg-sf-1'
                                     : customerName
-                                        ? 'bg-brand-subtle text-brand border border-brand-soft hover:bg-brand-subtle'
+                                        ? 'bg-brand-subtle text-brand border border-brand-soft'
                                         : 'border border-dashed border-sf-3 text-tx-muted hover:border-brand hover:text-brand'
                             }`}
                             title={canCustomerSearch
@@ -356,20 +368,23 @@ export default function POSCart({
                                 : getUpsellTooltip('enable_pos_customer_search', labels)
                             }
                         >
-                            <User className="w-3.5 h-3.5" />
-                            {canCustomerSearch
-                                ? (customerName || posLabel('panel.pos.addCustomer', labels))
-                                : posLabel('panel.pos.addCustomer', labels)
-                            }
+                            <User className="w-3 h-3" />
+                            <span className="truncate max-w-[160px]">
+                                {canCustomerSearch
+                                    ? (customerName || posLabel('panel.pos.addCustomer', labels))
+                                    : posLabel('panel.pos.addCustomer', labels)
+                                }
+                            </span>
+                            {customerName && canCustomerSearch && (
+                                <X className="w-3 h-3 ml-auto opacity-50 hover:opacity-100" onClick={(e) => { e.stopPropagation(); onSetCustomer() }} />
+                            )}
                             {!canCustomerSearch && (
-                                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">
-                                    Enterprise
-                                </span>
+                                <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">PRO</span>
                             )}
                         </button>
 
                         {/* ── Items list (ONLY scrollable section) ── */}
-                        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1.5">
+                        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-1.5 space-y-1">
                             {items.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-tx-muted gap-3 py-12">
                                     <motion.div
@@ -403,94 +418,82 @@ export default function POSCart({
                                         <motion.div
                                             key={item.id}
                                             layout
-                                            initial={{ opacity: 0, x: -20 }}
+                                            initial={{ opacity: 0, x: -16 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0 }}
-                                            transition={{ duration: 0.2 }}
+                                            exit={{ opacity: 0, x: 16, height: 0, marginBottom: 0 }}
+                                            transition={{ duration: 0.18 }}
                                             className="relative rounded-xl overflow-hidden"
                                         >
-                                            {/* Red backdrop revealed on swipe */}
-                                            <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-end pr-4 rounded-xl">
-                                                <Trash2 className="w-5 h-5 text-rose-500/60" />
+                                            {/* Swipe-to-delete backdrop — only visible during drag */}
+                                            <div className="absolute inset-0 bg-rose-500/8 flex items-center justify-end pr-4 rounded-xl">
+                                                <Trash2 className="w-4 h-4 text-rose-400" />
                                             </div>
-                                            {/* Draggable item card */}
+                                            {/* Single-row compact item */}
                                             <motion.div
                                                 drag="x"
-                                                dragConstraints={{ left: -80, right: 0 }}
-                                                dragElastic={0.15}
+                                                dragConstraints={{ left: -72, right: 0 }}
+                                                dragElastic={0.12}
                                                 onDragEnd={(_, info) => {
-                                                    if (info.offset.x < -60) onRemoveItem(item.id)
+                                                    if (info.offset.x < -55) onRemoveItem(item.id)
                                                 }}
-                                                className="flex items-center gap-2.5 p-3 rounded-xl bg-glass group
-                                                           hover:bg-sf-1 transition-colors duration-150 min-h-[56px]
+                                                className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-sf-0
+                                                           hover:bg-sf-1 transition-colors duration-100
                                                            cursor-grab active:cursor-grabbing relative z-10"
-                                                style={{ background: 'var(--color-surface-1, #f8faf6)', touchAction: 'pan-y' }}
+                                                style={{ touchAction: 'pan-y' }}
                                             >
+                                                {/* Thumbnail 36px */}
                                                 {item.thumbnail ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={item.thumbnail}
                                                         alt=""
-                                                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                                        className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
                                                     />
                                                 ) : (
-                                                    <div className="w-10 h-10 rounded-lg bg-sf-2 flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-9 h-9 rounded-lg bg-sf-2 flex items-center justify-center flex-shrink-0">
                                                         <Package className="w-4 h-4 text-tx-faint" />
                                                     </div>
                                                 )}
-                                                {/* Info */}
+                                                {/* Title + variant */}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-medium text-tx truncate">
+                                                    <p className="text-xs font-semibold text-tx truncate leading-tight">
                                                         {item.title}
                                                     </p>
-                                                    <p className="text-[10px] text-tx-muted">
-                                                        {formatCurrency(item.unit_price, item.currency_code)}
-                                                        {item.variant_title && ` · ${item.variant_title}`}
-                                                    </p>
+                                                    {item.variant_title && (
+                                                        <p className="text-[10px] text-tx-faint truncate">{item.variant_title}</p>
+                                                    )}
                                                 </div>
-                                                {/* Quantity controls — 44px WCAG touch targets */}
-                                                <div className="flex items-center gap-1">
+                                                {/* Inline qty stepper */}
+                                                <div className="flex items-center gap-0 bg-sf-1 rounded-lg flex-shrink-0">
                                                     <button
                                                         onClick={() => onUpdateQty(item.id, item.quantity - 1)}
                                                         aria-label={`Decrease quantity of ${item.title}`}
-                                                        className="w-[44px] h-[44px] rounded-xl bg-sf-2 hover:bg-sf-3
-                                                                   flex items-center justify-center transition-colors
-                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-med"
+                                                        className="w-7 h-7 flex items-center justify-center
+                                                                   hover:bg-sf-2 rounded-l-lg transition-colors active:scale-90"
                                                     >
-                                                        <Minus className="w-4 h-4" />
+                                                        <Minus className="w-3 h-3" />
                                                     </button>
                                                     <motion.span
                                                         key={item.quantity}
                                                         initial={{ scale: 1.2 }}
                                                         animate={{ scale: 1 }}
-                                                        className="w-8 text-center text-sm font-bold tabular-nums"
+                                                        className="w-6 text-center text-xs font-bold tabular-nums"
                                                     >
                                                         {item.quantity}
                                                     </motion.span>
                                                     <button
                                                         onClick={() => onUpdateQty(item.id, item.quantity + 1)}
                                                         aria-label={`Increase quantity of ${item.title}`}
-                                                        className="w-[44px] h-[44px] rounded-xl bg-sf-2 hover:bg-sf-3
-                                                                   flex items-center justify-center transition-colors
-                                                                   active:scale-[0.93] focus-visible:ring-2 focus-visible:ring-med"
+                                                        className="w-7 h-7 flex items-center justify-center
+                                                                   hover:bg-sf-2 rounded-r-lg transition-colors active:scale-90"
                                                     >
-                                                        <Plus className="w-4 h-4" />
+                                                        <Plus className="w-3 h-3" />
                                                     </button>
                                                 </div>
-                                                {/* Item total + Remove */}
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className="text-xs font-semibold text-tx tabular-nums">
-                                                        {formatCurrency(item.unit_price * item.quantity, item.currency_code)}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => onRemoveItem(item.id)}
-                                                        aria-label={`Remove ${item.title} from cart`}
-                                                        className="w-[36px] h-[36px] flex items-center justify-center text-tx-faint
-                                                                   hover:text-rose-500 hover:bg-rose-50 active:scale-90 rounded-lg transition-all"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
+                                                {/* Item total */}
+                                                <span className="text-xs font-bold text-tx tabular-nums w-16 text-right shrink-0">
+                                                    {formatCurrency(item.unit_price * item.quantity, item.currency_code)}
+                                                </span>
                                             </motion.div>
                                         </motion.div>
                                     ))}
@@ -498,120 +501,132 @@ export default function POSCart({
                             )}
                         </div>
 
-                        {/* ── Recommendations (after cart items) ── */}
-                        {showRecommendations && items.length > 0 && onAddToCart && (
-                            <div className="px-3 py-2 border-t border-sf-2">
-                                <Suspense fallback={null}>
-                                    <POSRecommendations
-                                        cartItems={items}
-                                        allProducts={products as any}
-                                        onAddItem={(item) => onAddToCart?.(item)}
-                                        labels={labels}
-                                        defaultCurrency={defaultCurrency}
-                                    />
-                                </Suspense>
-                            </div>
-                        )}
-
-                        {/* ── Pinned Footer: Totals + PAY ── */}
-                        <div className="border-t border-sf-2 px-4 py-3 space-y-3 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
-                            {/* Discount (grey-out if !canLineDiscounts) */}
-                            {discount ? (
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="flex items-center gap-1 font-medium" style={{ color: '#059669' }}>
-                                        <Percent className="w-3 h-3" />
-                                        {posLabel('panel.pos.discount', labels)}
-                                        {discount.type === 'percentage' ? ` ${discount.value}%` : ''}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold" style={{ color: '#059669' }}>
-                                            -{formatCurrency(discountAmount)}
-                                        </span>
-                                        <button
-                                            onClick={() => onSetDiscount(null)}
-                                            className="text-tx-muted hover:text-rose-500 transition-colors"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
+                            {/* ── Recommendations (inside scroll, capped height) ── */}
+                            {showRecommendations && items.length > 0 && onAddToCart && (
+                                <div className="pt-2 pb-1 max-h-[120px]">
+                                    <Suspense fallback={null}>
+                                        <POSRecommendations
+                                            cartItems={items}
+                                            allProducts={products as any}
+                                            onAddItem={(item) => onAddToCart?.(item)}
+                                            labels={labels}
+                                            defaultCurrency={defaultCurrency}
+                                            maxSuggestions={3}
+                                        />
+                                    </Suspense>
                                 </div>
-                            ) : !showDiscountInput ? (
+                            )}
+
+                        {/* ── Pinned Footer: Promos + Totals + PAY ── */}
+                        <div className="border-t border-sf-2 px-4 py-2.5 space-y-2 bg-glass-heavy backdrop-blur-sm flex-shrink-0">
+
+                            {/* ── Active promos display (discount/coupon badges) ── */}
+                            {(discount || couponCode) && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {discount && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-brand/10 text-brand">
+                                            <Percent className="w-3 h-3" />
+                                            {discount.type === 'percentage' ? `${discount.value}%` : ''} -{formatCurrency(discountAmount)}
+                                            <button onClick={() => onSetDiscount(null)} className="ml-0.5 hover:text-rose-500 transition-colors">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                    {couponCode && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/40">
+                                            <Tag className="w-3 h-3" />
+                                            {couponCode}
+                                            {onCouponRemove && (
+                                                <button onClick={onCouponRemove} className="ml-0.5 hover:text-rose-500 transition-colors">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Collapsed promos: expand to show discount/coupon inputs ── */}
+                            {!discount && !showDiscountInput && !couponCode && items.length > 0 && (
                                 <button
-                                    onClick={() => canLineDiscounts && setShowDiscountInput(true)}
-                                    disabled={!canLineDiscounts}
-                                    className={`text-xs font-medium transition-colors ${
-                                        canLineDiscounts
-                                            ? 'text-brand hover:text-brand-dark'
-                                            : 'text-tx-faint cursor-not-allowed'
+                                    onClick={() => handleFeatureClick(canLineDiscounts || !!onCouponApply, 'enable_pos_line_discounts', () => setShowDiscountInput(true))}
+                                    className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors ${
+                                        canLineDiscounts || onCouponApply
+                                            ? 'text-tx-muted hover:text-brand'
+                                            : 'text-tx-faint hover:bg-sf-1 p-1 rounded -ml-1'
                                     }`}
                                     title={canLineDiscounts
                                         ? posLabel('panel.pos.addDiscount', labels)
                                         : getUpsellTooltip('enable_pos_line_discounts', labels)
                                     }
                                 >
-                                    + {posLabel('panel.pos.addDiscount', labels)}
-                                    {!canLineDiscounts && (
-                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">
-                                            Enterprise
-                                        </span>
+                                    <Tag className="w-3 h-3" />
+                                    {posLabel('panel.pos.addDiscount', labels) || 'Descuento / Cupón'}
+                                    {!canLineDiscounts && !onCouponApply && (
+                                        <span className="text-[8px] px-1 py-0.5 rounded bg-sf-2 text-tx-faint font-semibold">PRO</span>
                                     )}
                                 </button>
-                            ) : (
-                                <div className="flex items-center gap-1.5">
-                                    <div className="flex rounded-lg overflow-hidden border border-sf-3">
-                                        <button
-                                            onClick={() => setDiscountType('percentage')}
-                                            className={`px-2.5 py-2 text-xs transition-colors ${
-                                                discountType === 'percentage' ? 'bg-brand text-white' : 'bg-sf-1'
-                                            }`}
-                                        >
-                                            <Percent className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDiscountType('fixed')}
-                                            className={`px-2.5 py-2 text-xs transition-colors ${
-                                                discountType === 'fixed' ? 'bg-brand text-white' : 'bg-sf-1'
-                                            }`}
-                                        >
-                                            <DollarSign className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                    <input
-                                        type="number"
-                                        value={discountValue}
-                                        onChange={e => setDiscountValue(e.target.value)}
-                                        placeholder={discountType === 'percentage' ? '10' : '5.00'}
-                                        className="flex-1 px-2.5 py-2 text-xs border border-sf-3 rounded-lg bg-sf-0
-                                                   focus:outline-none focus:ring-1 focus:ring-soft"
-                                        onKeyDown={e => e.key === 'Enter' && applyDiscount()}
-                                    />
-                                    <button
-                                        onClick={applyDiscount}
-                                        className="px-3 py-2 text-xs bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
-                                    >
-                                        OK
-                                    </button>
-                                    <button
-                                        onClick={() => { setShowDiscountInput(false); setDiscountValue('') }}
-                                        className="text-tx-muted hover:text-rose-500 transition-colors"
-                                    >
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
                             )}
 
-                            {/* ── Coupon Input (Pro+) ── */}
-                            {onCouponApply && (
-                                <Suspense fallback={null}>
-                                    <POSCouponInput
-                                        onApply={onCouponApply}
-                                        orderTotal={total}
-                                        currentCoupon={couponCode}
-                                        onRemove={onCouponRemove}
-                                        labels={labels}
-                                        defaultCurrency={defaultCurrency}
-                                    />
-                                </Suspense>
+                            {/* ── Expanded discount input ── */}
+                            {showDiscountInput && !discount && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="flex rounded-lg overflow-hidden border border-sf-3">
+                                            <button
+                                                onClick={() => handleFeatureClick(canLineDiscounts, 'enable_pos_line_discounts', () => setDiscountType('percentage'))}
+                                                className={`px-2 py-1.5 text-xs transition-colors ${
+                                                    discountType === 'percentage' ? 'bg-brand text-white' : 'bg-sf-1'
+                                                }`}
+                                            >
+                                                <Percent className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleFeatureClick(canLineDiscounts, 'enable_pos_line_discounts', () => setDiscountType('fixed'))}
+                                                className={`px-2 py-1.5 text-xs transition-colors ${
+                                                    discountType === 'fixed' ? 'bg-brand text-white' : 'bg-sf-1'
+                                                }`}
+                                            >
+                                                <DollarSign className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            value={discountValue}
+                                            onChange={e => setDiscountValue(e.target.value)}
+                                            placeholder={discountType === 'percentage' ? '10' : '5.00'}
+                                            className="flex-1 px-2 py-1.5 text-xs border border-sf-3 rounded-lg bg-sf-0
+                                                       focus:outline-none focus:ring-1 focus:ring-soft"
+                                            onKeyDown={e => e.key === 'Enter' && applyDiscount()}
+                                            autoFocus
+                                        />
+                                        <button
+                                            onClick={applyDiscount}
+                                            className="px-2.5 py-1.5 text-xs bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
+                                        >
+                                            OK
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowDiscountInput(false); setDiscountValue('') }}
+                                            className="text-tx-muted hover:text-rose-500 transition-colors p-1"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    {/* Coupon sub-row (collapsed by default) */}
+                                    {onCouponApply && !couponCode && (
+                                        <Suspense fallback={null}>
+                                            <POSCouponInput
+                                                onApply={onCouponApply}
+                                                orderTotal={total}
+                                                currentCoupon={couponCode}
+                                                onRemove={onCouponRemove}
+                                                labels={labels}
+                                                defaultCurrency={defaultCurrency}
+                                            />
+                                        </Suspense>
+                                    )}
+                                </div>
                             )}
 
                             {/* ── Totals ── */}
@@ -632,15 +647,15 @@ export default function POSCart({
                                 </div>
                             </div>
 
-                            {/* ★ PAGAR BUTTON ★ */}
+                            {/* ★ PAGAR BUTTON — with glow pulse ★ */}
                             <button
                                 onClick={handleCharge}
                                 disabled={items.length === 0 || processing}
-                                className="w-full h-[56px] rounded-2xl text-white font-bold text-lg
+                                className={`w-full h-[60px] rounded-2xl text-white font-bold text-lg
                                            active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed
                                            transition-all duration-200
-                                           flex items-center justify-center gap-2"
-                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                                           flex items-center justify-center gap-2.5
+                                           bg-brand shadow-xl shadow-brand/20 hover:bg-brand-dark`}
                             >
                                 {processing ? (
                                     <span className="flex items-center justify-center gap-2">
@@ -650,7 +665,8 @@ export default function POSCart({
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        {posLabel('panel.pos.pay', labels)} {total > 0 ? formatCurrency(total) : ''}
+                                        <span>{posLabel('panel.pos.pay', labels)}</span>
+                                        {total > 0 && <span className="font-black">{formatCurrency(total)}</span>}
                                     </>
                                 )}
                             </button>
@@ -806,12 +822,12 @@ export default function POSCart({
                             <button
                                 onClick={handleCharge}
                                 disabled={items.length === 0 || processing}
-                                className="w-full h-[56px] rounded-2xl text-white font-bold text-lg
+                                className="w-full h-[60px] rounded-2xl text-white font-bold text-lg
                                            active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed
                                            transition-all duration-200
                                            flex items-center justify-center gap-2
                                            relative overflow-hidden"
-                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                                style={{ background: 'linear-gradient(135deg, var(--color-pos-accent) 0%, var(--color-pos-accent-dark) 100%)', boxShadow: '0 6px 20px var(--color-pos-glow)' }}
                             >
                                 {processing ? (
                                     <span className="flex items-center justify-center gap-2">
@@ -887,7 +903,7 @@ export default function POSCart({
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     className="text-right text-xs font-semibold mt-1"
-                                    style={{ color: numpadChangeAmount >= 0 ? '#10b981' : '#f43f5e' }}
+                                    style={{ color: numpadChangeAmount >= 0 ? 'var(--color-pos-accent)' : '#f43f5e' }}
                                 
                                 >
                                     {numpadChangeAmount >= 0
@@ -919,8 +935,8 @@ export default function POSCart({
                                 onClick={() => handleNumpadQuick(total / 100)}
                                 className="flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all active:scale-[0.95]"
                                 style={numpadValue === (total / 100).toFixed(2)
-                                    ? { background: '#10b981', color: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }
-                                    : { background: 'rgba(16,185,129,0.08)', color: '#059669' }
+                                    ? { background: 'var(--color-pos-accent)', color: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }
+                                    : { background: 'var(--color-pos-surface)', color: 'var(--color-pos-accent-dark)' }
                                 }
                             >
                                 {posLabel('panel.pos.exact', labels) || 'Exacto'}
@@ -966,11 +982,11 @@ export default function POSCart({
                             <button
                                 onClick={handleCharge}
                                 disabled={numpadChangeAmount < 0 || processing}
-                                className="flex-[2] h-[52px] rounded-2xl text-white text-sm font-bold
+                                className="flex-[2] h-[56px] rounded-2xl text-white text-sm font-bold
                                            active:scale-[0.97]
                                            disabled:opacity-30 disabled:cursor-not-allowed
                                            transition-all duration-150 flex items-center justify-center gap-2"
-                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
+                                style={{ background: 'linear-gradient(135deg, var(--color-pos-accent) 0%, var(--color-pos-accent-dark) 100%)', boxShadow: '0 6px 20px var(--color-pos-glow)' }}
                             >
                                 <Check className="w-5 h-5" />
                                 {posLabel('panel.pos.confirmCharge', labels)} {total > 0 ? formatCurrency(total) : ''}

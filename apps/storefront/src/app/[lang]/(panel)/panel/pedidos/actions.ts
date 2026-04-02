@@ -2,6 +2,7 @@
 
 import { revalidatePanel } from '@/lib/revalidate'
 import { withPanelGuard } from '@/lib/panel-guard'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import {
     cancelAdminOrder,
     createOrderFulfillment,
@@ -28,6 +29,7 @@ export async function fulfillOrder(
             return { success: false, error: result.error }
         }
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'order.fulfill', { orderId })
         return { success: true }
     } catch (err) {
         console.error('[panel/orders] Fulfill error:', err)
@@ -52,6 +54,7 @@ export async function cancelOrder(
             return { success: false, error: result.error }
         }
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'order.cancel', { orderId })
         return { success: true }
     } catch (err) {
         console.error('[panel/orders] Cancel error:', err)
@@ -83,6 +86,7 @@ export async function refundOrder(
             return { success: false, error: result.error }
         }
         revalidatePanel('panel')
+        logOwnerAction(tenantId, 'order.refund', { orderId, paymentId, amount })
         return { success: true }
     } catch (err) {
         console.error('[panel/orders] Refund error:', err)

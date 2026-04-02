@@ -192,6 +192,11 @@ export default async function EmailMarketingPage({
                 hasProvider={hasProvider}
                 labels={labels}
                 saveAction={saveAutomationConfig}
+                emailSenderConfig={{
+                    email_sender_name: cfgAny.email_sender_name ?? '',
+                    email_reply_to: cfgAny.email_reply_to ?? '',
+                    email_footer_text: cfgAny.email_footer_text ?? '',
+                }}
             />
         </div>
     )

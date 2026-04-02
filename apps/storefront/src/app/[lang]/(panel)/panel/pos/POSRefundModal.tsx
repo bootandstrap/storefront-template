@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { X, RotateCcw, Check, Minus, Plus, Loader2, AlertCircle, HeartCrack, RefreshCw, Frown, FileText } from 'lucide-react'
 import type { POSRefund, RefundReason } from '@/lib/pos/pos-config'
 import type { RefundableItem } from '@/lib/pos/refunds/refund-actions'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface POSRefundModalProps {
@@ -21,13 +22,8 @@ const REASONS: { key: RefundReason; label_key: string; Icon: typeof HeartCrack }
     { key: 'other', label_key: 'panel.pos.refundOther', Icon: FileText },
 ]
 
-function formatPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: currency.toUpperCase(),
-        minimumFractionDigits: 2,
-    }).format(amount / 100)
-}
+const formatPrice = (amount: number, currency: string) =>
+    formatPOSCurrency(amount, currency)
 
 export default function POSRefundModal({
     orderId,

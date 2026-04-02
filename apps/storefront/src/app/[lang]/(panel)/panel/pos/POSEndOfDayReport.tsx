@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { DailyStats, POSShift, PaymentMethod } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 const PanelChart = lazy(() => import('@/components/panel/PanelChart'))
@@ -61,10 +62,7 @@ export default function POSEndOfDayReport({
     const today = new Date().toISOString().split('T')[0]
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     // ── Load stats ──

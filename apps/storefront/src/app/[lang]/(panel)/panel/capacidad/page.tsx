@@ -48,6 +48,12 @@ export default async function CapacidadPage({
             <CapacidadClient
             lang={lang}
             businessName={config.business_name || ''}
+            capacityConfig={{
+                traffic_alert_email: (config as unknown as Record<string, unknown>).traffic_alert_email ?? '',
+                capacity_warning_threshold_pct: (config as unknown as Record<string, unknown>).capacity_warning_threshold_pct ?? 80,
+                capacity_critical_threshold_pct: (config as unknown as Record<string, unknown>).capacity_critical_threshold_pct ?? 95,
+                capacity_auto_upgrade_interest: (config as unknown as Record<string, unknown>).capacity_auto_upgrade_interest ?? false,
+            }}
             featureFlags={{
                 trafficExpansion: featureFlags.enable_traffic_expansion,
                 trafficAnalytics: featureFlags.enable_traffic_analytics,

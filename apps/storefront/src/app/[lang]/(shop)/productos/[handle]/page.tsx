@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { getProduct, getProducts } from '@/lib/medusa/client'
 import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
-import { productJsonLD, breadcrumbListJsonLD } from '@/lib/seo/jsonld'
+import { productJsonLD, breadcrumbListJsonLD, safeJsonLd } from '@/lib/seo/jsonld'
 import { getDictionary, createTranslator, localizedHref, type Locale } from '@/lib/i18n'
 import ProductDetailClient from '@/components/products/ProductDetailClient'
 import ProductCard from '@/components/products/ProductCard'
@@ -29,10 +29,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!product) return { title: t('product.notFound') }
 
     const { config } = await getConfig()
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
 
     return {
         title: product.title,
         description: product.description || `${product.title} — ${config.business_name}`,
+        alternates: {
+            canonical: `${siteUrl}/${lang}/productos/${handle}`,
+        },
         openGraph: {
             title: product.title,
             description: product.description || undefined,
@@ -75,11 +79,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {/* JSON-LD Structured Data */}
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
             />
 
             <div className="container-page py-8">

@@ -16,9 +16,11 @@ import { useReactToPrint } from 'react-to-print'
 import { CheckCircle, Printer, Plus, Share2, Receipt, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { POSSale } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel, getUpsellTooltip } from '@/lib/pos/pos-i18n'
 import PrintableReceipt from './PrintableReceipt'
 import POSInvoice from './POSInvoice'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 type PrintMode = 'ticket' | 'invoice'
 
@@ -32,6 +34,8 @@ interface POSReceiptProps {
     canThermalPrint?: boolean
     onNewSale: () => void
     labels: Record<string, string>
+    /** POS config from governance (receipt header/footer, etc.) */
+    posConfig?: Record<string, unknown>
 }
 
 function getInitialPrintMode(): PrintMode {
@@ -49,11 +53,23 @@ export default function POSReceipt({
     canThermalPrint = true,
     onNewSale,
     labels,
+    posConfig = {},
 }: POSReceiptProps) {
     // ── Print mode state ──
     const [printMode, setPrintMode] = useState<PrintMode>(getInitialPrintMode)
     const receiptRef = useRef<HTMLDivElement>(null)
     const invoiceRef = useRef<HTMLDivElement>(null)
+
+    // ── SaaS Gating State ──
+    const [gateData, setGateData] = useState<{isOpen: boolean, flag: string}>({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
 
     // ── Persist print mode ──
     const togglePrintMode = useCallback((mode: PrintMode) => {
@@ -89,12 +105,8 @@ export default function POSReceipt({
         return () => window.removeEventListener('keydown', handler)
     }, [onNewSale])
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: sale.currency_code || 'EUR',
-        }).format(amount / 100)
-    }
+    const formatCurrency = (amount: number) =>
+        formatPOSCurrency(amount, sale.currency_code || 'EUR')
 
     const paymentLabel = sale.payment_method === 'cash' ? posLabel('panel.pos.cash', labels)
         : (sale.payment_method === 'card_terminal' || sale.payment_method === 'manual_card') ? posLabel('panel.pos.card', labels)
@@ -110,6 +122,12 @@ export default function POSReceipt({
 
     return (
         <>
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
+
             {/* Backdrop */}
             <div
                 className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -279,8 +297,7 @@ export default function POSReceipt({
                         transition={{ delay: 0.5 }}
                     >
                         <button
-                            onClick={() => canThermalPrint && handlePrint()}
-                            disabled={!canThermalPrint}
+                            onClick={() => handleFeatureClick(canThermalPrint, 'enable_pos_thermal_printer', handlePrint)}
                             aria-label={posLabel('panel.pos.printReceipt', labels)}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl min-h-[44px]
                                        border border-sf-3 text-sm font-medium
@@ -288,7 +305,7 @@ export default function POSReceipt({
                                        focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none ${
                                 canThermalPrint
                                     ? 'text-tx-sec hover:bg-sf-1'
-                                    : 'text-tx-faint cursor-not-allowed'
+                                    : 'text-tx-faint hover:bg-sf-1'
                             }`}
                             title={canThermalPrint
                                 ? posLabel('panel.pos.printReceipt', labels)
@@ -345,6 +362,8 @@ export default function POSReceipt({
                 business={business}
                 showQR={true}
                 labels={labels}
+                receiptHeader={posConfig.pos_receipt_header as string | undefined}
+                receiptFooter={posConfig.pos_receipt_footer as string | undefined}
             />
             <POSInvoice
                 ref={invoiceRef}

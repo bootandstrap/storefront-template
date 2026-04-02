@@ -20,6 +20,7 @@ import {
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,7 +108,10 @@ const DEMO_LOG = [
 
 type TabId = 'flows' | 'templates' | 'log'
 
-export default function AutomationsClient({ labels, lang }: { labels: Labels; lang: string }) {
+export default function AutomationsClient({ labels, lang, automationConfig }: { labels: Labels; lang: string; automationConfig?: Record<string, unknown> }) {
+    const automationConfigFields: ConfigFieldDef[] = [
+        { key: 'webhook_notification_email', label: 'Webhook notification email', type: 'email', placeholder: 'webhooks@yourstore.com', description: 'Get notified when automations trigger' },
+    ]
     const [activeTab, setActiveTab] = useState<TabId>('flows')
 
     const tabs: { id: TabId; label: string }[] = [
@@ -332,6 +336,15 @@ export default function AutomationsClient({ labels, lang }: { labels: Labels; la
                     </motion.div>
                 )}
             </AnimatePresence>
+            {/* Module Config Section */}
+            {automationConfig && (
+                <ModuleConfigSection
+                    fields={automationConfigFields}
+                    initialValues={automationConfig}
+                    title="Automation Settings"
+                    collapsible
+                />
+            )}
         </PageEntrance>
     )
 }

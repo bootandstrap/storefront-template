@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { RotateCcw, Printer, X } from 'lucide-react'
 import type { POSRefund } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 import PrintableReceipt from './PrintableReceipt'
 
@@ -17,13 +18,8 @@ interface POSRefundReceiptProps {
     labels: Record<string, string>
 }
 
-function formatPrice(amount: number, currency: string): string {
-    return new Intl.NumberFormat('es-CH', {
-        style: 'currency',
-        currency: currency.toUpperCase(),
-        minimumFractionDigits: 2,
-    }).format(amount / 100)
-}
+const formatPrice = (amount: number, currency: string) =>
+    formatPOSCurrency(amount, currency)
 
 const REASON_LABEL_KEYS: Record<string, string> = {
     damaged: 'panel.pos.refundDamaged',

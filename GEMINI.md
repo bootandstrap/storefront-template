@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-03-29 (A+D @theme inline CSS architecture, Turbopack cache protocol).
+> Last updated: 2026-04-02 (SaaS Gating Modal + Audit Remediation, Sentrux architectural enforcement).
 
 ## 0. Local Development Setup
 
@@ -205,12 +205,13 @@ For Supabase Storage images, use the existing `supabase-image-loader.ts`.
 
 ## 5. Testing Contract
 
-After ANY customization, these must pass (83 test files / 1030 tests):
+After ANY customization, these must pass:
 
 ```bash
+sentrux check .              # Architectural boundaries respected
 pnpm test:run              # All unit tests green
 pnpm build                 # Build succeeds (no type errors)
-bash scripts/release-gate.sh  # 8/8 gates pass (includes coverage threshold)
+bash scripts/release-gate.sh  # Gates pass (includes coverage and sentrux gate)
 ```
 
 If a test fails after your changes, your changes broke something. Fix before pushing.

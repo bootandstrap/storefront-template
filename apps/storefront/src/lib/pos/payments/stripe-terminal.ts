@@ -13,7 +13,7 @@
  * @see https://docs.stripe.com/terminal/payments/collect-payment?terminal-sdk-platform=server-driven
  */
 
-import type { ChargeResult } from './payment-adapter'
+import type { ChargeResult } from './types'
 
 // ---------------------------------------------------------------------------
 // Types

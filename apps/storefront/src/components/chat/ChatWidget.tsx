@@ -25,6 +25,12 @@ export interface ChatWidgetProps {
     isEnabled?: boolean
     businessName?: string
     planMessageLimit?: number | null
+    /** Owner config — chatbot_name */
+    chatbotName?: string
+    /** Owner config — chatbot_welcome_message */
+    chatbotWelcomeMessage?: string
+    /** Owner config — chatbot_auto_open_delay (seconds) */
+    autoOpenDelay?: number
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -35,6 +41,9 @@ export function ChatWidget({
     isEnabled = true,
     businessName = '',
     planMessageLimit,
+    chatbotName,
+    chatbotWelcomeMessage,
+    autoOpenDelay,
 }: ChatWidgetProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([])
@@ -59,16 +68,20 @@ export function ChatWidget({
             if (stored) setMessageCount(parseInt(stored) || 0)
         }
 
-        // Fetch dynamic settings (welcome message, limits)
-        fetch('/api/chat/settings')
-            .then(res => res.json())
-            .then(data => {
-                const key = `welcome_message_${locale}`
-                if (data.settings?.[key]) {
-                    setWelcomeMessage(data.settings[key])
-                }
-            })
-            .catch(() => { })
+        // Use owner-configured welcome message if available, else fetch from chat_settings
+        if (chatbotWelcomeMessage) {
+            setWelcomeMessage(chatbotWelcomeMessage)
+        } else {
+            fetch('/api/chat/settings')
+                .then(res => res.json())
+                .then(data => {
+                    const key = `welcome_message_${locale}`
+                    if (data.settings?.[key]) {
+                        setWelcomeMessage(data.settings[key])
+                    }
+                })
+                .catch(() => { })
+        }
 
         // Fetch authenticated user's usage count
         if (tier !== 'visitor') {
@@ -88,7 +101,15 @@ export function ChatWidget({
                 }
             } catch { /* ignore */ }
         }
-    }, [tier, locale])
+    }, [tier, locale, chatbotWelcomeMessage])
+
+    // Auto-open after owner-configured delay
+    useEffect(() => {
+        if (autoOpenDelay && autoOpenDelay > 0 && !isOpen) {
+            const timer = setTimeout(() => setIsOpen(true), autoOpenDelay * 1000)
+            return () => clearTimeout(timer)
+        }
+    }, [autoOpenDelay]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Persist local chat history for customer tier
     useEffect(() => {
@@ -240,7 +261,7 @@ export function ChatWidget({
                         >
                             <div>
                                 <h3 className="font-semibold text-sm flex items-center">
-                                    {l.title}
+                                    {chatbotName || l.title}
                                     {tierBadge}
                                 </h3>
                                 {businessName && (

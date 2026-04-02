@@ -9,7 +9,7 @@
  * create its own Supabase connection.
  */
 
-import type { GovernanceAdapter, ActiveModule } from '../adapter'
+import type { GovernanceAdapter, ActiveModule } from '../types'
 import type { StoreConfig } from '../schemas'
 
 export class SupabaseAdapter implements GovernanceAdapter {

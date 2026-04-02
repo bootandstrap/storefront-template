@@ -6,6 +6,22 @@ import type { MedusaProduct } from '@/lib/medusa/client'
 // The types serve as documentation; runtime output matches schema.org spec.
 
 /**
+ * XSS-safe JSON-LD serialization.
+ *
+ * Prevents injection via `</script>` in user-controlled fields (product titles,
+ * descriptions, business names). Without this, a product titled
+ * `</script><script>alert(1)</script>` would break out of the JSON-LD block.
+ *
+ * @see https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+ */
+export function safeJsonLd(data: Record<string, unknown>): string {
+    return JSON.stringify(data)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+}
+
+/**
  * Map Medusa inventory to Schema.org availability
  */
 function getAvailability(product: MedusaProduct): string {
@@ -70,12 +86,20 @@ export function productJsonLD(
  * Schema: https://schema.org/Organization
  */
 export function organizationJsonLD(config: StoreConfig): Record<string, unknown> {
+    // Collect social profile URLs for Google Knowledge Panel sameAs
+    const sameAs = [
+        config.social_instagram,
+        config.social_facebook,
+        config.social_tiktok,
+    ].filter(Boolean)
+
     return {
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: config.business_name,
         url: process.env.NEXT_PUBLIC_SITE_URL || '',
         logo: config.logo_url || undefined,
+        ...(sameAs.length > 0 && { sameAs }),
         contactPoint: config.whatsapp_number
             ? {
                 '@type': 'ContactPoint',

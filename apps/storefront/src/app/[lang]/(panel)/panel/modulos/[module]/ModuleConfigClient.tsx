@@ -113,6 +113,19 @@ const MODULE_CONFIG_FIELD_DEFS: Record<string, ConfigFieldDef[]> = {
     { key: 'bank_account_number', label: 'Número de cuenta', type: 'text', placeholder: 'IBAN' },
     { key: 'bank_account_holder', label: 'Titular', type: 'text', placeholder: 'Nombre del titular' },
     { key: 'bank_id_number', label: 'NIF/CIF titular', type: 'text', placeholder: 'Documento de identidad' },
+    { key: 'sales_whatsapp_greeting', label: 'Saludo WhatsApp', type: 'textarea', placeholder: '¡Hola! Bienvenido a nuestra tienda…' },
+    { key: 'sales_preferred_contact', label: 'Contacto preferido', type: 'select', options: [
+      { value: 'whatsapp', label: 'WhatsApp' },
+      { value: 'phone', label: 'Teléfono' },
+      { value: 'email', label: 'Email' },
+    ]},
+    { key: 'sales_business_hours_display', label: 'Mostrar horario', type: 'select', options: [
+      { value: 'not_shown', label: 'No mostrar' },
+      { value: 'weekdays', label: 'Lunes a viernes' },
+      { value: 'full_week', label: 'Semana completa' },
+      { value: 'custom', label: 'Personalizado' },
+    ]},
+    { key: 'sales_highlight_free_shipping', label: 'Destacar envío gratis', type: 'toggle' },
   ],
   seo_analytics: [
     { key: 'meta_title', label: 'Meta Título', type: 'text', placeholder: 'Mi Tienda Online' },
@@ -148,6 +161,71 @@ const MODULE_CONFIG_FIELD_DEFS: Record<string, ConfigFieldDef[]> = {
       { value: 'Europe/Paris', label: 'Paris (CET)' },
       { value: 'America/New_York', label: 'New York (EST)' },
     ]},
+  ],
+  // ── Chatbot ──────────────────────────────────────────────────────────────
+  chatbot: [
+    { key: 'chatbot_name', label: 'Nombre del asistente', type: 'text', placeholder: 'Asistente IA' },
+    { key: 'chatbot_tone', label: 'Tono de comunicación', type: 'select', options: [
+      { value: 'formal', label: 'Formal' },
+      { value: 'friendly', label: 'Amigable' },
+      { value: 'casual', label: 'Casual' },
+    ]},
+    { key: 'chatbot_welcome_message', label: 'Mensaje de bienvenida', type: 'textarea', placeholder: '¡Hola! ¿En qué puedo ayudarte?' },
+    { key: 'chatbot_auto_open_delay', label: 'Apertura automática (segundos)', type: 'number', placeholder: '0 = desactivado' },
+    { key: 'chatbot_knowledge_scope', label: 'Alcance de conocimiento', type: 'select', options: [
+      { value: 'products_only', label: 'Solo productos' },
+      { value: 'products_and_faq', label: 'Productos + FAQ' },
+      { value: 'full_catalog', label: 'Catálogo completo' },
+    ]},
+  ],
+  // ── POS ──────────────────────────────────────────────────────────────────
+  pos: [
+    { key: 'pos_receipt_header', label: 'Cabecera del ticket', type: 'textarea', placeholder: 'Nombre del negocio\nDirección…' },
+    { key: 'pos_receipt_footer', label: 'Pie del ticket', type: 'textarea', placeholder: '¡Gracias por su compra!' },
+    { key: 'pos_default_payment_method', label: 'Método de pago por defecto', type: 'select', options: [
+      { value: 'cash', label: 'Efectivo' },
+      { value: 'card', label: 'Tarjeta' },
+      { value: 'transfer', label: 'Transferencia' },
+    ]},
+    { key: 'pos_tax_display', label: 'Impuestos en ticket', type: 'select', options: [
+      { value: 'tax_included', label: 'Incluidos en precio' },
+      { value: 'tax_excluded', label: 'Desglosados' },
+    ]},
+    { key: 'pos_enable_tips', label: 'Permitir propinas', type: 'toggle' },
+    { key: 'pos_tip_percentages', label: 'Porcentajes de propina', type: 'text', placeholder: '5,10,15' },
+    { key: 'pos_sound_enabled', label: 'Sonidos de notificación', type: 'toggle' },
+  ],
+  // ── CRM ──────────────────────────────────────────────────────────────────
+  crm: [
+    { key: 'crm_auto_tag_customers', label: 'Auto-etiquetar clientes nuevos', type: 'toggle' },
+    { key: 'crm_new_customer_tag', label: 'Etiqueta para nuevos clientes', type: 'text', placeholder: 'nuevo' },
+    { key: 'crm_notify_new_contact', label: 'Notificar nuevos contactos', type: 'toggle' },
+    { key: 'crm_export_format', label: 'Formato de exportación', type: 'select', options: [
+      { value: 'csv', label: 'CSV' },
+      { value: 'excel', label: 'Excel' },
+    ]},
+  ],
+  // ── Email Marketing ─────────────────────────────────────────────────────
+  email_marketing: [
+    { key: 'email_sender_name', label: 'Nombre del remitente', type: 'text', placeholder: 'Mi Tienda' },
+    { key: 'email_reply_to', label: 'Responder a', type: 'email', placeholder: 'contacto@mitienda.com' },
+    { key: 'email_footer_text', label: 'Pie de email', type: 'textarea', placeholder: 'Gracias por ser nuestro cliente' },
+    { key: 'email_abandoned_cart_delay', label: 'Retraso carrito abandonado', type: 'select', options: [
+      { value: '1h', label: '1 hora' },
+      { value: '3h', label: '3 horas' },
+      { value: '24h', label: '24 horas' },
+    ]},
+  ],
+  // ── Automation ───────────────────────────────────────────────────────────
+  automation: [
+    { key: 'webhook_notification_email', label: 'Email de notificación', type: 'email', placeholder: 'admin@mitienda.com' },
+  ],
+  // ── Capacity ─────────────────────────────────────────────────────────────
+  capacidad: [
+    { key: 'traffic_alert_email', label: 'Email de alertas', type: 'email', placeholder: 'admin@mitienda.com' },
+    { key: 'capacity_warning_threshold_pct', label: 'Umbral aviso (%)', type: 'number', placeholder: '70' },
+    { key: 'capacity_critical_threshold_pct', label: 'Umbral crítico (%)', type: 'number', placeholder: '90' },
+    { key: 'capacity_auto_upgrade_interest', label: 'Interés en auto-ampliación', type: 'toggle' },
   ],
 }
 
@@ -324,7 +402,26 @@ export default function ModuleConfigClient({
               {fieldDefs.map((field) => (
                 <div key={field.key}>
                   <label className={labelClass}>{field.label}</label>
-                  {field.type === 'select' ? (
+                  {field.type === 'toggle' ? (
+                    <button
+                      type="button"
+                      onClick={() => update(field.key, !formData[field.key])}
+                      className={`
+                        relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200
+                        focus:outline-none focus:ring-2 focus:ring-soft focus:ring-offset-2
+                        ${formData[field.key] ? 'bg-brand' : 'bg-sf-3'}
+                      `}
+                      role="switch"
+                      aria-checked={!!formData[field.key]}
+                    >
+                      <span
+                        className={`
+                          inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200
+                          ${formData[field.key] ? 'translate-x-6' : 'translate-x-1'}
+                        `}
+                      />
+                    </button>
+                  ) : field.type === 'select' ? (
                     <select
                       className={inputClass}
                       value={(formData[field.key] as string) ?? ''}
@@ -349,6 +446,8 @@ export default function ModuleConfigClient({
                     <input
                       className={inputClass}
                       type="number"
+                      inputMode="decimal"
+                      min="0"
                       value={(formData[field.key] as number) ?? ''}
                       onChange={(e) =>
                         update(field.key, e.target.value ? Number(e.target.value) : null)

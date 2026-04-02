@@ -18,6 +18,7 @@
 import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
+import { useLimitGuard } from '@/hooks/useLimitGuard'
 import {
     Package, Plus, Search, X, Layers, ChevronDown, ChevronUp,
     Upload, Trash2, ImageIcon, Eye, EyeOff, Pencil, Tag, Loader2,
@@ -34,6 +35,7 @@ import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelCo
 import { motion, AnimatePresence } from 'framer-motion'
 import { SlideOver } from '@/components/panel/PanelAnimations'
 import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -137,6 +139,7 @@ export default function CatalogClient({
     const searchParams = useSearchParams()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
+    const { handleLimitError } = useLimitGuard()
 
     const [activeTab, setActiveTab] = useState<'productos' | 'categorias'>(initialTab)
 
@@ -162,6 +165,17 @@ export default function CatalogClient({
     const [categoryError, setCategoryError] = useState<string | null>(null)
     const [catName, setCatName] = useState('')
     const [catDescription, setCatDescription] = useState('')
+
+    // ── Gate state ──
+    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
+
+    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
+        if (!canAccess) {
+            setGateData({ isOpen: true, flag })
+        } else {
+            action()
+        }
+    }
 
     // ── Confirm dialogs ──
     const productDeleteDialog = useConfirmDialog({
@@ -225,7 +239,11 @@ export default function CatalogClient({
                     currency: defaultCurrency, variantId: editingProduct.variants?.[0]?.id,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
-                else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+                else {
+                    const err = result.error ?? 'Error'
+                    setProductError(err)
+                    if (!handleLimitError(err, (k) => k)) toast.error(err)
+                }
             } else {
                 const result = await createProduct({
                     title: formTitle, description: formDescription,
@@ -233,7 +251,11 @@ export default function CatalogClient({
                     categoryId: formCategory || undefined, status: formStatus,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
-                else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+                else {
+                    const err = result.error ?? 'Error'
+                    setProductError(err)
+                    if (!handleLimitError(err, (k) => k)) toast.error(err)
+                }
             }
         })
     }
@@ -281,7 +303,11 @@ export default function CatalogClient({
             formData.append('file', file)
             const result = await uploadProductImage(editingProduct.id, formData)
             if (result.success) { router.refresh(); toast.success(labels.imageAdded) }
-            else { setProductError(result.error ?? 'Upload failed'); toast.error(result.error ?? 'Upload failed') }
+            else {
+                    const err = result.error ?? 'Upload failed'
+                    setProductError(err)
+                    if (!handleLimitError(err, (k) => k)) toast.error(err)
+                }
         } finally { setIsUploading(false) }
     }
 
@@ -334,7 +360,11 @@ export default function CatalogClient({
                     name: catName, description: catDescription,
                 })
                 if (result.success) { resetCategoryForm(); router.refresh(); toast.success('✓') }
-                else { setCategoryError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
+                else {
+                    const err = result.error ?? 'Error'
+                    setCategoryError(err)
+                    if (!handleLimitError(err, (k) => k)) toast.error(err)
+                }
             }
         })
     }
@@ -361,6 +391,12 @@ export default function CatalogClient({
 
     return (
         <PageEntrance className="space-y-5">
+            <ClientFeatureGate
+                isOpen={gateData.isOpen}
+                onClose={() => setGateData({ ...gateData, isOpen: false })}
+                flag={gateData.flag}
+            />
+
             {/* ── Header ── */}
             <PanelPageHeader
                 title={labels.catalogTitle}
@@ -434,8 +470,8 @@ export default function CatalogClient({
                                 </button>
                                 <button
                                     className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                    disabled={!canAddProduct || isPending}
-                                    onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                    disabled={isPending}
+                                    onClick={() => handleFeatureClick(canAddProduct, 'max_products_limit', () => { resetProductForm(); setShowProductForm(true) })}
                                 >
                                     <Plus className="w-4 h-4" />
                                     {labels.addProduct}
@@ -517,8 +553,8 @@ export default function CatalogClient({
                                     </p>
                                     <button
                                         className="btn btn-primary inline-flex items-center gap-2"
-                                        disabled={!canAddProduct || isPending}
-                                        onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                        disabled={isPending}
+                                        onClick={() => handleFeatureClick(canAddProduct, 'max_products_limit', () => { resetProductForm(); setShowProductForm(true) })}
                                     >
                                         <Plus className="w-4 h-4" />
                                         {labels.addProduct}
@@ -713,8 +749,8 @@ export default function CatalogClient({
                             </p>
                             <button
                                 className="btn btn-primary flex items-center gap-2"
-                                disabled={!canAddCategory || isPending}
-                                onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                                disabled={isPending}
+                                onClick={() => handleFeatureClick(canAddCategory, 'max_categories_limit', () => { resetCategoryForm(); setShowCategoryForm(true) })}
                             >
                                 <Plus className="w-4 h-4" />
                                 {labels.addCategory}
@@ -753,8 +789,8 @@ export default function CatalogClient({
                                     </p>
                                     <button
                                         className="btn btn-primary inline-flex items-center gap-2"
-                                        disabled={!canAddCategory || isPending}
-                                        onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                                        disabled={isPending}
+                                        onClick={() => handleFeatureClick(canAddCategory, 'max_categories_limit', () => { resetCategoryForm(); setShowCategoryForm(true) })}
                                     >
                                         <Plus className="w-4 h-4" />
                                         {labels.addCategory}

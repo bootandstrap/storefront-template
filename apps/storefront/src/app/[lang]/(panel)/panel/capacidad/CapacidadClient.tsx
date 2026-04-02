@@ -18,6 +18,7 @@ import { motion } from 'framer-motion'
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 
 interface Props {
     lang: string
@@ -47,6 +48,7 @@ interface Props {
         comingSoon: string
         upgradeModule: string
     }
+    capacityConfig?: Record<string, unknown>
 }
 
 function AnimatedProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
@@ -68,7 +70,13 @@ function AnimatedProgressBar({ value, max, color }: { value: number; max: number
     )
 }
 
-export default function CapacidadClient({ featureFlags, limits, labels }: Props) {
+export default function CapacidadClient({ featureFlags, limits, labels, capacityConfig }: Props) {
+    const capacityConfigFields: ConfigFieldDef[] = [
+        { key: 'traffic_alert_email', label: 'Alert notification email', type: 'email', placeholder: 'alerts@yourstore.com' },
+        { key: 'capacity_warning_threshold_pct', label: 'Warning threshold (%)', type: 'number', placeholder: '80' },
+        { key: 'capacity_critical_threshold_pct', label: 'Critical threshold (%)', type: 'number', placeholder: '95' },
+        { key: 'capacity_auto_upgrade_interest', label: 'Interested in auto-upgrade', type: 'toggle' },
+    ]
     // Deterministic "simulated" usage — in production this would come from actual metrics
     const requestsToday = Math.round(limits.maxRequestsDay * 0.42)
     const percent = limits.maxRequestsDay > 0 ? Math.round((requestsToday / limits.maxRequestsDay) * 100) : 0
@@ -191,6 +199,15 @@ export default function CapacidadClient({ featureFlags, limits, labels }: Props)
                 >
                     {labels.upgradeModule}
                 </motion.p>
+            )}
+            {/* Module Config Section */}
+            {capacityConfig && (
+                <ModuleConfigSection
+                    fields={capacityConfigFields}
+                    initialValues={capacityConfig}
+                    title="Capacity Settings"
+                    collapsible
+                />
             )}
         </PageEntrance>
     )

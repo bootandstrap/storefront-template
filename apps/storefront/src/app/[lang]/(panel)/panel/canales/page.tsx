@@ -28,13 +28,16 @@ export default async function SalesChannelsPage({
 }) {
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
-    const { featureFlags } = appConfig
+    const { featureFlags, config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
     if (!featureFlags.enable_sales_channels) {
         return <FeatureGate flag="enable_sales_channels" lang={lang} />
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfgAny = config as unknown as Record<string, unknown>
 
     return (
         <div className="space-y-6">
@@ -44,6 +47,12 @@ export default async function SalesChannelsPage({
                 icon={<ShoppingCart className="w-5 h-5" />}
             />
             <SalesChannelsClient
+                salesConfig={{
+                    sales_whatsapp_greeting: cfgAny.sales_whatsapp_greeting ?? '',
+                    sales_preferred_contact: cfgAny.sales_preferred_contact ?? 'whatsapp',
+                    sales_business_hours_display: cfgAny.sales_business_hours_display ?? false,
+                    sales_highlight_free_shipping: cfgAny.sales_highlight_free_shipping ?? false,
+                }}
                 labels={{
                     activeChannels: t('panel.channels.activeChannels'),
                     totalRevenue: t('panel.channels.totalRevenue'),

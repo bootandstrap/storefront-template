@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { POSShift } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 
 interface POSShiftPanelProps {
     onClose: () => void
@@ -36,10 +37,7 @@ export default function POSShiftPanel({
     const [loading, setLoading] = useState(true)
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     // Load current shift + history

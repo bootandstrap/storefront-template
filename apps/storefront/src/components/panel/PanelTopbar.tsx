@@ -178,7 +178,7 @@ export default function PanelTopbar({
                                         <Store className="w-4 h-4" />
                                         {labels.backToStore}
                                     </a>
-                                    <form action="/api/auth/logout" method="POST">
+                                    <form action="/api/auth/signout" method="POST">
                                         <button
                                             type="submit"
                                             className="w-full flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-red-400 hover:bg-red-500/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-inset"

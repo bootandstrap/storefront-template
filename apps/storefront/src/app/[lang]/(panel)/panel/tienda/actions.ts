@@ -3,6 +3,7 @@
 import { revalidatePanel } from '@/lib/revalidate'
 import type { StoreConfig } from '@/lib/config'
 import { withPanelGuard } from '@/lib/panel-guard'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { StoreConfigUpdateSchema } from '@/lib/owner-validation'
 
 // Whitelist of config columns that can be updated from Owner Panel
@@ -83,6 +84,7 @@ export async function saveStoreConfig(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'settings.save_config', { fields: Object.keys(sanitized) })
         return { success: true }
     } catch (err) {
         console.error('[panel/config] Error:', err)

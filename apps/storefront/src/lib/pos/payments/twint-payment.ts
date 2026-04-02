@@ -12,7 +12,7 @@
  * @see https://docs.stripe.com/payments/twint
  */
 
-import type { ChargeResult } from './payment-adapter'
+import type { ChargeResult } from './types'
 
 // ---------------------------------------------------------------------------
 // Types

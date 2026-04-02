@@ -10,7 +10,7 @@ import CategoryGrid from '@/components/home/CategoryGrid'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 import TrustSection from '@/components/home/TrustSection'
 import ScrollReveal from '@/components/ui/ScrollReveal'
-import { organizationJsonLD, websiteJsonLD } from '@/lib/seo/jsonld'
+import { organizationJsonLD, websiteJsonLD, safeJsonLd } from '@/lib/seo/jsonld'
 import {
   CategoryGridSkeleton,
   ProductGridSkeleton,
@@ -74,11 +74,11 @@ export default async function HomePage({
       {/* Structured Data — Organization + WebSite with SearchAction */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLD(config)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLD(config)) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLD(config)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLD(config)) }}
       />
 
       <div id="main-content" className="container-page py-6 space-y-4 md:space-y-8">

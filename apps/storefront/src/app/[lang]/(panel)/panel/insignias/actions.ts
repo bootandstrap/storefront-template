@@ -4,8 +4,10 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { getAdminProducts, updateProductMetadata } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { revalidatePanel } from '@/lib/revalidate'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
 import { checkLimit } from '@/lib/limits'
+import { buildLimitError } from '@/lib/limit-errors'
 
 // ---------------------------------------------------------------------------
 // Fetch products with their current badges
@@ -77,7 +79,7 @@ export async function toggleBadge(
             // Enforce max_badges limit
             const limitCheck = checkLimit(appConfig.planLimits, 'max_badges', currentBadges.length)
             if (!limitCheck.allowed) {
-                return { success: false, error: 'Badge limit reached for this product' }
+                return { success: false, error: buildLimitError('max_badges', limitCheck) }
             }
             newBadges = [...new Set([...currentBadges, badgeId])]
         } else {
@@ -94,6 +96,7 @@ export async function toggleBadge(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'badge.toggle', { productId, badgeId, enabled, badgeCount: newBadges.length })
         return { success: true }
     } catch (err) {
         console.error('[panel/badges] Toggle failed:', err)
@@ -121,7 +124,7 @@ export async function setBadges(
         // Enforce max_badges limit
         const limitCheck = checkLimit(appConfig.planLimits, 'max_badges', badges.length)
         if (!limitCheck.allowed) {
-            return { success: false, error: 'Badge limit reached' }
+            return { success: false, error: buildLimitError('max_badges', limitCheck) }
         }
 
         const { products } = await getAdminProducts({ limit: 100 }, scope)
@@ -137,6 +140,7 @@ export async function setBadges(
         }
 
         revalidatePanel('all')
+        logOwnerAction(tenantId, 'badge.set', { productId, badges, badgeCount: badges.length })
         return { success: true }
     } catch (err) {
         console.error('[panel/badges] Set failed:', err)

@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { createDraftOrder, registerDraftPayment } from '@/lib/medusa/admin-draft-orders'
 import { getAdminProductsFull, getAdminCustomers } from '@/lib/medusa/admin'
 import type { AdminProductFull, AdminCustomer } from '@/lib/medusa/admin'
@@ -99,6 +100,13 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
 
         revalidatePath('/[lang]/panel/pedidos', 'page')
         revalidatePath('/[lang]/panel', 'page')
+
+        logOwnerAction(tenantId, 'pos.create_sale', {
+            itemCount: input.items.length,
+            paymentMethod: input.payment_method,
+            orderId: order_id,
+            draftOrderId: draft_order.id,
+        })
 
         return {
             success: true,

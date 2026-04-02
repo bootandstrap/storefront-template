@@ -24,6 +24,7 @@ import {
     type LoyaltyCustomer,
     type LoyaltyRedemption,
 } from '@/lib/pos/loyalty-engine'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface POSLoyaltyCardProps {
@@ -85,10 +86,7 @@ export default function POSLoyaltyCard({
     }, [customerId, onRewardApplied])
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     if (!customerId) {

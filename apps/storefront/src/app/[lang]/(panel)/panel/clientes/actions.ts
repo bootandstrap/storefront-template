@@ -10,6 +10,7 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getAdminOrders, getAdminCustomerDetail, updateCustomerMetadata } from '@/lib/medusa/admin-orders'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import type { LoyaltyMedusaData } from '@/lib/pos/loyalty-engine'
 
 export interface CustomerOrderSummary {
@@ -72,6 +73,10 @@ export async function syncLoyaltyStamps(
             { loyalty: loyaltyData },
             scope
         )
+
+        if (!error) {
+            logOwnerAction(tenantId, 'customer.sync_loyalty', { customerId, stamps: loyaltyData.stamps })
+        }
 
         return { error }
     } catch {

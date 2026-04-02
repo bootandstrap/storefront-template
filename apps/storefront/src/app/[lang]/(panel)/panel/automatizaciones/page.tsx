@@ -28,13 +28,16 @@ export default async function AutomationsPage({
 }) {
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
-    const { featureFlags } = appConfig
+    const { featureFlags, config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
     if (!featureFlags.enable_automations) {
         return <FeatureGate flag="enable_automations" lang={lang} />
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfgAny = config as unknown as Record<string, unknown>
 
     return (
         <div className="space-y-6">
@@ -44,6 +47,9 @@ export default async function AutomationsPage({
                 icon={<Zap className="w-5 h-5" />}
             />
             <AutomationsClient
+                automationConfig={{
+                    webhook_notification_email: cfgAny.webhook_notification_email ?? '',
+                }}
                 labels={{
                     activeFlows: t('panel.automations.activeFlows'),
                     executionsToday: t('panel.automations.executionsToday'),

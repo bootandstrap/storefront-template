@@ -12,24 +12,14 @@ import {
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, ACHIEVEMENT_DEFS, getAchievementsGrouped, type AchievementContext } from '@/lib/achievements'
 import { evaluateSmartTips, type SmartTipContext } from '@/lib/smart-tips'
-import StatCard from '@/components/panel/StatCard'
-import { AnimatedStatValue, AnimatedStringValue } from '@/components/panel/AnimatedStatValue'
-import UsageMeter from '@/components/panel/UsageMeter'
-import EmptyState from '@/components/panel/EmptyState'
-import SetupProgress from '@/components/panel/SetupProgress'
-import StoreHealthCard from '@/components/panel/StoreHealthCard'
-import SmartTip from '@/components/panel/SmartTip'
-import SectionHeader from '@/components/panel/SectionHeader'
-import ActivityFeed, { type ActivityEvent } from '@/components/panel/ActivityFeed'
-import PanelBadge from '@/components/panel/PanelBadge'
-import DashboardChart from './DashboardChart'
-import PanelTable, { PanelThead, PanelTbody, PanelTr, PanelTh, PanelTd } from '@/components/panel/PanelTable'
 import {
-    Package,
-    ShoppingCart,
-    Users,
-    FolderTree,
-    DollarSign,
+    UsageMeter, EmptyState, SetupProgress, StoreHealthCard,
+    SmartTip, SectionHeader, ActivityFeed, PanelBadge,
+    PanelTableLegacy as PanelTable, PanelThead, PanelTbody, PanelTr, PanelThCell as PanelTh, PanelTd,
+    type ActivityEvent,
+} from '@/components/panel'
+import DashboardMetricsPanel from './DashboardMetricsPanel'
+import {
     Plus,
     BarChart3,
     Settings,
@@ -492,76 +482,28 @@ export default async function PanelDashboard({
                 />
             )}
 
-            {/* ── Key Metrics ── */}
-            <div>
-                <SectionHeader
-                    title={t('panel.stats.title') || 'Key Metrics'}
-                    icon={<BarChart3 className="w-4.5 h-4.5" />}
-                />
-                {/* Hero row: Revenue + Orders */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <StatCard
-                        label={t('panel.stats.revenue') || 'Revenue'}
-                        value={<AnimatedStringValue value={formattedRevenue} />}
-                        icon={<DollarSign className="w-6 h-6" />}
-                        href={`/${lang}/panel/pedidos`}
-                        variant="hero"
-                        stagger={0}
-                    />
-                    <StatCard
-                        label={t('panel.stats.ordersMonth')}
-                        value={<AnimatedStatValue value={ordersThisMonth} locale={lang} />}
-                        icon={<ShoppingCart className="w-6 h-6" />}
-                        sparklineData={sparklineOrders}
-                        href={`/${lang}/panel/pedidos`}
-                        variant="hero"
-                        stagger={1}
-                    />
-                </div>
-                {/* Secondary row: Products, Customers, Categories */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard
-                        label={t('panel.stats.products')}
-                        value={<AnimatedStatValue value={productCount} locale={lang} />}
-                        icon={<Package className="w-5 h-5" />}
-                        href={`/${lang}/panel/catalogo`}
-                        stagger={2}
-                    />
-                    <StatCard
-                        label={t('panel.stats.customers')}
-                        value={<AnimatedStatValue value={customerCount} locale={lang} />}
-                        icon={<Users className="w-5 h-5" />}
-                        href={`/${lang}/panel/clientes`}
-                        stagger={3}
-                    />
-                    <StatCard
-                        label={t('panel.stats.categories')}
-                        value={<AnimatedStatValue value={categoryCount} locale={lang} />}
-                        icon={<FolderTree className="w-5 h-5" />}
-                        href={`/${lang}/panel/categorias`}
-                        stagger={4}
-                    />
-                </div>
-            </div>
-
-            {/* ── Revenue & Orders Chart ── */}
-            <div>
-                <SectionHeader
-                    title={t('panel.stats.chart') || 'Revenue Overview'}
-                    icon={<BarChart3 className="w-4.5 h-4.5" />}
-                />
-                <DashboardChart
-                    revenueByDay={revenueByDay}
-                    ordersByDay={ordersByDay}
-                    currency={currency}
-                    lang={lang}
-                    labels={{
-                        revenue: t('panel.stats.revenue') || 'Revenue',
-                        orders: t('panel.stats.ordersMonth') || 'Orders',
-                        chartTitle: t('panel.stats.chart') || 'Revenue Overview',
-                    }}
-                />
-            </div>
+            {/* ── Key Metrics & Chart ── */}
+            <DashboardMetricsPanel
+                formattedRevenue={formattedRevenue}
+                ordersThisMonth={ordersThisMonth}
+                sparklineOrders={sparklineOrders}
+                productCount={productCount}
+                customerCount={customerCount}
+                categoryCount={categoryCount}
+                revenueByDay={revenueByDay}
+                ordersByDay={ordersByDay}
+                currency={currency}
+                lang={lang}
+                labels={{
+                    statsTitle: t('panel.stats.title') || 'Key Metrics',
+                    revenue: t('panel.stats.revenue') || 'Revenue',
+                    ordersMonth: t('panel.stats.ordersMonth') || 'Orders',
+                    products: t('panel.stats.products') || 'Products',
+                    customers: t('panel.stats.customers') || 'Customers',
+                    categories: t('panel.stats.categories') || 'Categories',
+                    chartTitle: t('panel.stats.chart') || 'Revenue Overview',
+                }}
+            />
 
             {/* ── Quick Actions ── */}
             <div>
@@ -611,15 +553,32 @@ export default async function PanelDashboard({
                     icon={<Gauge className="w-4.5 h-4.5" />}
                     description={t('panel.usage.planInfo', { plan: planLimits.plan_name })}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[...realMeters, ...extendedMeters].map((meter) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {realMeters.map((meter) => (
                         <UsageMeter
                             key={meter.label}
                             label={meter.label}
                             result={meter.result}
+                            variant="radial"
+                            upgradeHref={`/${lang}/panel/modulos`}
+                            upgradeLabel={t('limits.exceeded.upgrade') || 'Upgrade →'}
                         />
                     ))}
                 </div>
+                {extendedMeters.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                        {extendedMeters.map((meter) => (
+                            <UsageMeter
+                                key={meter.label}
+                                label={meter.label}
+                                result={meter.result}
+                                variant="bar"
+                                upgradeHref={`/${lang}/panel/modulos`}
+                                upgradeLabel={t('limits.exceeded.upgrade') || 'Upgrade →'}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* ── Recent Orders ── */}

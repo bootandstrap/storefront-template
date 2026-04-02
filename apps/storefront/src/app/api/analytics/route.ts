@@ -14,6 +14,8 @@ import { getClientIp } from '@/lib/security/get-client-ip'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -117,4 +119,9 @@ export async function POST(request: NextRequest) {
             { status: 503 }
         )
     }
+}
+
+// Support GET for telemetry health/probe checks (avoid 405)
+export async function GET() {
+    return NextResponse.json({ status: 'analytics_endpoint_ready' })
 }

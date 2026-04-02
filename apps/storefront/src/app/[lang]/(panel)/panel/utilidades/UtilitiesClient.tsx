@@ -35,7 +35,7 @@ import {
     type LoyaltyConfig,
     type LoyaltyCustomer,
 } from '@/lib/pos/loyalty-engine'
-import { getModuleActivationUrl } from '@/lib/feature-gate-config'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 // ── Type interfaces ─────────────────────────────────────────────────────────
 
@@ -107,99 +107,6 @@ interface UtilityInfo {
     color: string
     gradient: string
     isLocked: boolean
-}
-
-// ── Up-sell Card (for locked utilities) ─────────────────────────────────────
-
-function UpSellCard({ util, lang }: { util: UtilityInfo; lang: string }) {
-    const activationUrl = util.key === 'loyalty'
-        ? getModuleActivationUrl('enable_self_service_returns', lang)
-        : getModuleActivationUrl('enable_product_badges', lang)
-
-    const features = util.key === 'loyalty'
-        ? [
-            'Tarjetas de sellos digitales con QR',
-            'Gestión de clientes y canjes',
-            'Configuración personalizada del negocio',
-            'Historial completo de recompensas',
-        ]
-        : [
-            'Etiquetas con código de barras automático',
-            'Selección de productos del catálogo',
-            'Impresión directa optimizada',
-            'Soporte multi-variante y SKU',
-        ]
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl border border-sf-3 bg-sf-0"
-        >
-            {/* Gradient header */}
-            <div className={`relative px-8 py-10 ${util.gradient} overflow-hidden`}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.15)_0%,transparent_60%)]" />
-                <div className="relative z-10 flex items-start justify-between">
-                    <div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white/90 text-xs font-semibold uppercase tracking-wider mb-4">
-                            <Crown className="w-3 h-3" />
-                            Ecommerce {util.tierLabel}
-                        </div>
-                        <h3 className="text-2xl font-bold text-white font-display">
-                            {util.label}
-                        </h3>
-                        <p className="text-white/80 text-sm mt-2 max-w-sm">
-                            {util.description}
-                        </p>
-                    </div>
-                    <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white">
-                        {util.icon}
-                    </div>
-                </div>
-            </div>
-
-            {/* Features list */}
-            <div className="px-8 py-6 space-y-4">
-                <h4 className="text-xs font-semibold text-tx-muted uppercase tracking-widest">
-                    Incluido en este tier
-                </h4>
-                <ul className="space-y-3">
-                    {features.map((feature, i) => (
-                        <motion.li
-                            key={i}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 + i * 0.08 }}
-                            className="flex items-center gap-3"
-                        >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${util.color}`}
-                                style={{ backgroundColor: 'var(--color-primary)', opacity: 0.12 }}>
-                                <Check className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
-                            </div>
-                            <span className="text-sm text-tx-sec">{feature}</span>
-                        </motion.li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* CTA */}
-            <div className="px-8 pb-8 pt-2 flex flex-col sm:flex-row gap-3">
-                <Link
-                    href={activationUrl}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-text-brand text-sf-0 px-6 py-3.5 text-sm font-semibold transition-all duration-300 hover:bg-brand hover:shadow-lg hover:shadow-brand-soft hover:-translate-y-0.5"
-                >
-                    Activar módulo
-                    <ArrowRight className="w-4 h-4" />
-                </Link>
-                <a
-                    href={`/${lang}/modulos`}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-sf-3 text-tx-sec px-6 py-3.5 text-sm font-medium hover:bg-sf-1 transition-colors"
-                >
-                    Ver todos los módulos
-                </a>
-            </div>
-        </motion.div>
-    )
 }
 
 // ── SOTA Loyalty Management ─────────────────────────────────────────────────
@@ -777,6 +684,7 @@ export default function UtilitiesClient({
     lang,
 }: UtilitiesClientProps) {
     const [activeTab, setActiveTab] = useState<TabKey>('wifi')
+    const [gateFlag, setGateFlag] = useState<string | null>(null)
 
     const isLoyaltyLocked = !featureFlags.enable_self_service_returns
     const isLabelsLocked = !featureFlags.enable_product_badges
@@ -839,7 +747,14 @@ export default function UtilitiesClient({
                     <button
                         key={util.key}
                         type="button"
-                        onClick={() => setActiveTab(util.key)}
+                        onClick={() => {
+                            if (util.isLocked) {
+                                if (util.key === 'loyalty') setGateFlag('enable_self_service_returns')
+                                if (util.key === 'labels') setGateFlag('enable_product_badges')
+                            } else {
+                                setActiveTab(util.key)
+                            }
+                        }}
                         className={`
                             group relative overflow-hidden text-left p-4 rounded-2xl border transition-all duration-300
                             ${activeTab === util.key
@@ -885,21 +800,23 @@ export default function UtilitiesClient({
                         <WiFiQRCard labels={wifiLabels} />
                     )}
 
-                    {/* Loyalty — locked or management UI */}
+                    {/* Loyalty — management UI */}
                     {activeTab === 'loyalty' && (
-                        isLoyaltyLocked
-                            ? <UpSellCard util={utilInfos[1]} lang={lang} />
-                            : <LoyaltyManager labels={loyaltyLabels} lang={lang} />
+                        <LoyaltyManager labels={loyaltyLabels} lang={lang} />
                     )}
 
-                    {/* Labels — locked or product selector */}
+                    {/* Labels — product selector */}
                     {activeTab === 'labels' && (
-                        isLabelsLocked
-                            ? <UpSellCard util={utilInfos[2]} lang={lang} />
-                            : <ProductLabelSelector products={products} labels={labelsLabels} />
+                        <ProductLabelSelector products={products} labels={labelsLabels} />
                     )}
                 </motion.div>
             </AnimatePresence>
+
+            <ClientFeatureGate
+                isOpen={!!gateFlag}
+                onClose={() => setGateFlag(null)}
+                flag={gateFlag || ''}
+            />
         </div>
     )
 }

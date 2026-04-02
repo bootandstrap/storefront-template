@@ -12,6 +12,7 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getAdminCustomers } from '@/lib/medusa/admin'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 
 // ---------------------------------------------------------------------------
 // CSV Export
@@ -67,6 +68,8 @@ export async function exportCrmCsv(): Promise<{ csv: string; filename: string; e
     const storeName = appConfig.config.business_name || 'store'
     const date = new Date().toISOString().split('T')[0]
     const filename = `crm-export-${storeName.toLowerCase().replace(/\s+/g, '-')}-${date}.csv`
+
+    logOwnerAction(tenantId, 'crm.export_csv', { customerCount: allCustomers.length })
 
     return { csv, filename }
 }

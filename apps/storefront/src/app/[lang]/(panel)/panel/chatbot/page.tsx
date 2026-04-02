@@ -28,12 +28,23 @@ export default async function ChatbotPage({
 }) {
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
-    const { featureFlags } = appConfig
+    const { featureFlags, config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
     if (!featureFlags.enable_chatbot) {
         return <FeatureGate flag="enable_chatbot" lang={lang} />
+    }
+
+    // Extract chatbot config fields for inline editing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfgAny = config as unknown as Record<string, unknown>
+    const chatbotConfig = {
+        chatbot_name: cfgAny.chatbot_name ?? '',
+        chatbot_tone: cfgAny.chatbot_tone ?? 'friendly',
+        chatbot_welcome_message: cfgAny.chatbot_welcome_message ?? '',
+        chatbot_auto_open_delay: cfgAny.chatbot_auto_open_delay ?? 0,
+        chatbot_knowledge_scope: cfgAny.chatbot_knowledge_scope ?? 'full_catalog',
     }
 
     return (
@@ -45,6 +56,7 @@ export default async function ChatbotPage({
             />
             <ChatbotPanelClient
                 locale={lang}
+                chatbotConfig={chatbotConfig}
                 labels={{
                     model: t('panel.chatbot.model'),
                     messages: t('panel.chatbot.messages'),
@@ -69,3 +81,4 @@ export default async function ChatbotPage({
         </div>
     )
 }
+

@@ -10,9 +10,11 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Plus, Sparkles, TrendingUp } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCartItem, POSSaleRecord } from '@/lib/pos/pos-config'
+import { safeVariantPrice } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Co-occurrence storage ──
@@ -74,17 +76,18 @@ export function buildCoOccurrenceFromHistory(sales: POSSaleRecord[]): void {
 interface POSRecommendationsProps {
     cartItems: POSCartItem[]
     onAddItem: (item: POSCartItem) => void
-    /** All available products to pick recommendations from */
-    allProducts: POSCartItem[]
+    /** All available products — raw Medusa format (prices in variant.calculated_price) */
+    allProducts: any[]
     labels: Record<string, string>
     defaultCurrency: string
     maxSuggestions?: number
 }
 
 interface Recommendation {
-    product: POSCartItem
-    score: number        // co-occurrence count
-    reason: string       // "Comprado con X"
+    product: any           // raw Medusa product
+    cartItem: POSCartItem  // pre-built cart item with safe price
+    score: number          // co-occurrence count
+    reason: string         // "Comprado con X"
 }
 
 export default function POSRecommendations({
@@ -98,10 +101,7 @@ export default function POSRecommendations({
     const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const recommendations = useMemo((): Recommendation[] => {
@@ -129,16 +129,31 @@ export default function POSRecommendations({
         }
 
         // Map to products and sort by score
+        // Extract price safely from raw Medusa product variants
         return Array.from(scored.entries())
             .map(([title, { score, reason }]) => {
-                const product = allProducts.find(p => p.title === title)
+                const product = allProducts.find((p: any) => p.title === title)
                 if (!product) return null
-                return { product, score, reason }
+                const variant = product.variants?.[0]
+                if (!variant) return null
+                const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
+                const cartItem: POSCartItem = {
+                    id: variant.id,
+                    product_id: product.id,
+                    title: product.title,
+                    variant_title: product.variants.length > 1 ? variant.title : null,
+                    thumbnail: product.thumbnail,
+                    sku: variant.sku || null,
+                    unit_price,
+                    quantity: 1,
+                    currency_code,
+                }
+                return { product, cartItem, score, reason }
             })
             .filter((r): r is Recommendation => r !== null)
             .sort((a, b) => b.score - a.score)
             .slice(0, maxSuggestions)
-    }, [cartItems, allProducts, dismissed, labels, maxSuggestions])
+    }, [cartItems, allProducts, dismissed, labels, maxSuggestions, defaultCurrency])
 
     if (recommendations.length === 0) return null
 
@@ -147,70 +162,42 @@ export default function POSRecommendations({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-2"
+            className="space-y-1.5"
         >
             {/* Header */}
-            <div className="flex items-center gap-2 px-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[11px] font-bold text-tx-sec uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 px-0.5">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                <span className="text-[10px] font-bold text-tx-faint uppercase tracking-wider">
                     {labels['panel.pos.suggestions'] || 'Sugerencias'}
                 </span>
                 <div className="flex-1 h-px bg-sf-2" />
             </div>
 
-            {/* Recommendations horizontal scroll */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+            {/* Compact horizontal pill recommendations */}
+            <div className="flex flex-wrap gap-1.5">
                 <AnimatePresence initial={false}>
                     {recommendations.map((rec, idx) => (
-                        <motion.div
-                            key={rec.product.id}
+                        <motion.button
+                            key={rec.cartItem.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                            animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, x: -20 }}
-                            transition={{ delay: idx * 0.06, type: 'spring', damping: 20, stiffness: 200 }}
-                            className="flex-shrink-0 w-[140px] rounded-2xl border border-sf-2 bg-glass
-                                       hover:border-brand-soft hover:shadow-sm transition-all duration-300 group overflow-hidden"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ delay: idx * 0.04, type: 'spring', damping: 20, stiffness: 200 }}
+                            onClick={() => onAddItem(rec.cartItem)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
+                                       border border-sf-2 bg-sf-0 hover:border-brand-soft hover:bg-brand-subtle
+                                       transition-all duration-200 group text-left"
+                            aria-label={`${labels['panel.pos.add'] || 'Add'} ${rec.cartItem.title}`}
                         >
-                            {/* Product thumbnail */}
-                            {rec.product.thumbnail && (
-                                <div className="h-16 bg-sf-1 overflow-hidden">
-                                    <img
-                                        src={rec.product.thumbnail}
-                                        alt={rec.product.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                </div>
-                            )}
-
-                            <div className="p-2.5 space-y-1.5">
-                                <div className="text-[11px] font-semibold text-tx leading-tight line-clamp-2">
-                                    {rec.product.title}
-                                </div>
-
-                                {/* Score badge */}
-                                <div className="flex items-center gap-1 text-[9px] text-tx-muted">
-                                    <TrendingUp className="w-2.5 h-2.5" />
-                                    {rec.score}× juntos
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-tx tabular-nums">
-                                        {formatCurrency(rec.product.unit_price)}
-                                    </span>
-                                    <button
-                                        onClick={() => onAddItem(rec.product)}
-                                        className="w-7 h-7 rounded-lg bg-brand-subtle text-brand
-                                                   flex items-center justify-center
-                                                   hover:bg-brand hover:text-white
-                                                   transition-all duration-200"
-                                        aria-label={`${labels['panel.pos.add'] || 'Add'} ${rec.product.title}`}
-                                    >
-                                        <Plus className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
+                            <span className="text-[11px] font-medium text-tx truncate max-w-[100px]">
+                                {rec.cartItem.title}
+                            </span>
+                            <span className="text-[10px] font-bold text-tx-muted tabular-nums shrink-0">
+                                {formatCurrency(rec.cartItem.unit_price)}
+                            </span>
+                            <Plus className="w-3 h-3 text-brand shrink-0 group-hover:scale-110 transition-transform" />
+                        </motion.button>
                     ))}
                 </AnimatePresence>
             </div>

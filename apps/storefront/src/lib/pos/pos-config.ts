@@ -178,7 +178,7 @@ export interface POSCoupon {
     active: boolean
 }
 
-export type POSPanelView = 'history' | 'dashboard' | 'shift' | 'customer' | 'refund' | 'parkedSales' | 'printerSettings' | 'splitPayment' | 'loyalty' | 'endOfDay' | null
+export type POSPanelView = 'history' | 'dashboard' | 'shift' | 'customer' | 'refund' | 'parkedSales' | 'printerSettings' | 'splitPayment' | 'loyalty' | 'endOfDay' | 'posSettings' | null
 
 // ---------------------------------------------------------------------------
 // Customer management types (Sprint 5)
@@ -290,7 +290,10 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
 // ---------------------------------------------------------------------------
 
 export function calculateCartTotals(state: CartState, taxRate = 0) {
-    const subtotal = state.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+    const subtotal = state.items.reduce((sum, i) => {
+        const price = typeof i.unit_price === 'number' && !isNaN(i.unit_price) ? i.unit_price : 0
+        return sum + price * i.quantity
+    }, 0)
 
     let discountAmount = 0
     if (state.discount) {
@@ -304,4 +307,29 @@ export function calculateCartTotals(state: CartState, taxRate = 0) {
     const total = taxableAmount + taxAmount
 
     return { subtotal, discountAmount, taxAmount, total }
+}
+
+// ---------------------------------------------------------------------------
+// Safe price extraction from Medusa v2 variant data
+// ---------------------------------------------------------------------------
+
+/**
+ * Safely extract unit_price from a Medusa v2 variant.
+ * Handles both `calculated_price.calculated_amount` (Store API)
+ * and `prices[].amount` (Admin API) gracefully.
+ * Returns 0 if no valid numeric price is found.
+ */
+export function safeVariantPrice(variant: {
+    calculated_price?: { calculated_amount?: number; currency_code?: string }
+    prices?: { amount?: number; currency_code?: string }[]
+} | null | undefined, defaultCurrency: string): { unit_price: number; currency_code: string } {
+    if (!variant) return { unit_price: 0, currency_code: defaultCurrency }
+    const calc = (variant as any).calculated_price
+    const fallback = variant.prices?.[0]
+
+    const rawAmount = calc?.calculated_amount ?? fallback?.amount
+    const unit_price = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0
+    const currency_code = calc?.currency_code ?? fallback?.currency_code ?? defaultCurrency
+
+    return { unit_price, currency_code }
 }

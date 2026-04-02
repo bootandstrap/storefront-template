@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
 
 interface CarouselSlide {
     id: string
@@ -106,6 +107,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
         })
     }
 
+    const [gateData, setGateData] = useState<{isOpen: boolean, flag: string}>({ isOpen: false, flag: '' })
     const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
@@ -118,8 +120,14 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                 action={
                     <button
                         className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={!canAdd || isPending}
-                        onClick={() => { resetForm(); setShowForm(true) }}
+                        disabled={isPending}
+                        onClick={() => {
+                            if (!canAdd) {
+                                setGateData({ isOpen: true, flag: 'carousel_slides_limit' })
+                            } else {
+                                resetForm(); setShowForm(true)
+                            }
+                        }}
                     >
                         <Plus className="w-4 h-4" />
                         {t('panel.carousel.addSlide')}
@@ -142,6 +150,12 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <ClientFeatureGate 
+                isOpen={gateData.isOpen} 
+                onClose={() => setGateData({ ...gateData, isOpen: false })} 
+                flag={gateData.flag} 
+            />
 
             {/* ── Form ── */}
             <AnimatePresence>

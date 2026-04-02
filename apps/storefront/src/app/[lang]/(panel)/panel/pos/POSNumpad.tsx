@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { Delete, Check, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { posLabel } from '@/lib/pos/pos-i18n'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -82,10 +83,7 @@ export default function POSNumpad({
         if (!v) return '0.00'
         const num = parseFloat(v)
         if (isNaN(num)) return '0.00'
-        return new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency,
-        }).format(num)
+        return formatPOSCurrency(Math.round(num * 100), currency)
     }
 
     const numericValue = parseFloat(value) || 0

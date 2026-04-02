@@ -3,6 +3,7 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getAdminShippingOptions, updateAdminShippingOption } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import type { AdminShippingOption } from '@/lib/medusa/admin'
 
 // ---------------------------------------------------------------------------
@@ -43,6 +44,7 @@ export async function updateShippingPrice(
         }, scope)
 
         if (error) return { success: false, error }
+        logOwnerAction(tenantId, 'shipping.update_price', { optionId, amount, currencyCode })
         return { success: true }
     } catch (err) {
         console.error('[panel/envios] updateShippingPrice error:', err)
@@ -67,6 +69,7 @@ export async function updateShippingName(
         const { error } = await updateAdminShippingOption(optionId, { name: name.trim() }, scope)
 
         if (error) return { success: false, error }
+        logOwnerAction(tenantId, 'shipping.update_name', { optionId, name: name.trim() })
         return { success: true }
     } catch (err) {
         console.error('[panel/envios] updateShippingName error:', err)

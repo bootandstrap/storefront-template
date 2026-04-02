@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { DailyStats, PaymentMethod } from '@/lib/pos/pos-config'
+import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 // Lazy load Chart.js (only imported when dashboard is opened)
@@ -60,10 +61,7 @@ export default function POSDashboard({
     const [activeTab, setActiveTab] = useState<DashboardTab>('today')
 
     const formatCurrency = useCallback((amount: number) =>
-        new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: defaultCurrency,
-        }).format(amount / 100),
+        formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
     const targetDate = new Date(Date.now() + dateOffset * 86400000)

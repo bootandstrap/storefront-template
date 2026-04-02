@@ -45,7 +45,7 @@ import {
     type PanelSidebarLabels,
     type PanelNavItem,
 } from '@/lib/panel-policy'
-import PanelTour, { type TourStep } from '@/components/panel/PanelTour'
+import PanelTourDriver, { type TourStep } from '@/components/panel/PanelTourDriver'
 
 interface PanelSidebarProps {
     lang: string
@@ -378,7 +378,7 @@ export default function PanelSidebar({
 
             {/* Replay tour overlay */}
             {showReplayTour && (
-                <PanelTour
+                <PanelTourDriver
                     steps={[
                         { targetId: 'nav-dashboard', title: tourTranslations['tour.step.dashboard.title'] || 'Dashboard', description: tourTranslations['tour.step.dashboard.description'] || '' },
                         { targetId: 'nav-catalog', title: tourTranslations['tour.step.catalog.title'] || 'Catalog', description: tourTranslations['tour.step.catalog.description'] || '' },

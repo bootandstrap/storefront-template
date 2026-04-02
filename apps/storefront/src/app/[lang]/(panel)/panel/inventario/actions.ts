@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import {
     adjustStockLevel,
     bulkUpdateStock,
@@ -43,6 +44,7 @@ export async function updateStock(
     }
 
     revalidatePath('/panel/inventario', 'page')
+    logOwnerAction(tenantId, 'inventory.update_stock', { inventoryItemId, locationId, stockedQuantity })
     return { success: true }
 }
 
@@ -97,5 +99,6 @@ export async function importStockCsv(
     ]
 
     revalidatePath('/panel/inventario', 'page')
+    logOwnerAction(tenantId, 'inventory.csv_import', { totalRows: rows.length, successCount: result.success, errorCount: allErrors.length })
     return { success: result.success, errors: allErrors, total: rows.length }
 }

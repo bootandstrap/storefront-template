@@ -35,40 +35,73 @@ export const MODULE_CONFIG_FIELDS: Record<string, string[]> = {
   ecommerce: [
     'stock_mode', 'low_stock_threshold',
     'free_shipping_threshold', 'tax_display_mode',
+    'min_order_amount', 'default_currency',
   ],
   sales_channels: [
     'whatsapp_number', 'default_country_prefix',
     'bank_name', 'bank_account_type', 'bank_account_number',
     'bank_account_holder', 'bank_id_number',
+    // Expansion fields (Phase 6 — onboarding config)
+    'sales_whatsapp_greeting', 'sales_preferred_contact',
+    'sales_business_hours_display', 'sales_highlight_free_shipping',
   ],
+  seo: [
+    'meta_title', 'meta_description',
+    'google_analytics_id', 'facebook_pixel_id',
+    'sentry_dsn',
+  ],
+  // Legacy alias for backward compatibility
   seo_analytics: [
     'meta_title', 'meta_description',
     'google_analytics_id', 'facebook_pixel_id',
     'sentry_dsn',
   ],
+  rrss: [
+    'social_facebook', 'social_instagram',
+    'social_tiktok', 'social_twitter',
+  ],
+  // Legacy alias for backward compatibility
   social_media: [
     'social_facebook', 'social_instagram',
     'social_tiktok', 'social_twitter',
   ],
+  i18n: [
+    'language', 'active_languages',
+    'active_currencies', 'default_currency',
+    'timezone',
+  ],
+  // Legacy alias for backward compatibility
   i18n_currency: [
     'language', 'active_languages',
     'active_currencies', 'default_currency',
     'timezone',
   ],
   email_marketing: [
-    // Email config uses separate email_automation_config table
+    'store_email', 'email_sender_name', 'email_reply_to',
+    'email_footer_text', 'email_abandoned_cart_delay',
   ],
   chatbot: [
-    // Chatbot config stored in chatbot-specific fields
+    'chatbot_name', 'chatbot_tone', 'chatbot_welcome_message',
+    'chatbot_auto_open_delay', 'chatbot_knowledge_scope',
   ],
-  auth_advanced: [
-    // Auth config via feature flags only
+  pos: [
+    'pos_receipt_header', 'pos_receipt_footer',
+    'pos_default_payment_method', 'pos_tax_display',
+    'pos_enable_tips', 'pos_tip_percentages', 'pos_sound_enabled',
   ],
   crm: [
-    // CRM config minimal
+    'crm_auto_tag_customers', 'crm_new_customer_tag',
+    'crm_notify_new_contact', 'crm_export_format',
   ],
   automation: [
-    // Automation config minimal
+    'webhook_notification_email',
+  ],
+  capacidad: [
+    'traffic_alert_email', 'capacity_warning_threshold_pct',
+    'capacity_critical_threshold_pct', 'capacity_auto_upgrade_interest',
+  ],
+  auth_advanced: [
+    // Auth config via feature flags only — no editable config fields
   ],
 }
 
@@ -86,15 +119,32 @@ export const MODULE_FLAG_KEYS: Record<string, string[]> = {
   sales_channels: [
     'enable_whatsapp_checkout', 'enable_online_payments',
     'enable_cash_on_delivery', 'enable_bank_transfer',
+    'enable_sales_channels',
   ],
-  seo_analytics: ['enable_analytics'],
-  social_media: ['enable_social_links'],
-  i18n_currency: ['enable_i18n'],
-  email_marketing: ['enable_email_marketing', 'enable_newsletter'],
+  seo: ['enable_analytics', 'enable_seo'],
+  seo_analytics: ['enable_analytics', 'enable_seo'],
+  rrss: ['enable_social_links', 'enable_social_media'],
+  social_media: ['enable_social_links', 'enable_social_media'],
+  i18n: ['enable_i18n', 'enable_multi_language', 'enable_multi_currency'],
+  i18n_currency: ['enable_i18n', 'enable_multi_language', 'enable_multi_currency'],
+  email_marketing: [
+    'enable_email_marketing', 'enable_newsletter',
+    'enable_email_notifications', 'enable_abandoned_cart_emails',
+    'enable_email_campaigns', 'enable_email_templates',
+  ],
   chatbot: ['enable_chatbot'],
-  auth_advanced: ['enable_user_registration', 'enable_customer_accounts', 'enable_address_management'],
-  crm: ['enable_crm'],
-  automation: ['enable_admin_api'],
+  pos: [
+    'enable_pos', 'enable_pos_kiosk', 'enable_pos_keyboard_shortcuts',
+    'enable_pos_quick_sale', 'enable_pos_offline_cart',
+    'enable_pos_thermal_printer', 'enable_pos_line_discounts',
+    'enable_pos_customer_search', 'enable_pos_multi_device', 'enable_pos_shifts',
+  ],
+  capacidad: [
+    'enable_traffic_expansion', 'enable_traffic_analytics', 'enable_traffic_autoscale',
+  ],
+  auth_advanced: ['enable_user_registration', 'enable_customer_accounts', 'enable_address_management', 'enable_auth_advanced'],
+  crm: ['enable_crm', 'enable_crm_segmentation', 'enable_crm_export'],
+  automation: ['enable_admin_api', 'enable_automations'],
 }
 
 // ── Data Fetching ────────────────────────────────────────────────────────────

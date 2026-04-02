@@ -112,6 +112,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/:lang/tienda",
+        destination: "/:lang/productos",
+        permanent: true,
+      },
+      {
         source: "/:lang/panel/productos",
         destination: "/:lang/panel/catalogo?tab=products",
         permanent: true,
