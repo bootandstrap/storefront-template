@@ -50,7 +50,7 @@ export default async function ModuleDetailPage({
   if (!configContext) {
     return (
       <div className="space-y-6">
-        <div className="glass rounded-2xl p-8 text-center">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-8 text-center">
           <div className="text-4xl mb-4">🔍</div>
           <h2 className="text-xl font-bold text-tx">
             {t('panel.moduleConfig.notFound') || 'Módulo no encontrado'}

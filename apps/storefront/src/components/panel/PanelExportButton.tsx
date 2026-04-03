@@ -166,7 +166,7 @@ export default function PanelExportButton({
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 z-40 glass rounded-xl border border-sf-3 shadow-xl p-1 min-w-[160px] animate-fade-in-up">
+                <div className="absolute right-0 top-full mt-2 z-40 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-xl rounded-xl p-1 min-w-[160px] animate-fade-in-up">
                     <button
                         type="button"
                         onClick={handleCSV}

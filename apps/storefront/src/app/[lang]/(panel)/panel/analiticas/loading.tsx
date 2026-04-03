@@ -15,7 +15,7 @@ export default function AnalyticsLoading() {
             {/* ── Summary Stats Skeletons ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[...Array(3)].map((_, i) => (
-                    <div key={i} className="glass p-5 rounded-2xl h-32 flex flex-col justify-between">
+                    <div key={i} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm p-5 rounded-2xl h-32 flex flex-col justify-between">
                         <div className="flex justify-between">
                             <div className="space-y-2">
                                 <div className="h-4 w-24 bg-sf-3 rounded" />
@@ -28,7 +28,7 @@ export default function AnalyticsLoading() {
             </div>
 
             {/* ── Conversion Funnel Skeleton ── */}
-            <div className="glass rounded-2xl p-6">
+            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6">
                 <div className="h-5 w-48 bg-sf-3 rounded mb-8" />
 
                 <div className="space-y-8">

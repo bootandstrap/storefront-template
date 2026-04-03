@@ -17,8 +17,9 @@ import { useToast } from '@/components/ui/Toaster'
 import { listShippingOptions, updateShippingPrice, updateShippingName } from './actions'
 import { Truck, Zap, Package, MapPin, Pencil, Loader2, Save, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 interface ShippingOption {
     id: string
@@ -105,18 +106,22 @@ export default function ShippingClient() {
         }).format(amount / 100)
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     if (loading) {
         return (
             <PageEntrance className="space-y-4">
+                <SotaBentoGrid>
                 {[1, 2].map((i) => (
-                    <div key={i} className="glass rounded-2xl p-6 animate-pulse">
+                    <SotaBentoItem key={i} colSpan={12}>
+                        <SotaGlassCard glowColor="none" className="p-6 animate-pulse">
                         <div className="h-5 bg-sf-2 rounded w-1/3 mb-3" />
                         <div className="h-4 bg-sf-2 rounded w-1/2" />
-                    </div>
+                        </SotaGlassCard>
+                    </SotaBentoItem>
                 ))}
+                </SotaBentoGrid>
             </PageEntrance>
         )
     }
@@ -124,35 +129,35 @@ export default function ShippingClient() {
     if (error) {
         return (
             <PageEntrance>
+                <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl p-6 text-center"
                 >
+                    <SotaGlassCard glowColor="danger" className="p-6 text-center">
                     <p className="text-red-500 mb-3">{error}</p>
                     <button onClick={loadOptions} className="btn btn-primary text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
                         {t('common.retry')}
                     </button>
+                    </SotaGlassCard>
                 </motion.div>
+                </SotaBentoItem>
+                </SotaBentoGrid>
             </PageEntrance>
         )
     }
 
     return (
         <PageEntrance className="space-y-5">
-            <PanelPageHeader
-                title={t('panel.shipping.title') || 'Envíos'}
-                subtitle={t('panel.shipping.subtitle') || 'Gestiona las opciones de envío'}
-                icon={<Truck className="w-5 h-5" />}
-                badge={options.length}
-            />
-
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
             {options.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
+                    <SotaGlassCard glowColor="none" className="p-8">
                     <div className="empty-state">
                         <div className="empty-state-icon">
                             <Truck className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
@@ -164,6 +169,7 @@ export default function ShippingClient() {
                             {t('panel.shipping.emptyHint') || 'Configure shipping options in your Medusa backend to manage delivery rates here.'}
                         </p>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
                 <ListStagger className="space-y-3">
@@ -176,8 +182,9 @@ export default function ShippingClient() {
                             <StaggerItem key={option.id}>
                                 <motion.div
                                     whileHover={isEditing ? {} : { y: -1 }}
-                                    className="glass rounded-2xl p-6 transition-shadow hover:shadow-lg"
+                                    className="transition-shadow hover:shadow-lg"
                                 >
+                                    <SotaGlassCard glowColor={isExpress ? "warning" : "none"} className="p-6">
                                     <AnimatePresence mode="wait">
                                         {isEditing ? (
                                             /* ── Edit mode ── */
@@ -289,12 +296,15 @@ export default function ShippingClient() {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
+                                    </SotaGlassCard>
                                 </motion.div>
                             </StaggerItem>
                         )
                     })}
                 </ListStagger>
             )}
+                </SotaBentoItem>
+            </SotaBentoGrid>
         </PageEntrance>
     )
 }

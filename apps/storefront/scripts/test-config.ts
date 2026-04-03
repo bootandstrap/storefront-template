@@ -1,5 +1,5 @@
 
-import { getConfig } from './src/lib/config';
+import { getConfig } from '../src/lib/config';
 
 async function test() {
     try {

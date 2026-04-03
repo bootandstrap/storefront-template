@@ -17,7 +17,10 @@ import PanelBadge from '@/components/panel/PanelBadge'
 import { Search, Download, Users, Tag, Lock, Loader2, UserCheck, UserPlus } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-import StatCard from '@/components/panel/StatCard'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
+import { SotaMetric } from '@/components/panel/sota/SotaMetric'
+
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 import { exportCrmCsv } from './actions'
@@ -164,7 +167,7 @@ export default function CRMClient({
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
+                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -183,268 +186,263 @@ export default function CRMClient({
     }
 
     return (
-        <PageEntrance className="space-y-5">
+        <PageEntrance className="space-y-8">
 
-            {/* Summary Stats — using StatCard */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <StatCard
-                    label={labels.totalContacts}
-                    value={segments.total}
-                    icon={<Users className="w-4 h-4" />}
-                    stagger={0}
-                />
-                <StatCard
-                    label={labels.withOrders}
-                    value={segments.withOrders}
-                    icon={<UserCheck className="w-4 h-4" />}
-                    stagger={1}
-                />
-                <StatCard
-                    label={labels.newLast30d}
-                    value={segments.recent}
-                    icon={<UserPlus className="w-4 h-4" />}
-                    variant="hero"
-                    stagger={2}
-                />
-            </div>
+            <SotaBentoGrid>
+                {/* ── Summary Stats ── */}
+                <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                    <SotaMetric
+                        label={labels.totalContacts}
+                        value={segments.total.toLocaleString()}
+                        icon={<Users className="w-5 h-5" />}
+                        glowColor="blue"
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                    <SotaMetric
+                        label={labels.withOrders}
+                        value={segments.withOrders.toLocaleString()}
+                        icon={<UserCheck className="w-5 h-5" />}
+                        glowColor="emerald"
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                    <SotaMetric
+                        label={labels.newLast30d}
+                        value={segments.recent.toLocaleString()}
+                        icon={<UserPlus className="w-5 h-5" />}
+                        glowColor="gold"
+                    />
+                </SotaBentoItem>
 
-            {/* Plan usage bar */}
-            {maxContacts > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="glass rounded-2xl px-5 py-4"
-                >
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-tx-muted">
-                            {labels.usageOf}
-                        </span>
-                        <span className="text-xs font-semibold text-tx">
-                            {totalCustomers} / {maxContacts}
-                        </span>
-                    </div>
-                    <div className="h-1.5 bg-sf-2 rounded-full overflow-hidden">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${usagePercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                            className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' :
-                                    usagePercent > 70 ? 'bg-amber-500' : 'bg-brand'
-                                }`}
-                        />
-                    </div>
-                </motion.div>
-            )}
-
-            {/* Contact list with toolbar */}
-            {customers.length > 0 && (
-                <div className="space-y-3">
-                    {/* Toolbar: Search + Segment tabs */}
-                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                        <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                placeholder={labels.searchPlaceholder}
-                                className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all placeholder:text-tx-muted"
-                            />
-                        </div>
-                        {enableSegmentation && (
-                            <div className="flex items-center gap-1 p-1 glass rounded-xl">
-                                {segmentTabs.map(seg => (
-                                    <button
-                                        key={seg.key}
-                                        onClick={() => setActiveSegment(seg.key)}
-                                        aria-pressed={activeSegment === seg.key}
-                                        className={`relative px-3 py-2 min-h-[40px] rounded-lg text-xs font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
-                                            activeSegment === seg.key
-                                                ? 'text-brand'
-                                                : 'text-tx-muted hover:text-tx-sec'
-                                        }`}
-                                    >
-                                        {activeSegment === seg.key && (
-                                            <motion.div
-                                                layoutId="crm-segment-indicator"
-                                                className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
-                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                            />
-                                        )}
-                                        <span className="relative z-10">
-                                            {seg.label}
-                                            <span className="ml-1 opacity-50">({seg.count})</span>
-                                        </span>
-                                    </button>
-                                ))}
+                {/* Plan usage bar */}
+                {maxContacts > 0 && (
+                    <SotaBentoItem colSpan={{ base: 12 }}>
+                        <SotaGlassCard glowColor="purple">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm font-semibold text-tx">
+                                    {labels.usageOf}
+                                </span>
+                                <span className="text-sm font-bold text-tx">
+                                    {totalCustomers} / {maxContacts}
+                                </span>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Table */}
-                    <div className="glass rounded-2xl overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-sf-2 bg-glass">
-                                        <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted">
-                                            {labels.contactHeader}
-                                        </th>
-                                        <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted hidden sm:table-cell">
-                                            {labels.emailHeader}
-                                        </th>
-                                        <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted">
-                                            {labels.ordersHeader}
-                                        </th>
-                                        <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted hidden md:table-cell">
-                                            {labels.joinedHeader}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-surface-2/60">
-                                    {filteredCustomers.map((c, i) => (
-                                        <motion.tr
-                                            key={c.id}
-                                            initial={{ opacity: 0, y: 4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.02 }}
-                                            className="hover:bg-glass transition-colors"
-                                        >
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-brand-subtle text-brand flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                        {(c.firstName?.[0] || c.email[0] || '?').toUpperCase()}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-tx font-medium truncate">
-                                                            {c.firstName || c.lastName
-                                                                ? `${c.firstName} ${c.lastName}`.trim()
-                                                                : c.email.split('@')[0]}
-                                                        </p>
-                                                        <p className="text-tx-muted text-xs truncate sm:hidden mt-0.5">
-                                                            {c.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-tx-muted hidden sm:table-cell">
-                                                {c.email}
-                                            </td>
-                                            <td className="px-5 py-4 text-center">
-                                                {c.orderCount > 0 ? (
-                                                    <PanelBadge variant="success" size="sm">
-                                                        {c.orderCount}
-                                                    </PanelBadge>
-                                                ) : (
-                                                    <span className="text-tx-muted text-xs">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-4 text-right text-tx-muted text-xs hidden md:table-cell">
-                                                {formatDate(c.createdAt)}
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {filteredCustomers.length === 0 && searchQuery && (
+                            <div className="h-2.5 bg-sf-2/50 rounded-full overflow-hidden inset-shadow-sm">
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="px-5 py-10 text-center text-tx-muted text-sm"
-                                >
-                                    No contacts matching &quot;{searchQuery}&quot;
-                                </motion.div>
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${usagePercent}%` }}
+                                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+                                    className={`h-full rounded-full transition-all duration-1000 ${usagePercent > 90 ? 'bg-gradient-to-r from-red-500 to-red-400' :
+                                            usagePercent > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-brand to-brand-light'
+                                        }`}
+                                />
+                            </div>
+                        </SotaGlassCard>
+                    </SotaBentoItem>
+                )}
+
+                {/* Contact list with toolbar */}
+                {customers.length > 0 && (
+                    <SotaBentoItem colSpan={{ base: 12 }}>
+                        <SotaGlassCard overflowHidden glowColor="brand">
+                            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-6">
+                                <div className="relative flex-1 max-w-sm">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder={labels.searchPlaceholder}
+                                        className="w-full pl-10 pr-4 py-2.5 min-h-[44px] bg-sf-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 transition-all placeholder:text-tx-muted border border-border"
+                                    />
+                                </div>
+                                {enableSegmentation && (
+                                    <div className="flex items-center gap-1 p-1 bg-sf-subtle rounded-xl border border-border">
+                                        {segmentTabs.map(seg => (
+                                            <button
+                                                key={seg.key}
+                                                onClick={() => setActiveSegment(seg.key)}
+                                                aria-pressed={activeSegment === seg.key}
+                                                className={`relative px-3 py-2 min-h-[40px] rounded-lg text-xs font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
+                                                    activeSegment === seg.key
+                                                        ? 'text-brand'
+                                                        : 'text-tx-muted hover:text-tx-sec'
+                                                }`}
+                                            >
+                                                {activeSegment === seg.key && (
+                                                    <motion.div
+                                                        layoutId="crm-segment-indicator"
+                                                        className="absolute inset-0 bg-white dark:bg-sf-2 rounded-lg shadow-sm"
+                                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                    />
+                                                )}
+                                                <span className="relative z-10">
+                                                    {seg.label}
+                                                    <span className="ml-1 opacity-50">({seg.count})</span>
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="overflow-x-auto -mx-6">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-sf-2 bg-sf-subtle/50">
+                                            <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted/70">
+                                                {labels.contactHeader}
+                                            </th>
+                                            <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted/70 hidden sm:table-cell">
+                                                {labels.emailHeader}
+                                            </th>
+                                            <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted/70">
+                                                {labels.ordersHeader}
+                                            </th>
+                                            <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wide text-tx-muted/70 hidden md:table-cell">
+                                                {labels.joinedHeader}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/50">
+                                        {filteredCustomers.map((c, i) => (
+                                            <motion.tr
+                                                key={c.id}
+                                                initial={{ opacity: 0, y: 4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: i * 0.02 }}
+                                                className="hover:bg-glass/50 transition-colors"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                            {(c.firstName?.[0] || c.email[0] || '?').toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-tx font-medium truncate">
+                                                                {c.firstName || c.lastName
+                                                                    ? `${c.firstName} ${c.lastName}`.trim()
+                                                                    : c.email.split('@')[0]}
+                                                            </p>
+                                                            <p className="text-tx-muted text-xs truncate sm:hidden mt-0.5">
+                                                                {c.email}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-tx-muted hidden sm:table-cell">
+                                                    {c.email}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {c.orderCount > 0 ? (
+                                                        <PanelBadge variant="success" size="sm">
+                                                            {c.orderCount}
+                                                        </PanelBadge>
+                                                    ) : (
+                                                        <span className="text-tx-muted/50 text-xs">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-tx-muted text-xs hidden md:table-cell tabular-nums">
+                                                    {formatDate(c.createdAt)}
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {filteredCustomers.length === 0 && searchQuery && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="px-6 py-12 text-center text-tx-muted text-sm bg-sf-subtle/30"
+                                    >
+                                        No contacts matching &quot;{searchQuery}&quot;
+                                    </motion.div>
+                                )}
+                            </div>
+                        </SotaGlassCard>
+                    </SotaBentoItem>
+                )}
+
+                {/* CRM Actions — Feature cards */}
+                <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
+                    <SotaGlassCard
+                        glowColor={enableSegmentation ? "emerald" : "none"}
+                        className={`h-full transition-shadow hover:shadow-xl hover:-translate-y-0.5 duration-300 ${!enableSegmentation ? 'opacity-60' : ''}`}
+                    >
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                <Tag className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-tx">
+                                    {labels.segmentation}
+                                </h3>
+                                <p className="text-sm text-tx-muted mt-1 leading-relaxed">
+                                    {labels.segmentationDesc}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-6">
+                            {enableSegmentation ? (
+                                <PanelBadge variant="info" size="sm">
+                                    {labels.comingSoon}
+                                </PanelBadge>
+                            ) : (
+                                <PanelBadge variant="neutral" size="sm">
+                                    <Lock className="w-3.5 h-3.5 mr-1" /> {labels.comingSoon}
+                                </PanelBadge>
                             )}
                         </div>
-                    </div>
-                </div>
-            )}
+                    </SotaGlassCard>
+                </SotaBentoItem>
 
-            {/* CRM Actions — Feature cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Segmentation card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    whileHover={{ y: -2 }}
-                    className={`glass rounded-2xl p-5 transition-shadow hover:shadow-lg ${!enableSegmentation ? 'opacity-60' : ''}`}
-                >
-                    <div className="flex items-start gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle flex items-center justify-center text-brand flex-shrink-0">
-                            <Tag className="w-4 h-4" />
+                <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
+                    <SotaGlassCard
+                        glowColor={enableExport ? "blue" : "none"}
+                        className={`h-full transition-shadow hover:shadow-xl hover:-translate-y-0.5 duration-300 ${!enableExport ? 'opacity-60' : ''}`}
+                    >
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                <Download className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-tx">
+                                    {labels.exportContacts}
+                                </h3>
+                                <p className="text-sm text-tx-muted mt-1 leading-relaxed">
+                                    {labels.exportDesc}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-tx">
-                                {labels.segmentation}
-                            </h3>
-                            <p className="text-xs text-tx-muted mt-0.5">
-                                {labels.segmentationDesc}
-                            </p>
+                        <div className="mt-6">
+                            {enableExport ? (
+                                <button
+                                    onClick={handleExport}
+                                    disabled={isExporting}
+                                    aria-label={labels.exportContacts}
+                                    className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-sm min-h-[44px] px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2"
+                                >
+                                    {isExporting
+                                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                                        : <Download className="w-4 h-4" />
+                                    }
+                                    {isExporting ? labels.downloading : labels.exportContacts}
+                                </button>
+                            ) : (
+                                <PanelBadge variant="neutral" size="sm">
+                                    <Lock className="w-3.5 h-3.5 mr-1" /> {labels.comingSoon}
+                                </PanelBadge>
+                            )}
                         </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-4">
-                        {enableSegmentation ? (
-                            <PanelBadge variant="info" size="sm">
-                                                {labels.comingSoon}
-                                            </PanelBadge>
-                        ) : (
-                            <PanelBadge variant="neutral" size="sm">
-                                <Lock className="w-3 h-3" /> {labels.comingSoon}
-                            </PanelBadge>
-                        )}
-                    </div>
-                </motion.div>
+                    </SotaGlassCard>
+                </SotaBentoItem>
 
-                {/* Export card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    whileHover={{ y: -2 }}
-                    className={`glass rounded-2xl p-5 transition-shadow hover:shadow-lg ${!enableExport ? 'opacity-60' : ''}`}
-                >
-                    <div className="flex items-start gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle flex items-center justify-center text-brand flex-shrink-0">
-                            <Download className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-tx">
-                                {labels.exportContacts}
-                            </h3>
-                            <p className="text-xs text-tx-muted mt-0.5">
-                                {labels.exportDesc}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        {enableExport ? (
-                            <button
-                                onClick={handleExport}
-                                disabled={isExporting}
-                                aria-label={labels.exportContacts}
-                                className="btn btn-primary inline-flex items-center gap-2 text-xs min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            >
-                                {isExporting
-                                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                                    : <Download className="w-3 h-3" />
-                                }
-                                {isExporting ? labels.downloading : labels.exportContacts}
-                            </button>
-                        ) : (
-                            <PanelBadge variant="neutral" size="sm">
-                                <Lock className="w-3 h-3" /> {labels.comingSoon}
-                            </PanelBadge>
-                        )}
-                    </div>
-                </motion.div>
-            </div>
+            </SotaBentoGrid>
             {/* Module Config Section */}
             {crmConfig && (
                 <ModuleConfigSection
                     fields={crmConfigFields}
-                    initialValues={crmConfig}
+                    initialValues={crmConfig!}
                     title="CRM Settings"
                     collapsible
                 />

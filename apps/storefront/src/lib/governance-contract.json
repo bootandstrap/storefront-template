@@ -1,15 +1,17 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-03-30T12:25:35.926Z",
+  "generated_at": "2026-04-02T12:10:56.356Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
-    "count": 57,
+    "count": 62,
     "keys": [
       "enable_abandoned_cart_emails",
       "enable_address_management",
       "enable_admin_api",
       "enable_analytics",
+      "enable_auth_advanced",
+      "enable_automations",
       "enable_bank_transfer",
       "enable_carousel",
       "enable_cash_on_delivery",
@@ -51,8 +53,11 @@
       "enable_promotions",
       "enable_related_products",
       "enable_reviews",
+      "enable_sales_channels",
       "enable_self_service_returns",
+      "enable_seo",
       "enable_social_links",
+      "enable_social_media",
       "enable_traffic_analytics",
       "enable_traffic_autoscale",
       "enable_traffic_expansion",
@@ -89,7 +94,8 @@
           "enable_google_auth",
           "enable_customer_accounts",
           "enable_address_management",
-          "enable_order_tracking"
+          "enable_order_tracking",
+          "enable_auth_advanced"
         ]
       },
       "___content___discovery": {
@@ -131,7 +137,9 @@
         "flags": [
           "enable_social_links",
           "enable_owner_panel",
-          "enable_newsletter"
+          "enable_newsletter",
+          "enable_social_media",
+          "enable_sales_channels"
         ]
       },
       "___system": {
@@ -145,7 +153,9 @@
           "enable_chatbot",
           "enable_self_service_returns",
           "owner_lite_enabled",
-          "owner_advanced_modules_enabled"
+          "owner_advanced_modules_enabled",
+          "enable_seo",
+          "enable_automations"
         ]
       },
       "___crm": {
@@ -179,7 +189,7 @@
     }
   },
   "limits": {
-    "count": 27,
+    "count": 28,
     "keys": [
       "max_admin_users",
       "max_badges",
@@ -198,6 +208,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
       "max_requests_day",
@@ -227,6 +238,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
       "max_requests_day",
@@ -242,7 +254,7 @@
     ]
   },
   "modules": {
-    "count": 12,
+    "count": 13,
     "keys": [
       "auth_advanced",
       "automation",
@@ -253,6 +265,7 @@
       "email_marketing",
       "i18n",
       "pos",
+      "pos_kiosk",
       "rrss",
       "sales_channels",
       "seo"
@@ -266,6 +279,7 @@
         "crm",
         "ecommerce",
         "email_marketing",
+        "pos_kiosk",
         "seo"
       ],
       "one_time": [
@@ -887,6 +901,19 @@
             }
           }
         ]
+      },
+      {
+        "key": "pos_kiosk",
+        "name": "Modo Kiosco POS",
+        "icon": "🖥️",
+        "description": "Terminal de autoservicio para clientes",
+        "category": "sell",
+        "popular": false,
+        "requires": [
+          "pos"
+        ],
+        "payment_type": "subscription",
+        "tiers": []
       },
       {
         "key": "rrss",

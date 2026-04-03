@@ -166,6 +166,22 @@ export async function saveActiveLanguagesAction(languages: string[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Panel language only (independent of storefront active_languages)
+// ---------------------------------------------------------------------------
+
+export async function savePanelLanguageAction(panelLang: string) {
+  const { tenantId } = await withPanelGuard()
+
+  if (!SUPPORTED_LANGUAGES.includes(panelLang)) {
+    return { success: false, error: 'Unsupported language' }
+  }
+
+  const result = await updateConfig(tenantId, { panel_language: panelLang })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+// ---------------------------------------------------------------------------
 // Complete onboarding (server action — more reliable than fetch route handler)
 // ---------------------------------------------------------------------------
 

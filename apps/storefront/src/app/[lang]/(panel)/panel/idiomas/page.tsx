@@ -45,6 +45,8 @@ export default async function I18nPage({
         maxCurrencies: planLimits.max_currencies,
     }
 
+    const panelLang = (config as Record<string, unknown>).panel_language as string | null ?? config.language
+
     return (
         <div className="space-y-6">
             <PanelPageHeader
@@ -55,6 +57,7 @@ export default async function I18nPage({
             />
             <I18nClient
                 data={languageData}
+                panelLang={panelLang}
                 labels={{
                     activeLanguages: t('panel.i18n.activeLanguages'),
                     activeCurrencies: t('panel.i18n.activeCurrencies'),
@@ -69,6 +72,13 @@ export default async function I18nPage({
                     tabLanguages: t('panel.i18n.tabLanguages'),
                     tabCurrencies: t('panel.i18n.tabCurrencies'),
                     tabTranslations: t('panel.i18n.tabTranslations'),
+                    panelLanguage: t('panel.i18n.panelLanguage'),
+                    panelLangDescription: t('panel.i18n.panelLangDescription'),
+                    saveSuccess: t('panel.i18n.saveSuccess'),
+                    saveError: t('panel.i18n.saveError'),
+                    limitReached: t('panel.i18n.limitReached'),
+                    upgradePrompt: t('panel.i18n.upgradePrompt'),
+                    cannotDeactivateLast: t('panel.i18n.cannotDeactivateLast'),
                 }}
                 lang={lang}
             />

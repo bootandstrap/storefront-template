@@ -1334,5 +1334,13 @@
   "wishlist.itemSingular": "Artikel",
   "wishlist.productUnavailable": "Produkt nicht verfügbar",
   "wishlist.remove": "Von der Wunschliste entfernen",
-  "wishlist.viewProduct": "Produkt ansehen"
+  "wishlist.viewProduct": "Produkt ansehen",
+
+  "panel.i18n.panelLanguage": "Panel-Sprache",
+  "panel.i18n.panelLangDescription": "Sprache, in der du dein Besitzer-Panel siehst",
+  "panel.i18n.saveSuccess": "Sprachen erfolgreich gespeichert",
+  "panel.i18n.saveError": "Fehler beim Speichern, bitte erneut versuchen",
+  "panel.i18n.limitReached": "Sprachlimit erreicht — upgrade dein Abo",
+  "panel.i18n.upgradePrompt": "Plaene ansehen",
+  "panel.i18n.cannotDeactivateLast": "Du musst mindestens eine Sprache aktiv lassen"
 }

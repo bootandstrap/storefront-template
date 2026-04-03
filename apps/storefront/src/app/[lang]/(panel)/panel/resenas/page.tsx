@@ -48,7 +48,7 @@ function ReviewsSkeleton() {
             <div className="h-7 w-40 bg-text-muted/10 rounded animate-pulse" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="glass rounded-xl p-4 animate-pulse">
+                    <div key={i} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl p-4 animate-pulse">
                         <div className="h-8 w-12 bg-text-muted/10 rounded mb-1" />
                         <div className="h-3 w-16 bg-text-muted/10 rounded" />
                     </div>
@@ -56,7 +56,7 @@ function ReviewsSkeleton() {
             </div>
             <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="glass rounded-xl p-4 animate-pulse">
+                    <div key={i} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl p-4 animate-pulse">
                         <div className="flex items-center gap-3">
                             <div className="h-4 w-24 bg-text-muted/10 rounded" />
                             <div className="h-4 w-20 bg-text-muted/10 rounded" />

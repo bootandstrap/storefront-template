@@ -22,6 +22,8 @@ import { toIntlLocale } from '@/lib/i18n/intl-locale'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
@@ -192,17 +194,19 @@ export default function ReviewsClient({
         <PageEntrance className="space-y-6">
 
 
-            {/* ── Filter stat cards ── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <SotaBentoGrid>
+                {/* ── Filter stat cards ── */}
+                <SotaBentoItem colSpan={12}>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {filterButtons.map(({ key, label, count }) => (
                     <motion.button
                         key={key}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setFilter(key)}
                         aria-pressed={filter === key}
-                        className={`glass rounded-2xl p-4 min-h-[80px] text-left transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${filter === key
+                        className={`bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner rounded-2xl p-4 min-h-[80px] text-left transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${filter === key
                             ? 'ring-2 ring-med'
-                            : 'hover:bg-sf-1'
+                            : 'hover:bg-sf-1/50 hover:border-sf-3/50'
                             }`}
                     >
                         {filter === key && (
@@ -216,7 +220,8 @@ export default function ReviewsClient({
                         <p className="text-xs text-tx-muted mt-0.5 relative">{label}</p>
                     </motion.button>
                 ))}
-            </div>
+                    </div>
+                </SotaBentoItem>
 
             {/* ── Filter indicator ── */}
             <AnimatePresence>
@@ -240,13 +245,14 @@ export default function ReviewsClient({
             </AnimatePresence>
 
             {/* ── Reviews list ── */}
+            <SotaBentoItem colSpan={12}>
             {filteredReviews.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
-                    <div className="empty-state">
+                    <SotaGlassCard glowColor="none" className="p-8">
+                        <div className="empty-state">
                         <div className="empty-state-icon">
                             <Star className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
@@ -257,6 +263,7 @@ export default function ReviewsClient({
                             {t('panel.reviews.emptyHint') || 'When customers leave reviews on your products, they will appear here for moderation.'}
                         </p>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
                 <ListStagger className="space-y-3">
@@ -264,8 +271,9 @@ export default function ReviewsClient({
                         <StaggerItem key={review.id}>
                             <motion.div
                                 whileHover={{ y: -1 }}
-                                className="glass rounded-xl p-4 transition-shadow hover:shadow-lg"
+                                className="transition-shadow hover:shadow-lg"
                             >
+                                <SotaGlassCard glowColor="none" className="p-4" overflowHidden={false}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 flex-wrap">
@@ -328,11 +336,14 @@ export default function ReviewsClient({
                                         </motion.button>
                                     </div>
                                 </div>
+                                </SotaGlassCard>
                             </motion.div>
                         </StaggerItem>
                     ))}
                 </ListStagger>
             )}
+            </SotaBentoItem>
+            </SotaBentoGrid>
 
             <PanelConfirmDialog {...confirmDialog.dialogProps} />
         </PageEntrance>

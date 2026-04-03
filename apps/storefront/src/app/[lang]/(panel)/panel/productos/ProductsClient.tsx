@@ -22,7 +22,9 @@ import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 const ProductFormSlideOver = lazy(() => import('./ProductFormSlideOver'))
 
@@ -93,16 +95,6 @@ export default function ProductsClient({
     const [editingProduct, setEditingProduct] = useState<AdminProductFull | null>(null)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-    // ── Gate state ──
-    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
-
-    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
-        if (!canAccess) {
-            setGateData({ isOpen: true, flag })
-        } else {
-            action()
-        }
-    }
 
     const deleteDialog = useConfirmDialog({
         title: labels.confirmDelete,
@@ -280,31 +272,32 @@ export default function ProductsClient({
         urlHandle: 'URL',
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
 
     return (
-        <PageEntrance className="space-y-5">
-            <ClientFeatureGate
-                isOpen={gateData.isOpen}
-                onClose={() => setGateData({ ...gateData, isOpen: false })}
-                flag={gateData.flag}
-            />
+        <PageEntrance className="space-y-8">
             <PanelPageHeader
                 title={labels.title}
                 subtitle={`${labels.subtitle} · ${productCount} / ${maxProducts} ${labels.products}`}
                 icon={<Package className="w-5 h-5" />}
                 badge={productCount}
                 action={
-                    <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={isPending}
-                        onClick={() => handleFeatureClick(canAdd, 'max_products_limit', openCreate)}
-                    >
-                        <Plus className="w-4 h-4" />
-                        {labels.addProduct}
-                    </button>
+                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_products_limit" variant="badge">
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                            disabled={isPending || !canAdd}
+                            onClick={openCreate}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {labels.addProduct}
+                        </button>
+                    </SotaFeatureGateWrapper>
                 }
             />
+
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-4">
 
             {/* ── Bulk action bar ── */}
             <AnimatePresence>
@@ -313,8 +306,8 @@ export default function ProductsClient({
                         initial={{ opacity: 0, y: -12 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -12 }}
-                        className="glass rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap"
                     >
+                        <SotaGlassCard glowColor="none" className="px-4 py-3 flex items-center gap-3 flex-wrap">
                         <span className="text-sm font-medium text-tx">
                             {selectedIds.size} {labels.selected}
                         </span>
@@ -350,6 +343,7 @@ export default function ProductsClient({
                                 <X className="w-3.5 h-3.5" /> {labels.deselectAll}
                             </button>
                         </div>
+                        </SotaGlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -372,7 +366,7 @@ export default function ProductsClient({
                         className={`${inputClass} pl-10`}
                     />
                 </div>
-                <div className="flex gap-1 glass rounded-xl overflow-hidden p-1">
+                <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl overflow-hidden p-1 border border-sf-3/30 shadow-inner">
                     {(['all', 'published', 'draft'] as const).map(s => (
                         <button
                             key={s}
@@ -428,45 +422,48 @@ export default function ProductsClient({
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
-                    <div className="empty-state">
-                        <div className="empty-state-icon">
-                            <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
-                        </div>
+                    <SotaGlassCard glowColor="none" className="py-16">
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
+                            </div>
                         <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noProducts}
                         </h3>
                         <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {labels.addProductHint || 'Create your first product to start selling.'}
                         </p>
-                        <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={isPending}
-                            onClick={() => handleFeatureClick(canAdd, 'max_products_limit', openCreate)}
-                        >
-                            <Plus className="w-4 h-4" />
-                            {labels.addProduct}
-                        </button>
+                        <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_products_limit" variant="badge">
+                            <button
+                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                disabled={isPending || !canAdd}
+                                onClick={openCreate}
+                            >
+                                <Plus className="w-4 h-4" />
+                                {labels.addProduct}
+                            </button>
+                        </SotaFeatureGateWrapper>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
-                <ListStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ListStagger className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filtered.map(product => (
                         <StaggerItem key={product.id}>
                             <motion.div
                                 whileHover={{ y: -2 }}
-                                className={`glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg ${selectedIds.has(product.id) ? 'ring-2 ring-brand' : ''}`}
                             >
-                                {/* Thumbnail */}
-                                <div
-                                    className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer"
+                                <SotaGlassCard glowColor="none" overflowHidden className="p-0 transition-shadow hover:shadow-lg h-full flex flex-col group">
+                                    {/* Thumbnail */}
+                                    <div
+                                        className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer"
                                     onClick={() => openEdit(product)}
                                 >
                                     <button
                                         onClick={(e) => { e.stopPropagation(); toggleSelect(product.id) }}
                                         aria-label={selectedIds.has(product.id) ? labels.deselectAll : labels.selectAll}
-                                        className="absolute top-2 left-2 z-10 p-1.5 rounded-md bg-glass-heavy backdrop-blur-sm hover:bg-sf-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
+                                        className="absolute top-2 left-2 z-10 p-1.5 rounded-md bg-sf-0/80 backdrop-blur-sm shadow-sm hover:bg-sf-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                     >
                                         {selectedIds.has(product.id)
                                             ? <CheckSquare className="w-4 h-4 text-brand" />
@@ -547,11 +544,16 @@ export default function ProductsClient({
                                         </motion.button>
                                     </div>
                                 </div>
+                                </SotaGlassCard>
                             </motion.div>
                         </StaggerItem>
                     ))}
                 </ListStagger>
             )}
+
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             <PanelConfirmDialog {...deleteDialog.dialogProps} />
             <PanelConfirmDialog {...bulkDeleteDialog.dialogProps} />

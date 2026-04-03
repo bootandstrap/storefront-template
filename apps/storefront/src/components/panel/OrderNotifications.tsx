@@ -106,7 +106,7 @@ export default function OrderNotifications() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto glass rounded-xl shadow-xl border border-border z-50">
+                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-xl rounded-xl border border-border z-50">
                     <div className="p-3 border-b border-border flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-tx">
                             {t('panel.orders.recentOrders')}

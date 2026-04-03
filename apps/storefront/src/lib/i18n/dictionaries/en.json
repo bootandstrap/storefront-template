@@ -1758,7 +1758,18 @@
       "tabTranslations": "Translations",
       "title": "Languages & Currencies",
       "translated": "Translated",
-      "translationProgress": "Translation progress"
+      "translationProgress": "Translation progress",
+      "panelLanguage": "Panel language",
+      "panelLangDescription": "Language in which you view your owner panel",
+      "saveSuccess": "Languages saved successfully",
+      "saveError": "Error saving, please try again",
+      "limitReached": "Language limit reached — upgrade your plan",
+      "upgradePrompt": "See plans",
+      "cannotDeactivateLast": "You must keep at least one language active",
+      "activeCurrencies": "Active currencies",
+      "currencyConfig": "Currency settings",
+      "languageSettings": "Languages & Currencies",
+      "usageOf": "in use of"
     },
     "labels": {
       "deselectAll": "Deselect all",

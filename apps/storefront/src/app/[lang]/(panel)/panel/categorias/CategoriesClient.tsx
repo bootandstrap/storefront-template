@@ -24,7 +24,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 interface Category {
     id: string
@@ -71,16 +73,6 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
     const [editingId, setEditingId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    // ── Gate state ──
-    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
-
-    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
-        if (!canAccess) {
-            setGateData({ isOpen: true, flag })
-        } else {
-            action()
-        }
-    }
 
     const confirmDialog = useConfirmDialog({
         title: labels.confirmDelete,
@@ -132,37 +124,37 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
         })
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     return (
-        <PageEntrance className="space-y-5">
-            <ClientFeatureGate
-                isOpen={gateData.isOpen}
-                onClose={() => setGateData({ ...gateData, isOpen: false })}
-                flag={gateData.flag}
-            />
+        <PageEntrance className="space-y-8">
             <PanelPageHeader
                 title={labels.title}
                 subtitle={labels.subtitle}
                 icon={<FolderTree className="w-5 h-5" />}
                 badge={categoryCount}
                 action={
-                    <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={isPending}
-                        onClick={() => handleFeatureClick(canAdd, 'max_categories_limit', () => { resetForm(); setShowForm(true) })}
-                    >
-                        <Plus className="w-4 h-4" />
-                        {labels.addCategory}
-                    </button>
+                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_categories_limit" variant="badge">
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                            disabled={isPending || !canAdd}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {labels.addCategory}
+                        </button>
+                    </SotaFeatureGateWrapper>
                 }
             />
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
-                {categoryCount} / {maxCategories} {labels.categories}
-                {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-            </motion.p>
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-4">
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted mb-2">
+                            {categoryCount} / {maxCategories} {labels.categories}
+                            {!canAdd && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
+                        </motion.p>
 
             <AnimatePresence>
                 {error && (
@@ -182,8 +174,8 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                         initial={{ opacity: 0, y: 12, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
-                        className="glass rounded-2xl p-6 space-y-4"
                     >
+                        <SotaGlassCard glowColor="blue" className="p-6 space-y-4">
                         <h2 className="font-bold text-lg text-tx">
                             {editingId ? labels.editCategory : labels.addCategory}
                         </h2>
@@ -207,6 +199,7 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                             </button>
                             <button onClick={resetForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
                         </div>
+                        </SotaGlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -215,27 +208,30 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
             {categories.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
-                    <div className="empty-state">
-                        <div className="empty-state-icon">
-                            <FolderTree className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
-                        </div>
+                    <SotaGlassCard glowColor="none" className="py-16">
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <FolderTree className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
+                            </div>
                         <h3 className="text-lg font-bold font-display text-tx mb-2">
                             {labels.noCategories}
                         </h3>
                         <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {labels.noCategoriesHint}
                         </p>
-                        <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={isPending}
-                            onClick={() => handleFeatureClick(canAdd, 'max_categories_limit', () => { resetForm(); setShowForm(true) })}
-                        >
-                            <Plus className="w-4 h-4" />
-                            {labels.addCategory}
-                        </button>
+                        <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_categories_limit" variant="badge">
+                            <button
+                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                disabled={isPending || !canAdd}
+                                onClick={() => { resetForm(); setShowForm(true) }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                {labels.addCategory}
+                            </button>
+                        </SotaFeatureGateWrapper>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
                 <ListStagger className="space-y-3">
@@ -243,8 +239,8 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                         <StaggerItem key={category.id}>
                             <motion.div
                                 whileHover={{ y: -1 }}
-                                className="glass rounded-2xl p-4 transition-shadow hover:shadow-lg"
                             >
+                                <SotaGlassCard glowColor="none" className="p-4 transition-shadow hover:shadow-lg">
                                 <div className="flex items-center gap-4">
                                     {/* Icon */}
                                     <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center flex-shrink-0">
@@ -285,11 +281,16 @@ export default function CategoriesClient({ categories, canAdd, categoryCount, ma
                                         </button>
                                     </div>
                                 </div>
+                                </SotaGlassCard>
                             </motion.div>
                         </StaggerItem>
                     ))}
                 </ListStagger>
             )}
+
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             <PanelConfirmDialog {...confirmDialog.dialogProps} />
         </PageEntrance>

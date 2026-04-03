@@ -88,7 +88,7 @@ export function PanelCard({
  */
 export function PanelFilterBar({ children }: { children: ReactNode }) {
     return (
-        <div className="glass rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl p-3 flex flex-wrap items-center gap-3">
             {children}
         </div>
     )
@@ -216,7 +216,7 @@ export function PanelEmptyState({
     action?: ReactNode
 }) {
     return (
-        <div className="glass rounded-2xl p-12 text-center">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-12 text-center">
             {icon && (
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sf-1 text-tx-muted mb-4">
                     {icon}

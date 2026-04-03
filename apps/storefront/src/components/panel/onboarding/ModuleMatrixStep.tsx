@@ -10,7 +10,7 @@
 
 import { motion } from 'framer-motion'
 import { Check, Lock } from 'lucide-react'
-import type { ModuleInfo } from './OnboardingWizard'
+import type { ModuleInfo } from './types'
 
 interface ModuleMatrixStepProps {
     modules: ModuleInfo[]

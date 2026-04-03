@@ -282,7 +282,7 @@ export default function ModuleConfigClient({
 
       {/* Not Active State */}
       {!isActive && (
-        <div className="glass rounded-2xl p-8 text-center space-y-4 border border-warning">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-warning shadow-sm rounded-2xl p-8 text-center space-y-4">
           <div className="text-5xl">🔒</div>
           <h2 className="text-xl font-bold text-tx">{labels.notActivated}</h2>
           <p className="text-tx-muted max-w-md mx-auto">{labels.notActivatedDesc}</p>
@@ -294,7 +294,7 @@ export default function ModuleConfigClient({
                 <div
                   key={tier.key}
                   className={`
-                    glass rounded-xl p-5 text-left border transition-all
+                    bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl p-5 text-left transition-all
                     ${tier.is_recommended
                       ? 'border-brand ring-2 ring-soft scale-[1.02]'
                       : 'border-sf-3 hover:border-brand'
@@ -338,7 +338,7 @@ export default function ModuleConfigClient({
         <>
           {/* Feature Flags */}
           {(enabledFlags.length > 0 || disabledFlags.length > 0) && (
-            <div className="glass rounded-2xl p-6 space-y-4">
+            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2 text-tx font-semibold">
                 <Shield className="w-5 h-5 text-brand" />
                 {labels.features}
@@ -393,7 +393,7 @@ export default function ModuleConfigClient({
 
           {/* Config Panel */}
           {hasConfigFields ? (
-            <div className="glass rounded-2xl p-6 space-y-5">
+            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 space-y-5">
               <div className="flex items-center gap-2 text-tx font-semibold">
                 <Settings className="w-5 h-5 text-brand" />
                 {labels.configuration}
@@ -486,7 +486,7 @@ export default function ModuleConfigClient({
               </div>
             </div>
           ) : (
-            <div className="glass rounded-2xl p-6 text-center text-tx-muted">
+            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 text-center text-tx-muted">
               <Settings className="w-8 h-8 mx-auto mb-3 opacity-30" />
               <p>{labels.noConfigAvailable}</p>
             </div>
@@ -494,7 +494,7 @@ export default function ModuleConfigClient({
 
           {/* Current Tier */}
           {context.activeTierKey && (
-            <div className="glass rounded-2xl p-6">
+            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs font-medium text-tx-muted uppercase tracking-wider">

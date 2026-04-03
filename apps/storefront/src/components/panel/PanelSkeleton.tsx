@@ -32,7 +32,7 @@ export function StatCardSkeleton({ count = 3 }: { count?: number }) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="glass rounded-2xl p-5 space-y-3">
+                <div key={i} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                         <Shimmer className="h-3 w-20" />
                         <Shimmer className="h-9 w-9 rounded-xl" />
@@ -49,7 +49,7 @@ export function StatCardSkeleton({ count = 3 }: { count?: number }) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
     return (
-        <div className="glass rounded-2xl overflow-hidden">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden">
             {/* Header */}
             <div className="flex gap-4 px-5 py-3 bg-glass border-b border-sf-2">
                 {Array.from({ length: cols }).map((_, i) => (
@@ -82,7 +82,7 @@ export function CardGridSkeleton({ count = 6, cols = 3 }: { count?: number; cols
     return (
         <div className={`grid ${gridClass} gap-4`}>
             {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="glass rounded-2xl overflow-hidden">
+                <div key={i} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden">
                     <Shimmer className="aspect-video w-full rounded-none" />
                     <div className="p-4 space-y-2">
                         <Shimmer className="h-4 w-3/4" />

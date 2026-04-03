@@ -189,8 +189,8 @@ export default function PanelSidebar({
             relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
             transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med
             ${active
-                ? 'bg-brand-subtle text-brand sidebar-link-active'
-                : 'text-tx-sec hover:bg-sf-1 hover:text-tx'
+                ? 'sidebar-link-glow text-brand dark:text-brand-300 font-semibold'
+                : 'text-tx-sec hover:bg-sf-1 dark:hover:bg-sf-2/40 hover:text-tx hover:translate-x-0.5'
             }
         `
     }

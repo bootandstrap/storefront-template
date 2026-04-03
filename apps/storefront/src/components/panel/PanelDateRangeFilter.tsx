@@ -110,7 +110,7 @@ export default function PanelDateRangeFilter({
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 z-40 glass rounded-xl border border-sf-3 shadow-xl p-2 min-w-[240px] animate-fade-in-up">
+                <div className="absolute right-0 top-full mt-2 z-40 bg-sf-0/50 backdrop-blur-md shadow-xl border border-sf-3/30 rounded-xl p-2 min-w-[240px] animate-fade-in-up">
                     {/* Presets */}
                     <div className="space-y-0.5 mb-2">
                         {presets.map(preset => (

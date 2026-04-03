@@ -225,8 +225,8 @@ export default function ClientFeatureGate({ isOpen, onClose, flag }: ClientFeatu
 
 // Map limit keys to their respective module capability to show the correct icon/description
 function getFlagForLimit(limitFlag: string): string {
-    if (limitFlag.includes('products') || limitFlag.includes('categories')) return 'ecommerce_pro' // or 'ecommerce'
-    if (limitFlag.includes('pages')) return 'ecommerce_pro'
-    if (limitFlag.includes('carousel')) return 'ecommerce_pro'
-    return 'capacidad' // generic fallback
+    if (limitFlag.includes('products') || limitFlag.includes('categories')) return 'enable_ecommerce'
+    if (limitFlag.includes('pages')) return 'enable_cms_pages'
+    if (limitFlag.includes('carousel')) return 'enable_carousel'
+    return 'enable_traffic_expansion' // generic fallback
 }

@@ -40,6 +40,7 @@ export const StoreConfigSchema = z.object({
     active_languages: z.array(z.string()),
     active_currencies: z.array(z.string()),
     default_currency: z.string(),
+    // Phase 8A
     store_email: z.string().nullable(),
     store_phone: z.string().nullable(),
     store_address: z.string().nullable(),
@@ -62,47 +63,48 @@ export const StoreConfigSchema = z.object({
     facebook_pixel_id: z.string().nullable(),
     sentry_dsn: z.string().nullable(),
     custom_css: z.string().nullable(),
+    // Inventory & Stock (Phase 1.7)
     stock_mode: z.enum(['always_in_stock', 'managed']),
     low_stock_threshold: z.number(),
+    // Shipping & Tax (Phase 1.9)
     free_shipping_threshold: z.number(),
     tax_display_mode: z.enum(['tax_included', 'tax_excluded']),
+    // Onboarding
     onboarding_completed: z.boolean(),
-    // Module-specific config (Phase 6 — migration: 20260331_onboarding_config_fields.sql)
-    chatbot_name: z.string().nullable().default(null),
-    chatbot_tone: z.enum(['formal', 'friendly', 'casual']).default('friendly'),
-    chatbot_welcome_message: z.string().nullable().default(null),
-    pos_receipt_header: z.string().nullable().default(null),
-    pos_receipt_footer: z.string().nullable().default(null),
-    pos_default_payment_method: z.enum(['cash', 'card', 'transfer']).default('cash'),
-    pos_tax_display: z.enum(['tax_included', 'tax_excluded']).default('tax_included'),
-    pos_enable_tips: z.boolean().default(false),
-    pos_tip_percentages: z.string().default('5,10,15'),
-    pos_sound_enabled: z.boolean().default(true),
-    webhook_notification_email: z.string().nullable().default(null),
-    // Chatbot expansion
-    chatbot_auto_open_delay: z.number().default(0),
-    chatbot_knowledge_scope: z.enum(['products_only', 'products_and_faq', 'full_catalog']).default('products_and_faq'),
-    // Capacity expansion
-    traffic_alert_email: z.string().nullable().default(null),
-    traffic_alert_threshold_pct: z.number().default(80),
-    capacity_warning_threshold_pct: z.number().default(70),
-    capacity_critical_threshold_pct: z.number().default(90),
-    capacity_auto_upgrade_interest: z.boolean().default(false),
+    // Module-specific config fields
+    chatbot_name: z.string().nullable(),
+    chatbot_tone: z.string(),
+    chatbot_welcome_message: z.string().nullable(),
+    pos_receipt_header: z.string().nullable(),
+    pos_receipt_footer: z.string().nullable(),
+    pos_default_payment_method: z.string(),
+    pos_tax_display: z.string(),
+    pos_enable_tips: z.boolean(),
+    pos_tip_percentages: z.string(),
+    pos_sound_enabled: z.boolean(),
+    webhook_notification_email: z.string().nullable(),
+    chatbot_auto_open_delay: z.number(),
+    chatbot_knowledge_scope: z.string(),
+    traffic_alert_email: z.string().nullable(),
+    traffic_alert_threshold_pct: z.number(),
+    capacity_warning_threshold_pct: z.number(),
+    capacity_critical_threshold_pct: z.number(),
+    capacity_auto_upgrade_interest: z.boolean(),
     // CRM expansion
-    crm_auto_tag_customers: z.boolean().default(true),
-    crm_new_customer_tag: z.string().default('nuevo'),
-    crm_notify_new_contact: z.boolean().default(false),
-    crm_export_format: z.enum(['csv', 'excel']).default('csv'),
-    // Sales Channels expansion
-    sales_whatsapp_greeting: z.string().nullable().default(null),
-    sales_preferred_contact: z.enum(['whatsapp', 'phone', 'email']).default('whatsapp'),
-    sales_business_hours_display: z.enum(['not_shown', 'weekdays', 'full_week', 'custom']).default('not_shown'),
-    sales_highlight_free_shipping: z.boolean().default(false),
-    // Email Marketing expansion
-    email_sender_name: z.string().nullable().default(null),
-    email_reply_to: z.string().nullable().default(null),
-    email_footer_text: z.string().nullable().default(null),
-    email_abandoned_cart_delay: z.enum(['1h', '3h', '24h']).default('3h'),
+    crm_auto_tag_customers: z.boolean(),
+    crm_new_customer_tag: z.string(),
+    crm_notify_new_contact: z.boolean(),
+    crm_export_format: z.string(),
+    // Sales Channels
+    sales_whatsapp_greeting: z.string().nullable(),
+    sales_preferred_contact: z.string(),
+    sales_business_hours_display: z.string(),
+    sales_highlight_free_shipping: z.boolean(),
+    // Email Marketing
+    email_sender_name: z.string().nullable(),
+    email_reply_to: z.string().nullable(),
+    email_footer_text: z.string().nullable(),
+    email_abandoned_cart_delay: z.string(),
     // Gamification (Phase 5 — migration: 20260319_gamification_fields.sql)
     achievements_unlocked: z.array(z.string()).default([]),
     dismissed_tips: z.array(z.string()).default([]),
@@ -114,19 +116,23 @@ export const StoreConfigSchema = z.object({
 
 export type StoreConfig = z.infer<typeof StoreConfigSchema>
 
-// ─── FeatureFlags (54 flags) ──────────────────────────────────────────────
+// ─── FeatureFlags (57 flags) ──────────────────────────────────────────────
 
 export const FeatureFlagsSchema = z.object({
+    // Checkout
     enable_whatsapp_checkout: z.boolean(),
     enable_online_payments: z.boolean(),
     enable_cash_on_delivery: z.boolean(),
     enable_bank_transfer: z.boolean(),
+    // WhatsApp Contact (separate from checkout)
     enable_whatsapp_contact: z.boolean(),
+    // Auth
     enable_user_registration: z.boolean(),
     enable_guest_checkout: z.boolean(),
     require_auth_to_order: z.boolean(),
     enable_google_auth: z.boolean(),
     enable_email_auth: z.boolean(),
+    // Content
     enable_ecommerce: z.boolean(),
     enable_reviews: z.boolean(),
     enable_wishlist: z.boolean(),
@@ -136,15 +142,18 @@ export const FeatureFlagsSchema = z.object({
     enable_related_products: z.boolean(),
     enable_product_comparisons: z.boolean(),
     enable_product_badges: z.boolean(),
+    // Advanced
     enable_analytics: z.boolean(),
     enable_promotions: z.boolean(),
     enable_multi_language: z.boolean(),
     enable_multi_currency: z.boolean(),
     enable_admin_api: z.boolean(),
+    // Business
     enable_social_links: z.boolean(),
     enable_order_notes: z.boolean(),
     enable_address_management: z.boolean(),
     enable_newsletter: z.boolean(),
+    // System
     enable_maintenance_mode: z.boolean(),
     enable_owner_panel: z.boolean(),
     enable_customer_accounts: z.boolean(),
@@ -154,13 +163,16 @@ export const FeatureFlagsSchema = z.object({
     enable_self_service_returns: z.boolean(),
     owner_lite_enabled: z.boolean(),
     owner_advanced_modules_enabled: z.boolean(),
+    // CRM
     enable_crm: z.boolean(),
     enable_crm_segmentation: z.boolean(),
     enable_crm_export: z.boolean(),
+    // Email Marketing
     enable_email_notifications: z.boolean(),
     enable_abandoned_cart_emails: z.boolean(),
     enable_email_campaigns: z.boolean(),
     enable_email_templates: z.boolean(),
+    // POS
     enable_pos: z.boolean(),
     enable_pos_kiosk: z.boolean(),
     enable_pos_keyboard_shortcuts: z.boolean(),
@@ -171,10 +183,11 @@ export const FeatureFlagsSchema = z.object({
     enable_pos_customer_search: z.boolean(),
     enable_pos_multi_device: z.boolean(),
     enable_pos_shifts: z.boolean(),
+    // Capacidad (Traffic)
     enable_traffic_expansion: z.boolean(),
     enable_traffic_analytics: z.boolean(),
     enable_traffic_autoscale: z.boolean(),
-    // ── New module gates (Phase 4 — 2026-03) ──
+    // New module gates (Phase 4 — 2026-03)
     enable_seo: z.boolean(),
     enable_social_media: z.boolean(),
     enable_automations: z.boolean(),
@@ -213,8 +226,8 @@ export const PlanLimitsSchema = z.object({
     max_wishlist_items: z.number(),
     max_promotions_active: z.number(),
     max_payment_methods: z.number(),
-    max_pos_payment_methods: z.number(),
     max_crm_contacts: z.number(),
+    max_pos_payment_methods: z.number(),
 })
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>
@@ -238,7 +251,9 @@ export const AppConfigSchema = z.object({
     planLimits: PlanLimitsSchema,
     planExpired: z.boolean(),
     tenantStatus: TenantStatusSchema,
+    /** True when config was loaded from hardcoded fallback (Supabase unreachable) */
     _degraded: z.boolean().optional(),
+    /** Days remaining in free maintenance month (only set when tenantStatus === 'maintenance_free') */
     maintenanceDaysRemaining: z.number().optional(),
 })
 
@@ -246,6 +261,7 @@ export type AppConfig = z.infer<typeof AppConfigSchema>
 
 // ─── Governance RPC Result ────────────────────────────────────────────────
 
+/** Response shape from get_tenant_governance() SECURITY DEFINER RPC */
 export const GovernanceRpcResultSchema = z.object({
     config: StoreConfigSchema.nullable(),
     feature_flags: z.record(z.string(), z.boolean()).nullable(),

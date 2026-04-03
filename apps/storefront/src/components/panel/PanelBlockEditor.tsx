@@ -158,7 +158,7 @@ function SlashMenu({
     return (
         <div
             ref={menuRef}
-            className="fixed z-50 glass rounded-xl border border-sf-3 shadow-xl py-1.5 w-[240px] animate-fade-in-up"
+            className="fixed z-50 bg-sf-0/50 backdrop-blur-md shadow-xl border border-sf-3/30 rounded-xl py-1.5 w-[240px] animate-fade-in-up"
             style={{ top: position.top, left: position.left }}
         >
             <p className="px-3 py-1 text-[10px] text-tx-faint uppercase tracking-wider font-semibold">

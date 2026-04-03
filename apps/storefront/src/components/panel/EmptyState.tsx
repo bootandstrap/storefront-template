@@ -38,7 +38,7 @@ export default function EmptyState({
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] max-w-3xl h-full bg-gradient-to-b from-brand-subtle via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none rounded-full blur-3xl" />
 
             <div className="relative z-10 flex flex-col items-center max-w-md mx-auto">
-                <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-sf-1 text-tx-muted mb-8 shadow-inner shadow-surface-3/20 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 group-hover:text-brand">
+                <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-sf-1 dark:bg-sf-2/50 text-tx-muted mb-8 shadow-inner shadow-surface-3/20 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 group-hover:text-brand dark:group-hover:text-brand-300 animate-float">
                     {/* Cloning the icon to force a consistent, elegant size if it's a lucide icon */}
                     {icon && typeof icon === 'object' && 'props' in icon
                         ? cloneElement(icon as ReactElement<{ className?: string }>, { className: 'w-10 h-10 md:w-12 md:h-12 stroke-[1.5]' })

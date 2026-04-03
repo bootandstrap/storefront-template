@@ -83,7 +83,7 @@ export default function PanelActionMenu({
 
             {isOpen && (
                 <div
-                    className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-40 glass rounded-xl border border-sf-3 shadow-xl py-1 min-w-[160px] animate-fade-in-up`}
+                    className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-40 bg-sf-0/50 backdrop-blur-md shadow-xl border border-sf-3/30 rounded-xl py-1 min-w-[160px] animate-fade-in-up`}
                     role="menu"
                 >
                     {actions.map((action, i) => {

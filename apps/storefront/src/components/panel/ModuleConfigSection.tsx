@@ -94,7 +94,7 @@ export default function ModuleConfigSection({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="glass rounded-2xl overflow-hidden"
+            className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden"
         >
             {/* Header */}
             <button
@@ -152,7 +152,7 @@ export default function ModuleConfigSection({
                                             value={String(values[field.key] ?? '')}
                                             onChange={e => updateValue(field.key, e.target.value)}
                                             placeholder={field.placeholder}
-                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none"
+                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none"
                                         />
                                     )}
 
@@ -165,7 +165,7 @@ export default function ModuleConfigSection({
                                             value={String(values[field.key] ?? '')}
                                             onChange={e => updateValue(field.key, e.target.value ? Number(e.target.value) : '')}
                                             placeholder={field.placeholder}
-                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none"
+                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none"
                                         />
                                     )}
 
@@ -175,7 +175,7 @@ export default function ModuleConfigSection({
                                             id={`cfg-${field.key}`}
                                             value={String(values[field.key] ?? '')}
                                             onChange={e => updateValue(field.key, e.target.value)}
-                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none appearance-none cursor-pointer"
+                                            className="w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none appearance-none cursor-pointer"
                                         >
                                             {field.options.map(opt => (
                                                 <option key={opt.value} value={opt.value}>
@@ -222,7 +222,7 @@ export default function ModuleConfigSection({
                                             onChange={e => updateValue(field.key, e.target.value)}
                                             placeholder={field.placeholder}
                                             rows={3}
-                                            className="w-full px-4 py-3 min-h-[80px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none resize-none"
+                                            className="w-full px-4 py-3 min-h-[80px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none resize-none"
                                         />
                                     )}
                                 </div>

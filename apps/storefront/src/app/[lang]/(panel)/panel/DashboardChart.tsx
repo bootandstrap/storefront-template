@@ -75,7 +75,7 @@ export default function DashboardChart({
     }), [currency, lang, labels])
 
     return (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-tx">
                     📊 {labels.chartTitle}

@@ -78,3 +78,10 @@ export { default as SectionHeader } from './SectionHeader'
 export { default as ActivityFeed } from './ActivityFeed'
 export type { ActivityEvent } from './ActivityFeed'
 export { default as PanelTableLegacy, PanelThead, PanelTbody, PanelTr, PanelTh as PanelThCell, PanelTd } from './PanelTable'
+
+// ─── SOTA Toolkit ───────────────────────────────────────────────────────────
+export { SotaBentoGrid, SotaBentoItem } from './sota/SotaBentoGrid'
+export { SotaGlassCard } from './sota/SotaGlassCard'
+export { SotaPillAction } from './sota/SotaInteractive'
+export { SotaMetric } from './sota/SotaMetric'
+export { SotaFeatureGateWrapper } from './sota/SotaFeatureGateWrapper'

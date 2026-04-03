@@ -66,7 +66,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="glass rounded-2xl p-4"
+                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-4"
             >
                 <p className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2">
                     {t('panel.badges.available')}
@@ -100,7 +100,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t('panel.badges.searchProducts')}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all"
                 />
             </div>
 
@@ -108,7 +108,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
             {filtered.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
+                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -127,7 +127,7 @@ export default function BadgesClient({ products, error: initialError }: Props) {
                         <StaggerItem key={product.id}>
                             <motion.div
                                 whileHover={{ y: -1 }}
-                                className="glass rounded-2xl p-4 transition-shadow hover:shadow-lg"
+                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-4 transition-shadow hover:shadow-lg"
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Thumbnail */}

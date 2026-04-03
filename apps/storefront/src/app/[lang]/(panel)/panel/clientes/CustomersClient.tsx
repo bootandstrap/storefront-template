@@ -17,8 +17,9 @@ import { Search, Users, Mail, ShoppingBag, Calendar, ChevronDown, Trophy, Plus }
 import { motion } from 'framer-motion'
 import { fetchCustomerOrders, syncLoyaltyStamps, type CustomerOrderSummary } from './actions'
 import { toIntlLocale } from '@/lib/i18n/intl-locale'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem, ExpandableSection } from '@/components/panel/PanelAnimations'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import PanelStatusBadge, { orderStatusVariant } from '@/components/panel/PanelStatusBadge'
 import PanelPagination from '@/components/panel/PanelPagination'
 import LoyaltyCardPreview from '@/components/panel/LoyaltyCardPreview'
@@ -159,7 +160,10 @@ export default function CustomersClient({
     }
 
     return (
-        <PageEntrance className="space-y-5">
+        <PageEntrance className="space-y-8">
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-4">
 
             {/* Search */}
             <div className="relative max-w-md">
@@ -171,7 +175,7 @@ export default function CustomersClient({
                     onKeyDown={(e) => { if (e.key === 'Enter') applySearch() }}
                     placeholder={labels.searchPlaceholder}
                     aria-label={labels.searchPlaceholder}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] glass rounded-xl text-sm text-tx placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-soft transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl text-sm text-tx placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-soft transition-all"
                 />
             </div>
 
@@ -180,24 +184,25 @@ export default function CustomersClient({
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
-                    <div className="empty-state">
-                        <div className="empty-state-icon">
-                            <Users className="w-8 h-8 text-tx-muted" />
+                    <SotaGlassCard glowColor="none" className="py-16">
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <Users className="w-8 h-8 text-tx-muted" />
+                            </div>
+                            <h3 className="text-lg font-bold font-display text-tx mb-2">
+                                {labels.noCustomers}
+                            </h3>
+                            <p className="text-sm text-tx-sec leading-relaxed">
+                                {labels.noCustomersHint || 'Your customers will appear here as they create accounts and place orders.'}
+                            </p>
                         </div>
-                        <h3 className="text-lg font-bold font-display text-tx mb-2">
-                            {labels.noCustomers}
-                        </h3>
-                        <p className="text-sm text-tx-sec leading-relaxed">
-                            {labels.noCustomersHint || 'Your customers will appear here as they create accounts and place orders.'}
-                        </p>
-                    </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
-                <div className="glass rounded-2xl overflow-hidden">
+                <SotaGlassCard glowColor="none" overflowHidden className="p-0">
                     {/* Table header */}
-                    <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-glass border-b border-sf-2 text-xs font-semibold text-tx-muted uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-sf-0/50 backdrop-blur-md border-b border-sf-2 text-xs font-semibold text-tx-muted uppercase tracking-wider">
                         <div className="col-span-4">{labels.customer}</div>
                         <div className="col-span-4">{labels.email}</div>
                         <div className="col-span-2 text-center">{labels.orders}</div>
@@ -225,7 +230,7 @@ export default function CustomersClient({
                                         aria-label={`${name} — ${customer.email}`}
                                         className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center px-5 py-4 min-h-[56px]
                                                    border-b border-sf-2 last:border-0
-                                                   hover:bg-glass transition-colors cursor-pointer
+                                                   hover:bg-sf-1 transition-colors cursor-pointer
                                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                         onClick={() => toggleExpand(customer.id)}
                                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(customer.id) } }}
@@ -266,13 +271,13 @@ export default function CustomersClient({
 
                                     {/* Expanded order history — animated */}
                                     <ExpandableSection isOpen={isExpanded}>
-                                        <div className="px-5 pb-4 bg-glass border-b border-sf-2">
+                                        <div className="px-5 pb-4 bg-sf-0/50 backdrop-blur-md border-b border-sf-2">
                                             <div className="pl-12 pt-2 space-y-2">
                                                 {isLoadingOrders && !cachedOrders ? (
                                                     /* Shimmer skeleton for loading orders */
                                                     <div className="space-y-2">
                                                         {[1, 2, 3].map(i => (
-                                                            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-glass">
+                                                            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-sf-0/50 backdrop-blur-md border border-sf-3/30">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="h-4 w-12 rounded bg-sf-2 animate-pulse" />
                                                                     <div className="h-5 w-16 rounded-full bg-sf-2 animate-pulse" />
@@ -291,7 +296,7 @@ export default function CustomersClient({
                                                                 key={order.id}
                                                                 initial={{ opacity: 0, x: -8 }}
                                                                 animate={{ opacity: 1, x: 0 }}
-                                                                className="flex items-center justify-between py-2 px-3 rounded-lg bg-glass text-sm"
+                                                                className="flex items-center justify-between py-2 px-3 rounded-lg bg-sf-0/50 backdrop-blur-md border border-sf-3/30 text-sm"
                                                             >
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="font-mono text-tx-muted">
@@ -321,7 +326,7 @@ export default function CustomersClient({
                                         </div>
 
                                         {/* Loyalty Card */}
-                                        <div className="px-5 pb-4 bg-glass">
+                                        <div className="px-5 pb-4 bg-sf-0/50 backdrop-blur-md">
                                             <div className="pl-12 pt-2">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-2">
@@ -367,8 +372,12 @@ export default function CustomersClient({
                             )
                         })}
                     </ListStagger>
-                </div>
+                </SotaGlassCard>
             )}
+
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             {/* Pagination */}
             {totalCount > pageSize && (

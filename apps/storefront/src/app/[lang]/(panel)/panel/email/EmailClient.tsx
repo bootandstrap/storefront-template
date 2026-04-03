@@ -147,7 +147,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
             </AnimatePresence>
 
             {/* Tabs with animated indicator */}
-            <div className="flex gap-1 glass rounded-xl w-fit p-1">
+            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl w-fit p-1">
                 {tabs.map(tab => {
                     const Icon = tab.icon
                     return (
@@ -224,7 +224,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="glass rounded-2xl px-5 py-4"
+                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl px-5 py-4"
                             >
                                 <div className="flex items-center justify-between mb-2 text-xs">
                                     <span className="text-tx-muted">
@@ -261,7 +261,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             whileHover={{ y: -1 }}
-                            className={`glass rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_abandoned_cart_emails ? 'opacity-60' : ''}`}
+                            className={`bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_abandoned_cart_emails ? 'opacity-60' : ''}`}
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -340,7 +340,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
                             whileHover={{ y: -1 }}
-                            className={`glass rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_email_notifications ? 'opacity-60' : ''}`}
+                            className={`bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 transition-shadow hover:shadow-lg ${!flags.enable_email_notifications ? 'opacity-60' : ''}`}
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -435,7 +435,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="glass rounded-2xl"
+                        className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                     >
                         <div className="empty-state">
                             <div className="empty-state-icon">
@@ -453,7 +453,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="glass rounded-2xl"
+                        className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                     >
                         <div className="empty-state">
                             <div className="empty-state-icon">

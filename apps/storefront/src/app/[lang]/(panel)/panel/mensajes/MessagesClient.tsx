@@ -24,8 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
-
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -110,16 +109,6 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
     const [showPreview, setShowPreview] = useState(true)
     const [copiedId, setCopiedId] = useState<string | null>(null)
 
-    // Gate state
-    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
-
-    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
-        if (!canAccess) {
-            setGateData({ isOpen: true, flag })
-        } else {
-            action()
-        }
-    }
 
     // Form state
     const [name, setName] = useState('')
@@ -215,29 +204,26 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
         setTimeout(() => setCopiedId(null), 2000)
     }
 
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
 
     return (
         <PageEntrance className="space-y-5">
-            <ClientFeatureGate
-                isOpen={gateData.isOpen}
-                onClose={() => setGateData({ ...gateData, isOpen: false })}
-                flag={gateData.flag}
-            />
             {/* Header */}
             <PanelPageHeader
                 title={t('panel.messages.title')}
                 subtitle={t('panel.messages.subtitle')}
                 icon={<MessageCircle className="w-5 h-5" />}
                 action={
-                    <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={isPending}
-                        onClick={() => handleFeatureClick(canAdd, 'max_templates_limit', () => { resetForm(); setShowForm(true) })}
-                    >
-                        <Plus className="w-4 h-4" />
-                        {t('panel.messages.addTemplate')}
-                    </button>
+                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_templates_limit" variant="badge">
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                            disabled={isPending || !canAdd}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {t('panel.messages.addTemplate')}
+                        </button>
+                    </SotaFeatureGateWrapper>
                 }
             />
 
@@ -276,7 +262,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                         initial={{ opacity: 0, y: 12, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
-                        className="glass rounded-2xl p-6 space-y-5"
+                        className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 space-y-5"
                     >
                         <h2 className="font-bold text-lg text-tx">
                             {editingId ? t('common.edit') : t('panel.messages.addTemplate')}
@@ -348,7 +334,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             aria-label={`Insert {{${v.key}}}`}
-                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-lg glass text-tx-muted text-xs font-medium transition-all hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[32px] rounded-lg bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-muted text-xs font-medium transition-all hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                                             title={`Insertar {{${v.key}}}`}
                                         >
                                             <span>{v.emoji}</span>
@@ -457,7 +443,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
+                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -475,7 +461,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                         <StaggerItem key={tmpl.id}>
                             <motion.div
                                 whileHover={{ y: -2 }}
-                                className="glass rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
+                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
                             >
                                 {/* Template header */}
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-sf-2">
@@ -551,7 +537,7 @@ export default function MessagesClient({ templates, canAdd, templateCount, maxTe
                                         <div className="flex flex-wrap gap-1.5">
                                             <span className="text-xs text-tx-muted mr-1">Variables:</span>
                                             {tmpl.variables.map(v => (
-                                                <span key={v} className="text-xs glass text-tx-sec px-2 py-0.5 rounded-full font-mono">
+                                                <span key={v} className="text-xs bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-sec px-2 py-0.5 rounded-full font-mono">
                                                     {`{{${v}}}`}
                                                 </span>
                                             ))}

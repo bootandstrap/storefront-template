@@ -93,7 +93,7 @@ export default function PanelTopbar({
     const initial = (ownerName || businessName || 'U')[0].toUpperCase()
 
     return (
-        <header data-panel-topbar className="sticky top-0 z-40 bg-glass-heavy backdrop-blur-md border-b border-sf-2">
+        <header data-panel-topbar className="sticky top-0 z-40 glass-premium border-b border-sf-2 dark:border-sf-3/30">
             <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-4">
                 {/* Left: hamburger (mobile) + greeting + breadcrumb */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -110,12 +110,12 @@ export default function PanelTopbar({
                         {/* Greeting (desktop) */}
                         <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-tx">
                             <span className="truncate">
-                                {greeting}, <span className="text-brand">{ownerName || businessName}</span>
+                                {greeting}, <span className="text-brand dark:text-brand-300">{ownerName || businessName}</span>
                             </span>
                             {setupNudge && (
                                 <a
                                     href={setupNudge.href}
-                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500/90 hover:text-amber-400 transition-colors ml-1"
+                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500/90 hover:text-amber-400 transition-all ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 animate-pulse-subtle"
                                 >
                                     <span>⚡</span>
                                     <span>{setupNudge.label}</span>
@@ -148,7 +148,7 @@ export default function PanelTopbar({
                         <button
                             type="button"
                             onClick={() => setAvatarOpen(!avatarOpen)}
-                            className="w-8 h-8 rounded-full bg-brand-muted text-brand font-bold text-sm flex items-center justify-center hover:bg-brand-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                            className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-brand-light text-white font-bold text-sm flex items-center justify-center avatar-online-ring transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                             aria-label="User menu"
                             aria-expanded={avatarOpen}
                         >
@@ -156,11 +156,11 @@ export default function PanelTopbar({
                         </button>
 
                         {avatarOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-sf-1 border border-sf-3 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                            <div className="absolute right-0 top-full mt-2 w-60 glass-premium rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
                                 {/* User info */}
                                 <div className="px-4 py-3 border-b border-sf-2">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-brand-muted text-brand font-bold text-xs flex items-center justify-center">
+                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-brand-light text-white font-bold text-xs flex items-center justify-center shadow-sm">
                                             {initial}
                                         </div>
                                         <div className="min-w-0">

@@ -1,7 +1,9 @@
-import StatCard from '@/components/panel/StatCard'
-import { AnimatedStatValue, AnimatedStringValue } from '@/components/panel/AnimatedStatValue'
 import DashboardChart from './DashboardChart'
 import SectionHeader from '@/components/panel/SectionHeader'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
+import { SotaMetric } from '@/components/panel/sota/SotaMetric'
+import { AnimatedStatValue, AnimatedStringValue } from '@/components/panel/AnimatedStatValue'
 import {
     Package,
     ShoppingCart,
@@ -47,77 +49,104 @@ export default function DashboardMetricsPanel({
     labels,
 }: DashboardMetricsPanelProps) {
     return (
-        <div className="space-y-10">
+        <div className="space-y-8">
             {/* ── Key Metrics ── */}
             <div>
                 <SectionHeader
                     title={labels.statsTitle}
-                    icon={<BarChart3 className="w-4.5 h-4.5" />}
+                    icon={<BarChart3 className="w-5 h-5" />}
+                    accent
                 />
-                {/* Hero row: Revenue + Orders */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <StatCard
-                        label={labels.revenue}
-                        value={<AnimatedStringValue value={formattedRevenue} />}
-                        icon={<DollarSign className="w-6 h-6" />}
-                        href={`/${lang}/panel/pedidos`}
-                        variant="hero"
-                        stagger={0}
-                    />
-                    <StatCard
-                        label={labels.ordersMonth}
-                        value={<AnimatedStatValue value={ordersThisMonth} locale={lang} />}
-                        icon={<ShoppingCart className="w-6 h-6" />}
-                        sparklineData={sparklineOrders}
-                        href={`/${lang}/panel/pedidos`}
-                        variant="hero"
-                        stagger={1}
-                    />
-                </div>
-                {/* Secondary row: Products, Customers, Categories */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard
-                        label={labels.products}
-                        value={<AnimatedStatValue value={productCount} locale={lang} />}
-                        icon={<Package className="w-5 h-5" />}
-                        href={`/${lang}/panel/catalogo`}
-                        stagger={2}
-                    />
-                    <StatCard
-                        label={labels.customers}
-                        value={<AnimatedStatValue value={customerCount} locale={lang} />}
-                        icon={<Users className="w-5 h-5" />}
-                        href={`/${lang}/panel/clientes`}
-                        stagger={3}
-                    />
-                    <StatCard
-                        label={labels.categories}
-                        value={<AnimatedStatValue value={categoryCount} locale={lang} />}
-                        icon={<FolderTree className="w-5 h-5" />}
-                        href={`/${lang}/panel/categorias`}
-                        stagger={4}
-                    />
-                </div>
+                
+                <SotaBentoGrid className="mt-6">
+                    {/* Hero row: Revenue + Orders */}
+                    <SotaBentoItem colSpan={{ base: 12, lg: 6 }}>
+                        <SotaMetric
+                            label={labels.revenue}
+                            value={formattedRevenue}
+                            icon={<DollarSign className="w-6 h-6" />}
+                            glowColor="emerald"
+                            accentColor="#16a34a"
+                            href={`/${lang}/panel/pedidos`}
+                        />
+                    </SotaBentoItem>
+                    
+                    <SotaBentoItem colSpan={{ base: 12, lg: 6 }}>
+                        <SotaMetric
+                            label={labels.ordersMonth}
+                            value={ordersThisMonth}
+                            locale={lang}
+                            icon={<ShoppingCart className="w-6 h-6" />}
+                            sparklineData={sparklineOrders}
+                            glowColor="blue"
+                            accentColor="#8BC34A"
+                            href={`/${lang}/panel/pedidos`}
+                        />
+                    </SotaBentoItem>
+
+                    {/* Secondary row: Products, Customers, Categories */}
+                    <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                        <SotaMetric
+                            label={labels.products}
+                            value={productCount}
+                            locale={lang}
+                            icon={<Package className="w-5 h-5" />}
+                            glowColor="purple"
+                            accentColor="#6366f1"
+                            href={`/${lang}/panel/catalogo`}
+                        />
+                    </SotaBentoItem>
+                    
+                    <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                        <SotaMetric
+                            label={labels.customers}
+                            value={customerCount}
+                            locale={lang}
+                            icon={<Users className="w-5 h-5" />}
+                            glowColor="brand"
+                            accentColor="#0ea5e9"
+                            href={`/${lang}/panel/clientes`}
+                        />
+                    </SotaBentoItem>
+                    
+                    <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                        <SotaMetric
+                            label={labels.categories}
+                            value={categoryCount}
+                            locale={lang}
+                            icon={<FolderTree className="w-5 h-5" />}
+                            glowColor="gold"
+                            accentColor="#f59e0b"
+                            href={`/${lang}/panel/categorias`}
+                        />
+                    </SotaBentoItem>
+                </SotaBentoGrid>
             </div>
 
             {/* ── Revenue & Orders Chart ── */}
-            <div>
-                <SectionHeader
-                    title={labels.chartTitle}
-                    icon={<BarChart3 className="w-4.5 h-4.5" />}
-                />
-                <DashboardChart
-                    revenueByDay={revenueByDay}
-                    ordersByDay={ordersByDay}
-                    currency={currency}
-                    lang={lang}
-                    labels={{
-                        revenue: labels.revenue,
-                        orders: labels.ordersMonth,
-                        chartTitle: labels.chartTitle,
-                    }}
-                />
-            </div>
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <SotaGlassCard glowColor="brand" className="p-1 sm:p-5">
+                        <SectionHeader
+                            title={labels.chartTitle}
+                            icon={<BarChart3 className="w-5 h-5" />}
+                        />
+                        <div className="mt-4">
+                            <DashboardChart
+                                revenueByDay={revenueByDay}
+                                ordersByDay={ordersByDay}
+                                currency={currency}
+                                lang={lang}
+                                labels={{
+                                    revenue: labels.revenue,
+                                    orders: labels.ordersMonth,
+                                    chartTitle: labels.chartTitle,
+                                }}
+                            />
+                        </div>
+                    </SotaGlassCard>
+                </SotaBentoItem>
+            </SotaBentoGrid>
         </div>
     )
 }

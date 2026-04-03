@@ -15,12 +15,13 @@
 import { useState, useTransition } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { useToast } from '@/components/ui/Toaster'
-import { Settings, Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck } from 'lucide-react'
+import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { StoreConfig } from '@/lib/config'
 import { saveStoreConfig } from './actions'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 interface StoreConfigClientProps {
     config: StoreConfig
@@ -67,7 +68,7 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     }
 
     const inputClass =
-        'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+        'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     const tabContent: Record<Tab, React.ReactNode> = {
@@ -242,16 +243,13 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     }
 
     return (
-        <PageEntrance className="space-y-5">
-            {/* Header */}
-            <PanelPageHeader
-                title={t('panel.config.title') || 'Configuración'}
-                subtitle={t('panel.config.subtitle') || 'Personaliza tu tienda'}
-                icon={<Settings className="w-5 h-5" />}
-            />
+        <PageEntrance className="space-y-8">
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-4">
 
             {/* Animated Tab bar */}
-            <div className="flex gap-1 glass rounded-xl overflow-x-auto p-1">
+            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-inner overflow-x-auto p-1">
                 {tabs.map((tab) => {
                     const Icon = tab.icon
                     return (
@@ -289,9 +287,10 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
-                    className="glass rounded-2xl p-6"
                 >
+                    <SotaGlassCard glowColor="none" className="p-6">
                     {tabContent[activeTab]}
+                    </SotaGlassCard>
                 </motion.div>
             </AnimatePresence>
 
@@ -323,6 +322,10 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                     )}
                 </AnimatePresence>
             </motion.div>
+
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
         </PageEntrance>
     )
 }

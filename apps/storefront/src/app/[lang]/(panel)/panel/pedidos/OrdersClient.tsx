@@ -20,11 +20,13 @@ import {
     CheckCircle, Truck, ShoppingBag, RotateCcw, X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem, ExpandableSection } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import PanelStatusBadge, { orderStatusVariant } from '@/components/panel/PanelStatusBadge'
 import PanelPagination from '@/components/panel/PanelPagination'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
+import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 import { fulfillOrder, cancelOrder, refundOrder } from './actions'
 import { toIntlLocale } from '@/lib/i18n/intl-locale'
 import type { AdminOrderFull } from '@/lib/medusa/admin'
@@ -79,6 +81,11 @@ interface Props {
     pageSize: number
     initialSearch: string
     initialStatus: StatusFilter
+    metrics: {
+        pendingCount: number
+        completedCount: number
+        formattedRevenue: string
+    }
     lang: string
     labels: OrderLabels
 }
@@ -124,6 +131,7 @@ export default function OrdersClient({
     pageSize,
     initialSearch,
     initialStatus,
+    metrics,
     lang,
     labels,
 }: Props) {
@@ -233,7 +241,7 @@ export default function OrdersClient({
     ]
 
     return (
-        <PageEntrance className="space-y-5">
+        <PageEntrance className="space-y-8">
 
             {/* Error banner */}
             <AnimatePresence>
@@ -252,9 +260,39 @@ export default function OrdersClient({
                 )}
             </AnimatePresence>
 
-            {/* Filter tabs + Search */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                <div className="flex gap-1 glass rounded-xl p-1">
+            <SotaBentoGrid>
+                {/* Stats / Metrics */}
+                <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                    <SotaMetric
+                        label={labels.total}
+                        value={metrics.formattedRevenue}
+                        icon={<CreditCard className="w-5 h-5" />}
+                        glowColor="gold"
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                    <SotaMetric
+                        label={labels.pending}
+                        value={metrics.pendingCount}
+                        icon={<Package className="w-5 h-5" />}
+                        glowColor="warning"
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
+                    <SotaMetric
+                        label={labels.completed}
+                        value={metrics.completedCount}
+                        icon={<CheckCircle className="w-5 h-5" />}
+                        glowColor="emerald"
+                    />
+                </SotaBentoItem>
+
+                {/* Orders List Context */}
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-4">
+                        {/* Filter tabs + Search */}
+                        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-inner p-1">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
@@ -292,7 +330,7 @@ export default function OrdersClient({
                         onKeyDown={(e) => { if (e.key === 'Enter') applySearch() }}
                         placeholder={labels.searchPlaceholder}
                         aria-label={labels.searchPlaceholder}
-                        className="pl-9 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all w-full sm:w-64"
+                        className="pl-9 pr-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all w-full sm:w-64"
                     />
                 </div>
             </div>
@@ -302,19 +340,20 @@ export default function OrdersClient({
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
-                    <div className="empty-state">
-                        <div className="empty-state-icon">
-                            <ShoppingBag className="w-8 h-8 text-tx-muted" />
+                    <SotaGlassCard glowColor="none" className="py-16">
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <ShoppingBag className="w-8 h-8 text-tx-muted" />
+                            </div>
+                            <h3 className="text-lg font-bold font-display text-tx mb-2">
+                                {labels.noOrders}
+                            </h3>
+                            <p className="text-sm text-tx-sec leading-relaxed mb-1">
+                                {labels.noOrdersDesc || 'When customers place orders, they will appear here.'}
+                            </p>
                         </div>
-                        <h3 className="text-lg font-bold font-display text-tx mb-2">
-                            {labels.noOrders}
-                        </h3>
-                        <p className="text-sm text-tx-sec leading-relaxed mb-1">
-                            {labels.noOrdersDesc || 'When customers place orders, they will appear here.'}
-                        </p>
-                    </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
                 <ListStagger className="space-y-3">
@@ -325,13 +364,13 @@ export default function OrdersClient({
 
                         return (
                             <StaggerItem key={order.id}>
-                                <div className="glass rounded-2xl overflow-hidden transition-shadow hover:shadow-lg">
+                                <SotaGlassCard glowColor="none" overflowHidden className="p-0 transition-shadow hover:shadow-lg">
                                     {/* Order row (clickable) */}
                                     <button
                                         onClick={() => setExpandedId(isExpanded ? null : order.id)}
                                         aria-expanded={isExpanded}
                                         aria-label={`${labels.viewDetail} #${order.display_id}`}
-                                        className="w-full flex items-center justify-between px-5 py-4 min-h-[56px] hover:bg-glass transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
+                                        className="w-full flex items-center justify-between px-5 py-4 min-h-[56px] hover:bg-sf-1 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                     >
                                         <div className="flex items-center gap-4 flex-wrap">
                                             <span className="font-bold text-brand text-sm">
@@ -371,7 +410,7 @@ export default function OrdersClient({
 
                                     {/* Expanded detail — animated */}
                                     <ExpandableSection isOpen={isExpanded}>
-                                        <div className="border-t border-sf-2 px-5 py-5 space-y-5 bg-glass">
+                                        <div className="border-t border-sf-2 px-5 py-5 space-y-5 bg-sf-0/30">
                                             {/* Items */}
                                             <div>
                                                 <h4 className="text-sm font-semibold text-tx-sec mb-3 flex items-center gap-2">
@@ -441,7 +480,7 @@ export default function OrdersClient({
                                             {/* Customer + Shipping + Payment */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {/* Customer */}
-                                                <div className="glass rounded-xl p-4">
+                                                <div className="bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-sm p-4">
                                                     <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2">
                                                         {labels.customer}
                                                     </h5>
@@ -453,7 +492,7 @@ export default function OrdersClient({
 
                                                 {/* Shipping address */}
                                                 {order.shipping_address && (
-                                                    <div className="glass rounded-xl p-4">
+                                                    <div className="bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-sm p-4">
                                                         <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2 flex items-center gap-1">
                                                             <MapPin className="w-3 h-3" />
                                                             {labels.shippingAddress}
@@ -481,7 +520,7 @@ export default function OrdersClient({
 
                                                 {/* Payment */}
                                                 {order.payments?.length > 0 && (
-                                                    <div className="glass rounded-xl p-4">
+                                                    <div className="bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-sm p-4">
                                                         <h5 className="text-xs font-semibold text-tx-muted uppercase tracking-wide mb-2 flex items-center gap-1">
                                                             <CreditCard className="w-3 h-3" />
                                                             {labels.payment}
@@ -537,7 +576,7 @@ export default function OrdersClient({
                                                                     initial={{ opacity: 0, width: 0 }}
                                                                     animate={{ opacity: 1, width: 'auto' }}
                                                                     exit={{ opacity: 0, width: 0 }}
-                                                                    className="flex items-center gap-2 glass rounded-xl px-4 py-2"
+                                                                    className="flex items-center gap-2 bg-sf-1 border border-sf-3 backdrop-blur-md shadow-sm rounded-xl px-4 py-2"
                                                                 >
                                                                     <label className="text-sm text-tx-sec whitespace-nowrap">
                                                                         {labels.refundAmount} ({order.currency_code.toUpperCase()}):
@@ -596,12 +635,15 @@ export default function OrdersClient({
                                             )}
                                         </div>
                                     </ExpandableSection>
-                                </div>
+                                </SotaGlassCard>
                             </StaggerItem>
                         )
                     })}
                 </ListStagger>
             )}
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             {/* Pagination */}
             {totalCount > pageSize && (

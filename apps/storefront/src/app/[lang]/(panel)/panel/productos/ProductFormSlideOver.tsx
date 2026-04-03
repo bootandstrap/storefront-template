@@ -344,7 +344,7 @@ export default function ProductFormSlideOver({
 
     const inputClass = 'w-full px-4 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all'
     const labelClass = 'block text-sm font-medium text-tx-sec mb-1.5'
-    const sectionClass = 'rounded-2xl border border-sf-3 bg-glass p-5 space-y-4'
+    const sectionClass = 'rounded-2xl border border-sf-3 bg-sf-0/30 p-5 space-y-4'
 
     return (
         <>
@@ -355,10 +355,10 @@ export default function ProductFormSlideOver({
             />
 
             {/* Slide-over panel */}
-            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-glass-heavy backdrop-blur-2xl shadow-2xl flex flex-col animate-slide-in-right">
+            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-sf-0/95 backdrop-blur-2xl shadow-2xl flex flex-col animate-slide-in-right">
 
                 {/* ── Sticky Header ── */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-sf-3 bg-glass-heavy backdrop-blur-xl sticky top-0 z-10">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-sf-3 bg-sf-0/90 backdrop-blur-xl sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-brand-subtle flex items-center justify-center">
                             <PackagePlus className="w-4 h-4 text-brand" />
@@ -395,7 +395,7 @@ export default function ProductFormSlideOver({
                                 relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all
                                 ${dragOver
                                     ? 'border-brand bg-brand-subtle scale-[1.01]'
-                                    : 'border-sf-3 hover:border-brand hover:bg-glass'
+                                    : 'border-sf-3 hover:border-brand hover:bg-sf-1'
                                 }
                                 ${images.length >= maxImagesPerProduct ? 'opacity-50 pointer-events-none' : ''}
                             `}
@@ -722,7 +722,7 @@ export default function ProductFormSlideOver({
                 </div>
 
                 {/* ── Sticky Footer ── */}
-                <div className="border-t border-sf-3 px-6 py-4 bg-glass-heavy backdrop-blur-xl flex items-center gap-3">
+                <div className="border-t border-sf-3 px-6 py-4 bg-sf-0/90 backdrop-blur-xl flex items-center gap-3">
                     {isEditing && (
                         <button
                             onClick={handleDelete}

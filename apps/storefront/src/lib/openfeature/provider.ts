@@ -22,12 +22,13 @@
  * @see https://openfeature.dev/docs/reference/concepts/provider
  */
 
-import type {
+import {
   Provider,
   JsonValue,
   ResolutionDetails,
   EvaluationContext,
   ProviderMetadata,
+  ErrorCode,
 } from '@openfeature/server-sdk'
 
 import { getConfig } from '@/lib/config'
@@ -68,7 +69,7 @@ export class BootandStrapProvider implements Provider {
       return {
         value: defaultValue,
         reason: 'ERROR',
-        errorCode: 'GENERAL',
+        errorCode: ErrorCode.GENERAL,
         errorMessage: 'Failed to fetch governance config',
       }
     }
@@ -102,7 +103,7 @@ export class BootandStrapProvider implements Provider {
       return {
         value: defaultValue,
         reason: 'ERROR',
-        errorCode: 'GENERAL',
+        errorCode: ErrorCode.GENERAL,
         errorMessage: 'Failed to fetch governance config',
       }
     }
@@ -136,7 +137,7 @@ export class BootandStrapProvider implements Provider {
       return {
         value: defaultValue,
         reason: 'ERROR',
-        errorCode: 'GENERAL',
+        errorCode: ErrorCode.GENERAL,
       }
     }
   }
@@ -175,7 +176,7 @@ export class BootandStrapProvider implements Provider {
       return {
         value: defaultValue,
         reason: 'ERROR',
-        errorCode: 'GENERAL',
+        errorCode: ErrorCode.GENERAL,
       }
     }
   }

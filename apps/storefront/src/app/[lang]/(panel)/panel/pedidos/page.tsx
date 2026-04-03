@@ -81,6 +81,11 @@ export default async function OrdersPage({
                 pageSize={query.limit}
                 initialSearch={query.q ?? ''}
                 initialStatus={(query.status as 'all' | 'pending' | 'completed' | 'canceled' | undefined) ?? 'all'}
+                metrics={{
+                    pendingCount,
+                    completedCount,
+                    formattedRevenue
+                }}
                 lang={lang}
                 labels={{
                     title: t('panel.orders.title'),

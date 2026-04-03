@@ -20,6 +20,8 @@ interface StatCardProps {
     /** Stagger animation delay index (0-based) */
     stagger?: number
     className?: string
+    /** Accent color for icon background (default: brand green) */
+    accentColor?: string
 }
 
 export default function StatCard({
@@ -32,6 +34,7 @@ export default function StatCard({
     variant = 'default',
     stagger = 0,
     className = '',
+    accentColor,
 }: StatCardProps) {
     const TrendIcon = trend
         ? trend.value > 0
@@ -53,13 +56,13 @@ export default function StatCard({
     const isCompact = variant === 'compact'
 
     const cardClasses = [
-        'rounded-2xl transition-all duration-300',
+        'stat-card-premium rounded-2xl',
         isHero
-            ? 'glass-strong p-6 bg-gradient-to-br from-brand-subtle via-sf-0 to-brand-subtle border border-brand-soft shadow-lg shadow-brand-soft'
+            ? 'bg-sf-0/50 backdrop-blur-md shadow-sm border border-brand-300 dark:border-brand-800 p-6'
             : isCompact
-                ? 'glass p-4'
-                : 'glass p-5',
-        href ? 'hover:shadow-lg hover:-translate-y-0.5 cursor-pointer' : '',
+                ? 'bg-sf-0/50 backdrop-blur-md shadow-sm border border-sf-3/30 p-4'
+                : 'bg-sf-0/50 backdrop-blur-md shadow-sm border border-sf-3/30 p-5',
+        href ? 'cursor-pointer hover:bg-sf-1/50 transition-colors' : '',
         className,
     ].filter(Boolean).join(' ')
 
@@ -69,34 +72,58 @@ export default function StatCard({
 
     const content = (
         <div className={cardClasses} style={staggerStyle}>
-            <div className="flex items-start justify-between gap-3">
+            {/* Hero gradient accent line at top */}
+            {isHero && (
+                <div
+                    className="absolute top-0 left-4 right-4 h-[2px] rounded-full opacity-60"
+                    style={{
+                        background: accentColor
+                            ? `linear-gradient(90deg, ${accentColor}, transparent)`
+                            : 'linear-gradient(90deg, #8BC34A, #2D5016, transparent)',
+                    }}
+                />
+            )}
+
+            <div className="relative z-10 flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                    <p className={`font-medium truncate ${isHero ? 'text-sm text-brand' : 'text-sm text-tx-muted'}`}>
+                    <p className={`font-medium truncate ${isHero ? 'text-sm text-brand dark:text-brand-300' : 'text-sm text-tx-muted'}`}>
                         {label}
                     </p>
-                    <p className={`font-bold font-display text-tx mt-1 stat-value ${isHero ? 'text-3xl lg:text-4xl' : isCompact ? 'text-xl' : 'text-2xl'}`}>
+                    <p className={`font-bold font-display text-tx mt-1 tabular-nums tracking-tight ${isHero ? 'text-3xl lg:text-4xl' : isCompact ? 'text-xl' : 'text-2xl'}`}>
                         {value}
                     </p>
                     {trend && TrendIcon && (
-                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-xs font-semibold ${trendClass}`}>
-                            <TrendIcon className="w-3 h-3" />
+                        <div className={`inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full text-xs font-semibold ${trendClass} transition-transform duration-300`}>
+                            <TrendIcon className="w-3.5 h-3.5" />
                             <span>{Math.abs(trend.value)}%</span>
-                            <span className="text-[10px] font-medium opacity-75">{trend.label}</span>
+                            <span className="text-[10px] font-medium opacity-70 ml-0.5">{trend.label}</span>
                         </div>
                     )}
                 </div>
-                <div className={`flex-shrink-0 flex items-center justify-center ${
-                    isHero
-                        ? 'p-3 rounded-2xl bg-gradient-to-br from-brand-muted to-brand-subtle text-brand shadow-sm'
-                        : 'p-2.5 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle text-brand'
-                }`}>
-                    {icon}
+
+                {/* Icon ring with 3D float on hover */}
+                <div
+                    className={`stat-icon-ring flex-shrink-0 ${
+                        isHero
+                            ? 'p-3 rounded-2xl'
+                            : 'p-2.5 rounded-xl'
+                    }`}
+                    style={{
+                        background: accentColor
+                            ? `linear-gradient(135deg, ${accentColor}20, ${accentColor}08)`
+                            : undefined,
+                        color: accentColor || undefined,
+                    }}
+                >
+                    <div className={!accentColor ? 'bg-gradient-to-br from-brand-muted to-brand-subtle text-brand rounded-xl p-0.5' : ''}>
+                        {icon}
+                    </div>
                 </div>
             </div>
 
             {/* Sparkline — 7 bars for weekly data */}
             {sparklineData && sparklineData.length > 0 && (
-                <div className={`border-t border-sf-2 ${isHero ? 'mt-4 pt-4' : 'mt-3 pt-3'}`}>
+                <div className={`relative z-10 border-t border-sf-2 dark:border-sf-3/30 ${isHero ? 'mt-4 pt-4' : 'mt-3 pt-3'}`}>
                     <MiniChart data={sparklineData} height={isHero ? 36 : 28} label={`${label} trend`} />
                 </div>
             )}

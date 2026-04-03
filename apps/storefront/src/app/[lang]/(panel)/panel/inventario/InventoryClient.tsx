@@ -17,10 +17,11 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { Package, AlertTriangle, Search, Save, X, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import type { InventoryItem, LowStockItem, StockLocation } from '@/lib/medusa/admin-inventory'
 import { updateStock } from './actions'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 interface Labels {
     title: string
@@ -80,14 +81,10 @@ export default function InventoryClient({ items, lowStockItems, locations, label
     }
 
     return (
-        <PageEntrance className="space-y-5">
-            {/* Header */}
-            <PanelPageHeader
-                title={labels.title}
-                subtitle={labels.subtitle}
-                icon={<Package className="w-5 h-5" />}
-                badge={items.length}
-            />
+        <PageEntrance className="space-y-6">
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
+                    <div className="space-y-6">
 
             {/* Low Stock Alerts */}
             <AnimatePresence>
@@ -98,7 +95,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                     >
-                        <div className="glass rounded-2xl border-l-4 border-l-amber-500 p-4">
+                        <SotaGlassCard glowColor="warning" className="border-l-4 border-l-amber-500 p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h2 className="font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
                                     <AlertTriangle className="w-5 h-5" />
@@ -132,7 +129,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                     </motion.div>
                                 ))}
                             </div>
-                        </div>
+                        </SotaGlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -145,7 +142,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                     placeholder={labels.searchPlaceholder}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:ring-2 focus:ring-soft focus:outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner text-sm focus:ring-2 focus:ring-soft focus:outline-none transition-all"
                 />
             </div>
 
@@ -153,26 +150,27 @@ export default function InventoryClient({ items, lowStockItems, locations, label
             {filtered.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
                 >
+                    <SotaGlassCard glowColor="none" className="p-8">
                     <div className="empty-state">
                         <div className="empty-state-icon">
                             <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
                         </div>
                         <p className="text-tx-muted text-lg">{labels.noItems}</p>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             ) : (
                 <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="glass rounded-2xl overflow-hidden"
                 >
+                    <SotaGlassCard glowColor="none" overflowHidden={true}>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-glass border-b border-sf-3">
+                                <tr className="bg-sf-0/50 backdrop-blur-md border-b border-sf-3">
                                     <th className="text-left px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.product}</th>
                                     <th className="text-left px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.sku}</th>
                                     <th className="text-right px-4 py-3 font-semibold text-tx-muted text-xs uppercase tracking-wide">{labels.stocked}</th>
@@ -195,7 +193,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                             className={`transition-colors ${
                                                 editingId === item.id
                                                     ? 'bg-brand-subtle'
-                                                    : 'hover:bg-glass'
+                                                    : 'hover:bg-sf-1/50'
                                             }`}
                                         >
                                             <td className="px-4 py-3">
@@ -247,7 +245,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                                                 min="0"
                                                                 value={editValue}
                                                                 onChange={e => setEditValue(parseInt(e.target.value) || 0)}
-                                                                className="w-20 px-2 py-1.5 min-h-[36px] rounded-lg glass text-right text-sm font-mono focus:ring-2 focus:ring-soft focus:outline-none"
+                                                                className="w-20 px-2 py-1.5 min-h-[36px] rounded-lg bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-inner text-right text-sm font-mono focus:ring-2 focus:ring-soft focus:outline-none"
                                                                 autoFocus
                                                             />
                                                             <button
@@ -288,8 +286,13 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                             </tbody>
                         </table>
                     </div>
+                    </SotaGlassCard>
                 </motion.div>
             )}
+            
+                    </div>
+                </SotaBentoItem>
+            </SotaBentoGrid>
         </PageEntrance>
     )
 }

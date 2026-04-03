@@ -33,8 +33,9 @@ import {
 } from 'lucide-react'
 import type { OwnerModuleInfo } from '@/lib/owner-modules'
 import ModuleCheckoutButton from '@/components/panel/ModuleCheckoutButton'
-import PanelStatGrid from '@/components/panel/PanelStatGrid'
-import StatCard from '@/components/panel/StatCard'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaMetric } from '@/components/panel/sota/SotaMetric'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { PageEntrance, CountUp } from '@/components/panel/PanelAnimations'
 import dynamic from 'next/dynamic'
 import type { SkillTreeModule } from '@/components/panel/SkillTree'
@@ -42,7 +43,7 @@ import type { SkillTreeModule } from '@/components/panel/SkillTree'
 // Lazy-load SkillTree to avoid SSR issues with React Flow
 const SkillTreeCanvas = dynamic(
     () => import('@/components/panel/SkillTree/SkillTreeCanvas').then(m => m.SkillTreeCanvas),
-    { ssr: false, loading: () => <div className="h-[70vh] flex items-center justify-center glass rounded-2xl"><div className="animate-pulse text-tx-muted text-sm">Cargando árbol de habilidades...</div></div> }
+    { ssr: false, loading: () => <div className="h-[70vh] flex items-center justify-center bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"><div className="animate-pulse text-tx-muted text-sm">Cargando árbol de habilidades...</div></div> }
 )
 
 interface ModulesMarketplaceClientProps {
@@ -144,8 +145,8 @@ export default function ModulesMarketplaceClient({
                         initial={{ opacity: 0, y: -12, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -12 }}
-                        className="relative overflow-hidden glass rounded-2xl bg-gradient-to-r from-brand-subtle via-sf-0 to-brand-subtle border border-brand-soft p-5"
                     >
+                        <SotaGlassCard glowColor="warning" className="relative overflow-hidden bg-gradient-to-r from-brand-subtle via-sf-0 to-brand-subtle border-brand-soft p-5">
                         <div className="flex items-center gap-4 relative z-10">
                             <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10">
                                 <Zap className="w-6 h-6 text-amber-500" />
@@ -161,6 +162,7 @@ export default function ModulesMarketplaceClient({
                         </div>
                         {/* Shimmer effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+                        </SotaGlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -172,8 +174,8 @@ export default function ModulesMarketplaceClient({
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="glass rounded-2xl p-4 border border-success/30 bg-brand-subtle"
                     >
+                        <SotaGlassCard glowColor="emerald" className="p-4 bg-brand-subtle">
                         <div className="flex items-center gap-3">
                             <PartyPopper className="w-5 h-5 text-green-400 shrink-0" />
                             <div>
@@ -192,35 +194,39 @@ export default function ModulesMarketplaceClient({
                                 </div>
                             </div>
                         </div>
+                        </SotaGlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* ── Summary Stats ── */}
-            <PanelStatGrid columns={3}>
-                <StatCard
-                    label={labels.activeModules || 'Módulos activos'}
-                    value={<><CountUp value={activeCount} /> <span className="text-sm font-normal text-tx-muted">/ {totalModules}</span></>}
-                    icon={<Blocks className="w-5 h-5" />}
-                    stagger={0}
-                />
-                <StatCard
-                    label={labels.monthlySpend || 'Gasto mensual'}
-                    value={monthlySpend > 0 ? <CountUp value={monthlySpend} suffix=" CHF" /> : '—'}
-                    icon={<Wallet className="w-5 h-5" />}
-                    trend={monthlySpend > 0 ? { value: 0, label: labels.monthly || '/mes' } : undefined}
-                    stagger={1}
-                />
-                <StatCard
-                    label={labels.availableModules || 'Disponibles'}
-                    value={<CountUp value={availableCount} />}
-                    icon={<TrendingUp className="w-5 h-5" />}
-                    stagger={2}
-                />
-            </PanelStatGrid>
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={4}>
+                    <SotaMetric
+                        label={labels.activeModules || 'Módulos activos'}
+                        value={`${activeCount} / ${totalModules}`}
+                        icon={<Blocks className="w-5 h-5" />}
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={4}>
+                    <SotaMetric
+                        label={labels.monthlySpend || 'Gasto mensual'}
+                        value={monthlySpend > 0 ? `${monthlySpend} CHF` : '—'}
+                        icon={<Wallet className="w-5 h-5" />}
+                        trend={monthlySpend > 0 ? { value: 0, label: labels.monthly || '/mes' } : undefined}
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={4}>
+                    <SotaMetric
+                        label={labels.availableModules || 'Disponibles'}
+                        value={availableCount.toString()}
+                        icon={<TrendingUp className="w-5 h-5" />}
+                    />
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             {/* ── Progress Bar ── */}
-            <div className="glass rounded-2xl p-4">
+            <SotaGlassCard glowColor="none" className="p-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-tx-muted font-medium">{labels.activeModules || 'Módulos activos'}</span>
                     <span className="font-semibold text-tx">{activeCount}/{totalModules}</span>
@@ -233,7 +239,7 @@ export default function ModulesMarketplaceClient({
                         className="h-full bg-gradient-to-r from-brand to-accent rounded-full"
                     />
                 </div>
-            </div>
+            </SotaGlassCard>
 
             {/* ── View Mode Toggle ── */}
             <div className="flex items-center justify-between">
@@ -282,7 +288,7 @@ export default function ModulesMarketplaceClient({
             <>
             {/* Category Tabs */}
             <LayoutGroup>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 glass rounded-2xl p-1.5">
+                <SotaGlassCard glowColor="none" className="flex gap-1.5 overflow-x-auto pb-1 p-1.5 backdrop-blur-md">
                     {CATEGORIES.map(cat => (
                         <button
                             key={cat}
@@ -311,7 +317,7 @@ export default function ModulesMarketplaceClient({
                             </span>
                         </button>
                     ))}
-                </div>
+                </SotaGlassCard>
             </LayoutGroup>
 
             {/* ── Module Grid ── */}
@@ -341,15 +347,19 @@ export default function ModulesMarketplaceClient({
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.3, delay: idx * 0.05 }}
                                 className={`
-                                    relative glass rounded-2xl transition-all duration-300
+                                    relative transition-all duration-300
                                     ${isRecent
-                                        ? 'border border-brand ring-2 ring-brand/20 shadow-md shadow-brand-soft'
+                                        ? 'ring-2 ring-brand/20 shadow-brand-soft'
                                         : isActive
-                                            ? 'border border-success/30 shadow-sm'
+                                            ? 'shadow-sm'
                                             : 'hover:shadow-lg hover:-translate-y-0.5'
                                     }
                                 `}
                             >
+                                <SotaGlassCard 
+                                    glowColor={isRecent ? 'warning' : isActive ? 'emerald' : 'none'}
+                                    className={isActive ? 'border-success/30' : ''}
+                                >
                                 {/* Recent glow decoration */}
                                 {isRecent && (
                                     <div className="absolute -top-px -right-px">
@@ -547,6 +557,7 @@ export default function ModulesMarketplaceClient({
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+                                </SotaGlassCard>
                             </motion.div>
                         )
                     })}
@@ -557,12 +568,13 @@ export default function ModulesMarketplaceClient({
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="glass rounded-2xl p-12 text-center"
                 >
+                    <SotaGlassCard glowColor="none" className="p-12 text-center">
                     <Blocks className="w-12 h-12 text-tx-muted mx-auto mb-3 opacity-30" />
                     <p className="text-tx-muted text-sm font-medium">
                         {labels.noModulesAvailable || 'No hay módulos en esta categoría'}
                     </p>
+                    </SotaGlassCard>
                 </motion.div>
             )}
             </> /* end list view */

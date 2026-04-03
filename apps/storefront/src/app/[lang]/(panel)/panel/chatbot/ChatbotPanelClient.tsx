@@ -15,9 +15,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { MessageSquare, Coins, Save, Loader2, Bot, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-import StatCard from '@/components/panel/StatCard'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { PageSkeleton } from '@/components/panel/PanelSkeleton'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaMetric } from '@/components/panel/sota/SotaMetric'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
 
 // ── Types ──────────────────────────────────────────────────
@@ -160,44 +162,50 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
 
 
             {/* Summary Stats — StatCard */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    label={labels.model}
-                    value={MODEL_DISPLAY[stats?.activeModel || ''] || stats?.activeModel || '—'}
-                    icon={<Bot className="w-4 h-4" />}
-                    stagger={0}
-                />
-                <StatCard
-                    label={labels.messages}
-                    value={(stats?.summary.messages ?? 0).toLocaleString()}
-                    icon={<MessageSquare className="w-4 h-4" />}
-                    stagger={1}
-                />
-                <StatCard
-                    label="Tokens"
-                    value={
-                        (stats?.summary.tokens ?? 0) > 1000
-                            ? `${((stats?.summary.tokens ?? 0) / 1000).toFixed(1)}k`
-                            : String(stats?.summary.tokens ?? 0)
-                    }
-                    icon={<TrendingUp className="w-4 h-4" />}
-                    stagger={2}
-                />
-                <StatCard
-                    label={labels.cost}
-                    value={`$${(stats?.summary.cost ?? 0).toFixed(4)}`}
-                    icon={<Coins className="w-4 h-4" />}
-                    stagger={3}
-                />
-            </div>
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={3}>
+                    <SotaMetric
+                        label={labels.model}
+                        value={MODEL_DISPLAY[stats?.activeModel || ''] || stats?.activeModel || '—'}
+                        icon={<Bot className="w-4 h-4" />}
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={3}>
+                    <SotaMetric
+                        label={labels.messages}
+                        value={(stats?.summary.messages ?? 0).toLocaleString()}
+                        icon={<MessageSquare className="w-4 h-4" />}
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={3}>
+                    <SotaMetric
+                        label="Tokens"
+                        value={
+                            (stats?.summary.tokens ?? 0) > 1000
+                                ? `${((stats?.summary.tokens ?? 0) / 1000).toFixed(1)}k`
+                                : String(stats?.summary.tokens ?? 0)
+                        }
+                        icon={<TrendingUp className="w-4 h-4" />}
+                    />
+                </SotaBentoItem>
+                <SotaBentoItem colSpan={3}>
+                    <SotaMetric
+                        label={labels.cost}
+                        value={`$${(stats?.summary.cost ?? 0).toFixed(4)}`}
+                        icon={<Coins className="w-4 h-4" />}
+                    />
+                </SotaBentoItem>
+            </SotaBentoGrid>
 
             {/* Usage Chart */}
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="glass rounded-2xl p-6"
             >
+                <SotaGlassCard glowColor="none" className="p-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h3 className="text-sm font-semibold text-tx">
@@ -286,15 +294,18 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                         {new Date().toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                     </span>
                 </div>
+                </SotaGlassCard>
             </motion.div>
+                </SotaBentoItem>
 
             {/* Settings */}
+                <SotaBentoItem colSpan={12}>
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="glass rounded-2xl p-6"
             >
+                <SotaGlassCard glowColor="none" className="p-6">
                 <h3 className="text-sm font-semibold text-tx mb-6">
                     {labels.settings}
                 </h3>
@@ -307,7 +318,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                             <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-3">
                                 {labels.aiModel}
                             </label>
-                            <div className="inline-flex glass p-1 rounded-xl">
+                            <SotaGlassCard glowColor="none" className="inline-flex p-1">
                                 {MODEL_OPTIONS.map(o => (
                                     <button
                                         key={o.value}
@@ -334,7 +345,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                                         </span>
                                     </button>
                                 ))}
-                            </div>
+                            </SotaGlassCard>
                         </div>
 
                         {/* Temperature toggle */}
@@ -342,7 +353,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                             <label className="block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-3">
                                 {labels.temperature}
                             </label>
-                            <div className="inline-flex glass p-1 rounded-xl">
+                            <SotaGlassCard glowColor="none" className="inline-flex p-1">
                                 {TEMPERATURE_OPTIONS.map(o => (
                                     <button
                                         key={o.value}
@@ -365,7 +376,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                                         <span className="relative z-10 text-[10px] opacity-60">{o.sub}</span>
                                     </button>
                                 ))}
-                            </div>
+                            </SotaGlassCard>
                         </div>
 
                         {/* Rate limits */}
@@ -379,9 +390,10 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                                     { key: 'registered_message_limit', label: labels.rateRegistered, default: '10' },
                                     { key: 'paying_message_limit', label: labels.ratePaying, default: '1000' },
                                 ].map(({ key, label, default: def }) => (
-                                    <div
+                                    <SotaGlassCard
+                                        glowColor="none"
                                         key={key}
-                                        className="glass rounded-xl p-3 focus-within:ring-2 focus-within:ring-soft transition-all"
+                                        className="p-3 focus-within:ring-2 focus-within:ring-soft transition-all ring-0"
                                     >
                                         <label className="block text-[10px] uppercase tracking-wider font-semibold text-tx-muted mb-1">
                                             {label}
@@ -406,7 +418,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                                                 }
                                             </button>
                                         </div>
-                                    </div>
+                                    </SotaGlassCard>
                                 ))}
                             </div>
                         </div>
@@ -423,6 +435,7 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                             </span>
                         </div>
                         <div className="relative">
+                            <SotaGlassCard glowColor="none" className="p-0">
                             <textarea
                                 value={settings[`welcome_message_${locale}`] || ''}
                                 onChange={e =>
@@ -433,8 +446,9 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                                 }
                                 placeholder={labels.welcomePlaceholder}
                                 rows={5}
-                                className="w-full px-4 py-3 min-h-[44px] rounded-xl glass text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none resize-none"
+                                className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-transparent text-tx text-sm focus:ring-2 focus:ring-soft transition-all outline-none resize-none"
                             />
+                            </SotaGlassCard>
                             <button
                                 onClick={() =>
                                     updateSetting(
@@ -454,16 +468,21 @@ export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: 
                         </div>
                     </div>
                 </div>
+                </SotaGlassCard>
             </motion.div>
+                </SotaBentoItem>
             {/* Module Config Section */}
             {chatbotConfig && (
+                <SotaBentoItem colSpan={12}>
                 <ModuleConfigSection
                     fields={configFields}
                     initialValues={chatbotConfig}
                     title="Chatbot Configuration"
                     collapsible
                 />
+                </SotaBentoItem>
             )}
+            </SotaBentoGrid>
         </PageEntrance>
     )
 }

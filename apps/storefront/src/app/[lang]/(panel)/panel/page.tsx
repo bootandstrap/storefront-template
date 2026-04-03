@@ -17,8 +17,9 @@ import {
     SmartTip, SectionHeader, ActivityFeed, PanelBadge,
     PanelTableLegacy as PanelTable, PanelThead, PanelTbody, PanelTr, PanelThCell as PanelTh, PanelTd,
     type ActivityEvent,
+    SotaBentoGrid, SotaBentoItem, SotaGlassCard, SotaPillAction, SotaMetric, SotaFeatureGateWrapper
 } from '@/components/panel'
-import DashboardMetricsPanel from './DashboardMetricsPanel'
+import DashboardChart from './DashboardChart'
 import {
     Plus,
     BarChart3,
@@ -30,6 +31,11 @@ import {
     Zap,
     Activity,
     Gauge,
+    DollarSign,
+    ShoppingCart,
+    Package,
+    Users,
+    FolderTree
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -347,266 +353,338 @@ export default async function PanelDashboard({
     }
 
     return (
-        <div className="space-y-10">
+        <SotaBentoGrid className="mb-20">
             {/* Medusa degraded banner */}
             {medusaDegraded && (
-                <div className="rounded-xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700">
-                    ⚠️ {t('panel.dashboard.medusaDegraded')}
-                </div>
-            )}
-
-            {/* Welcome Banner */}
-            <div className="glass-strong rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-subtle via-transparent to-brand-subtle pointer-events-none" />
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold font-display text-tx">
-                            {t('panel.dashboard.title')}
-                        </h1>
-                        <p className="text-tx-muted mt-1">
-                            {t('panel.dashboard.subtitle')}
-                        </p>
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <div className="rounded-2xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700 backdrop-blur-md">
+                        ⚠️ {t('panel.dashboard.medusaDegraded')}
                     </div>
-                    {storeConfig.onboarding_completed && (
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-glass-heavy border border-sf-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${
-                                readiness.score >= 80 ? 'bg-success' :
-                                readiness.score >= 40 ? 'bg-warning' : 'bg-error'
-                            }`} />
-                            <span className="text-sm font-medium text-tx-sec">
-                                {readiness.score}% {t('storeHealth.title')}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
+                </SotaBentoItem>
+            )}
 
             {/* Smart Tips — contextual suggestions */}
             {smartTips.length > 0 && (
-                <div className="space-y-2">
-                    {smartTips.map(tip => (
-                        <SmartTip
-                            key={tip.id}
-                            tipId={tip.id}
-                            emoji={tip.emoji}
-                            message={t(tip.messageKey)}
-                            actionLabel={t(tip.actionKey)}
-                            actionHref={tip.actionHref}
-                            lang={lang}
-                        />
-                    ))}
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <div className="space-y-2">
+                        {smartTips.map(tip => (
+                            <SmartTip
+                                key={tip.id}
+                                tipId={tip.id}
+                                emoji={tip.emoji}
+                                message={t(tip.messageKey)}
+                                actionLabel={t(tip.actionKey)}
+                                actionHref={tip.actionHref}
+                                lang={lang}
+                            />
+                        ))}
+                    </div>
+                </SotaBentoItem>
+            )}
+
+            {/* Welcome Hero Banner — Animated mesh gradient */}
+            <SotaBentoItem colSpan={{ base: 12 }}>
+                <div className="hero-welcome p-6 md:p-8 lg:p-10 rounded-[32px] w-full shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-white mb-2">
+                                {t('panel.dashboard.title')}
+                            </h1>
+                            <p className="text-white/80 mt-1text-sm md:text-base font-medium max-w-xl">
+                                {t('panel.dashboard.subtitle')}
+                            </p>
+                        </div>
+                        {storeConfig.onboarding_completed && (
+                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl transition-transform hover:scale-105 duration-300 cursor-default">
+                                <div className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] ${
+                                    readiness.score >= 80 ? 'bg-[#98FF98]' :
+                                    readiness.score >= 40 ? 'bg-[#FFD700]' : 'bg-[#FF6B6B]'
+                                }`} />
+                                <span className="text-sm font-bold text-white tracking-wide tabular-nums">
+                                    {readiness.score}% {t('storeHealth.title')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
+            </SotaBentoItem>
+
+            {/* Persistent setup progress — if not complete */}
+            {readiness.score < 100 && (
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <SetupProgress
+                        checks={readiness.checks}
+                        labels={{
+                            title: t('panel.setup.title'),
+                            subtitle: t('panel.setup.subtitle'),
+                            collapsed: t('panel.setup.collapsed'),
+                            complete: t('panel.setup.complete'),
+                            expand: t('panel.setup.expand'),
+                            collapse: t('panel.setup.collapse'),
+                            unlockWith: t('panel.setup.unlockWith'),
+                            categories: {
+                                setup: t('panel.setup.cat.setup'),
+                                content: t('panel.setup.cat.content'),
+                                sales: t('panel.setup.cat.sales'),
+                                growth: t('panel.setup.cat.growth'),
+                            },
+                        }}
+                        checkLabels={Object.fromEntries(
+                            readiness.checks.map(c => [c.id, t(c.labelKey)])
+                        )}
+                        moduleUpsells={{
+                            active_modules: {
+                                moduleName: t('panel.setup.modulesLabel'),
+                                href: `/${lang}/panel/modulos`,
+                            },
+                        }}
+                        lang={lang}
+                    />
+                </SotaBentoItem>
             )}
 
             {/* Store Health + Achievements row */}
             {storeConfig.onboarding_completed && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* Health Card — takes 1 column */}
-                    <StoreHealthCard
-                        readiness={readiness}
-                        labels={{
-                            title: t('storeHealth.title'),
-                            completed: t('storeHealth.completed'),
-                            expand: t('storeHealth.expand'),
-                            collapse: t('storeHealth.collapse'),
-                            levelLabels: {
-                                setup: t('storeHealth.level.setup'),
-                                growing: t('storeHealth.level.growing'),
-                                thriving: t('storeHealth.level.thriving'),
-                            },
-                            checkLabels: Object.fromEntries(
-                                readiness.checks.map(c => [c.id, t(c.labelKey)])
-                            ),
-                            nextActionLabel: readiness.nextAction ? t(readiness.nextAction.descKey) : undefined,
-                            replayTourLabel: t('panel.health.replayTour'),
-                            languageLabel: t('panel.health.language'),
-                        }}
-                        lang={lang}
-                    />
+                <>
+                    <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                        <StoreHealthCard
+                            readiness={readiness}
+                            labels={{
+                                title: t('storeHealth.title'),
+                                completed: t('storeHealth.completed'),
+                                expand: t('storeHealth.expand'),
+                                collapse: t('storeHealth.collapse'),
+                                levelLabels: {
+                                    setup: t('storeHealth.level.setup'),
+                                    growing: t('storeHealth.level.growing'),
+                                    thriving: t('storeHealth.level.thriving'),
+                                },
+                                checkLabels: Object.fromEntries(
+                                    readiness.checks.map(c => [c.id, t(c.labelKey)])
+                                ),
+                                nextActionLabel: readiness.nextAction ? t(readiness.nextAction.descKey) : undefined,
+                                replayTourLabel: t('panel.health.replayTour'),
+                                languageLabel: t('panel.health.language'),
+                            }}
+                            lang={lang}
+                        />
+                    </SotaBentoItem>
 
-                    {/* Achievements — takes 2 columns */}
-                    <div className="lg:col-span-2 glass rounded-2xl p-5">
-                        <h3 className="text-sm font-bold text-tx mb-3">
-                            🏆 {t('achievement.title')}
-                        </h3>
-                        <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
-                            {[...achievementsGrouped.setup, ...achievementsGrouped.sales, ...achievementsGrouped.growth].map(ach => (
-                                <div
-                                    key={ach.id}
-                                    title={t(ach.titleKey)}
-                                    className={`achievement-badge ${ach.unlocked ? 'unlocked' : 'locked'}`}
-                                >
-                                    <span className="text-xl">{ach.emoji}</span>
-                                    <span className="text-[9px] text-tx-muted leading-tight line-clamp-1">
-                                        {t(ach.titleKey)}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-xs text-tx-muted mt-3">
-                            {unlockedIds.length}/{ACHIEVEMENT_DEFS.length} {t('achievement.unlocked')}
-                        </p>
-                    </div>
-                </div>
+                    <SotaBentoItem colSpan={{ base: 12, lg: 8 }}>
+                        <SotaGlassCard className="h-full flex flex-col justify-center">
+                            <h3 className="text-sm font-bold text-tx mb-4 flex items-center gap-2">
+                                <span className="text-xl">🏆</span> {t('achievement.title')}
+                                <span className="ml-auto text-xs font-mono text-tx-muted px-2 py-1 bg-sf-0 rounded-lg border border-sf-3">
+                                    {unlockedIds.length}/{ACHIEVEMENT_DEFS.length} {t('achievement.unlocked')}
+                                </span>
+                            </h3>
+                            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-x-2 gap-y-4">
+                                {[...achievementsGrouped.setup, ...achievementsGrouped.sales, ...achievementsGrouped.growth].map(ach => (
+                                    <div
+                                        key={ach.id}
+                                        title={t(ach.titleKey)}
+                                        className={`achievement-badge transition-all hover:scale-110 ${ach.unlocked ? 'unlocked shadow-lg shadow-brand-500/20' : 'locked opacity-50 grayscale'}`}
+                                    >
+                                        <span className="text-2xl drop-shadow-md">{ach.emoji}</span>
+                                        <span className="text-[9px] font-medium text-tx-muted leading-tight line-clamp-1 mt-1 text-center w-full">
+                                            {t(ach.titleKey)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </SotaGlassCard>
+                    </SotaBentoItem>
+                </>
             )}
 
-            {/* Persistent setup progress — always visible until 100% complete */}
-            {readiness.score < 100 && (
-                <SetupProgress
-                    checks={readiness.checks}
-                    labels={{
-                        title: t('panel.setup.title'),
-                        subtitle: t('panel.setup.subtitle'),
-                        collapsed: t('panel.setup.collapsed'),
-                        complete: t('panel.setup.complete'),
-                        expand: t('panel.setup.expand'),
-                        collapse: t('panel.setup.collapse'),
-                        unlockWith: t('panel.setup.unlockWith'),
-                        categories: {
-                            setup: t('panel.setup.cat.setup'),
-                            content: t('panel.setup.cat.content'),
-                            sales: t('panel.setup.cat.sales'),
-                            growth: t('panel.setup.cat.growth'),
-                        },
-                    }}
-                    checkLabels={Object.fromEntries(
-                        readiness.checks.map(c => [c.id, t(c.labelKey)])
-                    )}
-                    moduleUpsells={{
-                        active_modules: {
-                            moduleName: t('panel.setup.modulesLabel'),
-                            href: `/${lang}/panel/modulos`,
-                        },
-                    }}
-                    lang={lang}
-                />
-            )}
-
-            {/* ── Key Metrics & Chart ── */}
-            <DashboardMetricsPanel
-                formattedRevenue={formattedRevenue}
-                ordersThisMonth={ordersThisMonth}
-                sparklineOrders={sparklineOrders}
-                productCount={productCount}
-                customerCount={customerCount}
-                categoryCount={categoryCount}
-                revenueByDay={revenueByDay}
-                ordersByDay={ordersByDay}
-                currency={currency}
-                lang={lang}
-                labels={{
-                    statsTitle: t('panel.stats.title') || 'Key Metrics',
-                    revenue: t('panel.stats.revenue') || 'Revenue',
-                    ordersMonth: t('panel.stats.ordersMonth') || 'Orders',
-                    products: t('panel.stats.products') || 'Products',
-                    customers: t('panel.stats.customers') || 'Customers',
-                    categories: t('panel.stats.categories') || 'Categories',
-                    chartTitle: t('panel.stats.chart') || 'Revenue Overview',
-                }}
-            />
-
-            {/* ── Quick Actions ── */}
-            <div>
+            {/* Quick Actions */}
+            <SotaBentoItem colSpan={{ base: 12 }}>
                 <SectionHeader
                     title={t('panel.quickActions.title') || 'Quick Actions'}
-                    icon={<Zap className="w-4.5 h-4.5" />}
+                    icon={<Zap className="w-5 h-5 text-brand" />}
                 />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {quickActions.map((action) => (
-                        <Link
-                            key={action.href}
-                            href={action.href}
-                            className="quick-action min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        >
-                            <div className="quick-action-icon">
-                                {action.icon}
-                            </div>
-                            <span className="text-sm font-medium text-center leading-tight">
-                                {action.label}
-                            </span>
-                        </Link>
+                <div className="flex flex-wrap gap-3 mt-4">
+                    {quickActions.map((action, i) => (
+                        <div key={action.href} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
+                            <SotaPillAction
+                                href={action.href}
+                                icon={action.icon}
+                                label={action.label}
+                                variant={i === 0 ? 'brand' : 'default'}
+                            />
+                        </div>
                     ))}
                 </div>
-            </div>
+            </SotaBentoItem>
 
-            {/* ── Activity Feed ── */}
-            <div>
-                <SectionHeader
-                    title={t('panel.activity.title')}
-                    icon={<Activity className="w-4.5 h-4.5" />}
-                />
-                <ActivityFeed
-                    events={activityEvents}
-                    labels={{
-                        title: t('panel.activity.title'),
-                        noActivity: t('panel.activity.noActivity'),
-                        noActivityDesc: t('panel.activity.noActivityDesc'),
-                    }}
-                    lang={lang}
-                />
-            </div>
 
-            {/* ── Usage Meters ── */}
-            <div>
-                <SectionHeader
-                    title={t('panel.usage.title')}
-                    icon={<Gauge className="w-4.5 h-4.5" />}
-                    description={t('panel.usage.planInfo', { plan: planLimits.plan_name })}
+            {/* KPI ROW 1 */}
+            <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
+                <SotaMetric
+                    label={t('panel.stats.revenue') || 'Revenue'}
+                    value={formattedRevenue}
+                    icon={<DollarSign className="w-6 h-6" />}
+                    href={`/${lang}/panel/pedidos`}
+                    accentColor="#16a34a"
                 />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {realMeters.map((meter) => (
-                        <UsageMeter
-                            key={meter.label}
-                            label={meter.label}
-                            result={meter.result}
-                            variant="radial"
-                            upgradeHref={`/${lang}/panel/modulos`}
-                            upgradeLabel={t('limits.exceeded.upgrade') || 'Upgrade →'}
+            </SotaBentoItem>
+            
+            <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
+                <SotaMetric
+                    label={t('panel.stats.ordersMonth') || 'Orders'}
+                    value={ordersThisMonth}
+                    icon={<ShoppingCart className="w-6 h-6" />}
+                    sparklineData={sparklineOrders}
+                    href={`/${lang}/panel/pedidos`}
+                    locale={lang}
+                    accentColor="#8BC34A"
+                />
+            </SotaBentoItem>
+
+            {/* KPI ROW 2: Products, Customers, Categories */}
+            <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                <SotaMetric
+                    label={t('panel.stats.products') || 'Products'}
+                    value={productCount}
+                    icon={<Package className="w-5 h-5" />}
+                    href={`/${lang}/panel/catalogo`}
+                    locale={lang}
+                    accentColor="#6366f1"
+                />
+            </SotaBentoItem>
+            
+            <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                <SotaMetric
+                    label={t('panel.stats.customers') || 'Customers'}
+                    value={customerCount}
+                    icon={<Users className="w-5 h-5" />}
+                    href={`/${lang}/panel/clientes`}
+                    locale={lang}
+                    accentColor="#0ea5e9"
+                />
+            </SotaBentoItem>
+            
+            <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                <SotaMetric
+                    label={t('panel.stats.categories') || 'Categories'}
+                    value={categoryCount}
+                    icon={<FolderTree className="w-5 h-5" />}
+                    href={`/${lang}/panel/categorias`}
+                    locale={lang}
+                    accentColor="#f59e0b"
+                />
+            </SotaBentoItem>
+
+            {/* Chart */}
+            <SotaBentoItem colSpan={{ base: 12 }}>
+                <SotaGlassCard glowColor="blue">
+                    <SectionHeader
+                        title={t('panel.stats.chart') || 'Revenue Overview'}
+                        icon={<BarChart3 className="w-5 h-5 text-blue-500" />}
+                    />
+                    <div className="mt-6">
+                        <DashboardChart
+                            revenueByDay={revenueByDay}
+                            ordersByDay={ordersByDay}
+                            currency={currency}
+                            lang={lang}
+                            labels={{
+                                revenue: t('panel.stats.revenue') || 'Revenue',
+                                orders: t('panel.stats.ordersMonth') || 'Orders',
+                                chartTitle: t('panel.stats.chart') || 'Revenue Overview',
+                            }}
                         />
-                    ))}
-                </div>
-                {extendedMeters.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                        {extendedMeters.map((meter) => (
+                    </div>
+                </SotaGlassCard>
+            </SotaBentoItem>
+
+            {/* Feed & Usage */}
+            <SotaBentoItem colSpan={{ base: 12, lg: 8 }}>
+                <SotaGlassCard className="h-full">
+                    <SectionHeader
+                        title={t('panel.activity.title')}
+                        icon={<Activity className="w-5 h-5 text-indigo-500" />}
+                    />
+                    <div className="mt-6">
+                        <ActivityFeed
+                            events={activityEvents}
+                            labels={{
+                                title: t('panel.activity.title'),
+                                noActivity: t('panel.activity.noActivity'),
+                                noActivityDesc: t('panel.activity.noActivityDesc'),
+                            }}
+                            lang={lang}
+                        />
+                    </div>
+                </SotaGlassCard>
+            </SotaBentoItem>
+            
+            <SotaBentoItem colSpan={{ base: 12, lg: 4 }}>
+                <SotaGlassCard className="h-full flex flex-col">
+                    <SectionHeader
+                        title={t('panel.usage.title')}
+                        icon={<Gauge className="w-5 h-5 text-rose-500" />}
+                        description={t('panel.usage.planInfo', { plan: planLimits.plan_name })}
+                    />
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                        {realMeters.map((meter) => (
                             <UsageMeter
                                 key={meter.label}
                                 label={meter.label}
                                 result={meter.result}
-                                variant="bar"
+                                variant="radial"
                                 upgradeHref={`/${lang}/panel/modulos`}
                                 upgradeLabel={t('limits.exceeded.upgrade') || 'Upgrade →'}
                             />
                         ))}
                     </div>
-                )}
-            </div>
+                    {extendedMeters.length > 0 && (
+                        <div className="grid grid-cols-1 gap-4 mt-6 pt-6 border-t border-sf-3/30">
+                            {extendedMeters.map((meter) => (
+                                <UsageMeter
+                                    key={meter.label}
+                                    label={meter.label}
+                                    result={meter.result}
+                                    variant="bar"
+                                    upgradeHref={`/${lang}/panel/modulos`}
+                                    upgradeLabel={t('limits.exceeded.upgrade') || 'Upgrade →'}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </SotaGlassCard>
+            </SotaBentoItem>
 
-            {/* ── Recent Orders ── */}
-            <div>
-                <SectionHeader
-                    title={t('panel.dashboard.recentOrders')}
-                    icon={<Inbox className="w-4.5 h-4.5" />}
-                    action={
-                        recentOrders.length > 0 ? (
-                            <Link
-                                href={`/${lang}/panel/pedidos`}
-                                className="text-sm text-brand hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med rounded-lg px-2 py-1"
-                            >
-                                {t('panel.dashboard.viewAll') || 'View all'} →
-                            </Link>
-                        ) : undefined
-                    }
-                />
-                {recentOrders.length === 0 ? (
-                    <EmptyState
-                        icon={<Inbox className="w-8 h-8" />}
-                        title={t('panel.dashboard.noOrders') || 'No orders yet'}
-                        description={t('panel.dashboard.noOrdersDesc') || 'When customers place orders, they will appear here. Share your store to start receiving orders!'}
-                        actionLabel={t('panel.dashboard.shareStore') || 'Share your store'}
-                        actionHref={`/${lang}/panel/tienda`}
-                    />
-                ) : (
-                    <div className="glass rounded-2xl overflow-hidden">
+            {/* Recent Orders Bottom Table */}
+            <SotaBentoItem colSpan={{ base: 12 }}>
+                <SotaGlassCard className="p-0 overflow-hidden">
+                    <div className="p-6 border-b border-sf-3/30">
+                        <SectionHeader
+                            title={t('panel.dashboard.recentOrders')}
+                            icon={<Inbox className="w-5 h-5 text-emerald-500" />}
+                            action={
+                                recentOrders.length > 0 ? (
+                                    <Link
+                                        href={`/${lang}/panel/pedidos`}
+                                        className="text-sm text-brand hover:text-brand-600 font-semibold transition-colors flex items-center gap-1 bg-brand-50 px-3 py-1.5 rounded-full"
+                                    >
+                                        {t('panel.dashboard.viewAll') || 'View all'} →
+                                    </Link>
+                                ) : undefined
+                            }
+                        />
+                    </div>
+                    {recentOrders.length === 0 ? (
+                        <div className="p-8">
+                            <EmptyState
+                                icon={<Inbox className="w-8 h-8 opacity-50" />}
+                                title={t('panel.dashboard.noOrders') || 'No orders yet'}
+                                description={t('panel.dashboard.noOrdersDesc') || 'When customers place orders, they will appear here. Share your store to start receiving orders!'}
+                                actionLabel={t('panel.dashboard.shareStore') || 'Share your store'}
+                                actionHref={`/${lang}/panel/tienda`}
+                            />
+                        </div>
+                    ) : (
                         <PanelTable ariaLabel="Recent orders">
                             <PanelThead>
                                 <PanelTr>
@@ -618,20 +696,20 @@ export default async function PanelDashboard({
                             </PanelThead>
                             <PanelTbody>
                                 {recentOrders.map((order) => (
-                                    <PanelTr key={order.id} className="cursor-pointer group">
+                                    <PanelTr key={order.id} className="cursor-pointer group hover:bg-sf-0/50 transition-colors">
                                         <PanelTd>
                                             <Link href={`/${lang}/panel/pedidos?search=${order.display_id}`} className="block">
-                                                <span className="font-medium text-tx">
+                                                <span className="font-semibold text-tx">
                                                     #{order.display_id}
                                                 </span>
                                                 {order.created_at && (
-                                                    <span className="text-xs text-tx-muted ml-2">
+                                                    <span className="text-xs text-tx-muted ml-2 font-mono">
                                                         {relativeTime(order.created_at)}
                                                     </span>
                                                 )}
                                             </Link>
                                         </PanelTd>
-                                        <PanelTd className="text-tx-sec">
+                                        <PanelTd className="text-tx-sec font-medium">
                                             {order.customer
                                                 ? `${order.customer.first_name ?? ''} ${order.customer.last_name ?? ''}`.trim() || order.customer.email
                                                 : '—'}
@@ -645,7 +723,7 @@ export default async function PanelDashboard({
                                                 {t(`order.${order.status}`) || order.status}
                                             </PanelBadge>
                                         </PanelTd>
-                                        <PanelTd align="right" className="font-medium text-tx">
+                                        <PanelTd align="right" className="font-bold text-tx text-lg tracking-tight">
                                             {new Intl.NumberFormat(lang, {
                                                 style: 'currency',
                                                 currency: order.currency_code ?? 'usd',
@@ -655,9 +733,9 @@ export default async function PanelDashboard({
                                 ))}
                             </PanelTbody>
                         </PanelTable>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )}
+                </SotaGlassCard>
+            </SotaBentoItem>
+        </SotaBentoGrid>
     )
 }

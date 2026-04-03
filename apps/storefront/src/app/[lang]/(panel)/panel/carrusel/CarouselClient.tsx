@@ -22,8 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
-
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
 interface CarouselSlide {
     id: string
     title: string | null
@@ -107,8 +106,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
         })
     }
 
-    const [gateData, setGateData] = useState<{isOpen: boolean, flag: string}>({ isOpen: false, flag: '' })
-    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 min-h-[44px] rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     return (
@@ -118,20 +116,16 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                 subtitle={t('panel.carousel.subtitle')}
                 icon={<Images className="w-5 h-5" />}
                 action={
-                    <button
-                        className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                        disabled={isPending}
-                        onClick={() => {
-                            if (!canAdd) {
-                                setGateData({ isOpen: true, flag: 'carousel_slides_limit' })
-                            } else {
-                                resetForm(); setShowForm(true)
-                            }
-                        }}
-                    >
-                        <Plus className="w-4 h-4" />
-                        {t('panel.carousel.addSlide')}
-                    </button>
+                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="carousel_slides_limit" variant="badge">
+                        <button
+                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                            disabled={isPending || !canAdd}
+                            onClick={() => { resetForm(); setShowForm(true) }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {t('panel.carousel.addSlide')}
+                        </button>
+                    </SotaFeatureGateWrapper>
                 }
             />
 
@@ -151,11 +145,6 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                 )}
             </AnimatePresence>
 
-            <ClientFeatureGate 
-                isOpen={gateData.isOpen} 
-                onClose={() => setGateData({ ...gateData, isOpen: false })} 
-                flag={gateData.flag} 
-            />
 
             {/* ── Form ── */}
             <AnimatePresence>
@@ -164,7 +153,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                         initial={{ opacity: 0, y: 12, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
-                        className="glass rounded-2xl p-6 space-y-4"
+                        className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 space-y-4"
                     >
                         <h2 className="font-bold text-lg text-tx">
                             {editingId ? t('common.edit') : t('panel.carousel.addSlide')}
@@ -210,7 +199,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
             {slides.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="glass rounded-2xl"
+                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
                 >
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -225,7 +214,7 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                         <StaggerItem key={slide.id}>
                             <motion.div
                                 whileHover={{ y: -2 }}
-                                className="glass rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
+                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
                             >
                                 {(slide.image || slide.image_url) && (
                                     <div className="aspect-video bg-sf-1 relative">

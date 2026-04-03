@@ -136,7 +136,7 @@ export default function CapacidadClient({ featureFlags, limits, labels, capacity
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="glass rounded-2xl p-5"
+                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5"
             >
                 <div className="flex justify-between text-sm mb-3">
                     <span className="font-medium">{labels.requestsToday}</span>
@@ -164,7 +164,7 @@ export default function CapacidadClient({ featureFlags, limits, labels, capacity
                             <StaggerItem key={feature.key}>
                                 <motion.div
                                     whileHover={{ y: -2, scale: 1.01 }}
-                                    className="glass rounded-2xl p-5 transition-shadow hover:shadow-lg"
+                                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5 transition-shadow hover:shadow-lg"
                                 >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${

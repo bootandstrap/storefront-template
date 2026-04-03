@@ -31,17 +31,8 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface ModuleInfo {
-    key: string
-    name: string
-    icon: string
-    description: string
-    active: boolean
-    tier?: string
-    tierName?: string
-    tierFeatures?: string[]
-    category: string
-}
+import type { ModuleInfo } from './types'
+export type { ModuleInfo }
 
 export interface OnboardingWizardProps {
     storeName: string

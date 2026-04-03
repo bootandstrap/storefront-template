@@ -1165,6 +1165,10 @@
   "panel.i18n.tabLanguages": "Idiomas",
   "panel.i18n.tabCurrencies": "Monedas",
   "panel.i18n.tabTranslations": "Traducciones",
+  "panel.i18n.activeCurrencies": "Monedas activas",
+  "panel.i18n.currencyConfig": "Configuración de monedas",
+  "panel.i18n.languageSettings": "Idiomas y Divisas",
+  "panel.i18n.usageOf": "en uso de",
   "panel.automations.title": "Automatizaciones",
   "panel.automations.subtitle": "Automatiza procesos y flujos de trabajo de tu tienda",
   "panel.automations.activeFlows": "Flujos activos",
@@ -1843,5 +1847,13 @@
 
   "cookies.manage": "Gestionar cookies",
 
-  "a11y.skipToContent": "Saltar al contenido"
+  "a11y.skipToContent": "Saltar al contenido",
+
+  "panel.i18n.panelLanguage": "Idioma del panel",
+  "panel.i18n.panelLangDescription": "Idioma en el que ves tu panel de propietario",
+  "panel.i18n.saveSuccess": "Idiomas guardados correctamente",
+  "panel.i18n.saveError": "Error al guardar, inténtalo de nuevo",
+  "panel.i18n.limitReached": "Límite de idiomas alcanzado — actualiza tu plan",
+  "panel.i18n.upgradePrompt": "Ver planes",
+  "panel.i18n.cannotDeactivateLast": "Debes mantener al menos un idioma activo"
 }

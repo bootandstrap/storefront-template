@@ -35,8 +35,7 @@ import {
     type LoyaltyConfig,
     type LoyaltyCustomer,
 } from '@/lib/pos/loyalty-engine'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
-
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
 // ── Type interfaces ─────────────────────────────────────────────────────────
 
 export interface UtilitiesLabels {
@@ -684,8 +683,6 @@ export default function UtilitiesClient({
     lang,
 }: UtilitiesClientProps) {
     const [activeTab, setActiveTab] = useState<TabKey>('wifi')
-    const [gateFlag, setGateFlag] = useState<string | null>(null)
-
     const isLoyaltyLocked = !featureFlags.enable_self_service_returns
     const isLabelsLocked = !featureFlags.enable_product_badges
 
@@ -744,45 +741,44 @@ export default function UtilitiesClient({
             {/* Overview cards — Free vs Pro vs Enterprise */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {utilInfos.map(util => (
-                    <button
+                    <SotaFeatureGateWrapper
                         key={util.key}
-                        type="button"
-                        onClick={() => {
-                            if (util.isLocked) {
-                                if (util.key === 'loyalty') setGateFlag('enable_self_service_returns')
-                                if (util.key === 'labels') setGateFlag('enable_product_badges')
-                            } else {
-                                setActiveTab(util.key)
-                            }
-                        }}
-                        className={`
-                            group relative overflow-hidden text-left p-4 rounded-2xl border transition-all duration-300
-                            ${activeTab === util.key
-                                ? 'border-brand bg-brand-subtle shadow-md shadow-brand-soft ring-1 ring-soft'
-                                : 'border-sf-3 bg-sf-0 hover:border-sf-4 hover:shadow-sm'
-                            }
-                        `}
+                        isLocked={util.isLocked}
+                        flag={util.key === 'loyalty' ? 'enable_self_service_returns' : 'enable_product_badges'}
+                        variant="blur"
                     >
-                        <div className="flex items-start justify-between mb-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${util.gradient} text-white transition-transform duration-300 group-hover:scale-110`}>
-                                {util.icon}
-                            </div>
-                            <span className={`
-                                inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider
-                                ${util.tier === 'free'
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : util.tier === 'pro'
-                                        ? 'bg-amber-100 text-amber-700'
-                                        : 'bg-rose-100 text-rose-700'
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab(util.key)}
+                            className={`
+                                w-full h-full group relative overflow-hidden text-left p-4 rounded-2xl border transition-all duration-300
+                                ${activeTab === util.key
+                                    ? 'border-brand bg-brand-subtle shadow-md shadow-brand-soft ring-1 ring-soft'
+                                    : 'border-sf-3 bg-sf-0 hover:border-sf-4 hover:shadow-sm'
                                 }
-                            `}>
-                                {util.isLocked && <Lock className="w-3 h-3" />}
-                                {util.tierLabel}
-                            </span>
-                        </div>
-                        <p className="text-sm font-semibold text-tx">{util.label}</p>
-                        <p className="text-xs text-tx-muted mt-1 line-clamp-2">{util.description}</p>
-                    </button>
+                            `}
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${util.gradient} text-white transition-transform duration-300 group-hover:scale-110`}>
+                                    {util.icon}
+                                </div>
+                                <span className={`
+                                    inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider
+                                    ${util.tier === 'free'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : util.tier === 'pro'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-rose-100 text-rose-700'
+                                    }
+                                `}>
+                                    {util.isLocked && <Lock className="w-3 h-3" />}
+                                    {util.tierLabel}
+                                </span>
+                            </div>
+                            <p className="text-sm font-semibold text-tx">{util.label}</p>
+                            <p className="text-xs text-tx-muted mt-1 line-clamp-2">{util.description}</p>
+                        </button>
+                    </SotaFeatureGateWrapper>
                 ))}
             </div>
 
@@ -811,12 +807,6 @@ export default function UtilitiesClient({
                     )}
                 </motion.div>
             </AnimatePresence>
-
-            <ClientFeatureGate
-                isOpen={!!gateFlag}
-                onClose={() => setGateFlag(null)}
-                flag={gateFlag || ''}
-            />
         </div>
     )
 }

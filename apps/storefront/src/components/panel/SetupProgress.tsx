@@ -141,7 +141,7 @@ export default function SetupProgress({
             <button
                 type="button"
                 onClick={toggleCollapse}
-                className="w-full glass rounded-xl px-4 py-3 flex items-center gap-3 hover:border-brand transition-all group"
+                className="w-full bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl px-4 py-3 flex items-center gap-3 hover:border-brand/50 hover:shadow-lg transition-all group"
             >
                 {/* Mini progress ring */}
                 <div className="relative w-8 h-8 flex-shrink-0">
@@ -175,7 +175,7 @@ export default function SetupProgress({
     // ── Celebration overlay ──
     if (celebrating) {
         return (
-            <div className="glass rounded-2xl p-6 border border-green-500/30 shadow-lg shadow-green-500/10 animate-fade-in text-center">
+            <div className="bg-sf-0/50 backdrop-blur-md shadow-sm rounded-2xl p-6 border border-green-500/30 hover:shadow-lg animate-fade-in text-center">
                 <p className="text-4xl mb-2">🎉</p>
                 <p className="text-lg font-bold text-tx">{labels.complete}</p>
                 <div className="flex justify-center gap-1 mt-3">
@@ -196,7 +196,7 @@ export default function SetupProgress({
 
     // ── Expanded state: full checklist ──
     return (
-        <div className="glass rounded-2xl p-5 border border-brand-soft">
+        <div className="bg-sf-0/50 backdrop-blur-md shadow-sm rounded-2xl p-5 border border-brand-soft">
             {/* Header */}
             <div className="flex items-center gap-4 mb-4">
                 {/* Progress ring */}

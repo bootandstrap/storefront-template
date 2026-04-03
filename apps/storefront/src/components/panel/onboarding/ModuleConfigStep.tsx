@@ -25,7 +25,7 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronLeft, ChevronRight, ArrowRight, Settings2 } from 'lucide-react'
 import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
-import type { ModuleInfo } from './OnboardingWizard'
+import type { ModuleInfo } from './types'
 
 interface ModuleConfigStepProps {
     modules: ModuleInfo[]

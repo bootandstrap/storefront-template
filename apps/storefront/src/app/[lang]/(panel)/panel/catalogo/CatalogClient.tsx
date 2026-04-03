@@ -35,8 +35,7 @@ import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelCo
 import { motion, AnimatePresence } from 'framer-motion'
 import { SlideOver } from '@/components/panel/PanelAnimations'
 import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
-import ClientFeatureGate from '@/components/ui/ClientFeatureGate'
-
+import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -166,16 +165,6 @@ export default function CatalogClient({
     const [catName, setCatName] = useState('')
     const [catDescription, setCatDescription] = useState('')
 
-    // ── Gate state ──
-    const [gateData, setGateData] = useState({ isOpen: false, flag: '' })
-
-    const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {
-        if (!canAccess) {
-            setGateData({ isOpen: true, flag })
-        } else {
-            action()
-        }
-    }
 
     // ── Confirm dialogs ──
     const productDeleteDialog = useConfirmDialog({
@@ -380,7 +369,7 @@ export default function CatalogClient({
     }
 
     // ── Shared styles ──
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl glass text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
+    const inputClass = 'w-full px-4 py-2.5 rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
     const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
 
     // ── Tabs config ──
@@ -391,11 +380,6 @@ export default function CatalogClient({
 
     return (
         <PageEntrance className="space-y-5">
-            <ClientFeatureGate
-                isOpen={gateData.isOpen}
-                onClose={() => setGateData({ ...gateData, isOpen: false })}
-                flag={gateData.flag}
-            />
 
             {/* ── Header ── */}
             <PanelPageHeader
@@ -405,7 +389,7 @@ export default function CatalogClient({
             />
 
             {/* ── Animated Tabs ── */}
-            <div className="flex gap-1 glass rounded-xl overflow-hidden w-fit p-1">
+            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl overflow-hidden w-fit p-1">
                 {tabs.map(tab => {
                     const Icon = tab.icon
                     return (
@@ -460,7 +444,7 @@ export default function CatalogClient({
                             </p>
                             <div className="flex items-center gap-2">
                                 <button
-                                    className="btn glass flex items-center gap-2 min-h-[44px] text-sm font-medium text-tx-sec hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                    className="btn border border-sf-3/30 bg-sf-0/50 backdrop-blur-md shadow-sm flex items-center gap-2 min-h-[44px] text-sm font-medium text-tx-sec hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
                                     disabled={products.length === 0}
                                     onClick={() => setShowLabels(true)}
                                     title="Print price labels"
@@ -468,14 +452,16 @@ export default function CatalogClient({
                                     <Barcode className="w-4 h-4" />
                                     <span className="hidden sm:inline">Labels</span>
                                 </button>
-                                <button
-                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                    disabled={isPending}
-                                    onClick={() => handleFeatureClick(canAddProduct, 'max_products_limit', () => { resetProductForm(); setShowProductForm(true) })}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    {labels.addProduct}
-                                </button>
+                                <SotaFeatureGateWrapper isLocked={!canAddProduct} flag="max_products_limit" variant="badge">
+                                    <button
+                                        className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                        disabled={isPending || !canAddProduct}
+                                        onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        {labels.addProduct}
+                                    </button>
+                                </SotaFeatureGateWrapper>
                             </div>
                         </div>
 
@@ -493,7 +479,7 @@ export default function CatalogClient({
                                     className={`${inputClass} pl-10 min-h-[44px]`}
                                 />
                             </div>
-                            <div className="flex gap-1 glass rounded-xl overflow-hidden p-1">
+                            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl overflow-hidden p-1">
                                 {(['all', 'published', 'draft'] as const).map(s => (
                                     <button
                                         key={s}
@@ -540,7 +526,7 @@ export default function CatalogClient({
 
                         {/* Product grid with inline badges */}
                         {filtered.length === 0 ? (
-                            <div className="glass rounded-2xl">
+                            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl">
                                 <div className="empty-state">
                                     <div className="empty-state-icon">
                                         <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
@@ -551,14 +537,16 @@ export default function CatalogClient({
                                     <p className="text-sm text-tx-sec leading-relaxed mb-6">
                                         {labels.noProducts}
                                     </p>
-                                    <button
-                                        className="btn btn-primary inline-flex items-center gap-2"
-                                        disabled={isPending}
-                                        onClick={() => handleFeatureClick(canAddProduct, 'max_products_limit', () => { resetProductForm(); setShowProductForm(true) })}
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        {labels.addProduct}
-                                    </button>
+                                    <SotaFeatureGateWrapper isLocked={!canAddProduct} flag="max_products_limit" variant="badge">
+                                        <button
+                                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                            disabled={isPending || !canAddProduct}
+                                            onClick={() => { resetProductForm(); setShowProductForm(true) }}
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            {labels.addProduct}
+                                        </button>
+                                    </SotaFeatureGateWrapper>
                                 </div>
                             </div>
                         ) : (
@@ -571,7 +559,7 @@ export default function CatalogClient({
                                         <StaggerItem key={product.id}>
                                             <motion.div
                                                 whileHover={{ y: -2 }}
-                                                className="glass rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
+                                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
                                             >
                                                 {/* Thumbnail */}
                                                 <div className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer" onClick={() => openEditProduct(product)}>
@@ -747,14 +735,16 @@ export default function CatalogClient({
                                 {categoryCount} / {maxCategories} {labels.categories}
                                 {!canAddCategory && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
                             </p>
-                            <button
-                                className="btn btn-primary flex items-center gap-2"
-                                disabled={isPending}
-                                onClick={() => handleFeatureClick(canAddCategory, 'max_categories_limit', () => { resetCategoryForm(); setShowCategoryForm(true) })}
-                            >
-                                <Plus className="w-4 h-4" />
-                                {labels.addCategory}
-                            </button>
+                            <SotaFeatureGateWrapper isLocked={!canAddCategory} flag="max_categories_limit" variant="badge">
+                                <button
+                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                    disabled={isPending || !canAddCategory}
+                                    onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {labels.addCategory}
+                                </button>
+                            </SotaFeatureGateWrapper>
                         </div>
 
                         {/* Error banner */}
@@ -776,7 +766,7 @@ export default function CatalogClient({
 
                         {/* Category grid */}
                         {categories.length === 0 ? (
-                            <div className="glass rounded-2xl">
+                            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl">
                                 <div className="empty-state">
                                     <div className="empty-state-icon">
                                         <Layers className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
@@ -787,14 +777,16 @@ export default function CatalogClient({
                                     <p className="text-sm text-tx-sec leading-relaxed mb-6">
                                         {labels.noCategories}
                                     </p>
-                                    <button
-                                        className="btn btn-primary inline-flex items-center gap-2"
-                                        disabled={isPending}
-                                        onClick={() => handleFeatureClick(canAddCategory, 'max_categories_limit', () => { resetCategoryForm(); setShowCategoryForm(true) })}
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        {labels.addCategory}
-                                    </button>
+                                    <SotaFeatureGateWrapper isLocked={!canAddCategory} flag="max_categories_limit" variant="badge">
+                                        <button
+                                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                            disabled={isPending || !canAddCategory}
+                                            onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            {labels.addCategory}
+                                        </button>
+                                    </SotaFeatureGateWrapper>
                                 </div>
                             </div>
                         ) : (
@@ -803,7 +795,7 @@ export default function CatalogClient({
                                     <StaggerItem key={cat.id}>
                                         <motion.div
                                             whileHover={{ y: -2 }}
-                                            className="glass rounded-2xl p-5 transition-shadow hover:shadow-lg"
+                                            className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5 transition-shadow hover:shadow-lg"
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-3">
@@ -883,7 +875,7 @@ export default function CatalogClient({
                                 className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
                                     formStatus === 'published'
                                         ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-300 dark:ring-emerald-800'
-                                        : 'glass text-tx-sec hover:bg-sf-1'
+                                        : 'bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-sec hover:bg-sf-1'
                                 }`}
                             >
                                 <Eye className="w-4 h-4" />
@@ -895,7 +887,7 @@ export default function CatalogClient({
                                 className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
                                     formStatus === 'draft'
                                         ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800'
-                                        : 'glass text-tx-sec hover:bg-sf-1'
+                                        : 'bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-sec hover:bg-sf-1'
                                 }`}
                             >
                                 <EyeOff className="w-4 h-4" />
@@ -911,7 +903,7 @@ export default function CatalogClient({
                             {editingProduct.images && editingProduct.images.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {editingProduct.images.map(img => (
-                                        <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden glass">
+                                        <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden bg-sf-0/50 backdrop-blur-md border border-sf-3/30">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img src={img.url} alt="" className="w-full h-full object-cover" />
                                             <button

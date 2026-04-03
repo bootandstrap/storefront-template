@@ -15,6 +15,7 @@ import { isPanelRole } from '@/lib/panel-access-policy'
 import PanelShell from '@/components/panel/PanelShell'
 import PanelOnboarding from '@/components/panel/PanelOnboarding'
 import AchievementProvider from '@/components/panel/AchievementProvider'
+import PanelDashboardStyles from '@/components/panel/PanelDashboardStyles'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, type AchievementContext } from '@/lib/achievements'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
@@ -395,6 +396,8 @@ export default async function PanelLayout({
             >
                 {children}
             </AchievementProvider>
+            <PanelDashboardStyles />
         </PanelShell>
     )
 }
+

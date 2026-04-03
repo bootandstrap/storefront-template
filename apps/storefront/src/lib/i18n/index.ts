@@ -10,7 +10,8 @@ import type { StoreConfig } from '@/lib/config'
 // ─── Types ───────────────────────────────────────────────────
 export type Locale = 'en' | 'es' | 'de' | 'fr' | 'it'
 
-export type Dictionary = Record<string, string>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Dictionary = Record<string, any>
 
 export const SUPPORTED_LOCALES: Locale[] = ['en', 'es', 'de', 'fr', 'it']
 

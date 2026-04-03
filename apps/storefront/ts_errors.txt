@@ -1,0 +1,241 @@
+scripts/test-config.ts(2,27): error TS2307: Cannot find module './src/lib/config' or its corresponding type declarations.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(52,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(65,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(65,42): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(66,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(74,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(80,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(80,42): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(81,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(84,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(89,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(90,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(91,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(97,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(105,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(119,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(120,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(121,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(122,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(125,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(127,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(128,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(129,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(131,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(135,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(137,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(138,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(139,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(140,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(143,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(146,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(147,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(148,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(149,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(150,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(152,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(153,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(156,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(159,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(161,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(162,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(170,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(173,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(174,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(177,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(178,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(180,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(183,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(202,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(206,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(207,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(215,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(218,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(219,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(222,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(223,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(226,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(227,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(235,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(238,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(239,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(250,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(250,44): error TS7006: Parameter 'action' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(251,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(254,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(255,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(258,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(259,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(294,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(298,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(300,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(301,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(302,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(305,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(308,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(312,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(315,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(316,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(324,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(366,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(366,45): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(367,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(370,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(370,45): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(371,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(374,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(377,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(380,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(385,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(393,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(396,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(397,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(400,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(401,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(402,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(403,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(404,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(405,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(408,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(409,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(410,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(413,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(414,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(417,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(418,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(421,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(422,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(430,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(433,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(434,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(435,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(438,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(439,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(442,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(443,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(444,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(447,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(448,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(451,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(452,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(460,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(480,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(480,47): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(482,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(485,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(486,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(489,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(490,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(493,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(494,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(495,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(496,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(497,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(498,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(499,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(502,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(512,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(516,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(518,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(519,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(520,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(521,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(522,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(523,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(527,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(528,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(529,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(530,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(531,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(532,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(536,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(538,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(539,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(542,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(543,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(544,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(545,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(546,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(547,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(551,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(552,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(553,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(554,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(557,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(558,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(559,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(560,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(564,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(565,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(566,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(567,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(568,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(569,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(570,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(574,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(575,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(576,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(577,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(578,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(579,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(580,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(584,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(585,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(586,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(587,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(588,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(589,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(590,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(591,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(595,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(596,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(597,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(598,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(599,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(603,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(604,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(605,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(606,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(607,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(615,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(621,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(623,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(626,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(628,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(636,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(644,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(647,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(649,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(650,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(654,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(656,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(658,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(659,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(660,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(664,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(668,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(669,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(674,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(681,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(682,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(687,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(688,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(689,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(693,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(700,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(703,5): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(711,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(716,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(722,7): error TS2304: Cannot find name 'expect'.
+src/lib/__tests__/onboarding-e2e-integrity.test.ts(725,7): error TS2304: Cannot find name 'expect'.
+src/lib/governance/defaults.ts(102,9): error TS2353: Object literal may only specify known properties, and 'chatbot_name' does not exist in type '{ id: string; tenant_id: string | null; business_name: string; whatsapp_number: string; default_country_prefix: string; primary_color: string; secondary_color: string; accent_color: string; ... 49 more ...; storefront_language: string | null; }'.
+src/lib/i18n/index.ts(29,15): error TS2322: Type 'Promise<Dictionary | { "about.contactCta": string; "about.contactHint": string; "about.intro": string; "about.metaDescription": string; "about.story1": string; "about.story2": string; "about.storyTitle": string; ... 1659 more ...; panel: { ...; }; }>' is not assignable to type 'Promise<Dictionary>'.
+  Type 'Dictionary | { "about.contactCta": string; "about.contactHint": string; "about.intro": string; "about.metaDescription": string; "about.story1": string; "about.story2": string; "about.storyTitle": string; ... 1659 more ...; panel: { ...; }; }' is not assignable to type 'Dictionary'.
+    Type '{ "about.contactCta": string; "about.contactHint": string; "about.intro": string; "about.metaDescription": string; "about.story1": string; "about.story2": string; "about.storyTitle": string; "about.title": string; ... 1658 more ...; panel: { ...; }; }' is not assignable to type 'Dictionary'.
+      Property '"panel"' is incompatible with index signature.
+        Type '{ auth: { activeUsers: string; apple: string; disableProvider: string; email: string; enableProvider: string; failedLogins: string; google: string; lastLogin: string; loginActivity: string; loginAttempts: string; ... 8 more ...; twoFactorDesc: string; }; ... 8 more ...; social: { ...; }; }' is not assignable to type 'string'.
+src/lib/openfeature/provider.ts(71,9): error TS2322: Type '"GENERAL"' is not assignable to type 'ErrorCode | undefined'.
+src/lib/openfeature/provider.ts(105,9): error TS2322: Type '"GENERAL"' is not assignable to type 'ErrorCode | undefined'.
+src/lib/openfeature/provider.ts(139,9): error TS2322: Type '"GENERAL"' is not assignable to type 'ErrorCode | undefined'.
+src/lib/openfeature/provider.ts(178,9): error TS2322: Type '"GENERAL"' is not assignable to type 'ErrorCode | undefined'.

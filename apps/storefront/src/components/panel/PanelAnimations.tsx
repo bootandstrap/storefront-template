@@ -354,3 +354,216 @@ export function SkeletonCard({ className = '' }: { className?: string }) {
         </div>
     )
 }
+
+// ─── ScrollReveal — IntersectionObserver-based entrance animation ────────────
+
+interface ScrollRevealProps {
+    children: ReactNode
+    className?: string
+    /** Animation direction */
+    direction?: 'up' | 'scale'
+    /** Delay in ms */
+    delay?: number
+    /** Threshold for intersection (0-1) */
+    threshold?: number
+}
+
+export function ScrollReveal({
+    children,
+    className = '',
+    direction = 'up',
+    delay = 0,
+    threshold = 0.1,
+}: ScrollRevealProps) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [isVisible, setIsVisible] = useState(false)
+
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return
+
+        // Check if user prefers reduced motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            setIsVisible(true)
+            return
+        }
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true)
+                    observer.unobserve(el)
+                }
+            },
+            { threshold }
+        )
+
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [threshold])
+
+    const animClass = direction === 'scale' ? 'reveal-on-scroll-scale' : 'reveal-on-scroll'
+
+    return (
+        <div
+            ref={ref}
+            className={`${isVisible ? animClass : 'opacity-0'} ${className}`}
+            style={{ animationDelay: `${delay}ms` }}
+        >
+            {children}
+        </div>
+    )
+}
+
+// ─── HoverScale — Tactile hover wrapper with spring easing ──────────────────
+
+interface HoverScaleProps {
+    children: ReactNode
+    className?: string
+    /** Scale on hover (default 1.02) */
+    scale?: number
+}
+
+export function HoverScale({ children, className = '', scale = 1.02 }: HoverScaleProps) {
+    return (
+        <motion.div
+            className={className}
+            whileHover={{ scale }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        >
+            {children}
+        </motion.div>
+    )
+}
+
+// ─── GlowPulse — Animated glow ring for status indicators ───────────────────
+
+interface GlowPulseProps {
+    /** Color of the glow ring (CSS color) */
+    color?: string
+    /** Size in px */
+    size?: number
+    /** Additional class */
+    className?: string
+    children?: ReactNode
+}
+
+export function GlowPulse({
+    color = '#22c55e',
+    size = 10,
+    className = '',
+    children,
+}: GlowPulseProps) {
+    return (
+        <span className={`relative inline-flex ${className}`}>
+            {children}
+            <motion.span
+                className="absolute rounded-full"
+                style={{
+                    width: size,
+                    height: size,
+                    backgroundColor: color,
+                    bottom: 0,
+                    right: 0,
+                }}
+                animate={{
+                    boxShadow: [
+                        `0 0 0 0 ${color}66`,
+                        `0 0 0 4px ${color}00`,
+                    ],
+                }}
+                transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                }}
+            />
+        </span>
+    )
+}
+
+// ─── FloatAnimation — Gentle floating effect for icons & illustrations ──────
+
+interface FloatAnimationProps {
+    children: ReactNode
+    className?: string
+    /** Duration in seconds */
+    duration?: number
+    /** Float distance in px */
+    distance?: number
+}
+
+export function FloatAnimation({
+    children,
+    className = '',
+    duration = 3,
+    distance = 8,
+}: FloatAnimationProps) {
+    return (
+        <motion.div
+            className={className}
+            animate={{ y: [-distance / 2, distance / 2, -distance / 2] }}
+            transition={{
+                duration,
+                repeat: Infinity,
+                ease: 'easeInOut',
+            }}
+        >
+            {children}
+        </motion.div>
+    )
+}
+
+// ─── FadeInStagger — Alternative stagger with configurable delay ────────────
+
+interface FadeInStaggerProps {
+    children: ReactNode
+    className?: string
+    /** Stagger delay between children in seconds */
+    staggerDelay?: number
+}
+
+export function FadeInStagger({
+    children,
+    className = '',
+    staggerDelay = 0.08,
+}: FadeInStaggerProps) {
+    return (
+        <motion.div
+            className={className}
+            initial="hidden"
+            animate="visible"
+            variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                    opacity: 1,
+                    transition: { staggerChildren: staggerDelay, delayChildren: 0.05 },
+                },
+            }}
+        >
+            {children}
+        </motion.div>
+    )
+}
+
+export function FadeInStaggerItem({
+    children,
+    className = '',
+}: { children: ReactNode; className?: string }) {
+    return (
+        <motion.div
+            className={className}
+            variants={{
+                hidden: { opacity: 0, y: 16 },
+                visible: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.4, ease: EASE_EXPO_OUT },
+                },
+            }}
+        >
+            {children}
+        </motion.div>
+    )
+}

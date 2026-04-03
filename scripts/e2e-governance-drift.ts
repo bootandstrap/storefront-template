@@ -105,7 +105,7 @@ check(
 // MODULES
 header('📦 Modules')
 const contractModules = new Set(contract.modules.keys)
-const gatedModules = new Set(Object.values(FEATURE_GATE_MAP).map((e: { moduleKey: string }) => e.moduleKey))
+const gatedModules = new Set(Object.values(FEATURE_GATE_MAP).map((e: any) => e.moduleKey))
 
 check(
     `modules: ${contract.modules.count} in contract, ${gatedModules.size} in feature-gate`,
@@ -123,8 +123,8 @@ check(
     contract.pricing.maintenance_chf_month > 0
 )
 check(
-    `web base: ${contract.pricing.web_base_chf} CHF`,
-    contract.pricing.web_base_chf > 0
+    `web base: ${contract.pricing.web_base_chf_onetime} CHF`,
+    contract.pricing.web_base_chf_onetime > 0
 )
 
 let tierIssues = 0
@@ -140,8 +140,9 @@ if (tierIssues === 0) ok(`all ${contract.modules.catalog.reduce((sum: number, m:
 
 // CROSS-PACKAGE
 header('🔗 Cross-Package Equality')
-const flagsEqual = JSON.stringify(FALLBACK_CONFIG.featureFlags) === JSON.stringify(SharedFB.featureFlags)
-const limitsEqual = JSON.stringify(FALLBACK_CONFIG.planLimits) === JSON.stringify(SharedFB.planLimits)
+const sortObj = (obj: any) => Object.keys(obj).sort().reduce((acc: any, key) => ({ ...acc, [key]: obj[key] }), {});
+const flagsEqual = JSON.stringify(sortObj(FALLBACK_CONFIG.featureFlags)) === JSON.stringify(sortObj(SharedFB.featureFlags))
+const limitsEqual = JSON.stringify(sortObj(FALLBACK_CONFIG.planLimits)) === JSON.stringify(sortObj(SharedFB.planLimits))
 check('inline featureFlags = shared featureFlags', flagsEqual)
 check('inline planLimits = shared planLimits', limitsEqual)
 

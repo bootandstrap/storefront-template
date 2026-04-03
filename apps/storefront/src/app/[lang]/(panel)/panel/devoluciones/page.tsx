@@ -20,6 +20,8 @@ import ReturnActions from '@/components/returns/ReturnActions'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import PanelBadge from '@/components/panel/PanelBadge'
 import PanelTable, { PanelThead, PanelTbody, PanelTr, PanelTh, PanelTd } from '@/components/panel/PanelTable'
+import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
+import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { RotateCcw, PackageX } from 'lucide-react'
 import { fetchReturns, approveReturnAction, rejectReturnAction } from './actions'
 
@@ -79,8 +81,10 @@ export default async function PanelReturnsPage({
                 badge={returns.length}
             />
 
+            <SotaBentoGrid>
+                <SotaBentoItem colSpan={12}>
             {returns.length === 0 ? (
-                <div className="glass rounded-2xl">
+                <SotaGlassCard glowColor="none" className="p-8">
                     <div className="empty-state">
                         <div className="empty-state-icon">
                             <PackageX className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
@@ -92,9 +96,9 @@ export default async function PanelReturnsPage({
                             {t('panel.returns.noRequestsHint') || 'When customers request returns, they will appear here for review.'}
                         </p>
                     </div>
-                </div>
+                </SotaGlassCard>
             ) : (
-                <div className="glass rounded-2xl overflow-hidden">
+                <SotaGlassCard glowColor="none">
                         <PanelTable ariaLabel="Returns">
                             <PanelThead>
                                 <PanelTr>
@@ -146,8 +150,10 @@ export default async function PanelReturnsPage({
                                 ))}
                             </PanelTbody>
                         </PanelTable>
-                </div>
+                </SotaGlassCard>
             )}
+                </SotaBentoItem>
+            </SotaBentoGrid>
         </div>
     )
 }

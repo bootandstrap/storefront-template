@@ -175,7 +175,7 @@ export function SubscriptionExperience({
                         initial={{ opacity: 0, y: -12, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -12 }}
-                        className="glass rounded-2xl p-5 border border-success bg-brand-subtle"
+                        className="backdrop-blur-md shadow-sm rounded-2xl p-5 border border-success/30 bg-brand-subtle"
                     >
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-green-500/10">
@@ -196,7 +196,7 @@ export function SubscriptionExperience({
 
             {/* ── Maintenance Free Banner ── */}
             {tenantStatus === 'maintenance_free' && maintenanceDaysRemaining != null && (
-                <div className="glass rounded-2xl p-4 border border-info bg-brand-subtle">
+                <div className="backdrop-blur-md shadow-sm rounded-2xl p-4 border border-info/30 bg-brand-subtle">
                     <div className="flex items-center gap-3">
                         <Crown className="w-5 h-5 text-brand shrink-0" />
                         <div>
@@ -259,7 +259,7 @@ export function SubscriptionExperience({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="glass rounded-2xl p-6"
+                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6"
                 >
                     <h2 className="text-base font-semibold text-tx mb-1 flex items-center gap-2">
                         <Receipt className="w-4 h-4 text-brand" />
@@ -324,7 +324,7 @@ export function SubscriptionExperience({
                 </div>
 
                 {activeModules.length === 0 ? (
-                    <div className="glass rounded-2xl p-8 text-center">
+                    <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-8 text-center">
                         <Puzzle className="w-12 h-12 text-tx-muted mx-auto mb-3 opacity-30" />
                         <p className="text-tx-muted text-sm font-medium">
                             {t('panel.subscription.noActiveModules') || 'No hay módulos activos todavía.'}
@@ -344,7 +344,7 @@ export function SubscriptionExperience({
 
                             return (
                                 <StaggerItem key={catalogEntry.key}>
-                                    <div className="glass rounded-2xl p-4 border border-success/30 hover:border-success/60 transition-all group">
+                                    <div className="bg-sf-0/50 backdrop-blur-md shadow-sm rounded-2xl p-4 border border-success/30 hover:border-success/60 transition-all group">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <span className="text-xl shrink-0">{catalogEntry.icon}</span>
@@ -400,7 +400,7 @@ export function SubscriptionExperience({
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="glass rounded-2xl p-5 border border-brand bg-brand-subtle relative overflow-hidden"
+                    className="backdrop-blur-md shadow-sm rounded-2xl p-5 border border-brand/50 bg-brand-subtle relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-brand/5 to-transparent rounded-bl-full" />
                     <div className="relative">
@@ -453,7 +453,7 @@ export function SubscriptionExperience({
                                     initial={{ opacity: 0, y: 12 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     whileHover={{ y: -2 }}
-                                    className="glass rounded-2xl p-5 hover:border-brand/50 transition-all hover:shadow-lg group"
+                                    className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5 hover:border-brand/50 transition-all hover:shadow-lg group"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3">
@@ -540,7 +540,7 @@ export function SubscriptionExperience({
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="glass rounded-2xl p-6 border border-sf-3"
+                    className="bg-sf-0/50 backdrop-blur-md shadow-sm rounded-2xl p-6 border border-sf-3/30"
                 >
                     <div className="flex items-start gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle text-brand shrink-0">
