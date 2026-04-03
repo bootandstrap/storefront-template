@@ -36,16 +36,32 @@ export default async function I18nPage({
         return <FeatureGate flag="enable_multi_language" lang={lang} />
     }
 
+    // Supabase may return active_languages as a JSON string or null — normalize defensively
+    const rawLangs = config.active_languages
+    const activeLanguages: string[] = Array.isArray(rawLangs)
+        ? rawLangs
+        : typeof rawLangs === 'string'
+            ? (() => { try { const p = JSON.parse(rawLangs); return Array.isArray(p) ? p : [rawLangs] } catch { return [rawLangs] } })()
+            : [config.language ?? 'es']
+
+    const rawCurrencies = config.active_currencies
+    const activeCurrencies: string[] = Array.isArray(rawCurrencies)
+        ? rawCurrencies
+        : typeof rawCurrencies === 'string'
+            ? (() => { try { const p = JSON.parse(rawCurrencies); return Array.isArray(p) ? p : [rawCurrencies] } catch { return [rawCurrencies] } })()
+            : [config.default_currency ?? 'eur']
+
     const languageData = {
-        activeLanguages: config.active_languages,
-        activeCurrencies: config.active_currencies,
-        defaultCurrency: config.default_currency,
-        defaultLanguage: config.language,
-        maxLanguages: planLimits.max_languages,
-        maxCurrencies: planLimits.max_currencies,
+        activeLanguages,
+        activeCurrencies,
+        defaultCurrency: config.default_currency ?? 'eur',
+        defaultLanguage: config.language ?? 'es',
+        maxLanguages: planLimits.max_languages ?? 5,
+        maxCurrencies: planLimits.max_currencies ?? 3,
     }
 
-    const panelLang = (config as Record<string, unknown>).panel_language as string | null ?? config.language
+    const panelLang = (config as Record<string, unknown>).panel_language as string | null ?? config.language ?? 'es'
+
 
     return (
         <div className="space-y-6">

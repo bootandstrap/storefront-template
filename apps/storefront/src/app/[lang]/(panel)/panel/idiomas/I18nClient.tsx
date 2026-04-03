@@ -11,6 +11,7 @@
  */
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Globe, Languages, DollarSign, CheckCircle2,
@@ -178,19 +179,31 @@ function UpgradeModal({ labels, lang, onClose }: {
 // ---------------------------------------------------------------------------
 
 export default function I18nClient({ data, labels, lang, panelLang }: I18nClientProps) {
+    const router = useRouter()
     const [activeTab, setActiveTab] = useState<TabId>('languages')
 
+    // Total supported languages (LANGUAGE_MAP keys = 5 hardcoded max)
+    const TOTAL_SUPPORTED = Object.keys(LANGUAGE_MAP).length // 5
+
     // Storefront active languages (optimistic)
-    const [enabledLanguages, setEnabledLanguages] = useState<string[]>(data.activeLanguages)
+    const [enabledLanguages, setEnabledLanguages] = useState<string[]>(
+        // Ensure we only keep codes that exist in our LANGUAGE_MAP
+        data.activeLanguages.filter(l => l in LANGUAGE_MAP)
+    )
     const [isPendingLang, startLangTransition] = useTransition()
 
     // Panel language (owner's UI language, independent)
-    const [selectedPanelLang, setSelectedPanelLang] = useState(panelLang || data.defaultLanguage || 'es')
+    const [selectedPanelLang, setSelectedPanelLang] = useState(
+        panelLang in LANGUAGE_MAP ? panelLang : data.defaultLanguage in LANGUAGE_MAP ? data.defaultLanguage : 'es'
+    )
     const [isPendingPanel, startPanelTransition] = useTransition()
 
     // UI feedback
     const [toast, setToast]           = useState<{ type: ToastType; message: string } | null>(null)
     const [showUpgrade, setShowUpgrade] = useState(false)
+
+    // Effective max = min(db limit, how many languages we support)
+    const effectiveMax = Math.min(data.maxLanguages, TOTAL_SUPPORTED)
 
     function showToastMsg(type: ToastType, message: string) {
         setToast({ type, message })
@@ -202,7 +215,7 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
 
         if (!isActive) {
             // Trying to ENABLE
-            if (enabledLanguages.length >= data.maxLanguages) {
+            if (enabledLanguages.length >= effectiveMax) {
                 setShowUpgrade(true)
                 return
             }
@@ -238,6 +251,7 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
     }
 
     function changePanelLang(newLang: string) {
+        if (!(newLang in LANGUAGE_MAP)) return
         const prev = selectedPanelLang
         setSelectedPanelLang(newLang)
         startPanelTransition(async () => {
@@ -245,6 +259,9 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
             if (!result.success) {
                 setSelectedPanelLang(prev)
                 showToastMsg('error', labels.saveError)
+            } else {
+                // Navigate to the panel in the new language locale
+                router.push(`/${newLang}/panel/idiomas`)
             }
         })
     }
@@ -259,7 +276,7 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
         ? Math.round(enabledLanguages.reduce((sum, la) => sum + (TRANSLATION_PROGRESS[la] ?? 0), 0) / enabledLanguages.length)
         : 0
 
-    const atLimit = enabledLanguages.length >= data.maxLanguages
+    const atLimit = enabledLanguages.length >= effectiveMax
 
     return (
         <PageEntrance className="space-y-6">
@@ -283,7 +300,7 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
                 <SotaBentoItem colSpan={3}>
                     <SotaMetric
                         label={labels.activeLanguages}
-                        value={`${enabledLanguages.length}/${data.maxLanguages}`}
+                        value={`${enabledLanguages.length}/${effectiveMax}`}
                         icon={<Languages className="w-5 h-5 opacity-70" />}
                         trend={{ value: 0, label: 'Habilitados' }}
                         glowColor="emerald"
@@ -441,12 +458,10 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
                                                                         transition={{ duration: 0.8, delay: 0.2 }}
                                                                     />
                                                                 </div>
-                                                            </div>
-
-                                                            {/* Toggle */}
+                                                               {/* Toggle — inline styles (Tailwind v4 purge-safe) */}
                                                             <div className="mt-5 pt-4 border-t border-sf-3/30 flex items-center justify-between">
                                                                 {isActive ? (
-                                                                    <span className="text-xs font-bold text-brand flex items-center gap-1.5">
+                                                                    <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--c-brand)' }}>
                                                                         {isPendingLang
                                                                             ? <Loader2 className="w-4 h-4 animate-spin" />
                                                                             : <CheckCircle2 className="w-4 h-4" />
@@ -460,15 +475,33 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
                                                                     onClick={() => toggleLanguage(code)}
                                                                     disabled={isPendingLang}
                                                                     aria-label={isActive ? `Desactivar ${info.name}` : `Activar ${info.name}`}
-                                                                    className={`w-10 h-5 rounded-full relative transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
-                                                                        isActive ? 'bg-brand' : 'bg-sf-3'
-                                                                    }`}
+                                                                    style={{
+                                                                        width: '40px', height: '20px',
+                                                                        borderRadius: '9999px',
+                                                                        position: 'relative',
+                                                                        backgroundColor: isActive ? 'var(--c-brand)' : 'var(--c-sf-3, #cbd5e1)',
+                                                                        transition: 'background-color 0.2s',
+                                                                        opacity: isPendingLang ? 0.5 : 1,
+                                                                        border: 'none',
+                                                                        cursor: isPendingLang ? 'not-allowed' : 'pointer',
+                                                                        flexShrink: 0,
+                                                                    }}
+                                                                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                                                                 >
-                                                                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                                                                        isActive ? 'translate-x-5' : 'translate-x-0.5'
-                                                                    }`} />
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: '2px',
+                                                                        left: isActive ? '22px' : '2px',
+                                                                        width: '16px',
+                                                                        height: '16px',
+                                                                        backgroundColor: '#fff',
+                                                                        borderRadius: '9999px',
+                                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                                                        transition: 'left 0.2s',
+                                                                    }} />
                                                                 </button>
                                                             </div>
+                                                           </div>
                                                         </SotaGlassCard>
                                                     </StaggerItem>
                                                 )
@@ -519,8 +552,24 @@ export default function I18nClient({ data, labels, lang, panelLang }: I18nClient
                                                                 <span className="text-xs font-semibold text-tx-muted font-mono bg-sf-1/50 px-3 py-1.5 rounded-lg border border-sf-3/30">
                                                                     1 USD = {info.rate} {code.toUpperCase()}
                                                                 </span>
-                                                                <div className={`w-10 h-5 rounded-full relative transition-colors ${isActive ? 'bg-brand' : 'bg-sf-3'}`}>
-                                                                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                                                                <div style={{
+                                                                        width: '40px', height: '20px',
+                                                                        borderRadius: '9999px',
+                                                                        position: 'relative',
+                                                                        backgroundColor: isActive ? 'var(--c-brand)' : 'var(--c-sf-3, #cbd5e1)',
+                                                                        transition: 'background-color 0.2s',
+                                                                    }}>
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: '2px',
+                                                                        left: isActive ? '22px' : '2px',
+                                                                        width: '16px',
+                                                                        height: '16px',
+                                                                        backgroundColor: '#fff',
+                                                                        borderRadius: '9999px',
+                                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                                                        transition: 'left 0.2s',
+                                                                    }} />
                                                                 </div>
                                                             </div>
                                                         </div>
