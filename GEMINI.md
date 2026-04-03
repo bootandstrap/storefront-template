@@ -95,7 +95,7 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 | `apps/storefront/src/lib/policy-engine.ts` | Business rule enforcement |
 | `apps/storefront/src/proxy.ts` | Next.js 16 routing proxy — auth + locale + role protection |
 | `apps/storefront/src/app/api/` | All API routes (webhooks, health, orders, revalidate, chat) |
-| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **36+ components** as of 2026-03-25: PanelTopbar, PanelShell, PanelSidebar, CommandPalette (⌘K), PanelToaster, SetupProgress, StoreHealthCard, SmartTip, AchievementProvider, UsageMeter, AnimatedStatValue, ModulesMarketplaceClient, TierComparisonTable, POS (POSCart, POSClient, POSProductGrid, POSPaymentOverlay, POSOfflineBanner, POSDashboard, POSVariantPicker, POSReceipt), Utilities (WiFiQRCard, LoyaltyCardPreview, BarcodeGenerator, PriceLabelSheet), etc. |
+| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **40+ components** as of 2026-04-03: PanelTopbar, PanelShell, PanelSidebar, CommandPalette (⌘K), PanelToaster, SetupProgress, StoreHealthCard, SmartTip, AchievementProvider, UsageMeter, AnimatedStatValue, ModulesMarketplaceClient, TierComparisonTable, POS (POSCart, POSClient, POSProductGrid, POSPaymentOverlay, POSOfflineBanner, POSDashboard, POSVariantPicker, POSReceipt), Utilities (WiFiQRCard, LoyaltyCardPreview, BarcodeGenerator, PriceLabelSheet), SOTA Bento system (SotaBentoGrid, SotaBentoItem, SotaGlassCard, SotaMetric, SotaFeatureGateWrapper), I18n panel (I18nClient v2 with live toggles), etc. |
 | `apps/storefront/src/app/[lang]/(auth)/` | Auth pages — governed by SaaS flags |
 | `apps/storefront/src/lib/i18n/index.ts` | i18n engine — only edit dictionaries, not the engine |
 | `apps/storefront/src/lib/i18n/locale.ts` | Locale resolution logic |
@@ -182,6 +182,71 @@ Use the `lang` param for i18n. Import `getDictionary(lang)` for translations.
 
 ### 3.7 Add client images
 
+### 3.8 Owner Panel — Architecture Patterns (SOTA Bento Grid)
+
+> These patterns apply to ALL panel pages. Deviating from them causes visual regressions.
+
+**Pattern: Header in Server, Grid in Client**
+
+Every panel page follows a strict split:
+- `page.tsx` (Server Component): fetches data + renders `<PanelPageHeader>` + passes props to Client
+- `*Client.tsx` (Client Component): renders `<SotaBentoGrid>` + interaction logic only
+
+```tsx
+// ✅ CORRECT — page.tsx (Server)
+export default async function MyPage() {
+  const { appConfig } = await withPanelGuard()
+  return (
+    <div className="space-y-6">
+      <PanelPageHeader title={t('...')} icon={<Icon />} />
+      <MyClient data={data} labels={labels} />
+    </div>
+  )
+}
+
+// ❌ WRONG — MyClient.tsx (Client)
+// NEVER render PanelPageHeader inside a Client component — causes double header
+export default function MyClient() {
+  return <><PanelPageHeader ... /><SotaBentoGrid>...</SotaBentoGrid></> // ← BUG
+}
+```
+
+**Pattern: Bento Grid colSpan — always inline style**
+
+Tailwind v4 + Turbopack purges dynamic class names like `col-span-4`. Always use inline styles:
+
+```tsx
+// ✅ CORRECT
+<SotaBentoItem colSpan={4}>  // internally uses style={{ gridColumn: 'span 4' }}
+
+// ❌ WRONG — will be purged
+<div className="col-span-4">
+```
+
+**Pattern: Interactive toggles with server actions**
+
+Use `useTransition` for server action calls in Client Components. This keeps the UI responsive during the async save:
+
+```tsx
+const [isPending, startTransition] = useTransition()
+function handleToggle(value: string) {
+  setOptimisticState(value)  // immediate UI update
+  startTransition(async () => {
+    const result = await mySaveAction(value)
+    if (!result.success) rollback()
+  })
+}
+```
+
+**Pattern: i18n Module gating**
+
+- `enable_multi_language` flag gates the entire `/panel/idiomas` route via `FeatureGate`
+- `max_languages` limit (from tier) controls how many storefront languages can be activated
+- `panel_language` (config) is the owner's UI language — independent of `active_languages` (storefront)
+- `LanguageSelector` in `Header.tsx` auto-hides when `active_languages.length <= 1`
+- Upgrade upsell links to `/panel/suscripcion?module=i18n`
+
+
 Place in `public/images/`. Use Next.js `<Image>` component:
 ```tsx
 import Image from 'next/image'
@@ -247,6 +312,10 @@ If a test fails after your changes, your changes broke something. Fix before pus
 - ❌ Removing error boundaries (`error.tsx` files)
 - ❌ Changing URL slug patterns (breaks SEO + i18n alternates)
 - ❌ Disabling TypeScript strict mode
+- ❌ Rendering `PanelPageHeader` inside a Client Component (`*Client.tsx`) — it belongs exclusively in `page.tsx` (Server Component). Double render = double header.
+- ❌ Using `className="col-span-N"` for Bento Grid layout — Turbopack purges dynamic Tailwind classes. Use `<SotaBentoItem colSpan={N}>` which applies `style={{ gridColumn: 'span N' }}` directly.
+- ❌ Calling `saveActiveLanguagesAction` with an empty array — minimum 1 language must always remain active; the action rejects it server-side.
+- ❌ Using `saveLanguagePreferencesAction` to update only `panel_language` — it also overwrites `active_languages`. Use `savePanelLanguageAction` instead for panel-only language changes.
 
 ## 9. When In Doubt
 
