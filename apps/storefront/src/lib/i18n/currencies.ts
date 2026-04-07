@@ -7,88 +7,66 @@
  * 3. Fallback: 'usd'
  *
  * Price formatting uses Intl.NumberFormat for locale-aware display.
+ *
+ * Currency DATA is derived from @bootandstrap/shared — the SSOT for all apps.
  */
 
-import { cookies } from 'next/headers'
 import type { Locale } from '.'
+import {
+    CURRENCIES as SHARED_CURRENCIES,
+    CURRENCY_SYMBOL_MAP,
+    CURRENCY_INTL_MAP,
+    type CurrencyInfo,
+} from '@bootandstrap/shared'
 
-// ─── Types ────────────────────────────────────────────────────
-export interface CurrencyInfo {
-    code: string
-    symbol: string
-    name: string
-    flag: string
+// Re-export the canonical type and data
+export type { CurrencyInfo }
+
+// ─── Supported currencies (re-exported from shared SSOT) ──────
+export const SUPPORTED_CURRENCIES = SHARED_CURRENCIES
+
+// ── Derived constants (use these instead of hardcoding) ───────
+/** All valid currency codes — for server-side validation */
+export const SUPPORTED_CURRENCY_CODES = SUPPORTED_CURRENCIES.map(c => c.code)
+
+/** Total number of supported currencies — for plan limit capping */
+export const SUPPORTED_CURRENCY_COUNT = SUPPORTED_CURRENCIES.length
+
+/** Fast lookup map: code → CurrencyInfo — for UI components */
+export const CURRENCY_MAP = Object.fromEntries(
+    SUPPORTED_CURRENCIES.map(c => [c.code, c])
+) as Record<string, CurrencyInfo>
+
+export const DEFAULT_CURRENCY = 'eur'
+
+/** Zero-decimal currencies — stored in whole units, not cents */
+export const ZERO_DECIMAL_CURRENCIES = new Set([
+    'cop', 'clp', 'jpy', 'krw', 'vnd', 'pyg', 'isk', 'ugx',
+])
+
+/** Check if a currency is zero-decimal (no cents/centavos) */
+export function isZeroDecimal(code: string): boolean {
+    return ZERO_DECIMAL_CURRENCIES.has(code.toLowerCase())
 }
-
-// ─── Supported currencies ─────────────────────────────────────
-// Filtered at runtime by getActiveCurrencies() — admin config controls which are shown.
-export const SUPPORTED_CURRENCIES: CurrencyInfo[] = [
-    // ── Global ──
-    { code: 'usd', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
-    { code: 'eur', symbol: '€', name: 'Euro', flag: '🇪🇺' },
-    { code: 'gbp', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
-    { code: 'chf', symbol: 'CHF', name: 'Swiss Franc', flag: '🇨🇭' },
-    // ── Scandinavia ──
-    { code: 'sek', symbol: 'kr', name: 'Swedish Krona', flag: '🇸🇪' },
-    { code: 'dkk', symbol: 'kr', name: 'Danish Krone', flag: '🇩🇰' },
-    { code: 'nok', symbol: 'kr', name: 'Norwegian Krone', flag: '🇳🇴' },
-    // ── Eastern Europe ──
-    { code: 'pln', symbol: 'zł', name: 'Polish Zloty', flag: '🇵🇱' },
-    { code: 'czk', symbol: 'Kč', name: 'Czech Koruna', flag: '🇨🇿' },
-    { code: 'huf', symbol: 'Ft', name: 'Hungarian Forint', flag: '🇭🇺' },
-    { code: 'ron', symbol: 'lei', name: 'Romanian Leu', flag: '🇷🇴' },
-    // ── Latin America ──
-    { code: 'mxn', symbol: '$', name: 'Peso Mexicano', flag: '🇲🇽' },
-    { code: 'cop', symbol: '$', name: 'Peso Colombiano', flag: '🇨🇴' },
-    { code: 'clp', symbol: '$', name: 'Peso Chileno', flag: '🇨🇱' },
-    { code: 'ars', symbol: '$', name: 'Peso Argentino', flag: '🇦🇷' },
-    { code: 'pen', symbol: 'S/', name: 'Sol Peruano', flag: '🇵🇪' },
-    { code: 'brl', symbol: 'R$', name: 'Real Brasileiro', flag: '🇧🇷' },
-    { code: 'uyu', symbol: '$U', name: 'Peso Uruguayo', flag: '🇺🇾' },
-    { code: 'crc', symbol: '₡', name: 'Colón Costarricense', flag: '🇨🇷' },
-    { code: 'dop', symbol: 'RD$', name: 'Peso Dominicano', flag: '🇩🇴' },
-    { code: 'gtq', symbol: 'Q', name: 'Quetzal Guatemalteco', flag: '🇬🇹' },
-    { code: 'bob', symbol: 'Bs', name: 'Boliviano', flag: '🇧🇴' },
-]
-
-export const DEFAULT_CURRENCY = 'usd'
 
 const CURRENCY_COOKIE = 'currency'
 
-// ─── Locale → Intl locale mapping ─────────────────────────────
-// Used by formatPrice() when no i18n locale is available.
-const INTL_LOCALE_MAP: Record<string, string> = {
-    usd: 'en-US',
-    eur: 'de-DE',
-    gbp: 'en-GB',
-    chf: 'de-CH',
-    sek: 'sv-SE',
-    dkk: 'da-DK',
-    nok: 'nb-NO',
-    pln: 'pl-PL',
-    czk: 'cs-CZ',
-    huf: 'hu-HU',
-    ron: 'ro-RO',
-    mxn: 'es-MX',
-    cop: 'es-CO',
-    clp: 'es-CL',
-    ars: 'es-AR',
-    pen: 'es-PE',
-    brl: 'pt-BR',
-    uyu: 'es-UY',
-    crc: 'es-CR',
-    dop: 'es-DO',
-    gtq: 'es-GT',
-    bob: 'es-BO',
-}
+// ─── Locale → Intl locale mapping (derived from shared) ──────
+const INTL_LOCALE_MAP: Record<string, string> = CURRENCY_INTL_MAP
 
-// ─── Currency resolution ──────────────────────────────────────
+// ─── Currency resolution (SERVER-ONLY at runtime) ─────────────
+// Uses dynamic import of next/headers to avoid poisoning client bundles.
 export async function getCurrency(defaultCurrency?: string): Promise<string> {
-    // 1. Cookie
-    const cookieStore = await cookies()
-    const cookieCurrency = cookieStore.get(CURRENCY_COOKIE)?.value
-    if (cookieCurrency && isValidCurrency(cookieCurrency)) {
-        return cookieCurrency
+    // 1. Cookie (server-only — dynamically imported)
+    try {
+        const { cookies } = await import('next/headers')
+        const cookieStore = await cookies()
+        const cookieCurrency = cookieStore.get(CURRENCY_COOKIE)?.value
+        if (cookieCurrency && isValidCurrency(cookieCurrency)) {
+            return cookieCurrency
+        }
+    } catch {
+        // Not in server context — skip cookie resolution
     }
 
     // 2. Config default
@@ -129,16 +107,21 @@ export function getActiveCurrencies(config?: Record<string, unknown> | null): Cu
  * @param locale - Optional i18n locale for number formatting
  */
 export function formatPrice(amount: number, currencyCode: string, locale?: Locale): string {
+    const code = currencyCode.toLowerCase()
     const intlLocale = locale
-        ? localeToIntlLocale(locale, currencyCode)
-        : INTL_LOCALE_MAP[currencyCode.toLowerCase()] ?? 'en-US'
+        ? localeToIntlLocale(locale, code)
+        : INTL_LOCALE_MAP[code] ?? 'en-US'
+
+    // Zero-decimal currencies: amount IS the display value (no /100)
+    const isZero = ZERO_DECIMAL_CURRENCIES.has(code)
+    const displayAmount = isZero ? amount : amount / 100
 
     return new Intl.NumberFormat(intlLocale, {
         style: 'currency',
-        currency: currencyCode.toUpperCase(),
+        currency: code.toUpperCase(),
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(amount / 100)
+        maximumFractionDigits: isZero ? 0 : 2,
+    }).format(displayAmount)
 }
 
 /**
@@ -158,8 +141,7 @@ function localeToIntlLocale(locale: Locale, currencyCode: string): string {
     return map[locale] ?? 'en-US'
 }
 
-/**
- * Server Action: set currency cookie.
- * Re-exported from actions.ts (separate file to avoid next/headers in client bundles).
- */
-export { setCurrencyCookie } from './actions'
+// NOTE: setCurrencyCookie lives in './actions' (a 'use server' module).
+// Import it directly from '@/lib/i18n/actions' — do NOT re-export here.
+// Re-exporting a 'use server' module causes Turbopack to split this file
+// into server/client chunks, breaking named exports like isZeroDecimal.

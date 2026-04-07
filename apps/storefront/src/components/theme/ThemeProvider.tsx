@@ -20,6 +20,7 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProvide
         <NextThemesProvider
             attribute="class"
             defaultTheme={defaultTheme}
+            storageKey="storefront-theme"
             enableSystem
             disableTransitionOnChange={false}
         >

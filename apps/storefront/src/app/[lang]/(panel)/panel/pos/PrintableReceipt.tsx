@@ -48,7 +48,7 @@ interface PrintableReceiptProps {
 // ── Helpers ────────────────────────────────────────────────────
 
 function fmtPrice(amount: number, currency: string): string {
-    return formatPOSCurrency(amount, currency?.toUpperCase() || 'EUR')
+    return formatPOSCurrency(amount, currency)
 }
 
 function fmtDate(iso: string): string {

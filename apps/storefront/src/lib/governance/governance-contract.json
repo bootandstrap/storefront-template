@@ -1,5 +1,5 @@
 {
-  "$schema": "governance-contract/v1",
+  "$schema": "governance-contract/v2",
   "generated_at": "2026-03-04T18:03:17.168Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "flags": {
@@ -564,6 +564,7 @@
         "description": "Conecta tus herramientas y deja que los datos fluyan solos.",
         "category": "automate",
         "popular": false,
+        "status": "construction",
         "requires": [],
         "tiers": [
           {
@@ -725,12 +726,13 @@
         "category": "channels",
         "popular": false,
         "requires": [
-          "pos"
+          "pos",
+          "ecommerce"
         ],
         "tiers": [
           {
             "key": "basic",
-            "name": "Kiosco",
+            "name": "Kiosco Basic",
             "price_chf": 15,
             "features": [
               "Modo pantalla completa (F11)",
@@ -738,7 +740,33 @@
               "Bloqueo de navegación (sin salir del kiosco)",
               "Logo de negocio en pantalla de espera"
             ],
+            "recommended": false
+          },
+          {
+            "key": "pro",
+            "name": "Kiosco Pro",
+            "price_chf": 30,
+            "features": [
+              "Todo de Basic incluido",
+              "Pantalla de espera personalizable (imágenes, vídeo)",
+              "Multi-dispositivo (hasta 3 tablets simultáneos)",
+              "Modo offline con sincronización",
+              "Temporizador de inactividad configurable"
+            ],
             "recommended": true
+          },
+          {
+            "key": "enterprise",
+            "name": "Kiosco Enterprise",
+            "price_chf": 50,
+            "features": [
+              "Todo de Pro incluido",
+              "Dispositivos ilimitados",
+              "Gestión remota de kioscos",
+              "Analítica de uso por dispositivo",
+              "Configuración centralizada desde panel"
+            ],
+            "recommended": false
           }
         ]
       },

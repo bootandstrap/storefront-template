@@ -29,6 +29,7 @@ export interface UseOfflineSyncReturn {
     pendingCount: number
     lastSyncTime: Date | null
     cachedProducts: CachedProduct[]
+    offlineInventoryOffsets: Record<string, number>
     syncNow: () => Promise<void>
     queueOfflineSale: (sale: Omit<PendingSale, 'id' | 'sync_attempts' | 'offline_ref'>) => Promise<void>
 }
@@ -89,6 +90,29 @@ export function useOfflineSync(): UseOfflineSyncReturn {
             window.removeEventListener('offline', handleOffline)
         }
     }, [])
+
+    // ── Compute Offline Inventory Offsets ──
+    const [offlineInventoryOffsets, setOfflineInventoryOffsets] = useState<Record<string, number>>({})
+
+    const computeInventoryOffsets = useCallback(async () => {
+        try {
+            const store = await import('./offline-store')
+            const allPending = await store.getPendingSales()
+            const offsets: Record<string, number> = {}
+            for (const sale of allPending) {
+                for (const item of sale.items) {
+                    offsets[item.variant_id] = (offsets[item.variant_id] || 0) + item.quantity
+                }
+            }
+            setOfflineInventoryOffsets(offsets)
+        } catch {
+            // ignore
+        }
+    }, [])
+
+    useEffect(() => {
+        computeInventoryOffsets()
+    }, [pendingCount, computeInventoryOffsets])
 
     // ── Drain pending sales queue ──
     const drainQueue = useCallback(async () => {
@@ -170,8 +194,9 @@ export function useOfflineSync(): UseOfflineSyncReturn {
             }
         } finally {
             isSyncingRef.current = false
+            computeInventoryOffsets()
         }
-    }, [pendingCount])
+    }, [pendingCount, computeInventoryOffsets])
 
     // ── Refresh product cache from server ──
     const refreshProducts = useCallback(async () => {
@@ -243,12 +268,13 @@ export function useOfflineSync(): UseOfflineSyncReturn {
 
                 const count = await store.getPendingSaleCount()
                 setPendingCount(count)
+                computeInventoryOffsets()
             } catch (err) {
                 console.error('[POS Offline] Failed to queue sale:', err)
                 throw err
             }
         },
-        []
+        [computeInventoryOffsets]
     )
 
     return {
@@ -257,7 +283,9 @@ export function useOfflineSync(): UseOfflineSyncReturn {
         pendingCount,
         lastSyncTime,
         cachedProducts,
+        offlineInventoryOffsets,
         syncNow,
         queueOfflineSale,
     }
 }
+

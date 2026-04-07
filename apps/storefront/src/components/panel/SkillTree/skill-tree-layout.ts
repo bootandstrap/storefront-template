@@ -1,8 +1,8 @@
 /**
- * Skill Tree Layout Engine — MMORPG Edition
+ * Skill Tree Layout Engine — Professional B2B Edition
  *
  * Transforms module catalog into React Flow nodes + edges
- * with energy-line connections and hexagonal node sizing.
+ * with subtle animated connections and clean card sizing.
  * Uses dagre for automatic graph layout.
  */
 
@@ -12,7 +12,8 @@ import type { Node, Edge } from '@xyflow/react'
 export interface SkillTreeModule {
     key: string
     name: string
-    icon: string
+    icon: string        // emoji fallback
+    icon_name: string   // Lucide icon name
     description: string
     category: string
     payment_type?: string
@@ -40,55 +41,72 @@ export interface SkillTreeNodeData {
     totalTiers: number
     activeTiers: number
     onNodeClick: (moduleKey: string) => void
+    labels: SkillTreeLabels
 }
 
-// ── Category Colors — MMORPG palette (vibrant on dark) ─────────────────────
-const CATEGORY_CONFIG: Record<string, { color: string; column: number }> = {
-    sell:     { color: '#3b82f6', column: 0 },  // electric blue
-    engage:  { color: '#a855f7', column: 1 },  // vivid purple
-    grow:    { color: '#22c55e', column: 2 },  // neon green
-    automate:{ color: '#f59e0b', column: 3 },  // molten amber
+export interface SkillTreeLabels {
+    locked: string
+    available: string
+    active: string
+    maxed: string
+    activate: string
+    upgrade: string
+    perMonth: string
+    requires: string
+    treeTitle: string
+    treeTip: string
+    modules: string
+    tiers: string
+    progress: string
+    categories: string
+    states: string
+}
+
+// ── Category Config — Muted professional palette ─────────────────────────────
+const CATEGORY_CONFIG: Record<string, { color: string; label: string }> = {
+    core:           { color: '#10b981', label: 'Core' },
+    channels:       { color: '#3b82f6', label: 'Channels' },
+    engage:         { color: '#8b5cf6', label: 'Engagement' },
+    grow:           { color: '#06b6d4', label: 'Growth' },
+    automate:       { color: '#f59e0b', label: 'Automation' },
+    marketing:      { color: '#ef4444', label: 'Marketing' },
+    intelligence:   { color: '#f97316', label: 'Intelligence' },
+    advanced:       { color: '#6366f1', label: 'Advanced' },
+    infrastructure: { color: '#8b5cf6', label: 'Infrastructure' },
+    sell:           { color: '#10b981', label: 'Sell' },
+    other:          { color: '#64748b', label: 'Other' },
 }
 
 export function getCategoryColor(category: string): string {
-    return CATEGORY_CONFIG[category]?.color ?? '#6b7280'
+    return CATEGORY_CONFIG[category]?.color ?? '#64748b'
 }
 
 export function getCategoryLabel(category: string): string {
-    const labels: Record<string, string> = {
-        sell: '⚔️ Vender',
-        engage: '🛡️ Conectar',
-        grow: '🌿 Crecer',
-        automate: '⚡ Automatizar',
-    }
-    return labels[category] ?? category
+    return CATEGORY_CONFIG[category]?.label ?? category
 }
 
 /**
- * Build React Flow nodes + edges with RPG energy connections.
+ * Build React Flow nodes + edges with professional connections.
  */
 export function buildSkillTreeGraph(
     modules: SkillTreeModule[],
     onNodeClick: (moduleKey: string) => void,
+    labels: SkillTreeLabels,
 ): { nodes: Node<SkillTreeNodeData>[]; edges: Edge[] } {
     const g = new dagre.graphlib.Graph()
     g.setDefaultEdgeLabel(() => ({}))
     g.setGraph({
-        rankdir: 'TB',       // Top to bottom
-        nodesep: 80,         // More space for hex nodes
-        ranksep: 120,        // Vertical spacing for energy lines
-        marginx: 60,
-        marginy: 60,
+        rankdir: 'TB',
+        nodesep: 60,
+        ranksep: 100,
+        marginx: 40,
+        marginy: 40,
     })
 
-    // Hex node dimensions (narrower than before)
-    const NODE_WIDTH = 210
-    const NODE_HEIGHT = 220
+    const NODE_WIDTH = 200
+    const NODE_HEIGHT = 180
 
-    // Map for quick lookup
     const moduleMap = new Map(modules.map(m => [m.key, m]))
-
-    // Determine node states
     const activeKeys = new Set(modules.filter(m => m.isActive).map(m => m.key))
 
     function getNodeState(mod: SkillTreeModule): SkillTreeNodeData['state'] {
@@ -102,18 +120,18 @@ export function buildSkillTreeGraph(
         return 'available'
     }
 
-    // Add nodes to dagre
+    // Add nodes
     for (const mod of modules) {
         g.setNode(mod.key, { width: NODE_WIDTH, height: NODE_HEIGHT })
     }
 
-    // ── Energy Edges ────────────────────────────────────────────────────────
+    // ── Edges ────────────────────────────────────────────────────────────────
     const edges: Edge[] = []
     for (const mod of modules) {
         for (const req of mod.requires) {
             if (moduleMap.has(req)) {
                 g.setEdge(req, mod.key)
-                const isLit = activeKeys.has(req) // parent is active = energy flows
+                const isLit = activeKeys.has(req)
                 const color = isLit ? getCategoryColor(mod.category) : '#1e293b'
 
                 edges.push({
@@ -124,26 +142,24 @@ export function buildSkillTreeGraph(
                     animated: isLit,
                     style: {
                         stroke: color,
-                        strokeWidth: isLit ? 2.5 : 1,
+                        strokeWidth: isLit ? 2 : 1,
                         strokeDasharray: isLit ? undefined : '6 4',
-                        filter: isLit ? `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 8px ${color}40)` : 'none',
+                        filter: isLit ? `drop-shadow(0 0 3px ${color}60)` : 'none',
                         transition: 'all 0.5s ease',
                     },
                     markerEnd: {
                         type: 'arrowclosed' as const,
                         color,
-                        width: 16,
-                        height: 16,
+                        width: 14,
+                        height: 14,
                     },
                 })
             }
         }
     }
 
-    // Run dagre layout
     dagre.layout(g)
 
-    // Convert dagre positions to React Flow nodes
     const nodes: Node<SkillTreeNodeData>[] = modules.map((mod) => {
         const nodeWithPos = g.node(mod.key)
         const state = getNodeState(mod)
@@ -171,6 +187,7 @@ export function buildSkillTreeGraph(
                 totalTiers: mod.tiers.length,
                 activeTiers: mod.currentTierIndex + 1,
                 onNodeClick,
+                labels,
             },
         }
     })

@@ -13,10 +13,11 @@
  * - Hover-lift cards
  */
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
+import { TEMPLATE_VARIABLES, TEMPLATE_PRESETS } from '@/lib/registries/whatsapp-templates'
 import { createTemplate, updateTemplate, deleteTemplate } from './actions'
 import { renderWhatsAppPreviewParts } from './preview-render'
 import { Plus, Eye, Code, Trash2, Pencil, MessageCircle, Copy, Check, X, Loader2 } from 'lucide-react'
@@ -44,46 +45,7 @@ interface Props {
     maxTemplates: number
 }
 
-// ---------------------------------------------------------------------------
-// Variable definitions for click-to-insert
-// ---------------------------------------------------------------------------
-
-const TEMPLATE_VARIABLES = [
-    { key: 'store_name', emoji: '🏪', label: 'Tienda' },
-    { key: 'customer_name', emoji: '👤', label: 'Cliente' },
-    { key: 'customer_phone', emoji: '📱', label: 'Teléfono' },
-    { key: 'total', emoji: '💰', label: 'Total' },
-    { key: 'order_id', emoji: '🔢', label: 'Nº Pedido' },
-    { key: 'items', emoji: '📦', label: 'Artículos' },
-] as const
-
-// Template presets
-const TEMPLATE_PRESETS = [
-    {
-        id: 'order',
-        emoji: '🛒',
-        label: 'Nuevo Pedido',
-        body: '🛒 *Nuevo Pedido — {{store_name}}*\n\nCliente: {{customer_name}}\nPedido: {{order_id}}\n\n{{items}}\n\n💰 *Total: {{total}}*\n\n¡Gracias por tu compra! 🎉',
-    },
-    {
-        id: 'welcome',
-        emoji: '👋',
-        label: 'Bienvenida',
-        body: '👋 ¡Hola {{customer_name}}!\n\nBienvenido/a a *{{store_name}}*.\n\nEstamos encantados de tenerte aquí. Si necesitas algo, no dudes en escribirnos.\n\n¡Un saludo! 😊',
-    },
-    {
-        id: 'shipping',
-        emoji: '🚚',
-        label: 'Envío',
-        body: '🚚 *Pedido Enviado — {{store_name}}*\n\n¡Hola {{customer_name}}!\n\nTu pedido {{order_id}} está en camino.\n\nTe avisaremos cuando llegue. 📦',
-    },
-    {
-        id: 'custom',
-        emoji: '✏️',
-        label: 'Personalizada',
-        body: '',
-    },
-]
+// Template variables and presets loaded from centralized SSOT registry
 
 // ---------------------------------------------------------------------------
 // Component

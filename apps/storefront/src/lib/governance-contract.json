@@ -1,15 +1,17 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-04-02T12:10:56.356Z",
+  "generated_at": "2026-04-06T00:38:11.118Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
-    "count": 62,
+    "count": 79,
     "keys": [
+      "enable_2fa",
       "enable_abandoned_cart_emails",
       "enable_address_management",
       "enable_admin_api",
       "enable_analytics",
+      "enable_apple_oauth",
       "enable_auth_advanced",
       "enable_automations",
       "enable_bank_transfer",
@@ -19,16 +21,26 @@
       "enable_cms_pages",
       "enable_cookie_consent",
       "enable_crm",
+      "enable_crm_contacts",
       "enable_crm_export",
+      "enable_crm_interactions",
       "enable_crm_segmentation",
+      "enable_crm_segments",
+      "enable_custom_webhooks",
       "enable_customer_accounts",
       "enable_ecommerce",
       "enable_email_auth",
       "enable_email_campaigns",
       "enable_email_notifications",
+      "enable_email_segmentation",
       "enable_email_templates",
-      "enable_google_auth",
+      "enable_facebook_oauth",
+      "enable_google_oauth",
       "enable_guest_checkout",
+      "enable_kiosk_analytics",
+      "enable_kiosk_idle_timer",
+      "enable_kiosk_remote_management",
+      "enable_magic_link",
       "enable_maintenance_mode",
       "enable_multi_currency",
       "enable_multi_language",
@@ -52,15 +64,20 @@
       "enable_product_search",
       "enable_promotions",
       "enable_related_products",
+      "enable_reservation_checkout",
+      "enable_review_request_emails",
       "enable_reviews",
       "enable_sales_channels",
       "enable_self_service_returns",
       "enable_seo",
+      "enable_seo_tools",
       "enable_social_links",
       "enable_social_media",
+      "enable_social_sharing",
       "enable_traffic_analytics",
       "enable_traffic_autoscale",
       "enable_traffic_expansion",
+      "enable_transactional_emails",
       "enable_user_registration",
       "enable_whatsapp_checkout",
       "enable_whatsapp_contact",
@@ -82,7 +99,8 @@
           "enable_guest_checkout",
           "require_auth_to_order",
           "enable_order_notes",
-          "enable_promotions"
+          "enable_promotions",
+          "enable_reservation_checkout"
         ]
       },
       "___auth___accounts": {
@@ -91,11 +109,15 @@
         "flags": [
           "enable_user_registration",
           "enable_email_auth",
-          "enable_google_auth",
+          "enable_google_oauth",
           "enable_customer_accounts",
           "enable_address_management",
           "enable_order_tracking",
-          "enable_auth_advanced"
+          "enable_auth_advanced",
+          "enable_apple_oauth",
+          "enable_facebook_oauth",
+          "enable_2fa",
+          "enable_magic_link"
         ]
       },
       "___content___discovery": {
@@ -112,6 +134,9 @@
           "enable_product_comparisons",
           "enable_pos",
           "enable_pos_kiosk",
+          "enable_kiosk_analytics",
+          "enable_kiosk_idle_timer",
+          "enable_kiosk_remote_management",
           "enable_pos_keyboard_shortcuts",
           "enable_pos_quick_sale",
           "enable_pos_offline_cart",
@@ -139,7 +164,8 @@
           "enable_owner_panel",
           "enable_newsletter",
           "enable_social_media",
-          "enable_sales_channels"
+          "enable_sales_channels",
+          "enable_social_sharing"
         ]
       },
       "___system": {
@@ -155,7 +181,9 @@
           "owner_lite_enabled",
           "owner_advanced_modules_enabled",
           "enable_seo",
-          "enable_automations"
+          "enable_automations",
+          "enable_seo_tools",
+          "enable_custom_webhooks"
         ]
       },
       "___crm": {
@@ -164,7 +192,10 @@
         "flags": [
           "enable_crm",
           "enable_crm_segmentation",
-          "enable_crm_export"
+          "enable_crm_export",
+          "enable_crm_contacts",
+          "enable_crm_interactions",
+          "enable_crm_segments"
         ]
       },
       "___email_marketing": {
@@ -174,7 +205,10 @@
           "enable_email_notifications",
           "enable_abandoned_cart_emails",
           "enable_email_campaigns",
-          "enable_email_templates"
+          "enable_email_templates",
+          "enable_transactional_emails",
+          "enable_review_request_emails",
+          "enable_email_segmentation"
         ]
       },
       "___traffic_capacity": {
@@ -189,9 +223,10 @@
     }
   },
   "limits": {
-    "count": 28,
+    "count": 29,
     "keys": [
       "max_admin_users",
+      "max_automations",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -222,6 +257,7 @@
     ],
     "numeric_keys": [
       "max_admin_users",
+      "max_automations",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -906,14 +942,59 @@
         "key": "pos_kiosk",
         "name": "Modo Kiosco POS",
         "icon": "🖥️",
-        "description": "Terminal de autoservicio para clientes",
+        "description": "Terminal de autoservicio interactivo para clientes",
         "category": "sell",
         "popular": false,
         "requires": [
           "pos"
         ],
         "payment_type": "subscription",
-        "tiers": []
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Básico",
+            "price_chf": 15,
+            "features": [
+              "Kiosko estándar para autoservicio",
+              "Pagos integrados"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true
+            }
+          },
+          {
+            "key": "pro",
+            "name": "Avanzado",
+            "price_chf": 29,
+            "features": [
+              "Todo lo básico",
+              "Temporizador de inactividad para flujo rápido"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_idle_timer": true
+            }
+          },
+          {
+            "key": "enterprise",
+            "name": "Premium",
+            "price_chf": 59,
+            "features": [
+              "Todo lo avanzado",
+              "Gestión remota",
+              "Analíticas avanzadas"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_analytics": true,
+              "enable_kiosk_idle_timer": true,
+              "enable_kiosk_remote_management": true
+            }
+          }
+        ]
       },
       {
         "key": "rrss",

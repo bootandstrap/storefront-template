@@ -40,10 +40,15 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 // Auth
                 enable_user_registration: true,
                 enable_email_auth: true,
-                enable_google_auth: true,
+                enable_google_oauth: true,
                 enable_customer_accounts: true,
                 enable_address_management: true,
                 enable_order_tracking: true,
+                // Auth Advanced (granular)
+                enable_apple_oauth: true,
+                enable_facebook_oauth: true,
+                enable_2fa: true,
+                enable_magic_link: true,
                 // Content
                 enable_carousel: true,
                 enable_cms_pages: true,
@@ -73,11 +78,17 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_crm: true,
                 enable_crm_segmentation: true,
                 enable_crm_export: true,
+                enable_crm_contacts: true,
+                enable_crm_interactions: true,
+                enable_crm_segments: true,
                 // Email Marketing
                 enable_email_notifications: true,
                 enable_abandoned_cart_emails: true,
                 enable_email_campaigns: true,
                 enable_email_templates: true,
+                enable_transactional_emails: true,
+                enable_review_request_emails: true,
+                enable_email_segmentation: true,
                 // POS
                 enable_pos: true,
                 enable_pos_kiosk: true,
@@ -89,16 +100,24 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_pos_customer_search: true,
                 enable_pos_multi_device: true,
                 enable_pos_shifts: true,
+                // Kiosk (granular)
+                enable_kiosk_analytics: true,
+                enable_kiosk_idle_timer: true,
+                enable_kiosk_remote_management: true,
                 // Capacidad
                 enable_traffic_expansion: true,
                 enable_traffic_analytics: true,
                 enable_traffic_autoscale: true,
-                // New module gates (Phase 4)
+                // Module gates
                 enable_seo: true,
+                enable_seo_tools: true,
                 enable_social_media: true,
+                enable_social_sharing: true,
                 enable_automations: true,
+                enable_custom_webhooks: true,
                 enable_auth_advanced: true,
                 enable_sales_channels: true,
+                enable_reservation_checkout: true,
             }
 
             const interfaceKeys = Object.keys(dummyFlags).sort()
@@ -156,6 +175,8 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 max_payment_methods: 3,
                 max_pos_payment_methods: 3,
                 max_crm_contacts: 200,
+                max_automations: 0,
+                max_pos_kiosk_devices: 0,
             }
 
             const interfaceKeys = Object.keys(dummyLimits).sort()
@@ -211,7 +232,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
 
     describe('Governance Contract integrity', () => {
         it('contract has expected structure', () => {
-            expect(contract.$schema).toBe('governance-contract/v1')
+            expect(contract.$schema).toBe('governance-contract/v2')
             expect(contract.flags.count).toBeGreaterThanOrEqual(43)
             expect(contract.limits.count).toBeGreaterThanOrEqual(27)
             expect(contract.modules.count).toBeGreaterThanOrEqual(10)
@@ -220,7 +241,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
         it('module keys are all canonical', () => {
             const expectedModules = [
                 'auth_advanced', 'automation', 'capacidad', 'chatbot', 'crm',
-                'ecommerce', 'email_marketing', 'i18n', 'pos', 'rrss',
+                'ecommerce', 'email_marketing', 'i18n', 'pos', 'pos_kiosk', 'rrss',
                 'sales_channels', 'seo',
             ]
             expect(contract.modules.keys.sort()).toEqual(expectedModules.sort())

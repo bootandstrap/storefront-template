@@ -31,8 +31,8 @@ interface ActionResult {
 export async function createProduct(data: {
     title: string
     description?: string
-    price: number
-    currency: string
+    /** Multi-currency prices: [{ currency: 'cop', amount: 6500 }, ...] */
+    prices: { currency: string; amount: number }[]
     categoryId?: string
     status: 'draft' | 'published'
     stockQuantity?: number
@@ -40,9 +40,6 @@ export async function createProduct(data: {
     const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!data.title.trim()) {
         return { success: false, error: 'El nombre es obligatorio' }
-    }
-    if (data.price < 0) {
-        return { success: false, error: 'El precio no puede ser negativo' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
@@ -55,6 +52,14 @@ export async function createProduct(data: {
         return { success: false, error: buildLimitError('max_products', limitCheck) }
     }
 
+    const { isZeroDecimal } = await import('@/lib/i18n/currencies')
+    const medusaPrices = data.prices
+        .filter(p => p.amount >= 0)
+        .map(p => ({
+            amount: isZeroDecimal(p.currency) ? Math.round(p.amount) : Math.round(p.amount * 100),
+            currency_code: p.currency,
+        }))
+
     const manageInventory = appConfig.config.stock_mode === 'managed'
 
     const input: CreateProductInput = {
@@ -65,7 +70,7 @@ export async function createProduct(data: {
         variants: [
             {
                 title: 'Default',
-                prices: [{ amount: Math.round(data.price * 100), currency_code: data.currency }],
+                prices: medusaPrices,
                 manage_inventory: manageInventory,
                 ...(manageInventory ? { inventory_quantity: data.stockQuantity ?? 0 } : {}),
             },
@@ -78,7 +83,7 @@ export async function createProduct(data: {
     }
 
     revalidatePanel('all')
-    logOwnerAction(tenantId, 'product.create', { title: data.title, status: data.status, price: data.price })
+    logOwnerAction(tenantId, 'product.create', { title: data.title, status: data.status, priceCount: medusaPrices.length })
 
     return { success: true }
 }
@@ -90,8 +95,8 @@ export async function updateProduct(
         description?: string
         status?: 'draft' | 'published'
         categoryId?: string | null
-        price?: number
-        currency?: string
+        /** Multi-currency prices */
+        prices?: { currency: string; amount: number }[]
         variantId?: string
     }
 ): Promise<ActionResult> {
@@ -105,7 +110,6 @@ export async function updateProduct(
         return { success: false, error: 'Medusa configuration not found' }
     }
 
-    // Update product fields
     const updateData: Partial<CreateProductInput> = {}
     if (data.title !== undefined) updateData.title = data.title.trim()
     if (data.description !== undefined) updateData.description = data.description.trim() || undefined
@@ -119,11 +123,17 @@ export async function updateProduct(
         return { success: false, error: result.error }
     }
 
-    // Update price separately if provided
-    if (data.price !== undefined && data.variantId && data.currency) {
-        const priceResult = await updateVariantPrices(id, data.variantId, [
-            { amount: Math.round(data.price * 100), currency_code: data.currency },
-        ], scope)
+    // Update prices (multi-currency)
+    if (data.variantId && data.prices && data.prices.length > 0) {
+        const { isZeroDecimal } = await import('@/lib/i18n/currencies')
+        const medusaPrices = data.prices
+            .filter(p => p.amount >= 0)
+            .map(p => ({
+                amount: isZeroDecimal(p.currency) ? Math.round(p.amount) : Math.round(p.amount * 100),
+                currency_code: p.currency,
+            }))
+
+        const priceResult = await updateVariantPrices(id, data.variantId, medusaPrices, scope)
         if (priceResult.error) {
             return { success: false, error: priceResult.error }
         }

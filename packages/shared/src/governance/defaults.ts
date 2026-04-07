@@ -150,10 +150,16 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_crm: false,
         enable_crm_segmentation: false,
         enable_crm_export: false,
+        enable_crm_contacts: false,
+        enable_crm_interactions: false,
+        enable_crm_segments: false,
         enable_email_notifications: false,
         enable_abandoned_cart_emails: false,
         enable_email_campaigns: false,
         enable_email_templates: false,
+        enable_transactional_emails: false,
+        enable_review_request_emails: false,
+        enable_email_segmentation: false,
         // POS
         enable_pos: false,
         enable_pos_kiosk: false,
@@ -165,16 +171,29 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_pos_customer_search: false,
         enable_pos_multi_device: false,
         enable_pos_shifts: false,
+        // Kiosk (granular)
+        enable_kiosk_analytics: false,
+        enable_kiosk_idle_timer: false,
+        enable_kiosk_remote_management: false,
         // Capacidad (Traffic)
         enable_traffic_expansion: false,
         enable_traffic_analytics: false,
         enable_traffic_autoscale: false,
-        // New module gates (Phase 4)
+        // Module gates
         enable_seo: false,
+        enable_seo_tools: false,
         enable_social_media: false,
+        enable_social_sharing: false,
         enable_automations: false,
+        enable_custom_webhooks: false,
         enable_auth_advanced: false,
         enable_sales_channels: false,
+        enable_reservation_checkout: false,
+        // Auth Advanced (granular)
+        enable_apple_oauth: false,
+        enable_facebook_oauth: false,
+        enable_2fa: false,
+        enable_magic_link: false,
     },
     planLimits: {
         // MINIMUM VALUES — no capacity granted during degradation
@@ -206,6 +225,8 @@ export const FALLBACK_CONFIG: AppConfig = {
         max_payment_methods: 0,
         max_pos_payment_methods: 0,
         max_crm_contacts: 0,
+        max_automations: 0,
+        max_pos_kiosk_devices: 0,
     },
     planExpired: false,
     tenantStatus: 'active',

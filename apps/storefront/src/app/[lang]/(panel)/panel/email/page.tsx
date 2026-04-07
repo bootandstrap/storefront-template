@@ -104,10 +104,13 @@ async function loadEmailStats(tenantId: string): Promise<{
 
 export default async function EmailMarketingPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ lang: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { lang } = await params
+    const rawSearchParams = await searchParams
     const { tenantId } = await withPanelGuard()
 
     const { featureFlags, planLimits, config: storeConfig } = await getConfigForTenant(tenantId)
@@ -127,10 +130,24 @@ export default async function EmailMarketingPage({
     const campaignsFlag = isFeatureEnabled(featureFlags, 'enable_email_campaigns')
     const templatesFlag = isFeatureEnabled(featureFlags, 'enable_email_templates')
 
+    // Parse list query for email logs
+    const { parsePanelListQuery } = await import('@/lib/panel-list-query')
+    const query = parsePanelListQuery(rawSearchParams, {
+        defaultLimit: 15,
+        allowedStatuses: ['all', 'sent', 'delivered', 'bounced', 'opened', 'clicked', 'failed'],
+    })
+
     // Load real data from DB (concurrent)
-    const [automationConfig, emailStats] = await Promise.all([
+    const { getEmailLogs } = await import('@/lib/email-log')
+    const [automationConfig, emailStats, emailLogsData] = await Promise.all([
         loadAutomationConfig(tenantId),
         loadEmailStats(tenantId),
+        getEmailLogs(tenantId, {
+            limit: query.limit,
+            offset: query.offset,
+            status: query.status,
+            q: query.q
+        })
     ])
 
     const monthlyLimit = 'max_email_sends_month' in planLimits
@@ -149,6 +166,7 @@ export default async function EmailMarketingPage({
         title: t('panel.email.title'),
         subtitle: t('panel.email.subtitle'),
         dashboard: t('panel.email.dashboard'),
+        logs: t('panel.email.logs') ?? 'Logs',
         automations: t('panel.email.automations'),
         templates: t('panel.email.templates'),
         campaigns: t('panel.email.campaigns'),
@@ -196,6 +214,13 @@ export default async function EmailMarketingPage({
                     email_sender_name: cfgAny.email_sender_name ?? '',
                     email_reply_to: cfgAny.email_reply_to ?? '',
                     email_footer_text: cfgAny.email_footer_text ?? '',
+                }}
+                logsData={emailLogsData}
+                queryParams={{
+                    currentPage: query.page,
+                    pageSize: query.limit,
+                    status: (query.status as 'all' | 'sent' | 'delivered' | 'bounced' | 'opened' | 'clicked' | 'failed' | undefined) ?? 'all',
+                    search: query.q ?? ''
                 }}
             />
         </div>

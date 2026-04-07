@@ -127,14 +127,14 @@ describe('isPOSDashboardAvailable', () => {
 
 describe('formatPOSCurrency', () => {
     it('formats CHF correctly', () => {
-        const result = formatPOSCurrency(2500, 'chf', 'de-CH')
+        const result = formatPOSCurrency(2500, 'chf')
         expect(result).toContain('25')
         // Intl includes currency symbol — just verify it's formatted
         expect(result).toMatch(/CHF|Fr/)
     })
 
     it('formats EUR correctly', () => {
-        const result = formatPOSCurrency(1000, 'EUR', 'es-ES')
+        const result = formatPOSCurrency(1000, 'EUR')
         expect(result).toContain('10')
     })
 
@@ -148,10 +148,8 @@ describe('formatPOSCurrency', () => {
         expect(result).toContain('9')
     })
 
-    it('defaults to EUR and de-CH locale', () => {
-        const result = formatPOSCurrency(1500)
-        expect(result).toBeTruthy()
-        expect(typeof result).toBe('string')
+    it('throws when currencyCode missing (strict governance)', () => {
+        expect(() => (formatPOSCurrency as any)(1500)).toThrow()
     })
 
     it('uppercases currency code', () => {

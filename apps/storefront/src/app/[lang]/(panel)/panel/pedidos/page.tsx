@@ -11,6 +11,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import { getConfigForTenant } from '@/lib/config'
+import { resolveCurrencyContext, sumRevenueByCurrency, formatAmount } from '@/lib/currency-engine'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { ShoppingBag } from 'lucide-react'
 import OrdersClient from './OrdersClient'
@@ -38,14 +39,15 @@ export default async function OrdersPage({
 
     const { tenantId } = await withPanelGuard()
     const scope = await getTenantMedusaScope(tenantId)
-    const { config } = await getConfigForTenant(tenantId)
+    const appConfig = await getConfigForTenant(tenantId)
+    const { config, featureFlags } = appConfig
 
     const query = parsePanelListQuery(rawSearchParams, {
         defaultLimit: 20,
         allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
     })
 
-    const [{ orders, count }, ordersThisMonth] = await Promise.all([
+    const [{ orders, count }, ordersThisMonth, { orders: allOrders }] = await Promise.all([
         getAdminOrders({
             limit: query.limit,
             offset: query.offset,
@@ -53,18 +55,29 @@ export default async function OrdersPage({
             status: query.status,
         }, scope),
         getOrdersThisMonth(scope),
+        // Fetch ALL orders for accurate revenue aggregation (not just the current page)
+        getAdminOrders({ limit: 500, status: 'all' }, scope),
     ])
 
-    // Compute order stats for StatGrid
+    // Compute order stats with CurrencyEngine — revenue uses allOrders, not page slice
     const pendingCount = orders.filter(o => o.status === 'pending').length
     const completedCount = orders.filter(o => o.status === 'completed').length
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total ?? 0), 0)
-    const currency = config.default_currency || orders[0]?.currency_code || 'usd'
-    const formattedRevenue = new Intl.NumberFormat(lang, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-    }).format(totalRevenue / 100)
+    const currencyCtx = resolveCurrencyContext(config, featureFlags)
+    const revenueBreakdown = sumRevenueByCurrency(allOrders, currencyCtx)
+    const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary)
+    const formattedRevenue = formatAmount(primaryRevenue?.amount ?? 0, currencyCtx.primary, lang)
+    const secondaryRevenues = revenueBreakdown
+        .filter(r => r.code !== currencyCtx.primary && r.amount > 0)
+        .map(r => `+${formatAmount(r.amount, r.code, lang)}`)
+        .join(' ')
+
+    // Channel distribution metrics (POS vs Online)
+    const posOrderCount = allOrders.filter(o => (o.metadata as Record<string, unknown> | null)?.source === 'pos').length
+    const onlineOrderCount = allOrders.length - posOrderCount
+
+    // Read initial channel filter from URL
+    const rawChannel = rawSearchParams?.channel as string | undefined
+    const initialChannel = (rawChannel === 'pos' || rawChannel === 'online') ? rawChannel : 'all'
 
     return (
         <div className="space-y-6">
@@ -81,10 +94,14 @@ export default async function OrdersPage({
                 pageSize={query.limit}
                 initialSearch={query.q ?? ''}
                 initialStatus={(query.status as 'all' | 'pending' | 'completed' | 'canceled' | undefined) ?? 'all'}
+                initialChannel={initialChannel as 'all' | 'pos' | 'online'}
                 metrics={{
                     pendingCount,
                     completedCount,
-                    formattedRevenue
+                    formattedRevenue,
+                    secondaryRevenues,
+                    posOrderCount,
+                    onlineOrderCount,
                 }}
                 lang={lang}
                 labels={{

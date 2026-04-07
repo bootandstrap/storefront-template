@@ -4,22 +4,8 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CircleDollarSign } from 'lucide-react'
 import { setCurrencyCookie } from '@/lib/i18n/actions'
-
-// Client-safe currency data (no server imports)
-interface CurrencyInfo {
-    code: string
-    symbol: string
-    name: string
-    flag: string
-}
-
-const SUPPORTED_CURRENCIES: CurrencyInfo[] = [
-    { code: 'usd', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
-    { code: 'eur', symbol: '€', name: 'Euro', flag: '🇪🇺' },
-    { code: 'gbp', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
-    { code: 'cop', symbol: '$', name: 'Peso Colombiano', flag: '🇨🇴' },
-    { code: 'mxn', symbol: '$', name: 'Peso Mexicano', flag: '🇲🇽' },
-]
+import { SUPPORTED_CURRENCIES, type CurrencyInfo } from '@/lib/i18n/currencies'
+import { useCart } from '@/contexts/CartContext'
 
 interface CurrencySelectorProps {
     activeCurrencies: string[]
@@ -29,6 +15,7 @@ interface CurrencySelectorProps {
 
 export default function CurrencySelector({ activeCurrencies, currentCurrency, maxCurrencies }: CurrencySelectorProps) {
     const router = useRouter()
+    const { resetCart } = useCart()
     const [open, setOpen] = useState(false)
     const [isPending, startTransition] = useTransition()
     const ref = useRef<HTMLDivElement>(null)
@@ -61,6 +48,7 @@ export default function CurrencySelector({ activeCurrencies, currentCurrency, ma
         setOpen(false)
         startTransition(async () => {
             await setCurrencyCookie(info.code)
+            resetCart() // Invalidate stale cart (wrong currency)
             router.refresh()
         })
     }

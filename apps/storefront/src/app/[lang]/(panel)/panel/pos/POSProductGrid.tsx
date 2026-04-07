@@ -12,14 +12,15 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { Package, Search, CheckCircle2, X, Settings2, Grid3X3, LayoutGrid, Columns3, Volume2, VolumeX, Eye, EyeOff, AlertTriangle } from 'lucide-react'
+import { Package, Search, CheckCircle2, X, Settings2, Grid3X3, LayoutGrid, Columns3, Volume2, VolumeX, Eye, EyeOff, AlertTriangle, DollarSign } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 import type { POSCartItem } from '@/lib/pos/pos-config'
-import { safeVariantPrice } from '@/lib/pos/pos-config'
+import { safeVariantPrice, type VariantPriceResult } from '@/lib/pos/pos-config'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
 import POSVariantPicker from './POSVariantPicker'
+import POSQuickPriceModal from './POSQuickPriceModal'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,6 +35,8 @@ interface POSProductGridProps {
     onAddToCart: (item: POSCartItem) => void
     labels: Record<string, string>
     loading?: boolean
+    /** Callback when a price is set via quick-price modal — triggers data refresh */
+    onPriceSet?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -276,6 +279,7 @@ export default function POSProductGrid({
     onAddToCart,
     labels,
     loading = false,
+    onPriceSet,
 }: POSProductGridProps) {
     const [search, setSearch] = useState('')
     const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -286,6 +290,11 @@ export default function POSProductGrid({
     const [soundEnabled, setSoundEnabled] = useState(true)
     const [configOpen, setConfigOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
+    // Multi-currency: quick-price modal state
+    const [quickPriceProduct, setQuickPriceProduct] = useState<{
+        product: AdminProductFull
+        availablePrices: { amount: number; currency_code: string }[]
+    } | null>(null)
 
     // ── Category scroll fade indicators ──
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -325,10 +334,24 @@ export default function POSProductGrid({
         })
     }, [products, search, activeCategory])
 
+    // ── Currency-aware price check (memoized per product) ──
+    const getProductPriceInfo = useCallback((product: AdminProductFull): VariantPriceResult => {
+        const variant = product.variants?.[0]
+        return safeVariantPrice(variant, defaultCurrency)
+    }, [defaultCurrency])
+
     const handleProductTap = useCallback((product: AdminProductFull) => {
         // Check stock if managed
         const stock = getStockInfo(product)
         if (showStock && stock.status === 'out_of_stock') return
+
+        // Check if product has a price in the target currency
+        const priceInfo = getProductPriceInfo(product)
+        if (!priceInfo.has_price) {
+            // Open quick-price modal instead of adding to cart
+            setQuickPriceProduct({ product, availablePrices: priceInfo.available_prices })
+            return
+        }
 
         if ((product.variants?.length ?? 0) > 1) {
             setVariantPickerProduct(product)
@@ -338,7 +361,6 @@ export default function POSProductGrid({
         const variant = product.variants?.[0]
         if (!variant) return
 
-        const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
         const item: POSCartItem = {
             id: variant.id,
             product_id: product.id,
@@ -346,30 +368,38 @@ export default function POSProductGrid({
             variant_title: product.variants.length > 1 ? variant.title : null,
             thumbnail: product.thumbnail,
             sku: variant.sku || null,
-            unit_price,
+            unit_price: priceInfo.unit_price,
             quantity: 1,
-            currency_code,
+            currency_code: priceInfo.currency_code,
         }
 
         setTappedId(product.id)
         setTimeout(() => setTappedId(null), 500)
         onAddToCart(item)
-    }, [defaultCurrency, onAddToCart, showStock])
+    }, [defaultCurrency, onAddToCart, showStock, getProductPriceInfo])
 
     const handleVariantSelect = useCallback((item: POSCartItem) => {
         setVariantPickerProduct(null)
         onAddToCart(item)
     }, [onAddToCart])
 
-    const formatPrice = (product: AdminProductFull) => {
-        const v = product.variants?.[0]
-        const calc = (v as any)?.calculated_price
-        const fallback = v?.prices?.[0]
-        const rawAmount = calc?.calculated_amount ?? fallback?.amount
-        const currency = calc?.currency_code ?? fallback?.currency_code
-        const amount = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : null
-        if (amount == null || !currency) return '—'
-        return formatPOSCurrency(amount, currency)
+    // Quick-price modal handler
+    const handleQuickPriceSet = useCallback(() => {
+        setQuickPriceProduct(null)
+        onPriceSet?.()
+    }, [onPriceSet])
+
+    const formatProductPrice = (product: AdminProductFull) => {
+        const priceInfo = getProductPriceInfo(product)
+        if (!priceInfo.has_price) {
+            // Show first available price with currency hint
+            if (priceInfo.available_prices.length > 0) {
+                const first = priceInfo.available_prices[0]
+                return formatPOSCurrency(first.amount, first.currency_code)
+            }
+            return '—'
+        }
+        return formatPOSCurrency(priceInfo.unit_price, priceInfo.currency_code)
     }
 
     const cfg = gridConfig[density]
@@ -527,12 +557,15 @@ export default function POSProductGrid({
                             const stock = getStockInfo(product)
                             const isOutOfStock = showStock && stock.status === 'out_of_stock'
                             const isTapped = tappedId === product.id
+                            const priceInfo = getProductPriceInfo(product)
+                            const missingPrice = !priceInfo.has_price
+                            const isDisabled = isOutOfStock
 
                             return (
                                 <motion.button
                                     key={product.id}
                                     onClick={() => handleProductTap(product)}
-                                    disabled={isOutOfStock}
+                                    disabled={isDisabled}
                                     animate={isTapped
                                         ? { scale: [1, 0.92, 1.02, 1] }
                                         : { scale: 1 }
@@ -544,7 +577,9 @@ export default function POSProductGrid({
                                                ${isTapped ? 'ring-2 ring-brand' : ''}
                                                ${isOutOfStock
                                                    ? 'border-sf-2 opacity-50 cursor-not-allowed grayscale'
-                                                   : 'border-sf-2 shadow-xs hover:shadow-lg hover:shadow-brand/10 hover:border-brand/40 active:scale-[0.96]'
+                                                   : missingPrice
+                                                       ? 'border-amber-300/60 opacity-65 shadow-xs'
+                                                       : 'border-sf-2 shadow-xs hover:shadow-lg hover:shadow-brand/10 hover:border-brand/40 active:scale-[0.96]'
                                                }`}
                                 >
                                     {/* Product image */}
@@ -553,7 +588,7 @@ export default function POSProductGrid({
                                             <LazyProductImage
                                                 src={product.thumbnail}
                                                 alt={product.title}
-                                                className="group-hover:scale-105 transition-transform duration-300"
+                                                className={`group-hover:scale-105 transition-transform duration-300 ${missingPrice ? 'grayscale-[50%]' : ''}`}
                                             />
                                         ) : (
                                             <Package className="w-10 h-10 text-tx-faint" />
@@ -564,8 +599,18 @@ export default function POSProductGrid({
                                             <StockBadge status={stock.status} quantity={stock.quantity} />
                                         )}
 
+                                        {/* Currency missing badge */}
+                                        {missingPrice && (
+                                            <span className="absolute top-2 left-2 text-[10px] px-2 py-0.5
+                                                             rounded-full bg-amber-500/90 text-white backdrop-blur-sm font-bold z-10
+                                                             flex items-center gap-1">
+                                                <DollarSign className="w-2.5 h-2.5" />
+                                                {defaultCurrency.toUpperCase()}
+                                            </span>
+                                        )}
+
                                         {/* Variant count badge */}
-                                        {(product.variants?.length ?? 0) > 1 && (
+                                        {!missingPrice && (product.variants?.length ?? 0) > 1 && (
                                             <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5
                                                              rounded-full bg-black/60 text-white backdrop-blur-sm font-bold z-10">
                                                 {product.variants.length} var
@@ -597,12 +642,20 @@ export default function POSProductGrid({
 
                                     {/* Product info */}
                                     <div className={`p-3 flex-1 flex flex-col justify-between gap-1 ${density === 'compact' ? 'p-2' : ''}`}>
-                                        <p className={`font-semibold text-tx line-clamp-2 leading-snug ${density === 'compact' ? 'text-[11px]' : 'text-xs'}`}>
+                                        <p className={`font-semibold line-clamp-2 leading-snug ${density === 'compact' ? 'text-[11px]' : 'text-xs'} ${missingPrice ? 'text-tx-muted' : 'text-tx'}`}>
                                             {product.title}
                                         </p>
-                                        <p className={`font-black text-brand-dark tabular-nums ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
-                                            {formatPrice(product)}
-                                        </p>
+                                        {missingPrice ? (
+                                            <div className="flex items-center gap-1">
+                                                <span className={`font-bold text-amber-600 tabular-nums ${density === 'compact' ? 'text-[10px]' : 'text-[11px]'}`}>
+                                                    💱 {posLabel('panel.pos.setPrice', labels) || 'Set price'}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <p className={`font-black text-brand-dark tabular-nums ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
+                                                {formatProductPrice(product)}
+                                            </p>
+                                        )}
                                     </div>
                                 </motion.button>
                             )
@@ -618,6 +671,18 @@ export default function POSProductGrid({
                     defaultCurrency={defaultCurrency}
                     onSelect={handleVariantSelect}
                     onClose={() => setVariantPickerProduct(null)}
+                    labels={labels}
+                />
+            )}
+
+            {/* ── Quick Price Modal (multi-currency) ── */}
+            {quickPriceProduct && (
+                <POSQuickPriceModal
+                    product={quickPriceProduct.product}
+                    targetCurrency={defaultCurrency}
+                    availablePrices={quickPriceProduct.availablePrices}
+                    onClose={() => setQuickPriceProduct(null)}
+                    onPriceSet={handleQuickPriceSet}
                     labels={labels}
                 />
             )}

@@ -242,7 +242,8 @@ describe('Server actions', () => {
 
   const REQUIRED_ACTIONS = [
     'completeOnboardingAction',
-    'saveLanguagePreferencesAction',
+    'savePanelLanguageAction',
+    'saveStorefrontLanguageAction',
     'saveActiveLanguagesAction',
     'saveOnboardingConfigAction',
     'completeTourAction',
@@ -420,7 +421,7 @@ describe('OnboardingWizard step structure', () => {
   })
 
   it('exports ModuleInfo type', () => {
-    expect(wizard).toContain('export interface ModuleInfo')
+    expect(wizard).toContain('export type { ModuleInfo }')
   })
 })
 
@@ -694,14 +695,14 @@ describe('Polish pass integrity', () => {
   it('no orphan keys in ONBOARDING_CONFIG_KEYS whitelist', () => {
     // Keys in whitelist that are NOT rendered as a field key in ModuleConfigStep
     // are flagged as orphans. Known exceptions: keys used outside onboarding.
-    const KNOWN_EXCEPTIONS = new Set<string>([])
+    const KNOWN_EXCEPTIONS = new Set<string>(['panel_language', 'storefront_language'])
 
     // Extract all keys from whitelist
     const whitelistMatch = actions.match(/ONBOARDING_CONFIG_KEYS = new Set\(\[([\s\S]*?)\]\)/)
     expect(whitelistMatch).toBeTruthy()
     const whitelistContent = whitelistMatch![1]
     const whitelistKeys = whitelistContent.match(/'([a-z_]+)'/g)?.map(s => s.replace(/'/g, '')) || []
-    expect(whitelistKeys.length).toBe(49) // 52 original - 2 orphans (delivery_info_text, traffic_alert_threshold_pct) - 1 (announcement_bar_text was double-counted)
+    expect(whitelistKeys.length).toBe(51) // updated for new fields
 
     // Extract all field keys from ModuleConfigStep
     const fieldKeys = configStep.match(/key: '([a-z_]+)'/g)?.map(s => s.replace(/key: '|'/g, '')) || []

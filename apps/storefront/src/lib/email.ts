@@ -460,35 +460,50 @@ export async function sendEmailForTenant(
     payload: EmailPayload
 ): Promise<EmailResult> {
     try {
-        // Check cache
-        const cached = _tenantProviders.get(tenantId)
-        if (cached && Date.now() < cached.expiresAt) {
-            // Use cached provider, inject tenant's from address
-            return await cached.provider.send(payload)
-        }
-
         // Load tenant config from DB (dynamic import to avoid circular deps)
         const { createAdminClient } = await import('@/lib/supabase/admin')
         const supabase = createAdminClient()
 
-        // NOTE: email_ columns added by migration 20260301_email_marketing_module.sql
-        // Type assertion needed until supabase:types is regenerated
-        const { data: rawConfig } = await supabase
-            .from('config')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .single()
+        // ── Pre-send limit check: max_email_sends_month ──
+        // Query both config (current count) and plan_limits (max allowed)
+        const [{ data: rawConfig }, { data: rawLimits }] = await Promise.all([
+            supabase.from('config').select('*').eq('tenant_id', tenantId).single(),
+            supabase.from('plan_limits').select('max_email_sends_month').eq('tenant_id', tenantId).single(),
+        ])
 
-        const config = rawConfig as { email_provider?: string; email_api_key?: string; email_from?: string } | null
+        const configTyped = rawConfig as {
+            email_provider?: string
+            email_api_key?: string
+            email_from?: string
+            email_sends_this_month?: number
+        } | null
+        const limitsTyped = rawLimits as { max_email_sends_month?: number } | null
 
-        if (!config?.email_provider || !config?.email_api_key) {
+        const currentSends = configTyped?.email_sends_this_month ?? 0
+        const maxSends = limitsTyped?.max_email_sends_month ?? Infinity
+
+        if (maxSends > 0 && currentSends >= maxSends) {
+            console.warn(`[EMAIL] Tenant ${tenantId}: monthly limit reached (${currentSends}/${maxSends})`)
+            return {
+                success: false,
+                error: `Monthly email limit reached (${currentSends}/${maxSends}). Upgrade your plan for more sends.`,
+            }
+        }
+
+        // Check cache for provider instance
+        const cached = _tenantProviders.get(tenantId)
+        if (cached && Date.now() < cached.expiresAt) {
+            return await cached.provider.send(payload)
+        }
+
+        if (!configTyped?.email_provider || !configTyped?.email_api_key) {
             console.log(`[EMAIL] Tenant ${tenantId}: no provider configured, using console`)
             return await consoleProvider.send(payload)
         }
 
         // Create provider and cache it
-        const provider = createProviderFromConfig(config.email_provider, config.email_api_key)
-        const from = config.email_from || 'Store <noreply@example.com>'
+        const provider = createProviderFromConfig(configTyped.email_provider, configTyped.email_api_key)
+        const from = configTyped.email_from || 'Store <noreply@example.com>'
 
         _tenantProviders.set(tenantId, {
             provider,

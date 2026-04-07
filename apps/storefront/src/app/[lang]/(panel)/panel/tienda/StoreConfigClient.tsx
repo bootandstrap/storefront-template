@@ -15,7 +15,8 @@
 import { useState, useTransition } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { useToast } from '@/components/ui/Toaster'
-import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck } from 'lucide-react'
+import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { StoreConfig } from '@/lib/config'
 import { saveStoreConfig } from './actions'
@@ -25,11 +26,16 @@ import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 
 interface StoreConfigClientProps {
     config: StoreConfig
+    featureFlags?: {
+        enable_seo?: boolean
+        enable_social_media?: boolean
+    }
+    lang?: string
 }
 
 type Tab = 'general' | 'apariencia' | 'seo' | 'social' | 'pagos' | 'entrega'
 
-export default function StoreConfigClient({ config }: StoreConfigClientProps) {
+export default function StoreConfigClient({ config, featureFlags = {}, lang = 'es' }: StoreConfigClientProps) {
     const { t } = useI18n()
     const [activeTab, setActiveTab] = useState<Tab>('general')
     const [formData, setFormData] = useState(config)
@@ -38,11 +44,12 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
     const [saved, setSaved] = useState(false)
     const [_saveError, setSaveError] = useState<string | null>(null)
 
+    // Build tabs dynamically — hide dedicated module tabs when modules are active
     const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
         { id: 'general', label: t('panel.config.general'), icon: Store },
         { id: 'apariencia', label: t('panel.config.appearance'), icon: Palette },
-        { id: 'seo', label: t('panel.config.seo'), icon: Search },
-        { id: 'social', label: t('panel.config.social'), icon: Share2 },
+        ...(!featureFlags.enable_seo ? [{ id: 'seo' as Tab, label: t('panel.config.seo'), icon: Search }] : []),
+        ...(!featureFlags.enable_social_media ? [{ id: 'social' as Tab, label: t('panel.config.social'), icon: Share2 }] : []),
         { id: 'pagos', label: t('panel.config.payments'), icon: CreditCard },
         { id: 'entrega', label: t('panel.config.delivery'), icon: Truck },
     ]
@@ -150,7 +157,19 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                 </AnimatePresence>
             </div>
         ),
-        seo: (
+        seo: featureFlags.enable_seo ? (
+            <div className="space-y-4 text-center py-8">
+                <Search className="w-8 h-8 text-tx-muted mx-auto" />
+                <p className="text-sm text-tx-sec">SEO is managed by the dedicated module</p>
+                <Link
+                    href={`/${lang}/panel/seo`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand/10 text-brand rounded-xl text-sm font-medium hover:bg-brand/20 transition-colors"
+                >
+                    <ExternalLink className="w-4 h-4" />
+                    Go to SEO Module
+                </Link>
+            </div>
+        ) : (
             <div className="space-y-5">
                 <div>
                     <label className={labelClass}>{t('panel.config.metaTitle')}</label>
@@ -180,7 +199,19 @@ export default function StoreConfigClient({ config }: StoreConfigClientProps) {
                 </div>
             </div>
         ),
-        social: (
+        social: featureFlags.enable_social_media ? (
+            <div className="space-y-4 text-center py-8">
+                <Share2 className="w-8 h-8 text-tx-muted mx-auto" />
+                <p className="text-sm text-tx-sec">Social Media is managed by the dedicated module</p>
+                <Link
+                    href={`/${lang}/panel/redes-sociales`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand/10 text-brand rounded-xl text-sm font-medium hover:bg-brand/20 transition-colors"
+                >
+                    <ExternalLink className="w-4 h-4" />
+                    Go to Social Media Module
+                </Link>
+            </div>
+        ) : (
             <div className="space-y-5">
                 <div>
                     <label className={labelClass}>Facebook</label>

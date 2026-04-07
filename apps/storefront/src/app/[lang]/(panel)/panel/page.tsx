@@ -8,7 +8,9 @@ import {
     getCategoryCount,
     getOrdersThisMonth,
     getRecentOrders,
+    getAdminOrders,
 } from '@/lib/medusa/admin'
+import { resolveCurrencyContext, sumRevenueByCurrency, revenueByDayAndCurrency, formatAmount, type CurrencyRevenue } from '@/lib/currency-engine'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, ACHIEVEMENT_DEFS, getAchievementsGrouped, type AchievementContext } from '@/lib/achievements'
 import { evaluateSmartTips, type SmartTipContext } from '@/lib/smart-tips'
@@ -33,9 +35,11 @@ import {
     Gauge,
     DollarSign,
     ShoppingCart,
-    Package,
+    User,
     Users,
-    FolderTree
+    FolderTree,
+    ExternalLink,
+    Package
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -68,6 +72,7 @@ export default async function PanelDashboard({
     let categoryCount = 0
     let ordersThisMonth = 0
     let recentOrders: Awaited<ReturnType<typeof getRecentOrders>> = []
+    let monthOrders: import('@/lib/medusa/admin').AdminOrderFull[] = []
     let customerCount = 0
     let adminCount = 0
     let medusaDegraded = false
@@ -75,11 +80,13 @@ export default async function PanelDashboard({
     try {
         const scope = await getTenantMedusaScope(tenantId)
         const supabase = await createClient()
-        const [pc, cc, otm, ro, customerCountRes, adminCountRes] = await Promise.all([
+        const [pc, cc, otm, ro, monthOrdersRes, customerCountRes, adminCountRes] = await Promise.all([
             getProductCount(scope),
             getCategoryCount(scope),
             getOrdersThisMonth(scope),
             getRecentOrders(5, scope),
+            // Fetch ALL orders this month for accurate revenue calculation
+            getAdminOrders({ limit: 500, status: 'all' }, scope),
             supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('role', 'customer'),
             supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('role', ['owner', 'super_admin']),
         ])
@@ -87,9 +94,11 @@ export default async function PanelDashboard({
         categoryCount = cc
         ordersThisMonth = otm
         recentOrders = ro
+        monthOrders = monthOrdersRes.orders
         customerCount = customerCountRes.count ?? 0
         adminCount = adminCountRes.count ?? 0
-    } catch {
+    } catch (err) {
+        console.error('[Panel Dashboard] Medusa scope/data fetch failed:', err instanceof Error ? err.message : err)
         medusaDegraded = true
         // Still try to get customer count from Supabase directly
         try {
@@ -103,23 +112,38 @@ export default async function PanelDashboard({
         } catch { /* ignore */ }
     }
 
-    // Revenue calculation from recent orders
-    const revenueThisMonth = recentOrders.reduce((sum, order) => {
-        return sum + (order.total ?? 0)
-    }, 0)
-    const currency = recentOrders[0]?.currency_code ?? storeConfig.default_currency ?? 'usd'
-    const formattedRevenue = new Intl.NumberFormat(lang, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(revenueThisMonth / 100)
+    // Revenue calculation — multi-currency aware via CurrencyEngine
+    // CRITICAL: Use monthOrders (all orders) for revenue, NOT recentOrders (5-item sample)
+    const currencyCtx = resolveCurrencyContext(storeConfig, featureFlags)
+    const revenueBreakdown = sumRevenueByCurrency(monthOrders, currencyCtx)
+    const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary) ?? {
+        code: currencyCtx.primary, amount: 0, orderCount: 0, avgOrderValue: 0
+    }
+    const secondaryRevenues = revenueBreakdown.filter(r => r.code !== currencyCtx.primary && r.amount > 0)
+    const formattedRevenue = formatAmount(primaryRevenue.amount, primaryRevenue.code, lang)
+    const revenueThisMonth = primaryRevenue.amount
 
-    // Simple sparkline data — create 7-bar data from recent orders
-    // Group recent orders by day-of-week for the sparkline
+    // POS vs Online revenue split
+    const posOrders = monthOrders.filter(o => {
+        const metadata = o.metadata as Record<string, unknown> | null;
+        const source = metadata?.source;
+        return source === 'pos' || source === 'pos-kiosk' || (o as any).tags?.some((tag: any) => tag.value?.includes('pos'));
+    });
+    const onlineOrders = monthOrders.filter(o => {
+        const metadata = o.metadata as Record<string, unknown> | null;
+        const source = metadata?.source;
+        return source !== 'pos' && source !== 'pos-kiosk' && !(o as any).tags?.some((tag: any) => tag.value?.includes('pos'));
+    });
+    const posRevenue = sumRevenueByCurrency(posOrders, currencyCtx)
+    const onlineRevenue = sumRevenueByCurrency(onlineOrders, currencyCtx)
+    const posPrimary = posRevenue.find(r => r.code === currencyCtx.primary)?.amount ?? 0
+    const onlinePrimary = onlineRevenue.find(r => r.code === currencyCtx.primary)?.amount ?? 0
+    const hasPosOrders = posOrders.length > 0
+
+    // Simple sparkline data — create 7-bar data from month orders (more accurate)
     const sparklineOrders = (() => {
         const data = new Array(7).fill(0)
-        for (const order of recentOrders) {
+        for (const order of monthOrders) {
             if (order.created_at) {
                 const day = new Date(order.created_at).getDay()
                 data[day]++
@@ -128,20 +152,8 @@ export default async function PanelDashboard({
         return data
     })()
 
-    // Chart data — revenue + orders by day (last 7 days)
-    const revenueByDay = (() => {
-        const days: { date: string; revenue: number }[] = []
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date()
-            d.setDate(d.getDate() - i)
-            const dateStr = d.toISOString().split('T')[0]
-            const dayRevenue = recentOrders
-                .filter(o => o.created_at?.startsWith(dateStr))
-                .reduce((sum, o) => sum + (o.total ?? 0), 0)
-            days.push({ date: dateStr, revenue: dayRevenue })
-        }
-        return days
-    })()
+    // Chart data — revenue × currency + orders by day (last 7 days)
+    const revenueByDay = revenueByDayAndCurrency(monthOrders, currencyCtx, 7)
 
     const ordersByDay = (() => {
         const days: { date: string; orders: number }[] = []
@@ -149,7 +161,7 @@ export default async function PanelDashboard({
             const d = new Date()
             d.setDate(d.getDate() - i)
             const dateStr = d.toISOString().split('T')[0]
-            const count = recentOrders.filter(o => o.created_at?.startsWith(dateStr)).length
+            const count = monthOrders.filter(o => o.created_at?.startsWith(dateStr)).length
             days.push({ date: dateStr, orders: count })
         }
         return days
@@ -357,8 +369,20 @@ export default async function PanelDashboard({
             {/* Medusa degraded banner */}
             {medusaDegraded && (
                 <SotaBentoItem colSpan={{ base: 12 }}>
-                    <div className="rounded-2xl border border-amber-300/30 bg-amber-50/10 px-4 py-3 text-sm text-amber-700 backdrop-blur-md">
-                        ⚠️ {t('panel.dashboard.medusaDegraded')}
+                    <div className="rounded-2xl border-2 border-amber-400/50 bg-amber-50/20 px-5 py-4 backdrop-blur-md flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-400/20 flex items-center justify-center text-amber-600 text-lg">⚠️</div>
+                            <div>
+                                <p className="text-sm font-semibold text-amber-800">{t('panel.dashboard.medusaDegraded')}</p>
+                                <p className="text-xs text-amber-600 mt-0.5">Las estadísticas de productos, pedidos e ingresos no están disponibles. Verifica que Medusa esté corriendo en el puerto 9000.</p>
+                            </div>
+                        </div>
+                        <Link
+                            href={`/${lang}/panel`}
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-700 text-xs font-medium hover:bg-amber-500/30 transition-colors"
+                        >
+                            Reintentar
+                        </Link>
                     </div>
                 </SotaBentoItem>
             )}
@@ -390,19 +414,39 @@ export default async function PanelDashboard({
                             <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-white mb-2">
                                 {t('panel.dashboard.title')}
                             </h1>
-                            <p className="text-white/80 mt-1text-sm md:text-base font-medium max-w-xl">
+                            <p className="text-white/80 mt-1 text-sm md:text-base font-medium max-w-xl">
                                 {t('panel.dashboard.subtitle')}
                             </p>
                         </div>
                         {storeConfig.onboarding_completed && (
-                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl transition-transform hover:scale-105 duration-300 cursor-default">
-                                <div className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] ${
-                                    readiness.score >= 80 ? 'bg-[#98FF98]' :
-                                    readiness.score >= 40 ? 'bg-[#FFD700]' : 'bg-[#FF6B6B]'
-                                }`} />
-                                <span className="text-sm font-bold text-white tracking-wide tabular-nums">
-                                    {readiness.score}% {t('storeHealth.title')}
-                                </span>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <a
+                                    href={`/${lang}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 text-white text-sm font-semibold shadow-xl transition-all hover:scale-105 hover:bg-white/30 duration-300"
+                                    title="View Public Storefront"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    {t('panel.dashboard.viewStorefront') || 'Storefront'}
+                                </a>
+                                <a
+                                    href={`/api/admin/simulate_client_panel?lang=${lang}`}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-500/80 backdrop-blur-xl border border-indigo-300/30 text-white text-sm font-semibold shadow-xl transition-all hover:scale-105 hover:bg-indigo-500 duration-300"
+                                    title="Simulate Client Panel (My Account)"
+                                >
+                                    <User className="w-4 h-4" />
+                                    Simulation Mode
+                                </a>
+                                <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl transition-transform hover:scale-105 duration-300 cursor-default`}>
+                                    <div className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] ${
+                                        readiness.score >= 80 ? 'bg-[#98FF98]' :
+                                        readiness.score >= 40 ? 'bg-[#FFD700]' : 'bg-[#FF6B6B]'
+                                    }`} />
+                                    <span className="text-sm font-bold text-white tracking-wide tabular-nums">
+                                        {readiness.score}% {t('storeHealth.title')}
+                                    </span>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -527,6 +571,33 @@ export default async function PanelDashboard({
                     href={`/${lang}/panel/pedidos`}
                     accentColor="#16a34a"
                 />
+                {/* Multi-currency sub-badges */}
+                {secondaryRevenues.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2 px-4 pb-2">
+                        {secondaryRevenues.map(r => (
+                            <span key={r.code} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sf-2/80 text-tx-sec border border-sf-3/30">
+                                {formatAmount(r.amount, r.code, lang)}
+                            </span>
+                        ))}
+                    </div>
+                )}
+                {/* POS vs Online revenue split */}
+                {hasPosOrders && (
+                    <div className="flex items-center gap-3 mt-1 px-4 pb-3">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="text-[10px] font-semibold text-tx-muted">
+                                POS {formatAmount(posPrimary, currencyCtx.primary, lang)}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                            <span className="text-[10px] font-semibold text-tx-muted">
+                                Online {formatAmount(onlinePrimary, currencyCtx.primary, lang)}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </SotaBentoItem>
             
             <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
@@ -586,7 +657,7 @@ export default async function PanelDashboard({
                         <DashboardChart
                             revenueByDay={revenueByDay}
                             ordersByDay={ordersByDay}
-                            currency={currency}
+                            currencyCtx={currencyCtx}
                             lang={lang}
                             labels={{
                                 revenue: t('panel.stats.revenue') || 'Revenue',
@@ -724,10 +795,7 @@ export default async function PanelDashboard({
                                             </PanelBadge>
                                         </PanelTd>
                                         <PanelTd align="right" className="font-bold text-tx text-lg tracking-tight">
-                                            {new Intl.NumberFormat(lang, {
-                                                style: 'currency',
-                                                currency: order.currency_code ?? 'usd',
-                                            }).format(order.total / 100)}
+                                            {formatAmount(order.total, order.currency_code ?? storeConfig.default_currency, lang)}
                                         </PanelTd>
                                     </PanelTr>
                                 ))}

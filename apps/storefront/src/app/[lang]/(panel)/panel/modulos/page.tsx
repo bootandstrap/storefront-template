@@ -91,6 +91,20 @@ export default async function ModulosPage({
                     powerUserDesc: t('panel.modules.powerUserDesc') || '',
                     recentlyActivated: t('panel.modules.recentlyActivated') || '¡Recién activado!',
                     noModulesAvailable: t('panel.modules.noModulesAvailable') || 'Todos los módulos están activos',
+                    // Tree-specific labels
+                    treeTitle: t('panel.modules.tree.title') || 'Módulos',
+                    treeTip: t('panel.modules.tree.tip') || 'Scroll para explorar · Clic en un módulo para ver detalles',
+                    treeView: t('panel.modules.tree.treeView') || 'Mapa',
+                    listView: t('panel.modules.tree.listView') || 'Lista',
+                    treeModules: t('panel.modules.tree.modules') || 'Módulos',
+                    treeTiers: t('panel.modules.tree.tiers') || 'Niveles',
+                    treeProgress: t('panel.modules.tree.progress') || 'Progreso',
+                    treeCategories: t('panel.modules.tree.categories') || 'Categorías',
+                    treeStates: t('panel.modules.tree.states') || 'Estados',
+                    treeLocked: t('panel.modules.tree.locked') || 'Bloqueado',
+                    treeAvailable: t('panel.modules.tree.available') || 'Disponible',
+                    treeActive: t('panel.modules.tree.active') || 'Activo',
+                    treeMaxed: t('panel.modules.tree.maxed') || 'Máximo',
                 }}
             />
         </div>

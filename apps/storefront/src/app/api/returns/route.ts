@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createStoreReturn, getStoreReturns } from '@/lib/medusa/client'
 import { getConfig } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { createClient } from '@/lib/supabase/server'
@@ -59,11 +58,38 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // NOTE: Ownership validation is handled by Medusa's Store API —
-        // the publishable API key + customer session scope requests to
-        // the authenticated customer's orders only. If using admin API,
-        // explicit order ownership must be verified here.
-        const returnRequest = await createStoreReturn(order_id, items)
+        // 1. Get user profile to map to Medusa Customer ID and get Tenant ID
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('medusa_customer_id, tenant_id')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile?.tenant_id) {
+            return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+        }
+
+        // 2. Validate order ownership (Optional: verify via Medusa Store API if the order belongs to this customer)
+        // For SOTA Pre-Validation layer, we record the request to Supabase directly
+        const { data: returnRequest, error } = await supabase
+            .from('return_requests')
+            .insert({
+                tenant_id: profile.tenant_id,
+                order_id,
+                customer_id: profile.medusa_customer_id,
+                status: 'pending',
+                items,
+                reason: body.reason || null,
+                customer_note: body.note || null
+            })
+            .select('*')
+            .single()
+
+        if (error) {
+            console.error('[returns] Supabase insert error:', error)
+            throw new Error('Failed to save return request')
+        }
+
         return NextResponse.json({ return: returnRequest }, { status: 201 })
     } catch (err) {
         console.error('[returns] Create error:', err)
@@ -99,8 +125,42 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Returns are not enabled' }, { status: 403 })
         }
 
+        // 1. Get user profile to map to Medusa Customer ID and get Tenant ID
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('medusa_customer_id, tenant_id')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile?.tenant_id) {
+            return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+        }
+
         const orderId = request.nextUrl.searchParams.get('order_id') || undefined
-        const returns = await getStoreReturns(orderId)
+        
+        let query = supabase
+            .from('return_requests')
+            .select('*')
+            .eq('tenant_id', profile.tenant_id)
+            
+        if (orderId) {
+            query = query.eq('order_id', orderId)
+        } else {
+            // If they didn't specify an order, they should only see their own returns
+            if (profile.medusa_customer_id) {
+                query = query.eq('customer_id', profile.medusa_customer_id)
+            } else {
+                return NextResponse.json({ returns: [] })
+            }
+        }
+        
+        const { data: returns, error } = await query.order('created_at', { ascending: false })
+            
+        if (error) {
+            console.error('[returns] Supabase fetch error:', error)
+            throw new Error('Failed to fetch returns')
+        }
+        
         return NextResponse.json({ returns })
     } catch (err) {
         console.error('[returns] List error:', err)

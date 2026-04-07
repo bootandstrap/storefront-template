@@ -3,6 +3,11 @@
  *
  * Provider configuration, roles, login activity log.
  * Gated by enable_auth_advanced feature flag (module: Auth Advanced).
+ *
+ * Data sources:
+ * - Provider toggles: governance feature flags (read-only from owner's perspective)
+ * - Activity: real profiles from Supabase (tenant-scoped)
+ * - Security score: computed from real flag state
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
@@ -11,6 +16,7 @@ import FeatureGate from '@/components/ui/FeatureGate'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { Shield } from 'lucide-react'
 import AuthClient from './AuthClient'
+import { getAuthActivityAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,11 +44,14 @@ export default async function AuthPage({
 
     const authConfig = {
         emailAuth: featureFlags.enable_email_auth,
-        googleAuth: featureFlags.enable_google_auth,
+        googleAuth: featureFlags.enable_google_oauth,
         guestCheckout: featureFlags.enable_guest_checkout,
         requireAuthToOrder: featureFlags.require_auth_to_order,
         userRegistration: featureFlags.enable_user_registration,
     }
+
+    // Fetch real auth activity data
+    const authStats = await getAuthActivityAction()
 
     return (
         <div className="space-y-6">
@@ -53,6 +62,7 @@ export default async function AuthPage({
             />
             <AuthClient
                 authConfig={authConfig}
+                authStats={authStats}
                 labels={{
                     providers: t('panel.auth.providers'),
                     loginActivity: t('panel.auth.loginActivity'),

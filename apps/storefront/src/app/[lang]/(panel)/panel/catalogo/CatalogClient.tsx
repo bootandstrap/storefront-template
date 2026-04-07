@@ -22,7 +22,7 @@ import { useLimitGuard } from '@/hooks/useLimitGuard'
 import {
     Package, Plus, Search, X, Layers, ChevronDown, ChevronUp,
     Upload, Trash2, ImageIcon, Eye, EyeOff, Pencil, Tag, Loader2,
-    ChevronLeft, ChevronRight, Barcode,
+    ChevronLeft, ChevronRight, Barcode, AlertTriangle,
 } from 'lucide-react'
 import { createProduct, updateProduct, removeProduct, uploadProductImage, removeProductImage } from '../productos/actions'
 import { createCategory, editCategory, removeCategory } from '../categorias/actions'
@@ -36,6 +36,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SlideOver } from '@/components/panel/PanelAnimations'
 import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
 import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
+import MultiPriceEditor, { medusaPricesToForm } from '@/components/panel/MultiPriceEditor'
+import { isZeroDecimal } from '@/lib/i18n/currencies'
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -108,6 +110,7 @@ interface Props {
     initialStatus: 'all' | 'published' | 'draft'
     initialTab: 'productos' | 'categorias'
     defaultCurrency: string
+    activeCurrencies: string[]
     labels: CatalogLabels
 }
 
@@ -131,6 +134,7 @@ export default function CatalogClient({
     initialStatus,
     initialTab,
     defaultCurrency,
+    activeCurrencies,
     labels,
 }: Props) {
     const router = useRouter()
@@ -150,7 +154,7 @@ export default function CatalogClient({
     const [productError, setProductError] = useState<string | null>(null)
     const [formTitle, setFormTitle] = useState('')
     const [formDescription, setFormDescription] = useState('')
-    const [formPrice, setFormPrice] = useState('')
+    const [formPrices, setFormPrices] = useState<Record<string, string>>({ [defaultCurrency]: '' })
     const [formCategory, setFormCategory] = useState('')
     const [formStatus, setFormStatus] = useState<'published' | 'draft'>('published')
     const [expandedBadges, setExpandedBadges] = useState<string | null>(null)
@@ -202,7 +206,7 @@ export default function CatalogClient({
     // ── Product helpers ──
 
     const resetProductForm = () => {
-        setFormTitle(''); setFormDescription(''); setFormPrice('')
+        setFormTitle(''); setFormDescription(''); setFormPrices({ [defaultCurrency]: '' })
         setFormCategory(''); setFormStatus('published')
         setEditingProduct(null); setShowProductForm(false); setProductError(null)
     }
@@ -210,8 +214,9 @@ export default function CatalogClient({
     const openEditProduct = (product: AdminProductFull) => {
         setFormTitle(product.title)
         setFormDescription(product.description ?? '')
-        const price = product.variants?.[0]?.prices?.[0]?.amount
-        setFormPrice(price ? String(price / 100) : '')
+        // Build multi-price map from existing variant prices
+        const variantPrices = product.variants?.[0]?.prices ?? []
+        setFormPrices(medusaPricesToForm(variantPrices))
         setFormCategory(product.categories?.[0]?.id ?? '')
         setFormStatus(product.status as 'published' | 'draft')
         setEditingProduct(product)
@@ -221,11 +226,17 @@ export default function CatalogClient({
     const handleProductSubmit = () => {
         startTransition(async () => {
             setProductError(null)
+            // Convert form prices to action format
+            const pricesArray = Object.entries(formPrices)
+                .filter(([, val]) => val && val.trim() !== '' && parseFloat(val) >= 0)
+                .map(([code, val]) => ({ currency: code, amount: parseFloat(val) }))
+
             if (editingProduct) {
                 const result = await updateProduct(editingProduct.id, {
                     title: formTitle, description: formDescription, status: formStatus,
-                    categoryId: formCategory || null, price: formPrice ? parseFloat(formPrice) : undefined,
-                    currency: defaultCurrency, variantId: editingProduct.variants?.[0]?.id,
+                    categoryId: formCategory || null,
+                    prices: pricesArray.length > 0 ? pricesArray : undefined,
+                    variantId: editingProduct.variants?.[0]?.id,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
                 else {
@@ -236,7 +247,7 @@ export default function CatalogClient({
             } else {
                 const result = await createProduct({
                     title: formTitle, description: formDescription,
-                    price: parseFloat(formPrice) || 0, currency: defaultCurrency,
+                    prices: pricesArray,
                     categoryId: formCategory || undefined, status: formStatus,
                 })
                 if (result.success) { resetProductForm(); router.refresh(); toast.success('✓') }
@@ -278,9 +289,20 @@ export default function CatalogClient({
     const getPrice = (product: AdminProductFull) => {
         const price = product.variants?.[0]?.prices?.[0]
         if (!price) return '—'
+        const code = price.currency_code.toLowerCase()
+        const displayAmount = isZeroDecimal(code) ? price.amount : price.amount / 100
         return new Intl.NumberFormat(undefined, {
             style: 'currency', currency: price.currency_code,
-        }).format(price.amount / 100)
+            minimumFractionDigits: 0,
+            maximumFractionDigits: isZeroDecimal(code) ? 0 : 2,
+        }).format(displayAmount)
+    }
+
+    /** Count how many active currencies are missing a price for this product */
+    const getMissingPriceCount = (product: AdminProductFull): number => {
+        const variantPrices = product.variants?.[0]?.prices ?? []
+        const configuredCurrencies = new Set(variantPrices.map(p => p.currency_code.toLowerCase()))
+        return activeCurrencies.filter(c => !configuredCurrencies.has(c)).length
     }
 
     // ── Image handlers ──
@@ -596,7 +618,18 @@ export default function CatalogClient({
                                                 <div className="p-4">
                                                     <h3 className="font-bold text-tx truncate cursor-pointer hover:text-brand transition-colors" onClick={() => openEditProduct(product)}>{product.title}</h3>
                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-lg font-bold text-brand">{getPrice(product)}</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-lg font-bold text-brand">{getPrice(product)}</span>
+                                                            {activeCurrencies.length > 1 && getMissingPriceCount(product) > 0 && (
+                                                                <span
+                                                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                                                    title={`${getMissingPriceCount(product)} moneda(s) sin precio`}
+                                                                >
+                                                                    <AlertTriangle className="w-3 h-3" />
+                                                                    {getMissingPriceCount(product)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <span className="text-xs text-tx-muted">
                                                             {product.categories?.[0]?.name || labels.noCategory}
                                                         </span>
@@ -851,20 +884,24 @@ export default function CatalogClient({
                         <label className={labelClass}>{labels.description}</label>
                         <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} className={`${inputClass} min-h-[80px] resize-y`} rows={3} />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={labelClass}>{labels.price} ({defaultCurrency.toUpperCase()})</label>
-                            <input type="number" step="0.01" min="0" value={formPrice} onChange={e => setFormPrice(e.target.value)} className={inputClass} placeholder="0.00" />
-                        </div>
-                        <div>
-                            <label className={labelClass}>{labels.category}</label>
-                            <select value={formCategory} onChange={e => setFormCategory(e.target.value)} className={inputClass}>
-                                <option value="">{labels.noCategory}</option>
-                                {categories.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                    {/* Multi-currency price editor */}
+                    <MultiPriceEditor
+                        prices={formPrices}
+                        onChange={setFormPrices}
+                        activeCurrencies={activeCurrencies}
+                        defaultCurrency={defaultCurrency}
+                        label={labels.price}
+                        showWarnings={activeCurrencies.length > 1}
+                        disabled={isPending}
+                    />
+                    <div>
+                        <label className={labelClass}>{labels.category}</label>
+                        <select value={formCategory} onChange={e => setFormCategory(e.target.value)} className={inputClass}>
+                            <option value="">{labels.noCategory}</option>
+                            {categories.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className={labelClass}>{labels.status}</label>
@@ -989,10 +1026,9 @@ export default function CatalogClient({
                 <PriceLabelSheet
                     items={products.map((p): PriceLabelItem => {
                         const variant = p.variants?.[0]
-                        const price = variant?.prices?.[0]
                         return {
                             name: p.title,
-                            price: price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: price.currency_code }).format(price.amount / 100) : '—',
+                            price: getPrice(p),
                             sku: variant?.sku ?? '',
                             variant: variant?.title && variant.title !== 'Default Variant' ? variant.title : undefined,
                         }

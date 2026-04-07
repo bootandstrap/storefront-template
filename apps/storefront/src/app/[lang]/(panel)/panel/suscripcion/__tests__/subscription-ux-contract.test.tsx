@@ -47,7 +47,7 @@ describe('subscription ux contract', () => {
         )
 
         // With t=(key)=>key, the rendered HTML contains i18n keys, not translations
-        expect(html).toContain('panel.subscription.whatIncludes')
+        expect(html).toContain('panel.subscription.availableModules')
         expect(html).toContain('panel.subscription.monthlyEstimate')
     })
 

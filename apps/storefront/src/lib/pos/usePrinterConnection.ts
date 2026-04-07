@@ -24,6 +24,9 @@ import {
 } from '@/lib/pos/print-engine'
 import type { POSSale, POSRefund } from '@/lib/pos/pos-config'
 
+// Re-export types for consumers
+export type { BusinessInfo, PrintOptions }
+
 // Singleton engine — shared across all hook instances
 let engineSingleton: PrintEngine | null = null
 

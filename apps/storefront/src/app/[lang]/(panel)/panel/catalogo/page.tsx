@@ -137,7 +137,8 @@ export default async function CatalogPage({
                 initialSearch={query.q ?? ''}
                 initialStatus={(query.status as 'all' | 'published' | 'draft' | undefined) ?? 'all'}
                 initialTab={(query.tab as 'productos' | 'categorias' | undefined) ?? 'productos'}
-                defaultCurrency={config.default_currency || 'usd'}
+                defaultCurrency={config.default_currency}
+                activeCurrencies={config.active_currencies ?? [config.default_currency]}
                 labels={labels}
             />
         </div>

@@ -130,8 +130,13 @@ export const FeatureFlagsSchema = z.object({
     enable_user_registration: z.boolean(),
     enable_guest_checkout: z.boolean(),
     require_auth_to_order: z.boolean(),
-    enable_google_auth: z.boolean(),
+    enable_google_oauth: z.boolean(),
     enable_email_auth: z.boolean(),
+    // Auth Advanced (granular OAuth/2FA)
+    enable_apple_oauth: z.boolean(),
+    enable_facebook_oauth: z.boolean(),
+    enable_2fa: z.boolean(),
+    enable_magic_link: z.boolean(),
     // Content
     enable_ecommerce: z.boolean(),
     enable_reviews: z.boolean(),
@@ -167,11 +172,17 @@ export const FeatureFlagsSchema = z.object({
     enable_crm: z.boolean(),
     enable_crm_segmentation: z.boolean(),
     enable_crm_export: z.boolean(),
+    enable_crm_contacts: z.boolean(),
+    enable_crm_interactions: z.boolean(),
+    enable_crm_segments: z.boolean(),
     // Email Marketing
     enable_email_notifications: z.boolean(),
     enable_abandoned_cart_emails: z.boolean(),
     enable_email_campaigns: z.boolean(),
     enable_email_templates: z.boolean(),
+    enable_transactional_emails: z.boolean(),
+    enable_review_request_emails: z.boolean(),
+    enable_email_segmentation: z.boolean(),
     // POS
     enable_pos: z.boolean(),
     enable_pos_kiosk: z.boolean(),
@@ -183,21 +194,29 @@ export const FeatureFlagsSchema = z.object({
     enable_pos_customer_search: z.boolean(),
     enable_pos_multi_device: z.boolean(),
     enable_pos_shifts: z.boolean(),
+    // Kiosk (granular)
+    enable_kiosk_analytics: z.boolean(),
+    enable_kiosk_idle_timer: z.boolean(),
+    enable_kiosk_remote_management: z.boolean(),
     // Capacidad (Traffic)
     enable_traffic_expansion: z.boolean(),
     enable_traffic_analytics: z.boolean(),
     enable_traffic_autoscale: z.boolean(),
     // New module gates (Phase 4 — 2026-03)
     enable_seo: z.boolean(),
+    enable_seo_tools: z.boolean(),
     enable_social_media: z.boolean(),
+    enable_social_sharing: z.boolean(),
     enable_automations: z.boolean(),
+    enable_custom_webhooks: z.boolean(),
     enable_auth_advanced: z.boolean(),
     enable_sales_channels: z.boolean(),
+    enable_reservation_checkout: z.boolean(),
 })
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>
 
-// ─── PlanLimits (28 fields) ───────────────────────────────────────────────
+// ─── PlanLimits (30 fields) ───────────────────────────────────────────────
 
 export const PlanLimitsSchema = z.object({
     max_products: z.number(),
@@ -228,6 +247,8 @@ export const PlanLimitsSchema = z.object({
     max_payment_methods: z.number(),
     max_crm_contacts: z.number(),
     max_pos_payment_methods: z.number(),
+    max_automations: z.number(),
+    max_pos_kiosk_devices: z.number(),
 })
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>

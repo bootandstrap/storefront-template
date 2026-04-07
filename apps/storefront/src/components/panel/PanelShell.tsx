@@ -48,6 +48,8 @@ interface PanelShellProps {
     tourTranslations?: Record<string, string>
     /** Inline setup nudge for the topbar greeting */
     setupNudge?: { label: string; href: string } | null
+    /** Governance SSOT default currency */
+    defaultCurrency: string
     children: React.ReactNode
 }
 
@@ -68,6 +70,7 @@ export default function PanelShell({
     replayTourLabel,
     tourTranslations,
     setupNudge,
+    defaultCurrency,
     children,
 }: PanelShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
@@ -113,6 +116,7 @@ export default function PanelShell({
                         greetings={greetings}
                         labels={topbarLabels}
                         setupNudge={setupNudge}
+                        defaultCurrency={defaultCurrency}
                         onMenuClick={() => setMobileOpen(true)}
                     />
                 )}

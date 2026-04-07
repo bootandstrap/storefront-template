@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * SkillTreeCanvas — WoW-style dark MMORPG module skill tree.
+ * SkillTreeCanvas — Professional module dependency graph.
  *
- * Dark constellation background, energy connection lines,
- * glassmorphism stat panels, BootandStrap green brand accents.
+ * Dark constellation background with clean glass panels,
+ * subtle animated connections, and professional typography.
  */
 
 import { useMemo, useCallback, useState } from 'react'
@@ -27,9 +27,9 @@ import {
     getCategoryColor,
     getCategoryLabel,
     type SkillTreeModule,
+    type SkillTreeLabels,
 } from './skill-tree-layout'
 
-// Register custom node types
 const nodeTypes: NodeTypes = {
     moduleNode: ModuleNode as NodeTypes['moduleNode'],
 }
@@ -37,21 +37,29 @@ const nodeTypes: NodeTypes = {
 interface SkillTreeCanvasProps {
     modules: SkillTreeModule[]
     onModuleClick: (moduleKey: string) => void
+    labels: SkillTreeLabels
 }
 
-export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps) {
+const DEFAULT_LABELS: SkillTreeLabels = {
+    locked: 'Locked', available: 'Available', active: 'Active', maxed: 'Maxed',
+    activate: 'Activate', upgrade: 'Upgrade', perMonth: '/mo', requires: 'Requires',
+    treeTitle: 'Modules', treeTip: 'Scroll to explore · Click a module for details',
+    modules: 'Modules', tiers: 'Tiers', progress: 'Progress',
+    categories: 'Categories', states: 'States',
+}
+
+export function SkillTreeCanvas({ modules, onModuleClick, labels: rawLabels }: SkillTreeCanvasProps) {
+    const labels = rawLabels ?? DEFAULT_LABELS
     const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
 
-    // Build the graph
     const { initialNodes, initialEdges } = useMemo(() => {
-        const { nodes, edges } = buildSkillTreeGraph(modules, onModuleClick)
+        const { nodes, edges } = buildSkillTreeGraph(modules, onModuleClick, labels)
         return { initialNodes: nodes, initialEdges: edges }
-    }, [modules, onModuleClick])
+    }, [modules, onModuleClick, labels])
 
     const [nodes, , onNodesChange] = useNodesState(initialNodes)
     const [edges, , onEdgesChange] = useEdgesState(initialEdges)
 
-    // Stats
     const stats = useMemo(() => {
         const active = modules.filter(m => m.isActive).length
         const total = modules.length
@@ -61,20 +69,18 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
         return { active, total, maxedOut, totalTiersPossible, totalTiersActive }
     }, [modules])
 
-    // Categories present
     const categories = useMemo(() => {
         const cats = new Set(modules.map(m => m.category))
         return Array.from(cats)
     }, [modules])
 
-    // Filter nodes by hovered category
     const filteredNodes = useMemo(() => {
         if (!hoveredCategory) return nodes
         return nodes.map(n => ({
             ...n,
             style: {
                 ...n.style,
-                opacity: (n.data as unknown as { module: SkillTreeModule }).module.category === hoveredCategory ? 1 : 0.15,
+                opacity: (n.data as unknown as { module: SkillTreeModule }).module.category === hoveredCategory ? 1 : 0.12,
                 transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             },
         }))
@@ -84,21 +90,29 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
         setHoveredCategory(cat)
     }, [])
 
-    // XP bar percentage
-    const xpPercent = stats.totalTiersPossible > 0
+    const progressPercent = stats.totalTiersPossible > 0
         ? Math.round((stats.totalTiersActive / stats.totalTiersPossible) * 100)
         : 0
+
+    // ── Shared panel style ───────────────────────────────────────────────────
+    const panelStyle: React.CSSProperties = {
+        background: 'rgba(10, 13, 20, 0.92)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.06)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+    }
 
     return (
         <div style={{
             width: '100%',
             height: '70vh',
             minHeight: 500,
-            borderRadius: 20,
+            borderRadius: 16,
             overflow: 'hidden',
-            border: '1px solid #1e293b',
+            border: '1px solid rgba(255,255,255,0.06)',
             position: 'relative',
-            boxShadow: '0 0 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+            boxShadow: '0 0 40px rgba(0,0,0,0.3)',
         }}>
             <ReactFlow
                 nodes={filteredNodes}
@@ -111,42 +125,35 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
                 nodesDraggable={false}
                 nodesConnectable={false}
                 proOptions={{ hideAttribution: true }}
-                defaultEdgeOptions={{
-                    type: 'smoothstep',
-                }}
-                style={{
-                    background: '#080c14',
-                }}
+                defaultEdgeOptions={{ type: 'smoothstep' }}
+                style={{ background: '#0a0d14' }}
             >
-                {/* Constellation dots background */}
                 <Background
                     variant={BackgroundVariant.Dots}
-                    gap={32}
-                    size={0.8}
-                    color="#1a2744"
+                    gap={28}
+                    size={0.6}
+                    color="#1a1f2e"
                 />
 
-                {/* Zoom controls */}
                 <Controls
                     showInteractive={false}
                     style={{
-                        borderRadius: 12,
-                        border: '1px solid #1e293b',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.06)',
                         overflow: 'hidden',
-                        background: '#0d1117',
+                        background: '#0a0d14',
                     }}
                 />
 
-                {/* Minimap */}
                 <MiniMap
                     nodeStrokeWidth={3}
                     pannable
                     zoomable
                     style={{
-                        borderRadius: 12,
-                        border: '1px solid #1e293b',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.06)',
                         overflow: 'hidden',
-                        background: '#0d1117',
+                        background: '#0a0d14',
                     }}
                     nodeColor={(n) => {
                         const mod = (n.data as unknown as { module: SkillTreeModule }).module
@@ -158,90 +165,61 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
 
                 {/* ── Stats Panel (top-left) ── */}
                 <Panel position="top-left">
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(13,17,23,0.92) 0%, rgba(15,23,42,0.92) 100%)',
-                        backdropFilter: 'blur(16px)',
-                        borderRadius: 14,
-                        padding: '14px 18px',
-                        border: '1px solid #1e293b',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
-                        minWidth: 200,
-                    }}>
-                        {/* Title with BootandStrap green */}
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+                    <div style={{ ...panelStyle, padding: '12px 16px', minWidth: 180 }}>
+                        <p style={{
+                            margin: '0 0 10px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: '#64748b',
+                            textTransform: 'uppercase' as const,
+                            letterSpacing: '0.1em',
                         }}>
-                            <span style={{ fontSize: 16 }}>🏰</span>
-                            <span style={{
-                                fontSize: 11,
-                                fontWeight: 800,
-                                color: '#94a3b8',
-                                textTransform: 'uppercase' as const,
-                                letterSpacing: '0.12em',
-                            }}>
-                                Árbol de habilidades
-                            </span>
-                        </div>
+                            {labels.treeTitle}
+                        </p>
 
-                        {/* Module count */}
-                        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+                        {/* Counters */}
+                        <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
                             <div>
-                                <p style={{ fontSize: 9, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.1em', margin: 0 }}>
-                                    Módulos
+                                <p style={{ fontSize: 9, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: 0 }}>
+                                    {labels.modules}
                                 </p>
-                                <p style={{ fontSize: 22, fontWeight: 900, color: '#e2e8f0', margin: 0 }}>
-                                    {stats.active}<span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>/{stats.total}</span>
+                                <p style={{ fontSize: 20, fontWeight: 800, color: '#e2e8f0', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                                    {stats.active}<span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>/{stats.total}</span>
                                 </p>
                             </div>
-                            <div style={{ width: 1, background: '#1e293b' }} />
+                            <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
                             <div>
-                                <p style={{ fontSize: 9, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.1em', margin: 0 }}>
-                                    Tiers
+                                <p style={{ fontSize: 9, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: 0 }}>
+                                    {labels.tiers}
                                 </p>
-                                <p style={{ fontSize: 22, fontWeight: 900, color: '#e2e8f0', margin: 0 }}>
-                                    {stats.totalTiersActive}<span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>/{stats.totalTiersPossible}</span>
+                                <p style={{ fontSize: 20, fontWeight: 800, color: '#e2e8f0', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                                    {stats.totalTiersActive}<span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>/{stats.totalTiersPossible}</span>
                                 </p>
                             </div>
-                            {stats.maxedOut > 0 && (
-                                <>
-                                    <div style={{ width: 1, background: '#1e293b' }} />
-                                    <div>
-                                        <p style={{ fontSize: 9, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' as const, letterSpacing: '0.1em', margin: 0 }}>
-                                            🏆 Max
-                                        </p>
-                                        <p style={{ fontSize: 22, fontWeight: 900, color: '#f59e0b', margin: 0 }}>
-                                            {stats.maxedOut}
-                                        </p>
-                                    </div>
-                                </>
-                            )}
                         </div>
 
-                        {/* XP Progress bar */}
+                        {/* Progress bar */}
                         <div>
-                            <div style={{
-                                display: 'flex', justifyContent: 'space-between', marginBottom: 4,
-                            }}>
-                                <span style={{ fontSize: 8, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>
-                                    Progreso total
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                                    {labels.progress}
                                 </span>
-                                <span style={{ fontSize: 9, fontWeight: 800, color: '#2D5016' }}>
-                                    {xpPercent}%
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                                    {progressPercent}%
                                 </span>
                             </div>
                             <div style={{
                                 width: '100%',
-                                height: 6,
-                                borderRadius: 3,
+                                height: 4,
+                                borderRadius: 2,
                                 background: '#1e293b',
                                 overflow: 'hidden',
                             }}>
                                 <div style={{
-                                    width: `${xpPercent}%`,
+                                    width: `${progressPercent}%`,
                                     height: '100%',
-                                    borderRadius: 3,
-                                    background: 'linear-gradient(90deg, #2D5016 0%, #4a7c28 50%, #6aad35 100%)',
-                                    boxShadow: '0 0 8px #2D501666',
+                                    borderRadius: 2,
+                                    background: 'linear-gradient(90deg, #10b981 0%, #06b6d4 100%)',
                                     transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }} />
                             </div>
@@ -251,27 +229,18 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
 
                 {/* ── Category Legend (top-right) ── */}
                 <Panel position="top-right">
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(13,17,23,0.92) 0%, rgba(15,23,42,0.92) 100%)',
-                        backdropFilter: 'blur(16px)',
-                        borderRadius: 14,
-                        padding: '10px 14px',
-                        border: '1px solid #1e293b',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
-                        display: 'flex',
-                        flexDirection: 'column' as const,
-                        gap: 4,
-                    }}>
+                    <div style={{ ...panelStyle, padding: '10px 14px' }}>
                         <p style={{
-                            fontSize: 8, fontWeight: 800, color: '#475569',
-                            textTransform: 'uppercase' as const, letterSpacing: '0.12em', margin: '0 0 4px',
+                            fontSize: 9, fontWeight: 700, color: '#475569',
+                            textTransform: 'uppercase' as const, letterSpacing: '0.1em', margin: '0 0 6px',
                         }}>
-                            Categorías
+                            {labels.categories}
                         </p>
                         {categories.map(cat => {
                             const count = modules.filter(m => m.category === cat).length
                             const activeCount = modules.filter(m => m.category === cat && m.isActive).length
                             const color = getCategoryColor(cat)
+                            const isHovered = hoveredCategory === cat
                             return (
                                 <div
                                     key={cat}
@@ -280,32 +249,29 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
                                         alignItems: 'center',
                                         gap: 8,
                                         cursor: 'pointer',
-                                        padding: '4px 8px',
-                                        borderRadius: 8,
-                                        background: hoveredCategory === cat ? `${color}15` : 'transparent',
-                                        border: `1px solid ${hoveredCategory === cat ? `${color}30` : 'transparent'}`,
-                                        transition: 'all 0.3s ease',
+                                        padding: '3px 6px',
+                                        borderRadius: 6,
+                                        background: isHovered ? `${color}10` : 'transparent',
+                                        transition: 'background 0.2s ease',
                                     }}
                                     onMouseEnter={() => handleCategoryHover(cat)}
                                     onMouseLeave={() => handleCategoryHover(null)}
                                 >
-                                    {/* Glowing dot */}
                                     <div style={{
-                                        width: 8,
-                                        height: 8,
+                                        width: 6,
+                                        height: 6,
                                         borderRadius: '50%',
                                         background: color,
-                                        boxShadow: hoveredCategory === cat
-                                            ? `0 0 8px ${color}, 0 0 16px ${color}40`
-                                            : `0 0 4px ${color}60`,
+                                        boxShadow: isHovered ? `0 0 6px ${color}` : 'none',
                                         flexShrink: 0,
-                                        transition: 'box-shadow 0.3s ease',
+                                        transition: 'box-shadow 0.2s ease',
                                     }} />
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#94a3b8' }}>
                                         {getCategoryLabel(cat)}
                                     </span>
                                     <span style={{
-                                        fontSize: 9, fontWeight: 800, color: '#475569', marginLeft: 'auto',
+                                        fontSize: 9, fontWeight: 700, color: '#475569', marginLeft: 'auto',
+                                        fontVariantNumeric: 'tabular-nums',
                                     }}>
                                         {activeCount}/{count}
                                     </span>
@@ -313,26 +279,29 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
                             )
                         })}
 
-                        {/* Node state legend */}
-                        <div style={{ borderTop: '1px solid #1e293b', marginTop: 4, paddingTop: 6 }}>
+                        {/* State legend */}
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 6, paddingTop: 6 }}>
                             <p style={{
-                                fontSize: 8, fontWeight: 800, color: '#475569',
-                                textTransform: 'uppercase' as const, letterSpacing: '0.12em', margin: '0 0 4px',
+                                fontSize: 9, fontWeight: 700, color: '#475569',
+                                textTransform: 'uppercase' as const, letterSpacing: '0.1em', margin: '0 0 4px',
                             }}>
-                                Estados
+                                {labels.states}
                             </p>
                             {[
-                                { icon: '🔒', label: 'Bloqueado', color: '#334155' },
-                                { icon: '⬜', label: 'Disponible', color: '#6b7280' },
-                                { icon: '✅', label: 'Activo', color: '#22c55e' },
-                                { icon: '🏆', label: 'Máximo', color: '#f59e0b' },
+                                { label: labels.locked, color: '#334155' },
+                                { label: labels.available, color: '#64748b' },
+                                { label: labels.active, color: '#10b981' },
+                                { label: labels.maxed, color: '#f59e0b' },
                             ].map(s => (
                                 <div key={s.label} style={{
                                     display: 'flex', alignItems: 'center', gap: 6,
                                     padding: '2px 0',
                                 }}>
-                                    <span style={{ fontSize: 10 }}>{s.icon}</span>
-                                    <span style={{ fontSize: 10, color: s.color, fontWeight: 600 }}>
+                                    <div style={{
+                                        width: 6, height: 6, borderRadius: '50%',
+                                        background: s.color,
+                                    }} />
+                                    <span style={{ fontSize: 10, color: s.color, fontWeight: 500 }}>
                                         {s.label}
                                     </span>
                                 </div>
@@ -344,17 +313,13 @@ export function SkillTreeCanvas({ modules, onModuleClick }: SkillTreeCanvasProps
                 {/* ── Bottom tip ── */}
                 <Panel position="bottom-center">
                     <div style={{
-                        background: 'rgba(13,17,23,0.85)',
-                        backdropFilter: 'blur(8px)',
-                        borderRadius: 10,
-                        padding: '6px 14px',
-                        border: '1px solid #1e293b',
+                        ...panelStyle,
+                        padding: '5px 12px',
                         fontSize: 10,
                         color: '#475569',
-                        fontWeight: 600,
-                        letterSpacing: '0.02em',
+                        fontWeight: 500,
                     }}>
-                        Scroll para zoom · Click en un módulo para gestionar · Arrastra para mover
+                        {labels.treeTip}
                     </div>
                 </Panel>
             </ReactFlow>

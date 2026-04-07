@@ -45,7 +45,7 @@ export default function ProductQuickView({ product, isOpen, onClose }: ProductQu
         ? product.variants?.find((v) => v.id === selectedVariantId)
         : product.variants?.[0]
     const price = activeVariant?.prices?.[0]
-    const currency = price?.currency_code || 'USD'
+    const currency = price?.currency_code ?? ''
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(locale, {

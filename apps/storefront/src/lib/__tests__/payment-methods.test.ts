@@ -13,7 +13,7 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_user_registration: true,
         enable_guest_checkout: true,
         require_auth_to_order: false,
-        enable_google_auth: true,
+        enable_google_oauth: true,
         enable_email_auth: true,
         enable_reviews: false,
         enable_wishlist: false,
@@ -63,10 +63,31 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_traffic_analytics: false,
         enable_traffic_autoscale: false,
         enable_seo: false,
+        enable_seo_tools: false,
         enable_social_media: false,
+        enable_social_sharing: false,
         enable_automations: false,
+        enable_custom_webhooks: false,
         enable_auth_advanced: false,
         enable_sales_channels: false,
+        enable_reservation_checkout: false,
+        // Auth Advanced (granular)
+        enable_apple_oauth: false,
+        enable_facebook_oauth: false,
+        enable_2fa: false,
+        enable_magic_link: false,
+        // CRM (granular)
+        enable_crm_contacts: false,
+        enable_crm_interactions: false,
+        enable_crm_segments: false,
+        // Email (granular)
+        enable_transactional_emails: false,
+        enable_review_request_emails: false,
+        enable_email_segmentation: false,
+        // Kiosk (granular)
+        enable_kiosk_analytics: false,
+        enable_kiosk_idle_timer: false,
+        enable_kiosk_remote_management: false,
         ...overrides,
     }
 }
@@ -203,6 +224,8 @@ describe('getEnabledMethods — max_payment_methods limit', () => {
             max_crm_contacts: 500,
             plan_tier: 'starter',
             max_pos_payment_methods: 4,
+            max_automations: 0,
+            max_pos_kiosk_devices: 0,
             ...overrides,
         } as PlanLimits
     }

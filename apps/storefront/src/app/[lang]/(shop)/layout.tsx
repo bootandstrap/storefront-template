@@ -27,6 +27,8 @@ import CompareBarWrapper from '@/components/products/CompareBar'
 import { createClient } from '@/lib/supabase/server'
 import type { ChatTier } from '@/lib/chat/client-config'
 import Script from 'next/script'
+import { cookies } from 'next/headers'
+import { ThemeProvider } from '@/components/theme/ThemeProvider'
 
 /**
  * Shop layout metadata — provides title.template so every child page
@@ -72,6 +74,9 @@ export default async function ShopLayout({
     const currentCurrency = await getCurrency(config.default_currency)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+
+    const cookieStore = await cookies()
+    const isSimulating = cookieStore.get('simulating_client')?.value === 'true'
 
     // Fetch categories for MegaMenu (top-level only)
     const allCategories = await getCategories()
@@ -130,8 +135,16 @@ export default async function ShopLayout({
     }
 
     return (
-        <>
-
+        <ThemeProvider defaultTheme={config.theme_mode || 'light'}>
+            {isSimulating && (
+                <a
+                    href={`/api/admin/stop_simulation?lang=${lang}`}
+                    className="fixed bottom-4 left-4 z-[9999] bg-indigo-600/90 text-white px-4 py-2 rounded-full font-bold shadow-2xl flex items-center gap-2 hover:scale-105 transition-transform border border-indigo-400/50 backdrop-blur-md"
+                >
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                    Exit Simulation Mode
+                </a>
+            )}
 
             {/* Governance: plan expiration banner */}
             {planExpired && (
@@ -229,7 +242,7 @@ export default async function ShopLayout({
                     {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${config.facebook_pixel_id}');fbq('track','PageView');`}
                 </Script>
             )}
-        </>
+        </ThemeProvider>
     )
 }
 

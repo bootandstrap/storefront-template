@@ -111,6 +111,29 @@ function main() {
             }
 
             totalIssues += issues.length
+
+            if (process.argv.includes('--fix')) {
+                let fixedDict = { ...loadDict(locale) }
+                // Remove extra
+                for (const issue of extra) {
+                    delete fixedDict[issue.key]
+                }
+                // Add missing
+                for (const issue of missing) {
+                    fixedDict[issue.key] = refDict[issue.key]
+                }
+                
+                // Sort keys alphabetically
+                const sortedKeys = Object.keys(fixedDict).sort()
+                const finalDict: Record<string, string> = {}
+                for (const k of sortedKeys) {
+                    finalDict[k] = fixedDict[k]
+                }
+                
+                const filePath = path.join(DICT_DIR, `${locale}.json`)
+                fs.writeFileSync(filePath, JSON.stringify(finalDict, null, 2) + '\n')
+                console.log(`🔧 Fixed ${locale}.json`)
+            }
         }
     }
 

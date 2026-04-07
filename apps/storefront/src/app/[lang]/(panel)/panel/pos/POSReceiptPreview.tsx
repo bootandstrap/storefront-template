@@ -34,7 +34,7 @@ interface POSReceiptPreviewProps {
 type PaperWidth = 48 | 32 // chars: 80mm = 48, 58mm = 32
 
 function formatPrice(amount: number, currency: string): string {
-    return formatPOSCurrency(amount, currency?.toUpperCase() || 'EUR')
+    return formatPOSCurrency(amount, currency)
 }
 
 function ReceiptLine({ left, right, bold = false, width }: {

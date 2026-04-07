@@ -3,6 +3,11 @@
  *
  * Channel configuration, performance comparison.
  * Gated by enable_sales_channels feature flag (module: Sales Channels).
+ *
+ * Data sources:
+ * - Channels: Medusa Admin API `/admin/sales-channels`
+ * - Metrics: Medusa Admin API `/admin/orders` (grouped by sales_channel_id)
+ * - Settings: config table (saved via ModuleConfigSection)
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
@@ -11,6 +16,7 @@ import FeatureGate from '@/components/ui/FeatureGate'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { ShoppingCart } from 'lucide-react'
 import SalesChannelsClient from './SalesChannelsClient'
+import { getSalesChannelsAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +45,9 @@ export default async function SalesChannelsPage({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cfgAny = config as unknown as Record<string, unknown>
 
+    // Fetch real sales channels data from Medusa
+    const channelsData = await getSalesChannelsAction()
+
     return (
         <div className="space-y-6">
             <PanelPageHeader
@@ -47,6 +56,7 @@ export default async function SalesChannelsPage({
                 icon={<ShoppingCart className="w-5 h-5" />}
             />
             <SalesChannelsClient
+                channelsData={channelsData}
                 salesConfig={{
                     sales_whatsapp_greeting: cfgAny.sales_whatsapp_greeting ?? '',
                     sales_preferred_contact: cfgAny.sales_preferred_contact ?? 'whatsapp',

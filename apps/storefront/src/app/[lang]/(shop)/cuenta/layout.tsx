@@ -4,6 +4,8 @@ import { getConfig } from '@/lib/config'
 import AccountSidebar from '@/components/account/AccountSidebar'
 import { isPanelRole } from '@/lib/panel-access-policy'
 
+import { cookies } from 'next/headers'
+
 export const dynamic = 'force-dynamic'
 
 export default async function CuentaLayout({
@@ -34,8 +36,11 @@ export default async function CuentaLayout({
         .eq('id', user.id)
         .single()
 
+    const cookieStore = await cookies()
+    const isSimulating = cookieStore.get('simulating_client')?.value === 'true'
+
     // Owners should always use the Owner Panel, not customer account
-    if (isPanelRole(profile?.role)) {
+    if (isPanelRole(profile?.role) && !isSimulating) {
         redirect(`/${lang}/panel`)
     }
 

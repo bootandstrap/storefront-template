@@ -40,7 +40,7 @@ const MEDUSA_API_KEY = process.env.MEDUSA_ADMIN_API_KEY || ''
  * Fetch carts abandoned for longer than the configured delay.
  * Uses Medusa Admin API to get carts without completed_at.
  */
-async function fetchAbandonedCarts(delayHours: number): Promise<AbandonedCart[]> {
+async function fetchAbandonedCarts(delayHours: number, defaultCurrency: string): Promise<AbandonedCart[]> {
     try {
         const cutoff = new Date(Date.now() - delayHours * 60 * 60 * 1000).toISOString()
         const res = await fetch(
@@ -80,7 +80,7 @@ async function fetchAbandonedCarts(delayHours: number): Promise<AbandonedCart[]>
                     price: String(((i.unit_price as number) || 0) / 100),
                 })),
                 total: String(((c.total as number) || 0) / 100),
-                currency: (c.region as Record<string, unknown>)?.currency_code as string || 'eur',
+                currency: (c.region as Record<string, unknown>)?.currency_code as string || defaultCurrency,
                 abandoned_at: new Date(c.created_at as string),
             }))
     } catch (err) {
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
         const tenantId = appConfig.config.tenant_id || ''
         const [abandonedCarts, deliveredOrders] = await Promise.all([
             abandonedCartEnabled
-                ? fetchAbandonedCarts(automationConfig.abandoned_cart_delay_hours)
+                ? fetchAbandonedCarts(automationConfig.abandoned_cart_delay_hours, appConfig.config.default_currency)
                 : Promise.resolve([]),
             reviewRequestEnabled
                 ? fetchDeliveredOrders(automationConfig.review_request_delay_days)

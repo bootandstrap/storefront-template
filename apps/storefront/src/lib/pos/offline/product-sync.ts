@@ -47,6 +47,9 @@ export async function syncProductCatalogAction(
                 id: v.id,
                 title: v.title || null,
                 sku: v.sku || null,
+                manage_inventory: !!v.manage_inventory,
+                inventory_quantity: v.inventory_quantity ?? 0,
+                barcode: (v as any).barcode || null,
                 prices: (v.prices || []).map((pr: { amount: number; currency_code: string }) => ({
                     amount: pr.amount,
                     currency_code: pr.currency_code,

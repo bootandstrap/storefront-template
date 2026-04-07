@@ -1,7 +1,7 @@
 # GEMINI — Tenant Storefront Customization Guide
 
 > **Read this first.** This guide tells an AI agent exactly what can and cannot be modified when customizing a tenant's storefront.
-> Last updated: 2026-04-02 (SaaS Gating Modal + Audit Remediation, Sentrux architectural enforcement).
+> Last updated: 2026-04-06 (Governance contract sync, pos_kiosk module, doc alignment run).
 
 ## 0. Local Development Setup
 
@@ -95,7 +95,7 @@ These files are the **SaaS platform layer**. Modifying them breaks governance, s
 | `apps/storefront/src/lib/policy-engine.ts` | Business rule enforcement |
 | `apps/storefront/src/proxy.ts` | Next.js 16 routing proxy — auth + locale + role protection |
 | `apps/storefront/src/app/api/` | All API routes (webhooks, health, orders, revalidate, chat) |
-| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **40+ components** as of 2026-04-03: PanelTopbar, PanelShell, PanelSidebar, CommandPalette (⌘K), PanelToaster, SetupProgress, StoreHealthCard, SmartTip, AchievementProvider, UsageMeter, AnimatedStatValue, ModulesMarketplaceClient, TierComparisonTable, POS (POSCart, POSClient, POSProductGrid, POSPaymentOverlay, POSOfflineBanner, POSDashboard, POSVariantPicker, POSReceipt), Utilities (WiFiQRCard, LoyaltyCardPreview, BarcodeGenerator, PriceLabelSheet), SOTA Bento system (SotaBentoGrid, SotaBentoItem, SotaGlassCard, SotaMetric, SotaFeatureGateWrapper), I18n panel (I18nClient v2 with live toggles), etc. |
+| `apps/storefront/src/app/[lang]/(panel)/` | Owner panel — governed by SaaS flags. **40+ components** as of 2026-04-06: PanelTopbar, PanelShell, PanelSidebar, CommandPalette (⌘K), PanelToaster, SetupProgress, StoreHealthCard, SmartTip, AchievementProvider, UsageMeter, AnimatedStatValue, ModulesMarketplaceClient, TierComparisonTable, POS (POSCart, POSClient, POSProductGrid, POSPaymentOverlay, POSOfflineBanner, POSDashboard, POSVariantPicker, POSReceipt, POSKioskClient), Utilities (WiFiQRCard, LoyaltyCardPreview, BarcodeGenerator, PriceLabelSheet), SOTA Bento system (SotaBentoGrid, SotaBentoItem, SotaGlassCard, SotaMetric, SotaFeatureGateWrapper), I18n panel (I18nClient v2 with live toggles), etc. |
 | `apps/storefront/src/app/[lang]/(auth)/` | Auth pages — governed by SaaS flags |
 | `apps/storefront/src/lib/i18n/index.ts` | i18n engine — only edit dictionaries, not the engine |
 | `apps/storefront/src/lib/i18n/locale.ts` | Locale resolution logic |

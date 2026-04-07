@@ -1,7 +1,8 @@
 /**
  * Automations Dashboard — Owner Panel
  *
- * Automation flows, templates, execution log.
+ * Multi-channel notification configuration: Webhook, WhatsApp, Telegram, Email.
+ * Event → channel mapping matrix for order lifecycle events.
  * Gated by enable_automations feature flag (module: Automation).
  */
 
@@ -21,6 +22,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     return { title: t('panel.automations.title') }
 }
 
+import { DEFAULT_CHANNEL_CONFIG, DEFAULT_EVENT_MAPPING } from '@/lib/registries/notification-events'
+
 export default async function AutomationsPage({
     params,
 }: {
@@ -39,6 +42,10 @@ export default async function AutomationsPage({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cfgAny = config as unknown as Record<string, unknown>
 
+    // Parse notification config with safe defaults
+    const notificationChannels = (cfgAny.notification_channels ?? DEFAULT_CHANNEL_CONFIG) as typeof DEFAULT_CHANNEL_CONFIG
+    const notificationEvents = (cfgAny.notification_events ?? DEFAULT_EVENT_MAPPING) as Record<string, string[]>
+
     return (
         <div className="space-y-6">
             <PanelPageHeader
@@ -47,19 +54,14 @@ export default async function AutomationsPage({
                 icon={<Zap className="w-5 h-5" />}
             />
             <AutomationsClient
-                automationConfig={{
-                    webhook_notification_email: cfgAny.webhook_notification_email ?? '',
-                }}
+                channels={notificationChannels}
+                events={notificationEvents}
                 labels={{
-                    activeFlows: t('panel.automations.activeFlows'),
-                    executionsToday: t('panel.automations.executionsToday'),
-                    successRate: t('panel.automations.successRate'),
-                    templates: t('panel.automations.templates'),
-                    executionLog: t('panel.automations.executionLog'),
-                    createFlow: t('panel.automations.createFlow'),
-                    tabFlows: t('panel.automations.tabFlows'),
-                    tabTemplates: t('panel.automations.tabTemplates'),
+                    tabChannels: t('panel.automations.tabFlows'),
+                    tabEvents: t('panel.automations.tabTemplates'),
                     tabLog: t('panel.automations.tabLog'),
+                    saveSuccess: t('panel.i18n.saveSuccess'),
+                    saveError: t('panel.i18n.saveError'),
                 }}
                 lang={lang}
             />

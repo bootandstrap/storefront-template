@@ -16,16 +16,19 @@ import { adminFetch } from './admin-core'
 // Types
 // ---------------------------------------------------------------------------
 
-interface ShippingOptionConfig {
+export interface ShippingOptionConfig {
     name: string
+    /** Amount in smallest currency unit (e.g. cents) */
     amount: number
-    /** e.g. 'manual' for manual fulfillment */
+    /** v2: 'flat' or 'calculated' (NOT 'flat_rate') */
+    price_type?: 'flat' | 'calculated'
     provider_id?: string
-    price_type?: string
-    metadata?: Record<string, string>
+    metadata?: Record<string, unknown>
+    /** Currency code for price (defaults to region currency) */
+    currency_code?: string
 }
 
-interface TaxRegionConfig {
+export interface TaxRegionConfig {
     country_code: string
     /** Default tax rate as percentage (e.g. 21 for 21%) */
     default_tax_rate: number
@@ -37,11 +40,17 @@ interface TaxRegionConfig {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a default shipping profile and options for a region.
+ * Creates a default shipping profile and options for a service zone.
+ * v2: Uses service_zone_id + shipping_profile_id + prices[] instead of region_id + profile_id + amount.
+ *
+ * @param serviceZoneId - The service zone to create options for
+ * @param options - Shipping option configs
+ * @param currencyCode - Currency for prices (default: 'eur')
  */
 export async function setupShippingOptions(
-    regionId: string,
-    options: ShippingOptionConfig[] = defaultShippingOptions
+    serviceZoneId: string,
+    options: ShippingOptionConfig[] = defaultShippingOptions,
+    currencyCode: string = 'eur'
 ): Promise<{ success: boolean; optionIds: string[]; error?: string }> {
     const optionIds: string[] = []
 
@@ -67,21 +76,23 @@ export async function setupShippingOptions(
             return { success: false, optionIds: [], error: 'Failed to get/create shipping profile' }
         }
 
-        // 2. Create shipping options
+        // 2. Create shipping options (v2 schema)
         for (const opt of options) {
+            const optCurrency = opt.currency_code || currencyCode
             const res = await adminFetch<{ shipping_option: { id: string } }>(
                 '/admin/shipping-options',
                 {
                     method: 'POST',
                     body: JSON.stringify({
                         name: opt.name,
-                        region_id: regionId,
-                        profile_id: profileId,
-                        provider_id: opt.provider_id || 'manual',
-                        price_type: opt.price_type || 'flat_rate',
-                        amount: opt.amount,
+                        service_zone_id: serviceZoneId,
+                        shipping_profile_id: profileId,
+                        provider_id: opt.provider_id || 'manual_manual',
+                        price_type: opt.price_type || 'flat',
+                        type: { label: opt.name, code: opt.name.toLowerCase().replace(/\s+/g, '-'), description: '' },
+                        prices: [{ currency_code: optCurrency, amount: opt.amount }],
+                        rules: [],
                         data: {},
-                        metadata: opt.metadata || {},
                     }),
                 }
             )
@@ -153,18 +164,20 @@ const defaultTaxRegions: TaxRegionConfig[] = [
 
 /**
  * Full commerce setup — shipping + tax in one call.
+ * v2: First param is serviceZoneId (not regionId).
  * Call from setupMedusaInstance() in job-queue.ts after Medusa boots.
  */
 export async function setupCommerceDefaults(
-    regionId: string,
+    serviceZoneId: string,
     config?: {
         shipping?: ShippingOptionConfig[]
         tax?: TaxRegionConfig[]
+        currencyCode?: string
     }
 ): Promise<{ success: boolean; shippingOptionIds: string[]; errors: string[] }> {
     const errors: string[] = []
 
-    const shippingResult = await setupShippingOptions(regionId, config?.shipping)
+    const shippingResult = await setupShippingOptions(serviceZoneId, config?.shipping, config?.currencyCode ?? 'eur')
     if (!shippingResult.success) errors.push(`Shipping: ${shippingResult.error}`)
 
     const taxResult = await setupTaxRegions(config?.tax)

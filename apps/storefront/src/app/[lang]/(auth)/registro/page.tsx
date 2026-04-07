@@ -70,7 +70,7 @@ export default async function RegistroPage({
                     {/* Registration form (client component) */}
                     <RegisterForm
                         lang={lang}
-                        showGoogleAuth={isFeatureEnabled(featureFlags, 'enable_google_auth')}
+                        showGoogleAuth={isFeatureEnabled(featureFlags, 'enable_google_oauth')}
                     />
                 </div>
             </div>

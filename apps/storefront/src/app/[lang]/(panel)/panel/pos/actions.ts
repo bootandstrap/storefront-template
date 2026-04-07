@@ -420,3 +420,77 @@ export async function cancelTwintPaymentAction(
         return false
     }
 }
+
+// ---------------------------------------------------------------------------
+// Quick Price — Add a currency price to an existing variant (POS multi-currency)
+// ---------------------------------------------------------------------------
+
+/**
+ * Appends a price in a new currency to an existing variant.
+ * Does NOT overwrite prices in other currencies.
+ *
+ * Used by the POS quick-price modal when a product is missing
+ * a price in the tenant's configured default_currency.
+ */
+export async function addVariantCurrencyPrice(input: {
+    productId: string
+    variantId: string
+    amount: number   // in major units (e.g., 25.00 → will be converted to 2500)
+    currencyCode: string
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
+        const scope = await getTenantMedusaScope(tenantId)
+        if (!scope) {
+            return { success: false, error: 'Medusa configuration not found' }
+        }
+
+        if (input.amount <= 0) {
+            return { success: false, error: 'Price must be greater than 0' }
+        }
+
+        // Read current variant prices to avoid overwriting
+        const { getAdminProduct } = await import('@/lib/medusa/admin')
+        const product = await getAdminProduct(input.productId, scope)
+        if (!product) {
+            return { success: false, error: 'Product not found' }
+        }
+
+        const variant = product.variants?.find(v => v.id === input.variantId)
+        if (!variant) {
+            return { success: false, error: 'Variant not found' }
+        }
+
+        // Build merged prices: existing + new (replace if same currency exists)
+        const existingPrices = (variant.prices ?? [])
+            .filter(p => p.currency_code?.toLowerCase() !== input.currencyCode.toLowerCase())
+            .map(p => ({ amount: p.amount, currency_code: p.currency_code }))
+
+        const newPrices = [
+            ...existingPrices,
+            { amount: Math.round(input.amount * 100), currency_code: input.currencyCode.toLowerCase() },
+        ]
+
+        const { updateVariantPrices } = await import('@/lib/medusa/admin')
+        const result = await updateVariantPrices(input.productId, input.variantId, newPrices, scope)
+        if (result.error) {
+            return { success: false, error: result.error }
+        }
+
+        revalidatePath('/[lang]/panel/pos', 'page')
+        revalidatePath('/[lang]/panel/productos', 'page')
+        logOwnerAction(tenantId, 'pos.add_currency_price', {
+            productId: input.productId,
+            variantId: input.variantId,
+            currency: input.currencyCode,
+            amount: input.amount,
+        })
+
+        return { success: true }
+    } catch (err) {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to add price',
+        }
+    }
+}

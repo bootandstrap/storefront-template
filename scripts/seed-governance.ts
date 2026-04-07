@@ -167,6 +167,18 @@ const TEMPLATE_GOVERNANCE: Record<string, GovernanceProfile> = {
             language: 'es',
         },
     },
+    'campifruit': {
+        bundleName: 'full-commerce',
+        storeConfig: {
+            business_name: 'Campifruit',
+            description: 'Frutas frescas seleccionadas directamente del campo colombiano.',
+            contact_phone: '+57 310 456 7890',
+            primary_color: '#2E7D32',
+            accent_color: '#66BB6A',
+            language: 'es',
+        },
+        limitOverrides: {},
+    },
 }
 
 // ── .env Writer ─────────────────────────────────────────────
@@ -261,8 +273,8 @@ export async function seedGovernance(
                     p_plan: 'enterprise',
                     p_language: profile.storeConfig.language || 'es',
                     p_country_prefix: '+34',
-                    p_currency: 'eur',
-                    p_timezone: 'Europe/Madrid',
+            p_currency: templateId === 'campifruit' ? 'cop' : 'eur',
+            p_timezone: templateId === 'campifruit' ? 'America/Bogota' : 'Europe/Madrid',
                 }
             ) as { data: string | null; error: { message: string } | null }
 
@@ -313,20 +325,42 @@ export async function seedGovernance(
     log('🏛️', `Seeding governance for template: ${templateId} (bundle: ${profile.bundleName})`)
     log('📋', `Contract: ${contract.flags.count} flags, ${contract.limits.count} limits`)
 
-    // ── Phase 1: Seed feature_flags (contract-driven) ──
+    // ── Phase 1: Seed feature_flags (contract-driven, schema-drift resilient) ──
     const flags = {
         ...CONTRACT_FLAGS,
         ...(profile.flagOverrides || {}),
     }
 
-    const { error: flagErr } = await supabase
-        .from('feature_flags')
-        .upsert({ tenant_id: effectiveTenantId, ...flags }, { onConflict: 'tenant_id' })
+    let flagsSeeded = false
+    let flagsToInsert = { tenant_id: effectiveTenantId, ...flags }
 
-    if (flagErr) {
+    // Retry loop: if column doesn't exist in DB, remove it and retry
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const { error: flagErr } = await supabase
+            .from('feature_flags')
+            .upsert(flagsToInsert, { onConflict: 'tenant_id' })
+
+        if (!flagErr) {
+            const insertedCount = Object.keys(flagsToInsert).length - 1 // minus tenant_id
+            log('✅', `Feature flags seeded (${insertedCount}/${contract.flags.count} from contract)`)
+            flagsSeeded = true
+            break
+        }
+
+        // Schema drift: column doesn't exist in DB
+        const missingCol = flagErr.message.match(/Could not find the '([^']+)' column/)?.[1]
+        if (missingCol) {
+            log('⚠️', `Schema drift: '${missingCol}' not in DB — removing from seed`)
+            delete (flagsToInsert as Record<string, unknown>)[missingCol]
+            continue
+        }
+
         log('❌', `Feature flags error: ${flagErr.message}`)
-    } else {
-        log('✅', `Feature flags seeded (${Object.keys(flags).length}/${contract.flags.count} from contract)`)
+        break
+    }
+
+    if (!flagsSeeded) {
+        log('⚠️', 'Feature flags partially seeded (schema drift)')
     }
 
     // ── Phase 2: Seed plan_limits (contract-driven) ──
@@ -362,8 +396,8 @@ export async function seedGovernance(
             color_preset: 'custom',
             theme_mode: 'light',
             active_languages: ['es'],
-            active_currencies: ['eur'],
-            default_currency: 'EUR',
+            active_currencies: templateId === 'campifruit' ? ['cop', 'usd'] : ['eur', 'usd'],
+            default_currency: templateId === 'campifruit' ? 'COP' : 'EUR',
         }, { onConflict: 'tenant_id' })
 
     if (cfgErr) {

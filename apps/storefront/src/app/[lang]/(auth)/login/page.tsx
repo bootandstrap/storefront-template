@@ -20,7 +20,7 @@ export default async function LoginPage({
     const businessName = config.business_name || 'Store'
 
     const emailEnabled = isFeatureEnabled(featureFlags, 'enable_email_auth')
-    const googleEnabled = isFeatureEnabled(featureFlags, 'enable_google_auth')
+    const googleEnabled = isFeatureEnabled(featureFlags, 'enable_google_oauth')
     const registrationEnabled = isFeatureEnabled(featureFlags, 'enable_user_registration')
 
     return (

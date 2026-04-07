@@ -47,19 +47,21 @@ export async function getPOSSalesAction(
             params.set('q', filters.search)
         }
 
+        // v2: Use fields=*relation syntax for cart expansion (expand= is v1-only)
         const res = await adminFetch<{
             draft_orders: DraftOrderRaw[]
             count: number
-        }>(`/admin/draft-orders?${params.toString()}`, {}, scope)
+        }>(`/admin/draft-orders?${params.toString()}&fields=id,display_id,status,created_at,metadata,*cart,*cart.items,*cart.region`, {}, scope)
 
         if (res.error || !res.data) {
             return { sales: [], total: 0, error: res.error || 'No data returned' }
         }
 
         // Map to POSSaleRecord + apply client-side filters
+        const defaultCurrency = appConfig.config.default_currency
         let sales = (res.data.draft_orders || [])
             .filter((d: DraftOrderRaw) => d.metadata?.source === 'pos')
-            .map(mapDraftOrderToSaleRecord)
+            .map((d: DraftOrderRaw) => mapDraftOrderToSaleRecord(d, defaultCurrency))
 
         // Payment method filter (client-side since Medusa doesn't support it)
         if (filters.payment_method) {
@@ -93,15 +95,16 @@ export async function getPOSSaleDetailAction(
         const scope = await getTenantMedusaScope(tenantId)
         const { adminFetch } = await import('@/lib/medusa/admin-core')
 
+        // v2: Use fields=*relation syntax for cart expansion
         const res = await adminFetch<{ draft_order: DraftOrderRaw }>(
-            `/admin/draft-orders/${orderId}`,
+            `/admin/draft-orders/${orderId}?fields=id,display_id,status,created_at,metadata,*cart,*cart.items,*cart.region`,
             {},
             scope
         )
 
         if (res.error || !res.data?.draft_order) return { sale: null }
 
-        return { sale: mapDraftOrderToSaleRecord(res.data.draft_order) }
+        return { sale: mapDraftOrderToSaleRecord(res.data.draft_order, appConfig.config.default_currency) }
     } catch (err) {
         return {
             sale: null,
@@ -118,6 +121,7 @@ interface DraftOrderRaw {
     id: string
     display_id?: number
     status: string
+    // v2: cart is the primary source of truth for draft orders (expanded via fields=*cart)
     cart?: {
         items?: {
             title: string
@@ -131,12 +135,21 @@ interface DraftOrderRaw {
             currency_code?: string
         }
     }
+    // v2 direct fields (fallback when cart expansion fails)
+    items?: {
+        title: string
+        quantity: number
+        unit_price: number
+    }[]
+    summary?: { current_order_total?: number }
+    currency_code?: string
     metadata?: Record<string, string>
     created_at: string
 }
 
-function mapDraftOrderToSaleRecord(d: DraftOrderRaw): POSSaleRecord {
-    const items = d.cart?.items || []
+function mapDraftOrderToSaleRecord(d: DraftOrderRaw, defaultCurrency: string): POSSaleRecord {
+    // v2: cart.items is primary, fall back to top-level items for resilience
+    const items = d.cart?.items || d.items || []
     const paymentMethod = (d.metadata?.payment_method || 'cash') as POSSaleRecord['payment_method']
 
     return {
@@ -150,8 +163,10 @@ function mapDraftOrderToSaleRecord(d: DraftOrderRaw): POSSaleRecord {
         item_count: items.reduce((s, i) => s + i.quantity, 0),
         subtotal: d.cart?.subtotal || 0,
         discount_amount: d.cart?.discount_total || 0,
-        total: d.cart?.total || 0,
-        currency_code: d.cart?.region?.currency_code || 'eur',
+        // v2: totals fallback chain: cart.total → summary.current_order_total → 0
+        total: d.cart?.total || d.summary?.current_order_total || 0,
+        // v2: currency fallback chain: cart.region → top-level → default
+        currency_code: d.cart?.region?.currency_code || d.currency_code || defaultCurrency,
         payment_method: paymentMethod,
         customer_name: d.metadata?.customer_name || null,
         created_at: d.created_at,

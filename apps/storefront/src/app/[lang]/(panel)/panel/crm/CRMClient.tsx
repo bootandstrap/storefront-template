@@ -22,7 +22,8 @@ import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
-import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
+import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
+import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
 import { exportCrmCsv } from './actions'
 
 // ---------------------------------------------------------------------------
@@ -102,16 +103,7 @@ export default function CRMClient({
     labels,
     crmConfig,
 }: Props) {
-    const crmConfigFields: ConfigFieldDef[] = [
-        { key: 'crm_auto_tag_customers', label: 'Auto-tag new customers', type: 'toggle' },
-        { key: 'crm_new_customer_tag', label: 'Default tag for new customers', type: 'text', placeholder: 'e.g. new-lead' },
-        { key: 'crm_notify_new_contact', label: 'Notify on new contact', type: 'toggle' },
-        { key: 'crm_export_format', label: 'Export format', type: 'select', options: [
-            { value: 'csv', label: 'CSV' },
-            { value: 'xlsx', label: 'Excel (XLSX)' },
-            { value: 'json', label: 'JSON' },
-        ] },
-    ]
+    const crmConfigFields = getModuleConfigSchema('crm')
     const [searchQuery, setSearchQuery] = useState('')
     const [activeSegment, setActiveSegment] = useState<Segment>('all')
     const [isExporting, startExport] = useTransition()

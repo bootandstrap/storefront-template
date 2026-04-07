@@ -2,7 +2,7 @@ import type {
     SubscriberArgs,
     SubscriberConfig,
 } from "@medusajs/framework"
-import { notifyStorefront } from "./shared/bridge"
+import { notifyStorefront, dispatchToChannels } from "./shared/bridge"
 
 /**
  * Subscriber: order.fulfillment_created
@@ -60,6 +60,15 @@ export default async function orderShippedHandler({
                 provider_id: fulfillment.provider_id,
             })
         )
+
+        // ── Multi-channel dispatch (webhook, whatsapp, telegram) ──
+        await dispatchToChannels("order.fulfillment_created", {
+            display_id: orderInfo.display_id,
+            customer_email: orderInfo.email,
+            customer_name: orderInfo.first_name || orderInfo.email?.split("@")[0],
+            tracking_numbers: trackingNumbers,
+            item_count: fulfillment.items?.length ?? 0,
+        })
 
         // ── Email notification via storefront bridge ──
         if (orderInfo.email) {

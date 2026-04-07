@@ -4,21 +4,26 @@
  * Sales Channels Client — Owner Panel (SOTA)
  *
  * Features:
- * - Channel cards with activation toggles
- * - Revenue comparison per channel
- * - Performance metrics with animated bars
+ * - Real channel cards from Medusa Admin API
+ * - Revenue and order metrics from real order data
+ * - Performance bars with channel comparison
+ * - Settings tab with ModuleConfigSection (saves to config table)
+ *
+ * All data provided by server (page.tsx → actions.ts → Medusa Admin API)
  */
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     ShoppingCart, Globe, Smartphone, Store, MessageCircle,
-    TrendingUp, DollarSign, Users, BarChart3,
+    TrendingUp, DollarSign, BarChart3, Package, Hash,
 } from 'lucide-react'
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
-import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
+import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
+import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
+import type { SalesChannelsData } from './actions'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,55 +41,25 @@ interface Labels {
 }
 
 // ---------------------------------------------------------------------------
-// Demo Data
+// Icon resolver — match channel name to icon
 // ---------------------------------------------------------------------------
 
-const CHANNELS = [
-    {
-        id: 'web',
-        name: 'Tienda Web',
-        description: 'Tu tienda online principal',
-        icon: Globe,
-        color: '#3b82f6',
-        active: true,
-        revenue: 4850,
-        orders: 62,
-        conversion: 3.2,
-    },
-    {
-        id: 'whatsapp',
-        name: 'WhatsApp',
-        description: 'Pedidos vía WhatsApp',
-        icon: MessageCircle,
-        color: '#25D366',
-        active: true,
-        revenue: 2340,
-        orders: 34,
-        conversion: 8.5,
-    },
-    {
-        id: 'pos',
-        name: 'Punto de Venta',
-        description: 'Ventas presenciales con POS',
-        icon: Store,
-        color: '#8b5cf6',
-        active: false,
-        revenue: 0,
-        orders: 0,
-        conversion: 0,
-    },
-    {
-        id: 'mobile',
-        name: 'App Móvil',
-        description: 'Aplicación móvil nativa',
-        icon: Smartphone,
-        color: '#f59e0b',
-        active: false,
-        revenue: 0,
-        orders: 0,
-        conversion: 0,
-    },
-]
+function getChannelIcon(name: string) {
+    const lower = name.toLowerCase()
+    if (lower.includes('whatsapp')) return MessageCircle
+    if (lower.includes('pos') || lower.includes('punto')) return Store
+    if (lower.includes('mobile') || lower.includes('app') || lower.includes('móvil')) return Smartphone
+    return Globe // Default — web store
+}
+
+function getChannelColor(name: string, index: number) {
+    const lower = name.toLowerCase()
+    if (lower.includes('whatsapp')) return '#25D366'
+    if (lower.includes('pos') || lower.includes('punto')) return '#8b5cf6'
+    if (lower.includes('mobile') || lower.includes('app')) return '#f59e0b'
+    const palette = ['#3b82f6', '#ef4444', '#06b6d4', '#ec4899', '#f97316']
+    return palette[index % palette.length]
+}
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -92,17 +67,18 @@ const CHANNELS = [
 
 type TabId = 'channels' | 'performance' | 'settings'
 
-export default function SalesChannelsClient({ labels, lang, salesConfig }: { labels: Labels; lang: string; salesConfig?: Record<string, unknown> }) {
-    const salesConfigFields: ConfigFieldDef[] = [
-        { key: 'sales_whatsapp_greeting', label: 'WhatsApp greeting message', type: 'textarea', placeholder: 'Hi! Thanks for reaching out...' },
-        { key: 'sales_preferred_contact', label: 'Preferred contact method', type: 'select', options: [
-            { value: 'whatsapp', label: 'WhatsApp' },
-            { value: 'email', label: 'Email' },
-            { value: 'phone', label: 'Phone' },
-        ] },
-        { key: 'sales_business_hours_display', label: 'Show business hours', type: 'toggle' },
-        { key: 'sales_highlight_free_shipping', label: 'Highlight free shipping', type: 'toggle' },
-    ]
+export default function SalesChannelsClient({
+    channelsData: cd,
+    labels,
+    salesConfig,
+}: {
+    channelsData: SalesChannelsData
+    labels: Labels
+    lang: string
+    salesConfig?: Record<string, unknown>
+}) {
+    const salesConfigFields = getModuleConfigSchema('sales_channels')
+
     const [activeTab, setActiveTab] = useState<TabId>('channels')
 
     const tabs: { id: TabId; label: string }[] = [
@@ -111,9 +87,35 @@ export default function SalesChannelsClient({ labels, lang, salesConfig }: { lab
         { id: 'settings', label: labels.tabSettings },
     ]
 
-    const activeChannels = CHANNELS.filter(c => c.active).length
-    const totalRevenue = CHANNELS.reduce((sum, c) => sum + c.revenue, 0)
-    const maxRevenue = Math.max(...CHANNELS.map(c => c.revenue), 1)
+    // Build channel display data from real Medusa data
+    const channels = cd.channels.map((ch, i) => {
+        const metrics = cd.metrics[ch.id]
+        const Icon = getChannelIcon(ch.name)
+        const color = getChannelColor(ch.name, i)
+        const isCurrent = ch.id === cd.currentChannelId
+
+        return {
+            id: ch.id,
+            name: ch.name,
+            description: ch.description || (isCurrent ? 'Tu canal principal' : 'Canal de ventas'),
+            Icon,
+            color,
+            active: !ch.is_disabled,
+            isCurrent,
+            revenue: metrics?.revenue ? Math.round(metrics.revenue / 100) : 0, // cents → units
+            orders: metrics?.orderCount ?? 0,
+            currencyCode: (metrics?.currencyCode ?? 'chf').toUpperCase(),
+        }
+    })
+
+    const activeChannels = channels.filter(c => c.active).length
+    const totalRevenue = channels.reduce((sum, c) => sum + c.revenue, 0)
+    const totalOrders = channels.reduce((sum, c) => sum + c.orders, 0)
+    const maxRevenue = Math.max(...channels.map(c => c.revenue), 1)
+    const currencyCode = channels[0]?.currencyCode ?? 'CHF'
+
+    // Show empty state if no channels from Medusa
+    const hasChannels = channels.length > 0
 
     return (
         <PageEntrance>
@@ -121,17 +123,17 @@ export default function SalesChannelsClient({ labels, lang, salesConfig }: { lab
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <StatCard
                     label={labels.activeChannels}
-                    value={`${activeChannels}/${CHANNELS.length}`}
+                    value={hasChannels ? `${activeChannels}/${channels.length}` : '—'}
                     icon={<ShoppingCart className="w-5 h-5" />}
                 />
                 <StatCard
                     label={labels.totalRevenue}
-                    value={`CHF ${totalRevenue.toLocaleString()}`}
+                    value={hasChannels ? `${currencyCode} ${totalRevenue.toLocaleString()}` : '—'}
                     icon={<DollarSign className="w-5 h-5" />}
                 />
                 <StatCard
-                    label={labels.conversionRate}
-                    value="4.8%"
+                    label="Pedidos del mes"
+                    value={hasChannels ? totalOrders : '—'}
                     icon={<TrendingUp className="w-5 h-5" />}
                 />
             </div>
@@ -169,84 +171,92 @@ export default function SalesChannelsClient({ labels, lang, salesConfig }: { lab
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <ListStagger>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {CHANNELS.map((channel) => {
-                                    const Icon = channel.icon
-                                    return (
-                                        <StaggerItem key={channel.id}>
-                                            <motion.div
-                                                className={`bg-white rounded-2xl border p-6 hover:shadow-md transition-shadow ${
-                                                    channel.active
-                                                        ? 'border-[var(--color-gray-200,#e5e7eb)]'
-                                                        : 'border-[var(--color-gray-200,#e5e7eb)] opacity-60'
-                                                }`}
-                                                whileHover={{ y: -2 }}
-                                            >
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div
-                                                            className="w-11 h-11 rounded-xl flex items-center justify-center"
-                                                            style={{ backgroundColor: `${channel.color}15` }}
-                                                        >
-                                                            <Icon className="w-5 h-5" style={{ color: channel.color }} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-[var(--color-gray-800,#1f2937)]">
-                                                                {channel.name}
-                                                            </p>
-                                                            <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
-                                                                {channel.description}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors ${
-                                                        channel.active ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
-                                                    }`}>
-                                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                                                            channel.active ? 'translate-x-4' : 'translate-x-0.5'
-                                                        }`} />
-                                                    </div>
-                                                </div>
-
-                                                {channel.active && (
-                                                    <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--color-gray-100,#f3f4f6)]">
-                                                        <div className="text-center">
-                                                            <p className="text-lg font-bold text-[var(--color-gray-800,#1f2937)]">
-                                                                {channel.orders}
-                                                            </p>
-                                                            <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">Pedidos</p>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-lg font-bold text-[var(--color-gray-800,#1f2937)]">
-                                                                CHF {channel.revenue.toLocaleString()}
-                                                            </p>
-                                                            <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">Ingresos</p>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-lg font-bold text-[var(--color-gray-800,#1f2937)]">
-                                                                {channel.conversion}%
-                                                            </p>
-                                                            <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">Conversión</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {!channel.active && (
-                                                    <div className="pt-4 border-t border-[var(--color-gray-100,#f3f4f6)]">
-                                                        <button
-                                                            className="w-full py-2 text-xs font-medium rounded-lg border border-[var(--color-gray-200,#e5e7eb)] text-[var(--color-gray-600,#4b5563)] hover:bg-[var(--color-gray-50,#f9fafb)] transition-colors"
-                                                        >
-                                                            Activar canal
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        </StaggerItem>
-                                    )
-                                })}
+                        {!hasChannels ? (
+                            <div className="bg-white rounded-2xl border border-[var(--color-gray-200,#e5e7eb)] p-12 text-center">
+                                <ShoppingCart className="w-10 h-10 mx-auto mb-3 text-[var(--color-gray-300,#d1d5db)]" />
+                                <p className="text-sm text-[var(--color-gray-500,#6b7280)]">
+                                    No se encontraron canales de venta en Medusa.
+                                </p>
+                                <p className="text-xs text-[var(--color-gray-400,#9ca3af)] mt-1">
+                                    Los canales se configuran automáticamente durante el despliegue.
+                                </p>
                             </div>
-                        </ListStagger>
+                        ) : (
+                            <ListStagger>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {channels.map((channel) => {
+                                        const Icon = channel.Icon
+                                        return (
+                                            <StaggerItem key={channel.id}>
+                                                <motion.div
+                                                    className={`bg-white rounded-2xl border p-6 hover:shadow-md transition-shadow ${
+                                                        channel.active
+                                                            ? 'border-[var(--color-gray-200,#e5e7eb)]'
+                                                            : 'border-[var(--color-gray-200,#e5e7eb)] opacity-60'
+                                                    }`}
+                                                    whileHover={{ y: -2 }}
+                                                >
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                                                style={{ backgroundColor: `${channel.color}15` }}
+                                                            >
+                                                                <Icon className="w-5 h-5" style={{ color: channel.color }} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="text-sm font-semibold text-[var(--color-gray-800,#1f2937)]">
+                                                                        {channel.name}
+                                                                    </p>
+                                                                    {channel.isCurrent && (
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
+                                                                            Principal
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
+                                                                    {channel.description}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                            channel.active
+                                                                ? 'bg-[var(--color-emerald-50,#ecfdf5)] text-[var(--color-emerald-700,#047857)]'
+                                                                : 'bg-[var(--color-gray-100,#f3f4f6)] text-[var(--color-gray-500,#6b7280)]'
+                                                        }`}>
+                                                            {channel.active ? 'Activo' : 'Desactivado'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Metrics row — real data */}
+                                                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--color-gray-100,#f3f4f6)]">
+                                                        <div className="flex items-center gap-2">
+                                                            <Package className="w-3.5 h-3.5 text-[var(--color-gray-400,#9ca3af)]" />
+                                                            <div>
+                                                                <p className="text-lg font-bold text-[var(--color-gray-800,#1f2937)]">
+                                                                    {channel.orders}
+                                                                </p>
+                                                                <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">Pedidos</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <DollarSign className="w-3.5 h-3.5 text-[var(--color-gray-400,#9ca3af)]" />
+                                                            <div>
+                                                                <p className="text-lg font-bold text-[var(--color-gray-800,#1f2937)]">
+                                                                    {channel.currencyCode} {channel.revenue.toLocaleString()}
+                                                                </p>
+                                                                <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">Ingresos</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            </StaggerItem>
+                                        )
+                                    })}
+                                </div>
+                            </ListStagger>
+                        )}
                     </motion.div>
                 )}
 
@@ -266,47 +276,51 @@ export default function SalesChannelsClient({ labels, lang, salesConfig }: { lab
                                 </h3>
                             </div>
 
-                            <ListStagger>
-                                {CHANNELS.filter(c => c.active).map((channel) => {
-                                    const Icon = channel.icon
-                                    const widthPct = (channel.revenue / maxRevenue) * 100
+                            {!hasChannels || channels.every(c => c.revenue === 0) ? (
+                                <p className="text-sm text-[var(--color-gray-400,#9ca3af)] py-8 text-center">
+                                    No hay datos de rendimiento este mes
+                                </p>
+                            ) : (
+                                <ListStagger>
+                                    {channels
+                                        .filter(c => c.active)
+                                        .sort((a, b) => b.revenue - a.revenue)
+                                        .map((channel) => {
+                                            const Icon = channel.Icon
+                                            const widthPct = (channel.revenue / maxRevenue) * 100
 
-                                    return (
-                                        <StaggerItem key={channel.id}>
-                                            <div className="mb-5">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Icon className="w-4 h-4" style={{ color: channel.color }} />
-                                                        <span className="text-sm font-medium text-[var(--color-gray-700,#374151)]">
-                                                            {channel.name}
-                                                        </span>
+                                            return (
+                                                <StaggerItem key={channel.id}>
+                                                    <div className="mb-5">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <Icon className="w-4 h-4" style={{ color: channel.color }} />
+                                                                <span className="text-sm font-medium text-[var(--color-gray-700,#374151)]">
+                                                                    {channel.name}
+                                                                </span>
+                                                                <span className="flex items-center gap-1 text-xs text-[var(--color-gray-400,#9ca3af)]">
+                                                                    <Hash className="w-3 h-3" />
+                                                                    {channel.orders} pedidos
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-sm font-bold text-[var(--color-gray-800,#1f2937)]">
+                                                                {currencyCode} {channel.revenue.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-3 bg-[var(--color-gray-100,#f3f4f6)] rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                className="h-full rounded-full"
+                                                                style={{ backgroundColor: channel.color }}
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${widthPct}%` }}
+                                                                transition={{ duration: 1, delay: 0.3 }}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <span className="text-sm font-bold text-[var(--color-gray-800,#1f2937)]">
-                                                        CHF {channel.revenue.toLocaleString()}
-                                                    </span>
-                                                </div>
-                                                <div className="h-3 bg-[var(--color-gray-100,#f3f4f6)] rounded-full overflow-hidden">
-                                                    <motion.div
-                                                        className="h-full rounded-full"
-                                                        style={{ backgroundColor: channel.color }}
-                                                        initial={{ width: 0 }}
-                                                        animate={{ width: `${widthPct}%` }}
-                                                        transition={{ duration: 1, delay: 0.3 }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </StaggerItem>
-                                    )
-                                })}
-                            </ListStagger>
-
-                            {/* Inactive channels notice */}
-                            {CHANNELS.some(c => !c.active) && (
-                                <div className="mt-4 p-4 bg-[var(--color-gray-50,#f9fafb)] rounded-xl">
-                                    <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
-                                        {CHANNELS.filter(c => !c.active).length} canales inactivos no incluidos en esta vista
-                                    </p>
-                                </div>
+                                                </StaggerItem>
+                                            )
+                                        })}
+                                </ListStagger>
                             )}
                         </div>
                     </motion.div>

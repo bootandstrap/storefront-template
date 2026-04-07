@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Medusa product IDs: prod_XXXX (alphanumeric + underscores)
+const VALID_PRODUCT_ID = /^prod_[a-zA-Z0-9]+$/
+
 export async function GET(
     _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params
+
+        // S7: Validate ID format to prevent SSRF/path traversal
+        if (!VALID_PRODUCT_ID.test(id)) {
+            return NextResponse.json({ error: 'Invalid product ID format' }, { status: 400 })
+        }
+
         const medusaUrl = process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
         const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 

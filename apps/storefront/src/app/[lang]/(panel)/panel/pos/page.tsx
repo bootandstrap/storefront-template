@@ -71,12 +71,13 @@ export default async function POSPage({
                 id: c.id,
                 name: c.name,
             }))}
-            defaultCurrency={config.default_currency || 'EUR'}
+            defaultCurrency={config.default_currency}
             businessName={config.business_name || ''}
             labels={posLabels}
             featureFlags={featureFlags}
             planLimits={planLimits}
             posConfig={posConfig}
+            tenantId={tenantId}
         />
     )
 }

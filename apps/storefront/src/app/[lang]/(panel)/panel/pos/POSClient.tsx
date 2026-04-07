@@ -34,6 +34,8 @@ import { charge } from '@/lib/pos/payments/payment-adapter'
 import { usePOSSounds, triggerHaptic } from '@/lib/pos/usePOSSounds'
 import { useBarcodeScanner } from '@/lib/pos/useBarcodeScanner'
 import { useOfflineSync } from '@/lib/pos/offline/useOfflineSync'
+import { usePrinterConnection, type BusinessInfo } from '@/lib/pos/usePrinterConnection'
+import { usePOSSync, type POSSyncEvent } from '@/lib/pos/usePOSSync'
 import { getEnabledPOSPaymentMethods, isPOSHistoryAvailable, isPOSDashboardAvailable, formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { getUpsellTooltip, posLabel } from '@/lib/pos/pos-i18n'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
@@ -59,6 +61,8 @@ interface POSClientProps {
     planLimits: PlanLimits
     /** POS-specific config values from governance config table */
     posConfig?: Record<string, unknown>
+    /** Tenant ID for multi-device sync */
+    tenantId?: string
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -72,6 +76,7 @@ export default function POSClient({
     featureFlags,
     planLimits,
     posConfig = {},
+    tenantId,
 }: POSClientProps) {
     // ── State ──
     const [cart, dispatch] = useReducer(cartReducer, INITIAL_CART)
@@ -88,6 +93,7 @@ export default function POSClient({
     const [mobileCartOpen, setMobileCartOpen] = useState(false)
     const [shiftHistory, setShiftHistory] = useState<POSShift[]>([])
     const [couponCode, setCouponCode] = useState<string | undefined>(undefined)
+    const [syncNotification, setSyncNotification] = useState<string | null>(null)
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const router = useRouter()
 
@@ -101,7 +107,32 @@ export default function POSClient({
 
     // ── Hooks ──
     const { playBeep, playTick, playCashRegister, playError } = usePOSSounds()
-    const { isOnline, syncStatus, pendingCount, lastSyncTime, syncNow, queueOfflineSale } = useOfflineSync()
+    const { isOnline, syncStatus, pendingCount, lastSyncTime, offlineInventoryOffsets, syncNow, queueOfflineSale, cachedProducts } = useOfflineSync()
+
+    // ── Thermal printer ──
+    const { status: printerStatus, printReceipt: thermalPrintReceipt, printRefund: thermalPrintRefund } = usePrinterConnection()
+
+    // ── Multi-device sync ──
+    const handlePOSSyncEvent = useCallback((event: POSSyncEvent) => {
+        switch (event.type) {
+            case 'sale_completed':
+                setSyncNotification(`Sale completed on another device`)
+                setTimeout(() => setSyncNotification(null), 3000)
+                break
+            case 'shift_changed':
+                setSyncNotification(`Shift ${event.payload?.action || 'updated'} on another device`)
+                setTimeout(() => setSyncNotification(null), 3000)
+                break
+            default:
+                break
+        }
+    }, [])
+
+    const { connected: syncConnected, deviceCount, broadcast: syncBroadcast } = usePOSSync({
+        tenantId,
+        enabled: featureFlags.enable_pos === true,
+        onEvent: handlePOSSyncEvent,
+    })
 
     // ── Derived capabilities ──
     const enabledPaymentMethods = useMemo(
@@ -121,19 +152,57 @@ export default function POSClient({
     const canLoyalty = canAccessShifts           // Pro+ gated
     const canEndOfDay = canAccessDashboard       // Enterprise gated
 
+    // ── Thermal printer derived state (after capabilities) ──
+    const businessInfo: BusinessInfo = useMemo(() => ({
+        name: (posConfig.receipt_business_name as string) || businessName,
+        address: (posConfig.receipt_address as string) || undefined,
+        nif: (posConfig.receipt_nif as string) || undefined,
+        phone: (posConfig.receipt_phone as string) || undefined,
+        email: (posConfig.receipt_email as string) || undefined,
+    }), [posConfig, businessName])
+
+    const shouldAutoPrint = useCallback(() => {
+        if (printerStatus !== 'connected') return false
+        if (!canThermalPrint) return false
+        if (typeof window === 'undefined') return false
+        return localStorage.getItem('pos-auto-print') === 'true'
+    }, [printerStatus, canThermalPrint])
+
     // ── Format helper ──
     const formatCurrency = useCallback(
         (amount: number) => formatPOSCurrency(amount, defaultCurrency),
         [defaultCurrency],
     )
 
-    // ── Merged products (local + server search) ──
-    const mergedProducts = useMemo(() => {
-        if (serverProducts.length === 0) return products
-        const localIds = new Set(products.map((p: any) => p.id))
-        const extras = serverProducts.filter((p: any) => !localIds.has(p.id))
-        return [...products, ...extras]
-    }, [products, serverProducts])
+    // ── Merged products (local + server search) + Offline Inventory Adjustments ──
+    const adjustedProducts = useMemo(() => {
+        let baseProducts = products
+        if (serverProducts.length > 0) {
+            const localIds = new Set(products.map((p: any) => p.id))
+            const extras = serverProducts.filter((p: any) => !localIds.has(p.id))
+            baseProducts = [...products, ...extras]
+        }
+
+        if (Object.keys(offlineInventoryOffsets).length === 0) return baseProducts
+
+        return baseProducts.map((p: any) => {
+            if (!p.variants || p.variants.length === 0) return p
+            const hasOffset = p.variants.some((v: any) => offlineInventoryOffsets[v.id])
+            if (!hasOffset) return p
+
+            return {
+                ...p,
+                variants: p.variants.map((v: any) => {
+                    const offset = offlineInventoryOffsets[v.id]
+                    if (!offset) return v
+                    return {
+                        ...v,
+                        inventory_quantity: Math.max(0, (v.inventory_quantity ?? 0) - offset),
+                    }
+                })
+            }
+        })
+    }, [products, serverProducts, offlineInventoryOffsets])
 
     // ── Cart totals ──
     const totals = useMemo(() => calculateCartTotals(cart), [cart])
@@ -207,17 +276,29 @@ export default function POSClient({
         return () => window.removeEventListener('keydown', handleKey)
     }, [canShortcuts, canAccessHistory, canAccessDashboard, canKiosk, mobileCartOpen])
 
+    // ── Cart operations ──
+    const handleAddToCart = useCallback((item: POSCartItem) => {
+        dispatch({ type: 'ADD_ITEM', item })
+        playBeep()
+        triggerHaptic()
+        syncBroadcast('cart_updated', { action: 'add', itemTitle: item.title })
+    }, [playBeep, syncBroadcast])
+
     // ── Barcode scanner ──
     const handleBarcodeScan = useCallback(async (barcode: string) => {
         // Try local products first
-        const localMatch = mergedProducts.find((p: any) =>
+        const localMatch = adjustedProducts.find((p: any) =>
             p.variants?.some((v: any) => v.sku === barcode || v.barcode === barcode),
         )
 
         if (localMatch) {
             const variant = localMatch.variants.find((v: any) => v.sku === barcode || v.barcode === barcode)
             if (variant) {
-                const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
+                const priceInfo = safeVariantPrice(variant, defaultCurrency)
+                if (!priceInfo.has_price) {
+                    playError()
+                    return
+                }
                 handleAddToCart({
                     id: variant.id,
                     product_id: localMatch.id,
@@ -225,9 +306,9 @@ export default function POSClient({
                     variant_title: localMatch.variants.length > 1 ? variant.title : null,
                     thumbnail: localMatch.thumbnail,
                     sku: variant.sku || null,
-                    unit_price,
+                    unit_price: priceInfo.unit_price,
                     quantity: 1,
-                    currency_code,
+                    currency_code: priceInfo.currency_code,
                 })
             }
         } else if (isOnline) {
@@ -239,7 +320,11 @@ export default function POSClient({
                     const product = results[0]
                     const variant = product.variants?.[0]
                     if (variant) {
-                        const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
+                        const priceInfo = safeVariantPrice(variant, defaultCurrency)
+                        if (!priceInfo.has_price) {
+                            playError()
+                            return
+                        }
                         handleAddToCart({
                             id: variant.id,
                             product_id: product.id,
@@ -247,9 +332,9 @@ export default function POSClient({
                             variant_title: product.variants.length > 1 ? variant.title : null,
                             thumbnail: product.thumbnail,
                             sku: variant.sku || null,
-                            unit_price,
+                            unit_price: priceInfo.unit_price,
                             quantity: 1,
-                            currency_code,
+                            currency_code: priceInfo.currency_code,
                         })
                     }
                 } else {
@@ -261,16 +346,9 @@ export default function POSClient({
         } else {
             playError()
         }
-    }, [mergedProducts, defaultCurrency, isOnline])
+    }, [adjustedProducts, handleAddToCart, defaultCurrency, isOnline, playError])
 
     useBarcodeScanner({ onScan: handleBarcodeScan })
-
-    // ── Cart operations ──
-    const handleAddToCart = useCallback((item: POSCartItem) => {
-        dispatch({ type: 'ADD_ITEM', item })
-        playBeep()
-        triggerHaptic()
-    }, [playBeep])
 
     const handleUpdateQty = useCallback((variantId: string, qty: number) => {
         dispatch({ type: 'UPDATE_QTY', variant_id: variantId, quantity: qty })
@@ -279,7 +357,8 @@ export default function POSClient({
 
     const handleRemoveItem = useCallback((variantId: string) => {
         dispatch({ type: 'REMOVE_ITEM', variant_id: variantId })
-    }, [])
+        syncBroadcast('cart_updated', { action: 'remove', variantId })
+    }, [syncBroadcast])
 
     const handleSetDiscount = useCallback((discount: POSDiscount | null) => {
         dispatch({ type: 'SET_DISCOUNT', discount })
@@ -312,7 +391,21 @@ export default function POSClient({
         setRefundOrderId(null)
         setPanelView(null)
         setRefundReceipt(refund)
-    }, [])
+
+        // Auto-print refund receipt
+        if (shouldAutoPrint()) {
+            const pw = (typeof window !== 'undefined' ? localStorage.getItem('pos-paper-width') : '80mm') as '80mm' | '58mm' || '80mm'
+            thermalPrintRefund(refund, businessInfo, {
+                mode: 'thermal',
+                paperWidth: pw,
+                labels,
+                receiptConfig: {
+                    receiptHeader: posConfig.receipt_header as string | undefined,
+                    receiptFooter: posConfig.receipt_footer as string | undefined,
+                },
+            }).catch(() => { /* print error handled by engine events */ })
+        }
+    }, [shouldAutoPrint, thermalPrintRefund, businessInfo, labels, posConfig])
 
     // ── Charge ──
     const completeSale = useCallback(async (paymentIntentId?: string) => {
@@ -334,6 +427,7 @@ export default function POSClient({
             playCashRegister()
             triggerHaptic(100)
             setPaymentState({ status: 'succeeded', payment_intent_id: paymentIntentId || '' })
+            syncBroadcast('sale_completed', { total: totals.total, itemCount: cart.items.length })
 
             const sale: POSSale = {
                 items: cart.items,
@@ -349,6 +443,21 @@ export default function POSClient({
                 created_at: new Date().toISOString(),
                 order_id: result.order_id || null,
                 draft_order_id: result.draft_order_id || null,
+            }
+
+            // Auto-print receipt if thermal printer connected + user has auto-print enabled
+            if (shouldAutoPrint()) {
+                const pw = (typeof window !== 'undefined' ? localStorage.getItem('pos-paper-width') : '80mm') as '80mm' | '58mm' || '80mm'
+                thermalPrintReceipt(sale, businessInfo, {
+                    mode: 'thermal',
+                    paperWidth: pw,
+                    openCashDrawer: sale.payment_method === 'cash',
+                    labels,
+                    receiptConfig: {
+                        receiptHeader: posConfig.receipt_header as string | undefined,
+                        receiptFooter: posConfig.receipt_footer as string | undefined,
+                    },
+                }).catch(() => { /* print error handled by engine events */ })
             }
 
             setTimeout(() => {
@@ -368,7 +477,7 @@ export default function POSClient({
             playError()
             setPaymentState({ status: 'failed', error: result.error || posLabel('panel.pos.paymentFailed', labels) })
         }
-    }, [cart, totals, defaultCurrency, playCashRegister, playError, labels])
+    }, [cart, totals, defaultCurrency, playCashRegister, playError, labels, shouldAutoPrint, thermalPrintReceipt, businessInfo, posConfig])
 
     const handleCharge = useCallback(async () => {
         if (cart.items.length === 0 || processing) return
@@ -688,11 +797,12 @@ export default function POSClient({
                     {/* Product Grid — fills full width on mobile, ~62% on desktop */}
                     <div className="pos-products-panel border-r border-sf-2">
                         <POSProductGrid
-                            products={mergedProducts}
+                            products={isOnline ? adjustedProducts : cachedProducts}
                             categories={categories}
                             defaultCurrency={defaultCurrency}
                             onAddToCart={handleAddToCart}
                             labels={labels}
+                            onPriceSet={() => router.refresh()}
                         />
                     </div>
 
@@ -724,7 +834,7 @@ export default function POSClient({
                             onCouponApply={handleCouponApply}
                             onCouponRemove={handleCouponRemove}
                             showRecommendations={featureFlags.enable_pos_shifts === true}
-                            products={mergedProducts}
+                            products={isOnline ? adjustedProducts : cachedProducts}
                             onAddToCart={handleAddToCart}
                             defaultCurrency={defaultCurrency}
                         />

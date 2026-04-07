@@ -92,6 +92,7 @@ interface UtilitiesClientProps {
     loyaltyLabels: LoyaltyLabels
     labelsLabels: PriceLabelLabels
     lang: string
+    defaultCurrency: string
 }
 
 // ── Utility overview card data ──────────────────────────────────────────────
@@ -461,9 +462,11 @@ function LoyaltyManager({ labels, lang }: { labels: LoyaltyLabels; lang: string 
 function ProductLabelSelector({
     products,
     labels,
+    defaultCurrency,
 }: {
     products: ProductData[]
     labels: PriceLabelLabels
+    defaultCurrency: string
 }) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [searchQuery, setSearchQuery] = useState('')
@@ -502,7 +505,7 @@ function ProductLabelSelector({
                     name: p.title + (p.variants.length > 1 ? ` - ${v.title}` : ''),
                     price: price ? (price.amount / 100).toFixed(2) : '0.00',
                     sku: v.sku || '',
-                    currency: price?.currency_code?.toUpperCase() || 'EUR',
+                    currency: price?.currency_code?.toUpperCase() || defaultCurrency.toUpperCase(),
                     variant: p.variants.length > 1 ? v.title : undefined,
                 })
             })
@@ -681,6 +684,7 @@ export default function UtilitiesClient({
     loyaltyLabels,
     labelsLabels,
     lang,
+    defaultCurrency,
 }: UtilitiesClientProps) {
     const [activeTab, setActiveTab] = useState<TabKey>('wifi')
     const isLoyaltyLocked = !featureFlags.enable_self_service_returns
@@ -803,7 +807,7 @@ export default function UtilitiesClient({
 
                     {/* Labels — product selector */}
                     {activeTab === 'labels' && (
-                        <ProductLabelSelector products={products} labels={labelsLabels} />
+                        <ProductLabelSelector products={products} labels={labelsLabels} defaultCurrency={defaultCurrency} />
                     )}
                 </motion.div>
             </AnimatePresence>

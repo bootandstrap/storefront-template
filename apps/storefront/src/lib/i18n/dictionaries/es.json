@@ -1065,6 +1065,21 @@
   "panel.modules.title": "Centro de Control",
   "panel.modules.upgrade": "Mejorar",
   "panel.modules.viewDetails": "Ver detalles",
+  "panel.modules.noModulesAvailable": "Todos los módulos están activos",
+  "panel.modules.recentlyActivated": "¡Recién activado!",
+  "panel.modules.tree.title": "Módulos",
+  "panel.modules.tree.tip": "Scroll para explorar · Clic en un módulo para ver detalles",
+  "panel.modules.tree.treeView": "Mapa",
+  "panel.modules.tree.listView": "Lista",
+  "panel.modules.tree.modules": "Módulos",
+  "panel.modules.tree.tiers": "Niveles",
+  "panel.modules.tree.progress": "Progreso",
+  "panel.modules.tree.categories": "Categorías",
+  "panel.modules.tree.states": "Estados",
+  "panel.modules.tree.locked": "Bloqueado",
+  "panel.modules.tree.available": "Disponible",
+  "panel.modules.tree.active": "Activo",
+  "panel.modules.tree.maxed": "Máximo",
   "panel.nav.analytics": "Analíticas",
   "panel.nav.backToStore": "Volver a la tienda",
   "panel.nav.groupOperations": "Operaciones",
@@ -1090,7 +1105,7 @@
   "panel.nav.capacidad": "Capacidad",
   "panel.nav.reviews": "Reseñas",
   "panel.nav.shipping": "Envíos",
-  "panel.nav.storeConfig": "Mi Tienda",
+  "panel.nav.storeConfig": "Configuración",
   "panel.nav.subscription": "Suscripción",
   "panel.nav.utilities": "Utilidades",
   "panel.nav.whatsapp": "WhatsApp",
@@ -1433,6 +1448,7 @@
   "panel.shipping.subtitle": "Gestiona los métodos de envío disponibles para tus clientes",
   "panel.shipping.title": "Opciones de envío",
   "panel.stats.categories": "Categorías",
+  "panel.stats.chart": "Resumen de ingresos",
   "panel.stats.customers": "Clientes",
   "panel.stats.ordersMonth": "Pedidos este mes",
   "panel.stats.products": "Productos",
@@ -1795,7 +1811,6 @@
   "wishlist.productUnavailable": "Producto no disponible",
   "wishlist.remove": "Quitar de favoritos",
   "wishlist.viewProduct": "Ver producto",
-
   "order.filters": "Filtros",
   "order.allStatuses": "Todos los estados",
   "order.dateFrom": "Desde",
@@ -1803,10 +1818,8 @@
   "order.downloadInvoice": "Descargar factura",
   "order.generatingPdf": "Generando...",
   "order.pdfReady": "¡Descargado!",
-
   "avatar.cropTitle": "Recortar avatar",
   "avatar.apply": "Aplicar",
-
   "password.changeTitle": "Cambiar contraseña",
   "password.current": "Contraseña actual",
   "password.new": "Nueva contraseña",
@@ -1819,7 +1832,6 @@
   "password.currentIncorrect": "La contraseña actual es incorrecta",
   "password.success": "¡Contraseña cambiada correctamente!",
   "password.changeButton": "Actualizar contraseña",
-
   "account.deleteTitle": "Eliminar cuenta",
   "account.deleteDescription": "Eliminar permanentemente tu cuenta y todos los datos asociados. Esta acción es irreversible.",
   "account.deleteButton": "Eliminar mi cuenta",
@@ -1827,15 +1839,12 @@
   "account.deleteWarning": "Esto eliminará permanentemente tu perfil, historial de pedidos, direcciones guardadas y todos tus datos personales. No podrás recuperar tu cuenta.",
   "account.deleteConfirmLabel": "Escribe \"{word}\" para confirmar",
   "account.deleteConfirm": "Eliminar para siempre",
-
   "profile.security": "Seguridad",
-
   "guestOrder.title": "Rastrear pedido",
   "guestOrder.subtitle": "Ingresa tu email y número de pedido para ver su estado.",
   "guestOrder.orderNumber": "Número de pedido",
   "guestOrder.search": "Buscar pedido",
   "guestOrder.notFound": "No se encontró ningún pedido con ese email y número.",
-
   "legal.privacyTitle": "Política de Privacidad",
   "legal.privacyMeta": "Cómo recopilamos, usamos y protegemos sus datos personales.",
   "legal.termsTitle": "Términos y Condiciones",
@@ -1844,11 +1853,8 @@
   "legal.cookiesMeta": "Cómo usamos cookies y tecnologías similares.",
   "legal.imprintTitle": "Aviso Legal",
   "legal.imprintMeta": "Identificación legal e información de contacto.",
-
   "cookies.manage": "Gestionar cookies",
-
   "a11y.skipToContent": "Saltar al contenido",
-
   "panel.i18n.panelLanguage": "Idioma del panel",
   "panel.i18n.panelLangDescription": "Idioma en el que ves tu panel de propietario",
   "panel.i18n.saveSuccess": "Idiomas guardados correctamente",

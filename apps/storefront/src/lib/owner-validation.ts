@@ -111,6 +111,8 @@ export const StoreConfigUpdateSchema = z.object({
     sentry_dsn: z.string().url().max(200).optional().or(z.literal('')),
     custom_css: z.string().max(10000).optional(),
     language: z.string().max(5).optional(),
+    panel_language: z.string().max(5).optional(),
+    storefront_language: z.string().max(5).optional(),
     timezone: z.string().max(50).optional(),
     active_languages: z.array(z.string().max(5)).max(10).optional(),
     active_currencies: z.array(z.string().max(5)).max(10).optional(),

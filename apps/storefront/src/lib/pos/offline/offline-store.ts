@@ -25,7 +25,10 @@ export interface CachedVariant {
     id: string
     title: string | null
     sku: string | null
+    barcode?: string | null
     prices: { amount: number; currency_code: string }[]
+    manage_inventory?: boolean
+    inventory_quantity?: number
 }
 
 export interface PendingSale {

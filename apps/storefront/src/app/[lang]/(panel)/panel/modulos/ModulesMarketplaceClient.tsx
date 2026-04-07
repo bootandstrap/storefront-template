@@ -30,6 +30,7 @@ import {
     BarChart3,
     Settings,
     PartyPopper,
+    Construction,
 } from 'lucide-react'
 import type { OwnerModuleInfo } from '@/lib/owner-modules'
 import ModuleCheckoutButton from '@/components/panel/ModuleCheckoutButton'
@@ -43,7 +44,7 @@ import type { SkillTreeModule } from '@/components/panel/SkillTree'
 // Lazy-load SkillTree to avoid SSR issues with React Flow
 const SkillTreeCanvas = dynamic(
     () => import('@/components/panel/SkillTree/SkillTreeCanvas').then(m => m.SkillTreeCanvas),
-    { ssr: false, loading: () => <div className="h-[70vh] flex items-center justify-center bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"><div className="animate-pulse text-tx-muted text-sm">Cargando árbol de habilidades...</div></div> }
+    { ssr: false, loading: () => <div className="h-[70vh] flex items-center justify-center bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"><div className="animate-pulse text-tx-muted text-sm">Loading...</div></div> }
 )
 
 interface ModulesMarketplaceClientProps {
@@ -110,6 +111,7 @@ export default function ModulesMarketplaceClient({
                 key: mod.key,
                 name: mod.name,
                 icon: mod.emoji,
+                icon_name: mod.icon_name || 'Package',
                 description: mod.description,
                 category: mod.category,
                 payment_type: mod.payment_type,
@@ -245,7 +247,7 @@ export default function ModulesMarketplaceClient({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <h3 className="text-sm font-semibold text-tx">
-                        {viewMode === 'tree' ? '🏰 Árbol de Habilidades' : labels.activeModules || 'Módulos'}
+                        {viewMode === 'tree' ? (labels.treeTitle || 'Modules') : labels.activeModules || 'Módulos'}
                     </h3>
                     <span className="text-xs text-tx-muted font-medium px-2 py-0.5 bg-sf-2 rounded-full">
                         {activeCount}/{totalModules}
@@ -260,7 +262,7 @@ export default function ModulesMarketplaceClient({
                                 : 'text-tx-muted hover:text-tx'
                         }`}
                     >
-                        ⚔️ Skill Tree
+                        {labels.treeView || 'Tree'}
                     </button>
                     <button
                         onClick={() => setViewMode('list')}
@@ -270,7 +272,7 @@ export default function ModulesMarketplaceClient({
                                 : 'text-tx-muted hover:text-tx'
                         }`}
                     >
-                        📋 Lista
+                        {labels.listView || 'List'}
                     </button>
                 </div>
             </div>
@@ -280,6 +282,23 @@ export default function ModulesMarketplaceClient({
                 <SkillTreeCanvas
                     modules={skillTreeModules}
                     onModuleClick={handleSkillTreeClick}
+                    labels={{
+                        locked: labels.treeLocked || 'Locked',
+                        available: labels.treeAvailable || 'Available',
+                        active: labels.treeActive || 'Active',
+                        maxed: labels.treeMaxed || 'Maxed',
+                        activate: labels.activate || 'Activate',
+                        upgrade: labels.upgrade || 'Upgrade',
+                        perMonth: labels.monthly || '/mo',
+                        requires: labels.requires || 'Requires',
+                        treeTitle: labels.treeTitle || 'Modules',
+                        treeTip: labels.treeTip || 'Scroll to explore · Click a module for details',
+                        modules: labels.treeModules || 'Modules',
+                        tiers: labels.treeTiers || 'Tiers',
+                        progress: labels.treeProgress || 'Progress',
+                        categories: labels.treeCategories || 'Categories',
+                        states: labels.treeStates || 'States',
+                    }}
                 />
             )}
 
@@ -337,6 +356,8 @@ export default function ModulesMarketplaceClient({
                         })
                         const isExpanded = expandedModule === mod.key
                         const isRecent = recentlyActivated.includes(mod.key)
+                        const isUnderConstruction = mod.status === 'construction'
+                        const dependenciesMet = mod.requires.every(req => req in activeModules)
 
                         return (
                             <motion.div
@@ -350,9 +371,11 @@ export default function ModulesMarketplaceClient({
                                     relative transition-all duration-300
                                     ${isRecent
                                         ? 'ring-2 ring-brand/20 shadow-brand-soft'
-                                        : isActive
-                                            ? 'shadow-sm'
-                                            : 'hover:shadow-lg hover:-translate-y-0.5'
+                                        : isUnderConstruction
+                                            ? 'opacity-75 grayscale-[30%]'
+                                            : isActive
+                                                ? 'shadow-sm'
+                                                : 'hover:shadow-lg hover:-translate-y-0.5'
                                     }
                                 `}
                             >
@@ -395,6 +418,12 @@ export default function ModulesMarketplaceClient({
                                                             {labels.recentlyActivated || 'Nuevo'}
                                                         </span>
                                                     )}
+                                                    {isUnderConstruction && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-500">
+                                                            <Construction className="w-2.5 h-2.5" />
+                                                            {labels.underConstruction || 'En construcción'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-tx-muted mt-0.5 line-clamp-2">{mod.description}</p>
                                             </div>
@@ -426,7 +455,7 @@ export default function ModulesMarketplaceClient({
                                         </div>
 
                                         <div className="flex gap-2">
-                                            {!isActive && (
+                                            {!isActive && !isUnderConstruction && (
                                                 <ModuleCheckoutButton
                                                     moduleKey={mod.key}
                                                     tierKey={mod.tiers[0]?.key}
@@ -434,7 +463,14 @@ export default function ModulesMarketplaceClient({
                                                     variant="activate"
                                                     colorGradient={mod.color_gradient}
                                                     locale={locale}
+                                                    disabled={!dependenciesMet}
                                                 />
+                                            )}
+                                            {isUnderConstruction && !isActive && (
+                                                <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-500 inline-flex items-center gap-1.5 cursor-not-allowed">
+                                                    <Construction className="w-3 h-3" />
+                                                    {labels.comingSoon || 'Próximamente'}
+                                                </span>
                                             )}
                                             {canUpgrade && (
                                                 <ModuleCheckoutButton
@@ -536,7 +572,7 @@ export default function ModulesMarketplaceClient({
                                                                     ))}
                                                                 </ul>
 
-                                                                {!isCurrentTier && (
+                                                                {!isCurrentTier && !isUnderConstruction && (
                                                                     <div className="mt-3">
                                                                         <ModuleCheckoutButton
                                                                             moduleKey={mod.key}
@@ -545,8 +581,17 @@ export default function ModulesMarketplaceClient({
                                                                             variant={isActive && mod.tiers.indexOf(tier) > mod.tiers.findIndex(t => t.key === activeTierKey) ? 'upgrade' : 'activate'}
                                                                             colorGradient={mod.color_gradient}
                                                                             locale={locale}
+                                                                            disabled={!dependenciesMet && !isActive}
                                                                             className="w-full"
                                                                         />
+                                                                    </div>
+                                                                )}
+                                                                {isUnderConstruction && !isCurrentTier && (
+                                                                    <div className="mt-3 text-center">
+                                                                        <span className="px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-500 inline-flex items-center gap-1.5 w-full justify-center cursor-not-allowed">
+                                                                            <Construction className="w-3 h-3" />
+                                                                            {labels.comingSoon || 'Próximamente'}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </motion.div>

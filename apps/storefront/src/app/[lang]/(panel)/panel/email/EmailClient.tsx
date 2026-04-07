@@ -21,7 +21,11 @@ import { ABANDONED_CART_DELAY_OPTIONS, REVIEW_REQUEST_DELAY_OPTIONS, type Automa
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
-import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
+import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
+import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
+
+import { EmailLogEntry } from '@/lib/email-log'
+import EmailLogsGrid from './EmailLogsGrid'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,6 +42,7 @@ interface Labels {
     title: string
     subtitle: string
     dashboard: string
+    logs: string
     automations: string
     templates: string
     campaigns: string
@@ -73,20 +78,23 @@ interface Props {
     labels: Labels
     saveAction: (config: AutomationConfig) => Promise<{ success: boolean; error?: string }>
     emailSenderConfig?: Record<string, unknown>
+    logsData: { logs: EmailLogEntry[]; count: number }
+    queryParams: {
+        currentPage: number
+        pageSize: number
+        status: 'all' | 'sent' | 'delivered' | 'bounced' | 'opened' | 'clicked' | 'failed'
+        search: string
+    }
 }
 
-type TabKey = 'dashboard' | 'automations' | 'templates' | 'campaigns'
+type TabKey = 'dashboard' | 'logs' | 'automations' | 'templates' | 'campaigns'
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction, emailSenderConfig }: Props) {
-    const emailConfigFields: ConfigFieldDef[] = [
-        { key: 'email_sender_name', label: 'Sender name', type: 'text', placeholder: 'Your Store' },
-        { key: 'email_reply_to', label: 'Reply-to email', type: 'email', placeholder: 'hello@yourstore.com' },
-        { key: 'email_footer_text', label: 'Email footer text', type: 'textarea', placeholder: '© 2026 Your Store. All rights reserved.' },
-    ]
+export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction, emailSenderConfig, logsData, queryParams }: Props) {
+    const emailConfigFields = getModuleConfigSchema('email_marketing')
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const toast = useToast()
@@ -112,6 +120,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
 
     const tabs: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }>; gated: boolean }[] = [
         { key: 'dashboard', label: labels.dashboard, icon: BarChart3, gated: false },
+        { key: 'logs', label: labels.logs || 'Logs', icon: Mail, gated: false },
         { key: 'automations', label: labels.automations, icon: Clock, gated: false },
         { key: 'templates', label: labels.templates, icon: Palette, gated: !flags.enable_email_templates },
         { key: 'campaigns', label: labels.campaigns, icon: Send, gated: !flags.enable_email_campaigns },
@@ -244,6 +253,18 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                 </div>
                             </motion.div>
                         )}
+                    </motion.div>
+                )}
+
+                {/* Logs Tab */}
+                {activeTab === 'logs' && (
+                    <motion.div
+                        key="logs"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                    >
+                        <EmailLogsGrid logsData={logsData} queryParams={queryParams} />
                     </motion.div>
                 )}
 

@@ -9,20 +9,33 @@ import { adminFetch, normalizeAdminListParams } from './admin-core'
 import type { TenantMedusaScope } from './admin-core'
 
 // ---------------------------------------------------------------------------
-// Types
+// Types — Medusa v2 Fulfillment Module schema
 // ---------------------------------------------------------------------------
+
+export interface ShippingOptionPrice {
+    currency_code: string
+    amount: number
+}
 
 export interface ShippingOption {
     id: string
     name: string
-    region_id: string
-    profile_id: string
+    service_zone_id: string
+    shipping_profile_id: string
     provider_id: string
-    price_type: 'flat_rate' | 'calculated'
-    amount: number | null
+    price_type: 'flat' | 'calculated'
+    // v2: prices are an array (multi-currency support)
+    prices: ShippingOptionPrice[]
+    type: { label: string; code: string; description?: string }
+    rules: { attribute: string; operator: string; value: string }[]
     is_return: boolean
-    data: Record<string, unknown>
+    data: Record<string, unknown> | null
     metadata: Record<string, unknown> | null
+    service_zone?: {
+        id: string
+        name: string
+        fulfillment_set?: { type: string }
+    }
     created_at: string
     updated_at: string
 }
@@ -39,21 +52,41 @@ export interface FulfillmentProvider {
     is_installed: boolean
 }
 
+// v2: Region no longer has `tax_rate` — taxes are decoupled into Tax Module
 export interface Region {
     id: string
     name: string
     currency_code: string
-    tax_rate: number
     countries: { iso_2: string; display_name: string }[]
+    automatic_taxes?: boolean
+    payment_providers?: { id: string }[]
+}
+
+export interface TaxRegion {
+    id: string
+    country_code: string
+    province_code?: string
+    parent_id?: string
+}
+
+export interface TaxRate {
+    id: string
+    name: string | null
+    rate: number
+    code: string | null
+    tax_region_id: string
+    is_default: boolean
 }
 
 export interface CreateShippingOptionInput {
     name: string
-    region_id: string
-    profile_id: string
+    service_zone_id: string
+    shipping_profile_id: string
     provider_id: string
-    price_type: 'flat_rate' | 'calculated'
-    amount?: number
+    price_type: 'flat' | 'calculated'
+    type: { label: string; code: string; description?: string }
+    prices: ShippingOptionPrice[]
+    rules?: { attribute: string; operator: string; value: string }[]
     data?: Record<string, unknown>
 }
 
@@ -62,14 +95,16 @@ export interface CreateShippingOptionInput {
 // ---------------------------------------------------------------------------
 
 export async function getShippingOptions(params?: {
-    region_id?: string
+    stock_location_id?: string
     limit?: number
 }, scope?: TenantMedusaScope | null): Promise<{ shipping_options: ShippingOption[]; count: number }> {
     const normalized = normalizeAdminListParams({ limit: params?.limit ?? 50 })
     const searchParams = new URLSearchParams({
         limit: String(normalized.limit),
+        // v2: expand service_zone and prices relations
+        fields: '*service_zone,*prices',
     })
-    if (params?.region_id) searchParams.set('region_id', params.region_id)
+    if (params?.stock_location_id) searchParams.set('stock_location_id', params.stock_location_id)
 
     const res = await adminFetch<{ shipping_options: ShippingOption[]; count: number }>(
         `/admin/shipping-options?${searchParams.toString()}`,
@@ -169,8 +204,9 @@ export async function updateRegion(
     data: {
         name?: string
         currency_code?: string
-        tax_rate?: number
+        // v2: tax_rate removed — taxes managed via Tax Module
         countries?: string[]
+        automatic_taxes?: boolean
     },
     scope?: TenantMedusaScope | null
 ): Promise<{ error: string | null }> {
@@ -186,16 +222,41 @@ export async function updateRegion(
 // Tax Configuration
 // ---------------------------------------------------------------------------
 
+/**
+ * Get tax rates for a region.
+ * v2: Tax rates are decoupled from regions. Uses Tax Module:
+ *   1. Find tax regions matching the region's countries
+ *   2. Get tax rates for those tax regions
+ */
 export async function getTaxRatesForRegion(
     regionId: string,
     scope?: TenantMedusaScope | null
-): Promise<{ id: string; name: string; rate: number }[]> {
-    const res = await adminFetch<{ tax_rates: { id: string; name: string; rate: number }[] }>(
-        `/admin/tax-rates?region_id=${regionId}`,
+): Promise<TaxRate[]> {
+    // Step 1: Get the region to find its country codes
+    const regionRes = await adminFetch<{ region: Region }>(
+        `/admin/regions/${regionId}?fields=*countries`,
         {},
         scope
     )
-    return res.data?.tax_rates ?? []
+    const countryCodes = regionRes.data?.region?.countries?.map(c => c.iso_2) ?? []
+    if (countryCodes.length === 0) return []
+
+    // Step 2: Find tax regions for the first country (primary)
+    const taxRegionRes = await adminFetch<{ tax_regions: TaxRegion[] }>(
+        `/admin/tax-regions?country_code=${countryCodes[0]}`,
+        {},
+        scope
+    )
+    const taxRegions = taxRegionRes.data?.tax_regions ?? []
+    if (taxRegions.length === 0) return []
+
+    // Step 3: Get tax rates for the tax region
+    const taxRateRes = await adminFetch<{ tax_rates: TaxRate[] }>(
+        `/admin/tax-rates?tax_region_id=${taxRegions[0].id}`,
+        {},
+        scope
+    )
+    return taxRateRes.data?.tax_rates ?? []
 }
 
 // ---------------------------------------------------------------------------

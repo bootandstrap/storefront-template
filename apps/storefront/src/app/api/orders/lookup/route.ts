@@ -22,7 +22,7 @@ const lookupLimiter = createSmartRateLimiter({ limit: 5, windowMs: 15 * 60 * 100
 
 export async function POST(request: Request): Promise<Response> {
     // Governance: guest order lookup gated by order tracking feature flag
-    const { featureFlags } = await getConfig()
+    const { featureFlags, config } = await getConfig()
     if (!featureFlags.enable_order_tracking) {
         return Response.json(
             { error: 'Order tracking is disabled for this tenant' },
@@ -130,7 +130,7 @@ export async function POST(request: Request): Promise<Response> {
                 status: match.status || 'pending',
                 created_at: match.created_at,
                 total: match.total ?? 0,
-                currency_code: match.currency_code || 'usd',
+                currency_code: match.currency_code || config.default_currency,
             },
         })
     } catch {
@@ -147,8 +147,21 @@ export async function POST(request: Request): Promise<Response> {
  * Used by the Owner Panel (OrderNotifications.tsx) to check for new orders.
  * Uses since query parameter to filter by created_at.
  * Restricted to authenticated owners only.
+ * 
+ * Uses Medusa ADMIN API (JWT auth) — NOT store API (which requires customer auth).
  */
 import { withPanelGuard } from '@/lib/panel-guard'
+import { adminFetch } from '@/lib/medusa/admin-core'
+
+interface AdminOrder {
+    id: string
+    display_id?: number
+    email?: string
+    total?: number
+    currency_code?: string
+    created_at?: string
+    status?: string
+}
 
 export async function GET(request: Request): Promise<Response> {
     try {
@@ -158,38 +171,24 @@ export async function GET(request: Request): Promise<Response> {
         const { searchParams } = new URL(request.url)
         const since = searchParams.get('since')
 
-        const params = new URLSearchParams({
-            limit: '10',
-            offset: '0',
-            fields: 'id,display_id,email,total,currency_code,created_at,status',
-            order: '-created_at',
-        })
-
-        // Query Medusa for recent orders
-        const medusaRes = await fetch(
-            `${MEDUSA_BACKEND_URL}/store/orders?${params.toString()}`,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(PUBLISHABLE_KEY && { 'x-publishable-api-key': PUBLISHABLE_KEY }),
-                },
-            }
+        // Query Medusa Admin API for recent orders (JWT auth handled by adminFetch)
+        const { data, error } = await adminFetch<{ orders: AdminOrder[]; count: number }>(
+            '/admin/orders?limit=10&offset=0&order=-created_at&fields=id,display_id,email,total,currency_code,created_at,status'
         )
 
-        if (!medusaRes.ok) {
+        if (error || !data) {
             return Response.json(
-                { error: 'Medusa service unavailable' },
+                { error: error || 'Medusa service unavailable' },
                 { status: 502 }
             )
         }
 
-        const data = await medusaRes.json()
         let orders = data.orders ?? []
 
-        // If 'since' provided, filter for only newer orders manually (Medusa filter is complex for created_at in some versions)
+        // If 'since' provided, filter for only newer orders
         if (since) {
             const sinceDate = new Date(since).getTime()
-            orders = orders.filter((o: { created_at: string }) => new Date(o.created_at).getTime() > sinceDate)
+            orders = orders.filter((o) => new Date(o.created_at || 0).getTime() > sinceDate)
         }
 
         return Response.json({ orders })

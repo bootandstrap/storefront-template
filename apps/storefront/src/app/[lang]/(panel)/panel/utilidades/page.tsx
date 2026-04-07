@@ -133,6 +133,7 @@ export default async function UtilitiesPage({
                     generate: t('panel.labels.generate'),
                 }}
                 lang={lang}
+                defaultCurrency={appConfig.config.default_currency}
             />
         </div>
     )

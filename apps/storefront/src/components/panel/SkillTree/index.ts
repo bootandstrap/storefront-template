@@ -6,4 +6,5 @@ export {
     getCategoryLabel,
     type SkillTreeModule,
     type SkillTreeNodeData,
+    type SkillTreeLabels,
 } from './skill-tree-layout'

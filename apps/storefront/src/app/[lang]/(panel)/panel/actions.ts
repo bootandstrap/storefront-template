@@ -18,6 +18,8 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { clearCachedConfig } from '@/lib/config'
 import { revalidatePath } from 'next/cache'
+import { NOTIFICATION_EVENT_KEYS, NOTIFICATION_CHANNEL_KEYS } from '@/lib/registries/notification-events'
+import { SUPPORTED_CURRENCY_CODES } from '@/lib/i18n/currencies'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,25 +40,65 @@ async function readConfigFields(
   return data as Record<string, unknown> | null
 }
 
-/** Update config fields for the guarded tenant — invalidates cache. */
+/** Update config fields for the guarded tenant — invalidates cache.
+ *
+ * Uses SECURITY DEFINER RPC `update_owner_config` via the stateless admin
+ * client.  The RPC validates tenant ownership server-side so we don't need
+ * the user-session client (which was blocked by incomplete RLS policies).
+ *
+ * Caller MUST have already gone through `withPanelGuard()`.
+ */
 async function updateConfig(
   tenantId: string,
   updates: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = createAdminClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any)
-    .from('config')
-    .update(updates)
-    .eq('tenant_id', tenantId)
 
-  if (error) {
-    console.error('[panel-action] Config update failed:', error.message)
-    return { success: false, error: error.message }
+  // Try RPC first (recommended — bypasses RLS safely)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rpcResult, error: rpcError } = await (admin as any).rpc(
+    'update_owner_config',
+    { p_tenant_id: tenantId, p_updates: updates },
+  )
+
+  if (!rpcError) {
+    if (rpcResult === true || rpcResult === 1 || rpcResult === 'OK') {
+      clearCachedConfig()
+      return { success: true }
+    }
+    // Unexpected return — treat as failure
+    console.warn('[panel-action] RPC returned unexpected value:', rpcResult)
   }
 
-  clearCachedConfig()
-  return { success: true }
+  // Fallback: RPC may not be deployed yet — try direct update via auth client
+  if (rpcError?.code === 'PGRST202' || rpcError?.message?.includes('Could not find')) {
+    console.warn('[panel-action] RPC update_owner_config not found, falling back to direct update')
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('config')
+      .update(updates)
+      .eq('tenant_id', tenantId)
+      .select()
+
+    if (error) {
+      console.error('[panel-action] Config update failed:', error.message)
+      return { success: false, error: error.message }
+    }
+    if (!data || data.length === 0) {
+      console.error('[panel-action] Config update failed: 0 rows affected (RLS rejection)')
+      return { success: false, error: 'No se encontraron permisos suficientes o la configuración no existe (RLS)' }
+    }
+
+    clearCachedConfig()
+    return { success: true }
+  }
+
+  // RPC exists but returned an error
+  console.error('[panel-action] Config RPC failed:', rpcError.message)
+  return { success: false, error: rpcError.message }
 }
 
 // ---------------------------------------------------------------------------
@@ -123,28 +165,7 @@ export async function completeTourAction() {
 // Language preferences (panel + storefront independently)
 // ---------------------------------------------------------------------------
 
-const SUPPORTED_LANGUAGES = ['es', 'en', 'de', 'fr', 'it']
-
-export async function saveLanguagePreferencesAction(
-  panelLang: string,
-  storefrontLang: string,
-) {
-  const { tenantId } = await withPanelGuard()
-
-  // Validate inputs — fail-closed
-  if (!SUPPORTED_LANGUAGES.includes(panelLang) || !SUPPORTED_LANGUAGES.includes(storefrontLang)) {
-    return { success: false, error: 'Unsupported language' }
-  }
-
-  const result = await updateConfig(tenantId, {
-    panel_language: panelLang,
-    storefront_language: storefrontLang,
-    language: storefrontLang, // also set main language field
-    active_languages: [storefrontLang], // single language by default
-  })
-  if (result.success) revalidatePath('/panel')
-  return result
-}
+// (Placeholder removed - moved below)
 
 // ---------------------------------------------------------------------------
 // Multi-language persistence (active_languages array)
@@ -156,27 +177,55 @@ export async function saveActiveLanguagesAction(languages: string[]) {
   const valid = languages.filter(l => SUPPORTED_LANGUAGES.includes(l))
   if (valid.length === 0) return { success: false, error: 'No valid languages' }
 
-  const result = await updateConfig(tenantId, {
-    active_languages: valid,
-    language: valid[0], // first one is primary
-    storefront_language: valid[0],
-  })
+  // Read current config to avoid clobbering independent language preferences
+  const currentConfig = await readConfigFields(tenantId, 'language, storefront_language')
+  const currentStorefrontLang = (currentConfig?.storefront_language as string) || (currentConfig?.language as string) || 'es'
+
+  // Only update language/storefront_language if current value would be removed
+  const updates: Record<string, unknown> = { active_languages: valid }
+
+  // If the currently selected storefront language is no longer in the active list,
+  // we must fallback to the first active language to avoid breaking the UI.
+  if (!valid.includes(currentStorefrontLang)) {
+    updates.storefront_language = valid[0]
+    updates.language = valid[0] // sync legacy field
+  }
+
+  const result = await updateConfig(tenantId, updates)
   if (result.success) revalidatePath('/panel')
   return result
 }
 
 // ---------------------------------------------------------------------------
-// Panel language only (independent of storefront active_languages)
+// Language preferences (panel + storefront independently)
 // ---------------------------------------------------------------------------
 
+const SUPPORTED_LANGUAGES = ['es', 'en', 'de', 'fr', 'it']
+
+/** Updates the panel (UI) language independently. */
 export async function savePanelLanguageAction(panelLang: string) {
   const { tenantId } = await withPanelGuard()
-
   if (!SUPPORTED_LANGUAGES.includes(panelLang)) {
     return { success: false, error: 'Unsupported language' }
   }
 
   const result = await updateConfig(tenantId, { panel_language: panelLang })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+/** Updates the storefront (customer-facing) primary language independently. */
+export async function saveStorefrontLanguageAction(storefrontLang: string) {
+  const { tenantId } = await withPanelGuard()
+  if (!SUPPORTED_LANGUAGES.includes(storefrontLang)) {
+    return { success: false, error: 'Unsupported language' }
+  }
+
+  // Sync legacy 'language' field for wider compatibility
+  const result = await updateConfig(tenantId, {
+    storefront_language: storefrontLang,
+    language: storefrontLang,
+  })
   if (result.success) revalidatePath('/panel')
   return result
 }
@@ -259,6 +308,9 @@ const ONBOARDING_CONFIG_KEYS = new Set([
   'email_reply_to',
   'email_footer_text',
   'email_abandoned_cart_delay',
+  // Language Preferences
+  'panel_language',
+  'storefront_language',
 ])
 
 /** Keys that must be valid emails (basic format check) */
@@ -327,5 +379,152 @@ export async function saveOnboardingConfigAction(
       console.warn('[audit] Failed to log config change')
     }
   }
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Notification channels persistence
+// ---------------------------------------------------------------------------
+
+/** Notification channel configuration shape */
+interface NotificationChannelConfig {
+  webhook?: { enabled: boolean; url: string; secret: string }
+  whatsapp?: { enabled: boolean; phone_number_id: string; token: string; recipient: string }
+  telegram?: { enabled: boolean; bot_token: string; chat_id: string }
+  email?: { enabled: boolean }
+}
+
+/** Save notification channel configuration (webhook, whatsapp, telegram, email). */
+export async function saveNotificationChannelsAction(channels: NotificationChannelConfig) {
+  const { tenantId } = await withPanelGuard()
+
+  // Sanitize: only keep known channel keys
+  const safe: Record<string, unknown> = {}
+  for (const key of NOTIFICATION_CHANNEL_KEYS) {
+    if (channels[key]) safe[key] = channels[key]
+  }
+
+  const result = await updateConfig(tenantId, { notification_channels: safe })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+/** Save notification events → channels mapping. */
+export async function saveNotificationEventsAction(events: Record<string, string[]>) {
+  const { tenantId } = await withPanelGuard()
+
+  // Validate event names
+  const safe: Record<string, string[]> = {}
+  for (const [event, channels] of Object.entries(events)) {
+    if (NOTIFICATION_EVENT_KEYS.includes(event)) {
+      safe[event] = channels.filter(c => NOTIFICATION_CHANNEL_KEYS.includes(c as typeof NOTIFICATION_CHANNEL_KEYS[number]))
+    }
+  }
+
+  const result = await updateConfig(tenantId, { notification_events: safe })
+  if (result.success) revalidatePath('/panel')
+  return result
+}
+
+/** Test a notification channel by sending a test message. */
+export async function testNotificationChannelAction(
+  channel: 'webhook' | 'whatsapp' | 'telegram',
+  config: Record<string, string>
+): Promise<{ success: boolean; error?: string }> {
+  await withPanelGuard() // Auth gate only
+
+  try {
+    if (channel === 'webhook') {
+      const res = await fetch(config.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'test',
+          timestamp: new Date().toISOString(),
+          data: { message: '🧪 Test notification from BootandStrap' },
+        }),
+        signal: AbortSignal.timeout(10000),
+      })
+      return res.ok
+        ? { success: true }
+        : { success: false, error: `HTTP ${res.status}` }
+    }
+
+    if (channel === 'whatsapp') {
+      const to = config.recipient?.replace(/[^+\d]/g, '')
+      const res = await fetch(
+        `https://graph.facebook.com/v21.0/${config.phone_number_id}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to,
+            type: 'text',
+            text: { body: '🧪 Test notification from BootandStrap — your channel is working!' },
+          }),
+          signal: AbortSignal.timeout(10000),
+        }
+      )
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '')
+        return { success: false, error: `HTTP ${res.status}: ${errBody}` }
+      }
+      return { success: true }
+    }
+
+    if (channel === 'telegram') {
+      const res = await fetch(
+        `https://api.telegram.org/bot${config.bot_token}/sendMessage`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: config.chat_id,
+            text: '🧪 <b>Test notification from BootandStrap</b>\n\nYour Telegram channel is correctly configured!',
+            parse_mode: 'HTML',
+          }),
+          signal: AbortSignal.timeout(10000),
+        }
+      )
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '')
+        return { success: false, error: `HTTP ${res.status}: ${errBody}` }
+      }
+      return { success: true }
+    }
+
+    return { success: false, error: 'Unknown channel' }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Multi-currency persistence (active_currencies array)
+// ---------------------------------------------------------------------------
+
+export async function saveActiveCurrenciesAction(currencies: string[]) {
+  const { tenantId } = await withPanelGuard()
+
+  const valid = currencies.filter(c => SUPPORTED_CURRENCY_CODES.includes(c.toLowerCase())).map(c => c.toLowerCase())
+  if (valid.length === 0) return { success: false, error: 'No valid currencies' }
+
+  // Read current config to check if default_currency would be removed
+  const currentConfig = await readConfigFields(tenantId, 'default_currency')
+  const currentDefault = (currentConfig?.default_currency as string) || 'eur'
+
+  const updates: Record<string, unknown> = { active_currencies: valid }
+
+  // If the current default currency is no longer active, fallback to first
+  if (!valid.includes(currentDefault.toLowerCase())) {
+    updates.default_currency = valid[0]
+  }
+
+  const result = await updateConfig(tenantId, updates)
+  if (result.success) revalidatePath('/panel')
   return result
 }

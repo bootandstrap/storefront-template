@@ -42,7 +42,10 @@ async function OrderDetail({
 }) {
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-    const order = await getAuthOrder(orderId)
+    const [order, { config }] = await Promise.all([
+        getAuthOrder(orderId),
+        getConfig(),
+    ])
 
     if (!order) {
         return (
@@ -68,7 +71,7 @@ async function OrderDetail({
         lang === 'es' ? 'es-ES' : lang,
         { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
     )
-    const currency = order.currency_code || 'eur'
+    const currency = order.currency_code || config.default_currency
 
     return (
         <div className="space-y-6">
@@ -313,21 +316,30 @@ async function OrderDetail({
                 const canReturn = order.status === 'completed' || order.status === 'delivered'
                 if (!canReturn) return null
 
-                // Check for existing return via Medusa Store API
-                const { getStoreReturns } = await import('@/lib/medusa/client')
-                let existingReturns: Awaited<ReturnType<typeof getStoreReturns>> = []
+                // Check for existing return request via SOTA Supabase layer
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let existingReturns: any[] = []
                 try {
-                    existingReturns = await getStoreReturns(order.id)
+                    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+                    const res = await fetch(`${baseUrl}/api/returns?order_id=${order.id}`, {
+                        headers: { cookie: (await import('next/headers')).cookies().toString() },
+                        cache: 'no-store',
+                    })
+                    if (res.ok) {
+                        const data = await res.json()
+                        existingReturns = data.returns || []
+                    }
                 } catch {
-                    // Medusa returns API may not be available
+                    // Returns API may not be available
                 }
 
                 if (existingReturns.length > 0) {
                     const ret = existingReturns[0]
                     const statusMap: Record<string, 'pending' | 'approved' | 'rejected' | 'completed'> = {
-                        requested: 'pending',
-                        received: 'completed',
-                        canceled: 'rejected',
+                        pending: 'pending',
+                        approved: 'approved',
+                        rejected: 'rejected',
+                        completed: 'completed',
                     }
                     return (
                         <div className="glass rounded-xl p-6">

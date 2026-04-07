@@ -456,7 +456,7 @@ export function createPrintEngine(): PrintEngine {
 function fmtAmount(amount: number, currency: string): string {
     return new Intl.NumberFormat('es-ES', {
         style: 'currency',
-        currency: currency?.toUpperCase() || 'EUR',
+        currency: currency.toUpperCase(),
         minimumFractionDigits: 2,
     }).format(amount / 100)
 }

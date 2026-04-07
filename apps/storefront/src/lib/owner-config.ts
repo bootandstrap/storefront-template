@@ -66,13 +66,13 @@ export const MODULE_CONFIG_FIELDS: Record<string, string[]> = {
     'social_tiktok', 'social_twitter',
   ],
   i18n: [
-    'language', 'active_languages',
+    'language', 'active_languages', 'panel_language', 'storefront_language',
     'active_currencies', 'default_currency',
     'timezone',
   ],
   // Legacy alias for backward compatibility
   i18n_currency: [
-    'language', 'active_languages',
+    'language', 'active_languages', 'panel_language', 'storefront_language',
     'active_currencies', 'default_currency',
     'timezone',
   ],

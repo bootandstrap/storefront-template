@@ -31,6 +31,8 @@ const mockLimits: PlanLimits = {
     max_crm_contacts: 500,
     plan_tier: 'starter',
     max_pos_payment_methods: 4,
+    max_automations: 0,
+    max_pos_kiosk_devices: 0,
 }
 
 describe('checkLimit', () => {

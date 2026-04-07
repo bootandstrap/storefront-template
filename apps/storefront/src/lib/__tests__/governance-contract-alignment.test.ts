@@ -39,7 +39,7 @@ describe('Governance Contract Alignment', () => {
     })
 
     it('inline StoreConfig has expected fields', () => {
-        expect(Object.keys(StoreConfigSchema.shape)).toHaveLength(58)
+        expect(Object.keys(StoreConfigSchema.shape)).toHaveLength(88)
     })
 
     it('inline TenantStatus has exactly 4 values', () => {

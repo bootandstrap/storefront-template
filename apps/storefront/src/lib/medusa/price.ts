@@ -66,20 +66,11 @@ export function getOriginalPrice(variant: MedusaVariant | undefined | null): Res
 
 /**
  * Format a price for display.
- * Converts from cents to display format using Intl.NumberFormat.
+ * Delegates to the unified i18n/currencies engine which handles
+ * zero-decimal currencies (COP, CLP, JPY) correctly.
  */
-export function formatPrice(
-    amount: number,
-    currency: string,
-    locale: string = 'en'
-): string {
-    return new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: currency.toUpperCase(),
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(amount / 100)
-}
+import { formatPrice } from '@/lib/i18n/currencies'
+export { formatPrice }
 
 /**
  * Convenience: get a formatted price string directly from a variant.
@@ -91,5 +82,5 @@ export function getFormattedPrice(
 ): string | null {
     const resolved = getPrice(variant)
     if (!resolved) return null
-    return formatPrice(resolved.amount, resolved.currency, locale)
+    return formatPrice(resolved.amount, resolved.currency)
 }

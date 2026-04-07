@@ -74,7 +74,7 @@ describe('createCategory server-side limits', () => {
         const result = await createCategory({ name: 'Frutas' })
 
         expect(result.success).toBe(false)
-        expect(result.error).toContain('Límite de categorías alcanzado')
+        expect(result.error).toContain('LIMIT_EXCEEDED')
         expect(mockCreateAdminCategory).not.toHaveBeenCalled()
     })
 

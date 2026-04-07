@@ -50,24 +50,24 @@ describe('getPrice', () => {
 
 describe('formatPrice', () => {
     it('formats EUR prices correctly', () => {
-        const result = formatPrice(1299, 'eur', 'es-ES')
+        const result = formatPrice(1299, 'eur', 'es')
         expect(result).toContain('12,99')
         expect(result).toContain('€')
     })
 
     it('formats USD prices correctly', () => {
-        const result = formatPrice(2500, 'usd', 'en-US')
+        const result = formatPrice(2500, 'usd', 'en')
         // $25 or $25.00
         expect(result).toMatch(/\$25/)
     })
 
     it('formats zero amount', () => {
-        const result = formatPrice(0, 'eur', 'es-ES')
+        const result = formatPrice(0, 'eur', 'es')
         expect(result).toContain('0')
     })
 
     it('handles large amounts', () => {
-        const result = formatPrice(999900, 'usd', 'en-US')
+        const result = formatPrice(999900, 'usd', 'en')
         expect(result).toMatch(/9,999|9\.999/)
     })
 })
@@ -85,7 +85,7 @@ describe('getFormattedPrice', () => {
             prices: [{ amount: 350, currency_code: 'eur' }],
             options: [],
         }
-        const result = getFormattedPrice(variant, 'es-ES')
+        const result = getFormattedPrice(variant)
         expect(result).toContain('3,5')
         expect(result).toContain('€')
     })

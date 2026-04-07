@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerOrders } from '@/lib/medusa/auth-medusa'
 import { formatPrice } from '@/lib/i18n/currencies'
+import { getConfig } from '@/lib/config'
 import { ShoppingBag, ArrowRight, Package, Clock, CheckCircle } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -77,6 +78,7 @@ function StatsSkeleton() {
 async function RecentOrders({ lang }: { lang: string }) {
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+    const { config } = await getConfig()
 
     const { orders } = await getAuthCustomerOrders({ limit: 3 })
 
@@ -111,7 +113,7 @@ async function RecentOrders({ lang }: { lang: string }) {
                     )
                     const itemCount = order.items?.length ?? 0
                     const total = order.total
-                        ? formatPrice(order.total, order.currency_code || 'eur', lang as Locale)
+                        ? formatPrice(order.total, order.currency_code || config.default_currency, lang as Locale)
                         : '—'
 
                     return (

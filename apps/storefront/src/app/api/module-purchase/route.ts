@@ -11,6 +11,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getActiveModulesForTenant } from '@/lib/active-modules'
+import contract from '@/lib/governance/governance-contract.json'
 
 const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
     || process.env.NEXT_PUBLIC_BSWEB_URL
@@ -41,6 +43,25 @@ export async function POST(req: NextRequest) {
 
         if (!module_key || typeof module_key !== 'string') {
             return NextResponse.json({ error: 'module_key is required' }, { status: 400 })
+        }
+
+        // Validate module dependencies (v2.0 POS/Kiosk governance)
+        const targetModule = contract.modules.catalog.find(m => m.key === module_key)
+        if (!targetModule) {
+            return NextResponse.json({ error: 'Invalid module_key' }, { status: 400 })
+        }
+
+        if (targetModule.requires && targetModule.requires.length > 0) {
+            const activeModules = await getActiveModulesForTenant(profile.tenant_id)
+            const activeModuleKeys = new Set(activeModules.map(m => m.moduleKey))
+            
+            const missingDependencies = targetModule.requires.filter(req => !activeModuleKeys.has(req))
+            if (missingDependencies.length > 0) {
+                return NextResponse.json({ 
+                    error: 'Dependencies not met', 
+                    missing_dependencies: missingDependencies 
+                }, { status: 400 })
+            }
         }
 
         // Determine locale for return URLs

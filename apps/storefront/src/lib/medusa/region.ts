@@ -88,7 +88,7 @@ export async function getRegions(): Promise<MedusaRegion[]> {
  * Resolve the region_id for Medusa Store API calls.
  *
  * Pipeline:
- * 1. Cookie → 2. Config → 3. First region fallback
+ * 1. Cookie → 2. Config currency → region match → 3. First region fallback
  *
  * Returns null if no regions are available (Medusa not configured).
  */
@@ -102,16 +102,26 @@ export async function resolveRegionId(): Promise<string | null> {
         // cookies() not available in non-request context (e.g., generateStaticParams)
     }
 
-    // 2. Check config for default_region_id
-    // Note: we DON'T import getConfig here to avoid circular deps.
-    // The config default will be added when the column exists in BSWEB.
-    // For now, fall through to step 3.
-
-    // 3. First region fallback
+    // 2. Match config.default_currency → Medusa region
     const regions = await fetchRegions()
-    if (regions.length > 0) return regions[0].id
+    if (regions.length === 0) return null
 
-    return null
+    try {
+        const { getConfig } = await import('@/lib/config')
+        const appConfig = await getConfig()
+        const tenantCurrency = appConfig.config.default_currency?.toLowerCase()
+        if (tenantCurrency) {
+            const matchedRegion = regions.find(
+                r => r.currency_code.toLowerCase() === tenantCurrency,
+            )
+            if (matchedRegion) return matchedRegion.id
+        }
+    } catch {
+        // Config unavailable (build phase, etc.) — fall through to step 3
+    }
+
+    // 3. First region fallback (last resort)
+    return regions[0].id
 }
 
 /**

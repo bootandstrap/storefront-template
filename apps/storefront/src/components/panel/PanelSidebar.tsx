@@ -38,6 +38,7 @@ import {
     Shield,
     ShoppingCart,
     Gauge,
+    ExternalLink,
 } from 'lucide-react'
 import {
     getPanelNavigationGrouped,
@@ -302,14 +303,16 @@ export default function PanelSidebar({
                                     <span className="plan-badge">{planName}</span>
                                 </div>
                             )}
-                            <Link
+                            <a
                                 href={`/${lang}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 onClick={closeMobileMenu}
                                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-tx-muted hover:text-tx hover:bg-sf-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4" />
                                 {labels.backToStore}
-                            </Link>
+                            </a>
                         </div>
                     </aside>
                 </div>
@@ -368,10 +371,12 @@ export default function PanelSidebar({
                         className={`flex items-center justify-center rounded-xl text-tx-muted hover:text-tx hover:bg-sf-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
                             isCollapsed ? 'w-9 h-9' : 'gap-2 px-3 py-2.5 w-full text-sm'
                         }`}
-                        title={isCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                        title={isCollapsed ? (labels.backToStore || 'Expand') : (labels.backToStore || 'Collapse')}
                     >
                         <ChevronLeft className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} />
-                        {!isCollapsed && labels.backToStore}
+                        {!isCollapsed && (
+                            <span className="text-xs opacity-60">{isCollapsed ? '▸' : '◂'} {labels.groupSettings?.charAt(0) === 'A' ? 'Collapse' : 'Colapsar'}</span>
+                        )}
                     </button>
                 </div>
             </aside>

@@ -310,6 +310,12 @@ export interface MedusaOrder {
     billing_address: MedusaAddress | null
     fulfillments: MedusaFulfillment[]
     payments: MedusaPayment[]
+    // v2: payments are nested under payment_collections
+    payment_collections?: {
+        id: string
+        status: string
+        payments: MedusaPayment[]
+    }[]
     total: number
     subtotal: number
     tax_total: number
@@ -333,6 +339,16 @@ interface OrderListResponse {
     limit: number
 }
 
+/**
+ * Normalize order: flatten payment_collections → payments for backward compat
+ */
+function normalizeOrderPayments(order: MedusaOrder): MedusaOrder {
+    if (order.payment_collections?.length && (!order.payments || order.payments.length === 0)) {
+        order.payments = order.payment_collections.flatMap(pc => pc.payments ?? [])
+    }
+    return order
+}
+
 export async function getCustomerOrders(params?: {
     limit?: number
     offset?: number
@@ -341,13 +357,17 @@ export async function getCustomerOrders(params?: {
     if (params?.limit) searchParams.set('limit', String(params.limit))
     if (params?.offset) searchParams.set('offset', String(params.offset))
     searchParams.set('order', '-created_at')
-    searchParams.set('fields', '+items,+shipping_address,+fulfillments,+payments')
+    // v2: Use *payment_collections.payments for payment data (matches official Medusa starter)
+    searchParams.set('fields', '*payment_collections.payments,*items,*items.variant,*items.product,+shipping_address,+fulfillments')
 
     const qs = searchParams.toString()
     try {
-        return await medusaFetch<OrderListResponse>(
+        const result = await medusaFetch<OrderListResponse>(
             `/store/orders${qs ? `?${qs}` : ''}`
         )
+        // Normalize payments for backward compat
+        result.orders = result.orders.map(normalizeOrderPayments)
+        return result
     } catch {
         return { orders: [], count: 0, offset: 0, limit: params?.limit ?? 10 }
     }
@@ -355,10 +375,11 @@ export async function getCustomerOrders(params?: {
 
 export async function getOrder(id: string): Promise<MedusaOrder | null> {
     try {
+        // v2: Use *payment_collections.payments (matches official Medusa starter)
         const res = await medusaFetch<{ order: MedusaOrder }>(
-            `/store/orders/${id}?fields=+items,+shipping_address,+billing_address,+fulfillments,+payments`
+            `/store/orders/${id}?fields=*payment_collections.payments,*items,*items.variant,*items.product,+shipping_address,+billing_address,+fulfillments`
         )
-        return res.order
+        return normalizeOrderPayments(res.order)
     } catch {
         return null
     }
@@ -423,13 +444,15 @@ export async function deleteAddress(addressId: string): Promise<void> {
 export interface StoreReturn {
     id: string
     order_id: string
-    status: string
+    status: 'requested' | 'received' | 'canceled'
     refund_amount: number
     created_at: string
     items: {
         id: string
         item_id: string
         quantity: number
+        received_quantity?: number   // v2: quantity actually received
+        damaged_quantity?: number    // v2: quantity damaged (not restockable)
         reason_id: string | null
         note: string | null
     }[]

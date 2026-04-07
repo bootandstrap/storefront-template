@@ -27,8 +27,20 @@ export async function addToCartAction(
             currentCartId = newCart.id
         }
 
-        const cart = await medusaAddToCart(currentCartId, variantId, quantity)
-        return { cart, cartId: currentCartId }
+        try {
+            const cart = await medusaAddToCart(currentCartId, variantId, quantity)
+            return { cart, cartId: currentCartId }
+        } catch (addErr) {
+            // Stale cart recovery: if the existing cart fails (e.g., wrong region,
+            // deleted during re-seed), create a fresh cart and retry once
+            if (cartId) {
+                console.warn('[cart] Stale cart detected, creating fresh cart...', cartId)
+                const freshCart = await medusaCreateCart()
+                const cart = await medusaAddToCart(freshCart.id, variantId, quantity)
+                return { cart, cartId: freshCart.id }
+            }
+            throw addErr
+        }
     } catch (err) {
         console.error('[cart] addToCart failed:', err)
         return { cart: null, cartId: null }

@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 const MAX_RETRIES = 3
-const INITIAL_BACKOFF_MS = 1000
+const INITIAL_BACKOFF_MS = process.env.NODE_ENV === 'test' ? 10 : 1000
 
 async function completeCartInMedusa(cartId: string): Promise<boolean> {
     const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY

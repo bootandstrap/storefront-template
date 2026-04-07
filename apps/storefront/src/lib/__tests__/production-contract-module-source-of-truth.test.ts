@@ -5,8 +5,9 @@ import { getActiveModulesForTenant } from '../active-modules'
 // Mock the governance client (used by active-modules.ts)
 // ---------------------------------------------------------------------------
 
+const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null })
 const mockIn = vi.fn()
-const mockEq = vi.fn(() => ({ in: mockIn }))
+const mockEq = vi.fn(() => ({ in: mockIn, single: mockSingle }))
 const mockSelect = vi.fn(() => ({ eq: mockEq }))
 const mockFrom = vi.fn(() => ({ select: mockSelect }))
 
@@ -57,10 +58,16 @@ describe('Commercial Source of Truth (orders-based)', () => {
             moduleKey: 'ecommerce',
             tierKey: 'Pro',
             stripeSubscriptionId: 'sub_123',
-            activatedAt: '2026-03-01T12:00:00Z'
+            activatedAt: '2026-03-01T12:00:00Z',
+            source: 'orders'
         })
-        expect(result[1].moduleKey).toBe('chatbot')
-        expect(result[1].tierKey).toBeNull()
+        expect(result[1]).toEqual({
+            moduleKey: 'chatbot',
+            tierKey: 'basic',
+            activatedAt: '2026-03-01T12:00:00Z',
+            stripeSubscriptionId: 'sub_123',
+            source: 'orders'
+        })
     })
 
     it('returns empty array on database error', async () => {

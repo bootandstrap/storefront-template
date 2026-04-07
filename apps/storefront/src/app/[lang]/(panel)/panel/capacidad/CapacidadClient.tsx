@@ -18,7 +18,8 @@ import { motion } from 'framer-motion'
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
-import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
+import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
+import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
 
 interface Props {
     lang: string
@@ -30,6 +31,7 @@ interface Props {
     }
     limits: {
         maxRequestsDay: number
+        requestsToday: number
     }
     labels: {
         title: string
@@ -71,14 +73,9 @@ function AnimatedProgressBar({ value, max, color }: { value: number; max: number
 }
 
 export default function CapacidadClient({ featureFlags, limits, labels, capacityConfig }: Props) {
-    const capacityConfigFields: ConfigFieldDef[] = [
-        { key: 'traffic_alert_email', label: 'Alert notification email', type: 'email', placeholder: 'alerts@yourstore.com' },
-        { key: 'capacity_warning_threshold_pct', label: 'Warning threshold (%)', type: 'number', placeholder: '80' },
-        { key: 'capacity_critical_threshold_pct', label: 'Critical threshold (%)', type: 'number', placeholder: '95' },
-        { key: 'capacity_auto_upgrade_interest', label: 'Interested in auto-upgrade', type: 'toggle' },
-    ]
-    // Deterministic "simulated" usage — in production this would come from actual metrics
-    const requestsToday = Math.round(limits.maxRequestsDay * 0.42)
+    const capacityConfigFields = getModuleConfigSchema('capacidad')
+    // Use real traffic counter from Upstash (provided by server component)
+    const requestsToday = limits.requestsToday
     const percent = limits.maxRequestsDay > 0 ? Math.round((requestsToday / limits.maxRequestsDay) * 100) : 0
 
     const features = [

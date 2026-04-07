@@ -99,7 +99,9 @@ describe('v0.1 Release Gate — Structural Integrity', () => {
             'enable_carousel', 'enable_whatsapp_checkout', 'enable_cms_pages',
             'enable_analytics', 'enable_chatbot', 'enable_self_service_returns',
             'enable_crm', 'enable_reviews', 'enable_pos', 'enable_traffic_expansion',
-            'enable_product_badges',
+            'enable_product_badges', 'enable_seo', 'enable_social_media',
+            'enable_multi_language', 'enable_automations', 'enable_auth_advanced',
+            'enable_sales_channels',
         ]
 
         // Extract featureKey values from ADVANCED_MODULES array

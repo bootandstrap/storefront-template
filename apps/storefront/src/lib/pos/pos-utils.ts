@@ -41,41 +41,29 @@ export function getEnabledPOSPaymentMethods(
 }
 
 // ---------------------------------------------------------------------------
-// Currency formatting
+// Currency formatting — delegates to unified formatPrice from currencies.ts
 // ---------------------------------------------------------------------------
 
-/**
- * Format a minor-unit amount (cents) as a currency string.
- * Uses Intl.NumberFormat for locale-aware formatting.
- * Derives locale from currency code for proper symbol placement.
- */
-const CURRENCY_LOCALE_MAP: Record<string, string> = {
-    eur: 'de-DE',
-    chf: 'de-CH',
-    usd: 'en-US',
-    gbp: 'en-GB',
-    sek: 'sv-SE',
-    dkk: 'da-DK',
-    nok: 'nb-NO',
-    pln: 'pl-PL',
-    czk: 'cs-CZ',
-    mxn: 'es-MX',
-    cop: 'es-CO',
-    brl: 'pt-BR',
-}
+import { formatPrice } from '@/lib/i18n/currencies'
 
+/**
+ * Format a minor-unit amount (cents) as a currency string for POS display.
+ *
+ * This is a thin wrapper around the unified `formatPrice()` from the i18n
+ * currency module. The currency code MUST come from tenant governance config
+ * (config.default_currency). No hardcoded fallback.
+ *
+ * @param amount - Price in minor units (cents)
+ * @param currencyCode - Currency code from tenant config (REQUIRED)
+ */
 export function formatPOSCurrency(
     amount: number,
-    currencyCode = 'EUR',
-    locale?: string,
+    currencyCode: string,
 ): string {
-    const effectiveLocale = locale || CURRENCY_LOCALE_MAP[currencyCode.toLowerCase()] || 'de-DE'
-    const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0
-    return new Intl.NumberFormat(effectiveLocale, {
-        style: 'currency',
-        currency: currencyCode.toUpperCase(),
-        minimumFractionDigits: 2,
-    }).format(safeAmount / 100)
+    if (!currencyCode) {
+        throw new Error('[POS] formatPOSCurrency: currencyCode is required — must come from tenant config.default_currency')
+    }
+    return formatPrice(amount, currencyCode)
 }
 
 // ---------------------------------------------------------------------------

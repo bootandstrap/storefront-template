@@ -15,6 +15,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Menu, ChevronRight, LogOut, Store, User } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import OrderNotifications from '@/components/panel/OrderNotifications'
+import PanelLanguageSwitch from '@/components/panel/PanelLanguageSwitch'
+import PanelThemeToggle from '@/components/panel/PanelThemeToggle'
 
 interface PanelTopbarProps {
     ownerName: string
@@ -36,6 +38,8 @@ interface PanelTopbarProps {
         label: string   // e.g. "4 setup steps left"
         href: string    // links to dashboard
     } | null
+    /** Governance SSOT currency for notification formatting */
+    defaultCurrency: string
     onMenuClick: () => void
 }
 
@@ -54,6 +58,7 @@ export default function PanelTopbar({
     greetings,
     labels,
     setupNudge,
+    defaultCurrency,
     onMenuClick,
 }: PanelTopbarProps) {
     const pathname = usePathname()
@@ -141,7 +146,9 @@ export default function PanelTopbar({
 
                 {/* Right: notifications + avatar */}
                 <div className="flex items-center gap-2 shrink-0">
-                    <OrderNotifications />
+                    <OrderNotifications defaultCurrency={defaultCurrency} />
+                    <PanelThemeToggle />
+                    <PanelLanguageSwitch currentLang={lang} />
 
                     {/* Avatar */}
                     <div className="relative" ref={dropdownRef}>

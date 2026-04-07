@@ -15,7 +15,8 @@ import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Globe, Lock, Sparkles } from 'lucide-react'
 import {
-    saveLanguagePreferencesAction,
+    savePanelLanguageAction,
+    saveStorefrontLanguageAction,
     saveActiveLanguagesAction,
 } from '@/app/[lang]/(panel)/panel/actions'
 
@@ -84,8 +85,10 @@ export default function LanguageStep({
     const handleSaveAndContinue = useCallback(async () => {
         setSaving(true)
         try {
-            // Save panel + storefront language (primary)
-            await saveLanguagePreferencesAction(panelLang, selectedStoreLangs[0])
+            // Save panel language
+            await savePanelLanguageAction(panelLang)
+            // Save primary storefront language
+            await saveStorefrontLanguageAction(selectedStoreLangs[0])
 
             // If multi-language, save all active languages
             if (hasMultiLanguage && selectedStoreLangs.length > 1) {

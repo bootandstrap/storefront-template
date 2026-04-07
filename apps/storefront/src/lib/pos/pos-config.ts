@@ -314,22 +314,73 @@ export function calculateCartTotals(state: CartState, taxRate = 0) {
 // ---------------------------------------------------------------------------
 
 /**
- * Safely extract unit_price from a Medusa v2 variant.
- * Handles both `calculated_price.calculated_amount` (Store API)
- * and `prices[].amount` (Admin API) gracefully.
- * Returns 0 if no valid numeric price is found.
+ * Currency-aware variant price extraction.
+ *
+ * Resolution order:
+ * 1. `calculated_price.calculated_amount` (Store API) — if currency matches targetCurrency
+ * 2. `prices[]` entry matching targetCurrency (Admin API)
+ * 3. If no match: returns `has_price: false` + `available_prices` for UX (greyed-out card + quick-price modal)
+ *
+ * @param variant - Medusa v2 variant with calculated_price and/or prices[]
+ * @param targetCurrency - The currency code to find a price for (from config.default_currency)
  */
+export interface VariantPriceResult {
+    unit_price: number
+    currency_code: string
+    has_price: boolean
+    /** Other currencies that DO have a price — shown in quick-price modal for conversion reference */
+    available_prices: { amount: number; currency_code: string }[]
+}
+
 export function safeVariantPrice(variant: {
     calculated_price?: { calculated_amount?: number; currency_code?: string }
     prices?: { amount?: number; currency_code?: string }[]
-} | null | undefined, defaultCurrency: string): { unit_price: number; currency_code: string } {
-    if (!variant) return { unit_price: 0, currency_code: defaultCurrency }
+} | null | undefined, targetCurrency: string): VariantPriceResult {
+    const target = targetCurrency.toLowerCase()
+    const noPriceResult: VariantPriceResult = {
+        unit_price: 0,
+        currency_code: targetCurrency,
+        has_price: false,
+        available_prices: [],
+    }
+
+    if (!variant) return noPriceResult
+
+    // Collect all available prices for the quick-price modal reference
+    const available: { amount: number; currency_code: string }[] = []
+    for (const p of variant.prices ?? []) {
+        if (typeof p.amount === 'number' && !isNaN(p.amount) && p.currency_code) {
+            available.push({ amount: p.amount, currency_code: p.currency_code })
+        }
+    }
+
+    // 1. Check calculated_price (Store API — already resolved for context)
     const calc = (variant as any).calculated_price
-    const fallback = variant.prices?.[0]
+    if (calc?.currency_code?.toLowerCase() === target && typeof calc.calculated_amount === 'number') {
+        return {
+            unit_price: calc.calculated_amount,
+            currency_code: calc.currency_code,
+            has_price: true,
+            available_prices: available,
+        }
+    }
 
-    const rawAmount = calc?.calculated_amount ?? fallback?.amount
-    const unit_price = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0
-    const currency_code = calc?.currency_code ?? fallback?.currency_code ?? defaultCurrency
+    // 2. Find matching price in prices[] (Admin API)
+    const matchingPrice = (variant.prices ?? []).find(
+        p => p.currency_code?.toLowerCase() === target && typeof p.amount === 'number' && !isNaN(p.amount!)
+    )
+    if (matchingPrice) {
+        return {
+            unit_price: matchingPrice.amount!,
+            currency_code: matchingPrice.currency_code!,
+            has_price: true,
+            available_prices: available,
+        }
+    }
 
-    return { unit_price, currency_code }
+    // 3. No price in target currency — flag it
+    return {
+        ...noPriceResult,
+        available_prices: available,
+    }
 }

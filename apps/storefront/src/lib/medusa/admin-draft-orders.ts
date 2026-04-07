@@ -99,20 +99,38 @@ export async function createDraftOrder(
  * Finalize a draft order, converting it to a completed order.
  *
  * In Medusa v2, draft orders use `order_` prefix IDs and are completed
- * via `/admin/orders/{id}/complete` (the legacy `/pay` endpoint does not exist).
+ * via `/admin/orders/{id}/complete`. The order stays in the draft-orders
+ * collection but with status=completed. It does NOT appear in /admin/orders.
+ *
+ * Dashboard queries have been updated to include completed draft orders
+ * in KPI calculations.
  */
 export async function registerDraftPayment(
     draftOrderId: string,
     scope?: TenantMedusaScope | null
 ): Promise<{ order_id: string | null; error: string | null }> {
-    const res = await adminFetch<{ order: { id: string; status: string } }>(
+    // First, complete the draft order
+    const res = await adminFetch<{ order: { id: string; status: string; total?: number } }>(
         `/admin/orders/${draftOrderId}/complete`,
         { method: 'POST' },
         scope
     )
+
+    if (res.error) {
+        console.error('[pos] registerDraftPayment failed:', res.error, 'draftOrderId:', draftOrderId)
+        return { order_id: null, error: res.error }
+    }
+
+    const completedOrder = res.data?.order
+    if (!completedOrder || completedOrder.status !== 'completed') {
+        const errMsg = `Draft order completion returned unexpected status: ${completedOrder?.status ?? 'null'}`
+        console.error('[pos]', errMsg)
+        return { order_id: completedOrder?.id ?? draftOrderId, error: errMsg }
+    }
+
     return {
-        order_id: res.data?.order?.id ?? draftOrderId,
-        error: res.error,
+        order_id: completedOrder.id,
+        error: null,
     }
 }
 

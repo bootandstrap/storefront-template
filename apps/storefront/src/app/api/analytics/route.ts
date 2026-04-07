@@ -13,24 +13,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getClientIp } from '@/lib/security/get-client-ip'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ANALYTICS_EVENT_SET } from '@/lib/registries/analytics-events'
 
 export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-const ALLOWED_EVENTS = new Set([
-    'page_view',
-    'product_view',
-    'add_to_cart',
-    'remove_from_cart',
-    'checkout_start',
-    'order_placed',
-    'search',
-    'category_view',
-    'whatsapp_click',
-])
 
 const MAX_PROPERTIES_SIZE = 4096 // bytes
 const analyticsLimiter = createSmartRateLimiter({
@@ -67,7 +56,7 @@ export async function POST(request: NextRequest) {
         const { event_type, properties, page_url, referrer } = body
 
         // Validate event_type
-        if (!event_type || !ALLOWED_EVENTS.has(event_type)) {
+        if (!ANALYTICS_EVENT_SET.has(event_type)) {
             return NextResponse.json(
                 { error: 'invalid_event_type' },
                 { status: 400 }

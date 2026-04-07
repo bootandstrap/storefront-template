@@ -11,6 +11,7 @@ import FeatureGate from '@/components/ui/FeatureGate'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { Globe } from 'lucide-react'
 import I18nClient from './I18nClient'
+import { SUPPORTED_CURRENCY_COUNT } from '@/lib/i18n/currencies'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,11 +39,16 @@ export default async function I18nPage({
 
     // Supabase may return active_languages as a JSON string or null — normalize defensively
     const rawLangs = config.active_languages
-    const activeLanguages: string[] = Array.isArray(rawLangs)
+    const defaultLang = config.language ?? 'es'
+    const parsedLangs: string[] = Array.isArray(rawLangs)
         ? rawLangs
         : typeof rawLangs === 'string'
             ? (() => { try { const p = JSON.parse(rawLangs); return Array.isArray(p) ? p : [rawLangs] } catch { return [rawLangs] } })()
-            : [config.language ?? 'es']
+            : [defaultLang]
+    // Ensure the primary/default language is always in the active list
+    const activeLanguages = parsedLangs.includes(defaultLang)
+        ? parsedLangs
+        : [defaultLang, ...parsedLangs]
 
     const rawCurrencies = config.active_currencies
     const activeCurrencies: string[] = Array.isArray(rawCurrencies)
@@ -51,13 +57,14 @@ export default async function I18nPage({
             ? (() => { try { const p = JSON.parse(rawCurrencies); return Array.isArray(p) ? p : [rawCurrencies] } catch { return [rawCurrencies] } })()
             : [config.default_currency ?? 'eur']
 
+    // Cap maxCurrencies to the number of actually supported currencies
     const languageData = {
         activeLanguages,
         activeCurrencies,
         defaultCurrency: config.default_currency ?? 'eur',
         defaultLanguage: config.language ?? 'es',
         maxLanguages: planLimits.max_languages ?? 5,
-        maxCurrencies: planLimits.max_currencies ?? 3,
+        maxCurrencies: Math.min(planLimits.max_currencies ?? 3, SUPPORTED_CURRENCY_COUNT),
     }
 
     const panelLang = (config as Record<string, unknown>).panel_language as string | null ?? config.language ?? 'es'
@@ -69,7 +76,7 @@ export default async function I18nPage({
                 title={t('panel.i18n.title')}
                 subtitle={t('panel.i18n.subtitle')}
                 icon={<Globe className="w-5 h-5" />}
-                badge={config.active_languages.length}
+                badge={activeLanguages.length}
             />
             <I18nClient
                 data={languageData}

@@ -4,20 +4,24 @@
  * Auth Client — Owner Panel (SOTA)
  *
  * Features:
- * - Auth provider cards with toggle controls
- * - Login activity timeline
- * - Security settings with policy toggles
+ * - Auth provider cards with governance-controlled status indicators
+ * - Login activity timeline from real profile data
+ * - Security settings with policy display
+ *
+ * Data: all data comes from server props (feature flags + Supabase profiles)
+ * Toggles display governance state — not interactive (controlled by plan/module)
  */
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Shield, Mail, Chrome, UserCheck, Lock, Eye,
-    Users, Key, Clock, CheckCircle2, AlertTriangle,
+    Users, Key, Clock, CheckCircle2, Info,
 } from 'lucide-react'
 
 import StatCard from '@/components/panel/StatCard'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import type { AuthActivity, AuthStats } from './actions'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,18 +53,6 @@ interface Labels {
 }
 
 // ---------------------------------------------------------------------------
-// Demo Data
-// ---------------------------------------------------------------------------
-
-const DEMO_ACTIVITY = [
-    { email: 'owner@tienda.com', method: 'Email', time: 'Hace 2 min', success: true },
-    { email: 'admin@tienda.com', method: 'Google', time: 'Hace 15 min', success: true },
-    { email: 'test@example.com', method: 'Email', time: 'Hace 1h', success: false },
-    { email: 'owner@tienda.com', method: 'Email', time: 'Hace 3h', success: true },
-    { email: 'staff@tienda.com', method: 'Google', time: 'Hace 6h', success: true },
-]
-
-// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -68,10 +60,11 @@ type TabId = 'providers' | 'activity' | 'security'
 
 export default function AuthClient({
     authConfig,
+    authStats,
     labels,
-    lang,
 }: {
     authConfig: AuthConfig
+    authStats: AuthStats
     labels: Labels
     lang: string
 }) {
@@ -109,6 +102,9 @@ export default function AuthClient({
         },
     ]
 
+    // Use real activity data from server
+    const activityData: AuthActivity[] = authStats.recentActivity
+
     return (
         <PageEntrance>
             {/* ── Stats Row ── */}
@@ -120,7 +116,7 @@ export default function AuthClient({
                 />
                 <StatCard
                     label={labels.totalLogins}
-                    value={DEMO_ACTIVITY.filter(a => a.success).length}
+                    value={authStats.totalUsers}
                     icon={<Users className="w-5 h-5" />}
                 />
                 <StatCard
@@ -163,6 +159,12 @@ export default function AuthClient({
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
                     >
+                        {/* Governance notice */}
+                        <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs">
+                            <Info className="w-4 h-4 flex-shrink-0" />
+                            <span>Los proveedores de autenticación están configurados por tu plan. Contacta soporte para cambiar la configuración.</span>
+                        </div>
+
                         <ListStagger>
                             <div className="space-y-4">
                                 {providers.map((provider, i) => (
@@ -188,7 +190,7 @@ export default function AuthClient({
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-3">
                                                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                                                         provider.enabled
                                                             ? 'bg-[var(--color-emerald-50,#ecfdf5)] text-[var(--color-emerald-700,#047857)]'
@@ -196,12 +198,18 @@ export default function AuthClient({
                                                     }`}>
                                                         {provider.enabled ? 'Activo' : 'Inactivo'}
                                                     </span>
-                                                    <div className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors ${
-                                                        provider.enabled ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
-                                                    }`}>
-                                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                                                            provider.enabled ? 'translate-x-5' : 'translate-x-1'
-                                                        }`} />
+                                                    {/* Governance-controlled indicator (not interactive) */}
+                                                    <div className="group relative">
+                                                        <div className={`w-10 h-6 rounded-full relative cursor-default transition-colors ${
+                                                            provider.enabled ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
+                                                        }`}>
+                                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                                                                provider.enabled ? 'translate-x-5' : 'translate-x-1'
+                                                            }`} />
+                                                        </div>
+                                                        <div className="absolute bottom-full right-0 mb-1 w-40 px-2 py-1 text-[10px] bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
+                                                            Configurado por tu plan
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -225,33 +233,35 @@ export default function AuthClient({
                             <h3 className="text-base font-semibold text-[var(--color-gray-800,#1f2937)] mb-4">
                                 {labels.loginActivity}
                             </h3>
-                            <ListStagger>
-                                {DEMO_ACTIVITY.map((entry, i) => (
-                                    <StaggerItem key={i}>
-                                        <div className="flex items-center justify-between py-3 border-b border-[var(--color-gray-100,#f3f4f6)] last:border-0">
-                                            <div className="flex items-center gap-3">
-                                                {entry.success ? (
+                            {activityData.length === 0 ? (
+                                <p className="text-sm text-[var(--color-gray-400,#9ca3af)] py-8 text-center">
+                                    No hay actividad registrada aún
+                                </p>
+                            ) : (
+                                <ListStagger>
+                                    {activityData.map((entry, i) => (
+                                        <StaggerItem key={i}>
+                                            <div className="flex items-center justify-between py-3 border-b border-[var(--color-gray-100,#f3f4f6)] last:border-0">
+                                                <div className="flex items-center gap-3">
                                                     <CheckCircle2 className="w-5 h-5 text-[var(--color-emerald-500,#10b981)]" />
-                                                ) : (
-                                                    <AlertTriangle className="w-5 h-5 text-[var(--color-red-500,#ef4444)]" />
-                                                )}
-                                                <div>
-                                                    <p className="text-sm font-medium text-[var(--color-gray-800,#1f2937)]">
-                                                        {entry.email}
-                                                    </p>
-                                                    <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
-                                                        vía {entry.method}
-                                                    </p>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-[var(--color-gray-800,#1f2937)]">
+                                                            {entry.email}
+                                                        </p>
+                                                        <p className="text-xs text-[var(--color-gray-400,#9ca3af)]">
+                                                            vía {entry.method}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-[var(--color-gray-400,#9ca3af)]">
+                                                    <Clock className="w-3.5 h-3.5" />
+                                                    {entry.time}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs text-[var(--color-gray-400,#9ca3af)]">
-                                                <Clock className="w-3.5 h-3.5" />
-                                                {entry.time}
-                                            </div>
-                                        </div>
-                                    </StaggerItem>
-                                ))}
-                            </ListStagger>
+                                        </StaggerItem>
+                                    ))}
+                                </ListStagger>
+                            )}
                         </div>
                     </motion.div>
                 )}
@@ -286,12 +296,17 @@ export default function AuthClient({
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors ${
-                                            setting.enabled ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
-                                        }`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                                                setting.enabled ? 'translate-x-5' : 'translate-x-1'
-                                            }`} />
+                                        <div className="group relative">
+                                            <div className={`w-10 h-6 rounded-full relative cursor-default transition-colors ${
+                                                setting.enabled ? 'bg-[var(--color-emerald-500,#10b981)]' : 'bg-[var(--color-gray-200,#e5e7eb)]'
+                                            }`}>
+                                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                                                    setting.enabled ? 'translate-x-5' : 'translate-x-1'
+                                                }`} />
+                                            </div>
+                                            <div className="absolute bottom-full right-0 mb-1 w-40 px-2 py-1 text-[10px] bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
+                                                Configurado por tu plan
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

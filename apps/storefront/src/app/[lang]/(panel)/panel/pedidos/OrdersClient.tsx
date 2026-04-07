@@ -12,12 +12,13 @@
  * - PanelPagination for shared pagination
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import {
     Package, Search, ChevronDown, MapPin, CreditCard,
-    CheckCircle, Truck, ShoppingBag, RotateCcw, X
+    CheckCircle, Truck, ShoppingBag, RotateCcw, X,
+    Monitor, Receipt, Printer
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageEntrance, ListStagger, StaggerItem, ExpandableSection } from '@/components/panel/PanelAnimations'
@@ -81,10 +82,14 @@ interface Props {
     pageSize: number
     initialSearch: string
     initialStatus: StatusFilter
+    initialChannel: ChannelFilter
     metrics: {
         pendingCount: number
         completedCount: number
         formattedRevenue: string
+        secondaryRevenues?: string
+        posOrderCount?: number
+        onlineOrderCount?: number
     }
     lang: string
     labels: OrderLabels
@@ -96,11 +101,12 @@ type StatusFilter = 'all' | 'pending' | 'completed' | 'canceled'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatPrice(amount: number, currency: string, lang: string): string {
+function formatPrice(amount: number, currency: string | undefined, lang: string): string {
+    const safeCurrency = (currency || 'eur').toUpperCase()
     return new Intl.NumberFormat(toIntlLocale(lang), {
         style: 'currency',
-        currency: currency.toUpperCase(),
-    }).format(amount / 100)
+        currency: safeCurrency,
+    }).format((amount || 0) / 100)
 }
 
 function formatDate(dateStr: string, lang: string): string {
@@ -120,6 +126,13 @@ function fulfillmentLabel(status: string): { label: string; variant: 'success' |
     return { label: status || 'not_fulfilled', variant: 'pending' }
 }
 
+type ChannelFilter = 'all' | 'pos' | 'online'
+
+function getOrderChannel(order: AdminOrderFull): 'pos' | 'online' {
+    const meta = order.metadata as Record<string, unknown> | null
+    return meta?.source === 'pos' ? 'pos' : 'online'
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -131,6 +144,7 @@ export default function OrdersClient({
     pageSize,
     initialSearch,
     initialStatus,
+    initialChannel,
     metrics,
     lang,
     labels,
@@ -142,12 +156,38 @@ export default function OrdersClient({
     const toast = useToast()
 
     const [filter, setFilter] = useState<StatusFilter>(initialStatus)
+    const [channel, setChannel] = useState<ChannelFilter>(initialChannel)
     const [search, setSearch] = useState(initialSearch)
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [refundingId, setRefundingId] = useState<string | null>(null)
     const [refundAmount, setRefundAmount] = useState('')
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+    // ── Universal Persistence ───────────────────────────────────────────
+    useEffect(() => {
+        // If arriving with bare URL, parse session storage and restore
+        if (!searchParams.toString()) {
+            const saved = sessionStorage.getItem('panel-pedidos-query')
+            if (saved) {
+                router.replace(`${pathname}?${saved}`)
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
+        // Automatically save meaningful query parameters
+        const query = searchParams.toString()
+        if (query) {
+            sessionStorage.setItem('panel-pedidos-query', query)
+        }
+    }, [searchParams])
+
+    // Client-side channel filtering (metadata isn't queryable server-side)
+    const filteredOrders = channel === 'all'
+        ? orders
+        : orders.filter(o => getOrderChannel(o) === channel)
 
     // ── Confirm dialogs ─────────────────────────────────────────────────
     const fulfillDialog = useConfirmDialog({
@@ -269,6 +309,11 @@ export default function OrdersClient({
                         icon={<CreditCard className="w-5 h-5" />}
                         glowColor="gold"
                     />
+                    {metrics.secondaryRevenues && (
+                        <div className="mt-1 px-4 pb-1">
+                            <span className="text-[10px] font-semibold text-tx-muted">{metrics.secondaryRevenues}</span>
+                        </div>
+                    )}
                 </SotaBentoItem>
                 <SotaBentoItem colSpan={{ base: 12, sm: 4 }}>
                     <SotaMetric
@@ -322,6 +367,32 @@ export default function OrdersClient({
                     ))}
                 </div>
 
+                {/* Channel filter — POS vs Online */}
+                <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-inner p-1">
+                    {([{ key: 'all', label: 'All', count: undefined }, { key: 'pos', label: 'POS', count: metrics.posOrderCount }, { key: 'online', label: 'Online', count: metrics.onlineOrderCount }] as { key: ChannelFilter; label: string; count?: number }[]).map(ch => (
+                        <button
+                            key={ch.key}
+                            onClick={() => {
+                                setChannel(ch.key)
+                                updateQuery({ channel: ch.key === 'all' ? undefined : ch.key, page: '1' })
+                            }}
+                            aria-pressed={channel === ch.key}
+                            className={`relative px-3 py-2 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
+                                channel === ch.key
+                                    ? 'text-brand bg-white dark:bg-sf-2 shadow-sm'
+                                    : 'text-tx-muted hover:text-tx-sec'
+                            }`}
+                        >
+                            <span className="flex items-center gap-1.5">
+                                {ch.key === 'pos' && <Receipt className="w-3 h-3" />}
+                                {ch.key === 'online' && <Monitor className="w-3 h-3" />}
+                                {ch.label}
+                                {ch.count !== undefined && <span className="tabular-nums opacity-60">({ch.count})</span>}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+
                 <div className="relative">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-tx-muted" />
                     <input
@@ -336,28 +407,44 @@ export default function OrdersClient({
             </div>
 
             {/* Orders list */}
-            {orders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                 >
-                    <SotaGlassCard glowColor="none" className="py-16">
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <ShoppingBag className="w-8 h-8 text-tx-muted" />
-                            </div>
-                            <h3 className="text-lg font-bold font-display text-tx mb-2">
-                                {labels.noOrders}
-                            </h3>
-                            <p className="text-sm text-tx-sec leading-relaxed mb-1">
-                                {labels.noOrdersDesc || 'When customers place orders, they will appear here.'}
-                            </p>
+                    <SotaGlassCard glowColor="none" className="py-24 flex flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 rounded-full bg-sf-1/50 border border-sf-3/30 flex items-center justify-center mb-6 shadow-sm">
+                            {search ? (
+                                <Search className="w-10 h-10 text-tx-muted opacity-50" />
+                            ) : channel === 'pos' ? (
+                                <Receipt className="w-10 h-10 text-emerald-500/50" />
+                            ) : (
+                                <ShoppingBag className="w-10 h-10 text-brand/50" />
+                            )}
                         </div>
+                        <h3 className="text-xl font-bold font-display text-tx mb-2">
+                            {search ? 'No search results' : labels.noOrders}
+                        </h3>
+                        <p className="text-sm text-tx-sec max-w-sm mx-auto leading-relaxed mb-6">
+                            {search
+                                ? `We couldn't find any orders matching "${search}". Try adjusting your search or filters.`
+                                : channel !== 'all'
+                                ? `You don't have any ${channel.toUpperCase()} orders yet in this view.`
+                                : (labels.noOrdersDesc || 'When customers place orders on your store or via POS, they will appear here.')}
+                        </p>
+                        {search && (
+                            <button
+                                onClick={() => { setSearch(''); updateQuery({ q: undefined, page: '1' }) }}
+                                className="px-5 py-2.5 rounded-xl bg-brand text-white font-medium shadow-sm hover:shadow-md transition-all active:scale-95"
+                            >
+                                Clear search
+                            </button>
+                        )}
                     </SotaGlassCard>
                 </motion.div>
             ) : (
-                <ListStagger className="space-y-3">
-                    {orders.map(order => {
+                <ListStagger className="space-y-3 relative">
+                    {filteredOrders.map(order => {
                         const isExpanded = expandedId === order.id
                         const customerName = [order.customer?.first_name, order.customer?.last_name].filter(Boolean).join(' ') || order.email || '—'
                         const fulfillment = fulfillmentLabel(order.fulfillment_status)
@@ -376,6 +463,18 @@ export default function OrdersClient({
                                             <span className="font-bold text-brand text-sm">
                                                 #{order.display_id}
                                             </span>
+                                            {/* Channel badge */}
+                                            {getOrderChannel(order) === 'pos' ? (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                                    <Receipt className="w-2.5 h-2.5" />
+                                                    POS
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
+                                                    <Monitor className="w-2.5 h-2.5" />
+                                                    Online
+                                                </span>
+                                            )}
                                             <span className="text-sm text-tx-sec">
                                                 {customerName}
                                             </span>
@@ -452,19 +551,19 @@ export default function OrdersClient({
 
                                                 {/* Totals summary */}
                                                 <div className="mt-3 pt-3 border-t border-sf-2 space-y-1 text-sm">
-                                                    {order.shipping_total > 0 && (
+                                                    {(order.shipping_total ?? 0) > 0 && (
                                                         <div className="flex justify-between text-tx-muted">
                                                             <span>{labels.shipping}</span>
-                                                            <span>{formatPrice(order.shipping_total, order.currency_code, lang)}</span>
+                                                            <span>{formatPrice(order.shipping_total ?? 0, order.currency_code, lang)}</span>
                                                         </div>
                                                     )}
-                                                    {order.tax_total > 0 && (
+                                                    {(order.tax_total ?? 0) > 0 && (
                                                         <div className="flex justify-between text-tx-muted">
                                                             <span>{labels.taxes}</span>
-                                                            <span>{formatPrice(order.tax_total, order.currency_code, lang)}</span>
+                                                            <span>{formatPrice(order.tax_total ?? 0, order.currency_code, lang)}</span>
                                                         </div>
                                                     )}
-                                                    {order.discount_total > 0 && (
+                                                    {(order.discount_total ?? 0) > 0 && (
                                                         <div className="flex justify-between text-emerald-600">
                                                             <span>{labels.discount}</span>
                                                             <span>-{formatPrice(order.discount_total, order.currency_code, lang)}</span>
@@ -535,6 +634,58 @@ export default function OrdersClient({
                                                 )}
                                             </div>
 
+                                            {/* POS Ticket Info (shown only for POS orders) */}
+                                            {getOrderChannel(order) === 'pos' && (() => {
+                                                const meta = order.metadata as Record<string, unknown> | null
+                                                return (
+                                                    <div className="bg-emerald-50/80 dark:bg-emerald-500/10 backdrop-blur-md rounded-xl border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm p-4 relative">
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <h5 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                                                                <Receipt className="w-3 h-3" />
+                                                                POS Ticket
+                                                            </h5>
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // SOTA IFRAME Print Fallback stub
+                                                                    // In a real implementation this would open an iframe with a clean print template
+                                                                    window.print();
+                                                                }}
+                                                                className="text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
+                                                                title="Download or Print Receipt"
+                                                            >
+                                                                <Printer className="w-3.5 h-3.5" />
+                                                                <span className="hidden sm:inline">Imprimir (Fallback)</span>
+                                                            </button>
+                                                        </div>
+                                                        <div className="space-y-2 text-sm">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-tx-muted">Ticket #</span>
+                                                                <span className="font-mono font-bold text-tx">T-{String(order.display_id).padStart(5, '0')}</span>
+                                                            </div>
+                                                            {meta?.payment_method ? (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-tx-muted">Payment</span>
+                                                                    <span className="font-medium text-tx capitalize">{String(meta.payment_method)}</span>
+                                                                </div>
+                                                            ) : null}
+                                                            {meta?.operator ? (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-tx-muted">Operator</span>
+                                                                    <span className="font-medium text-tx">{String(meta.operator)}</span>
+                                                                </div>
+                                                            ) : null}
+                                                            {meta?.terminal_id ? (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-tx-muted">Terminal</span>
+                                                                    <span className="font-mono text-xs text-tx-sec">{String(meta.terminal_id)}</span>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
                                             {/* Actions */}
                                             {order.status !== 'canceled' && (
                                                 <div className="flex flex-wrap gap-3 pt-2">
@@ -579,7 +730,7 @@ export default function OrdersClient({
                                                                     className="flex items-center gap-2 bg-sf-1 border border-sf-3 backdrop-blur-md shadow-sm rounded-xl px-4 py-2"
                                                                 >
                                                                     <label className="text-sm text-tx-sec whitespace-nowrap">
-                                                                        {labels.refundAmount} ({order.currency_code.toUpperCase()}):
+                                                                        {labels.refundAmount} ({(order.currency_code || 'eur').toUpperCase()}):
                                                                     </label>
                                                                     <input
                                                                         type="number"

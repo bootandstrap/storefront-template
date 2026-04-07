@@ -85,13 +85,12 @@ describe('createProduct server-side limits', () => {
 
         const result = await createProduct({
             title: 'Producto 1',
-            price: 10,
-            currency: 'usd',
+            prices: [{ currency: 'usd', amount: 10 }],
             status: 'published',
         })
 
         expect(result.success).toBe(false)
-        expect(result.error).toContain('Límite de productos alcanzado')
+        expect(result.error).toContain('LIMIT_EXCEEDED')
         expect(mockCreateAdminProduct).not.toHaveBeenCalled()
     })
 
@@ -101,8 +100,7 @@ describe('createProduct server-side limits', () => {
 
         const result = await createProduct({
             title: 'Producto 2',
-            price: 10,
-            currency: 'usd',
+            prices: [{ currency: 'usd', amount: 10 }],
             status: 'published',
         })
 

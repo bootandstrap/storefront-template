@@ -34,7 +34,9 @@ export function getSelectedTier(
     module: ModuleCatalogEntry,
     selectedTierKey?: string | null
 ) {
-    return module.tiers.find((tier) => tier.key === selectedTierKey) || module.tiers[0]
+    return module.tiers.find((tier) => tier.key === selectedTierKey)
+        || module.tiers[0]
+        || { key: 'default', name: module.name, price_chf: 0, features: [], recommended: false }
 }
 
 export function calculateActiveMonthlyEstimate(
@@ -370,7 +372,7 @@ export function SubscriptionExperience({
                                         </div>
 
                                         {/* Usage/Limits — Mini progress bar */}
-                                        {tier.features.length > 0 && (
+                                        {tier?.features?.length > 0 && (
                                             <div className="mt-3 pt-3 border-t border-sf-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {tier.features.slice(0, 3).map((feature, idx) => (
@@ -493,6 +495,7 @@ export function SubscriptionExperience({
                                     )}
 
                                     {/* Features preview */}
+                                    {(selectedTier?.features?.length ?? 0) > 0 && (
                                     <div className="mt-3">
                                         <ul className="space-y-1">
                                             {selectedTier.features.slice(0, 3).map((feature) => (
@@ -508,6 +511,7 @@ export function SubscriptionExperience({
                                             )}
                                         </ul>
                                     </div>
+                                    )}
 
                                     {/* Price + CTA */}
                                     <div className="mt-4 flex items-center justify-between pt-3 border-t border-sf-2">

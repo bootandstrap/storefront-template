@@ -2,13 +2,13 @@
  * Store Settings Page — Owner Panel
  *
  * Server component wraps StoreConfigClient with PanelPageHeader
- * and passes governance config for SOTA header consistency.
+ * and passes governance config + feature flags for SOTA module deduplication.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import { Store } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import StoreConfigClient from './StoreConfigClient'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +27,7 @@ export default async function StoreConfigPage({
 }) {
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
-    const { config } = appConfig
+    const { config, featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -36,9 +36,16 @@ export default async function StoreConfigPage({
             <PanelPageHeader
                 title={t('panel.config.title')}
                 subtitle={t('panel.config.subtitle')}
-                icon={<Store className="w-5 h-5" />}
+                icon={<Settings className="w-5 h-5" />}
             />
-            <StoreConfigClient config={config} />
+            <StoreConfigClient
+                config={config}
+                featureFlags={{
+                    enable_seo: featureFlags.enable_seo,
+                    enable_social_media: featureFlags.enable_social_media,
+                }}
+                lang={lang}
+            />
         </div>
     )
 }

@@ -18,7 +18,7 @@ interface OrderNotification {
  * instead of SSE to keep infrastructure simple (no persistent connections needed).
  * Shows a dropdown with the latest unread orders.
  */
-export default function OrderNotifications() {
+export default function OrderNotifications({ defaultCurrency }: { defaultCurrency: string }) {
     const { t } = useI18n()
     const [notifications, setNotifications] = useState<OrderNotification[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -55,7 +55,7 @@ export default function OrderNotifications() {
                         total: order.total
                             ? new Intl.NumberFormat(undefined, {
                                 style: 'currency',
-                                currency: order.currency_code || 'EUR',
+                                currency: order.currency_code || defaultCurrency,
                             }).format(order.total / 100)
                             : '—',
                         timestamp: new Date(order.created_at || Date.now()),

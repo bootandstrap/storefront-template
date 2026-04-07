@@ -170,19 +170,17 @@ export default async function RootLayout({
           shadow={false}
         />
         <RuntimeEnvScript />
-        <ThemeProvider defaultTheme={themeMode}>
-          <CartProvider>
+        <CartProvider>
             <WishlistProvider isAuthenticated={isAuthenticated}>
-              <CompareProvider>
+                <CompareProvider>
                 <ToastProvider>
-                  {children}
-                  <AnalyticsTracker enabled={featureFlags.enable_analytics} />
-                  <ServiceWorkerRegister />
+                    {children}
+                    <AnalyticsTracker enabled={featureFlags.enable_analytics} />
+                    <ServiceWorkerRegister />
                 </ToastProvider>
-              </CompareProvider>
+                </CompareProvider>
             </WishlistProvider>
-          </CartProvider>
-        </ThemeProvider>
+        </CartProvider>
       </body>
     </html>
   )

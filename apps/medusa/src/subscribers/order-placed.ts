@@ -2,7 +2,7 @@ import type {
     SubscriberArgs,
     SubscriberConfig,
 } from "@medusajs/framework"
-import { notifyStorefront, logAnalyticsEvent } from "./shared/bridge"
+import { notifyStorefront, dispatchToChannels, logAnalyticsEvent } from "./shared/bridge"
 
 /**
  * Subscriber: order.placed
@@ -37,6 +37,16 @@ export default async function orderPlacedHandler({
                 shipping_country: order.shipping_address?.country_code,
             })
         )
+
+        // ── Multi-channel dispatch (webhook, whatsapp, telegram) ──
+        await dispatchToChannels("order.placed", {
+            customer_email: order.email,
+            customer_name: order.shipping_address?.first_name || order.email?.split("@")[0],
+            display_id: order.display_id,
+            total: order.total,
+            currency: order.currency_code,
+            item_count: order.items?.length ?? 0,
+        })
 
         // ── Email notification via storefront bridge ──
         // The storefront has access to tenant email config (Resend/SendGrid/Console).

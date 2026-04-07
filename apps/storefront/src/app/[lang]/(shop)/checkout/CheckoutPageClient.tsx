@@ -43,7 +43,7 @@ export default function CheckoutPageClient({
     const hasAnyMethod = getEnabledMethods(featureFlags, planLimits).length > 0
 
     const items = optimisticItems ?? []
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
+    const currency = config?.default_currency || items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
 
     // Local calculation fallback
     const localTotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
@@ -113,7 +113,7 @@ export default function CheckoutPageClient({
                             {t('checkout.yourOrder', { count: String(itemCount) })}
                         </h2>
                         {items.map((item) => (
-                            <CartItem key={item.id} item={item} />
+                            <CartItem key={item.id} item={item} currencyCode={currency} />
                         ))}
                     </div>
 

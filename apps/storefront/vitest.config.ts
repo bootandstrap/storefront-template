@@ -11,6 +11,12 @@ export default defineConfig({
     },
     test: {
         environment: 'node',
+        env: {
+            MEDUSA_ADMIN_PASSWORD: 'test-admin-password',
+            TENANT_ID: 'test-tenant',
+            STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            NEXT_PUBLIC_SITE_URL: 'http://localhost:3000'
+        },
         // Deterministic execution: forks pool prevents flaky parallel failures
         pool: 'forks',
         testTimeout: 10_000,

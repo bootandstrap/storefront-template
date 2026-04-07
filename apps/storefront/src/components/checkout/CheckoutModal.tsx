@@ -128,7 +128,7 @@ export default function CheckoutModal({
 
     // Items & formatting
     const items = cart?.items ?? []
-    const displayCurrency = cartTotals?.currency_code || items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
+    const displayCurrency = cartTotals?.currency_code || config.default_currency
     const displayTotal = cartTotals?.total ?? items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
     const formatPrice = (amount: number) =>

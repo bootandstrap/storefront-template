@@ -49,7 +49,10 @@ export default function POSVariantPicker({
         const variant = product.variants[variantIndex]
         if (!variant) return
 
-        const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
+        const priceInfo = safeVariantPrice(variant, defaultCurrency)
+        // Don't allow selection if variant has no price in target currency
+        if (!priceInfo.has_price) return
+
         onSelect({
             id: variant.id,
             product_id: product.id,
@@ -57,9 +60,9 @@ export default function POSVariantPicker({
             variant_title: variant.title,
             thumbnail: product.thumbnail,
             sku: variant.sku || null,
-            unit_price,
+            unit_price: priceInfo.unit_price,
             quantity: 1,
-            currency_code,
+            currency_code: priceInfo.currency_code,
         })
     }
 
@@ -128,27 +131,31 @@ export default function POSVariantPicker({
                     <div className="p-4 max-h-[60vh] overflow-y-auto">
                         <div className="grid grid-cols-2 gap-2.5">
                             {product.variants.map((variant, idx) => {
-                                const { unit_price, currency_code } = safeVariantPrice(variant, defaultCurrency)
+                                const priceInfo = safeVariantPrice(variant, defaultCurrency)
                                 const isInStock = variant.manage_inventory
                                     ? (variant.inventory_quantity ?? 0) > 0
                                     : true
+                                const hasPriceInCurrency = priceInfo.has_price
+                                const isSelectable = isInStock && hasPriceInCurrency
 
                                 return (
                                     <motion.button
                                         key={variant.id}
                                         onClick={() => handleVariantSelect(idx)}
-                                        disabled={!isInStock}
+                                        disabled={!isSelectable}
                                         initial={{ opacity: 0, scale: 0.92 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: 0.15 + idx * 0.04, type: 'spring', damping: 20, stiffness: 250 }}
-                                        aria-label={`${variant.title || `Variant ${idx + 1}`} — ${formatPrice(unit_price, currency_code)}`}
+                                        aria-label={`${variant.title || `Variant ${idx + 1}`} — ${hasPriceInCurrency ? formatPrice(priceInfo.unit_price, priceInfo.currency_code) : 'No price'}`}
                                         className={`relative flex flex-col items-center gap-2 p-4 rounded-xl
                                                    border-2 text-center transition-all duration-150
                                                    min-h-[80px]
                                                    focus-visible:ring-2 focus-visible:ring-med focus-visible:outline-none
-                                                   ${isInStock
+                                                   ${isSelectable
                                                        ? 'border-sf-2 hover:border-brand hover:bg-brand-subtle active:scale-[0.97] cursor-pointer'
-                                                       : 'border-sf-2 opacity-50 cursor-not-allowed'
+                                                       : !isInStock
+                                                           ? 'border-sf-2 opacity-50 cursor-not-allowed'
+                                                           : 'border-amber-300/60 opacity-65 cursor-not-allowed'
                                                    }`}
                                     >
                                         <span className="text-sm font-semibold text-tx">
@@ -159,11 +166,15 @@ export default function POSVariantPicker({
                                                 {variant.sku}
                                             </span>
                                         )}
-                                        {unit_price > 0 && (
+                                        {hasPriceInCurrency && priceInfo.unit_price > 0 ? (
                                             <span className="text-sm font-bold text-brand">
-                                                {formatPrice(unit_price, currency_code)}
+                                                {formatPrice(priceInfo.unit_price, priceInfo.currency_code)}
                                             </span>
-                                        )}
+                                        ) : !hasPriceInCurrency ? (
+                                            <span className="text-[11px] font-bold text-amber-600">
+                                                💱 {defaultCurrency.toUpperCase()}
+                                            </span>
+                                        ) : null}
                                         {!isInStock && (
                                             <span className="absolute top-1.5 right-1.5 text-[9px] px-1.5 py-0.5
                                                            rounded-full bg-rose-500/10 text-rose-500 font-semibold">

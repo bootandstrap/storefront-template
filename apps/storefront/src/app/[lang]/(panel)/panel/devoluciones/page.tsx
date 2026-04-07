@@ -29,10 +29,19 @@ export const dynamic = 'force-dynamic'
 
 function formatReturnStatus(status: string): 'pending' | 'approved' | 'rejected' | 'completed' {
     switch (status) {
-        case 'requested': return 'pending'
-        case 'received': return 'completed'
-        case 'canceled': return 'rejected'
-        default: return 'pending'
+        case 'requested':
+        case 'pending': 
+            return 'pending'
+        case 'approved':
+            return 'approved'
+        case 'canceled':
+        case 'rejected': 
+            return 'rejected'
+        case 'received':
+        case 'completed': 
+            return 'completed'
+        default: 
+            return 'pending'
     }
 }
 
@@ -133,10 +142,10 @@ export default async function PanelReturnsPage({
                                             />
                                         </PanelTd>
                                         <PanelTd align="right">
-                                            {ret.status === 'requested' && (
+                                            {['requested', 'pending'].includes(ret.status) && (
                                                 <ReturnActions
                                                     returnId={ret.id}
-                                                    items={(ret.items || []).map(i => ({
+                                                    items={(ret.items || []).map((i: any) => ({
                                                         id: i.id,
                                                         quantity: i.quantity,
                                                     }))}

@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmailForTenant, sendEmail, type EmailTemplate } from '@/lib/email'
+import { getConfig } from '@/lib/config'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,20 +32,19 @@ interface MedusaEventPayload {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
-    // ── Auth: shared secret or localhost ──
+    // ── Auth: shared secret (MANDATORY) ──
     const secret = process.env.MEDUSA_EVENTS_SECRET
-    if (secret) {
-        const authHeader = request.headers.get('x-medusa-events-secret')
-        if (authHeader !== secret) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-    } else {
-        // In development, allow localhost only
-        const forwarded = request.headers.get('x-forwarded-for') || ''
-        const isLocal = forwarded.includes('127.0.0.1') || forwarded.includes('::1') || forwarded === ''
-        if (!isLocal && process.env.NODE_ENV === 'production') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+    if (!secret) {
+        console.error('[medusa-events] MEDUSA_EVENTS_SECRET is not configured — rejecting all requests')
+        return NextResponse.json(
+            { error: 'Webhook not configured. Set MEDUSA_EVENTS_SECRET.' },
+            { status: 503 }
+        )
+    }
+
+    const authHeader = request.headers.get('x-medusa-events-secret')
+    if (authHeader !== secret) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     let payload: MedusaEventPayload
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tenantId = process.env.TENANT_ID
+    const appConfig = await getConfig()
 
     try {
         switch (payload.event_type) {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
                         customerName: customer_name || customer_email.split('@')[0],
                         orderId: String(display_id || ''),
                         total: typeof total === 'number' ? (total / 100).toFixed(2) : '0.00',
-                        currency: currency?.toUpperCase() || 'EUR',
+                        currency: currency?.toUpperCase() || appConfig.config.default_currency.toUpperCase(),
                         storeName: process.env.NEXT_PUBLIC_STORE_NAME || 'Store',
                         storeUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
                     },

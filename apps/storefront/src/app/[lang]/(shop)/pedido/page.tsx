@@ -54,7 +54,7 @@ export default function GuestOrderLookup() {
                     status: data.order.status || 'pending',
                     created_at: data.order.created_at,
                     total: data.order.total ?? 0,
-                    currency_code: data.order.currency_code || 'usd',
+                    currency_code: data.order.currency_code,
                 })
             } else {
                 setError(t('order.lookupNotFound'))
@@ -173,7 +173,7 @@ export default function GuestOrderLookup() {
                                 <span className="font-bold text-brand">
                                     {new Intl.NumberFormat(locale, {
                                         style: 'currency',
-                                        currency: (result.currency_code || 'USD').toUpperCase(),
+                                        currency: result.currency_code.toUpperCase(),
                                         minimumFractionDigits: 0,
                                     }).format(result.total / 100)}
                                 </span>

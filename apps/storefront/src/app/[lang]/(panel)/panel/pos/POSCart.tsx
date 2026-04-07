@@ -64,7 +64,7 @@ interface POSCartProps {
     showRecommendations?: boolean
     products?: any[]
     onAddToCart?: (product: any) => void
-    defaultCurrency?: string
+    defaultCurrency: string
 }
 
 // ── Park/hold helpers ──
@@ -139,7 +139,7 @@ export default function POSCart({
     showRecommendations = false,
     products = [],
     onAddToCart,
-    defaultCurrency = 'EUR',
+    defaultCurrency,
 }: POSCartProps) {
     const [showDiscountInput, setShowDiscountInput] = useState(false)
     const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')

@@ -16,6 +16,7 @@ import PanelShell from '@/components/panel/PanelShell'
 import PanelOnboarding from '@/components/panel/PanelOnboarding'
 import AchievementProvider from '@/components/panel/AchievementProvider'
 import PanelDashboardStyles from '@/components/panel/PanelDashboardStyles'
+import { PanelThemeProvider } from '@/components/theme/PanelThemeProvider'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, type AchievementContext } from '@/lib/achievements'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
@@ -34,8 +35,28 @@ export default async function PanelLayout({
     children: React.ReactNode
     params: Promise<{ lang: string }>
 }) {
-    const { lang } = await params
+    const { lang: urlLang } = await params
     const { config, featureFlags, planLimits } = await getConfig()
+
+    // ── Panel language resolution ──
+    // The panel language is independent from the storefront language.
+    // Priority: panel_language (explicit) > config.language (legacy) > URL lang (fallback)
+    const panelLang = (
+        (config as Record<string, unknown>).panel_language as string
+        ?? config.language
+        ?? urlLang
+    ) as Locale
+
+    // If URL locale doesn't match the panel language, redirect to the correct one
+    if (urlLang !== panelLang) {
+        const { headers } = await import('next/headers')
+        const headersList = await headers()
+        const pathname = headersList.get('x-invoke-path') || headersList.get('x-url') || `/${urlLang}/panel`
+        const correctedPath = pathname.replace(`/${urlLang}/`, `/${panelLang}/`)
+        redirect(correctedPath)
+    }
+
+    const lang = panelLang
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -260,7 +281,7 @@ export default async function PanelLayout({
             label: t('panel.cmdPalette.addProduct'),
             group: 'actions' as const,
             icon: 'addProduct',
-            href: `/${lang}/panel/productos`,
+            href: `/${lang}/panel/catalogo`,
             keywords: ['add', 'nuevo', 'product', 'crear'],
         },
         {
@@ -282,6 +303,7 @@ export default async function PanelLayout({
     }
 
     return (
+        <PanelThemeProvider>
         <PanelShell
             tenantId={config.tenant_id ?? undefined}
             lang={lang}
@@ -355,6 +377,7 @@ export default async function PanelLayout({
                 label: t('panel.topbar.stepsLeft').replace('{{count}}', String(readinessRemaining)),
                 href: `/${lang}/panel`,
             } : null}
+            defaultCurrency={config.default_currency}
         >
             {/* Onboarding — SOTA wizard on first panel access (suppressed on immersive routes like POS) */}
             {!config.onboarding_completed && routeSegment !== 'pos' && (
@@ -363,7 +386,7 @@ export default async function PanelLayout({
                     storeUrl={storeUrl}
                     locale={lang}
                     domain={process.env.NEXT_PUBLIC_STORE_DOMAIN || null}
-                    currency={config.default_currency || 'EUR'}
+                    currency={config.default_currency}
                     language={config.language || 'en'}
                     modules={buildModuleInfoList(featureFlags, planLimits as Record<string, number | string | null>)}
                     featureFlags={featureFlags}
@@ -398,6 +421,7 @@ export default async function PanelLayout({
             </AchievementProvider>
             <PanelDashboardStyles />
         </PanelShell>
+        </PanelThemeProvider>
     )
 }
 

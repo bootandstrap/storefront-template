@@ -15,12 +15,12 @@ export type Dictionary = Record<string, any>
 
 export const SUPPORTED_LOCALES: Locale[] = ['en', 'es', 'de', 'fr', 'it']
 
-export const LOCALE_LABELS: Record<Locale, { label: string; flag: string }> = {
-    en: { label: 'English', flag: '🇬🇧' },
-    es: { label: 'Español', flag: '🇪🇸' },
-    de: { label: 'Deutsch', flag: '🇩🇪' },
-    fr: { label: 'Français', flag: '🇫🇷' },
-    it: { label: 'Italiano', flag: '🇮🇹' },
+export const LOCALE_LABELS: Record<Locale, { label: string; flag: string; nativeName: string }> = {
+    en: { label: 'English', flag: '🇬🇧', nativeName: 'English' },
+    es: { label: 'Español', flag: '🇪🇸', nativeName: 'Español' },
+    de: { label: 'Deutsch', flag: '🇩🇪', nativeName: 'Deutsch' },
+    fr: { label: 'Français', flag: '🇫🇷', nativeName: 'Français' },
+    it: { label: 'Italiano', flag: '🇮🇹', nativeName: 'Italiano' },
 }
 
 export const DEFAULT_LOCALE: Locale = 'en'

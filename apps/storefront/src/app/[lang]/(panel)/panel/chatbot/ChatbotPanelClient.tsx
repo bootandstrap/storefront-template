@@ -20,7 +20,8 @@ import { PageSkeleton } from '@/components/panel/PanelSkeleton'
 import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
 import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
-import ModuleConfigSection, { type ConfigFieldDef } from '@/components/panel/ModuleConfigSection'
+import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
+import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
 
 // ── Types ──────────────────────────────────────────────────
 interface DailyStat {
@@ -65,21 +66,7 @@ const MODEL_DISPLAY: Record<string, string> = {
 
 // ── Component ──────────────────────────────────────────────
 export function ChatbotPanelClient({ locale, labels, chatbotConfig }: { locale: string; labels: ChatbotLabels; chatbotConfig?: Record<string, unknown> }) {
-    const configFields: ConfigFieldDef[] = [
-        { key: 'chatbot_name', label: 'Bot name', type: 'text', placeholder: 'e.g. ShopBot' },
-        { key: 'chatbot_tone', label: 'Tone', type: 'select', options: [
-            { value: 'friendly', label: '🤗 Friendly' },
-            { value: 'professional', label: '👔 Professional' },
-            { value: 'casual', label: '😎 Casual' },
-        ] },
-        { key: 'chatbot_welcome_message', label: 'Welcome message', type: 'textarea', placeholder: 'Hi! How can I help you?' },
-        { key: 'chatbot_auto_open_delay', label: 'Auto-open delay (seconds)', type: 'number', placeholder: '0 = disabled' },
-        { key: 'chatbot_knowledge_scope', label: 'Knowledge scope', type: 'select', options: [
-            { value: 'full_catalog', label: 'Full catalog' },
-            { value: 'faq_only', label: 'FAQ only' },
-            { value: 'support_only', label: 'Support only' },
-        ] },
-    ]
+    const configFields = getModuleConfigSchema('chatbot')
     const MODEL_OPTIONS = [
         { value: 'gpt-4.1-nano', label: labels.modelNano },
         { value: 'gpt-4.1-mini', label: labels.modelMini },

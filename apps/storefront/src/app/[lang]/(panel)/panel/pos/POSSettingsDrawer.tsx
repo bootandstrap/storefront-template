@@ -14,37 +14,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
-// ── Config field definitions ──────────────────────────────────────
+// ── Config field definitions — loaded from centralized SSOT registry ──
+import { POS_SETTINGS_SCHEMA, type ConfigFieldDefWithGroup } from '@/lib/registries/module-config-schemas'
 
-interface SettingsField {
-    key: string
-    label: string
-    type: 'text' | 'textarea' | 'select' | 'toggle'
-    placeholder?: string
-    options?: { value: string; label: string }[]
-    icon?: typeof Receipt
-    group: 'receipt' | 'payment' | 'experience'
-}
+const ICON_MAP: Record<string, typeof Receipt> = { Receipt, Volume2 }
 
-const POS_SETTINGS_FIELDS: SettingsField[] = [
-    // Receipt
-    { key: 'pos_receipt_header', label: 'Receipt Header', type: 'textarea', placeholder: 'Business Name\nAddress...', icon: Receipt, group: 'receipt' },
-    { key: 'pos_receipt_footer', label: 'Receipt Footer', type: 'textarea', placeholder: 'Thank you for your purchase!', group: 'receipt' },
-    // Payment
-    { key: 'pos_default_payment_method', label: 'Default Payment', type: 'select', options: [
-        { value: 'cash', label: '💵 Cash' },
-        { value: 'card', label: '💳 Card' },
-        { value: 'transfer', label: '🏦 Transfer' },
-    ], group: 'payment' },
-    { key: 'pos_tax_display', label: 'Tax Display', type: 'select', options: [
-        { value: 'tax_included', label: 'Included in price' },
-        { value: 'tax_excluded', label: 'Itemized separately' },
-    ], group: 'payment' },
-    // Experience
-    { key: 'pos_enable_tips', label: 'Enable Tips', type: 'toggle', group: 'experience' },
-    { key: 'pos_tip_percentages', label: 'Tip Percentages', type: 'text', placeholder: '5,10,15', group: 'experience' },
-    { key: 'pos_sound_enabled', label: 'Sound Effects', type: 'toggle', icon: Volume2, group: 'experience' },
-]
+const POS_SETTINGS_FIELDS = POS_SETTINGS_SCHEMA.map(f => ({
+    ...f,
+    icon: f.iconKey ? ICON_MAP[f.iconKey] : undefined,
+}))
 
 // ── Props ──────────────────────────────────────────────────────────
 

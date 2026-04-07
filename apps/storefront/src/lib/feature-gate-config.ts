@@ -52,7 +52,7 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_bank_transfer:       ['sales_channels', 'bankTransfer'],
     enable_whatsapp_contact:    ['sales_channels', 'whatsappContact'],
     // ── Auth ──────────────────────────────────────────────────
-    enable_google_auth:         ['auth_advanced', 'googleAuth'],
+    enable_google_oauth:         ['auth_advanced', 'googleAuth'],
     enable_user_registration:   ['auth_advanced', 'userRegistration'],
     enable_customer_accounts:   ['auth_advanced', 'customerAccounts'],
     enable_address_management:  ['auth_advanced', 'addressManagement'],
@@ -65,18 +65,26 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_crm:                 ['crm', 'crm'],
     enable_crm_segmentation:   ['crm', 'crmSegmentation'],
     enable_crm_export:          ['crm', 'crmExport'],
+    enable_crm_contacts:        ['crm', 'crmContacts'],
+    enable_crm_interactions:    ['crm', 'crmInteractions'],
+    enable_crm_segments:        ['crm', 'crmSegments'],
     // ── Email Marketing ───────────────────────────────────────
     enable_email_notifications: ['email_marketing', 'emailNotifications'],
     enable_abandoned_cart_emails:['email_marketing', 'abandonedCartEmails'],
     enable_email_campaigns:     ['email_marketing', 'emailCampaigns'],
     enable_email_templates:     ['email_marketing', 'emailTemplates'],
     enable_newsletter:          ['email_marketing', 'newsletter'],
+    enable_transactional_emails:['email_marketing', 'transactionalEmails'],
+    enable_review_request_emails:['email_marketing', 'reviewRequestEmails'],
+    enable_email_segmentation:  ['email_marketing', 'emailSegmentation'],
     // ── SEO / Analytics ───────────────────────────────────────
     enable_analytics:           ['seo', 'analytics'],
     enable_seo:                 ['seo', 'seo'],
+    enable_seo_tools:           ['seo', 'seoTools'],
     // ── RRSS ──────────────────────────────────────────────────
     enable_social_links:        ['rrss', 'socialLinks'],
     enable_social_media:        ['rrss', 'socialMedia'],
+    enable_social_sharing:      ['rrss', 'socialSharing'],
     // ── POS ───────────────────────────────────────────────────
     enable_pos:                 ['pos', 'pos'],
     enable_pos_kiosk:           ['pos_kiosk', 'posKiosk'],
@@ -88,13 +96,23 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_pos_customer_search: ['pos', 'posCustomerSearch'],
     enable_pos_multi_device:    ['pos', 'posMultiDevice'],
     enable_pos_shifts:          ['pos', 'posShifts'],
+    // ── Kiosk (granular) ─────────────────────────────────────
+    enable_kiosk_analytics:     ['pos_kiosk', 'kioskAnalytics'],
+    enable_kiosk_idle_timer:    ['pos_kiosk', 'kioskIdleTimer'],
+    enable_kiosk_remote_management:['pos_kiosk', 'kioskRemoteManagement'],
     // ── Automation ────────────────────────────────────────────
     enable_admin_api:           ['automation', 'adminApi'],
     enable_automations:         ['automation', 'automations'],
+    enable_custom_webhooks:     ['automation', 'customWebhooks'],
     // ── Auth Advanced ────────────────────────────────────────
     enable_auth_advanced:       ['auth_advanced', 'authAdvanced'],
+    enable_apple_oauth:         ['auth_advanced', 'appleOauth'],
+    enable_facebook_oauth:      ['auth_advanced', 'facebookOauth'],
+    enable_2fa:                 ['auth_advanced', 'twoFactorAuth'],
+    enable_magic_link:          ['auth_advanced', 'magicLink'],
     // ── Sales Channels ───────────────────────────────────────
     enable_sales_channels:      ['sales_channels', 'salesChannels'],
+    enable_reservation_checkout:['sales_channels', 'reservationCheckout'],
     // ── Capacidad (Traffic) ───────────────────────────────────
     enable_traffic_expansion:   ['capacidad', 'trafficExpansion'],
     enable_traffic_analytics:   ['capacidad', 'trafficAnalytics'],

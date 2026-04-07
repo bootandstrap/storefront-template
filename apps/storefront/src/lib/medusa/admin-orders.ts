@@ -89,12 +89,24 @@ export async function getOrdersThisMonth(scope: TenantMedusaScope | null): Promi
     if (!scope) return 0
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    const res = await adminFetch<{ count: number }>(
-        `/admin/orders?limit=0&fields=id&created_at[gte]=${startOfMonth}`,
-        {},
-        scope
-    )
-    return res.data?.count ?? 0
+    // Count both regular orders AND completed draft orders (POS creates draft orders in Medusa v2)
+    // Note: Medusa v2 draft-orders API doesn't support status filter, so we fetch all and filter
+    // Also: limit=0 returns count but empty array — we need the array for status filtering
+    const [regularRes, draftRes] = await Promise.all([
+        adminFetch<{ count: number }>(
+            `/admin/orders?limit=0&fields=id&created_at[gte]=${startOfMonth}`,
+            {},
+            scope
+        ),
+        adminFetch<{ draft_orders: { id: string; status: string }[] }>(
+            `/admin/draft-orders?limit=500&fields=id,status&created_at[gte]=${startOfMonth}`,
+            {},
+            scope
+        ),
+    ])
+    const rawDrafts = draftRes.data?.draft_orders as Array<{ id: string; status: string }> | undefined
+    const completedDraftCount = (rawDrafts || []).filter(d => d.status === 'completed').length
+    return (regularRes.data?.count ?? 0) + completedDraftCount
 }
 
 export async function getCustomerCount(scope: TenantMedusaScope | null): Promise<number> {
@@ -110,12 +122,38 @@ export async function getCustomerCount(scope: TenantMedusaScope | null): Promise
 export async function getRecentOrders(limit = 5, scope?: TenantMedusaScope | null): Promise<AdminOrder[]> {
     if (!scope) return []
     const normalizedLimit = Math.min(100, Math.max(1, Math.floor(limit)))
-    const res = await adminFetch<{ orders: AdminOrder[] }>(
-        `/admin/orders?limit=${normalizedLimit}&order=-created_at&fields=*customer`,
-        {},
-        scope
-    )
-    return res.data?.orders ?? []
+    // Fetch both regular orders AND completed draft orders (POS creates draft orders in Medusa v2)
+    // Note: Medusa v2 draft-orders API doesn't support status filter
+    const [regularRes, draftRes] = await Promise.all([
+        adminFetch<{ orders: AdminOrder[] }>(
+            `/admin/orders?limit=${normalizedLimit}&order=-created_at&fields=*customer`,
+            {},
+            scope
+        ),
+        adminFetch<{ draft_orders: (AdminOrder & { region?: { currency_code?: string } })[] }>(
+            `/admin/draft-orders?limit=${normalizedLimit * 2}&order=-created_at&fields=*region`,
+            {},
+            scope
+        ),
+    ])
+    // Merge, filter completed drafts, sort by created_at desc, and take the top N
+    const regularOrders = regularRes.data?.orders ?? []
+    
+    // Cleanly map Medusa v2 Draft Orders
+    const rawDrafts = draftRes.data?.draft_orders as Array<AdminOrder & { region?: { currency_code?: string }; summary?: { current_order_total?: number } }> | undefined
+    const draftOrders = (rawDrafts || [])
+        .filter(d => d.status === 'completed')
+        .map(d => ({
+            ...d,
+            total: d.total ?? d.summary?.current_order_total ?? 0,
+            currency_code: d.currency_code || d.region?.currency_code || 'eur',
+        }))
+
+    const merged = [...regularOrders, ...draftOrders]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, normalizedLimit)
+    
+    return merged
 }
 
 export async function getAdminOrders(params?: {
@@ -135,7 +173,7 @@ export async function getAdminOrders(params?: {
     searchParams.set('limit', String(normalized.limit))
     searchParams.set('offset', String(normalized.offset))
     searchParams.set('order', '-created_at')
-    searchParams.set('fields', '*customer,*items,*shipping_address,sales_channel_id,metadata')
+    searchParams.set('fields', '*customer,*items,*shipping_address,sales_channel_id,metadata,*payment_collections,*payment_collections.payments,*summary')
     if (normalized.status && normalized.status !== 'all') {
         searchParams.append('status[]', normalized.status)
     }
@@ -143,24 +181,95 @@ export async function getAdminOrders(params?: {
         searchParams.set('q', normalized.q)
     }
 
-    const res = await adminFetch<{ orders: AdminOrderFull[]; count: number }>(
-        `/admin/orders?${searchParams.toString()}`,
-        {},
-        scope
-    )
-    return { orders: res.data?.orders ?? [], count: res.data?.count ?? 0 }
+    // Fetch both regular orders AND completed draft orders (POS creates draft orders in Medusa v2)
+    // Note: Medusa v2 draft-orders API doesn't support status filter
+    const draftSearchParams = new URLSearchParams()
+    draftSearchParams.set('limit', String(normalized.limit * 2))
+    draftSearchParams.set('order', '-created_at')
+
+    type V2OrderResponse = AdminOrderFull & { 
+        payment_collections?: { payments?: { id: string; provider_id: string; amount: number; currency_code: string }[] }[] 
+        summary?: { current_order_total?: number }
+    }
+    type V2DraftResponse = AdminOrderFull & { 
+        region?: { currency_code?: string }
+        summary?: { current_order_total?: number }
+    }
+
+    const [regularRes, draftRes] = await Promise.all([
+        adminFetch<{ orders: V2OrderResponse[]; count: number }>(
+            `/admin/orders?${searchParams.toString()}`,
+            {},
+            scope
+        ),
+        adminFetch<{ draft_orders: V2DraftResponse[] }>(
+            `/admin/draft-orders?${draftSearchParams.toString()}&fields=*region,*items,*summary`,
+            {},
+            scope
+        ),
+    ])
+
+    const regularOrders: AdminOrderFull[] = (regularRes.data?.orders ?? []).map(o => {
+        // Map Medusa v2 payment_collections to flat array if needed
+        const payments = o.payments ?? o.payment_collections?.flatMap(pc => pc.payments ?? []) ?? []
+        return { 
+            ...o, 
+            payments,
+            total: o.total ?? o.summary?.current_order_total ?? 0,
+        }
+    })
+    
+    const regularCount = regularRes.data?.count ?? 0
+    
+    // Cleanly map Medusa v2 Draft Orders
+    const rawDrafts = draftRes.data?.draft_orders ?? []
+    const draftOrders: AdminOrderFull[] = rawDrafts
+        .filter(d => d.status === 'completed')
+        .map(d => ({
+            ...d,
+            total: d.total ?? d.summary?.current_order_total ?? 0,
+            currency_code: d.currency_code || d.region?.currency_code || 'eur',
+            fulfillment_status: d.fulfillment_status || 'not_fulfilled',
+            payment_status: d.payment_status || 'not_paid',
+            metadata: { ...(d.metadata || {}), source: 'pos' },
+            payments: [], // Drafts don't conventionally return captured payments natively the same way
+        }))
+    
+    const draftCount = draftOrders.length
+
+    // Merge, sort by created_at desc
+    const merged = [...regularOrders, ...draftOrders]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, normalized.limit)
+
+    return { orders: merged, count: regularCount + draftCount }
 }
 
-export async function getAdminOrderDetail(
+    export async function getAdminOrderDetail(
     id: string,
     scope?: TenantMedusaScope | null
 ): Promise<AdminOrderFull | null> {
-    const res = await adminFetch<{ order: AdminOrderFull }>(
-        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,sales_channel_id,metadata`,
+    type V2OrderResponse = AdminOrderFull & { 
+        payment_collections?: { payments?: { id: string; provider_id: string; amount: number; currency_code: string }[] }[] 
+        summary?: { current_order_total?: number }
+    }
+
+    const res = await adminFetch<{ order: V2OrderResponse }>(
+        `/admin/orders/${id}?fields=*customer,*items,*shipping_address,sales_channel_id,metadata,*payment_collections,*payment_collections.payments,*summary`,
         {},
         scope
     )
-    return res.data?.order ?? null
+    
+    if (!res.data?.order) return null;
+    
+    const order = res.data.order;
+    const payments = order.payments ?? order.payment_collections?.flatMap(pc => pc.payments ?? []) ?? [];
+    
+    return { 
+        ...order, 
+        payments,
+        total: order.total ?? order.summary?.current_order_total ?? 0,
+    }
 }
 
 export function orderBelongsToScope(

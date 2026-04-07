@@ -10,6 +10,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import FeatureGate from '@/components/ui/FeatureGate'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { Gauge } from 'lucide-react'
+import { getRequestCount, isRateLimitEnabled } from '@/lib/rate-limit'
 import CapacidadClient from './CapacidadClient'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,7 @@ export default async function CapacidadPage({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { appConfig } = await withPanelGuard()
+    const { tenantId, appConfig } = await withPanelGuard()
     const { config, featureFlags, planLimits } = appConfig
 
     // Gate: enable_traffic_expansion must be true
@@ -37,6 +38,16 @@ export default async function CapacidadPage({
 
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+
+    // Fetch real traffic counter from Upstash Redis (graceful fallback to 0)
+    let requestsToday = 0
+    if (isRateLimitEnabled()) {
+        try {
+            requestsToday = await getRequestCount(tenantId)
+        } catch {
+            // fail-open: show 0 if Upstash is unreachable
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -61,6 +72,7 @@ export default async function CapacidadPage({
             }}
             limits={{
                 maxRequestsDay: planLimits.max_requests_day,
+                requestsToday,
             }}
             labels={{
                 title: t('panel.capacidad.title') || 'Capacidad',

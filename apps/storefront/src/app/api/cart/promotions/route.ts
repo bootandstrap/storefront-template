@@ -8,6 +8,9 @@ import { requireFlag, policyErrorResponse, PolicyError } from '@/lib/policy-engi
 // P0-5: Server-side enforcement of enable_promotions flag
 // ---------------------------------------------------------------------------
 
+// Medusa cart IDs: cart_XXXX (alphanumeric + underscores)
+const VALID_CART_ID = /^cart_[a-zA-Z0-9]+$/
+
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUBLISHABLE_KEY =
@@ -29,6 +32,14 @@ export async function POST(request: NextRequest) {
         if (!cartId || !code) {
             return NextResponse.json(
                 { error: 'cartId and code are required' },
+                { status: 400 }
+            )
+        }
+
+        // Validate cartId format to prevent SSRF/path traversal
+        if (!VALID_CART_ID.test(cartId)) {
+            return NextResponse.json(
+                { error: 'Invalid cart ID format' },
                 { status: 400 }
             )
         }
@@ -73,6 +84,14 @@ export async function DELETE(request: NextRequest) {
         if (!cartId || !code) {
             return NextResponse.json(
                 { error: 'cartId and code are required' },
+                { status: 400 }
+            )
+        }
+
+        // Validate cartId format to prevent SSRF/path traversal
+        if (!VALID_CART_ID.test(cartId)) {
+            return NextResponse.json(
+                { error: 'Invalid cart ID format' },
                 { status: 400 }
             )
         }

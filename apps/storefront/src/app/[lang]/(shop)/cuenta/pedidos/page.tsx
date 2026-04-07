@@ -49,7 +49,10 @@ async function OrdersList({
     const t = createTranslator(dictionary)
 
     const offset = (page - 1) * PAGE_SIZE
-    const { orders, count } = await getAuthCustomerOrders({ limit: PAGE_SIZE, offset })
+    const [{ orders, count }, { config }] = await Promise.all([
+        getAuthCustomerOrders({ limit: PAGE_SIZE, offset }),
+        getConfig(),
+    ])
     const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
 
     if (orders.length === 0 && page === 1) {
@@ -72,7 +75,7 @@ async function OrdersList({
                     )
                     const itemCount = order.items?.length ?? 0
                     const total = order.total
-                        ? formatPrice(order.total, order.currency_code || 'eur', lang as Locale)
+                        ? formatPrice(order.total, order.currency_code || config.default_currency, lang as Locale)
                         : '—'
                     const status = order.status || 'pending'
                     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending

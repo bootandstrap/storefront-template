@@ -40,6 +40,7 @@ export type OwnerActionCategory =
     | 'export'
     | 'pos'
     | 'capacity'
+    | 'promotion'
 
 interface LogOptions {
     /** User-friendly description for the audit log */

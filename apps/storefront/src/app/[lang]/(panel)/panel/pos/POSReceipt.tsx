@@ -106,7 +106,7 @@ export default function POSReceipt({
     }, [onNewSale])
 
     const formatCurrency = (amount: number) =>
-        formatPOSCurrency(amount, sale.currency_code || 'EUR')
+        formatPOSCurrency(amount, sale.currency_code)
 
     const paymentLabel = sale.payment_method === 'cash' ? posLabel('panel.pos.cash', labels)
         : (sale.payment_method === 'card_terminal' || sale.payment_method === 'manual_card') ? posLabel('panel.pos.card', labels)

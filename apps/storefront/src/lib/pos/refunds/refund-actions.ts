@@ -30,12 +30,13 @@ export async function getRefundableItemsAction(
     orderId: string
 ): Promise<{ items: RefundableItem[]; order_total: number; currency_code: string; error?: string }> {
     try {
-        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
+        const fallbackCurrency = appConfig.config.default_currency || 'eur'
         const scope = await getTenantMedusaScope(tenantId)
         const order = await getAdminOrderDetail(orderId, scope)
 
         if (!order) {
-            return { items: [], order_total: 0, currency_code: 'chf', error: 'Order not found' }
+            return { items: [], order_total: 0, currency_code: fallbackCurrency, error: 'Order not found' }
         }
 
         const items: RefundableItem[] = (order.items || []).map(item => ({
@@ -52,13 +53,14 @@ export async function getRefundableItemsAction(
         return {
             items,
             order_total: order.total,
-            currency_code: order.currency_code,
+            currency_code: order.currency_code || fallbackCurrency,
         }
     } catch (err) {
+        // In error paths, we may not have appConfig yet — use 'eur' as safe default
         return {
             items: [],
             order_total: 0,
-            currency_code: 'chf',
+            currency_code: 'eur',
             error: err instanceof Error ? err.message : 'Failed to load order',
         }
     }

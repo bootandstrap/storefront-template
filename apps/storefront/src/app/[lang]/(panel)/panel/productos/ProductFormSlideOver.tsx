@@ -272,8 +272,7 @@ export default function ProductFormSlideOver({
                     description: description.trim() || undefined,
                     status: submitStatus,
                     categoryId: categoryId || null,
-                    price: price ? parseFloat(price) : undefined,
-                    currency: defaultCurrency,
+                    prices: price ? [{ currency: defaultCurrency, amount: parseFloat(price) }] : [],
                     variantId: product.variants?.[0]?.id,
                 })
 
@@ -305,8 +304,7 @@ export default function ProductFormSlideOver({
                 const result = await createProduct({
                     title: title.trim(),
                     description: description.trim() || undefined,
-                    price: parseFloat(price) || 0,
-                    currency: defaultCurrency,
+                    prices: price ? [{ currency: defaultCurrency, amount: parseFloat(price) }] : [],
                     categoryId: categoryId || undefined,
                     status: submitStatus,
                     stockQuantity: stockMode === 'managed' ? parseInt(stockQty) || 0 : undefined,
@@ -526,7 +524,7 @@ export default function ProductFormSlideOver({
                                 </label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-tx-muted">
-                                        {defaultCurrency === 'eur' ? '€' : defaultCurrency === 'usd' ? '$' : defaultCurrency.toUpperCase()}
+                                        {new Intl.NumberFormat('en', { style: 'currency', currency: defaultCurrency.toUpperCase(), currencyDisplay: 'narrowSymbol' }).format(0).replace(/[\d.,\s]/g, '').trim() || defaultCurrency.toUpperCase()}
                                     </span>
                                     <input
                                         type="number"

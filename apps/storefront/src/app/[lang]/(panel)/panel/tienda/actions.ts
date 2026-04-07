@@ -72,15 +72,31 @@ export async function saveStoreConfig(
             return { success: false, error: 'Config not found' }
         }
 
-        const { error } = await supabase
-            .from('config')
-            .update(sanitized)
-            .eq('id', existing.id)
-            .eq('tenant_id', tenantId)
+        // 1. Try RPC first (bypasses RLS)
+        let rpcError = null
+        try {
+            const { error: rpcErr } = await supabase.rpc('update_owner_config', {
+                p_tenant_id: tenantId,
+                p_updates: sanitized
+            })
+            rpcError = rpcErr
+        } catch (e: any) {
+            rpcError = e
+        }
 
-        if (error) {
-            console.error('[panel/config] Save failed:', error)
-            return { success: false, error: error.message }
+        // 2. Fallback to direct UPDATE if RPC is missing/fails (for local dev environments not fully synced)
+        if (rpcError) {
+            console.warn('[panel/config] RPC failed, attempting direct update fallback:', rpcError)
+            const { error: fallbackError } = await supabase
+                .from('config')
+                .update(sanitized)
+                .eq('id', existing.id)
+                .eq('tenant_id', tenantId)
+
+            if (fallbackError) {
+                console.error('[panel/config] Both RPC and Fallback failed:', fallbackError)
+                return { success: false, error: fallbackError.message }
+            }
         }
 
         revalidatePanel('all')

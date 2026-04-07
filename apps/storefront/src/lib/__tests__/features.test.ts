@@ -12,7 +12,7 @@ const mockFlags: FeatureFlags = {
     enable_user_registration: true,
     enable_guest_checkout: true,
     require_auth_to_order: false,
-    enable_google_auth: true,
+    enable_google_oauth: true,
     enable_email_auth: true,
     enable_reviews: false,
     enable_wishlist: false,
@@ -62,10 +62,31 @@ const mockFlags: FeatureFlags = {
     enable_traffic_analytics: false,
     enable_traffic_autoscale: false,
     enable_seo: false,
+    enable_seo_tools: false,
     enable_social_media: false,
+    enable_social_sharing: false,
     enable_automations: false,
+    enable_custom_webhooks: false,
     enable_auth_advanced: false,
     enable_sales_channels: false,
+    enable_reservation_checkout: false,
+    // Auth Advanced (granular)
+    enable_apple_oauth: false,
+    enable_facebook_oauth: false,
+    enable_2fa: false,
+    enable_magic_link: false,
+    // CRM (granular)
+    enable_crm_contacts: false,
+    enable_crm_interactions: false,
+    enable_crm_segments: false,
+    // Email (granular)
+    enable_transactional_emails: false,
+    enable_review_request_emails: false,
+    enable_email_segmentation: false,
+    // Kiosk (granular)
+    enable_kiosk_analytics: false,
+    enable_kiosk_idle_timer: false,
+    enable_kiosk_remote_management: false,
 }
 
 describe('isFeatureEnabled', () => {
@@ -73,7 +94,7 @@ describe('isFeatureEnabled', () => {
         expect(isFeatureEnabled(mockFlags, 'enable_whatsapp_checkout')).toBe(true)
         expect(isFeatureEnabled(mockFlags, 'enable_cash_on_delivery')).toBe(true)
         expect(isFeatureEnabled(mockFlags, 'enable_carousel')).toBe(true)
-        expect(isFeatureEnabled(mockFlags, 'enable_google_auth')).toBe(true)
+        expect(isFeatureEnabled(mockFlags, 'enable_google_oauth')).toBe(true)
     })
 
     it('returns false for disabled flags', () => {

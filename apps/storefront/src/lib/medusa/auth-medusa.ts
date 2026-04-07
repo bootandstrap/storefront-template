@@ -112,7 +112,8 @@ export async function getAuthCustomerOrders(params?: {
     if (params?.limit) searchParams.set('limit', String(params.limit))
     if (params?.offset) searchParams.set('offset', String(params.offset))
     searchParams.set('order', '-created_at')
-    searchParams.set('fields', '+items,+shipping_address,+fulfillments,+payments')
+    // v2: Use *payment_collections.payments for payment data (matches official Medusa starter)
+    searchParams.set('fields', '*payment_collections.payments,*items,*items.variant,*items.product,+shipping_address,+fulfillments')
 
     const qs = searchParams.toString()
     try {
@@ -126,10 +127,16 @@ export async function getAuthCustomerOrders(params?: {
 
 export async function getAuthOrder(id: string): Promise<MedusaOrder | null> {
     try {
+        // v2: Use *payment_collections.payments (matches official Medusa starter)
         const res = await authenticatedMedusaFetch<{ order: MedusaOrder }>(
-            `/store/orders/${id}?fields=+items,+shipping_address,+billing_address,+fulfillments,+payments`
+            `/store/orders/${id}?fields=*payment_collections.payments,*items,*items.variant,*items.product,+shipping_address,+billing_address,+fulfillments`
         )
-        return res.order
+        // Flatten payment_collections into payments for backward compat
+        const order = res.order
+        if (order?.payment_collections?.length && (!order.payments || order.payments.length === 0)) {
+            order.payments = order.payment_collections.flatMap(pc => (pc as any).payments ?? [])
+        }
+        return order
     } catch {
         return null
     }
