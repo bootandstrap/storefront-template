@@ -50,7 +50,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --filter @bootandstrap/shared --filter .
+        run: pnpm install --no-frozen-lockfile
 
       - name: Type check
         run: pnpm --filter @bootandstrap/shared type-check
@@ -59,7 +59,7 @@ jobs:
         run: pnpm --filter @bootandstrap/shared test:run
 
       - name: E2E Provisioning Drill
-        run: pnpm --filter @bootandstrap/shared exec npx tsx ../../scripts/e2e-provision-drill.ts
+        run: npx tsx scripts/e2e-provision-drill.ts
 
   publish:
     name: Version & Publish
