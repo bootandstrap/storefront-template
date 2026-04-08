@@ -1,0 +1,157 @@
+# Publish @bootandstrap/shared to GitHub Packages
+# Two modes:
+#   - Push to main (auto): uses changesets to determine version + changelog
+#   - Manual dispatch (force): direct semver bump without changesets
+#
+# Changesets flow:
+#   Developer creates changeset → merges to main → this workflow runs
+#   → changeset version (bumps package.json + writes CHANGELOG.md)
+#   → build → publish → commit version changes back to main
+
+name: Publish Shared Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/shared/src/**'
+      - 'packages/shared/package.json'
+      - 'packages/shared/tsconfig.json'
+      - '.changeset/**'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (bypasses changesets)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: publish-shared
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test shared package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter @bootandstrap/shared type-check
+
+      - name: Run tests
+        run: pnpm --filter @bootandstrap/shared test:run
+
+      - name: E2E Provisioning Drill
+        run: npx tsx scripts/e2e-provision-drill.ts
+
+  publish:
+    name: Version & Publish
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@bootandstrap'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ── Changesets path (auto on push) ────────────────────────
+      - name: Apply changesets version
+        if: github.event_name == 'push'
+        run: |
+          # Check if there are pending changesets
+          if ls .changeset/*.md 2>/dev/null | grep -v README.md | head -1 > /dev/null 2>&1; then
+            pnpm changeset version
+            echo "CHANGESET_APPLIED=true" >> $GITHUB_ENV
+          else
+            echo "No pending changesets — skipping version bump"
+            echo "CHANGESET_APPLIED=false" >> $GITHUB_ENV
+          fi
+
+      # ── Manual bump path (workflow_dispatch) ──────────────────
+      - name: Bump version (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: packages/shared
+        run: |
+          npm version ${{ github.event.inputs.bump || 'patch' }} --no-git-tag-version
+          echo "CHANGESET_APPLIED=true" >> $GITHUB_ENV
+
+      - name: Read version
+        if: env.CHANGESET_APPLIED == 'true'
+        run: |
+          VERSION=$(node -p 'require("./packages/shared/package.json").version')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "📦 Publishing v${VERSION}"
+
+      - name: Build
+        if: env.CHANGESET_APPLIED == 'true'
+        run: pnpm --filter @bootandstrap/shared build
+
+      - name: Publish to GitHub Packages
+        if: env.CHANGESET_APPLIED == 'true'
+        working-directory: packages/shared
+        run: npm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version + changelog
+        if: env.CHANGESET_APPLIED == 'true'
+        run: |
+          git add .
+          git commit -m "chore: release @bootandstrap/shared v${{ env.VERSION }}" || true
+          git push
+
+      - name: Summary
+        if: env.CHANGESET_APPLIED == 'true'
+        run: |
+          echo "## 📦 @bootandstrap/shared v${{ env.VERSION }} published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Registry: \`https://npm.pkg.github.com\`" >> $GITHUB_STEP_SUMMARY
+          echo "Install: \`pnpm add @bootandstrap/shared@${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: No-op summary
+        if: env.CHANGESET_APPLIED != 'true'
+        run: |
+          echo "## ⏭️ No version changes" >> $GITHUB_STEP_SUMMARY
+          echo "No pending changesets found. Push with \`pnpm changeset\` to trigger a release." >> $GITHUB_STEP_SUMMARY

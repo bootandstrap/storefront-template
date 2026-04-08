@@ -3,6 +3,7 @@ import type {
     SubscriberConfig,
 } from "@medusajs/framework"
 import { notifyStorefront, dispatchToChannels } from "./shared/bridge"
+import { withGovernanceGate } from "./shared/governance-gate"
 
 /**
  * Subscriber: order.fulfillment_created
@@ -10,11 +11,13 @@ import { notifyStorefront, dispatchToChannels } from "./shared/bridge"
  * Fires when fulfillment is created for an order (i.e., items shipped).
  * Logs structured shipment data and dispatches shipping notification email
  * via the storefront's internal API.
+ *
+ * GOVERNANCE: Gated on `enable_ecommerce` — skipped if ecommerce module is disabled.
  */
-export default async function orderShippedHandler({
+export default withGovernanceGate("enable_ecommerce", async ({
     event: { data },
     container,
-}: SubscriberArgs<{ id: string; fulfillment_id: string; order_id: string }>) {
+}: SubscriberArgs<{ id: string; fulfillment_id: string; order_id: string }>) => {
     try {
         const fulfillmentModule = container.resolve("fulfillment")
         const orderModule = container.resolve("order")
@@ -89,9 +92,8 @@ export default async function orderShippedHandler({
             })
         )
     }
-}
+})
 
 export const config: SubscriberConfig = {
     event: "order.fulfillment_created",
 }
-

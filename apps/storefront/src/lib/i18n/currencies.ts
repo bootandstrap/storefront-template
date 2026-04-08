@@ -49,34 +49,11 @@ export function isZeroDecimal(code: string): boolean {
     return ZERO_DECIMAL_CURRENCIES.has(code.toLowerCase())
 }
 
-const CURRENCY_COOKIE = 'currency'
+export const CURRENCY_COOKIE = 'currency'
 
 // ─── Locale → Intl locale mapping (derived from shared) ──────
 const INTL_LOCALE_MAP: Record<string, string> = CURRENCY_INTL_MAP
 
-// ─── Currency resolution (SERVER-ONLY at runtime) ─────────────
-// Uses dynamic import of next/headers to avoid poisoning client bundles.
-export async function getCurrency(defaultCurrency?: string): Promise<string> {
-    // 1. Cookie (server-only — dynamically imported)
-    try {
-        const { cookies } = await import('next/headers')
-        const cookieStore = await cookies()
-        const cookieCurrency = cookieStore.get(CURRENCY_COOKIE)?.value
-        if (cookieCurrency && isValidCurrency(cookieCurrency)) {
-            return cookieCurrency
-        }
-    } catch {
-        // Not in server context — skip cookie resolution
-    }
-
-    // 2. Config default
-    if (defaultCurrency && isValidCurrency(defaultCurrency)) {
-        return defaultCurrency
-    }
-
-    // 3. Fallback
-    return DEFAULT_CURRENCY
-}
 
 export function isValidCurrency(code: string): boolean {
     return SUPPORTED_CURRENCIES.some((c) => c.code === code.toLowerCase())

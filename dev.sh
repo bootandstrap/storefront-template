@@ -272,6 +272,22 @@ if [[ "$MEDUSA_UP" -eq 0 ]]; then
     echo -e "  ${YELLOW}⚠${NC} Medusa not yet healthy — starting storefront anyway"
 fi
 
+# ── 2.5. Governance Pre-flight Check ──────
+# Ensures local tenant governance is seeded before storefront starts.
+# This eliminates the "maintenance mode loop" during local dev.
+GOVERNANCE_CHECK_SCRIPT="$ROOT_DIR/scripts/governance-check.ts"
+if [[ -f "$GOVERNANCE_CHECK_SCRIPT" ]] && [[ -n "${LOCAL_TENANT_ID:-${TENANT_ID:-}}" ]]; then
+    echo -e "\n${BLUE}[gov]${NC} Running governance pre-flight check..."
+    if npx tsx "$GOVERNANCE_CHECK_SCRIPT" 2>&1 | sed 's/^/  [gov] /'; then
+        echo -e "  ${GREEN}✓${NC} Governance check passed"
+    else
+        echo -e "  ${YELLOW}⚠${NC} Governance check had issues (storefront may show maintenance mode)"
+        echo -e "  ${YELLOW}→${NC} Run manually: npx tsx scripts/governance-check.ts --force-seed"
+    fi
+else
+    echo -e "\n${BLUE}[gov]${NC} ${YELLOW}Skipping${NC} governance check (no TENANT_ID set or script missing)"
+fi
+
 # ── 3. Next.js Storefront ─────────────────
 if [[ "$PROD_MODE" -eq 1 ]]; then
     echo -e "\n${BLUE}[3/3]${NC} Building Storefront for production..."

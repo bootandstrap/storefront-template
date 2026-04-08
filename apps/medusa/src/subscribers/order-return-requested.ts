@@ -3,17 +3,20 @@ import type {
     SubscriberConfig,
 } from "@medusajs/framework"
 import { notifyStorefront, dispatchToChannels, logAnalyticsEvent } from "./shared/bridge"
+import { withGovernanceGate } from "./shared/governance-gate"
 
 /**
  * Subscriber: order.return_requested
  *
  * Fires when a return/refund is requested for an order.
  * Dispatches multi-channel notifications so the owner is immediately informed.
+ *
+ * GOVERNANCE: Gated on `enable_ecommerce` — skipped if ecommerce module is disabled.
  */
-export default async function orderReturnRequestedHandler({
+export default withGovernanceGate("enable_ecommerce", async ({
     event: { data },
     container,
-}: SubscriberArgs<{ id: string; order_id?: string; return_id?: string }>) {
+}: SubscriberArgs<{ id: string; order_id?: string; return_id?: string }>) => {
     try {
         const orderModule = container.resolve("order")
 
@@ -62,7 +65,7 @@ export default async function orderReturnRequestedHandler({
             })
         )
     }
-}
+})
 
 export const config: SubscriberConfig = {
     event: "order.return_requested",

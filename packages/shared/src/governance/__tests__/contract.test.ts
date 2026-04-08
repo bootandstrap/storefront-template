@@ -25,19 +25,19 @@ describe('Governance Contract Tests', () => {
         expect(() => AppConfigSchema.parse(FALLBACK_CONFIG)).not.toThrow()
     })
 
-    it('FeatureFlags has exactly 44 flags', () => {
+    it('FeatureFlags has exactly 79 flags', () => {
         const shape = FeatureFlagsSchema.shape
-        expect(Object.keys(shape)).toHaveLength(44)
+        expect(Object.keys(shape)).toHaveLength(79)
     })
 
-    it('PlanLimits has exactly 26 fields', () => {
+    it('PlanLimits has exactly 30 fields', () => {
         const shape = PlanLimitsSchema.shape
-        expect(Object.keys(shape)).toHaveLength(26)
+        expect(Object.keys(shape)).toHaveLength(30)
     })
 
-    it('StoreConfig has exactly 58 fields', () => {
+    it('StoreConfig has exactly 88 fields', () => {
         const shape = StoreConfigSchema.shape
-        expect(Object.keys(shape)).toHaveLength(58)
+        expect(Object.keys(shape)).toHaveLength(88)
     })
 
     it('TenantStatus has exactly 4 values', () => {

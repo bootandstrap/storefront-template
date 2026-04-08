@@ -3,17 +3,20 @@ import type {
     SubscriberConfig,
 } from "@medusajs/framework"
 import { notifyStorefront, dispatchToChannels, logAnalyticsEvent } from "./shared/bridge"
+import { withGovernanceGate } from "./shared/governance-gate"
 
 /**
  * Subscriber: order.canceled
  *
  * Fires when an order is canceled. Dispatches multi-channel notifications
  * and logs structured event data for observability.
+ *
+ * GOVERNANCE: Gated on `enable_ecommerce` — skipped if ecommerce module is disabled.
  */
-export default async function orderCanceledHandler({
+export default withGovernanceGate("enable_ecommerce", async ({
     event: { data },
     container,
-}: SubscriberArgs<{ id: string }>) {
+}: SubscriberArgs<{ id: string }>) => {
     try {
         const orderModule = container.resolve("order")
         const order = await orderModule.retrieveOrder(data.id, {
@@ -58,7 +61,7 @@ export default async function orderCanceledHandler({
             })
         )
     }
-}
+})
 
 export const config: SubscriberConfig = {
     event: "order.canceled",

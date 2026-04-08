@@ -1,61 +1,112 @@
-# Custom subscribers
+# Medusa Subscribers — BootandStrap Platform
 
-Subscribers handle events emitted in the Medusa application.
+## Overview
 
-> Learn more about Subscribers in [this documentation](https://docs.medusajs.com/learn/fundamentals/events-and-subscribers).
+Event-driven handlers that react to Medusa domain events (orders, fulfillments, inventory).
+All subscribers are **governance-gated** — they only fire when the corresponding feature flag is active for the tenant.
 
-The subscriber is created in a TypeScript or JavaScript file under the `src/subscribers` directory.
+## Governance Gate Pattern
 
-For example, create the file `src/subscribers/product-created.ts` with the following content:
+All subscribers use the `withGovernanceGate()` HOF from `shared/governance-gate.ts`:
 
-```ts
-import {
-  type SubscriberConfig,
-} from "@medusajs/framework"
+```typescript
+import { withGovernanceGate } from "./shared/governance-gate"
 
-// subscriber function
-export default async function productCreateHandler() {
-  console.log("A product was created")
-}
+// Single flag check
+export default withGovernanceGate("enable_ecommerce", async ({ event, container }) => {
+    // Only runs if enable_ecommerce = true in Supabase
+})
 
-// subscriber config
+// Multiple flags required (ALL must be true)
+export default withGovernanceGateAll(
+    ["enable_ecommerce", "enable_low_stock_alerts"],
+    async ({ event, container }) => { ... }
+)
+
+// Any flag enables handler
+export default withGovernanceGateAny(
+    ["enable_chatbot", "enable_rrss"],
+    async ({ event, container }) => { ... }
+)
+```
+
+### How It Works
+
+1. When an event fires, the gate checks `feature_flags` in Supabase for the tenant
+2. If the flag is `false` or missing, the handler is **silently skipped** (structured log emitted)
+3. Flag values are cached for **60 seconds** to minimize Supabase pressure
+4. In dev mode (no governance config), all features default to **enabled**
+
+### Cache Invalidation
+
+Call `invalidateFlagsCache()` after changing feature flags programmatically:
+
+```typescript
+import { invalidateFlagsCache } from "./shared/governance-gate"
+
+// After activating a module for a tenant
+invalidateFlagsCache()
+```
+
+## Subscriber Matrix
+
+| File | Event | Gate Flag(s) | Gate Mode |
+|------|-------|-------------|-----------|
+| `order-placed.ts` | `order.placed` | `enable_ecommerce` | `withGovernanceGate` |
+| `order-canceled.ts` | `order.canceled` | `enable_ecommerce` | `withGovernanceGate` |
+| `order-shipped.ts` | `order.fulfillment_created` | `enable_ecommerce` | `withGovernanceGate` |
+| `order-return-requested.ts` | `order.return_requested` | `enable_ecommerce` | `withGovernanceGate` |
+| `low-stock-alert.ts` | `inventory-item.updated` | `enable_ecommerce` | `withGovernanceGate` |
+
+## Shared Utilities
+
+| File | Purpose |
+|------|---------|
+| `shared/bridge.ts` | `notifyStorefront()`, `dispatchToChannels()`, `logAnalyticsEvent()` |
+| `shared/channels.ts` | Multi-channel dispatch (webhook, WhatsApp, Telegram) |
+| `shared/governance-gate.ts` | Feature flag gating HOFs |
+| `shared/message-templates.ts` | Localized message formatting |
+
+## Adding a New Subscriber
+
+1. Create handler file in `subscribers/`
+2. Wrap with appropriate governance gate
+3. Add entry to the matrix in this README
+4. If the subscriber serves a specific module, use that module's flag (e.g., `enable_crm`)
+
+```typescript
+// Example: CRM contact sync on customer creation
+import { withGovernanceGate } from "./shared/governance-gate"
+
+export default withGovernanceGate("enable_crm", async ({
+    event: { data },
+    container,
+}: SubscriberArgs<{ id: string }>) => {
+    // Sync customer to CRM...
+})
+
 export const config: SubscriberConfig = {
-  event: "product.created",
+    event: "customer.created",
 }
 ```
 
-A subscriber file must export:
+## Architecture
 
-- The subscriber function that is an asynchronous function executed whenever the associated event is triggered.
-- A configuration object defining the event this subscriber is listening to.
-
-## Subscriber Parameters
-
-A subscriber receives an object having the following properties:
-
-- `event`: An object holding the event's details. It has a `data` property, which is the event's data payload.
-- `container`: The Medusa container. Use it to resolve modules' main services and other registered resources.
-
-```ts
-import type {
-  SubscriberArgs,
-  SubscriberConfig,
-} from "@medusajs/framework"
-
-export default async function productCreateHandler({
-  event: { data },
-  container,
-}: SubscriberArgs<{ id: string }>) {
-  const productId = data.id
-
-  const productModuleService = container.resolve("product")
-
-  const product = await productModuleService.retrieveProduct(productId)
-
-  console.log(`The product ${product.title} was created`)
-}
-
-export const config: SubscriberConfig = {
-  event: "product.created",
-}
+```
+Medusa Event Bus
+    │
+    ├──► Subscriber (wrapped with governance gate)
+    │        │
+    │        ├──► Check feature_flags table (cached 60s)
+    │        │
+    │        ├─── Flag OFF ──► Silent skip + structured log
+    │        │
+    │        └─── Flag ON ──► Execute handler
+    │                │
+    │                ├──► Structured logging (JSON)
+    │                ├──► Multi-channel dispatch (bridge)
+    │                ├──► Email notification (storefront bridge)
+    │                └──► Analytics event (Supabase)
+    │
+    └──► Next subscriber...
 ```

@@ -2,20 +2,51 @@
     "$schema": "https://turbo.build/schema.json",
     "globalEnv": [
         "TENANT_ID",
+        "LOCAL_TENANT_ID",
+        "BILLING_PROVIDER",
+        "GOVERNANCE_MODE",
+        "DEMO_MODE",
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
+        "GOVERNANCE_SUPABASE_URL",
+        "GOVERNANCE_SUPABASE_ANON_KEY",
+        "GOVERNANCE_SUPABASE_SERVICE_KEY",
         "NEXT_PUBLIC_MEDUSA_BACKEND_URL",
         "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY",
         "NEXT_PUBLIC_STORE_URL",
         "NEXT_PUBLIC_SITE_URL",
+        "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
         "MEDUSA_BACKEND_URL"
     ],
     "tasks": {
+        "generate-contract": {
+            "inputs": [
+                "scripts/generate-contract.ts",
+                "apps/storefront/src/lib/governance/flag-definitions.json",
+                "apps/storefront/src/lib/governance-contract.json"
+            ],
+            "outputs": [
+                "generated/contract.json"
+            ]
+        },
+        "@bootandstrap/shared#type-check": {
+            "outputs": []
+        },
+        "@bootandstrap/shared#build": {
+            "dependsOn": [
+                "generate-contract"
+            ],
+            "outputs": [
+                "dist/**"
+            ]
+        },
         "build": {
             "dependsOn": [
-                "^build"
+                "^build",
+                "generate-contract",
+                "@bootandstrap/shared#type-check"
             ],
             "env": [
                 "TENANT_ID",
@@ -54,6 +85,22 @@
             "dependsOn": [
                 "^build"
             ]
+        },
+        "test:e2e-drill": {
+            "dependsOn": [
+                "@bootandstrap/shared#build"
+            ],
+            "inputs": [
+                "scripts/e2e-provision-drill.ts"
+            ],
+            "cache": false
+        },
+        "governance:check": {
+            "dependsOn": [
+                "generate-contract",
+                "@bootandstrap/shared#build"
+            ],
+            "cache": false
         },
         "clean": {
             "cache": false
