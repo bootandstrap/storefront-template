@@ -19,4 +19,3 @@ export * from "./provisioning";
 
 // Module registry (auto-derived from governance-contract.json)
 export * from "./modules";
-// trigger

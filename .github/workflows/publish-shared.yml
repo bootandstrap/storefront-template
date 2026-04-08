@@ -49,7 +49,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Type check
         run: pnpm --filter @bootandstrap/shared type-check
@@ -85,7 +85,7 @@ jobs:
           scope: '@bootandstrap'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Configure git
         run: |
