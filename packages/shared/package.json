@@ -44,8 +44,7 @@
         "changeset": "changeset",
         "version": "changeset version",
         "release": "npm run build && changeset publish",
-        "clean": "rm -rf dist",
-        "prepublishOnly": "npm run clean && npm run build"
+        "clean": "rm -rf dist"
     },
     "dependencies": {},
     "peerDependencies": {

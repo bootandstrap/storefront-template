@@ -1,0 +1,1 @@
+{"version":3,"file":"circuit-breaker.d.ts","sourceRoot":"","sources":["../../src/governance/circuit-breaker.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;GAYG;AAaH;;;GAGG;AACH,wBAAgB,sBAAsB,IAAI,OAAO,CAahD;AAED,+DAA+D;AAC/D,wBAAgB,oBAAoB,IAAI,IAAI,CAG3C;AAED,kEAAkE;AAClE,wBAAgB,oBAAoB,IAAI,IAAI,CAO3C;AAED,mEAAmE;AACnE,wBAAgB,mBAAmB,IAAI,IAAI,CAI1C"}

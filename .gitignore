@@ -71,3 +71,6 @@ backups/
 .env.sops
 secrets/
 .secrets/
+
+# Allow shared package dist for publishing
+!packages/shared/dist/
