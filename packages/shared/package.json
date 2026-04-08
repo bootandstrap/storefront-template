@@ -47,9 +47,7 @@
         "clean": "rm -rf dist",
         "prepublishOnly": "npm run clean && npm run build"
     },
-    "dependencies": {
-        "zod": "^4.3.6"
-    },
+    "dependencies": {},
     "peerDependencies": {
         "stripe": ">=14.0.0"
     },
