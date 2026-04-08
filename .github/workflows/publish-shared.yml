@@ -18,6 +18,7 @@ on:
       - 'packages/shared/package.json'
       - 'packages/shared/tsconfig.json'
       - '.changeset/**'
+      - '.github/workflows/publish-shared.yml'
   workflow_dispatch:
     inputs:
       bump:
