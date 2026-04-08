@@ -127,7 +127,8 @@ jobs:
 
       - name: Build
         if: env.CHANGESET_APPLIED == 'true'
-        run: pnpm --filter @bootandstrap/shared build
+        working-directory: packages/shared
+        run: npx tsc
 
       - name: Publish to GitHub Packages
         if: env.CHANGESET_APPLIED == 'true'
