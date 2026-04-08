@@ -90,7 +90,7 @@ jobs:
           scope: '@bootandstrap'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Configure git
         run: |
