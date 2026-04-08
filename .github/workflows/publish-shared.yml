@@ -57,7 +57,8 @@ jobs:
         run: pnpm --filter @bootandstrap/shared type-check
 
       - name: Run tests
-        run: pnpm --filter @bootandstrap/shared test:run
+        working-directory: packages/shared
+        run: npx vitest run
 
       - name: E2E Provisioning Drill
         run: npx tsx scripts/e2e-provision-drill.ts
