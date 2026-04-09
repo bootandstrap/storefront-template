@@ -1,14 +1,19 @@
 {
-  "$schema": "governance-contract/v1",
-  "generated_at": "2026-03-04T18:03:17.168Z",
+  "$schema": "governance-contract/v2",
+  "generated_at": "2026-04-09T22:07:54.350Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
+  "db_enriched": true,
   "flags": {
-    "count": 57,
+    "count": 79,
     "keys": [
+      "enable_2fa",
       "enable_abandoned_cart_emails",
       "enable_address_management",
       "enable_admin_api",
       "enable_analytics",
+      "enable_apple_oauth",
+      "enable_auth_advanced",
+      "enable_automations",
       "enable_bank_transfer",
       "enable_carousel",
       "enable_cash_on_delivery",
@@ -16,16 +21,26 @@
       "enable_cms_pages",
       "enable_cookie_consent",
       "enable_crm",
+      "enable_crm_contacts",
       "enable_crm_export",
+      "enable_crm_interactions",
       "enable_crm_segmentation",
+      "enable_crm_segments",
+      "enable_custom_webhooks",
       "enable_customer_accounts",
       "enable_ecommerce",
       "enable_email_auth",
       "enable_email_campaigns",
       "enable_email_notifications",
+      "enable_email_segmentation",
       "enable_email_templates",
-      "enable_google_auth",
+      "enable_facebook_oauth",
+      "enable_google_oauth",
       "enable_guest_checkout",
+      "enable_kiosk_analytics",
+      "enable_kiosk_idle_timer",
+      "enable_kiosk_remote_management",
+      "enable_magic_link",
       "enable_maintenance_mode",
       "enable_multi_currency",
       "enable_multi_language",
@@ -49,12 +64,20 @@
       "enable_product_search",
       "enable_promotions",
       "enable_related_products",
+      "enable_reservation_checkout",
+      "enable_review_request_emails",
       "enable_reviews",
+      "enable_sales_channels",
       "enable_self_service_returns",
+      "enable_seo",
+      "enable_seo_tools",
       "enable_social_links",
+      "enable_social_media",
+      "enable_social_sharing",
       "enable_traffic_analytics",
       "enable_traffic_autoscale",
       "enable_traffic_expansion",
+      "enable_transactional_emails",
       "enable_user_registration",
       "enable_whatsapp_checkout",
       "enable_whatsapp_contact",
@@ -76,7 +99,8 @@
           "enable_guest_checkout",
           "require_auth_to_order",
           "enable_order_notes",
-          "enable_promotions"
+          "enable_promotions",
+          "enable_reservation_checkout"
         ]
       },
       "___auth___accounts": {
@@ -85,10 +109,15 @@
         "flags": [
           "enable_user_registration",
           "enable_email_auth",
-          "enable_google_auth",
+          "enable_google_oauth",
           "enable_customer_accounts",
           "enable_address_management",
-          "enable_order_tracking"
+          "enable_order_tracking",
+          "enable_auth_advanced",
+          "enable_apple_oauth",
+          "enable_facebook_oauth",
+          "enable_2fa",
+          "enable_magic_link"
         ]
       },
       "___content___discovery": {
@@ -103,9 +132,11 @@
           "enable_wishlist",
           "enable_related_products",
           "enable_product_comparisons",
-          "enable_product_badges",
           "enable_pos",
           "enable_pos_kiosk",
+          "enable_kiosk_analytics",
+          "enable_kiosk_idle_timer",
+          "enable_kiosk_remote_management",
           "enable_pos_keyboard_shortcuts",
           "enable_pos_quick_sale",
           "enable_pos_offline_cart",
@@ -113,7 +144,8 @@
           "enable_pos_line_discounts",
           "enable_pos_customer_search",
           "enable_pos_multi_device",
-          "enable_pos_shifts"
+          "enable_pos_shifts",
+          "enable_product_badges"
         ]
       },
       "___internationalization": {
@@ -130,7 +162,10 @@
         "flags": [
           "enable_social_links",
           "enable_owner_panel",
-          "enable_newsletter"
+          "enable_newsletter",
+          "enable_social_media",
+          "enable_sales_channels",
+          "enable_social_sharing"
         ]
       },
       "___system": {
@@ -144,7 +179,11 @@
           "enable_chatbot",
           "enable_self_service_returns",
           "owner_lite_enabled",
-          "owner_advanced_modules_enabled"
+          "owner_advanced_modules_enabled",
+          "enable_seo",
+          "enable_automations",
+          "enable_seo_tools",
+          "enable_custom_webhooks"
         ]
       },
       "___crm": {
@@ -153,7 +192,10 @@
         "flags": [
           "enable_crm",
           "enable_crm_segmentation",
-          "enable_crm_export"
+          "enable_crm_export",
+          "enable_crm_contacts",
+          "enable_crm_interactions",
+          "enable_crm_segments"
         ]
       },
       "___email_marketing": {
@@ -163,7 +205,10 @@
           "enable_email_notifications",
           "enable_abandoned_cart_emails",
           "enable_email_campaigns",
-          "enable_email_templates"
+          "enable_email_templates",
+          "enable_transactional_emails",
+          "enable_review_request_emails",
+          "enable_email_segmentation"
         ]
       },
       "___traffic_capacity": {
@@ -178,9 +223,10 @@
     }
   },
   "limits": {
-    "count": 28,
+    "count": 29,
     "keys": [
       "max_admin_users",
+      "max_automations",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -211,6 +257,7 @@
     ],
     "numeric_keys": [
       "max_admin_users",
+      "max_automations",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -243,7 +290,7 @@
     ]
   },
   "modules": {
-    "count": 12,
+    "count": 13,
     "keys": [
       "auth_advanced",
       "automation",
@@ -254,108 +301,208 @@
       "email_marketing",
       "i18n",
       "pos",
+      "pos_kiosk",
       "rrss",
       "sales_channels",
       "seo"
     ],
+    "payment_types": {
+      "subscription": [
+        "auth_advanced",
+        "automation",
+        "capacidad",
+        "chatbot",
+        "crm",
+        "ecommerce",
+        "email_marketing",
+        "pos_kiosk",
+        "seo"
+      ],
+      "one_time": [
+        "i18n",
+        "rrss"
+      ],
+      "extension": [
+        "pos",
+        "sales_channels"
+      ]
+    },
     "catalog": [
       {
-        "key": "ecommerce",
-        "name": "Tienda Online",
-        "icon": "🛍️",
-        "description": "Catálogo, carrito, checkout, cuentas de cliente y panel de gestión",
-        "category": "sell",
-        "popular": true,
+        "key": "auth_advanced",
+        "name": "Auth Avanzado",
+        "icon": "🔐",
+        "description": "Google OAuth, Magic Links y autenticación avanzada",
+        "category": "engage",
+        "popular": false,
         "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
-            "price_chf": 25,
-            "features": [
-              "50 productos / 5 categorías",
-              "100 pedidos/mes / 100 clientes",
-              "Carrito + Checkout + Cuentas",
-              "Seguimiento y direcciones",
-              "Búsqueda de productos"
-            ],
-            "recommended": false
+            "name": "Básico",
+            "price_chf": 5,
+            "features": "[\"Google OAuth\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_google_oauth": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzoZFWa7WMiJl2veweBmSd"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
-            "price_chf": 45,
-            "features": [
-              "200 productos / 20 categorías",
-              "500 pedidos/mes / 500 clientes",
-              "Insignias + Productos relacionados",
-              "Promociones (max 5 activas)",
-              "Reseñas + Wishlist + CMS + Carousel"
-            ],
-            "recommended": true
+            "price_chf": 12,
+            "features": "[\"Google + Apple + Facebook\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_apple_oauth": true,
+              "enable_google_oauth": true,
+              "enable_facebook_oauth": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzoaFWa7WMiJl2d5klsY6w"
+            }
           },
           {
             "key": "enterprise",
             "name": "Enterprise",
-            "price_chf": 75,
-            "features": [
-              "Productos y categorías ilimitados",
-              "5000 pedidos/mes / Clientes ∞",
-              "Devoluciones self-service",
-              "API externa",
-              "Todo de Pro incluido"
-            ],
-            "recommended": false
+            "price_chf": 25,
+            "features": "[\"2FA\",\"Magic Link\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_2fa": true,
+              "enable_magic_link": true,
+              "enable_apple_oauth": true,
+              "enable_google_oauth": true,
+              "enable_facebook_oauth": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzocFWa7WMiJl2s04Y4z0M"
+            }
           }
         ]
       },
       {
-        "key": "sales_channels",
-        "name": "Canales de Venta y Pago",
-        "icon": "💬",
-        "description": "WhatsApp, tarjeta, efectivo, transferencia y más canales de venta",
-        "category": "sell",
-        "popular": true,
-        "requires": [
-          "ecommerce"
-        ],
+        "key": "automation",
+        "name": "Automatización",
+        "icon": "⚡",
+        "description": "Flujos automáticos, webhooks y conexiones externas",
+        "category": "automate",
+        "popular": false,
+        "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
-            "price_chf": 15,
-            "features": [
-              "WhatsApp Checkout + Contacto",
-              "5 templates WhatsApp",
-              "1 método de pago"
-            ],
-            "recommended": false
+            "name": "Básico",
+            "price_chf": 20,
+            "features": "[\"5 automatizaciones\"]",
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TKQipFWa7WMiJl2PwzsXwTP"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
-            "price_chf": 30,
+            "price_chf": 40,
+            "features": "[\"Ilimitadas\",\"Webhooks custom\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_admin_api": true,
+              "enable_automations": true,
+              "enable_custom_webhooks": true
+            },
+            "limit_effects": {
+              "max_automations": 99999
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzofFWa7WMiJl2U8jVNAnC"
+            }
+          }
+        ]
+      },
+      {
+        "key": "capacidad",
+        "name": "Capacidad Extra",
+        "icon": "📦",
+        "description": "Más almacenamiento, dominios y capacidad de procesamiento",
+        "category": "automate",
+        "popular": false,
+        "requires": [],
+        "payment_type": "subscription",
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Basic",
+            "price_chf": 10,
             "features": [
-              "15 templates WhatsApp",
-              "Pago con tarjeta (Stripe)",
-              "Efectivo contra entrega",
-              "Newsletter (1000 suscriptores)",
-              "3 métodos de pago"
+              "10.000 peticiones/día",
+              "Monitorización básica de uso",
+              "Alertas de límite por email"
             ],
-            "recommended": true
+            "recommended": false,
+            "flag_effects": {
+              "enable_traffic_expansion": true
+            },
+            "limit_effects": {
+              "max_requests_day": 25000,
+              "storage_limit_mb": 500
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzohFWa7WMiJl2G6rsOwKH"
+            }
+          },
+          {
+            "key": "pro",
+            "name": "Pro",
+            "price_chf": 25,
+            "features": [
+              "50.000 peticiones/día",
+              "Dashboard de tráfico en tiempo real",
+              "Analítica de consumo diario/mensual",
+              "Alertas avanzadas"
+            ],
+            "recommended": true,
+            "flag_effects": {
+              "enable_traffic_analytics": true,
+              "enable_traffic_expansion": true
+            },
+            "limit_effects": {
+              "max_requests_day": 100000,
+              "storage_limit_mb": 2000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzojFWa7WMiJl209zNlXeQ"
+            }
           },
           {
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 50,
             "features": [
-              "Templates ilimitados",
-              "Transferencia bancaria",
-              "Reservas (usuario registrado)",
-              "Newsletter (5000 suscriptores)",
-              "Métodos de pago ∞"
+              "Peticiones ilimitadas",
+              "Autoscaling automático",
+              "Dashboard de tráfico avanzado",
+              "SLA de disponibilidad",
+              "Todo de Pro incluido"
             ],
-            "recommended": false
+            "recommended": false,
+            "flag_effects": {
+              "enable_traffic_analytics": true,
+              "enable_traffic_autoscale": true,
+              "enable_traffic_expansion": true
+            },
+            "limit_effects": {
+              "max_requests_day": 99999,
+              "storage_limit_mb": 10000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzomFWa7WMiJl2SNUJ2Ly4"
+            }
           }
         ]
       },
@@ -363,257 +510,226 @@
         "key": "chatbot",
         "name": "Chatbot IA",
         "icon": "🤖",
-        "description": "Asistente inteligente entrenado con tu negocio. Widget de chat en tu web con IA conversacional.",
+        "description": "Asistente virtual con IA para atención al cliente 24/7",
         "category": "engage",
-        "popular": false,
+        "popular": true,
         "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
-            "price_chf": 25,
-            "features": [
-              "Widget de chat en tu web",
-              "IA entrenada con tu negocio",
-              "500 mensajes/mes"
-            ],
-            "recommended": false
+            "name": "Básico",
+            "price_chf": 20,
+            "features": "[\"Widget chatbot en tu web\",\"500 mensajes/mes\",\"RAG sobre tus documentos\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_chatbot": true
+            },
+            "limit_effects": {
+              "max_chatbot_messages_month": 500
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzooFWa7WMiJl2xGOfatVX"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
             "price_chf": 40,
-            "features": [
-              "Todo lo de Basic",
-              "5000 mensajes/mes",
-              "Analítica de conversaciones"
-            ],
-            "recommended": true
+            "features": "[\"5000 mensajes/mes\",\"RAG avanzado\",\"Integración Calendly/Google\"]",
+            "recommended": true,
+            "flag_effects": {
+              "enable_chatbot": true
+            },
+            "limit_effects": {
+              "max_chatbot_messages_month": 5000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzopFWa7WMiJl22KFPrNR5"
+            }
           }
         ]
       },
       {
         "key": "crm",
         "name": "CRM",
-        "icon": "📁",
-        "description": "Gestión de contactos, clientes e interacciones",
+        "icon": "👥",
+        "description": "Gestión de clientes y relaciones comerciales",
         "category": "engage",
         "popular": false,
         "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
+            "name": "Básico",
             "price_chf": 15,
-            "features": [
-              "Lista de contactos + notas",
-              "Historial de interacciones",
-              "Max 200 contactos"
-            ],
-            "recommended": false
+            "features": "[\"Lista de contactos + notas\",\"Historial de interacciones\",\"Max 200 contactos\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_crm": true,
+              "enable_crm_contacts": true,
+              "enable_crm_interactions": true
+            },
+            "limit_effects": {
+              "max_crm_contacts": 200
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzorFWa7WMiJl2wNr5b8D0"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
             "price_chf": 30,
-            "features": [
-              "Max 5000 contactos",
-              "Segmentación / etiquetas",
-              "Exportar CSV"
-            ],
-            "recommended": false
+            "features": "[\"Max 5000 contactos\",\"Segmentación / etiquetas\",\"Exportar CSV\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_crm": true,
+              "enable_crm_export": true,
+              "enable_crm_contacts": true,
+              "enable_crm_segments": true,
+              "enable_crm_interactions": true,
+              "enable_crm_segmentation": true
+            },
+            "limit_effects": {
+              "max_crm_contacts": 5000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzotFWa7WMiJl2qEb2WPZx"
+            }
           }
         ]
       },
       {
-        "key": "seo",
-        "name": "SEO Modular",
-        "icon": "🚀",
-        "description": "Posiciónate en Google y atrae clientes de forma orgánica.",
-        "category": "grow",
-        "popular": false,
+        "key": "ecommerce",
+        "name": "E-Commerce Pro",
+        "icon": "🛍️",
+        "description": "Tienda online completa con carrito, pagos y gestión de pedidos",
+        "category": "sell",
+        "popular": true,
         "requires": [],
-        "tiers": [
-          {
-            "key": "medio",
-            "name": "MEDIO",
-            "price_chf": 85,
-            "features": [
-              "SEO on-page básico",
-              "Optimización de metadatos",
-              "Google Search Console"
-            ],
-            "recommended": false
-          },
-          {
-            "key": "avanzado",
-            "name": "AVANZADO",
-            "price_chf": 230,
-            "features": [
-              "Todo lo de MEDIO",
-              "SEO técnico completo",
-              "Link building",
-              "Reportes mensuales"
-            ],
-            "recommended": true
-          }
-        ]
-      },
-      {
-        "key": "rrss",
-        "name": "Redes Sociales",
-        "icon": "📱",
-        "description": "Gestión profesional de Instagram, Facebook y Google Maps para crecer.",
-        "category": "engage",
-        "popular": false,
-        "requires": [],
-        "tiers": [
-          {
-            "key": "google_maps",
-            "name": "Google Maps",
-            "price_chf": 90,
-            "features": [
-              "Gestión Google My Business",
-              "Optimización ficha",
-              "Reseñas y respuestas"
-            ],
-            "recommended": false
-          },
-          {
-            "key": "instagram",
-            "name": "Instagram",
-            "price_chf": 85,
-            "features": [
-              "Gestión de perfil",
-              "Publicaciones mensuales",
-              "Estrategia de contenido"
-            ],
-            "recommended": false
-          },
-          {
-            "key": "google_maps_instagram",
-            "name": "Google Maps + Instagram",
-            "price_chf": 150,
-            "features": [
-              "Todo de Google Maps",
-              "Todo de Instagram",
-              "Estrategia integrada"
-            ],
-            "recommended": true
-          },
-          {
-            "key": "paquete_basico",
-            "name": "Paquete básico de recursos visuales",
-            "price_chf": 105,
-            "features": [
-              "Sesión fotográfica básica",
-              "Diseño de contenido visual",
-              "Pack de plantillas"
-            ],
-            "recommended": false
-          },
-          {
-            "key": "paquete_avanzado",
-            "name": "Paquete avanzado de recursos visuales",
-            "price_chf": 145,
-            "features": [
-              "Sesión fotográfica profesional",
-              "Vídeo corto para redes",
-              "Diseño de marca completo"
-            ],
-            "recommended": false
-          }
-        ]
-      },
-      {
-        "key": "i18n",
-        "name": "Multi-idioma y Moneda",
-        "icon": "🌐",
-        "description": "Soporte multilingüe y multi-moneda (independiente)",
-        "category": "automate",
-        "popular": false,
-        "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "2 Idiomas",
+            "name": "Básico",
             "price_chf": 15,
-            "features": [
-              "2 idiomas + 1 moneda",
-              "URLs localizadas"
-            ],
-            "recommended": false
-          },
-          {
-            "key": "pro",
-            "name": "5 Idiomas + Monedas",
-            "price_chf": 35,
-            "features": [
-              "5 idiomas + 5 monedas",
-              "Conversión automática"
-            ],
-            "recommended": false
-          }
-        ]
-      },
-      {
-        "key": "automation",
-        "name": "Automatizaciones",
-        "icon": "🔌",
-        "description": "Conecta tus herramientas y deja que los datos fluyan solos.",
-        "category": "automate",
-        "popular": false,
-        "requires": [],
-        "tiers": [
-          {
-            "key": "pro",
-            "name": "Pro",
-            "price_chf": 75,
-            "features": [
-              "Automatizaciones ilimitadas",
-              "Webhooks custom",
-              "Integración n8n / Zapier / Make"
-            ],
-            "recommended": false
-          }
-        ]
-      },
-      {
-        "key": "auth_advanced",
-        "name": "Auth Avanzada",
-        "icon": "🛡️",
-        "description": "Login social con Google y otros proveedores OAuth",
-        "category": "automate",
-        "popular": false,
-        "requires": [],
-        "tiers": [
-          {
-            "key": "basic",
-            "name": "Basic",
-            "price_chf": 5,
-            "features": [
-              "Google OAuth"
-            ],
-            "recommended": false
+            "features": "[\"50 productos / 5 categorías\",\"100 pedidos/mes / 100 clientes\",\"Carrito + Checkout + Cuentas\",\"Seguimiento y direcciones\",\"Búsqueda de productos\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_carousel": true,
+              "enable_ecommerce": true,
+              "enable_email_auth": true,
+              "enable_order_notes": true,
+              "enable_owner_panel": true,
+              "owner_lite_enabled": true,
+              "enable_order_tracking": true,
+              "enable_product_badges": true,
+              "enable_product_search": true,
+              "enable_related_products": true,
+              "enable_customer_accounts": true,
+              "enable_user_registration": true,
+              "enable_address_management": true
+            },
+            "limit_effects": {
+              "max_products": 50,
+              "max_customers": 100,
+              "max_categories": 5,
+              "max_orders_month": 100,
+              "max_carousel_slides": 5,
+              "max_images_per_product": 5
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzovFWa7WMiJl2SFgMsTYm"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
-            "price_chf": 12,
-            "features": [
-              "Google + Apple + Facebook"
-            ],
-            "recommended": false
+            "price_chf": 45,
+            "features": "[\"200 productos / 20 categorías\",\"500 pedidos/mes / 500 clientes\",\"Insignias + Productos relacionados\",\"Promociones (max 5 activas)\",\"Reseñas + Wishlist + CMS + Carousel\"]",
+            "recommended": true,
+            "flag_effects": {
+              "enable_reviews": true,
+              "enable_carousel": true,
+              "enable_wishlist": true,
+              "enable_cms_pages": true,
+              "enable_ecommerce": true,
+              "enable_email_auth": true,
+              "enable_promotions": true,
+              "enable_order_notes": true,
+              "enable_owner_panel": true,
+              "owner_lite_enabled": true,
+              "enable_order_tracking": true,
+              "enable_product_badges": true,
+              "enable_product_search": true,
+              "enable_related_products": true,
+              "enable_customer_accounts": true,
+              "enable_user_registration": true,
+              "enable_address_management": true
+            },
+            "limit_effects": {
+              "max_badges": 10,
+              "max_products": 200,
+              "max_cms_pages": 10,
+              "max_customers": 500,
+              "max_categories": 20,
+              "max_orders_month": 500,
+              "max_wishlist_items": 20,
+              "max_carousel_slides": 10,
+              "max_promotions_active": 5,
+              "max_images_per_product": 10,
+              "max_reviews_per_product": 10
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzp1FWa7WMiJl2WqTUe2H2"
+            }
           },
           {
             "key": "enterprise",
             "name": "Enterprise",
-            "price_chf": 25,
-            "features": [
-              "2FA",
-              "Magic Link"
-            ],
-            "recommended": false
+            "price_chf": 75,
+            "features": "[\"Productos y categorías ilimitados\",\"5000 pedidos/mes / Clientes ∞\",\"Devoluciones self-service\",\"API externa\",\"Todo de Pro incluido\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_reviews": true,
+              "enable_carousel": true,
+              "enable_wishlist": true,
+              "enable_admin_api": true,
+              "enable_cms_pages": true,
+              "enable_ecommerce": true,
+              "enable_email_auth": true,
+              "enable_promotions": true,
+              "enable_order_notes": true,
+              "enable_owner_panel": true,
+              "owner_lite_enabled": true,
+              "enable_order_tracking": true,
+              "enable_product_badges": true,
+              "enable_product_search": true,
+              "enable_related_products": true,
+              "enable_customer_accounts": true,
+              "enable_user_registration": true,
+              "enable_address_management": true,
+              "enable_product_comparisons": true,
+              "enable_self_service_returns": true
+            },
+            "limit_effects": {
+              "max_badges": 99999,
+              "max_products": 99999,
+              "max_cms_pages": 50,
+              "max_customers": 99999,
+              "max_categories": 99999,
+              "max_orders_month": 5000,
+              "max_wishlist_items": 99999,
+              "max_carousel_slides": 20,
+              "max_promotions_active": 50,
+              "max_images_per_product": 20,
+              "max_reviews_per_product": 99999
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzp8FWa7WMiJl2eubSnoms"
+            }
           }
         ]
       },
@@ -621,64 +737,138 @@
         "key": "email_marketing",
         "name": "Email Marketing",
         "icon": "📧",
-        "description": "Emails transaccionales, abandono de carrito y campañas",
-        "category": "grow",
+        "description": "Emails transaccionales, newsletters y campañas automatizadas",
+        "category": "automate",
         "popular": true,
         "requires": [],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
+            "name": "Básico",
             "price_chf": 15,
-            "features": [
-              "Emails transaccionales (pedido, envío, bienvenida)",
-              "500 emails/mes",
-              "Templates predefinidos"
-            ],
-            "recommended": false
+            "features": "[\"Emails transaccionales (pedido, envío, bienvenida)\",\"500 emails/mes\",\"Templates predefinidos\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_email_notifications": true,
+              "enable_transactional_emails": true
+            },
+            "limit_effects": {
+              "max_email_sends_month": 500
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpGFWa7WMiJl2nwk3ASDI"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
             "price_chf": 30,
-            "features": [
-              "2000 emails/mes",
-              "Abandono de carrito automático",
-              "Review requests post-compra",
-              "Delay configurable (1h/3h/24h)"
-            ],
-            "recommended": true
+            "features": "[\"2000 emails/mes\",\"Abandono de carrito automático\",\"Review requests post-compra\",\"Delay configurable (1h/3h/24h)\"]",
+            "recommended": true,
+            "flag_effects": {
+              "enable_email_templates": true,
+              "enable_email_notifications": true,
+              "enable_transactional_emails": true,
+              "enable_abandoned_cart_emails": true,
+              "enable_review_request_emails": true
+            },
+            "limit_effects": {
+              "max_email_sends_month": 2000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpIFWa7WMiJl2ZApuxour"
+            }
           },
           {
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 50,
-            "features": [
-              "10.000 emails/mes",
-              "Campañas manuales",
-              "Segmentación de clientes",
-              "Templates custom (editor no-code)",
-              "Métricas: opens, clicks, bounces"
-            ],
-            "recommended": false
+            "features": "[\"10.000 emails/mes\",\"Campañas manuales\",\"Segmentación de clientes\",\"Templates custom (editor no-code)\",\"Métricas: opens, clicks, bounces\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_newsletter": true,
+              "enable_email_campaigns": true,
+              "enable_email_templates": true,
+              "enable_email_segmentation": true,
+              "enable_email_notifications": true,
+              "enable_transactional_emails": true,
+              "enable_abandoned_cart_emails": true,
+              "enable_review_request_emails": true
+            },
+            "limit_effects": {
+              "max_email_sends_month": 10000,
+              "max_newsletter_subscribers": 5000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpKFWa7WMiJl2iQnZ6xF4"
+            }
+          }
+        ]
+      },
+      {
+        "key": "i18n",
+        "name": "Multiidioma",
+        "icon": "🌍",
+        "description": "Tu tienda en múltiples idiomas y monedas",
+        "category": "grow",
+        "popular": false,
+        "requires": [],
+        "payment_type": "one_time",
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "2 Idiomas",
+            "price_chf": 15,
+            "features": "[\"2 idiomas + 1 moneda\",\"URLs localizadas\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_multi_language": true
+            },
+            "limit_effects": {
+              "max_languages": 2,
+              "max_currencies": 1
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpNFWa7WMiJl2hlCgeqS5"
+            }
+          },
+          {
+            "key": "pro",
+            "name": "5 Idiomas + Monedas",
+            "price_chf": 35,
+            "features": "[\"5 idiomas + 5 monedas\",\"Conversión automática\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_multi_currency": true,
+              "enable_multi_language": true
+            },
+            "limit_effects": {
+              "max_languages": 5,
+              "max_currencies": 5
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpPFWa7WMiJl21tElFJza"
+            }
           }
         ]
       },
       {
         "key": "pos",
         "name": "Punto de Venta",
-        "icon": "🏪",
-        "description": "Terminal POS web con escáner, recibos, modo kiosco y draft orders de Medusa",
+        "icon": "💳",
+        "description": "Terminal POS para ventas presenciales",
         "category": "sell",
-        "popular": true,
+        "popular": false,
         "requires": [
           "ecommerce"
         ],
+        "payment_type": "extension",
         "tiers": [
           {
             "key": "basic",
             "name": "Basic",
-            "price_chf": 20,
+            "price_chf": 5,
             "features": [
               "Terminal POS web",
               "Escáner código de barras",
@@ -686,7 +876,16 @@
               "Recibo (browser print)",
               "1 método de pago"
             ],
-            "recommended": false
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos": true
+            },
+            "limit_effects": {
+              "max_pos_payment_methods": 2
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpRFWa7WMiJl2o9JTCxvd"
+            }
           },
           {
             "key": "pro",
@@ -700,7 +899,21 @@
               "Sonidos + háptica",
               "Carrito offline (localStorage)"
             ],
-            "recommended": true
+            "recommended": true,
+            "flag_effects": {
+              "enable_pos": true,
+              "enable_pos_kiosk": true,
+              "enable_pos_quick_sale": true,
+              "enable_pos_line_discounts": true,
+              "enable_pos_customer_search": true,
+              "enable_pos_keyboard_shortcuts": true
+            },
+            "limit_effects": {
+              "max_pos_payment_methods": 5
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpTFWa7WMiJl2gbmaoFjL"
+            }
           },
           {
             "key": "enterprise",
@@ -713,54 +926,335 @@
               "Búsqueda de clientes",
               "Todo de Pro incluido"
             ],
-            "recommended": false
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos": true,
+              "enable_pos_kiosk": true,
+              "enable_pos_shifts": true,
+              "enable_pos_quick_sale": true,
+              "enable_pos_multi_device": true,
+              "enable_pos_offline_cart": true,
+              "enable_pos_line_discounts": true,
+              "enable_pos_customer_search": true,
+              "enable_pos_thermal_printer": true,
+              "enable_pos_keyboard_shortcuts": true
+            },
+            "limit_effects": {
+              "max_pos_payment_methods": 99
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpWFWa7WMiJl2RASRPoW6"
+            }
           }
         ]
       },
       {
-        "key": "capacidad",
-        "name": "Capacidad de Tráfico",
-        "icon": "📊",
-        "description": "Amplía la capacidad de peticiones diarias y añade analítica de tráfico para tu web",
-        "category": "automate",
+        "key": "pos_kiosk",
+        "name": "Modo Kiosco POS",
+        "icon": "🖥️",
+        "description": "Terminal de autoservicio interactivo para clientes",
+        "category": "sell",
         "popular": false,
-        "requires": [],
+        "requires": [
+          "pos"
+        ],
+        "payment_type": "subscription",
         "tiers": [
           {
             "key": "basic",
-            "name": "Basic",
-            "price_chf": 10,
+            "name": "Básico",
+            "price_chf": 5,
             "features": [
-              "10.000 peticiones/día",
-              "Monitorización básica de uso",
-              "Alertas de límite por email"
+              "Kiosko estándar para autoservicio",
+              "Pagos integrados"
             ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TKQinFWa7WMiJl2ULYhscTg"
+            }
+          },
+          {
+            "key": "pro",
+            "name": "Avanzado",
+            "price_chf": 29,
+            "features": [
+              "Todo lo básico",
+              "Temporizador de inactividad para flujo rápido"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_idle_timer": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TKQinFWa7WMiJl2HSlDnx2X"
+            }
+          },
+          {
+            "key": "enterprise",
+            "name": "Premium",
+            "price_chf": 59,
+            "features": [
+              "Todo lo avanzado",
+              "Gestión remota",
+              "Analíticas avanzadas"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_analytics": true,
+              "enable_kiosk_idle_timer": true,
+              "enable_kiosk_remote_management": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TKQioFWa7WMiJl2nT4qtw1z"
+            }
+          }
+        ]
+      },
+      {
+        "key": "rrss",
+        "name": "Redes Sociales",
+        "icon": "📱",
+        "description": "Integración con redes sociales y compartir productos",
+        "category": "grow",
+        "popular": false,
+        "requires": [],
+        "payment_type": "one_time",
+        "tiers": [
+          {
+            "key": "google_maps",
+            "name": "Google Maps",
+            "price_chf": 90,
+            "features": [
+              "Gestión Google My Business",
+              "Optimización ficha",
+              "Reseñas y respuestas"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_social_sharing": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpZFWa7WMiJl2E2oOQLkO"
+            }
+          },
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 0,
+            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
             "recommended": false
+          },
+          {
+            "key": "instagram",
+            "name": "Instagram",
+            "price_chf": 85,
+            "features": [
+              "Gestión de perfil",
+              "Publicaciones mensuales",
+              "Estrategia de contenido"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_social_links": true,
+              "enable_social_sharing": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpaFWa7WMiJl213Gsq5Db"
+            }
+          },
+          {
+            "key": "google_maps_instagram",
+            "name": "Google Maps + Instagram",
+            "price_chf": 150,
+            "features": [
+              "Todo de Google Maps",
+              "Todo de Instagram",
+              "Estrategia integrada"
+            ],
+            "recommended": true,
+            "flag_effects": {
+              "enable_social_links": true,
+              "enable_social_sharing": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpcFWa7WMiJl2k9yPv1jV"
+            }
+          },
+          {
+            "key": "paquete_basico",
+            "name": "Paquete básico de recursos visuales",
+            "price_chf": 105,
+            "features": [
+              "Sesión fotográfica básica",
+              "Diseño de contenido visual",
+              "Pack de plantillas"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_social_sharing": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpdFWa7WMiJl2Qwvoe4ch"
+            }
+          },
+          {
+            "key": "paquete_avanzado",
+            "name": "Paquete avanzado de recursos visuales",
+            "price_chf": 145,
+            "features": [
+              "Sesión fotográfica profesional",
+              "Vídeo corto para redes",
+              "Diseño de marca completo"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_social_sharing": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpfFWa7WMiJl2f6t9I0jE"
+            }
+          }
+        ]
+      },
+      {
+        "key": "sales_channels",
+        "name": "Multicanal",
+        "icon": "📡",
+        "description": "Vende en Instagram, Facebook y más plataformas",
+        "category": "sell",
+        "popular": false,
+        "requires": [
+          "ecommerce"
+        ],
+        "payment_type": "extension",
+        "tiers": [
+          {
+            "key": "basic",
+            "name": "Básico",
+            "price_chf": 15,
+            "features": "[\"WhatsApp Checkout + Contacto\",\"5 templates WhatsApp\",\"1 método de pago\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_whatsapp_contact": true,
+              "enable_whatsapp_checkout": true
+            },
+            "limit_effects": {
+              "max_payment_methods": 1,
+              "max_whatsapp_templates": 5
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpgFWa7WMiJl2as7m1gHn"
+            }
           },
           {
             "key": "pro",
             "name": "Pro",
-            "price_chf": 25,
-            "features": [
-              "50.000 peticiones/día",
-              "Dashboard de tráfico en tiempo real",
-              "Analítica de consumo diario/mensual",
-              "Alertas avanzadas"
-            ],
-            "recommended": true
+            "price_chf": 30,
+            "features": "[\"15 templates WhatsApp\",\"Pago con tarjeta (Stripe)\",\"Efectivo contra entrega\",\"Newsletter (1000 suscriptores)\",\"3 métodos de pago\"]",
+            "recommended": true,
+            "flag_effects": {
+              "enable_newsletter": true,
+              "enable_online_payments": true,
+              "enable_cash_on_delivery": true,
+              "enable_whatsapp_contact": true,
+              "enable_whatsapp_checkout": true
+            },
+            "limit_effects": {
+              "max_payment_methods": 3,
+              "max_whatsapp_templates": 15,
+              "max_newsletter_subscribers": 1000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpiFWa7WMiJl2bi7lP1ys"
+            }
           },
           {
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 50,
+            "features": "[\"Templates ilimitados\",\"Transferencia bancaria\",\"Reservas (usuario registrado)\",\"Newsletter (5000 suscriptores)\",\"Métodos de pago ∞\"]",
+            "recommended": false,
+            "flag_effects": {
+              "enable_newsletter": true,
+              "enable_bank_transfer": true,
+              "enable_online_payments": true,
+              "enable_cash_on_delivery": true,
+              "enable_whatsapp_contact": true,
+              "enable_whatsapp_checkout": true,
+              "enable_reservation_checkout": true
+            },
+            "limit_effects": {
+              "max_payment_methods": 99999,
+              "max_whatsapp_templates": 99999,
+              "max_newsletter_subscribers": 5000
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzplFWa7WMiJl21OqOhVfU"
+            }
+          }
+        ]
+      },
+      {
+        "key": "seo",
+        "name": "SEO & Analytics",
+        "icon": "📊",
+        "description": "Optimización para buscadores y analítica avanzada",
+        "category": "grow",
+        "popular": true,
+        "requires": [],
+        "payment_type": "subscription",
+        "tiers": [
+          {
+            "key": "medio",
+            "name": "MEDIO",
+            "price_chf": 85,
             "features": [
-              "Peticiones ilimitadas",
-              "Autoscaling automático",
-              "Dashboard de tráfico avanzado",
-              "SLA de disponibilidad",
-              "Todo de Pro incluido"
+              "SEO on-page básico",
+              "Optimización de metadatos",
+              "Google Search Console"
             ],
-            "recommended": false
+            "recommended": false,
+            "flag_effects": {
+              "enable_analytics": true,
+              "enable_seo_tools": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzppFWa7WMiJl25rzFvm40"
+            }
+          },
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
+            }
+          },
+          {
+            "key": "avanzado",
+            "name": "AVANZADO",
+            "price_chf": 230,
+            "features": [
+              "Todo lo de MEDIO",
+              "SEO técnico completo",
+              "Link building",
+              "Reportes mensuales"
+            ],
+            "recommended": true,
+            "flag_effects": {
+              "enable_analytics": true,
+              "enable_seo_tools": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TGzpqFWa7WMiJl28KHXsv6r"
+            }
           }
         ]
       }
