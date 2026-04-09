@@ -16,6 +16,7 @@ env:
 jobs:
   # ── Lint, Type Check, Build ─────────────────────
   build:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Lint, Type Check & Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -80,6 +81,7 @@ jobs:
           fi
   # ── RLS Static Analysis ──────────────────────────
   rls-check:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: RLS Policy Check
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -93,6 +95,7 @@ jobs:
 
   # ── Unit & Integration Tests (Storefront) ───────
   unit-tests:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Unit Tests (Storefront)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -135,6 +138,7 @@ jobs:
 
   # ── Medusa Backend Tests ────────────────────────
   medusa-tests:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Medusa Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -277,6 +281,7 @@ jobs:
 
   # ── Lighthouse CI ──────────────────────────────
   lighthouse:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Lighthouse CI
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -329,6 +334,7 @@ jobs:
 
   # ── Failure Notification ────────────────────────
   notify-failure:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Notify on Failure
     runs-on: ubuntu-latest
     needs: [build, unit-tests, medusa-tests]

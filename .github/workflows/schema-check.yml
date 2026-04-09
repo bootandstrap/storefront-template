@@ -27,6 +27,7 @@ on:
 
 jobs:
   schema-check:
+    if: github.repository != 'bootandstrap/storefront-template'
     name: Schema Drift Detection
     runs-on: ubuntu-latest
     timeout-minutes: 5

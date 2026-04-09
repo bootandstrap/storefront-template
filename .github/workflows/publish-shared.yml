@@ -53,16 +53,13 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Type check
-        continue-on-error: true
         run: pnpm --filter @bootandstrap/shared type-check
 
       - name: Run tests
-        continue-on-error: true
         working-directory: packages/shared
         run: npx vitest run
 
       - name: E2E Provisioning Drill
-        continue-on-error: true
         run: npx tsx scripts/e2e-provision-drill.ts
 
   publish:
