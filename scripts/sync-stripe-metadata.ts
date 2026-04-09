@@ -12,9 +12,10 @@
  * IDEMPOTENT: Safe to run multiple times — uses lookup-by-metadata before creating.
  *
  * FLAGS:
- *   --dry-run     Show what would be created (no Stripe mutations)
- *   --write-db    Also update Supabase module_tiers.stripe_price_id
- *   --verbose     Show full Stripe API payloads
+ *   --dry-run      Show what would be created (no Stripe mutations)
+ *   --write-db     Also update Supabase module_tiers.stripe_price_id
+ *   --verbose      Show full Stripe API payloads
+ *   --allow-live   Allow sk_live_* keys (for production sync)
  *
  * REQUIRES:
  *   STRIPE_SECRET_KEY — Must be TEST MODE key (starts with sk_test_)
@@ -43,6 +44,7 @@ const args = process.argv.slice(2)
 const DRY_RUN = args.includes('--dry-run')
 const WRITE_DB = args.includes('--write-db')
 const VERBOSE = args.includes('--verbose')
+const ALLOW_LIVE = args.includes('--allow-live')
 
 // ── Load contract ─────────────────────────────────────────────────────────
 interface ContractTier {
@@ -68,6 +70,7 @@ interface ContractModule {
 
 function loadContract(): { modules: { catalog: ContractModule[] } } {
     const candidates = [
+        resolve(__dirname, '../packages/shared/src/governance/generated/contract.json'),
         resolve(__dirname, '../apps/storefront/src/lib/governance-contract.json'),
         resolve(__dirname, '../generated/contract.json'),
     ]
@@ -88,8 +91,11 @@ async function stripeRequest(
 ): Promise<Record<string, unknown>> {
     const key = process.env.STRIPE_SECRET_KEY
     if (!key) throw new Error('STRIPE_SECRET_KEY not set')
-    if (key.startsWith('sk_live_')) {
-        throw new Error('🚨 SAFETY: This script must use a TEST MODE key (sk_test_*)')
+    if (key.startsWith('sk_live_') && !ALLOW_LIVE) {
+        throw new Error('🚨 SAFETY: This script must use a TEST MODE key (sk_test_*). Use --allow-live to override.')
+    }
+    if (key.startsWith('sk_live_') && ALLOW_LIVE) {
+        console.log(`${YELLOW}⚠️  LIVE MODE — Products/Prices will be created in production Stripe${NC}`)
     }
 
     const url = `https://api.stripe.com/v1${path}`
