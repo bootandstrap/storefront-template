@@ -15,7 +15,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     if (type) filters.type = type
 
     const interactions = await service.listCrmInteractions(filters, {
-        order: { occurred_at: "DESC" },
+        order: { created_at: "DESC" },
         take: 200,
     })
 
@@ -42,9 +42,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const service = req.scope.resolve(CRM_MODULE) as CrmModuleService
 
     const interaction = await service.createCrmInteractions({
-        ...body,
-        channel: body.channel ?? "manual",
-        occurred_at: new Date(),
+        contact_id: body.contact_id,
+        type: body.type,
+        summary: body.subject ?? body.type,
+        content: body.notes ?? null,
+        initiated_by: "operator" as const,
     })
 
     res.status(201).json({ interaction })

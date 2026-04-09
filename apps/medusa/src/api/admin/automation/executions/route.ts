@@ -15,7 +15,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     if (status) filters.status = status
 
     const executions = await service.listAutomationExecutions(filters, {
-        order: { executed_at: "DESC" },
+        order: { created_at: "DESC" },
         take: 200,
     })
 

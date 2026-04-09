@@ -34,9 +34,9 @@ export default withGovernanceGate("enable_automation", async ({
                 // Log execution (actual action dispatch is handled by the rule engine)
                 await automationService.createAutomationExecutions({
                     rule_id: rule.id,
-                    trigger_data: { order_id: data.id },
-                    status: "completed",
-                    executed_at: new Date(),
+                    trigger_event: "order.placed",
+                    event_payload: { order_id: data.id },
+                    status: "success",
                 })
 
                 console.log(JSON.stringify({
@@ -50,10 +50,10 @@ export default withGovernanceGate("enable_automation", async ({
             } catch (ruleErr) {
                 await automationService.createAutomationExecutions({
                     rule_id: rule.id,
-                    trigger_data: { order_id: data.id },
+                    trigger_event: "order.placed",
+                    event_payload: { order_id: data.id },
                     status: "failed",
                     error_message: ruleErr instanceof Error ? ruleErr.message : String(ruleErr),
-                    executed_at: new Date(),
                 })
             }
         }

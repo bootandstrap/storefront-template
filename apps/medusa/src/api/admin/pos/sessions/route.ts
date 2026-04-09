@@ -27,24 +27,23 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
  * Create a new POS session (open terminal)
  */
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
-    const { terminal_id, cashier_name, opening_cash } = req.body as {
+    const { terminal_id, operator, opening_balance } = req.body as {
         terminal_id: string
-        cashier_name: string
-        opening_cash?: number
+        operator: string
+        opening_balance?: number
     }
 
-    if (!terminal_id || !cashier_name) {
-        return res.status(400).json({ message: "terminal_id and cashier_name are required" })
+    if (!operator) {
+        return res.status(400).json({ message: "operator is required" })
     }
 
     const service = req.scope.resolve(POS_MODULE) as PosModuleService
 
     const session = await service.createPosSessions({
-        terminal_id,
-        cashier_name,
+        terminal_id: terminal_id ?? null,
+        operator,
         status: "open",
-        opening_cash: opening_cash ?? 0,
-        opened_at: new Date(),
+        opening_balance: opening_balance ?? 0,
     })
 
     res.status(201).json({ session })
