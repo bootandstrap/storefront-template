@@ -37,6 +37,22 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/product-reviews",
     },
+    // POS module — Point of Sale sessions, transactions, shifts
+    {
+      resolve: "./src/modules/pos",
+    },
+    // CRM module — Contacts, interactions, segments
+    {
+      resolve: "./src/modules/crm",
+    },
+    // Email Marketing module — Campaigns, templates, sends
+    {
+      resolve: "./src/modules/email-marketing",
+    },
+    // Automation module — Rules and execution engine
+    {
+      resolve: "./src/modules/automation",
+    },
     // Supabase Auth Provider
     {
       resolve: "@medusajs/medusa/auth",
