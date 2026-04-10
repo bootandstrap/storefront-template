@@ -15,6 +15,11 @@
             "import": "./dist/billing/index.js",
             "default": "./dist/billing/index.js"
         },
+        "./billing/plans": {
+            "types": "./dist/billing/plans.d.ts",
+            "import": "./dist/billing/plans.js",
+            "default": "./dist/billing/plans.js"
+        },
         "./governance": {
             "types": "./dist/governance/index.d.ts",
             "import": "./dist/governance/index.js",
