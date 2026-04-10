@@ -1,0 +1,196 @@
+/**
+ * Ventas — Server-side data fetchers
+ *
+ * RSC Slot data layer for the Sales hub.
+ */
+
+import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+import { getAdminOrders, getOrdersThisMonth, getAdminCustomers } from '@/lib/medusa/admin'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { parsePanelListQuery } from '@/lib/panel-list-query'
+import { getConfigForTenant } from '@/lib/config'
+import { resolveCurrencyContext, sumRevenueByCurrency, formatAmount } from '@/lib/currency-engine'
+import { fetchReturns } from '../devoluciones/actions'
+import { getReviews } from '../resenas/actions'
+
+// ── Orders Data ───────────────────────────────────────────────────────────
+
+export async function fetchOrdersData(
+    tenantId: string,
+    lang: string,
+    rawSearchParams: Record<string, string | string[] | undefined>,
+) {
+    const scope = await getTenantMedusaScope(tenantId)
+    const appConfig = await getConfigForTenant(tenantId)
+    const { config, featureFlags } = appConfig
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+
+    const query = parsePanelListQuery(rawSearchParams, {
+        defaultLimit: 20,
+        allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
+    })
+
+    const [{ orders, count }, ordersThisMonth, { orders: allOrders }] = await Promise.all([
+        getAdminOrders({
+            limit: query.limit,
+            offset: query.offset,
+            q: query.q,
+            status: query.status,
+        }, scope),
+        getOrdersThisMonth(scope),
+        getAdminOrders({ limit: 500, status: 'all' }, scope),
+    ])
+
+    const pendingCount = orders.filter(o => o.status === 'pending').length
+    const completedCount = orders.filter(o => o.status === 'completed').length
+    const currencyCtx = resolveCurrencyContext(config, featureFlags)
+    const revenueBreakdown = sumRevenueByCurrency(allOrders, currencyCtx)
+    const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary)
+    const formattedRevenue = formatAmount(primaryRevenue?.amount ?? 0, currencyCtx.primary, lang)
+    const secondaryRevenues = revenueBreakdown
+        .filter(r => r.code !== currencyCtx.primary && r.amount > 0)
+        .map(r => `+${formatAmount(r.amount, r.code, lang)}`)
+        .join(' ')
+
+    const posOrderCount = allOrders.filter(o => (o.metadata as Record<string, unknown> | null)?.source === 'pos').length
+    const onlineOrderCount = allOrders.length - posOrderCount
+    const rawChannel = rawSearchParams?.channel as string | undefined
+    const initialChannel = (rawChannel === 'pos' || rawChannel === 'online') ? rawChannel : 'all'
+
+    const labels = {
+        title: t('panel.orders.title'),
+        subtitle: t('panel.orders.subtitle'),
+        searchPlaceholder: t('panel.orders.searchPlaceholder'),
+        all: t('panel.orders.all'),
+        pending: t('panel.orders.pending'),
+        completed: t('panel.orders.completed'),
+        canceled: t('panel.orders.canceled'),
+        noOrders: t('panel.orders.noOrders'),
+        noOrdersDesc: t('panel.orders.noOrdersDesc'),
+        order: t('panel.orders.order'),
+        customer: t('panel.orders.customer'),
+        date: t('panel.orders.date'),
+        items: t('panel.orders.items'),
+        total: t('panel.orders.total'),
+        status: t('panel.orders.status'),
+        viewDetail: t('panel.orders.viewDetail'),
+        fulfill: t('panel.orders.fulfill'),
+        cancel: t('panel.orders.cancel'),
+        fulfillConfirm: t('panel.orders.fulfillConfirm'),
+        cancelConfirm: t('panel.orders.cancelConfirm'),
+        refund: t('panel.orders.refund'),
+        refundConfirm: t('panel.orders.refundConfirm'),
+        refundAmount: t('panel.orders.refundAmount'),
+        refundHint: t('panel.orders.refundHint'),
+        refundSuccess: t('panel.orders.refundSuccess'),
+        shippingAddress: t('panel.orders.shippingAddress'),
+        payment: t('panel.orders.payment'),
+        fulfilled: t('panel.orders.fulfilled'),
+        notFulfilled: t('panel.orders.notFulfilled'),
+        shipping: t('panel.orders.shipping'),
+        taxes: t('panel.orders.taxes'),
+        discount: t('panel.orders.discount'),
+        subtotal: t('panel.orders.subtotal'),
+        back: t('common.back'),
+        previous: t('pagination.previous'),
+        next: t('pagination.next'),
+    }
+
+    return {
+        orders,
+        totalCount: count,
+        currentPage: query.page,
+        pageSize: query.limit,
+        initialSearch: query.q ?? '',
+        initialStatus: (query.status as 'all' | 'pending' | 'completed' | 'canceled' | undefined) ?? 'all',
+        initialChannel: initialChannel as 'all' | 'pos' | 'online',
+        metrics: { pendingCount, completedCount, formattedRevenue, secondaryRevenues, posOrderCount, onlineOrderCount },
+        lang,
+        labels,
+    }
+}
+
+// ── Customers Data ────────────────────────────────────────────────────────
+
+export async function fetchCustomersData(
+    tenantId: string,
+    lang: string,
+    rawSearchParams: Record<string, string | string[] | undefined>,
+) {
+    const scope = await getTenantMedusaScope(tenantId)
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+
+    const query = parsePanelListQuery(rawSearchParams, { defaultLimit: 20 })
+
+    const { customers, count } = await getAdminCustomers({
+        limit: query.limit,
+        offset: query.offset,
+        q: query.q,
+    }, scope)
+
+    const labels = {
+        title: t('panel.customers.title'),
+        subtitle: t('panel.customers.subtitle'),
+        searchPlaceholder: t('panel.customers.searchPlaceholder'),
+        noCustomers: t('panel.customers.noCustomers'),
+        noCustomersHint: t('panel.customers.noCustomersHint'),
+        customer: t('panel.customers.customer'),
+        email: t('panel.customers.email'),
+        orders: t('panel.customers.orders'),
+        totalSpent: t('panel.customers.totalSpent'),
+        joinedDate: t('panel.customers.joinedDate'),
+        total: t('panel.orders.total'),
+        previous: t('pagination.previous'),
+        next: t('pagination.next'),
+        noOrders: t('panel.customers.noOrders'),
+    }
+
+    return {
+        customers,
+        totalCount: count,
+        currentPage: query.page,
+        pageSize: query.limit,
+        initialSearch: query.q ?? '',
+        lang,
+        labels,
+    }
+}
+
+// ── Returns Data ──────────────────────────────────────────────────────────
+
+export async function fetchReturnsData(lang: string) {
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+    const { returns } = await fetchReturns()
+
+    return {
+        returns: returns ?? [],
+        labels: {
+            title: t('panel.returns.title'),
+            subtitle: t('panel.returns.subtitle'),
+            noRequests: t('panel.returns.noRequests'),
+            customer: t('panel.returns.customer'),
+            order: t('panel.returns.order'),
+            reason: t('panel.returns.reason'),
+            date: t('panel.returns.date'),
+            status: t('panel.returns.status'),
+            items: t('panel.returns.items'),
+            actions: t('panel.returns.actions'),
+        },
+    }
+}
+
+// ── Reviews Data ──────────────────────────────────────────────────────────
+
+export async function fetchReviewsData(lang: string) {
+    const dictionary = await getDictionary(lang as Locale)
+    const { reviews, stats } = await getReviews()
+
+    return {
+        reviews: reviews ?? [],
+        stats: stats ?? { total: 0, pending: 0, approved: 0, rejected: 0, averageRating: 0 },
+        dictionary,
+    }
+}

@@ -8,6 +8,6 @@ describe('feature-gate links', () => {
         const html = renderToStaticMarkup(view)
 
         expect(html).toContain('https://bootandstrap.com/es/modulos/chatbot-ia')
-        expect(html).toContain('/es/panel/suscripcion?module=chatbot')
+        expect(html).toContain('/es/panel/ajustes?tab=suscripcion&module=chatbot')
     })
 })

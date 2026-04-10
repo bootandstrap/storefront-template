@@ -3169,3 +3169,154 @@ body.pos-fullscreen {
   }
 }
 
+/* ── Panel Tab Navigation (SOTA Redesign) ──────────────────────────────── */
+
+.panel-tab-nav {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.375rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    background: var(--sf-1);
+    border-radius: 1rem;
+    border: 1px solid var(--sf-3);
+}
+.panel-tab-nav::-webkit-scrollbar { display: none; }
+
+.panel-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--tx-sec);
+    position: relative;
+}
+
+.panel-tab-active {
+    background: var(--surface, #fff);
+    color: var(--brand);
+    font-weight: 600;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.panel-tab-inactive:hover {
+    background: var(--sf-2);
+    color: var(--tx);
+}
+
+.panel-tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+}
+.panel-tab-icon > svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.panel-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.25rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    background: var(--brand);
+    color: white;
+    line-height: 1;
+}
+
+/* Dark mode adjustments */
+:root[data-panel-theme="dark"] .panel-tab-nav {
+    background: var(--sf-2);
+}
+:root[data-panel-theme="dark"] .panel-tab-active {
+    background: var(--sf-3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile: slightly smaller tabs */
+@media (max-width: 768px) {
+    .panel-tab-item {
+        padding: 0.4375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    .panel-tab-nav {
+        padding: 0.25rem;
+    }
+}
+
+/* ── New Sidebar Styles (6-section model) ───────────────────────────────── */
+
+.panel-sidebar-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--tx-sec);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    position: relative;
+}
+
+.panel-sidebar-section:hover {
+    background: var(--sf-1);
+    color: var(--tx);
+    transform: translateX(2px);
+}
+
+.panel-sidebar-section-active {
+    background: var(--brand-subtle, rgba(45, 80, 22, 0.08));
+    color: var(--brand);
+    font-weight: 600;
+}
+
+.panel-sidebar-section-active .panel-sidebar-icon {
+    color: var(--brand);
+}
+
+.panel-sidebar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--tx-faint);
+    transition: color 0.2s;
+}
+
+.panel-sidebar-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    background: var(--brand);
+    color: white;
+}
+

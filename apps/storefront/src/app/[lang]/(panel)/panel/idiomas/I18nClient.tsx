@@ -202,7 +202,7 @@ function UpgradeModal({ labels, lang, onClose }: {
                     <p className="text-sm text-tx-sec mt-1">{labels.upgradePrompt}</p>
                 </div>
                 <Link
-                    href={`/${lang}/panel/suscripcion?module=i18n`}
+                    href={`/${lang}/panel/ajustes?tab=suscripcion&module=i18n`}
                     className="flex items-center justify-center gap-2 w-full btn btn-primary py-3 text-sm font-semibold"
                     onClick={onClose}
                 >
@@ -308,7 +308,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                 setSelectedPanelLang(prev)
                 showToastMsg('error', labels.saveError)
             } else {
-                router.push(`/${newLang}/panel/idiomas`)
+                router.push(`/${newLang}/panel/ajustes?tab=idiomas`)
             }
         })
     }
@@ -454,7 +454,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                                             {labels.limitReached}
                                         </span>
                                         <Link
-                                            href={`/${lang}/panel/suscripcion?module=i18n`}
+                                            href={`/${lang}/panel/ajustes?tab=suscripcion&module=i18n`}
                                             className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 whitespace-nowrap transition-colors"
                                         >
                                             {labels.upgradePrompt} <ArrowRight className="w-3 h-3" />

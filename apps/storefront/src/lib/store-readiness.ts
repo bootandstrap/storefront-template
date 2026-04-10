@@ -105,7 +105,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.firstProduct',
       weight: 15,
       done: productCount > 0,
-      actionHref: `/${lang}/panel/catalogo`,
+      actionHref: `/${lang}/panel/mi-tienda`,
       category: 'content',
     },
     {
@@ -115,7 +115,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.logo',
       weight: 10,
       done: !!config.logo_url,
-      actionHref: `/${lang}/panel/tienda`,
+      actionHref: `/${lang}/panel/ajustes?tab=tienda`,
       category: 'setup',
     },
     {
@@ -125,7 +125,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.contact',
       weight: 10,
       done: !!config.whatsapp_number || !!config.store_email,
-      actionHref: `/${lang}/panel/tienda`,
+      actionHref: `/${lang}/panel/ajustes?tab=tienda`,
       category: 'setup',
     },
     {
@@ -135,7 +135,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.payment',
       weight: 12,
       done: hasPaymentMethod,
-      actionHref: `/${lang}/panel/tienda`,
+      actionHref: `/${lang}/panel/ajustes?tab=tienda`,
       category: 'setup',
     },
     {
@@ -145,7 +145,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.categories',
       weight: 8,
       done: categoryCount > 0,
-      actionHref: `/${lang}/panel/categorias`,
+      actionHref: `/${lang}/panel/mi-tienda?tab=categorias`,
       category: 'content',
     },
     {
@@ -155,7 +155,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.goLive',
       weight: 12,
       done: !featureFlags.enable_maintenance_mode,
-      actionHref: `/${lang}/panel/tienda`,
+      actionHref: `/${lang}/panel/ajustes?tab=tienda`,
       category: 'setup',
     },
     {
@@ -165,7 +165,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.firstSale',
       weight: 10,
       done: ordersThisMonth > 0,
-      actionHref: `/${lang}/panel/pedidos`,
+      actionHref: `/${lang}/panel/ventas`,
       category: 'sales',
     },
     {
@@ -175,7 +175,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.multiProducts',
       weight: 8,
       done: productCount >= 5,
-      actionHref: `/${lang}/panel/catalogo`,
+      actionHref: `/${lang}/panel/mi-tienda`,
       category: 'growth',
     },
     {
@@ -185,7 +185,7 @@ export async function calculateStoreReadiness(
       descKey: 'storeHealth.tip.multiCategories',
       weight: 7,
       done: categoryCount >= 3,
-      actionHref: `/${lang}/panel/categorias`,
+      actionHref: `/${lang}/panel/mi-tienda?tab=categorias`,
       category: 'growth',
     },
     {

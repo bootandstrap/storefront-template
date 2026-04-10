@@ -63,6 +63,8 @@ interface POSClientProps {
     posConfig?: Record<string, unknown>
     /** Tenant ID for multi-device sync */
     tenantId?: string
+    /** Stock management mode from tenant config: 'always_in_stock' | 'managed' */
+    stockMode?: 'always_in_stock' | 'managed'
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -77,6 +79,7 @@ export default function POSClient({
     planLimits,
     posConfig = {},
     tenantId,
+    stockMode = 'always_in_stock',
 }: POSClientProps) {
     // ── State ──
     const [cart, dispatch] = useReducer(cartReducer, INITIAL_CART)
@@ -222,16 +225,33 @@ export default function POSClient({
             try {
                 const parsed = JSON.parse(saved)
                 if (parsed.items?.length > 0) {
-                    // Sanitize any corrupted unit_price values from previous sessions
-                    parsed.items = parsed.items.map((i: any) => ({
-                        ...i,
-                        unit_price: typeof i.unit_price === 'number' && !isNaN(i.unit_price) ? i.unit_price : 0,
-                    }))
-                    dispatch({ type: 'RESTORE_CART', cart: parsed })
+                    // Build a set of valid variant IDs from current server products
+                    const validVariantIds = new Set(
+                        products.flatMap((p: any) => (p.variants ?? []).map((v: any) => v.id))
+                    )
+                    // Filter out stale items (variants that no longer exist in Medusa)
+                    const validItems = parsed.items
+                        .filter((i: any) => validVariantIds.has(i.id))
+                        .map((i: any) => ({
+                            ...i,
+                            unit_price: typeof i.unit_price === 'number' && !isNaN(i.unit_price) ? i.unit_price : 0,
+                        }))
+
+                    const droppedCount = parsed.items.length - validItems.length
+                    if (droppedCount > 0) {
+                        console.warn(`[POS] Dropped ${droppedCount} stale cart item(s) — variants no longer exist`)
+                    }
+
+                    if (validItems.length > 0) {
+                        dispatch({ type: 'RESTORE_CART', cart: { ...parsed, items: validItems } })
+                    } else {
+                        // All items were stale — clear localStorage
+                        localStorage.removeItem('pos_cart')
+                    }
                 }
             } catch { /* ignore corrupt data */ }
         }
-    }, [])
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (cart.items.length > 0) {
@@ -475,7 +495,14 @@ export default function POSClient({
             }, 1500)
         } else {
             playError()
-            setPaymentState({ status: 'failed', error: result.error || posLabel('panel.pos.paymentFailed', labels) })
+            // Auto-clear cart if items are stale (variants deleted from Medusa)
+            if (result.error?.startsWith('STALE_CART')) {
+                dispatch({ type: 'CLEAR' })
+                localStorage.removeItem('pos_cart')
+                setPaymentState({ status: 'failed', error: posLabel('panel.pos.staleCart', labels) || 'Items in cart are outdated. Cart has been cleared. Please add items again.' })
+            } else {
+                setPaymentState({ status: 'failed', error: result.error || posLabel('panel.pos.paymentFailed', labels) })
+            }
         }
     }, [cart, totals, defaultCurrency, playCashRegister, playError, labels, shouldAutoPrint, thermalPrintReceipt, businessInfo, posConfig])
 
@@ -798,6 +825,7 @@ export default function POSClient({
                     <div className="pos-products-panel border-r border-sf-2">
                         <POSProductGrid
                             products={isOnline ? adjustedProducts : cachedProducts}
+                            stockMode={stockMode}
                             categories={categories}
                             defaultCurrency={defaultCurrency}
                             onAddToCart={handleAddToCart}

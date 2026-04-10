@@ -81,7 +81,12 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
         }, scope)
 
         if (createError || !draft_order) {
-            return { success: false, error: createError || 'Failed to create draft order' }
+            // Detect stale variant errors from Medusa and convert to STALE_CART
+            const errStr = createError || 'Failed to create draft order'
+            if (errStr.includes('do not exist') || errStr.includes('not published')) {
+                return { success: false, error: 'STALE_CART: Some items in cart no longer exist.' }
+            }
+            return { success: false, error: errStr }
         }
 
         // Register payment (mark as paid → converts to order)

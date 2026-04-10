@@ -59,9 +59,8 @@ export const MODULE_CONFIG_SCHEMAS: Record<string, ConfigFieldDef[]> = {
     // ── E-Commerce ────────────────────────────────────────────────────
     ecommerce: [
         { key: 'stock_mode', label: 'Modo de stock', type: 'select', options: [
-            { value: 'enabled', label: 'Activado' },
-            { value: 'disabled', label: 'Desactivado' },
-            { value: 'display_only', label: 'Solo mostrar' },
+            { value: 'always_in_stock', label: '✅ Siempre disponible' },
+            { value: 'managed', label: '📦 Stock gestionado' },
         ]},
         { key: 'low_stock_threshold', label: 'Umbral de stock bajo', type: 'number', placeholder: '5' },
         { key: 'free_shipping_threshold', label: 'Envío gratis desde (€)', type: 'number', placeholder: '50' },

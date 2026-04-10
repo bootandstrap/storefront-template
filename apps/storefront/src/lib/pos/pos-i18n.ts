@@ -280,6 +280,7 @@ export const POS_DEFAULT_LABELS: Record<string, string> = {
     'panel.pos.paymentError': 'Error de pago',
     'panel.pos.qrExpired': 'QR expirado',
     'panel.pos.twintScanHint': 'Abra la app Twint y escanee',
+    'panel.pos.staleCart': 'Algunos productos del carrito ya no existen. Se ha vaciado el carrito — añade los productos de nuevo.',
 
     // ── Shift panel extras ──
     'panel.pos.shiftActive': 'Turno activo',

@@ -37,6 +37,8 @@ interface POSProductGridProps {
     loading?: boolean
     /** Callback when a price is set via quick-price modal — triggers data refresh */
     onPriceSet?: () => void
+    /** Stock management mode from tenant config: 'always_in_stock' | 'managed' */
+    stockMode?: 'always_in_stock' | 'managed'
 }
 
 // ---------------------------------------------------------------------------
@@ -53,7 +55,10 @@ const gridConfig: Record<GridDensity, { cols: string; gap: string; imageAspect: 
 // Stock Helpers
 // ---------------------------------------------------------------------------
 
-function getStockInfo(product: AdminProductFull): { status: 'in_stock' | 'low_stock' | 'out_of_stock'; quantity: number | null; managed: boolean } {
+function getStockInfo(product: AdminProductFull, stockMode: 'always_in_stock' | 'managed' = 'managed'): { status: 'in_stock' | 'low_stock' | 'out_of_stock'; quantity: number | null; managed: boolean } {
+    // When stock_mode is 'always_in_stock', all products are always available
+    if (stockMode === 'always_in_stock') return { status: 'in_stock', quantity: null, managed: false }
+
     const variants = product.variants ?? []
     if (variants.length === 0) return { status: 'in_stock', quantity: null, managed: false }
 
@@ -280,13 +285,15 @@ export default function POSProductGrid({
     labels,
     loading = false,
     onPriceSet,
+    stockMode = 'always_in_stock',
 }: POSProductGridProps) {
     const [search, setSearch] = useState('')
     const [activeCategory, setActiveCategory] = useState<string | null>(null)
     const [variantPickerProduct, setVariantPickerProduct] = useState<AdminProductFull | null>(null)
     const [tappedId, setTappedId] = useState<string | null>(null)
     const [density, setDensity] = useState<GridDensity>('default')
-    const [showStock, setShowStock] = useState(true)
+    // showStock defaults to true only when stock is managed
+    const [showStock, setShowStock] = useState(stockMode === 'managed')
     const [soundEnabled, setSoundEnabled] = useState(true)
     const [configOpen, setConfigOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
@@ -342,7 +349,7 @@ export default function POSProductGrid({
 
     const handleProductTap = useCallback((product: AdminProductFull) => {
         // Check stock if managed
-        const stock = getStockInfo(product)
+        const stock = getStockInfo(product, stockMode)
         if (showStock && stock.status === 'out_of_stock') return
 
         // Check if product has a price in the target currency
@@ -376,7 +383,7 @@ export default function POSProductGrid({
         setTappedId(product.id)
         setTimeout(() => setTappedId(null), 500)
         onAddToCart(item)
-    }, [defaultCurrency, onAddToCart, showStock, getProductPriceInfo])
+    }, [defaultCurrency, onAddToCart, showStock, getProductPriceInfo, stockMode])
 
     const handleVariantSelect = useCallback((item: POSCartItem) => {
         setVariantPickerProduct(null)
@@ -554,7 +561,7 @@ export default function POSProductGrid({
                 ) : (
                     <div className={`grid ${cfg.cols} ${cfg.gap}`}>
                         {filtered.map(product => {
-                            const stock = getStockInfo(product)
+                            const stock = getStockInfo(product, stockMode)
                             const isOutOfStock = showStock && stock.status === 'out_of_stock'
                             const isTapped = tappedId === product.id
                             const priceInfo = getProductPriceInfo(product)
@@ -672,6 +679,7 @@ export default function POSProductGrid({
                     onSelect={handleVariantSelect}
                     onClose={() => setVariantPickerProduct(null)}
                     labels={labels}
+                    stockMode={stockMode}
                 />
             )}
 

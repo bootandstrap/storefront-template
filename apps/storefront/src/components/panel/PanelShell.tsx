@@ -8,6 +8,8 @@
  * CommandPalette is mounted globally for ⌘K access.
  * PanelMobileNav provides thumb-zone bottom tabs on mobile.
  * PanelKeyboardShortcuts shows an overlay on `?` press.
+ *
+ * SOTA Redesign: Sidebar now uses 6 sections (home, myStore, sales, modules, settings, pos).
  */
 
 import { useState, useCallback } from 'react'
@@ -43,9 +45,6 @@ interface PanelShellProps {
     commandPaletteItems: CommandItem[]
     commandPaletteLabels: CommandPaletteLabels
     planName?: string
-    onboardingCompleted?: boolean
-    replayTourLabel?: string
-    tourTranslations?: Record<string, string>
     /** Inline setup nudge for the topbar greeting */
     setupNudge?: { label: string; href: string } | null
     /** Governance SSOT default currency */
@@ -66,9 +65,6 @@ export default function PanelShell({
     commandPaletteItems,
     commandPaletteLabels,
     planName,
-    onboardingCompleted,
-    replayTourLabel,
-    tourTranslations,
     setupNudge,
     defaultCurrency,
     children,
@@ -97,9 +93,6 @@ export default function PanelShell({
                     labels={sidebarLabels}
                     featureFlags={featureFlags}
                     planName={planName}
-                    onboardingCompleted={onboardingCompleted}
-                    replayTourLabel={replayTourLabel}
-                    tourTranslations={tourTranslations}
                     mobileOpen={mobileOpen}
                     onMobileOpenChange={setMobileOpen}
                     collapsed={sidebarCollapsed}
@@ -146,11 +139,11 @@ export default function PanelShell({
                 <PanelMobileNav
                     lang={lang}
                     labels={{
-                        dashboard: sidebarLabels.dashboard,
-                        catalog: sidebarLabels.catalog,
-                        orders: sidebarLabels.orders,
-                        customers: sidebarLabels.customers,
-                        more: 'Más',
+                        dashboard: sidebarLabels.home,
+                        catalog: sidebarLabels.myStore,
+                        orders: sidebarLabels.sales,
+                        customers: sidebarLabels.settings,
+                        more: '•••',
                     }}
                     onMoreClick={handleMobileMore}
                 />

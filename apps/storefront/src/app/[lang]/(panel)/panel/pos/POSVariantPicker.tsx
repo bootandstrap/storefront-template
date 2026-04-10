@@ -22,6 +22,8 @@ interface POSVariantPickerProps {
     onSelect: (item: POSCartItem) => void
     onClose: () => void
     labels: Record<string, string>
+    /** Stock management mode from tenant config */
+    stockMode?: 'always_in_stock' | 'managed'
 }
 
 export default function POSVariantPicker({
@@ -30,6 +32,7 @@ export default function POSVariantPicker({
     onSelect,
     onClose,
     labels,
+    stockMode = 'always_in_stock',
 }: POSVariantPickerProps) {
     // ── Escape key to dismiss ──
     useEffect(() => {
@@ -132,9 +135,11 @@ export default function POSVariantPicker({
                         <div className="grid grid-cols-2 gap-2.5">
                             {product.variants.map((variant, idx) => {
                                 const priceInfo = safeVariantPrice(variant, defaultCurrency)
-                                const isInStock = variant.manage_inventory
-                                    ? (variant.inventory_quantity ?? 0) > 0
-                                    : true
+                                const isInStock = stockMode === 'always_in_stock'
+                                    ? true
+                                    : variant.manage_inventory
+                                        ? (variant.inventory_quantity ?? 0) > 0
+                                        : true
                                 const hasPriceInCurrency = priceInfo.has_price
                                 const isSelectable = isInStock && hasPriceInCurrency
 

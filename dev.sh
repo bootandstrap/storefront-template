@@ -254,7 +254,7 @@ if [[ -n "${MEDUSA_ADMIN_EMAIL:-}" ]] && [[ -n "${MEDUSA_ADMIN_PASSWORD:-}" ]]; 
     (cd "$ROOT_DIR/apps/medusa" && NODE_OPTIONS='--dns-result-order=ipv4first' npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD" 2>&1 | sed 's/^/  [medusa-user] /') || true
 fi
 
-start_service "medusa" "$ROOT_DIR/apps/medusa" "REDIS_URL='$DEV_REDIS_URL' NODE_OPTIONS='--dns-result-order=ipv4first' pnpm dev"
+start_service "medusa" "$ROOT_DIR/apps/medusa" "REDIS_URL='$DEV_REDIS_URL' NODE_OPTIONS='--dns-result-order=ipv4first' npm run dev"
 
 # ── Wait for Medusa before starting Storefront ──
 echo -e "\n${BLUE}[wait]${NC} Waiting for Medusa API on :9000 (up to 90s)..."

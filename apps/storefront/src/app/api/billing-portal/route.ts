@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
                 stripe_customer_id: tenant.stripe_customer_id,
-                return_url: `${origin}/${locale}/panel/suscripcion`,
+                return_url: `${origin}/${locale}/panel/ajustes?tab=suscripcion`,
             }),
         })
 

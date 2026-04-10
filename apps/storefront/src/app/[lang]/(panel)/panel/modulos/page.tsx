@@ -1,18 +1,21 @@
 /**
- * Módulos — Owner Panel Module Marketplace (SOTA)
+ * Módulos — Modules Hub (SOTA Redesign)
  *
- * Shows all available modules with their activation status.
- * Owners can browse, compare tiers, and request module activation.
- * Gated as essential route (always accessible).
+ * RSC Slot pattern with dynamic tabs based on active modules.
+ *
+ * Default tab: marketplace (always visible).
+ * Additional tabs appear for each activated module.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
-import { getOwnerModuleStatus } from '@/lib/owner-modules'
-import { getActiveModulesForTenant } from '@/lib/active-modules'
+import { getModuleTabs } from '@/lib/panel-policy'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import FeatureGate from '@/components/ui/FeatureGate'
 import { Blocks } from 'lucide-react'
+import ModulosShell from './ModulosShell'
 import ModulesMarketplaceClient from './ModulesMarketplaceClient'
+import { fetchMarketplaceData } from './data'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,88 +28,152 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function ModulosPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ lang: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { lang } = await params
-    const { tenantId } = await withPanelGuard()
+    const rawSearchParams = await searchParams
+    const tab = typeof rawSearchParams.tab === 'string' ? rawSearchParams.tab : undefined
+    const { appConfig, tenantId } = await withPanelGuard()
+    const { featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Fetch module data
-    const moduleStatus = await getOwnerModuleStatus(lang)
+    const tabs = getModuleTabs(featureFlags)
+    const activeTab = tab && tabs.some(tb => tb.key === tab) ? tab : 'marketplace'
 
-    // Compute recently activated modules (within last 7 days)
-    let recentlyActivated: string[] = []
-    try {
-        const activeModules = await getActiveModulesForTenant(tenantId)
-        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-        recentlyActivated = activeModules
-            .filter(m => new Date(m.activatedAt).getTime() > sevenDaysAgo)
-            .map(m => m.moduleKey)
-    } catch { /* degrade */ }
+    const tabsWithLabels = tabs.map(tb => ({
+        ...tb,
+        label: tb.key === 'marketplace'
+            ? (t('panel.tabs.marketplace' as keyof typeof dictionary) || 'Explorar')
+            : tb.label,
+    }))
 
-    const activeCount = Object.keys(moduleStatus.activeModules).length
-    const totalCount = moduleStatus.catalog.filter(m => m.key).length
+    // ── RSC Slot: fetch only the active tab's data ──
+    let tabContent: React.ReactNode
+
+    switch (activeTab) {
+        case 'marketplace': {
+            const data = await fetchMarketplaceData(tenantId, lang)
+            tabContent = (
+                <ModulesMarketplaceClient
+                    catalog={data.catalog}
+                    activeModules={data.activeModules}
+                    monthlySpend={data.monthlySpend}
+                    locale={lang}
+                    recentlyActivated={data.recentlyActivated}
+                    labels={{
+                        title: data.t('panel.modules.title') || 'Módulos',
+                        subtitle: data.t('panel.modules.subtitle') || 'Gestiona y amplía las funcionalidades de tu tienda',
+                        active: data.t('panel.modules.active') || 'Activo',
+                        inactive: data.t('panel.modules.inactive') || 'Disponible',
+                        activate: data.t('panel.modules.activate') || 'Activar',
+                        upgrade: data.t('panel.modules.upgrade') || 'Mejorar',
+                        manage: data.t('panel.modules.manage') || 'Gestionar',
+                        monthly: data.t('panel.modules.monthly') || '/mes',
+                        free: data.t('panel.modules.free') || 'Gratis',
+                        recommended: data.t('panel.modules.recommended') || 'Recomendado',
+                        currentPlan: data.t('panel.modules.currentPlan') || 'Plan actual',
+                        monthlySpend: data.t('panel.modules.monthlySpend') || 'Gasto mensual en módulos',
+                        activeModules: data.t('panel.modules.activeModules') || 'Módulos activos',
+                        availableModules: data.t('panel.modules.availableModules') || 'Módulos disponibles',
+                        allCategories: data.t('panel.modules.allCategories') || 'Todos',
+                        categorySell: data.t('panel.modules.categorySell') || 'Vender',
+                        categoryEngage: data.t('panel.modules.categoryEngage') || 'Conectar',
+                        categoryGrow: data.t('panel.modules.categoryGrow') || 'Crecer',
+                        categoryAutomate: data.t('panel.modules.categoryAutomate') || 'Automatizar',
+                        requires: data.t('panel.modules.requires') || 'Requiere',
+                        features: data.t('panel.modules.features') || 'Características',
+                        contactSupport: data.t('panel.modules.contactSupport') || 'Contactar soporte',
+                        viewDetails: data.t('panel.modules.viewDetails') || 'Ver detalles',
+                        powerUserTitle: data.t('panel.modules.powerUserTitle') || 'Power User!',
+                        powerUserDesc: data.t('panel.modules.powerUserDesc') || '',
+                        recentlyActivated: data.t('panel.modules.recentlyActivated') || '¡Recién activado!',
+                        noModulesAvailable: data.t('panel.modules.noModulesAvailable') || 'Todos los módulos están activos',
+                        treeTitle: data.t('panel.modules.tree.title') || 'Módulos',
+                        treeTip: data.t('panel.modules.tree.tip') || 'Scroll para explorar · Clic en un módulo para ver detalles',
+                        treeView: data.t('panel.modules.tree.treeView') || 'Mapa',
+                        listView: data.t('panel.modules.tree.listView') || 'Lista',
+                        treeModules: data.t('panel.modules.tree.modules') || 'Módulos',
+                        treeTiers: data.t('panel.modules.tree.tiers') || 'Niveles',
+                        treeProgress: data.t('panel.modules.tree.progress') || 'Progreso',
+                        treeCategories: data.t('panel.modules.tree.categories') || 'Categorías',
+                        treeStates: data.t('panel.modules.tree.states') || 'Estados',
+                        treeLocked: data.t('panel.modules.tree.locked') || 'Bloqueado',
+                        treeAvailable: data.t('panel.modules.tree.available') || 'Disponible',
+                        treeActive: data.t('panel.modules.tree.active') || 'Activo',
+                        treeMaxed: data.t('panel.modules.tree.maxed') || 'Máximo',
+                    }}
+                />
+            )
+            break
+        }
+        // ── Dynamic module tabs — loaded on demand ──
+        case 'chatbot': {
+            const ChatbotPage = (await import('../chatbot/page')).default
+            tabContent = <ChatbotPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'crm': {
+            const CRMPage = (await import('../crm/page')).default
+            tabContent = <CRMPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'seo': {
+            const SEOPage = (await import('../seo/page')).default
+            tabContent = <SEOPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'rrss': {
+            const SocialPage = (await import('../redes-sociales/page')).default
+            tabContent = <SocialPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'whatsapp': {
+            const MessagesPage = (await import('../mensajes/page')).default
+            tabContent = <MessagesPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'automatizaciones': {
+            const AutomationsPage = (await import('../automatizaciones/page')).default
+            tabContent = <AutomationsPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'canales': {
+            const ChannelsPage = (await import('../canales/page')).default
+            tabContent = <ChannelsPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'capacidad': {
+            const CapacidadPage = (await import('../capacidad/page')).default
+            tabContent = <CapacidadPage params={Promise.resolve({ lang })} />
+            break
+        }
+        case 'auth': {
+            const AuthPage = (await import('../auth/page')).default
+            tabContent = <AuthPage params={Promise.resolve({ lang })} />
+            break
+        }
+        default:
+            tabContent = null
+    }
 
     return (
         <div className="space-y-6">
             <PanelPageHeader
-                title={t('panel.modules.title') || 'Centro de Control'}
+                title={t('panel.modules.title') || 'Módulos'}
                 subtitle={t('panel.modules.subtitle') || 'Gestiona y amplía las funcionalidades de tu tienda'}
                 icon={<Blocks className="w-5 h-5" />}
-                badge={`${activeCount}/${totalCount}`}
             />
-            <ModulesMarketplaceClient
-                catalog={moduleStatus.catalog}
-                activeModules={moduleStatus.activeModules}
-                monthlySpend={moduleStatus.monthlySpend}
-                locale={lang}
-                recentlyActivated={recentlyActivated}
-                labels={{
-                    title: t('panel.modules.title') || 'Módulos',
-                    subtitle: t('panel.modules.subtitle') || 'Gestiona y amplía las funcionalidades de tu tienda',
-                    active: t('panel.modules.active') || 'Activo',
-                    inactive: t('panel.modules.inactive') || 'Disponible',
-                    activate: t('panel.modules.activate') || 'Activar',
-                    upgrade: t('panel.modules.upgrade') || 'Mejorar',
-                    manage: t('panel.modules.manage') || 'Gestionar',
-                    monthly: t('panel.modules.monthly') || '/mes',
-                    free: t('panel.modules.free') || 'Gratis',
-                    recommended: t('panel.modules.recommended') || 'Recomendado',
-                    currentPlan: t('panel.modules.currentPlan') || 'Plan actual',
-                    monthlySpend: t('panel.modules.monthlySpend') || 'Gasto mensual en módulos',
-                    activeModules: t('panel.modules.activeModules') || 'Módulos activos',
-                    availableModules: t('panel.modules.availableModules') || 'Módulos disponibles',
-                    allCategories: t('panel.modules.allCategories') || 'Todos',
-                    categorySell: t('panel.modules.categorySell') || 'Vender',
-                    categoryEngage: t('panel.modules.categoryEngage') || 'Conectar',
-                    categoryGrow: t('panel.modules.categoryGrow') || 'Crecer',
-                    categoryAutomate: t('panel.modules.categoryAutomate') || 'Automatizar',
-                    requires: t('panel.modules.requires') || 'Requiere',
-                    features: t('panel.modules.features') || 'Características',
-                    contactSupport: t('panel.modules.contactSupport') || 'Contactar soporte',
-                    viewDetails: t('panel.modules.viewDetails') || 'Ver detalles',
-                    powerUserTitle: t('panel.modules.powerUserTitle') || 'Power User!',
-                    powerUserDesc: t('panel.modules.powerUserDesc') || '',
-                    recentlyActivated: t('panel.modules.recentlyActivated') || '¡Recién activado!',
-                    noModulesAvailable: t('panel.modules.noModulesAvailable') || 'Todos los módulos están activos',
-                    // Tree-specific labels
-                    treeTitle: t('panel.modules.tree.title') || 'Módulos',
-                    treeTip: t('panel.modules.tree.tip') || 'Scroll para explorar · Clic en un módulo para ver detalles',
-                    treeView: t('panel.modules.tree.treeView') || 'Mapa',
-                    listView: t('panel.modules.tree.listView') || 'Lista',
-                    treeModules: t('panel.modules.tree.modules') || 'Módulos',
-                    treeTiers: t('panel.modules.tree.tiers') || 'Niveles',
-                    treeProgress: t('panel.modules.tree.progress') || 'Progreso',
-                    treeCategories: t('panel.modules.tree.categories') || 'Categorías',
-                    treeStates: t('panel.modules.tree.states') || 'Estados',
-                    treeLocked: t('panel.modules.tree.locked') || 'Bloqueado',
-                    treeAvailable: t('panel.modules.tree.available') || 'Disponible',
-                    treeActive: t('panel.modules.tree.active') || 'Activo',
-                    treeMaxed: t('panel.modules.tree.maxed') || 'Máximo',
-                }}
-            />
+            <ModulosShell
+                tabs={tabsWithLabels}
+                activeTab={activeTab}
+                lang={lang}
+            >
+                {tabContent}
+            </ModulosShell>
         </div>
     )
 }

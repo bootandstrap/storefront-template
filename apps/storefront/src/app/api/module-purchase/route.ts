@@ -87,8 +87,8 @@ export async function POST(req: NextRequest) {
                 tenant_id: profile.tenant_id,
                 module_key,
                 tier_id: tier_id || undefined,
-                success_url: `${origin}/${locale}/panel/suscripcion?module_purchased=${encodeURIComponent(module_key)}`,
-                cancel_url: `${origin}/${locale}/panel/suscripcion`,
+                success_url: `${origin}/${locale}/panel/ajustes?tab=suscripcion&module_purchased=${encodeURIComponent(module_key)}`,
+                cancel_url: `${origin}/${locale}/panel/ajustes?tab=suscripcion`,
             }),
         })
 

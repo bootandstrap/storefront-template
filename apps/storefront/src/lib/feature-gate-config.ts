@@ -187,8 +187,8 @@ export function getModuleInfoUrl(flagOrModuleKey: string, lang = 'es'): string {
 export function getModuleActivationUrl(flagOrModuleKey: string, lang = 'es'): string {
     const entry = FEATURE_GATE_MAP[flagOrModuleKey]
     const moduleKey = entry?.moduleKey ?? flagOrModuleKey
-    if (!moduleKey || !MODULE_SLUGS[moduleKey]) return `/${lang}/panel/suscripcion`
-    return `/${lang}/panel/suscripcion?module=${encodeURIComponent(moduleKey)}`
+    if (!moduleKey || !MODULE_SLUGS[moduleKey]) return `/${lang}/panel/ajustes?tab=suscripcion`
+    return `/${lang}/panel/ajustes?tab=suscripcion&module=${encodeURIComponent(moduleKey)}`
 }
 
 /**

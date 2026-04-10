@@ -1,62 +1,18 @@
 /**
- * CMS Pages Editor — Owner Panel
+ * /panel/paginas → Redirect to /panel/mi-tienda?tab=paginas
  *
- * Server component fetches pages + plan limits, delegates to PagesClient.
+ * SOTA Redesign: consolidated into "Mi Tienda" section.
  */
 
-import { withPanelGuard } from '@/lib/panel-guard'
-import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { createClient } from '@/lib/supabase/server'
-import { checkLimit } from '@/lib/limits'
-import FeatureGate from '@/components/ui/FeatureGate'
-import PagesClient from './PagesClient'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
-    const { lang } = await params
-    const dictionary = await getDictionary(lang as Locale)
-    const t = createTranslator(dictionary)
-    return { title: t('panel.pages.title') }
-}
-
-export default async function CMSPagesPage({
+export default async function RedirectPage({
     params,
 }: {
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId, appConfig } = await withPanelGuard()
-    const { planLimits, featureFlags } = appConfig
-
-    if (!featureFlags.enable_cms_pages) {
-        return <FeatureGate flag="enable_cms_pages" lang={lang} />
-    }
-
-    const supabase = await createClient()
-    const { data: pages } = await supabase
-        .from('cms_pages')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-
-    const pageList = (pages ?? []).map((p: Record<string, unknown>) => ({
-        id: p.id as string,
-        slug: p.slug as string,
-        title: p.title as string,
-        body: p.body as string,
-        published: p.published as boolean,
-    }))
-    const limitCheck = checkLimit(planLimits, 'max_cms_pages', pageList.length)
-
-    return (
-        <div className="space-y-6">
-            <PagesClient
-                pages={pageList}
-                canAdd={limitCheck.allowed}
-                pageCount={pageList.length}
-                maxPages={planLimits.max_cms_pages}
-            />
-        </div>
-    )
+    redirect(`/${lang}/panel/mi-tienda?tab=paginas`)
 }

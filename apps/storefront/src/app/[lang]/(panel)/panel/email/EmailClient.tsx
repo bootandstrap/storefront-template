@@ -145,7 +145,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                 {labels.providerWarning}
                             </p>
                             <a
-                                href="/panel/tienda"
+                                href="/panel/ajustes?tab=tienda"
                                 className="text-sm text-brand hover:underline mt-1 inline-block"
                             >
                                 {labels.providerWarningAction} →

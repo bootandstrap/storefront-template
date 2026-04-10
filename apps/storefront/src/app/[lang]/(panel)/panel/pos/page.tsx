@@ -78,6 +78,7 @@ export default async function POSPage({
             planLimits={planLimits}
             posConfig={posConfig}
             tenantId={tenantId}
+            stockMode={(config as any).stock_mode === 'managed' ? 'managed' : 'always_in_stock'}
         />
     )
 }

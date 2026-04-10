@@ -186,6 +186,13 @@ export default async function PanelLayout({
 
     // ── Breadcrumb map (segment → localized label) ──
     const breadcrumbMap: Record<string, string> = {
+        // ── New hub routes ──
+        'mi-tienda': t('panel.section.myStore'),
+        ventas: t('panel.section.sales'),
+        ajustes: t('panel.section.settings'),
+        modulos: t('panel.nav.modules'),
+        pos: t('panel.nav.pos'),
+        // ── Legacy route labels (still needed for redirects + module pages) ──
         catalogo: t('panel.nav.catalog'),
         pedidos: t('panel.nav.orders'),
         clientes: t('panel.nav.customers'),
@@ -193,7 +200,6 @@ export default async function PanelLayout({
         tienda: t('panel.nav.storeConfig'),
         envios: t('panel.nav.shipping'),
         'mi-proyecto': t('panel.nav.myProject'),
-        modulos: t('panel.nav.modules'),
         carrusel: t('panel.nav.carousel'),
         mensajes: t('panel.nav.whatsapp'),
         paginas: t('panel.nav.pages'),
@@ -203,7 +209,6 @@ export default async function PanelLayout({
         devoluciones: t('panel.nav.returns'),
         crm: t('panel.nav.crm'),
         resenas: t('panel.nav.reviews'),
-        pos: t('panel.nav.pos'),
         suscripcion: t('panel.nav.subscription'),
         seo: t('panel.nav.seo'),
         'redes-sociales': t('panel.nav.socialMedia'),
@@ -211,6 +216,8 @@ export default async function PanelLayout({
         automatizaciones: t('panel.nav.automations'),
         auth: t('panel.nav.authAdvanced'),
         canales: t('panel.nav.salesChannels'),
+        capacidad: t('panel.nav.capacity') || 'Capacidad',
+        email: t('panel.nav.email') || 'Email',
     }
 
     // ── Greetings ──
@@ -221,59 +228,29 @@ export default async function PanelLayout({
     }
 
     // ── Command Palette items ──
-    const { getPanelNavigation } = await import('@/lib/panel-policy')
-    const { essentialItems: navEssentialItems, moduleItems: navModuleItems } = getPanelNavigation({
+    const { getPanelSections } = await import('@/lib/panel-policy')
+    const sections = getPanelSections({
         lang,
         labels: {
-            dashboard: t('panel.nav.dashboard'),
-            catalog: t('panel.nav.catalog'),
-            orders: t('panel.nav.orders'),
-            customers: t('panel.nav.customers'),
-            utilities: t('panel.nav.utilities'),
-            storeConfig: t('panel.nav.storeConfig'),
-            shipping: t('panel.nav.shipping'),
-            myProject: t('panel.nav.myProject'),
-            modules: t('panel.nav.modules'),
-            carousel: t('panel.nav.carousel'),
-            whatsapp: t('panel.nav.whatsapp'),
-            pages: t('panel.nav.pages'),
-            analytics: t('panel.nav.analytics'),
-            badges: t('panel.nav.badges'),
-            chatbot: t('panel.nav.chatbot'),
-            returns: t('panel.nav.returns'),
-            crm: t('panel.nav.crm'),
-            reviews: t('panel.nav.reviews'),
-            pos: t('panel.nav.pos'),
-            capacidad: t('panel.nav.capacidad'),
-            seo: t('panel.nav.seo'),
-            socialMedia: t('panel.nav.socialMedia'),
-            i18n: t('panel.nav.i18n'),
-            automations: t('panel.nav.automations'),
-            authAdvanced: t('panel.nav.authAdvanced'),
-            salesChannels: t('panel.nav.salesChannels'),
+            home: t('panel.section.home'),
+            myStore: t('panel.section.myStore'),
+            sales: t('panel.section.sales'),
+            modules: t('panel.section.modules'),
+            settings: t('panel.section.settings'),
+            pos: t('panel.section.pos'),
             ownerPanel: t('panel.nav.ownerPanel'),
             backToStore: t('panel.nav.backToStore'),
-            groupOperations: t('panel.nav.groupOperations'),
-            groupContent: t('panel.nav.groupContent'),
-            groupSettings: t('panel.nav.groupSettings'),
         },
         featureFlags,
     })
 
     const commandPaletteItems = [
-        ...navEssentialItems.map(item => ({
-            id: `nav-${item.key}`,
-            label: item.label,
+        ...sections.map(section => ({
+            id: `nav-${section.key}`,
+            label: section.label,
             group: 'navigation' as const,
-            icon: item.key,
-            href: item.href,
-        })),
-        ...navModuleItems.map(item => ({
-            id: `nav-${item.key}`,
-            label: item.label,
-            group: 'navigation' as const,
-            icon: item.key,
-            href: item.href,
+            icon: section.icon,
+            href: section.href,
         })),
         // Quick actions
         {
@@ -281,16 +258,24 @@ export default async function PanelLayout({
             label: t('panel.cmdPalette.addProduct'),
             group: 'actions' as const,
             icon: 'addProduct',
-            href: `/${lang}/panel/catalogo`,
-            keywords: ['add', 'nuevo', 'product', 'crear'],
+            href: `/${lang}/panel/mi-tienda`,
+            keywords: ['add', 'nuevo', 'product', 'crear', 'producto'],
         },
         {
             id: 'action-settings',
             label: t('panel.cmdPalette.storeSettings'),
             group: 'actions' as const,
             icon: 'settings',
-            href: `/${lang}/panel/tienda`,
+            href: `/${lang}/panel/ajustes`,
             keywords: ['config', 'settings', 'ajustes', 'tienda'],
+        },
+        {
+            id: 'action-orders',
+            label: t('panel.nav.orders'),
+            group: 'actions' as const,
+            icon: 'orders',
+            href: `/${lang}/panel/ventas`,
+            keywords: ['orders', 'pedidos', 'ventas'],
         },
     ]
 
@@ -310,37 +295,14 @@ export default async function PanelLayout({
             ownerName={ownerName}
             businessName={config.business_name}
             sidebarLabels={{
-                dashboard: t('panel.nav.dashboard'),
-                catalog: t('panel.nav.catalog'),
-                orders: t('panel.nav.orders'),
-                customers: t('panel.nav.customers'),
-                utilities: t('panel.nav.utilities'),
-                storeConfig: t('panel.nav.storeConfig'),
-                shipping: t('panel.nav.shipping'),
-                myProject: t('panel.nav.myProject'),
-                modules: t('panel.nav.modules'),
-                carousel: t('panel.nav.carousel'),
-                whatsapp: t('panel.nav.whatsapp'),
-                pages: t('panel.nav.pages'),
-                analytics: t('panel.nav.analytics'),
-                badges: t('panel.nav.badges'),
-                chatbot: t('panel.nav.chatbot'),
-                returns: t('panel.nav.returns'),
-                crm: t('panel.nav.crm'),
-                reviews: t('panel.nav.reviews'),
-                pos: t('panel.nav.pos'),
-                capacidad: t('panel.nav.capacidad'),
-                seo: t('panel.nav.seo'),
-                socialMedia: t('panel.nav.socialMedia'),
-                i18n: t('panel.nav.i18n'),
-                automations: t('panel.nav.automations'),
-                authAdvanced: t('panel.nav.authAdvanced'),
-                salesChannels: t('panel.nav.salesChannels'),
+                home: t('panel.section.home'),
+                myStore: t('panel.section.myStore'),
+                sales: t('panel.section.sales'),
+                modules: t('panel.section.modules'),
+                settings: t('panel.section.settings'),
+                pos: t('panel.section.pos'),
                 ownerPanel: t('panel.nav.ownerPanel'),
                 backToStore: t('panel.nav.backToStore'),
-                groupOperations: t('panel.nav.groupOperations'),
-                groupContent: t('panel.nav.groupContent'),
-                groupSettings: t('panel.nav.groupSettings'),
             }}
             featureFlags={{
                 enable_carousel: featureFlags.enable_carousel,

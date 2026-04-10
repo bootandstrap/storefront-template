@@ -236,7 +236,7 @@ export default function StoreHealthCard({
               )}
               {labels.languageLabel && (
                 <a
-                  href={`/${lang}/panel/tienda`}
+                  href={`/${lang}/panel/ajustes?tab=tienda`}
                   className="inline-flex items-center gap-1.5 text-[11px] text-tx-muted hover:text-brand transition-colors px-2 py-1 rounded-lg hover:bg-brand-subtle"
                 >
                   <Globe className="w-3 h-3" />
