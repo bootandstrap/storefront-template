@@ -26,7 +26,7 @@
  */
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import provisionStoreWorkflow from "../../../workflows/provision-store"
+import provisionStoreWorkflow from "../../../../workflows/provision-store"
 
 // ── Auth guard ────────────────────────────────────────────────────────────
 
