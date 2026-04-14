@@ -2,6 +2,7 @@
  * Analytics Tab Content — Thin RSC wrapper for the Ajustes hub.
  *
  * Fetches dashboard metrics from Medusa and passes them to AnalyticsCharts.
+ * Also renders the Supabase-based AnalyticsDashboard for event analytics.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
@@ -10,6 +11,7 @@ import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { resolveCurrencyContext } from '@/lib/currency-engine'
 import { getDashboardMetrics, getTopProducts } from '@/lib/medusa/admin-analytics'
 import AnalyticsCharts from '../analiticas/AnalyticsCharts'
+import AnalyticsDashboard from '@/components/panel/AnalyticsDashboard'
 
 export default async function AnalyticsTabContent({
     lang,
@@ -38,14 +40,23 @@ export default async function AnalyticsTabContent({
     }
 
     return (
-        <AnalyticsCharts
-            revenueByDay={metrics.revenue_by_day}
-            ordersByDay={metrics.orders_by_day}
-            currencyCtx={currencyCtx}
-            revenueMonth={metrics.revenue_this_month}
-            topProducts={topProducts}
-            lang={lang}
-            labels={labels}
-        />
+        <div className="space-y-8">
+            {/* Medusa-based revenue/order charts */}
+            <AnalyticsCharts
+                revenueByDay={metrics.revenue_by_day}
+                ordersByDay={metrics.orders_by_day}
+                currencyCtx={currencyCtx}
+                revenueMonth={metrics.revenue_this_month}
+                topProducts={topProducts}
+                lang={lang}
+                labels={labels}
+            />
+
+            {/* Supabase-based event analytics (customer growth, product views, storage) */}
+            <AnalyticsDashboard
+                lang={lang}
+                currency={currencyCtx.primary.toUpperCase()}
+            />
+        </div>
     )
 }

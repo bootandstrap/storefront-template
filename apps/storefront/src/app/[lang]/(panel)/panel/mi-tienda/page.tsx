@@ -36,6 +36,7 @@ import InventoryClient from '../inventario/InventoryClient'
 import BadgesClient from '../insignias/BadgesClient'
 import CarouselClient from '../carrusel/CarouselClient'
 import PagesClient from '../paginas/PagesClient'
+import { StorageLimitBanner } from '@/components/panel/StorageLimitBanner'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,10 +80,13 @@ export default async function MyStorePage({
             // Both tabs use CatalogClient — it handles its own internal tab
             const data = await fetchProductsData(tenantId, lang, rawSearchParams)
             tabContent = (
-                <CatalogClient
-                    {...data}
-                    initialTab={activeTab}
-                />
+                <>
+                    <StorageLimitBanner storageLimitMb={(appConfig.planLimits as unknown as Record<string, number>).storage_limit_mb ?? 500} />
+                    <CatalogClient
+                        {...data}
+                        initialTab={activeTab}
+                    />
+                </>
             )
             break
         }

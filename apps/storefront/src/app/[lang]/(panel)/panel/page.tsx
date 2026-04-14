@@ -11,6 +11,8 @@ import {
     getAdminOrders,
 } from '@/lib/medusa/admin'
 import { resolveCurrencyContext, sumRevenueByCurrency, revenueByDayAndCurrency, formatAmount, type CurrencyRevenue } from '@/lib/currency-engine'
+import { getTopProducts, type TopProduct } from '@/lib/medusa/admin-analytics'
+import { getLowStockItems, type LowStockItem } from '@/lib/medusa/admin-inventory'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, ACHIEVEMENT_DEFS, getAchievementsGrouped, type AchievementContext } from '@/lib/achievements'
 import { evaluateSmartTips, type SmartTipContext } from '@/lib/smart-tips'
@@ -39,11 +41,15 @@ import {
     Users,
     FolderTree,
     ExternalLink,
-    Package
+    Package,
+    AlertTriangle,
+    Clock,
+    TrendingUp,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
+import ModuleSetupWidget from '@/components/panel/ModuleSetupWidget'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +82,8 @@ export default async function PanelDashboard({
     let customerCount = 0
     let adminCount = 0
     let medusaDegraded = false
+    let topProducts: TopProduct[] = []
+    let lowStockItems: LowStockItem[] = []
 
     try {
         const scope = await getTenantMedusaScope(tenantId)
@@ -97,6 +105,16 @@ export default async function PanelDashboard({
         monthOrders = monthOrdersRes.orders
         customerCount = customerCountRes.count ?? 0
         adminCount = adminCountRes.count ?? 0
+
+        // Fetch top products + low stock (non-blocking)
+        try {
+            const [tp, ls] = await Promise.all([
+                getTopProducts(5, scope, storeConfig.default_currency ?? 'eur'),
+                getLowStockItems((storeConfig as any).low_stock_threshold ?? 5, scope),
+            ])
+            topProducts = tp
+            lowStockItems = ls
+        } catch { /* gracefully degrade */ }
     } catch (err) {
         console.error('[Panel Dashboard] Medusa scope/data fetch failed:', err instanceof Error ? err.message : err)
         medusaDegraded = true
@@ -114,8 +132,10 @@ export default async function PanelDashboard({
 
     // Revenue calculation — multi-currency aware via CurrencyEngine
     // CRITICAL: Use monthOrders (all orders) for revenue, NOT recentOrders (5-item sample)
+    // CRITICAL: Exclude canceled orders from revenue calculations
     const currencyCtx = resolveCurrencyContext(storeConfig, featureFlags)
-    const revenueBreakdown = sumRevenueByCurrency(monthOrders, currencyCtx)
+    const revenueOrders = monthOrders.filter(o => o.status !== 'canceled' && o.status !== 'cancelled')
+    const revenueBreakdown = sumRevenueByCurrency(revenueOrders, currencyCtx)
     const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary) ?? {
         code: currencyCtx.primary, amount: 0, orderCount: 0, avgOrderValue: 0
     }
@@ -123,13 +143,13 @@ export default async function PanelDashboard({
     const formattedRevenue = formatAmount(primaryRevenue.amount, primaryRevenue.code, lang)
     const revenueThisMonth = primaryRevenue.amount
 
-    // POS vs Online revenue split
-    const posOrders = monthOrders.filter(o => {
+    // POS vs Online revenue split (using filtered revenueOrders)
+    const posOrders = revenueOrders.filter(o => {
         const metadata = o.metadata as Record<string, unknown> | null;
         const source = metadata?.source;
         return source === 'pos' || source === 'pos-kiosk' || (o as any).tags?.some((tag: any) => tag.value?.includes('pos'));
     });
-    const onlineOrders = monthOrders.filter(o => {
+    const onlineOrders = revenueOrders.filter(o => {
         const metadata = o.metadata as Record<string, unknown> | null;
         const source = metadata?.source;
         return source !== 'pos' && source !== 'pos-kiosk' && !(o as any).tags?.some((tag: any) => tag.value?.includes('pos'));
@@ -153,7 +173,7 @@ export default async function PanelDashboard({
     })()
 
     // Chart data — revenue × currency + orders by day (last 7 days)
-    const revenueByDay = revenueByDayAndCurrency(monthOrders, currencyCtx, 7)
+    const revenueByDay = revenueByDayAndCurrency(revenueOrders, currencyCtx, 7)
 
     const ordersByDay = (() => {
         const days: { date: string; orders: number }[] = []
@@ -166,6 +186,11 @@ export default async function PanelDashboard({
         }
         return days
     })()
+
+    // Today's Focus data
+    const pendingOrders = monthOrders.filter(o => o.status === 'pending')
+    const pendingOrderCount = pendingOrders.length
+    const lowStockCount = lowStockItems.length
 
     // Usage meter data
     const realMeters = [
@@ -365,7 +390,7 @@ export default async function PanelDashboard({
     }
 
     return (
-        <SotaBentoGrid className="mb-20">
+        <SotaBentoGrid className="mb-20 panel-page-enter bento-stagger">
             {/* Medusa degraded banner */}
             {medusaDegraded && (
                 <SotaBentoItem colSpan={{ base: 12 }}>
@@ -406,11 +431,23 @@ export default async function PanelDashboard({
                 </SotaBentoItem>
             )}
 
-            {/* Welcome Hero Banner — Animated mesh gradient */}
+            {/* Welcome Hero Banner — Cinematic v2 */}
             <SotaBentoItem colSpan={{ base: 12 }}>
-                <div className="hero-welcome p-6 md:p-8 lg:p-10 rounded-[32px] w-full shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]">
+                <div className="hero-welcome-v2">
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
+                            {/* Date line */}
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs font-medium text-white/60 tracking-wide uppercase">
+                                    {new Date().toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </span>
+                                {storeConfig.onboarding_completed && (
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-sm">
+                                        <span className="live-dot" />
+                                        <span className="text-[10px] font-semibold text-white/80 tracking-wide">LIVE</span>
+                                    </span>
+                                )}
+                            </div>
                             <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-white mb-2">
                                 {t('panel.dashboard.title')}
                             </h1>
@@ -487,6 +524,29 @@ export default async function PanelDashboard({
                 </SotaBentoItem>
             )}
 
+            {/* Module Onboarding — per-module setup cards */}
+            {activeModuleCount > 0 && (
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <ModuleSetupWidget
+                        activeModules={[
+                            ...(featureFlags.enable_carousel ? [{ moduleKey: 'ecommerce', tierName: 'Active', displayName: 'E-commerce' }] : []),
+                            ...(featureFlags.enable_chatbot ? [{ moduleKey: 'chatbot', tierName: 'Active', displayName: 'Chatbot IA', icon: '🤖' }] : []),
+                            ...(featureFlags.enable_pos ? [{ moduleKey: 'pos', tierName: 'Active', displayName: 'POS', icon: '💳' }] : []),
+                            ...(featureFlags.enable_crm ? [{ moduleKey: 'crm', tierName: 'Active', displayName: 'CRM', icon: '👥' }] : []),
+                            ...(featureFlags.enable_seo ? [{ moduleKey: 'seo', tierName: 'Active', displayName: 'SEO', icon: '🔍' }] : []),
+                            ...(featureFlags.enable_multi_language ? [{ moduleKey: 'i18n', tierName: 'Active', displayName: 'Idiomas', icon: '🌍' }] : []),
+                            ...(featureFlags.enable_automations ? [{ moduleKey: 'automation', tierName: 'Active', displayName: 'Automatizaciones', icon: '⚡' }] : []),
+                            ...(featureFlags.enable_sales_channels ? [{ moduleKey: 'sales_channels', tierName: 'Active', displayName: 'Canales', icon: '📡' }] : []),
+                            ...(featureFlags.enable_social_media ? [{ moduleKey: 'rrss', tierName: 'Active', displayName: 'Redes Sociales', icon: '📱' }] : []),
+                        ]}
+                        featureFlags={featureFlags as unknown as Record<string, boolean>}
+                        configValues={storeConfig as unknown as Record<string, unknown>}
+                        onboardingCompleted={!!storeConfig.onboarding_completed}
+                        lang={lang}
+                    />
+                </SotaBentoItem>
+            )}
+
             {/* Store Health + Achievements row */}
             {storeConfig.onboarding_completed && (
                 <>
@@ -518,7 +578,7 @@ export default async function PanelDashboard({
                         <SotaGlassCard className="h-full flex flex-col justify-center">
                             <h3 className="text-sm font-bold text-tx mb-4 flex items-center gap-2">
                                 <span className="text-xl">🏆</span> {t('achievement.title')}
-                                <span className="ml-auto text-xs font-mono text-tx-muted px-2 py-1 bg-sf-0 rounded-lg border border-sf-3">
+                                <span className="ml-auto text-xs font-mono text-tx-muted px-2 py-1 rounded-lg" style={{ background: 'rgba(45,80,22,0.06)', border: '1px solid rgba(45,80,22,0.12)' }}>
                                     {unlockedIds.length}/{ACHIEVEMENT_DEFS.length} {t('achievement.unlocked')}
                                 </span>
                             </h3>
@@ -561,8 +621,105 @@ export default async function PanelDashboard({
                 </div>
             </SotaBentoItem>
 
+            {/* ── TODAY'S FOCUS — Shopify-style actionable alerts ── */}
+            {(pendingOrderCount > 0 || lowStockCount > 0) && (
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <SotaGlassCard>
+                        <SectionHeader
+                            title={t('panel.dashboard.todaysFocus') || "Today's Focus"}
+                            icon={<Clock className="w-5 h-5 text-amber-500" />}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                            {pendingOrderCount > 0 && (
+                                <Link
+                                    href={`/${lang}/panel/pedidos?status=pending`}
+                                    className="flex items-center gap-4 p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition-all group"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                                        <Inbox className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-amber-900">
+                                            {pendingOrderCount} {t('panel.dashboard.pendingOrders') || 'pending orders'}
+                                        </p>
+                                        <p className="text-xs text-amber-600 mt-0.5">{t('panel.dashboard.requireAction') || 'Require your attention'}</p>
+                                    </div>
+                                    <span className="text-amber-400 group-hover:translate-x-1 transition-transform">→</span>
+                                </Link>
+                            )}
+                            {lowStockCount > 0 && (
+                                <Link
+                                    href={`/${lang}/panel/inventario`}
+                                    className="flex items-center gap-4 p-4 rounded-xl border border-red-200 bg-red-50/50 hover:bg-red-50 transition-all group"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-red-900">
+                                            {lowStockCount} {t('panel.dashboard.lowStockItems') || 'low stock items'}
+                                        </p>
+                                        <p className="text-xs text-red-600 mt-0.5">{t('panel.dashboard.restockSoon') || 'Consider restocking soon'}</p>
+                                    </div>
+                                    <span className="text-red-400 group-hover:translate-x-1 transition-transform">→</span>
+                                </Link>
+                            )}
+                        </div>
+                    </SotaGlassCard>
+                </SotaBentoItem>
+            )}
 
-            {/* KPI ROW 1 */}
+            {/* ── TOP PRODUCTS — Wired to getTopProducts() from admin-analytics ── */}
+            {topProducts.length > 0 && (
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <SotaGlassCard>
+                        <SectionHeader
+                            title={t('panel.dashboard.topProducts') || 'Top Products'}
+                            icon={<TrendingUp className="w-5 h-5 text-emerald-500" />}
+                            action={
+                                <Link
+                                    href={`/${lang}/panel/catalogo`}
+                                    className="text-sm text-brand hover:text-brand-600 font-semibold transition-colors flex items-center gap-1 bg-brand-50 px-3 py-1.5 rounded-full"
+                                >
+                                    {t('panel.dashboard.viewAll') || 'View all'} →
+                                </Link>
+                            }
+                        />
+                        <div className="mt-4 space-y-2">
+                            {topProducts.map((product, i) => (
+                                <div
+                                    key={product.product_id}
+                                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-sf-0/50 transition-colors"
+                                >
+                                    <span className="text-xs font-bold text-tx-muted w-5 text-center tabular-nums">{i + 1}</span>
+                                    {product.thumbnail ? (
+                                        <img
+                                            src={product.thumbnail}
+                                            alt=""
+                                            className="w-10 h-10 rounded-lg object-cover border border-sf-3/30"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-lg bg-sf-1 flex items-center justify-center border border-sf-3/30">
+                                            <Package className="w-5 h-5 text-tx-muted" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-tx truncate">{product.title}</p>
+                                        <p className="text-xs text-tx-muted">
+                                            {product.units_sold} {t('panel.dashboard.unitsSold') || 'units sold'}
+                                        </p>
+                                    </div>
+                                    <span className="text-sm font-bold text-tx tabular-nums">
+                                        {formatAmount(product.revenue, product.currency_code, lang)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </SotaGlassCard>
+                </SotaBentoItem>
+            )}
+
+
             <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
                 <SotaMetric
                     label={t('panel.stats.revenue') || 'Revenue'}

@@ -1,4 +1,8 @@
 import { Suspense } from 'react'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Pedido confirmado', robots: { index: false } }
+
 import ConfirmationClient from './ConfirmationClient'
 import { Loader2 } from 'lucide-react'
 

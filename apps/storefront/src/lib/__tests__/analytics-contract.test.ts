@@ -145,6 +145,8 @@ describe('Limit Enforcement Scenarios', () => {
         max_pos_payment_methods: 2,
         max_automations: 0,
         max_pos_kiosk_devices: 0,
+        max_backups: 6,
+        backup_frequency_hours: 168,
     }
 
     const proPlan = {

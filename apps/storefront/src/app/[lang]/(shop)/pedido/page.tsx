@@ -1,5 +1,9 @@
 'use client'
 
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Detalle de pedido', robots: { index: false } }
+
+
 import { useState } from 'react'
 import { Search, Package, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'

@@ -71,13 +71,59 @@ export function SotaBentoItem({
     rowSpan,
     className = ''
 }: SotaBentoItemProps) {
-    const style: React.CSSProperties = {
-        ...resolveSpanStyle('gridColumn', colSpan),
-        ...resolveSpanStyle('gridRow', rowSpan),
+    // For responsive objects, we build CSS custom properties and use a
+    // single inline style that adapts. Since the grid columns change at
+    // breakpoints (1 → 6 → 12), we must clamp spans accordingly.
+    const buildResponsiveStyle = (): React.CSSProperties => {
+        const base: React.CSSProperties = { minWidth: 0 }
+
+        // Handle colSpan
+        if (colSpan) {
+            if (typeof colSpan === 'number') {
+                base.gridColumn = `span ${colSpan} / span ${colSpan}`
+            } else if (colSpan === 'auto') {
+                base.gridColumn = 'auto'
+            } else if (colSpan === 'full') {
+                base.gridColumn = '1 / -1'
+            } else {
+                // Responsive object — use the base value (mobile first)
+                // On mobile, grid is 1 col, so always full width
+                // On md (6 cols), use sm/md values
+                // On lg (12 cols), use lg/xl values
+                const mobileVal = colSpan.base ?? 12
+                const lgVal = colSpan.lg ?? colSpan.md ?? colSpan.sm ?? mobileVal
+                
+                if (mobileVal === 'full' || mobileVal === 12) {
+                    // Mobile: always full-width (the grid is 1 col anyway)
+                    base.gridColumn = `span ${typeof lgVal === 'number' ? lgVal : 12} / span ${typeof lgVal === 'number' ? lgVal : 12}`
+                } else {
+                    const v = typeof lgVal === 'number' ? lgVal : 12
+                    base.gridColumn = `span ${v} / span ${v}`
+                }
+            }
+        }
+
+        // Handle rowSpan
+        if (rowSpan) {
+            if (typeof rowSpan === 'number') {
+                base.gridRow = `span ${rowSpan} / span ${rowSpan}`
+            } else if (rowSpan === 'auto') {
+                base.gridRow = 'auto'
+            } else if (rowSpan === 'full') {
+                base.gridRow = '1 / -1'
+            } else {
+                const value = rowSpan.xl ?? rowSpan.lg ?? rowSpan.md ?? rowSpan.sm ?? rowSpan.base
+                if (value && typeof value === 'number') {
+                    base.gridRow = `span ${value} / span ${value}`
+                }
+            }
+        }
+
+        return base
     }
 
     return (
-        <div style={style} className={className || undefined}>
+        <div style={buildResponsiveStyle()} className={className || undefined}>
             {children}
         </div>
     )

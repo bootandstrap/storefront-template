@@ -49,6 +49,10 @@ interface PanelShellProps {
     setupNudge?: { label: string; href: string } | null
     /** Governance SSOT default currency */
     defaultCurrency: string
+    /** Business logo URL for sidebar identity */
+    logoUrl?: string
+    /** Store readiness score for sidebar health indicator */
+    readinessScore?: number
     children: React.ReactNode
 }
 
@@ -67,6 +71,8 @@ export default function PanelShell({
     planName,
     setupNudge,
     defaultCurrency,
+    logoUrl,
+    readinessScore,
     children,
 }: PanelShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
@@ -83,8 +89,8 @@ export default function PanelShell({
 
     return (
         <div
-            className={`bg-sf-0 md:flex ${isPOS ? 'overflow-hidden' : 'min-h-screen'}`}
-            style={isPOS ? { height: '100dvh' } : undefined}
+            className={`md:flex ${isPOS ? 'overflow-hidden' : 'min-h-screen'}`}
+            style={isPOS ? { height: '100dvh' } : { background: '#f4f6f0', minHeight: '100vh' }}
         >
             {!isPOS && (
                 <PanelSidebar
@@ -93,13 +99,15 @@ export default function PanelShell({
                     labels={sidebarLabels}
                     featureFlags={featureFlags}
                     planName={planName}
+                    logoUrl={logoUrl}
+                    readinessScore={readinessScore}
                     mobileOpen={mobileOpen}
                     onMobileOpenChange={setMobileOpen}
                     collapsed={sidebarCollapsed}
                     onCollapseChange={setSidebarCollapsed}
                 />
             )}
-            <div className={`flex-1 min-h-0 ${isPOS ? 'overflow-hidden flex flex-col h-full' : 'overflow-auto'}`}>
+            <div className={`flex-1 min-h-0 transition-all duration-300 ${isPOS ? 'overflow-hidden flex flex-col h-full' : 'overflow-auto'}`}>
                 {!isPOS && (
                     <PanelTopbar
                         ownerName={ownerName}

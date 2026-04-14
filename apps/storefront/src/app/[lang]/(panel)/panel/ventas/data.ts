@@ -45,7 +45,9 @@ export async function fetchOrdersData(
     const pendingCount = orders.filter(o => o.status === 'pending').length
     const completedCount = orders.filter(o => o.status === 'completed').length
     const currencyCtx = resolveCurrencyContext(config, featureFlags)
-    const revenueBreakdown = sumRevenueByCurrency(allOrders, currencyCtx)
+    // Exclude canceled orders from revenue calculations
+    const revenueEligibleOrders = allOrders.filter(o => o.status !== 'canceled' && o.status !== 'cancelled')
+    const revenueBreakdown = sumRevenueByCurrency(revenueEligibleOrders, currencyCtx)
     const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary)
     const formattedRevenue = formatAmount(primaryRevenue?.amount ?? 0, currencyCtx.primary, lang)
     const secondaryRevenues = revenueBreakdown
@@ -192,5 +194,50 @@ export async function fetchReviewsData(lang: string) {
         reviews: reviews ?? [],
         stats: stats ?? { total: 0, pending: 0, approved: 0, rejected: 0, averageRating: 0 },
         dictionary,
+    }
+}
+
+// ── Promotions Data ───────────────────────────────────────────────────────
+
+export async function fetchPromotionsData(tenantId: string, lang: string) {
+    const scope = await getTenantMedusaScope(tenantId)
+    const dictionary = await getDictionary(lang as Locale)
+    const t = createTranslator(dictionary)
+
+    // Import dynamically to avoid circular deps — promotions module is standalone
+    const { getPromotions } = await import('@/lib/medusa/admin-promotions')
+    const { promotions, count } = await getPromotions({ limit: 100 }, scope)
+
+    return {
+        promotions,
+        totalCount: count,
+        lang,
+        labels: {
+            title: t('panel.promotions.title') || 'Promotions',
+            subtitle: t('panel.promotions.subtitle') || 'Manage discounts and coupons',
+            create: t('panel.promotions.create') || 'Create Coupon',
+            code: t('panel.promotions.code') || 'Code',
+            type: t('panel.promotions.type') || 'Type',
+            value: t('panel.promotions.value') || 'Value',
+            usageLimit: t('panel.promotions.usageLimit') || 'Usage Limit',
+            usageCount: t('panel.promotions.usageCount') || 'uses',
+            startsAt: t('panel.promotions.startsAt') || 'Starts at',
+            endsAt: t('panel.promotions.endsAt') || 'Ends at',
+            noPromotions: t('panel.promotions.noPromotions') || 'No promotions yet',
+            noPromotionsDesc: t('panel.promotions.noPromotionsDesc') || 'Create your first coupon to attract customers',
+            percentage: t('panel.promotions.percentage') || 'Percentage',
+            fixed: t('panel.promotions.fixed') || 'Fixed Amount',
+            freeShipping: t('panel.promotions.freeShipping') || 'Free Shipping',
+            active: t('panel.promotions.active') || 'Active',
+            disabled: t('panel.promotions.disabled') || 'Disabled',
+            save: t('panel.promotions.save') || 'Save',
+            cancel: t('panel.promotions.cancel') || 'Cancel',
+            delete: t('panel.promotions.delete') || 'Delete',
+            confirmDelete: t('panel.promotions.confirmDelete') || 'Are you sure you want to delete this promotion?',
+            unlimited: t('panel.promotions.unlimited') || 'Unlimited',
+            codeCopied: t('panel.promotions.codeCopied') || 'Code copied',
+            creating: t('panel.promotions.creating') || 'Creating...',
+            saving: t('panel.promotions.saving') || 'Saving...',
+        },
     }
 }

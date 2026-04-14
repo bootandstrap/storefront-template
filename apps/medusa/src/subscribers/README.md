@@ -105,8 +105,27 @@ Medusa Event Bus
     │                │
     │                ├──► Structured logging (JSON)
     │                ├──► Multi-channel dispatch (bridge)
-    │                ├──► Email notification (storefront bridge)
+    │                ├──► Email notification (storefront bridge OR Notification Module)
     │                └──► Analytics event (Supabase)
     │
     └──► Next subscriber...
 ```
+
+## Notification Module (Resend Provider)
+
+The Medusa Notification Module is registered in `medusa-config.ts` with a custom
+Resend provider (`src/modules/resend-notification/`).
+
+- **Only active** when `RESEND_API_KEY` env var is set
+- **Channel**: `email` — skips non-email channels silently
+- **Graceful degradation**: If API key missing, logs warning but does not crash
+
+### Env vars required:
+- `RESEND_API_KEY` — Resend API key (starts with `re_`)
+- `RESEND_FROM` — Sender address (default: `noreply@bootandstrap.com`)
+
+### Dual email path:
+1. **Storefront bridge** (existing): Subscriber → POST to `/api/webhooks/medusa-events` → storefront sends via Resend
+2. **Notification Module** (new): Subscriber → `notificationService.createNotifications()` → Resend provider sends directly
+
+Both paths coexist. The bridge path has tenant-specific templates; the Notification Module path is for Medusa-built-in events.

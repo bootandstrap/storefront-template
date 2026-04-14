@@ -207,7 +207,7 @@ function UpgradeModal({ labels, lang, onClose }: {
                     onClick={onClose}
                 >
                     <Sparkles className="w-4 h-4" />
-                    Ver planes de idiomas
+                    {labels.upgradePrompt}
                     <ArrowRight className="w-4 h-4" />
                 </Link>
             </motion.div>
@@ -343,7 +343,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                         icon={<Languages className="w-5 h-5 opacity-70" />}
                         trend={{
                             value: allSlotsUsed ? 0 : effectiveMax - enabledLanguages.length,
-                            label: allSlotsUsed ? '✓ Máximo' : `${effectiveMax - enabledLanguages.length} disponibles`,
+                            label: allSlotsUsed ? '✓' : `${effectiveMax - enabledLanguages.length}`,
                         }}
                         glowColor={allSlotsUsed ? 'brand' : 'emerald'}
                     />
@@ -389,7 +389,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
             </SotaBentoGrid>
 
             {/* ── Main content area ── */}
-            <SotaGlassCard glowColor="none" className="!p-0" padded={false}>
+            <SotaGlassCard glowColor="none" className="!p-0">
                 {/* Tab bar */}
                 <div className="flex gap-1 p-1.5 border-b border-sf-3/30">
                     {tabs.map(tab => {
@@ -471,7 +471,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                                     >
                                         <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
                                         <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                                            Todos los idiomas soportados están activos. Tu tienda es completamente multilingüe.
+                                            {labels.saveSuccess || 'All supported languages are active. Your store is fully multilingual.'}
                                         </span>
                                     </motion.div>
                                 )}
@@ -528,7 +528,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                                                                 checked={isActive}
                                                                 onChange={() => toggleLanguage(code)}
                                                                 disabled={isPendingLang}
-                                                                ariaLabel={isActive ? `Desactivar ${info.label}` : `Activar ${info.label}`}
+                                                                ariaLabel={isActive ? `Disable ${info.label}` : `Enable ${info.label}`}
                                                             />
                                                         </div>
 
@@ -554,7 +554,7 @@ export default function I18nClient({ data, labels, lang, panelLang: panelLangPro
                                 {isPendingLang && (
                                     <div className="flex items-center justify-center gap-2 py-2 text-xs text-tx-muted">
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span className="font-medium">Guardando cambios…</span>
+                                        <span className="font-medium">{labels.saveSuccess ? labels.saveSuccess.split('.')[0] + '…' : 'Saving…'}</span>
                                     </div>
                                 )}
                             </motion.div>

@@ -3,8 +3,9 @@
  * Returns daily usage stats and summary (owner/admin only)
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatLogsTable, chatSettingsTable, profilesTable } from '@/lib/chat/db'
 
 interface LogEntry {
@@ -12,8 +13,11 @@ interface LogEntry {
     created_at: string
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
+        const rl = await withRateLimit(req, API_GUARD)
+        if (rl.limited) return rl.response!
+
         const tenantId = process.env.TENANT_ID
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })

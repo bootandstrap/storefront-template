@@ -118,6 +118,9 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_auth_advanced: true,
                 enable_sales_channels: true,
                 enable_reservation_checkout: true,
+                // Backup & Storage
+                enable_backups: true,
+                enable_manual_backup: true,
             }
 
             const interfaceKeys = Object.keys(dummyFlags).sort()
@@ -177,6 +180,8 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 max_crm_contacts: 200,
                 max_automations: 0,
                 max_pos_kiosk_devices: 0,
+                max_backups: 6,
+                backup_frequency_hours: 168,
             }
 
             const interfaceKeys = Object.keys(dummyLimits).sort()

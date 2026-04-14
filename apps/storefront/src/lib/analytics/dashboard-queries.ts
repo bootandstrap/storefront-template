@@ -19,6 +19,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
+/**
+ * Shape of a row returned from the `analytics_events` table.
+ * Used to type Supabase query results across all dashboard functions.
+ */
+interface AnalyticsEvent {
+    event_type: string
+    properties: Record<string, unknown> | null
+    session_id: string
+    created_at: string
+    tenant_id: string
+}
+
 export interface ConversionFunnel {
     /** Total unique sessions */
     sessions: number
@@ -109,14 +121,15 @@ export async function getDashboardKPIs(
     const { start, end } = getPeriodDates(period)
 
     // Fetch all events in the period
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('event_type, properties, session_id')
         .eq('tenant_id', tenantId)
         .gte('created_at', start)
         .lte('created_at', end)
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) {
+    if (!events.length) {
         return {
             visitors: 0, orders: 0, revenue: 0,
             averageOrderValue: 0, conversionRate: 0,
@@ -153,14 +166,15 @@ export async function getConversionFunnel(
     const supabase = createAdminClient()
     const { start, end } = getPeriodDates(period)
 
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('event_type, session_id')
         .eq('tenant_id', tenantId)
         .gte('created_at', start)
         .lte('created_at', end)
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) {
+    if (!events.length) {
         return {
             sessions: 0, pageViews: 0, productViews: 0,
             addToCart: 0, checkoutStart: 0, checkoutComplete: 0,
@@ -206,15 +220,16 @@ export async function getTopProducts(
     const supabase = createAdminClient()
     const { start, end } = getPeriodDates(period)
 
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('event_type, properties')
         .eq('tenant_id', tenantId)
         .in('event_type', ['product_view', 'add_to_cart', 'checkout_complete'])
         .gte('created_at', start)
         .lte('created_at', end)
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) return []
+    if (!events.length) return []
 
     // Aggregate by product
     const products = new Map<string, { name: string; views: number; adds: number; purchases: number }>()
@@ -263,7 +278,7 @@ export async function getRevenueTimeline(
     const supabase = createAdminClient()
     const { start, end } = getPeriodDates(period)
 
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('properties, created_at')
         .eq('tenant_id', tenantId)
@@ -271,8 +286,9 @@ export async function getRevenueTimeline(
         .gte('created_at', start)
         .lte('created_at', end)
         .order('created_at', { ascending: true })
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) return []
+    if (!events.length) return []
 
     // Group by date
     const buckets = new Map<string, { revenue: number; count: number }>()
@@ -319,15 +335,16 @@ export async function getVisitorCount(
     const supabase = createAdminClient()
     const { start, end } = getPeriodDates(period)
 
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('session_id')
         .eq('tenant_id', tenantId)
         .eq('event_type', 'page_view')
         .gte('created_at', start)
         .lte('created_at', end)
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) return { total: 0, unique: 0 }
+    if (!events.length) return { total: 0, unique: 0 }
 
     const uniqueSessions = new Set(events.map(e => e.session_id))
     return { total: events.length, unique: uniqueSessions.size }
@@ -343,15 +360,16 @@ export async function getModuleUsage(
     const supabase = createAdminClient()
     const { start, end } = getPeriodDates(period)
 
-    const { data: events } = await supabase
+    const { data } = await supabase
         .from('analytics_events')
         .select('properties, created_at')
         .eq('tenant_id', tenantId)
         .eq('event_type', 'module_interaction')
         .gte('created_at', start)
         .lte('created_at', end)
+    const events = (data ?? []) as AnalyticsEvent[]
 
-    if (!events?.length) return []
+    if (!events.length) return []
 
     const modules = new Map<string, { count: number; lastUsed: string }>()
 

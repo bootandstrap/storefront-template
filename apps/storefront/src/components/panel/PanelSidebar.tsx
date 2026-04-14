@@ -1,11 +1,13 @@
 'use client'
 
 /**
- * PanelSidebar — Owner Panel Navigation (SOTA 6-Section Model)
+ * PanelSidebar — Owner Panel Navigation (SOTA 2026 Revamp)
  *
- * 6 primary sections: Inicio · Mi Tienda · Ventas · Módulos · Ajustes · POS
- * POS only visible when enable_pos is active.
- * Clean, minimal, non-tech-friendly — an SME owner sees 5-6 items, not 26.
+ * Clean, minimal sidebar inspired by Linear/Vercel/Notion.
+ * - Icon-only collapsed mode with tooltip on hover
+ * - Subtle green active indicator (left bar + tinted bg)
+ * - No glassmorphism, no glow — pure clean design
+ * - Self-contained inline styles for reliability with Tailwind v4
  */
 
 import Link from 'next/link'
@@ -34,17 +36,13 @@ interface PanelSidebarProps {
     businessName: string
     labels: PanelSidebarLabels
     featureFlags: PanelFeatureFlags
-    /** Optional notification badges: section key → count */
     badges?: Record<string, number>
-    /** Plan name for sidebar footer */
     planName?: string
-    /** Controlled mobile open state */
+    logoUrl?: string
+    readinessScore?: number
     mobileOpen?: boolean
-    /** Callback when mobile menu state changes */
     onMobileOpenChange?: (open: boolean) => void
-    /** Whether sidebar is collapsed (icon-only) */
     collapsed?: boolean
-    /** Callback when collapse state changes */
     onCollapseChange?: (collapsed: boolean) => void
 }
 
@@ -57,6 +55,91 @@ const SECTION_ICONS: Record<SectionKey, typeof LayoutDashboard> = {
     pos: Monitor,
 }
 
+/* ── Inline style constants (Turbopack-proof) ── */
+const S = {
+    sidebar: {
+        background: '#111A0B',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+    },
+    divider: {
+        height: 1,
+        background: 'rgba(255,255,255,0.06)',
+        margin: '8px 16px',
+    },
+    text: {
+        primary: 'rgba(255,255,255,0.85)',
+        secondary: 'rgba(255,255,255,0.50)',
+        muted: 'rgba(255,255,255,0.30)',
+        active: '#8BC34A',
+    },
+    nav: {
+        base: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 12px',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 500 as const,
+            color: 'rgba(255,255,255,0.55)',
+            textDecoration: 'none' as const,
+            transition: 'background 0.15s, color 0.15s',
+            position: 'relative' as const,
+            cursor: 'pointer' as const,
+            border: 'none' as const,
+            width: '100%' as const,
+            lineHeight: 1.4,
+        },
+        active: {
+            color: '#8BC34A',
+            background: 'rgba(139,195,74,0.10)',
+            fontWeight: 600 as const,
+        },
+        activeBar: {
+            position: 'absolute' as const,
+            left: -4,
+            top: '20%',
+            bottom: '20%',
+            width: 3,
+            borderRadius: 4,
+            background: '#8BC34A',
+        },
+    },
+    icon: {
+        width: 18,
+        height: 18,
+        flexShrink: 0,
+    },
+    avatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 700 as const,
+        fontSize: 13,
+        background: 'linear-gradient(135deg, #4a8030, #6FAF2C)',
+        color: '#fff',
+        flexShrink: 0,
+    },
+    badge: {
+        marginLeft: 'auto',
+        minWidth: 18,
+        height: 18,
+        padding: '0 5px',
+        borderRadius: 9999,
+        fontSize: 10,
+        fontWeight: 700 as const,
+        background: '#8BC34A',
+        color: '#111A0B',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        lineHeight: 1,
+    },
+} as const
+
 export default function PanelSidebar({
     lang,
     businessName,
@@ -64,6 +147,8 @@ export default function PanelSidebar({
     featureFlags,
     badges = {},
     planName,
+    logoUrl,
+    readinessScore,
     mobileOpen: controlledMobileOpen,
     onMobileOpenChange,
     collapsed: controlledCollapsed,
@@ -131,34 +216,40 @@ export default function PanelSidebar({
     }
 
     const closeMobileMenu = () => setMobileOpen(false)
+    const monogram = (businessName || 'B')[0].toUpperCase()
 
+    const healthColor = readinessScore != null
+        ? readinessScore >= 80 ? '#22c55e' : readinessScore >= 40 ? '#f59e0b' : '#ef4444'
+        : undefined
+
+    // ── Nav Item ──
     const renderNavLink = (section: typeof sections[number], forCollapsed = false) => {
         const IconComponent = SECTION_ICONS[section.key]
         const active = isActive(section.href, section.exact)
+
+        const style: React.CSSProperties = {
+            ...S.nav.base,
+            ...(active ? S.nav.active : {}),
+            ...(forCollapsed ? { justifyContent: 'center', padding: '10px 0' } : {}),
+        }
 
         return (
             <Link
                 key={section.key}
                 href={section.href}
-                className={`panel-sidebar-section ${active ? 'panel-sidebar-section-active' : ''}`}
+                style={style}
                 onClick={closeMobileMenu}
                 title={forCollapsed ? section.label : undefined}
                 data-tour-id={`nav-${section.key}`}
             >
-                <span className="panel-sidebar-icon">
-                    <IconComponent className="w-5 h-5" />
-                </span>
+                {active && !forCollapsed && <span style={S.nav.activeBar} />}
+                <IconComponent style={S.icon} />
                 {!forCollapsed && (
-                    <span className="flex-1 text-sm">{section.label}</span>
+                    <span style={{ flex: 1 }}>{section.label}</span>
                 )}
                 {!forCollapsed && section.badge != null && section.badge > 0 && (
-                    <span className="panel-sidebar-badge">
+                    <span style={S.badge}>
                         {section.badge > 99 ? '99+' : section.badge}
-                    </span>
-                )}
-                {forCollapsed && section.badge != null && section.badge > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
-                        {section.badge > 9 ? '•' : section.badge}
                     </span>
                 )}
             </Link>
@@ -166,8 +257,116 @@ export default function PanelSidebar({
     }
 
     const navigationContent = (forCollapsed = false) => (
-        <div className={forCollapsed ? 'space-y-1 flex flex-col items-center' : 'space-y-1'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {sections.map(section => renderNavLink(section, forCollapsed))}
+        </div>
+    )
+
+    // ── Business Identity ──
+    const identityHeader = (compact = false) => (
+        <div style={{ padding: compact ? '16px 8px' : '20px 16px', display: 'flex', alignItems: 'center', justifyContent: compact ? 'center' : 'flex-start', gap: 10 }}>
+            {compact ? (
+                <button
+                    type="button"
+                    onClick={() => setCollapsed(false)}
+                    style={{ ...S.avatar, border: 'none', cursor: 'pointer' }}
+                    title={businessName}
+                >
+                    {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={logoUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} />
+                    ) : (
+                        monogram
+                    )}
+                </button>
+            ) : (
+                <>
+                    <div style={S.avatar}>
+                        {logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={logoUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} />
+                        ) : (
+                            monogram
+                        )}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: S.text.primary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {businessName}
+                        </div>
+                        <div style={{ fontSize: 11, color: S.text.secondary, marginTop: 1 }}>
+                            {labels.ownerPanel}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    )
+
+    /* ── Sidebar footer ── */
+    const sidebarFooter = (compact = false) => (
+        <div style={{ padding: compact ? 8 : 12, display: 'flex', flexDirection: 'column', gap: 4, alignItems: compact ? 'center' : 'stretch' }}>
+            {/* Health indicator */}
+            {readinessScore != null && !compact && (
+                <Link href={`/${lang}/panel`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, fontSize: 12, color: S.text.secondary, textDecoration: 'none' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: healthColor, boxShadow: `0 0 6px ${healthColor}50`, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{readinessScore}%</span>
+                    <span style={{ color: S.text.muted }}>Health</span>
+                </Link>
+            )}
+            {readinessScore != null && compact && (
+                <Link href={`/${lang}/panel`} title={`${readinessScore}% Health`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, textDecoration: 'none' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: healthColor, boxShadow: `0 0 6px ${healthColor}50` }} />
+                </Link>
+            )}
+
+            {/* Plan badge */}
+            {planName && !compact && (
+                <div style={{ padding: '4px 12px' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8BC34A', background: 'rgba(139,195,74,0.12)', border: '1px solid rgba(139,195,74,0.2)', borderRadius: 9999, padding: '2px 8px', display: 'inline-flex', alignItems: 'center' }}>
+                        {planName}
+                    </span>
+                </div>
+            )}
+
+            {/* Back to store */}
+            {!compact && (
+                <a
+                    href={`/${lang}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, fontSize: 13, color: S.text.secondary, textDecoration: 'none' }}
+                >
+                    <ExternalLink style={{ width: 14, height: 14 }} />
+                    {labels.backToStore}
+                </a>
+            )}
+
+            {/* Collapse toggle */}
+            <button
+                type="button"
+                onClick={() => setCollapsed(!isCollapsed)}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: compact ? 'center' : 'flex-start',
+                    gap: 8,
+                    padding: compact ? 8 : '6px 12px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    color: S.text.muted,
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    width: compact ? 36 : '100%',
+                    height: compact ? 36 : 'auto',
+                }}
+                title="Toggle sidebar"
+            >
+                <ChevronLeft style={{ width: 14, height: 14, transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(180deg)' : 'none' }} />
+                {!compact && (
+                    <span style={{ fontSize: 10, opacity: 0.5, fontFamily: 'monospace' }}>⌥ [</span>
+                )}
+            </button>
         </div>
     )
 
@@ -179,111 +378,82 @@ export default function PanelSidebar({
                     <button
                         type="button"
                         aria-label="Close panel menu backdrop"
-                        className="absolute inset-0 bg-black/45"
+                        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer' }}
                         onClick={closeMobileMenu}
                     />
-                    <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[90vw] glass-strong border-r border-sf-3 flex flex-col">
-                        <div className="h-14 px-4 border-b border-sf-3 flex items-center justify-between">
-                            <div className="text-sm font-semibold text-tx truncate">
-                                {businessName}
+                    <aside
+                        style={{
+                            position: 'absolute', left: 0, top: 0, bottom: 0,
+                            width: 280, maxWidth: '85vw',
+                            display: 'flex', flexDirection: 'column',
+                            ...S.sidebar,
+                            animation: 'slide-in-left 0.25s ease-out',
+                        }}
+                    >
+                        {/* Mobile header */}
+                        <div style={{ height: 56, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <div style={{ ...S.avatar, width: 28, height: 28, fontSize: 11, borderRadius: 7 }}>
+                                    {logoUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={logoUrl} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
+                                    ) : (
+                                        monogram
+                                    )}
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: S.text.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {businessName}
+                                </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={closeMobileMenu}
                                 aria-label="Close panel menu"
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-sf-3 text-tx hover:bg-sf-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: S.text.secondary, cursor: 'pointer' }}
                             >
-                                <X className="w-4 h-4" />
+                                <X style={{ width: 14, height: 14 }} />
                             </button>
                         </div>
 
-                        <nav className="flex-1 p-3 overflow-y-auto">
+                        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
                             {navigationContent()}
                         </nav>
 
-                        <div className="p-3 border-t border-sf-3">
-                            {planName && (
-                                <div className="px-3 py-2 mb-2">
-                                    <span className="plan-badge">{planName}</span>
-                                </div>
-                            )}
-                            <a
-                                href={`/${lang}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={closeMobileMenu}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-tx-muted hover:text-tx hover:bg-sf-1 transition-all"
-                            >
-                                <ExternalLink className="w-4 h-4" />
-                                {labels.backToStore}
-                            </a>
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            {sidebarFooter(false)}
                         </div>
                     </aside>
                 </div>
             )}
 
             {/* Desktop sidebar */}
-            <aside className={`hidden md:flex min-h-screen glass-strong border-r border-sf-3 flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-56'}`}>
-                {/* Header */}
-                <div className={`border-b border-sf-3 ${isCollapsed ? 'p-3 flex items-center justify-center' : 'p-5'}`}>
-                    {isCollapsed ? (
-                        <button
-                            type="button"
-                            onClick={() => setCollapsed(false)}
-                            className="w-9 h-9 rounded-xl bg-brand-subtle text-brand font-bold text-sm flex items-center justify-center hover:bg-brand-muted transition-colors"
-                            title={businessName}
-                        >
-                            {(businessName || 'B')[0].toUpperCase()}
-                        </button>
-                    ) : (
-                        <>
-                            <h2 className="text-base font-bold font-display text-tx truncate">
-                                {businessName}
-                            </h2>
-                            <p className="text-xs text-tx-muted mt-0.5">
-                                {labels.ownerPanel}
-                            </p>
-                        </>
-                    )}
+            <aside
+                style={{
+                    ...S.sidebar,
+                    width: isCollapsed ? 64 : 220,
+                    minHeight: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    flexShrink: 0,
+                }}
+                className="hidden md:flex"
+            >
+                {/* Identity */}
+                <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    {identityHeader(isCollapsed)}
                 </div>
 
                 {/* Navigation */}
-                <nav className={`flex-1 overflow-y-auto ${isCollapsed ? 'p-2' : 'p-3'}`}>
+                <nav style={{ flex: 1, padding: isCollapsed ? '12px 8px' : '12px 8px', overflowY: 'auto' }}>
                     {navigationContent(isCollapsed)}
                 </nav>
 
+                {/* Separator */}
+                <div style={S.divider} />
+
                 {/* Footer */}
-                <div className={`border-t border-sf-3 ${isCollapsed ? 'p-2 flex flex-col items-center' : 'p-3 space-y-2'}`}>
-                    {!isCollapsed && planName && (
-                        <div className="px-3 py-1">
-                            <span className="plan-badge">{planName}</span>
-                        </div>
-                    )}
-                    {!isCollapsed && (
-                        <a
-                            href={`/${lang}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-tx-muted hover:text-tx hover:bg-sf-1 transition-all"
-                        >
-                            <ExternalLink className="w-4 h-4" />
-                            {labels.backToStore}
-                        </a>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => setCollapsed(!isCollapsed)}
-                        className={`flex items-center justify-center rounded-xl text-tx-muted hover:text-tx hover:bg-sf-1 transition-all ${
-                            isCollapsed ? 'w-9 h-9' : 'gap-2 px-3 py-2 w-full text-sm'
-                        }`}
-                        title="Toggle sidebar"
-                    >
-                        <ChevronLeft className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} />
-                        {!isCollapsed && (
-                            <span className="text-xs opacity-60">⌥ [</span>
-                        )}
-                    </button>
-                </div>
+                {sidebarFooter(isCollapsed)}
             </aside>
         </>
     )

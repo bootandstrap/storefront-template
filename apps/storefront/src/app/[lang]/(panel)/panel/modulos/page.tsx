@@ -46,9 +46,7 @@ export default async function ModulosPage({
 
     const tabsWithLabels = tabs.map(tb => ({
         ...tb,
-        label: tb.key === 'marketplace'
-            ? (t('panel.tabs.marketplace' as keyof typeof dictionary) || 'Explorar')
-            : tb.label,
+        label: t(tb.label as keyof typeof dictionary) || tb.label,
     }))
 
     // ── RSC Slot: fetch only the active tab's data ──
@@ -126,12 +124,12 @@ export default async function ModulosPage({
             tabContent = <SEOPage params={Promise.resolve({ lang })} />
             break
         }
-        case 'rrss': {
+        case 'redes-sociales': {
             const SocialPage = (await import('../redes-sociales/page')).default
             tabContent = <SocialPage params={Promise.resolve({ lang })} />
             break
         }
-        case 'whatsapp': {
+        case 'mensajes': {
             const MessagesPage = (await import('../mensajes/page')).default
             tabContent = <MessagesPage params={Promise.resolve({ lang })} />
             break

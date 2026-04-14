@@ -83,12 +83,12 @@ async function fetchOrdersForRange(
     scope?: TenantMedusaScope | null,
     includeFields: string = 'total,currency_code,created_at'
 ): Promise<{ orders: RawOrder[]; count: number }> {
-    // Fetch regular orders
+    // Fetch regular orders — exclude canceled from revenue
     const regularRes = await adminFetch<{
-        orders: RawOrder[]
+        orders: (RawOrder & { status?: string })[]
         count: number
     }>(
-        `/admin/orders?limit=500&fields=${includeFields}&created_at[gte]=${startDate.toISOString()}&order=-created_at`,
+        `/admin/orders?limit=500&fields=${includeFields},status&created_at[gte]=${startDate.toISOString()}&order=-created_at`,
         {},
         scope
     )
@@ -107,7 +107,10 @@ async function fetchOrdersForRange(
         scope
     )
 
-    const regularOrders = regularRes.data?.orders ?? []
+    // Filter out canceled orders from revenue calculations
+    const regularOrders = (regularRes.data?.orders ?? []).filter(
+        o => (o as any).status !== 'canceled' && (o as any).status !== 'cancelled'
+    )
 
     // Normalize draft orders to match the regular order shape
     // v2 draft orders: totals can be in cart.total, summary.current_order_total, or top-level total

@@ -1,4 +1,8 @@
 import Link from 'next/link'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Mi cuenta', robots: { index: false } }
+
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'

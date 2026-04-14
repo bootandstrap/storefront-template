@@ -35,12 +35,24 @@ export async function getChatSettings(tenantId: string): Promise<ChatSettings> {
     }
 
     try {
-        const { data, error } = await chatSettingsTable()
+        // Try tenant-scoped query first
+        let data: Array<{ key: string; value: string }> | null = null
+
+        const result = await chatSettingsTable()
             .select('key, value')
             .eq('tenant_id', tenantId)
 
-        if (error || !data || data.length === 0) {
-            console.warn('[ChatSettings] Using file defaults for tenant:', tenantId, error?.message)
+        if (result.error?.code === '42703') {
+            // Column tenant_id doesn't exist yet — fall back to global key-value
+            const fallback = await chatSettingsTable()
+                .select('key, value')
+            data = fallback.data
+        } else {
+            data = result.data
+        }
+
+        if (!data || data.length === 0) {
+            console.warn('[ChatSettings] Using file defaults for tenant:', tenantId)
             return getDefaultSettings()
         }
 

@@ -71,6 +71,8 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_auth_advanced: false,
         enable_sales_channels: false,
         enable_reservation_checkout: false,
+        enable_backups: false,
+        enable_manual_backup: false,
         // Auth Advanced (granular)
         enable_apple_oauth: false,
         enable_facebook_oauth: false,
@@ -226,6 +228,8 @@ describe('getEnabledMethods — max_payment_methods limit', () => {
             max_pos_payment_methods: 4,
             max_automations: 0,
             max_pos_kiosk_devices: 0,
+            max_backups: 6,
+            backup_frequency_hours: 168,
             ...overrides,
         } as PlanLimits
     }

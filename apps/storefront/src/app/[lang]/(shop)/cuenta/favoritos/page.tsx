@@ -1,4 +1,8 @@
 import { getConfig } from '@/lib/config'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Mis favoritos', robots: { index: false } }
+
 import { redirect } from 'next/navigation'
 import FavoritosClient from './FavoritosClient'
 

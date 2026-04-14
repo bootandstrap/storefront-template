@@ -1,26 +1,13 @@
 'use client'
 
 /**
- * SettingsShell — Thin tab navigation shell for the Ajustes hub.
+ * SettingsShell — Tab shell for Ajustes hub (SOTA 2026 Revamp)
+ *
+ * Wraps tab content with glass card and renders PanelTabNav.
  */
 
-import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import PanelTabNav, { type TabItem } from '@/components/panel/PanelTabNav'
-import {
-    Store, Truck, Globe, BarChart3, Mail, CreditCard, Kanban, Wifi,
-} from 'lucide-react'
-
-const TAB_ICONS: Record<string, React.ReactNode> = {
-    tienda: <Store className="w-4 h-4" />,
-    envios: <Truck className="w-4 h-4" />,
-    idiomas: <Globe className="w-4 h-4" />,
-    analiticas: <BarChart3 className="w-4 h-4" />,
-    email: <Mail className="w-4 h-4" />,
-    suscripcion: <CreditCard className="w-4 h-4" />,
-    proyecto: <Kanban className="w-4 h-4" />,
-    wifi: <Wifi className="w-4 h-4" />,
-}
 
 interface SettingsShellProps {
     tabs: TabItem[]
@@ -31,20 +18,23 @@ interface SettingsShellProps {
 
 export default function SettingsShell({ tabs, activeTab, lang, children }: SettingsShellProps) {
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
 
-    const handleTabChange = useCallback((tab: string) => {
-        router.push(`/${lang}/panel/ajustes?tab=${tab}`)
-    }, [router, lang])
-
-    const tabsWithIcons: TabItem[] = tabs.map(tab => ({
-        ...tab,
-        icon: TAB_ICONS[tab.key],
-    }))
+    const handleTabChange = (tab: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tab)
+        router.push(`${pathname}?${params.toString()}`)
+    }
 
     return (
-        <div className="space-y-6">
-            <PanelTabNav tabs={tabsWithIcons} activeTab={activeTab} onTabChange={handleTabChange} />
-            <div id={`panel-tab-content-${activeTab}`} role="tabpanel">
+        <div className="space-y-4 panel-page-enter">
+            <PanelTabNav
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
+            <div className="glass rounded-2xl p-4 md:p-5" id={`panel-tab-content-${activeTab}`} role="tabpanel">
                 {children}
             </div>
         </div>

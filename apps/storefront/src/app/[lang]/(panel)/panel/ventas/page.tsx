@@ -23,12 +23,14 @@ import {
     fetchCustomersData,
     fetchReturnsData,
     fetchReviewsData,
+    fetchPromotionsData,
 } from './data'
 
 import OrdersClient from '../pedidos/OrdersClient'
 import CustomersClient from '../clientes/CustomersClient'
 import ReviewsClient from '../resenas/ReviewsClient'
 import ReturnsClient from './ReturnsClient'
+import PromotionsClient from '../promociones/PromotionsClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +62,7 @@ export default async function SalesPage({
     const tabLabelMap: Record<string, string> = {
         pedidos: 'orders',
         clientes: 'customers',
+        promociones: 'promotions',
         devoluciones: 'returns',
         resenas: 'reviews',
     }
@@ -80,6 +83,11 @@ export default async function SalesPage({
         case 'clientes': {
             const data = await fetchCustomersData(tenantId, lang, rawSearchParams)
             tabContent = <CustomersClient {...data} />
+            break
+        }
+        case 'promociones': {
+            const data = await fetchPromotionsData(tenantId, lang)
+            tabContent = <PromotionsClient {...data} />
             break
         }
         case 'devoluciones': {

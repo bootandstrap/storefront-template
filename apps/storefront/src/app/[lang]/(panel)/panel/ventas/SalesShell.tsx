@@ -1,20 +1,13 @@
 'use client'
 
 /**
- * SalesShell — Thin tab navigation shell for the Ventas hub.
+ * SalesShell — Tab shell for Ventas hub (SOTA 2026 Revamp)
+ *
+ * Wraps tab content with glass card and renders PanelTabNav.
  */
 
-import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import PanelTabNav, { type TabItem } from '@/components/panel/PanelTabNav'
-import { ShoppingBag, Users, RotateCcw, Star } from 'lucide-react'
-
-const TAB_ICONS: Record<string, React.ReactNode> = {
-    pedidos: <ShoppingBag className="w-4 h-4" />,
-    clientes: <Users className="w-4 h-4" />,
-    devoluciones: <RotateCcw className="w-4 h-4" />,
-    resenas: <Star className="w-4 h-4" />,
-}
 
 interface SalesShellProps {
     tabs: TabItem[]
@@ -25,20 +18,23 @@ interface SalesShellProps {
 
 export default function SalesShell({ tabs, activeTab, lang, children }: SalesShellProps) {
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
 
-    const handleTabChange = useCallback((tab: string) => {
-        router.push(`/${lang}/panel/ventas?tab=${tab}`)
-    }, [router, lang])
-
-    const tabsWithIcons: TabItem[] = tabs.map(tab => ({
-        ...tab,
-        icon: TAB_ICONS[tab.key],
-    }))
+    const handleTabChange = (tab: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tab)
+        router.push(`${pathname}?${params.toString()}`)
+    }
 
     return (
-        <div className="space-y-6">
-            <PanelTabNav tabs={tabsWithIcons} activeTab={activeTab} onTabChange={handleTabChange} />
-            <div id={`panel-tab-content-${activeTab}`} role="tabpanel">
+        <div className="space-y-4 panel-page-enter">
+            <PanelTabNav
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
+            <div className="glass rounded-2xl p-4 md:p-5" id={`panel-tab-content-${activeTab}`} role="tabpanel">
                 {children}
             </div>
         </div>

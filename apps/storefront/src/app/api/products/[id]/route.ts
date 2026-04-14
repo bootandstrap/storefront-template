@@ -1,13 +1,24 @@
+/**
+ * GET /api/products/[id] — Fetch a single product by Medusa ID
+ *
+ * Public endpoint with rate limiting (API_GUARD: 60 req/min).
+ * Validates product ID format (prod_XXX) to prevent SSRF/path traversal.
+ * Proxies to Medusa Store API with publishable key auth.
+ */
 import { NextRequest, NextResponse } from 'next/server'
+import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 
 // Medusa product IDs: prod_XXXX (alphanumeric + underscores)
 const VALID_PRODUCT_ID = /^prod_[a-zA-Z0-9]+$/
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const rl = await withRateLimit(request, API_GUARD)
+        if (rl.limited) return rl.response!
+
         const { id } = await params
 
         // S7: Validate ID format to prevent SSRF/path traversal

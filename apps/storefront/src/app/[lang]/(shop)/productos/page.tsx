@@ -1,4 +1,8 @@
 import { Suspense } from 'react'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Productos', description: 'Explora nuestro catálogo completo de productos' }
+
 import { getProducts, getCategories } from '@/lib/medusa/client'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'

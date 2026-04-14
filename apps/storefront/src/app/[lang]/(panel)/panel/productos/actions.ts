@@ -26,6 +26,7 @@ import {
 interface ActionResult {
     success: boolean
     error?: string
+    productId?: string
 }
 
 export async function createProduct(data: {
@@ -39,7 +40,7 @@ export async function createProduct(data: {
 }): Promise<ActionResult> {
     const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!data.title.trim()) {
-        return { success: false, error: 'El nombre es obligatorio' }
+        return { success: false, error: 'Product name is required' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
@@ -85,7 +86,7 @@ export async function createProduct(data: {
     revalidatePanel('all')
     logOwnerAction(tenantId, 'product.create', { title: data.title, status: data.status, priceCount: medusaPrices.length })
 
-    return { success: true }
+    return { success: true, productId: result.product?.id }
 }
 
 export async function updateProduct(
@@ -102,7 +103,7 @@ export async function updateProduct(
 ): Promise<ActionResult> {
     const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (data.title !== undefined && !data.title.trim()) {
-        return { success: false, error: 'El nombre es obligatorio' }
+        return { success: false, error: 'Product name is required' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
@@ -190,7 +191,7 @@ export async function uploadProductImage(
     // Dynamic file size limit from plan (scoped to auth tenant)
     const maxFileSizeBytes = (appConfig.planLimits.max_file_upload_mb ?? 5) * 1024 * 1024
     if (file.size > maxFileSizeBytes) {
-        return { success: false, error: `El archivo excede el límite de ${appConfig.planLimits.max_file_upload_mb ?? 5} MB` }
+        return { success: false, error: `File exceeds the ${appConfig.planLimits.max_file_upload_mb ?? 5} MB limit` }
     }
 
     // Check current image count against plan limit
@@ -216,7 +217,7 @@ export async function uploadProductImage(
         if (!storageCheck.allowed) {
             return {
                 success: false,
-                error: `Límite de almacenamiento alcanzado (${storageCheck.usedMb}/${storageCheck.limitMb} MB)`
+                error: `Storage limit reached (${storageCheck.usedMb}/${storageCheck.limitMb} MB)`
             }
         }
     }
@@ -271,7 +272,7 @@ export async function updateProductStock(
 ): Promise<ActionResult> {
     const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (typeof quantity !== 'number' || quantity < 0) {
-        return { success: false, error: 'La cantidad debe ser un número positivo' }
+        return { success: false, error: 'Quantity must be a positive number' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)

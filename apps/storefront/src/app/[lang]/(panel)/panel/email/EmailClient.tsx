@@ -10,6 +10,8 @@
  * - Animated usage bar (motion width)
  * - Feature-gated tab styling
  * - Animated automation cards
+ * - Per-template toggle control (Notifications tab)
+ * - Real-time stats breakdown per email type
  */
 
 import { useState, useTransition } from 'react'
@@ -36,6 +38,7 @@ interface EmailStats {
     monthly_limit: number
     open_rate: number
     bounce_rate: number
+    breakdown?: Record<string, number>
 }
 
 interface Labels {
@@ -77,6 +80,8 @@ interface Props {
     hasProvider: boolean
     labels: Labels
     saveAction: (config: AutomationConfig) => Promise<{ success: boolean; error?: string }>
+    savePreferencesAction?: (prefs: EmailPreferences) => Promise<{ success: boolean; error?: string }>
+    emailPreferences?: EmailPreferences
     emailSenderConfig?: Record<string, unknown>
     logsData: { logs: EmailLogEntry[]; count: number }
     queryParams: {
@@ -87,13 +92,15 @@ interface Props {
     }
 }
 
-type TabKey = 'dashboard' | 'logs' | 'automations' | 'templates' | 'campaigns'
+import type { EmailPreferences } from './actions'
+
+type TabKey = 'dashboard' | 'notifications' | 'logs' | 'automations' | 'templates' | 'campaigns'
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction, emailSenderConfig, logsData, queryParams }: Props) {
+export default function EmailClient({ config, stats, flags, hasProvider, labels, saveAction, savePreferencesAction, emailPreferences, emailSenderConfig, logsData, queryParams }: Props) {
     const emailConfigFields = getModuleConfigSchema('email_marketing')
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -101,6 +108,20 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
 
     const [automationConfig, setAutomationConfig] = useState<AutomationConfig>(config)
     const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
+    const [prefs, setPrefs] = useState<EmailPreferences>(emailPreferences || {
+        send_order_confirmation: true,
+        send_payment_failed: true,
+        send_order_shipped: true,
+        send_order_delivered: true,
+        send_order_cancelled: true,
+        send_refund_processed: true,
+        send_welcome: true,
+        send_low_stock_alert: true,
+        send_abandoned_cart: true,
+        send_review_request: true,
+        template_design: 'minimal',
+    })
+    const [prefsSaving, startPrefsSaving] = useTransition()
 
     const handleSave = () => {
         startTransition(async () => {
@@ -120,6 +141,7 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
 
     const tabs: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }>; gated: boolean }[] = [
         { key: 'dashboard', label: labels.dashboard, icon: BarChart3, gated: false },
+        { key: 'notifications', label: 'Notificaciones', icon: Mail, gated: false },
         { key: 'logs', label: labels.logs || 'Logs', icon: Mail, gated: false },
         { key: 'automations', label: labels.automations, icon: Clock, gated: false },
         { key: 'templates', label: labels.templates, icon: Palette, gated: !flags.enable_email_templates },
@@ -227,31 +249,256 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             </div>
                         </div>
 
-                        {/* Usage bar */}
-                        {stats.monthly_limit > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl px-5 py-4"
-                            >
-                                <div className="flex items-center justify-between mb-2 text-xs">
+                        {/* ── Governance-aware usage card ── */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl px-5 py-5"
+                        >
+                            {/* Header with tier badge */}
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-brand" />
+                                    <span className="font-semibold text-sm text-tx">
+                                        {stats.monthly_limit > 0 ? 'Email Marketing' : 'Emails Gratuitos'}
+                                    </span>
+                                    {stats.monthly_limit > 0 && (
+                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand/10 text-brand">
+                                            {stats.monthly_limit >= 10000 ? 'Enterprise' : stats.monthly_limit >= 2000 ? 'Pro' : 'Basic'}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="font-semibold text-sm text-tx">
+                                    {stats.sent_this_month.toLocaleString()} / {(stats.monthly_limit > 0 ? stats.monthly_limit : 100).toLocaleString()}
+                                </span>
+                            </div>
+
+                            {/* Usage bar */}
+                            <div className="h-2.5 bg-sf-2 rounded-full overflow-hidden mb-3">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(usagePercent > 0 ? usagePercent : Math.round((stats.sent_this_month / 100) * 100), 100)}%` }}
+                                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+                                    className={`h-full rounded-full ${usagePercent > 90 || (stats.monthly_limit === 0 && stats.sent_this_month > 80) ? 'bg-red-500' : usagePercent > 70 || (stats.monthly_limit === 0 && stats.sent_this_month > 60) ? 'bg-amber-500' : 'bg-brand'}`}
+                                />
+                            </div>
+
+                            {/* Category breakdown */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                {/* Essential */}
+                                <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl px-3 py-2.5">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">Esenciales</span>
+                                    </div>
+                                    <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">
+                                        Confirmación pedido, pago fallido
+                                    </p>
+                                    <p className="text-emerald-700 dark:text-emerald-300 font-bold mt-1">
+                                        ✓ Gratis
+                                    </p>
+                                </div>
+
+                                {/* Transactional */}
+                                <div className={`rounded-xl px-3 py-2.5 ${flags.enable_email_notifications ? 'bg-blue-50 dark:bg-blue-500/10' : 'bg-sf-1/50'}`}>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className={`w-2 h-2 rounded-full ${flags.enable_email_notifications ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                                        <span className={`font-medium ${flags.enable_email_notifications ? 'text-blue-700 dark:text-blue-400' : 'text-tx-muted'}`}>
+                                            Transaccional
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-tx-muted">
+                                        Envío, entrega, reembolso, stock
+                                    </p>
+                                    <p className={`font-bold mt-1 ${flags.enable_email_notifications ? 'text-blue-700 dark:text-blue-300' : 'text-tx-muted'}`}>
+                                        {flags.enable_email_notifications ? '✓ Activo' : <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Basic</span>}
+                                    </p>
+                                </div>
+
+                                {/* Marketing */}
+                                <div className={`rounded-xl px-3 py-2.5 ${flags.enable_abandoned_cart_emails ? 'bg-orange-50 dark:bg-orange-500/10' : 'bg-sf-1/50'}`}>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className={`w-2 h-2 rounded-full ${flags.enable_abandoned_cart_emails ? 'bg-orange-500' : 'bg-gray-400'}`} />
+                                        <span className={`font-medium ${flags.enable_abandoned_cart_emails ? 'text-orange-700 dark:text-orange-400' : 'text-tx-muted'}`}>
+                                            Marketing
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-tx-muted">
+                                        Carrito abandonado, reseñas
+                                    </p>
+                                    <p className={`font-bold mt-1 ${flags.enable_abandoned_cart_emails ? 'text-orange-700 dark:text-orange-300' : 'text-tx-muted'}`}>
+                                        {flags.enable_abandoned_cart_emails ? '✓ Activo' : <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Pro</span>}
+                                    </p>
+                                </div>
+
+                                {/* Campaigns */}
+                                <div className={`rounded-xl px-3 py-2.5 ${flags.enable_email_campaigns ? 'bg-purple-50 dark:bg-purple-500/10' : 'bg-sf-1/50'}`}>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className={`w-2 h-2 rounded-full ${flags.enable_email_campaigns ? 'bg-purple-500' : 'bg-gray-400'}`} />
+                                        <span className={`font-medium ${flags.enable_email_campaigns ? 'text-purple-700 dark:text-purple-400' : 'text-tx-muted'}`}>
+                                            Campañas
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-tx-muted">
+                                        Newsletter, segmentación
+                                    </p>
+                                    <p className={`font-bold mt-1 ${flags.enable_email_campaigns ? 'text-purple-700 dark:text-purple-300' : 'text-tx-muted'}`}>
+                                        {flags.enable_email_campaigns ? '✓ Activo' : <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Enterprise</span>}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Upsell strip */}
+                            {stats.monthly_limit === 0 && (
+                                <div className="mt-3 pt-3 border-t border-sf-2 flex items-center justify-between text-xs">
                                     <span className="text-tx-muted">
-                                        {usagePercent}% · {labels.emailsRemaining}: {(stats.monthly_limit - stats.sent_this_month).toLocaleString()}
+                                        ⬆️ Amplía a 500/mes con Email Marketing
                                     </span>
-                                    <span className="font-semibold text-tx">
-                                        {stats.sent_this_month.toLocaleString()} / {stats.monthly_limit.toLocaleString()}
+                                    <a
+                                        href="/panel/modulos"
+                                        className="text-brand hover:underline font-medium"
+                                    >
+                                        Ver módulo →
+                                    </a>
+                                </div>
+                            )}
+                            {stats.monthly_limit > 0 && stats.monthly_limit < 10000 && (
+                                <div className="mt-3 pt-3 border-t border-sf-2 flex items-center justify-between text-xs">
+                                    <span className="text-tx-muted">
+                                        ⬆️ {stats.monthly_limit < 2000 ? 'Pro: 2.000/mes + automatizaciones' : 'Enterprise: 10.000/mes + dominio propio'}
                                     </span>
+                                    <a
+                                        href="/panel/modulos"
+                                        className="text-brand hover:underline font-medium"
+                                    >
+                                        Mejorar →
+                                    </a>
                                 </div>
-                                <div className="h-2 bg-sf-2 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min(usagePercent, 100)}%` }}
-                                        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-brand'}`}
-                                    />
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}\n\n                {/* Notifications Tab — Per-template toggles */}
+                {activeTab === 'notifications' && (
+                    <motion.div
+                        key="notifications"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-4"
+                    >
+                        <p className="text-sm text-tx-muted">
+                            Controla qué emails se envían desde tu tienda. Los emails esenciales están siempre disponibles.
+                        </p>
+
+                        {/* Toggle Grid */}
+                        {(() => {
+                            const categories: { title: string; color: string; dot: string; items: { key: keyof EmailPreferences; label: string; desc: string; gated: boolean; gateLabel?: string; audience: string; count: number }[] }[] = [
+                                {
+                                    title: 'Esenciales (gratis)',
+                                    color: 'emerald',
+                                    dot: 'bg-emerald-500',
+                                    items: [
+                                        { key: 'send_order_confirmation', label: 'Confirmación de pedido', desc: 'Al cliente tras completar compra', gated: false, audience: '→ Cliente', count: stats.breakdown?.order_confirmation ?? 0 },
+                                        { key: 'send_payment_failed', label: 'Pago fallido', desc: 'Al cliente si el pago no se procesa', gated: false, audience: '→ Cliente', count: stats.breakdown?.payment_failed ?? 0 },
+                                    ],
+                                },
+                                {
+                                    title: 'Transaccional',
+                                    color: 'blue',
+                                    dot: 'bg-blue-500',
+                                    items: [
+                                        { key: 'send_order_shipped', label: 'Pedido enviado', desc: 'Al cliente cuando se envía', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Cliente', count: stats.breakdown?.order_shipped ?? 0 },
+                                        { key: 'send_order_delivered', label: 'Pedido entregado', desc: 'Al cliente cuando se entrega', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Cliente', count: stats.breakdown?.order_delivered ?? 0 },
+                                        { key: 'send_order_cancelled', label: 'Pedido cancelado', desc: 'Al cliente si se cancela', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Cliente', count: stats.breakdown?.order_cancelled ?? 0 },
+                                        { key: 'send_refund_processed', label: 'Reembolso procesado', desc: 'Al cliente al procesar devolución', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Cliente', count: stats.breakdown?.refund_processed ?? 0 },
+                                        { key: 'send_welcome', label: 'Bienvenida', desc: 'Al cliente al crear cuenta', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Cliente', count: stats.breakdown?.welcome ?? 0 },
+                                        { key: 'send_low_stock_alert', label: 'Alerta stock bajo', desc: 'A ti cuando un producto tiene poco stock', gated: !flags.enable_email_notifications, gateLabel: 'Basic', audience: '→ Tú', count: stats.breakdown?.low_stock_alert ?? 0 },
+                                    ],
+                                },
+                                {
+                                    title: 'Marketing',
+                                    color: 'orange',
+                                    dot: 'bg-orange-500',
+                                    items: [
+                                        { key: 'send_abandoned_cart', label: 'Carrito abandonado', desc: 'Al cliente que deja items en carrito', gated: !flags.enable_abandoned_cart_emails, gateLabel: 'Pro', audience: '→ Cliente', count: stats.breakdown?.abandoned_cart ?? 0 },
+                                        { key: 'send_review_request', label: 'Solicitud de reseña', desc: 'Al cliente tras recibir pedido', gated: !flags.enable_abandoned_cart_emails, gateLabel: 'Pro', audience: '→ Cliente', count: stats.breakdown?.review_request ?? 0 },
+                                    ],
+                                },
+                            ]
+
+                            return categories.map(cat => (
+                                <div key={cat.title} className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-sf-2 flex items-center gap-2">
+                                        <div className={`w-2.5 h-2.5 rounded-full ${cat.dot}`} />
+                                        <span className="text-sm font-semibold text-tx">{cat.title}</span>
+                                    </div>
+                                    <div className="divide-y divide-sf-2/50">
+                                        {cat.items.map(item => (
+                                            <div key={item.key} className="flex items-center justify-between px-5 py-3.5 group">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-medium text-tx">{item.label}</span>
+                                                        <span className="text-[10px] text-tx-muted bg-sf-1 px-1.5 py-0.5 rounded">{item.audience}</span>
+                                                        {item.count > 0 && (
+                                                            <span className="text-[10px] font-mono text-tx-muted">{item.count} este mes</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-tx-muted mt-0.5">{item.desc}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-3">
+                                                    {item.gated ? (
+                                                        <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                                            <Lock className="w-3 h-3" />
+                                                            {item.gateLabel}
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            role="switch"
+                                                            aria-checked={prefs[item.key] as boolean}
+                                                            onClick={() => setPrefs(p => ({ ...p, [item.key]: !p[item.key] }))}
+                                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+                                                                prefs[item.key] ? 'bg-brand' : 'bg-sf-3'
+                                                            }`}
+                                                        >
+                                                            <span
+                                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                                                                    prefs[item.key] ? 'translate-x-6' : 'translate-x-1'
+                                                                }`}
+                                                            />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </motion.div>
+                            ))
+                        })()}
+
+                        {/* Save button */}
+                        {savePreferencesAction && (
+                            <motion.button
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                onClick={() => {
+                                    startPrefsSaving(async () => {
+                                        const result = await savePreferencesAction(prefs)
+                                        if (result.success) {
+                                            toast.success('Preferencias guardadas')
+                                            router.refresh()
+                                        } else {
+                                            toast.error(result.error ?? 'Error')
+                                        }
+                                    })
+                                }}
+                                disabled={prefsSaving}
+                                className="w-full py-3 rounded-xl bg-brand text-white font-semibold hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {prefsSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                {labels.save}
+                            </motion.button>
                         )}
                     </motion.div>
                 )}

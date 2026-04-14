@@ -15,7 +15,7 @@
 import { useState, useTransition } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { useToast } from '@/components/ui/Toaster'
-import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck, ExternalLink, Package } from 'lucide-react'
+import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck, ExternalLink, Package, Globe } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { StoreConfig } from '@/lib/config'
@@ -23,6 +23,8 @@ import { saveStoreConfig } from './actions'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
+import { STATIC_EXCHANGE_RATES } from '@/lib/currency-engine'
+import { SUPPORTED_LOCALES } from '@/lib/i18n'
 
 interface StoreConfigClientProps {
     config: StoreConfig
@@ -100,6 +102,108 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                 <div>
                     <label className={labelClass}>{t('panel.config.storeAddress')}</label>
                     <textarea className={inputClass + ' resize-none'} rows={2} value={formData.store_address ?? ''} onChange={(e) => update('store_address', e.target.value)} />
+                </div>
+
+                {/* ── Default Currency & Language (always visible) ── */}
+                <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Globe className="w-4 h-4 text-brand" />
+                        <span className="text-sm font-bold text-tx">{t('panel.config.regionSettings') || 'Región y moneda'}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>{t('panel.config.defaultCurrency') || 'Moneda por defecto'}</label>
+                            <select
+                                className={inputClass}
+                                value={(formData.default_currency ?? 'eur').toLowerCase()}
+                                onChange={(e) => update('default_currency', e.target.value)}
+                            >
+                                {Object.keys(STATIC_EXCHANGE_RATES).map(code => (
+                                    <option key={code} value={code}>{code.toUpperCase()}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelClass}>{t('panel.config.storeLanguage') || 'Idioma de la tienda'}</label>
+                            <select
+                                className={inputClass}
+                                value={(formData as any).language ?? 'es'}
+                                onChange={(e) => update('language' as keyof StoreConfig, e.target.value)}
+                            >
+                                {SUPPORTED_LOCALES.map(loc => (
+                                    <option key={loc} value={loc}>{loc === 'es' ? '🇪🇸 Español' : loc === 'en' ? '🇬🇧 English' : loc === 'de' ? '🇩🇪 Deutsch' : loc === 'fr' ? '🇫🇷 Français' : loc === 'it' ? '🇮🇹 Italiano' : loc}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Stock Mode (promoted from entrega tab) ── */}
+                <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Package className="w-4 h-4 text-brand" />
+                        <span className="text-sm font-bold text-tx">{t('panel.config.stockMode') || 'Gestión de inventario'}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div
+                            role="switch"
+                            aria-checked={(formData as any).stock_mode === 'managed'}
+                            tabIndex={0}
+                            onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed') }}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${
+                                (formData as any).stock_mode === 'managed' ? 'bg-brand' : 'bg-sf-3'
+                            }`}
+                        >
+                            <motion.span
+                                layout
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ${
+                                    (formData as any).stock_mode === 'managed' ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label
+                                className="text-sm font-medium text-tx-sec cursor-pointer"
+                                onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
+                            >
+                                {(formData as any).stock_mode === 'managed'
+                                    ? (t('panel.config.stockManaged') || 'Stock gestionado')
+                                    : (t('panel.config.stockAlwaysAvailable') || 'Siempre disponible')
+                                }
+                            </label>
+                            <p className="text-[11px] text-tx-faint mt-0.5">
+                                {(formData as any).stock_mode === 'managed'
+                                    ? (t('panel.config.stockManagedDesc') || 'Los productos necesitan cantidades de stock. Se ocultan cuando se agotan.')
+                                    : (t('panel.config.stockAlwaysDesc') || 'Todos los productos están siempre disponibles. Ideal para servicios o negocios sin inventario.')
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    <AnimatePresence>
+                        {(formData as any).stock_mode === 'managed' && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <div>
+                                    <label className={labelClass}>{t('panel.config.lowStockThreshold') || 'Alerta de stock bajo (unidades)'}</label>
+                                    <input
+                                        className={inputClass}
+                                        type="number"
+                                        min={0}
+                                        value={(formData as any).low_stock_threshold ?? 5}
+                                        onChange={(e) => update('low_stock_threshold' as keyof StoreConfig, parseInt(e.target.value) || 0)}
+                                        placeholder="5"
+                                    />
+                                    <p className="text-[10px] text-tx-faint mt-1">{t('panel.config.lowStockThresholdDesc') || 'Se mostrará una alerta cuando un producto tenga menos de estas unidades.'}</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         ),
@@ -257,74 +361,6 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
         ),
         entrega: (
             <div className="space-y-5">
-                {/* ── Stock Mode ── */}
-                <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Package className="w-4 h-4 text-brand" />
-                        <span className="text-sm font-bold text-tx">{t('panel.config.stockMode') || 'Gestión de inventario'}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div
-                            role="switch"
-                            aria-checked={(formData as any).stock_mode === 'managed'}
-                            tabIndex={0}
-                            onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed') }}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${
-                                (formData as any).stock_mode === 'managed' ? 'bg-brand' : 'bg-sf-3'
-                            }`}
-                        >
-                            <motion.span
-                                layout
-                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ${
-                                    (formData as any).stock_mode === 'managed' ? 'translate-x-5' : 'translate-x-0'
-                                }`}
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <label
-                                className="text-sm font-medium text-tx-sec cursor-pointer"
-                                onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
-                            >
-                                {(formData as any).stock_mode === 'managed'
-                                    ? (t('panel.config.stockManaged') || 'Stock gestionado')
-                                    : (t('panel.config.stockAlwaysAvailable') || 'Siempre disponible')
-                                }
-                            </label>
-                            <p className="text-[11px] text-tx-faint mt-0.5">
-                                {(formData as any).stock_mode === 'managed'
-                                    ? (t('panel.config.stockManagedDesc') || 'Los productos necesitan cantidades de stock. Se ocultan cuando se agotan.')
-                                    : (t('panel.config.stockAlwaysDesc') || 'Todos los productos están siempre disponibles. Ideal para servicios o negocios sin inventario.')
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    <AnimatePresence>
-                        {(formData as any).stock_mode === 'managed' && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="overflow-hidden"
-                            >
-                                <div>
-                                    <label className={labelClass}>{t('panel.config.lowStockThreshold') || 'Alerta de stock bajo (unidades)'}</label>
-                                    <input
-                                        className={inputClass}
-                                        type="number"
-                                        min={0}
-                                        value={(formData as any).low_stock_threshold ?? 5}
-                                        onChange={(e) => update('low_stock_threshold' as keyof StoreConfig, parseInt(e.target.value) || 0)}
-                                        placeholder="5"
-                                    />
-                                    <p className="text-[10px] text-tx-faint mt-1">{t('panel.config.lowStockThresholdDesc') || 'Se mostrará una alerta cuando un producto tenga menos de estas unidades.'}</p>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
                 {/* ── Delivery settings ── */}
                 <div>
                     <label className={labelClass}>{t('panel.config.minOrderAmount')}</label>

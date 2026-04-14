@@ -1,4 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Mi perfil', robots: { index: false } }
+
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import AvatarUpload from '@/components/account/AvatarUpload'
 import ProfileForm from './ProfileForm'

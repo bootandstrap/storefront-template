@@ -20,6 +20,8 @@ interface PanelPageHeaderProps {
     action?: ReactNode
     /** Optional badge (e.g., count) */
     badge?: string | number
+    /** Optional inline mini-stats (e.g., "24 products · 5 categories") */
+    stats?: string
 }
 
 export default function PanelPageHeader({
@@ -28,18 +30,19 @@ export default function PanelPageHeader({
     icon,
     action,
     badge,
+    stats,
 }: PanelPageHeaderProps) {
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 panel-page-enter">
             <div className="flex items-center gap-3 min-w-0">
                 {icon && (
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-brand-muted to-brand-subtle text-brand shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl glass border border-sf-3/30 text-brand shrink-0 shadow-sm">
                         {icon}
                     </div>
                 )}
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-xl sm:text-2xl font-bold font-display text-tx truncate">
+                        <h1 className="text-xl sm:text-2xl font-bold font-display text-tx truncate accent-underline">
                             {title}
                         </h1>
                         {badge != null && (
@@ -51,6 +54,11 @@ export default function PanelPageHeader({
                     {subtitle && (
                         <p className="text-sm text-tx-muted mt-0.5 truncate">
                             {subtitle}
+                        </p>
+                    )}
+                    {stats && (
+                        <p className="text-xs text-tx-faint mt-0.5 font-medium tracking-wide">
+                            {stats}
                         </p>
                     )}
                 </div>

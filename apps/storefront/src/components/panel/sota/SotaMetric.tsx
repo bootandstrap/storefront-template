@@ -11,6 +11,8 @@ interface SotaMetricProps {
     isCurrency?: boolean
     locale?: string
     href?: string
+    /** Subtitle text (e.g. 'este mes', 'this month') */
+    subtitle?: string
     trend?: { value: number; label: string }
     sparklineData?: number[]
     accentColor?: string
@@ -25,6 +27,7 @@ export function SotaMetric({
     isCurrency,
     locale = 'es',
     href,
+    subtitle,
     trend,
     sparklineData,
     accentColor = '#8BC34A',
@@ -52,8 +55,9 @@ export function SotaMetric({
                 </div>
                 
                 {trend && (
-                    <div className={`px-2 py-1 rounded-full text-xs font-bold font-mono tracking-tight ${trend.value >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                        {trend.value > 0 ? '+' : ''}{trend.value}%
+                    <div className={trend.value >= 0 ? 'metric-trend-up' : 'metric-trend-down'}>
+                        <span>{trend.value > 0 ? '↑' : '↓'}</span>
+                        {Math.abs(trend.value)}%
                     </div>
                 )}
             </div>
@@ -67,6 +71,9 @@ export function SotaMetric({
                         <AnimatedStatValue value={value as number} locale={locale} />
                     )}
                 </div>
+                {subtitle && (
+                    <span className="text-[11px] text-tx-faint font-medium tracking-wide">{subtitle}</span>
+                )}
             </div>
 
             {sparklineData && sparklineData.length > 0 && (

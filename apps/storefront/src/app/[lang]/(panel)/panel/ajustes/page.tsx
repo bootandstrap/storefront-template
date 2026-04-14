@@ -70,6 +70,7 @@ export default async function SettingsPage({
         suscripcion: 'subscription',
         proyecto: 'project',
         wifi: 'wifi',
+        privacidad: 'privacy',
     }
     const tabsWithLabels = tabs.map(tb => ({
         ...tb,
@@ -152,6 +153,11 @@ export default async function SettingsPage({
             const data = await fetchWifiData(tenantId)
             const WifiQRSection = (await import('@/components/panel/WifiQRSection')).default
             tabContent = <WifiQRSection businessName={data.businessName} />
+            break
+        }
+        case 'privacidad': {
+            const DataPrivacySection = (await import('@/components/panel/DataPrivacySection')).default
+            tabContent = <DataPrivacySection lang={lang} />
             break
         }
         default:

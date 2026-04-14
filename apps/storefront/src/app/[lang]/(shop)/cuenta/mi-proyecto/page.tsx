@@ -1,4 +1,8 @@
 /**
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Mi proyecto', robots: { index: false } }
+
  * Legacy redirect — mi-proyecto moved to owner panel
  * Customers accessing this URL will be redirected to their account dashboard.
  * Owners are already redirected by the cuenta layout guard.

@@ -38,7 +38,7 @@ export async function createCrmContact(data: {
     const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_crm' })
 
     if (!data.email?.trim()) {
-        return { success: false, error: 'El email es obligatorio' }
+        return { success: false, error: 'Email is required' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)

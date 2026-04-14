@@ -42,41 +42,53 @@ const nextConfig: NextConfig = {
   },
 
   // ── Security + CDN Headers ─────────────────────────
+  // NOTE: Content-Security-Policy is handled dynamically in proxy.ts
+  // with a per-request nonce — it CANNOT be set here (static headers
+  // don't support nonces, and inline scripts would break).
   async headers() {
     return [
       // ── Global security headers ──
+      // Applied to every request. Defense-in-depth against common web attacks.
       {
         source: "/(.*)",
         headers: [
           {
+            // Prevents clickjacking — blocks the site from being embedded in <iframe>
             key: "X-Frame-Options",
             value: "DENY",
           },
           {
+            // Prevents MIME type sniffing — browser must respect Content-Type
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
           {
+            // Controls Referer header leakage — full URL only to same origin,
+            // origin-only to cross-origin (protects sensitive URL paths)
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
           {
+            // Restricts browser API access — camera, microphone, geolocation
+            // disabled by default (can be enabled per-page if needed)
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
           {
+            // Enables DNS prefetching for <a> links — faster navigation
             key: "X-DNS-Prefetch-Control",
             value: "on",
           },
           {
+            // Forces HTTPS for 1 year (31536000s) including subdomains.
+            // Once set, browsers will refuse HTTP connections.
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
           },
-          // NOTE: Content-Security-Policy is set dynamically per-request
-          // in proxy.ts with a nonce — not here (static headers can't use nonces).
         ],
       },
-      // ── Static asset caching (hashed filenames → immutable) ──
+      // ── Static asset caching ──
+      // Next.js hashes filenames → safe to cache forever (immutable)
       {
         source: "/_next/static/:path*",
         headers: [
@@ -86,7 +98,9 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Image caching (1 day + stale-while-revalidate 7 days) ──
+      // ── Image caching ──
+      // 1 day fresh + 7 days stale-while-revalidate (serves stale while
+      // fetching fresh in background → fast UX with eventual consistency)
       {
         source: "/images/:path*",
         headers: [
@@ -96,7 +110,8 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Font caching (1 year, immutable) ──
+      // ── Font caching ──
+      // Fonts never change per deployment → cache forever (immutable)
       {
         source: "/fonts/:path*",
         headers: [

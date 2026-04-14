@@ -212,6 +212,9 @@ export const FeatureFlagsSchema = z.object({
     enable_auth_advanced: z.boolean(),
     enable_sales_channels: z.boolean(),
     enable_reservation_checkout: z.boolean(),
+    // Backup & Storage (Phase 6 — 2026-04)
+    enable_backups: z.boolean(),
+    enable_manual_backup: z.boolean(),
 })
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>
@@ -249,6 +252,9 @@ export const PlanLimitsSchema = z.object({
     max_pos_payment_methods: z.number(),
     max_automations: z.number(),
     max_pos_kiosk_devices: z.number(),
+    // Backup & Storage (Phase 6 — 2026-04)
+    max_backups: z.number(),
+    backup_frequency_hours: z.number(),
 })
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>

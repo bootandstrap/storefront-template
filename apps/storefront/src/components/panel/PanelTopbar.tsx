@@ -1,19 +1,21 @@
 'use client'
 
 /**
- * PanelTopbar — SOTA Owner Panel Header (Phase 6)
+ * PanelTopbar — SOTA 2026 Owner Panel Header
  *
- * Always-visible sticky top bar with:
- * - Time-of-day greeting + owner name
- * - Breadcrumb (Panel / current section)
- * - Notification bell (OrderNotifications)
- * - User avatar dropdown (Back to Store + Logout)
- * - Mobile hamburger toggle
+ * Features:
+ * - Time-of-day greeting with emoji + animated transition
+ * - Breadcrumb with styled / divider + clickable root
+ * - ⌘K search button (opens CommandPalette)
+ * - Premium avatar dropdown with glass card
+ * - Setup nudge with micro progress indicator
+ * - Liquid glass background
  */
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Menu, ChevronRight, LogOut, Store, User } from 'lucide-react'
+import { Menu, LogOut, Store, Search } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import OrderNotifications from '@/components/panel/OrderNotifications'
 import PanelLanguageSwitch from '@/components/panel/PanelLanguageSwitch'
 import PanelThemeToggle from '@/components/panel/PanelThemeToggle'
@@ -43,11 +45,11 @@ interface PanelTopbarProps {
     onMenuClick: () => void
 }
 
-function getGreeting(greetings: PanelTopbarProps['greetings']): string {
+function getGreeting(greetings: PanelTopbarProps['greetings']): { text: string; emoji: string } {
     const hour = new Date().getHours()
-    if (hour < 12) return greetings.morning
-    if (hour < 18) return greetings.afternoon
-    return greetings.evening
+    if (hour < 12) return { text: greetings.morning, emoji: '☀️' }
+    if (hour < 18) return { text: greetings.afternoon, emoji: '🌤️' }
+    return { text: greetings.evening, emoji: '🌙' }
 }
 
 export default function PanelTopbar({
@@ -94,11 +96,21 @@ export default function PanelTopbar({
         return breadcrumbMap[segment] || segment
     }, [pathname, breadcrumbMap])
 
-    const greeting = getGreeting(greetings)
+    const { text: greetingText, emoji: greetingEmoji } = getGreeting(greetings)
     const initial = (ownerName || businessName || 'U')[0].toUpperCase()
 
+    // ⌘K handler
+    const openCommandPalette = () => {
+        const event = new KeyboardEvent('keydown', {
+            key: 'k',
+            metaKey: true,
+            bubbles: true,
+        })
+        document.dispatchEvent(event)
+    }
+
     return (
-        <header data-panel-topbar className="sticky top-0 z-40 glass-premium border-b border-sf-2 dark:border-sf-3/30">
+        <header data-panel-topbar className="sticky top-0 z-40 liquid-glass" style={{ borderBottom: '1px solid rgba(45,80,22,0.08)' }}>
             <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-4">
                 {/* Left: hamburger (mobile) + greeting + breadcrumb */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -114,17 +126,18 @@ export default function PanelTopbar({
                     <div className="min-w-0">
                         {/* Greeting (desktop) */}
                         <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-tx">
+                            <span className="text-base" role="img" aria-hidden="true">{greetingEmoji}</span>
                             <span className="truncate">
-                                {greeting}, <span className="text-brand dark:text-brand-300">{ownerName || businessName}</span>
+                                {greetingText}, <span className="text-brand dark:text-brand-300">{ownerName || businessName}</span>
                             </span>
                             {setupNudge && (
-                                <a
+                                <Link
                                     href={setupNudge.href}
-                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500/90 hover:text-amber-400 transition-all ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 animate-pulse-subtle"
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 transition-all ml-2 px-2.5 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20"
                                 >
-                                    <span>⚡</span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                                     <span>{setupNudge.label}</span>
-                                </a>
+                                </Link>
                             )}
                         </div>
                         {/* Mobile: business name */}
@@ -132,11 +145,13 @@ export default function PanelTopbar({
                             {businessName}
                         </div>
                         {/* Breadcrumb */}
-                        <div className="flex items-center gap-1 text-[11px] text-tx-muted">
-                            <span>{labels.ownerPanel}</span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-tx-muted">
+                            <Link href={`/${lang}/panel`} className="hover:text-tx transition-colors">
+                                {labels.ownerPanel}
+                            </Link>
                             {currentSection && (
                                 <>
-                                    <ChevronRight className="w-3 h-3" />
+                                    <span className="text-tx-faint font-light">/</span>
                                     <span className="font-medium text-tx-sec">{currentSection}</span>
                                 </>
                             )}
@@ -144,8 +159,28 @@ export default function PanelTopbar({
                     </div>
                 </div>
 
-                {/* Right: notifications + avatar */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Right: search + notifications + theme + lang + avatar */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {/* ⌘K Search */}
+                    <button
+                        type="button"
+                        onClick={openCommandPalette}
+                        className="cmd-k-button hidden sm:inline-flex"
+                        aria-label="Open search"
+                    >
+                        <Search className="w-3.5 h-3.5" />
+                        <kbd>⌘K</kbd>
+                    </button>
+                    {/* Mobile search icon */}
+                    <button
+                        type="button"
+                        onClick={openCommandPalette}
+                        className="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg text-tx-muted hover:text-tx hover:bg-sf-1 transition-colors"
+                        aria-label="Search"
+                    >
+                        <Search className="w-4 h-4" />
+                    </button>
+
                     <OrderNotifications defaultCurrency={defaultCurrency} />
                     <PanelThemeToggle />
                     <PanelLanguageSwitch currentLang={lang} />
@@ -163,24 +198,27 @@ export default function PanelTopbar({
                         </button>
 
                         {avatarOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-60 glass-premium rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
-                                {/* User info */}
-                                <div className="px-4 py-3 border-b border-sf-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-brand-light text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                            <div className="absolute right-0 top-full mt-2 w-64 liquid-glass rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+                                {/* User info card */}
+                                <div className="px-4 py-3.5 border-b border-sf-2 bg-gradient-to-r from-brand-subtle to-transparent">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand to-brand-light text-white font-bold text-xs flex items-center justify-center shadow-lg shadow-brand/20">
                                             {initial}
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-semibold text-tx truncate">{ownerName || businessName}</p>
-                                            <p className="text-[11px] text-tx-muted truncate">{businessName}</p>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand-muted text-brand">Owner</span>
+                                                <span className="text-[10px] text-tx-faint truncate">{businessName}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 {/* Menu items */}
-                                <div className="py-1">
+                                <div className="py-1.5">
                                     <a
                                         href={`/${lang}`}
-                                        className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-tx-sec hover:bg-glass transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
+                                        className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-sm text-tx-sec hover:bg-sf-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                     >
                                         <Store className="w-4 h-4" />
                                         {labels.backToStore}

@@ -162,6 +162,7 @@ export function getSalesTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
     const tabs: PanelTab[] = [
         { key: 'pedidos', label: 'panel.tabs.orders', visible: true },
         { key: 'clientes', label: 'panel.tabs.customers', visible: true },
+        { key: 'promociones', label: 'panel.tabs.promotions', visible: true },
         { key: 'devoluciones', label: 'panel.tabs.returns', featureKey: 'enable_self_service_returns', visible: !!featureFlags.enable_self_service_returns },
         { key: 'resenas', label: 'panel.tabs.reviews', featureKey: 'enable_reviews', visible: !!featureFlags.enable_reviews },
     ]
@@ -178,6 +179,7 @@ export function getSettingsTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
         { key: 'suscripcion', label: 'panel.tabs.subscription', visible: true },
         { key: 'proyecto', label: 'panel.tabs.project', visible: true },
         { key: 'wifi', label: 'panel.tabs.wifi', visible: true },
+        { key: 'privacidad', label: 'panel.tabs.privacy', visible: true },
     ]
     return tabs.filter(t => t.visible)
 }

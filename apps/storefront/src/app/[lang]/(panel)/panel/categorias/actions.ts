@@ -34,7 +34,7 @@ export async function createCategory(data: {
 }): Promise<ActionResult> {
     const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (!data.name.trim()) {
-        return { success: false, error: 'El nombre es obligatorio' }
+        return { success: false, error: 'Category name is required' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)
@@ -69,7 +69,7 @@ export async function editCategory(
 ): Promise<ActionResult> {
     const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_ecommerce' })
     if (data.name !== undefined && !data.name.trim()) {
-        return { success: false, error: 'El nombre es obligatorio' }
+        return { success: false, error: 'Category name is required' }
     }
 
     const scope = await getTenantMedusaScope(tenantId)

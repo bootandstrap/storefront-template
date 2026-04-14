@@ -7,11 +7,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatSettingsTable, profilesTable } from '@/lib/chat/db'
 import { clearSettingsCache } from '@/lib/chat/settings-loader'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
+        const rl = await withRateLimit(req, API_GUARD)
+        if (rl.limited) return rl.response!
+
         const tenantId = process.env.TENANT_ID
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })
@@ -19,14 +23,30 @@ export async function GET() {
 
         const supabase = await createClient()
 
-        // Fetch settings for this tenant
-        const { data, error } = await chatSettingsTable()
+        // Fetch settings for this tenant (with fallback for pre-migration schema)
+        let data: Array<{ key: string; value: string | null; description?: string; updated_at?: string }> | null = null
+        let fetchError: { code?: string; message?: string } | null = null
+
+        // Try tenant-scoped query first
+        const result = await chatSettingsTable()
             .select('key, value, description, updated_at')
             .eq('tenant_id', tenantId)
             .order('key')
+        
+        if (result.error?.code === '42703') {
+            // Column tenant_id doesn't exist yet — fall back to global key-value
+            const fallback = await chatSettingsTable()
+                .select('key, value, description, updated_at')
+                .order('key')
+            data = fallback.data
+            fetchError = fallback.error
+        } else {
+            data = result.data
+            fetchError = result.error
+        }
 
-        if (error) {
-            console.error('[ChatSettings] Error fetching:', error)
+        if (fetchError) {
+            console.error('[ChatSettings] Error fetching:', fetchError)
             return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
         }
 
@@ -72,6 +92,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
+        const rl = await withRateLimit(request, API_GUARD)
+        if (rl.limited) return rl.response!
+
         const tenantId = process.env.TENANT_ID
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })

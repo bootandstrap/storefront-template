@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withRateLimit, CHECKOUT_GUARD } from '@/lib/security/api-rate-guard'
 import { getActiveModulesForTenant } from '@/lib/active-modules'
 import contract from '@/lib/governance/governance-contract.json'
 
@@ -20,6 +21,9 @@ const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
 
 export async function POST(req: NextRequest) {
     try {
+        const rl = await withRateLimit(req, CHECKOUT_GUARD)
+        if (rl.limited) return rl.response!
+
         // Auth check
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()

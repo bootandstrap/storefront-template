@@ -117,6 +117,9 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_traffic_expansion:   ['capacidad', 'trafficExpansion'],
     enable_traffic_analytics:   ['capacidad', 'trafficAnalytics'],
     enable_traffic_autoscale:   ['capacidad', 'trafficAutoscale'],
+    // ── Capacidad (Backup & Storage) ─────────────────────────
+    enable_backups:             ['capacidad', 'backups'],
+    enable_manual_backup:       ['capacidad', 'manualBackup'],
 }
 
 // ── BSWEB URL Slugs per Module ────────────────────────────────────────────

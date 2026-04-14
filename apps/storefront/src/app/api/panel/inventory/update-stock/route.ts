@@ -9,11 +9,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
+import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { adjustStockLevel } from '@/lib/medusa/admin-inventory'
 
 export async function POST(request: NextRequest) {
     try {
+        const rl = await withRateLimit(request, PANEL_GUARD)
+        if (rl.limited) return rl.response!
+
         const { tenantId } = await withPanelGuard()
         const scope = await getTenantMedusaScope(tenantId)
 

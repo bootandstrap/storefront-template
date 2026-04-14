@@ -57,36 +57,39 @@ export default function PanelTabNav({ tabs, activeTab, onTabChange, className = 
     if (tabs.length <= 1) return null
 
     return (
-        <div
-            ref={scrollRef}
-            className={`panel-tab-nav ${className}`}
-            role="tablist"
-            aria-orientation="horizontal"
-        >
-            {tabs.map((tab) => {
-                const isActive = tab.key === activeTab
-                return (
-                    <button
-                        key={tab.key}
-                        ref={isActive ? activeRef : undefined}
-                        role="tab"
-                        aria-selected={isActive}
-                        aria-controls={`panel-tab-content-${tab.key}`}
-                        onClick={() => handleClick(tab.key)}
-                        className={`panel-tab-item ${isActive ? 'panel-tab-active' : 'panel-tab-inactive'}`}
-                    >
-                        {tab.icon && (
-                            <span className="panel-tab-icon">{tab.icon}</span>
-                        )}
-                        <span>{tab.label}</span>
-                        {tab.badge != null && tab.badge > 0 && (
-                            <span className="panel-tab-badge">
-                                {tab.badge > 99 ? '99+' : tab.badge}
-                            </span>
-                        )}
-                    </button>
-                )
-            })}
+        <div className="relative">
+            <div
+                ref={scrollRef}
+                className={`panel-tab-nav ${className}`}
+                role="tablist"
+                aria-orientation="horizontal"
+            >
+                {tabs.map((tab) => {
+                    const isActive = tab.key === activeTab
+                    return (
+                        <button
+                            key={tab.key}
+                            ref={isActive ? activeRef : undefined}
+                            role="tab"
+                            aria-selected={isActive}
+                            aria-controls={`panel-tab-content-${tab.key}`}
+                            onClick={() => handleClick(tab.key)}
+                            className={`panel-tab-item ${isActive ? 'panel-tab-active' : 'panel-tab-inactive'}`}
+                            style={{ minHeight: 44 }}
+                        >
+                            {tab.icon && (
+                                <span className={`panel-tab-icon transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>{tab.icon}</span>
+                            )}
+                            <span>{tab.label}</span>
+                            {tab.badge != null && tab.badge > 0 && (
+                                <span className="panel-tab-badge">
+                                    {tab.badge > 99 ? '99+' : tab.badge}
+                                </span>
+                            )}
+                        </button>
+                    )
+                })}
+            </div>
         </div>
     )
 }

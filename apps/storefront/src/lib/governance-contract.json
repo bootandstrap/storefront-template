@@ -1,10 +1,10 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-04-09T22:07:54.350Z",
+  "generated_at": "2026-04-11T22:05:21.559Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
-    "count": 79,
+    "count": 81,
     "keys": [
       "enable_2fa",
       "enable_abandoned_cart_emails",
@@ -14,6 +14,7 @@
       "enable_apple_oauth",
       "enable_auth_advanced",
       "enable_automations",
+      "enable_backups",
       "enable_bank_transfer",
       "enable_carousel",
       "enable_cash_on_delivery",
@@ -42,6 +43,7 @@
       "enable_kiosk_remote_management",
       "enable_magic_link",
       "enable_maintenance_mode",
+      "enable_manual_backup",
       "enable_multi_currency",
       "enable_multi_language",
       "enable_newsletter",
@@ -219,14 +221,24 @@
           "enable_traffic_analytics",
           "enable_traffic_autoscale"
         ]
+      },
+      "____backup___storage": {
+        "label": "🛡️ Backup & Storage",
+        "color": "#14b8a6",
+        "flags": [
+          "enable_backups",
+          "enable_manual_backup"
+        ]
       }
     }
   },
   "limits": {
-    "count": 29,
+    "count": 32,
     "keys": [
+      "backup_frequency_hours",
       "max_admin_users",
       "max_automations",
+      "max_backups",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -243,6 +255,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -256,8 +269,10 @@
       "storage_limit_mb"
     ],
     "numeric_keys": [
+      "backup_frequency_hours",
       "max_admin_users",
       "max_automations",
+      "max_backups",
       "max_badges",
       "max_carousel_slides",
       "max_categories",
@@ -274,6 +289,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -446,11 +462,14 @@
             ],
             "recommended": false,
             "flag_effects": {
+              "enable_backups": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 3,
               "max_requests_day": 25000,
-              "storage_limit_mb": 500
+              "storage_limit_mb": 500,
+              "backup_frequency_hours": 168
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzohFWa7WMiJl2G6rsOwKH"
@@ -468,12 +487,16 @@
             ],
             "recommended": true,
             "flag_effects": {
+              "enable_backups": true,
+              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 6,
               "max_requests_day": 100000,
-              "storage_limit_mb": 2000
+              "storage_limit_mb": 2000,
+              "backup_frequency_hours": 24
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzojFWa7WMiJl209zNlXeQ"
@@ -492,13 +515,17 @@
             ],
             "recommended": false,
             "flag_effects": {
+              "enable_backups": true,
+              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_autoscale": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 12,
               "max_requests_day": 99999,
-              "storage_limit_mb": 10000
+              "storage_limit_mb": 10000,
+              "backup_frequency_hours": 6
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzomFWa7WMiJl2SNUJ2Ly4"
@@ -966,11 +993,15 @@
             "price_chf": 5,
             "features": [
               "Kiosko estándar para autoservicio",
-              "Pagos integrados"
+              "Pagos integrados",
+              "1 dispositivo kiosco"
             ],
             "recommended": false,
             "flag_effects": {
               "enable_pos_kiosk": true
+            },
+            "limit_effects": {
+              "max_pos_kiosk_devices": 1
             },
             "stripe_price_ids": {
               "CHF": "price_1TKQinFWa7WMiJl2ULYhscTg"
@@ -982,12 +1013,16 @@
             "price_chf": 29,
             "features": [
               "Todo lo básico",
-              "Temporizador de inactividad para flujo rápido"
+              "Temporizador de inactividad para flujo rápido",
+              "Hasta 5 dispositivos kiosco"
             ],
             "recommended": false,
             "flag_effects": {
               "enable_pos_kiosk": true,
               "enable_kiosk_idle_timer": true
+            },
+            "limit_effects": {
+              "max_pos_kiosk_devices": 5
             },
             "stripe_price_ids": {
               "CHF": "price_1TKQinFWa7WMiJl2HSlDnx2X"
@@ -1000,7 +1035,8 @@
             "features": [
               "Todo lo avanzado",
               "Gestión remota",
-              "Analíticas avanzadas"
+              "Analíticas avanzadas",
+              "Dispositivos kiosco ilimitados"
             ],
             "recommended": false,
             "flag_effects": {
@@ -1008,6 +1044,9 @@
               "enable_kiosk_analytics": true,
               "enable_kiosk_idle_timer": true,
               "enable_kiosk_remote_management": true
+            },
+            "limit_effects": {
+              "max_pos_kiosk_devices": 99
             },
             "stripe_price_ids": {
               "CHF": "price_1TKQioFWa7WMiJl2nT4qtw1z"

@@ -21,6 +21,7 @@ import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, type AchievementContext } from '@/lib/achievements'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { buildModuleInfoList } from '@/lib/governance/build-module-info'
+import KeyboardShortcutsGuide from '@/components/panel/KeyboardShortcutsGuide'
 import {
     getProductCount,
     getCategoryCount,
@@ -340,6 +341,8 @@ export default async function PanelLayout({
                 href: `/${lang}/panel`,
             } : null}
             defaultCurrency={config.default_currency}
+            logoUrl={config.logo_url || undefined}
+            readinessScore={readinessScore}
         >
             {/* Onboarding — SOTA wizard on first panel access (suppressed on immersive routes like POS) */}
             {!config.onboarding_completed && routeSegment !== 'pos' && (
@@ -382,6 +385,7 @@ export default async function PanelLayout({
                 {children}
             </AchievementProvider>
             <PanelDashboardStyles />
+            <KeyboardShortcutsGuide />
         </PanelShell>
         </PanelThemeProvider>
     )

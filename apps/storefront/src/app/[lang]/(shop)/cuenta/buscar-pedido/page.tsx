@@ -1,4 +1,8 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Buscar pedido', robots: { index: false } }
+
 import { Package } from 'lucide-react'
 import GuestOrderLookupClient from './GuestOrderLookupClient'
 

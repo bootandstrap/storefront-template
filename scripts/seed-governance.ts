@@ -88,6 +88,9 @@ const ENTERPRISE_MAXIMUMS: Record<string, number> = {
     max_reviews_per_product: 50,
     max_wishlist_items: 200,
     max_chatbot_messages_month: 10000,
+    max_pos_kiosk_devices: 50,
+    max_backups: 12,
+    backup_frequency_hours: 6,
 }
 
 // Derive from contract: any numeric key not in ENTERPRISE_MAXIMUMS → 9999

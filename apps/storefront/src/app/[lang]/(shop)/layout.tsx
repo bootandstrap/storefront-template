@@ -29,6 +29,7 @@ import type { ChatTier } from '@/lib/chat/client-config'
 import Script from 'next/script'
 import { cookies } from 'next/headers'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
+import WebVitalsReporter from '@/components/WebVitalsReporter'
 
 /**
  * Shop layout metadata — provides title.template so every child page
@@ -242,6 +243,9 @@ export default async function ShopLayout({
                     {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${config.facebook_pixel_id}');fbq('track','PageView');`}
                 </Script>
             )}
+
+            {/* Core Web Vitals reporting — production only */}
+            {featureFlags.enable_analytics && <WebVitalsReporter />}
         </ThemeProvider>
     )
 }

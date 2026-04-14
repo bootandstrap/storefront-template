@@ -6,13 +6,17 @@
  * Write via admin client (service_role bypasses RLS).
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
+import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { clearCachedConfig } from '@/lib/config'
 
-export async function POST() {
+export async function POST(req: NextRequest) {
     try {
+        const rl = await withRateLimit(req, PANEL_GUARD)
+        if (rl.limited) return rl.response!
+
         const { tenantId } = await withPanelGuard()
 
         const admin = createAdminClient()

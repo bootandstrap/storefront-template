@@ -1,4 +1,8 @@
 import { Suspense } from 'react'
+
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Mis direcciones', robots: { index: false } }
+
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerAddresses } from '@/lib/medusa/auth-medusa'
 import { getConfig } from '@/lib/config'

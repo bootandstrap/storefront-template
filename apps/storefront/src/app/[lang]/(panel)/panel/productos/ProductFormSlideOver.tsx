@@ -182,7 +182,7 @@ export default function ProductFormSlideOver({
         for (const file of fileArray) {
             if (!file.type.startsWith('image/')) continue
             if (file.size > 10 * 1024 * 1024) {
-                toast.error(`${file.name}: máx 10 MB`)
+                toast.error(`${file.name}: max 10 MB`)
                 continue
             }
 
@@ -300,7 +300,6 @@ export default function ProductFormSlideOver({
                 router.refresh()
                 onClose()
             } else {
-                // Create new product
                 const result = await createProduct({
                     title: title.trim(),
                     description: description.trim() || undefined,
@@ -313,6 +312,16 @@ export default function ProductFormSlideOver({
                 if (!result.success) {
                     toast.error(result.error ?? 'Error')
                     return
+                }
+
+                // Upload any staged images to the newly created product
+                const newProductId = result.productId
+                if (newProductId && images.some(i => i.file)) {
+                    for (const img of images.filter(i => i.file)) {
+                        const formData = new FormData()
+                        formData.append('file', img.file!)
+                        await uploadProductImage(newProductId, formData)
+                    }
                 }
 
                 toast.success('✓')
@@ -700,7 +709,7 @@ export default function ProductFormSlideOver({
                                 {/* SEO Preview */}
                                 {(metaTitle || title) && (
                                     <div className="rounded-xl bg-sf-1 p-4 space-y-1">
-                                        <p className="text-xs text-tx-muted">Vista previa</p>
+                                        <p className="text-xs text-tx-muted">SEO Preview</p>
                                         <p className="text-sm font-medium text-[#1a0dab] truncate">
                                             {metaTitle || title}
                                         </p>

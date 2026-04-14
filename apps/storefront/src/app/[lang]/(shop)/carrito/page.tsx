@@ -1,5 +1,7 @@
 'use client'
 
+
+
 import { useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, ArrowLeft, Loader2, ArrowRight } from 'lucide-react'

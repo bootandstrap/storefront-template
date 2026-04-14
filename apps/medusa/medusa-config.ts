@@ -53,6 +53,28 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/automation",
     },
+    // Resend Email Notification Provider
+    // Handles transactional emails (order confirmation, shipping, etc.)
+    // via Medusa's Notification Module. Only active when RESEND_API_KEY is set.
+    ...(process.env.RESEND_API_KEY
+      ? [
+        {
+          resolve: "@medusajs/medusa/notification",
+          options: {
+            providers: [
+              {
+                resolve: "./src/modules/resend-notification",
+                id: "resend",
+                options: {
+                  api_key: process.env.RESEND_API_KEY,
+                  from: process.env.RESEND_FROM || "noreply@bootandstrap.com",
+                },
+              },
+            ],
+          },
+        },
+      ]
+      : []),
     // Supabase Auth Provider
     {
       resolve: "@medusajs/medusa/auth",

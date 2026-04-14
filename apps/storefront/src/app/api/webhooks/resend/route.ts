@@ -126,21 +126,29 @@ async function updateEmailLogStatus(
         const { createAdminClient } = await import('@/lib/supabase/admin')
         const supabase = createAdminClient()
 
-        // Upsert or update? Usually the row is created when sending, but to be robust against out-of-order 
-        // webhooks, if we update, it's safer.
         const updateData: Record<string, string> = { status }
         if (errorDetail) {
             updateData.error_detail = errorDetail
         }
 
+        // Try resend_id first (set by sendEmailForTenant), then message_id
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('email_log') as any)
+        const { error: resendError } = await (supabase.from('email_log') as any)
             .update(updateData)
             .eq('tenant_id', tenantId)
-            .eq('message_id', messageId)
+            .eq('resend_id', messageId)
 
-        if (error) {
-            console.error('[resend-webhook] Error updating email_log:', error)
+        if (resendError) {
+            // Fallback to message_id correlation
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase.from('email_log') as any)
+                .update(updateData)
+                .eq('tenant_id', tenantId)
+                .eq('message_id', messageId)
+
+            if (error) {
+                console.error('[resend-webhook] Error updating email_log:', error)
+            }
         }
     } catch (err) {
         console.error('[resend-webhook] Failed to update email_log:', err)

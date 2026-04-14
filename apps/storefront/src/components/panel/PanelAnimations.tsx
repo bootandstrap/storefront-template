@@ -567,3 +567,59 @@ export function FadeInStaggerItem({
         </motion.div>
     )
 }
+
+// ─── PageTransition — Wrap page content for entrance animation ──────────────
+
+interface PageTransitionProps {
+    children: ReactNode
+    className?: string
+}
+
+export function PageTransition({ children, className = '' }: PageTransitionProps) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.5, ease: EASE_EXPO_OUT }}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    )
+}
+
+// ─── ShineEffect — Diagonal light sweep wrapper ─────────────────────────────
+
+interface ShineEffectProps {
+    children: ReactNode
+    className?: string
+}
+
+export function ShineEffect({ children, className = '' }: ShineEffectProps) {
+    return (
+        <div className={`card-shine ${className}`}>
+            {children}
+        </div>
+    )
+}
+
+// ─── PressScale — Tactile press feedback ────────────────────────────────────
+
+interface PressScaleProps {
+    children: ReactNode
+    className?: string
+    /** Scale factor on press (default 0.97) */
+    pressScale?: number
+}
+
+export function PressScale({ children, className = '', pressScale = 0.97 }: PressScaleProps) {
+    return (
+        <motion.div
+            className={className}
+            whileTap={{ scale: pressScale }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        >
+            {children}
+        </motion.div>
+    )
+}

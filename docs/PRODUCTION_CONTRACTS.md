@@ -1,111 +1,33 @@
-# Production Contracts & Enforcement Catalog
+# Production Contracts & Enforcement
 
-> Consolidated from: production-contracts.md + flag-limit-enforcement-catalog.md.
-> Last updated: 2026-03-25.
+> Last updated: 2026-04-14.
 
 ## Contract Dimensions
 
 Every module must satisfy: Feature Flag gate, Plan Limit enforcement, Server-side auth guard, Zod validation, Toast feedback, Error boundary, i18n.
 
-## Module Contracts Summary
+## Module Contracts
 
-| Module | Flag | Limit | Server Enforced | Status |
-|--------|------|-------|----------------|--------|
-| Catálogo (Products) | N/A (essential) | `max_products`, `max_categories`, `max_images_per_product` | ✅ | Production |
-| Pedidos (Orders) | N/A (essential) | `max_orders_month` (tenant-scoped) | ✅ | Production |
-| Clientes (Customers) | N/A (essential) | `max_customers` | ✅ | Production |
-| Tienda (Config) | N/A (essential) | N/A | ✅ | Production |
-| Carrusel | `enable_carousel` | `max_carousel_slides` | ✅ | Production |
-| Mensajes (WhatsApp) | `enable_whatsapp_checkout` | `max_whatsapp_templates` | ✅ | Production |
-| Páginas (CMS) | `enable_cms_pages` | `max_cms_pages` | ✅ | Production |
-| Analíticas | `enable_analytics` | N/A | ✅ | Production |
-| Chatbot | `enable_chatbot` | `max_chatbot_messages_month` | ✅ (fail-closed + rate-limit) | Production |
-| Devoluciones | `enable_self_service_returns` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
-| Insignias | `enable_product_badges` | `max_badges` | ✅ | Production |
-| CRM | `enable_crm` | `max_crm_contacts` | ✅ (`shouldAllowPanelRoute`) | Production |
-| Reseñas | `enable_reviews` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
-| POS | `enable_pos` | N/A | ✅ (`shouldAllowPanelRoute`) | Production |
-| Email Notifications | `enable_email_notifications` | `max_email_sends_month` | ✅ (cron + quota check) | Production |
-| Email Campaigns | `enable_email_campaigns` | `max_email_sends_month` | ✅ (cron + quota check) | Production |
+| Module | Flag | Limit | Server Enforced |
+|--------|------|-------|----------------|
+| Catálogo | N/A (essential) | `max_products`, `max_categories`, `max_images_per_product` | ✅ |
+| Pedidos | N/A (essential) | `max_orders_month` | ✅ |
+| Clientes | N/A (essential) | `max_customers` | ✅ |
+| Carrusel | `enable_carousel` | `max_carousel_slides` | ✅ |
+| Mensajes | `enable_whatsapp_checkout` | `max_whatsapp_templates` | ✅ |
+| Páginas | `enable_cms_pages` | `max_cms_pages` | ✅ |
+| Chatbot | `enable_chatbot` | `max_chatbot_messages_month` | ✅ (fail-closed) |
+| Insignias | `enable_product_badges` | `max_badges` | ✅ |
+| CRM | `enable_crm` | `max_crm_contacts` | ✅ |
+| POS | `enable_pos` | N/A | ✅ |
+| Email | `enable_email_notifications` | `max_email_sends_month` | ✅ |
 
----
+## Server-Enforced Flags (20+)
 
-## Feature Flag Enforcement (44+ flags)
+Key enforcement points: `checkout/actions.ts` (payment flags), `registro/actions.ts` (registration), `checkout/page.tsx` (guest/auth), `paginas/[slug]/page.tsx` (CMS), `/api/cart/promotions`, `/api/newsletter`, `/api/chat`, `(shop)/layout.tsx` (maintenance), `(panel)/layout.tsx` (panel), panel pages (module gates).
 
-### Server-Enforced (20+ flags) ✅
+## Server-Enforced Limits (14)
 
-| Flag | Enforcement Point |
-|------|-------------------|
-| `enable_whatsapp_checkout` | `checkout/actions.ts` |
-| `enable_online_payments` | `checkout/actions.ts` |
-| `enable_cash_on_delivery` | `checkout/actions.ts` |
-| `enable_bank_transfer` | `checkout/actions.ts` |
-| `enable_user_registration` | `registro/actions.ts` + page |
-| `enable_guest_checkout` | `checkout/page.tsx` RSC redirect |
-| `require_auth_to_order` | `checkout/page.tsx` RSC redirect |
-| `enable_cms_pages` | `paginas/[slug]/page.tsx` |
-| `enable_promotions` | `/api/cart/promotions` via `requireFlag()` |
-| `enable_newsletter` | `/api/newsletter` (fail-closed) |
-| `enable_maintenance_mode` | `(shop)/layout.tsx` blocks store |
-| `enable_owner_panel` | `(panel)/layout.tsx` redirect |
-| `enable_customer_accounts` | `cuenta/layout.tsx` redirect |
-| `enable_order_tracking` | `cuenta/pedidos/page.tsx` redirect |
-| `enable_chatbot` | `/api/chat` + panel page |
-| `enable_self_service_returns` | Panel devoluciones page |
-| `enable_crm` | Panel CRM page + utilities/loyalty |
-| `enable_pos` | Panel POS page |
-| `enable_ecommerce` | Root module gate + utilities/labels |
-| `owner_lite_enabled` | `panel-modules.ts` |
-| `owner_advanced_modules_enabled` | `panel-modules.ts` + `panel-route-guards.ts` |
+`max_products`, `max_customers`, `max_orders_month`, `max_categories`, `max_images_per_product`, `max_cms_pages`, `max_carousel_slides`, `max_whatsapp_templates`, `max_badges`, `max_newsletter_subscribers`, `max_chatbot_messages_month`, `max_file_upload_mb`, `max_email_sends_month`, `max_api_calls_day`.
 
-### UI-Gated Only (24 flags) 🟡
-
-`enable_google_auth`, `enable_email_auth`, `enable_reviews`, `enable_wishlist`, `enable_carousel`, `enable_product_search`, `enable_related_products`, `enable_product_comparisons`, `enable_product_badges`, `enable_analytics`, `enable_multi_language`, `enable_multi_currency`, `enable_admin_api`, `enable_social_links`, `enable_order_notes`, `enable_address_management`, `enable_cookie_consent`, `enable_whatsapp_contact`, `enable_email_notifications`, `enable_abandoned_cart_emails`, `enable_email_campaigns`, `enable_email_templates`, `enable_crm_segmentation`, `enable_crm_export`
-
----
-
-## Plan Limit Enforcement (25+ limits)
-
-### Server-Enforced (14 limits) ✅
-
-| Limit | Enforcement Point |
-|-------|-------------------|
-| `max_products` | `productos/actions.ts` + page |
-| `max_customers` | `registro/actions.ts` + page |
-| `max_orders_month` | `checkout/actions.ts` (tenant-scoped via `sales_channel_id`) |
-| `max_categories` | `categorias/actions.ts` + page |
-| `max_images_per_product` | `productos/actions.ts` (upload) |
-| `max_cms_pages` | `paginas/actions.ts` + page |
-| `max_carousel_slides` | `carrusel/actions.ts` + page |
-| `max_whatsapp_templates` | `mensajes/actions.ts` + page |
-| `max_badges` | `insignias/actions.ts` |
-| `max_newsletter_subscribers` | `/api/newsletter` (fail-closed) |
-| `max_chatbot_messages_month` | `/api/chat` (`checkChatQuota()`, fail-closed + 10 req/min) |
-| `max_file_upload_mb` | `productos/actions.ts` (per-file) |
-| `max_email_sends_month` | `email-automations.ts` |
-| `max_api_calls_day` | `rate-limit-tenant.ts` `checkTrafficCapacity()` |
-
-### Display-Only (3 limits)
-
-`max_admin_users`, `storage_limit_mb`, `max_custom_domains` — shown in dashboard `UsageMeter`, no server block.
-
-### Open Items
-
-- **`max_admin_users`**: Enforce at user invitation (currently display-only)
-- **`storage_limit_mb`**: Enforce aggregate at upload time (per-file enforced, aggregate not)
-
----
-
-## Test Suites (83 files, 1030 tests)
-
-| Suite | Validates |
-|-------|----------|
-| Checkout Multi-Method | Flags ↔ payment methods, `order_placed` emission, tenant scope |
-| Chat Anti-Abuse | Rate-limit, server-side quota, fail-closed, payload |
-| Owner Lite Gating | 5 essential + 7 advanced routes |
-| Webhook Idempotency | `claimEvent`, critical/non-critical paths |
-| Revalidation & Governance | Migration paths, schema cutoff, tenant scope |
-| Panel Policy Routes | All 26+ panel routes correctly gated by flags |
-| Feature Gate Config | Flag → module mapping integrity |
-| Store Readiness | Score calculation, check categorization |
-| i18n Dictionary Sync | All 5 locale files have matching keys |
+**Open items**: `max_admin_users` (display-only, needs invitation enforcement), `storage_limit_mb` (per-file enforced, aggregate not).
