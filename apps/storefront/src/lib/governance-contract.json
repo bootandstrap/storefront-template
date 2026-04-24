@@ -1,10 +1,10 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-04-11T22:05:21.559Z",
+  "generated_at": "2026-04-24T09:43:24.933Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
-    "count": 82,
+    "count": 83,
     "keys": [
       "enable_2fa",
       "enable_abandoned_cart_emails",
@@ -27,6 +27,7 @@
       "enable_crm_interactions",
       "enable_crm_segmentation",
       "enable_crm_segments",
+      "enable_custom_email_domain",
       "enable_custom_webhooks",
       "enable_customer_accounts",
       "enable_ecommerce",
@@ -147,8 +148,8 @@
           "enable_pos_line_discounts",
           "enable_pos_customer_search",
           "enable_pos_multi_device",
-          "enable_pos_reports",
           "enable_pos_shifts",
+          "enable_pos_reports",
           "enable_product_badges"
         ]
       },
@@ -212,7 +213,8 @@
           "enable_email_templates",
           "enable_transactional_emails",
           "enable_review_request_emails",
-          "enable_email_segmentation"
+          "enable_email_segmentation",
+          "enable_custom_email_domain"
         ]
       },
       "___traffic_capacity": {
@@ -235,7 +237,7 @@
     }
   },
   "limits": {
-    "count": 32,
+    "count": 31,
     "keys": [
       "backup_frequency_hours",
       "max_admin_users",
@@ -257,7 +259,6 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
-      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -291,7 +292,6 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
-      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -960,7 +960,6 @@
               "enable_pos": true,
               "enable_pos_kiosk": true,
               "enable_pos_shifts": true,
-              "enable_pos_reports": true,
               "enable_pos_quick_sale": true,
               "enable_pos_multi_device": true,
               "enable_pos_offline_cart": true,
@@ -996,39 +995,14 @@
             "price_chf": 5,
             "features": [
               "Kiosko estándar para autoservicio",
-              "Pagos integrados",
-              "1 dispositivo kiosco"
+              "Pagos integrados"
             ],
             "recommended": false,
             "flag_effects": {
               "enable_pos_kiosk": true
             },
-            "limit_effects": {
-              "max_pos_kiosk_devices": 1
-            },
             "stripe_price_ids": {
               "CHF": "price_1TKQinFWa7WMiJl2ULYhscTg"
-            }
-          },
-          {
-            "key": "pro",
-            "name": "Avanzado",
-            "price_chf": 29,
-            "features": [
-              "Todo lo básico",
-              "Temporizador de inactividad para flujo rápido",
-              "Hasta 5 dispositivos kiosco"
-            ],
-            "recommended": false,
-            "flag_effects": {
-              "enable_pos_kiosk": true,
-              "enable_kiosk_idle_timer": true
-            },
-            "limit_effects": {
-              "max_pos_kiosk_devices": 5
-            },
-            "stripe_price_ids": {
-              "CHF": "price_1TKQinFWa7WMiJl2HSlDnx2X"
             }
           },
           {
@@ -1038,8 +1012,7 @@
             "features": [
               "Todo lo avanzado",
               "Gestión remota",
-              "Analíticas avanzadas",
-              "Dispositivos kiosco ilimitados"
+              "Analíticas avanzadas"
             ],
             "recommended": false,
             "flag_effects": {
@@ -1048,11 +1021,25 @@
               "enable_kiosk_idle_timer": true,
               "enable_kiosk_remote_management": true
             },
-            "limit_effects": {
-              "max_pos_kiosk_devices": 99
-            },
             "stripe_price_ids": {
               "CHF": "price_1TKQioFWa7WMiJl2nT4qtw1z"
+            }
+          },
+          {
+            "key": "pro",
+            "name": "Avanzado",
+            "price_chf": 29,
+            "features": [
+              "Todo lo básico",
+              "Temporizador de inactividad para flujo rápido"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_idle_timer": true
+            },
+            "stripe_price_ids": {
+              "CHF": "price_1TKQinFWa7WMiJl2HSlDnx2X"
             }
           }
         ]
@@ -1067,6 +1054,13 @@
         "requires": [],
         "payment_type": "one_time",
         "tiers": [
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 0,
+            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
+            "recommended": false
+          },
           {
             "key": "google_maps",
             "name": "Google Maps",
@@ -1083,13 +1077,6 @@
             "stripe_price_ids": {
               "CHF": "price_1TGzpZFWa7WMiJl2E2oOQLkO"
             }
-          },
-          {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 0,
-            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
-            "recommended": false
           },
           {
             "key": "instagram",
@@ -1252,6 +1239,16 @@
         "payment_type": "subscription",
         "tiers": [
           {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
+            }
+          },
+          {
             "key": "medio",
             "name": "MEDIO",
             "price_chf": 85,
@@ -1267,16 +1264,6 @@
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzppFWa7WMiJl25rzFvm40"
-            }
-          },
-          {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 15,
-            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
-            "recommended": false,
-            "stripe_price_ids": {
-              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
             }
           },
           {

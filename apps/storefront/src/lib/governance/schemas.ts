@@ -183,6 +183,7 @@ export const FeatureFlagsSchema = z.object({
     enable_transactional_emails: z.boolean(),
     enable_review_request_emails: z.boolean(),
     enable_email_segmentation: z.boolean(),
+    enable_custom_email_domain: z.boolean(),
     // POS
     enable_pos: z.boolean(),
     enable_pos_kiosk: z.boolean(),
