@@ -44,7 +44,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         operator,
         status: "open",
         opening_balance: opening_balance ?? 0,
-    })
+    } as any)
 
     res.status(201).json({ session })
 }

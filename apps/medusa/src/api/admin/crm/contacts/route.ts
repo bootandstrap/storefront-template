@@ -48,7 +48,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         ...body,
         stage: body.stage ?? "lead",
         source: body.source ?? "manual",
-    })
+    } as any)
 
     res.status(201).json({ contact })
 }

@@ -44,7 +44,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
             update.closed_at = body.closed_at ?? new Date().toISOString()
         }
 
-        const session = await service.updatePosSessions(id, update as any)
+        const session = await service.updatePosSessions({ id, ...update } as any)
         res.json({ session })
     } catch {
         res.status(404).json({ message: `Session ${id} not found` })

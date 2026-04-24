@@ -47,7 +47,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         summary: body.subject ?? body.type,
         content: body.notes ?? null,
         initiated_by: "operator" as const,
-    })
+    } as any)
 
     res.status(201).json({ interaction })
 }

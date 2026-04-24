@@ -59,7 +59,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         expected_cash: expected_cash ?? 0,
         transaction_count: 0,
         total_revenue: 0,
-    })
+    } as any)
 
     res.status(201).json({ shift })
 }
