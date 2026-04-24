@@ -1,6 +1,6 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-04-24T09:43:24.933Z",
+  "generated_at": "2026-04-24T12:47:55.328Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
@@ -464,14 +464,11 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_backups": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 3,
               "max_requests_day": 25000,
-              "storage_limit_mb": 500,
-              "backup_frequency_hours": 168
+              "storage_limit_mb": 500
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzohFWa7WMiJl2G6rsOwKH"
@@ -489,16 +486,12 @@
             ],
             "recommended": true,
             "flag_effects": {
-              "enable_backups": true,
-              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 6,
               "max_requests_day": 100000,
-              "storage_limit_mb": 2000,
-              "backup_frequency_hours": 24
+              "storage_limit_mb": 2000
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzojFWa7WMiJl209zNlXeQ"
@@ -517,17 +510,13 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_backups": true,
-              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_autoscale": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 12,
               "max_requests_day": 99999,
-              "storage_limit_mb": 10000,
-              "backup_frequency_hours": 6
+              "storage_limit_mb": 10000
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzomFWa7WMiJl2SNUJ2Ly4"
@@ -643,7 +632,7 @@
           {
             "key": "basic",
             "name": "Básico",
-            "price_chf": 15,
+            "price_chf": 25,
             "features": "[\"50 productos / 5 categorías\",\"100 pedidos/mes / 100 clientes\",\"Carrito + Checkout + Cuentas\",\"Seguimiento y direcciones\",\"Búsqueda de productos\"]",
             "recommended": false,
             "flag_effects": {
@@ -1055,13 +1044,6 @@
         "payment_type": "one_time",
         "tiers": [
           {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 0,
-            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
-            "recommended": false
-          },
-          {
             "key": "google_maps",
             "name": "Google Maps",
             "price_chf": 90,
@@ -1077,6 +1059,13 @@
             "stripe_price_ids": {
               "CHF": "price_1TGzpZFWa7WMiJl2E2oOQLkO"
             }
+          },
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 0,
+            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
+            "recommended": false
           },
           {
             "key": "instagram",
@@ -1239,16 +1228,6 @@
         "payment_type": "subscription",
         "tiers": [
           {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 15,
-            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
-            "recommended": false,
-            "stripe_price_ids": {
-              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
-            }
-          },
-          {
             "key": "medio",
             "name": "MEDIO",
             "price_chf": 85,
@@ -1264,6 +1243,16 @@
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzppFWa7WMiJl25rzFvm40"
+            }
+          },
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
             }
           },
           {

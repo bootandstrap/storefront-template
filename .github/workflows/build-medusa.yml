@@ -70,31 +70,45 @@ jobs:
           cache-to: type=gha,mode=max,scope=medusa
 
   # ── Deploy shared Medusa to all tenant instances ──
+  # Non-blocking: uses continue-on-error so the build result stays green
+  # even when deploy secrets are not yet configured.
   deploy-medusa:
     name: Deploy Medusa to Dokploy
     runs-on: ubuntu-latest
     needs: [build-medusa]
     if: needs.build-medusa.result == 'success'
     timeout-minutes: 10
+    continue-on-error: true
 
     steps:
       - name: Deploy Medusa via Dokploy
-        if: ${{ secrets.DOKPLOY_MEDUSA_APP_ID != '' }}
+        # vars.* is allowed in if: conditions (unlike secrets.*)
+        if: vars.DOKPLOY_MEDUSA_APP_ID != ''
+        env:
+          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_MEDUSA_APP_ID: ${{ vars.DOKPLOY_MEDUSA_APP_ID }}
         run: |
-          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/trpc/application.redeploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+          if [ -z "$DOKPLOY_API_TOKEN" ] || [ -z "$DOKPLOY_URL" ]; then
+            echo "⚠️ DOKPLOY secrets not configured — skipping deploy"
+            exit 0
+          fi
+          curl -sf -X POST "${DOKPLOY_URL}/api/trpc/application.redeploy" \
+            -H "x-api-key: ${DOKPLOY_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{"json": {"applicationId": "${{ secrets.DOKPLOY_MEDUSA_APP_ID }}"}}'
+            -d "{\"json\": {\"applicationId\": \"${DOKPLOY_MEDUSA_APP_ID}\"}}"
           echo "✅ Medusa redeploy triggered"
 
       - name: Health check — Medusa
-        if: ${{ vars.MEDUSA_DOMAIN != '' }}
+        if: vars.MEDUSA_DOMAIN != ''
+        env:
+          MEDUSA_DOMAIN: ${{ vars.MEDUSA_DOMAIN }}
         run: |
           echo "⏳ Waiting for Medusa startup..."
           for i in 1 2 3 4; do
             sleep 30
             status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
-              "https://${{ vars.MEDUSA_DOMAIN }}/health" 2>/dev/null || echo "000")
+              "https://${MEDUSA_DOMAIN}/health" 2>/dev/null || echo "000")
             echo "  Attempt $i: HTTP $status"
             if [ "$status" = "200" ]; then
               echo "✅ Medusa healthy"
@@ -108,14 +122,18 @@ jobs:
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [build-medusa, deploy-medusa]
+    needs: [build-medusa]
+    # Only notify on build failure, not deploy failure
     if: failure()
     steps:
       - name: Send failure notification
+        env:
+          BSWEB_TOKEN: ${{ secrets.BSWEB_INTERNAL_API_TOKEN }}
+          BSWEB_URL: ${{ secrets.BSWEB_URL }}
         run: |
-          if [ -n "${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" ] && [ -n "${{ secrets.BSWEB_URL }}" ]; then
-            curl -s -X POST "${{ secrets.BSWEB_URL }}/api/admin/ci-notification" \
-              -H "Authorization: Bearer ${{ secrets.BSWEB_INTERNAL_API_TOKEN }}" \
+          if [ -n "$BSWEB_TOKEN" ] && [ -n "$BSWEB_URL" ]; then
+            curl -s -X POST "${BSWEB_URL}/api/admin/ci-notification" \
+              -H "Authorization: Bearer ${BSWEB_TOKEN}" \
               -H "Content-Type: application/json" \
               -d '{
                 "repo": "${{ github.repository }}",
