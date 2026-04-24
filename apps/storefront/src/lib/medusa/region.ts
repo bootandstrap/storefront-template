@@ -20,6 +20,7 @@
  */
 
 import { cookies } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000'
@@ -60,7 +61,7 @@ async function fetchRegions(): Promise<MedusaRegion[]> {
             next: { revalidate: 300 }, // Next.js cache: 5min
         })
         if (!res.ok) {
-            console.warn(`[region] Failed to fetch regions: ${res.status}`)
+            logger.warn(`[region] Failed to fetch regions: ${res.status}`)
             return cachedRegions ?? []
         }
         const data = await res.json() as { regions: MedusaRegion[] }
@@ -68,7 +69,7 @@ async function fetchRegions(): Promise<MedusaRegion[]> {
         cacheExpiry = now + CACHE_TTL
         return cachedRegions
     } catch (err) {
-        console.warn('[region] Region fetch error:', err)
+        logger.warn('[region] Region fetch error:', err)
         return cachedRegions ?? []
     }
 }

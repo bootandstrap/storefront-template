@@ -7,6 +7,7 @@
  */
 
 import 'server-only'
+import { logger } from '@/lib/logger'
 
 type ErrorSeverity = 'error' | 'warning' | 'critical'
 type ErrorSource = 'webhook' | 'registration' | 'medusa' | 'config' | 'rls' | 'build' | string
@@ -27,7 +28,7 @@ export async function logTenantError({
     try {
         const tenantId = process.env.TENANT_ID
         if (!tenantId) {
-            console.warn('[logTenantError] TENANT_ID not set — skipping error log')
+            logger.warn('[logTenantError] TENANT_ID not set — skipping error log')
             return
         }
 
@@ -49,7 +50,7 @@ export async function logTenantError({
             })
 
             if (error) {
-                console.error('[logTenantError] RPC failed:', error.message)
+                logger.error('[logTenantError] RPC failed:', error.message)
             }
         } else {
             // Legacy: direct insert via service_role
@@ -63,11 +64,11 @@ export async function logTenantError({
             })
 
             if (error) {
-                console.error('[logTenantError] Failed to insert:', error.message)
+                logger.error('[logTenantError] Failed to insert:', error.message)
             }
         }
     } catch (err) {
         // Non-blocking: log to console if insert fails
-        console.error('[logTenantError] Exception:', err instanceof Error ? err.message : err)
+        logger.error('[logTenantError] Exception:', err instanceof Error ? err.message : err)
     }
 }

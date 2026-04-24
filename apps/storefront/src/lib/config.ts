@@ -35,6 +35,7 @@ import {
     // Reporting
     reportDegradedMode,
 } from '@/lib/governance'
+import { logger } from '@/lib/logger'
 
 // Re-export types for consumers
 export type { StoreConfig, FeatureFlags, PlanLimits, AppConfig, GovernanceRpcResult }
@@ -68,7 +69,7 @@ async function _fetchGovernanceData(tenantId: string): Promise<{
         }) as { data: GovernanceRpcResult | null; error: { message: string } | null }
 
         if (error) {
-            console.warn('[config] get_tenant_governance RPC error:', error.message)
+            logger.warn('[config] get_tenant_governance RPC error:', error.message)
         } else if (data) {
             configData = data.config ?? null
             flagsData = data.feature_flags ?? null
@@ -89,9 +90,9 @@ async function _fetchGovernanceData(tenantId: string): Promise<{
             .eq('id', tenantId)
             .single() as { data: { status: string } | null }
 
-        if (configRes.error) console.warn('[config] config query error:', configRes.error.message)
-        if (flagsRes.error) console.warn('[config] feature_flags query error:', flagsRes.error.message)
-        if (limitsRes.error) console.warn('[config] plan_limits query error:', limitsRes.error.message)
+        if (configRes.error) logger.warn('[config] config query error:', configRes.error.message)
+        if (flagsRes.error) logger.warn('[config] feature_flags query error:', flagsRes.error.message)
+        if (limitsRes.error) logger.warn('[config] plan_limits query error:', limitsRes.error.message)
 
         configData = configRes.data ?? null
         flagsData = flagsRes.data ?? null
@@ -155,7 +156,7 @@ export async function getConfig(): Promise<AppConfig> {
     const tenantId = getRequiredTenantId()
 
     if (isBuildPhase()) {
-        console.info('[config] Build-phase prerender detected — using fallback config')
+        logger.info('[config] Build-phase prerender detected — using fallback config')
         return FALLBACK_CONFIG
     }
 

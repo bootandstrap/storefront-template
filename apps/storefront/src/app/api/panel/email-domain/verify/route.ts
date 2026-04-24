@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { logger } from '@/lib/logger'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const RESEND_API_URL = 'https://api.resend.com'
@@ -10,15 +11,7 @@ const RESEND_API_URL = 'https://api.resend.com'
  */
 export async function POST() {
     try {
-        const tenantId = process.env.TENANT_ID
-        if (!tenantId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-        )
+        const { tenantId, supabase } = await requirePanelAuth()
 
         // Get domain ID from config
         const { data: config } = await supabase
@@ -60,7 +53,7 @@ export async function POST() {
 
         if (!verifyRes.ok) {
             const err = await verifyRes.text()
-            console.error('[email-domain/verify] Resend verify failed:', err)
+            logger.error('[email-domain/verify] Resend verify failed:', err)
             return NextResponse.json(
                 { error: 'Verification request failed. Check DNS records.' },
                 { status: 502 }
@@ -96,7 +89,7 @@ export async function POST() {
                 : '⏳ DNS records not yet propagated. Try again in a few minutes.',
         })
     } catch (e) {
-        console.error('[email-domain/verify] error:', e)
+        logger.error('[email-domain/verify] error:', e)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

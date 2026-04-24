@@ -23,7 +23,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSmartRateLimiter } from './rate-limit-factory'
+import { getClientIp } from '@/lib/security/get-client-ip'
 import type { AsyncRateLimiter } from './rate-limit'
+import { logger } from '@/lib/logger'
 
 // ── Per-route limiter cache (module-level singletons) ─────────────────
 const limiters = new Map<string, AsyncRateLimiter>()
@@ -38,15 +40,11 @@ function getOrCreateLimiter(name: string, limit: number, windowMs: number): Asyn
     return limiter
 }
 
-// ── IP extraction (handles proxies, Cloudflare, etc.) ─────────────────
+// ── IP extraction — centralized utility (LAST XFF, spoofing-resistant) ──
+// getClientIp() trusts only the proxy-appended segment, not client-controlled
+// headers. See: lib/security/get-client-ip.ts for full rationale.
 function extractClientIP(req: NextRequest): string {
-    return (
-        req.headers.get('cf-connecting-ip') ||
-        req.headers.get('x-real-ip') ||
-        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-        (req as unknown as { ip?: string }).ip ||
-        '127.0.0.1'
-    )
+    return getClientIp(req)
 }
 
 // ── Tenant extraction from headers/cookies ────────────────────────────
@@ -116,7 +114,7 @@ export async function withRateLimit(
         headers['Retry-After'] = String(retryAfterSec)
         headers['X-RateLimit-Remaining'] = '0'
 
-        console.warn(
+        logger.warn(
             `[rate-limit] 429 ${name} — IP: ${clientIp}, tenant: ${tenantHint}`
         )
 

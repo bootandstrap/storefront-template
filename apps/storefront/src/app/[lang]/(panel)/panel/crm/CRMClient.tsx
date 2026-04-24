@@ -14,7 +14,7 @@
 
 import { useState, useTransition } from 'react'
 import PanelBadge from '@/components/panel/PanelBadge'
-import { Search, Download, Users, Tag, Lock, Loader2, UserCheck, UserPlus } from 'lucide-react'
+import { Search, Download, Users, Tag, Lock, Loader2, UserCheck, UserPlus, Plus, X, MessageSquare, History } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
@@ -25,6 +25,7 @@ import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/Panel
 import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
 import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
 import { exportCrmCsv } from './actions'
+import { createCrmContact, updateCrmContact } from './guarded-actions'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,6 +81,8 @@ interface Props {
     maxContacts: number
     enableSegmentation: boolean
     enableExport: boolean
+    enableContacts: boolean
+    enableInteractions: boolean
     customers: CustomerRow[]
     lang: string
     labels: Labels
@@ -98,6 +101,8 @@ export default function CRMClient({
     maxContacts,
     enableSegmentation,
     enableExport,
+    enableContacts,
+    enableInteractions,
     customers,
     lang,
     labels,
@@ -107,6 +112,10 @@ export default function CRMClient({
     const [searchQuery, setSearchQuery] = useState('')
     const [activeSegment, setActiveSegment] = useState<Segment>('all')
     const [isExporting, startExport] = useTransition()
+    const [showAddContact, setShowAddContact] = useState(false)
+    const [isCreating, startCreating] = useTransition()
+    const [createError, setCreateError] = useState<string | null>(null)
+    const [selectedContact, setSelectedContact] = useState<CustomerRow | null>(null)
     const usagePercent = maxContacts > 0 ? Math.min((totalCustomers / maxContacts) * 100, 100) : 0
 
     const filteredCustomers = customers.filter(c => {
@@ -132,6 +141,23 @@ export default function CRMClient({
             a.download = result.filename
             a.click()
             URL.revokeObjectURL(url)
+        })
+    }
+
+    const handleCreateContact = (formData: FormData) => {
+        setCreateError(null)
+        startCreating(async () => {
+            const result = await createCrmContact({
+                email: formData.get('email') as string,
+                first_name: formData.get('first_name') as string || undefined,
+                last_name: formData.get('last_name') as string || undefined,
+                phone: formData.get('phone') as string || undefined,
+            })
+            if (result.success) {
+                setShowAddContact(false)
+            } else {
+                setCreateError(result.error || 'Error creating contact')
+            }
         })
     }
 
@@ -303,7 +329,8 @@ export default function CRMClient({
                                                 initial={{ opacity: 0, y: 4 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: i * 0.02 }}
-                                                className="hover:bg-glass/50 transition-colors"
+                                                className={`hover:bg-glass/50 transition-colors ${enableInteractions ? 'cursor-pointer' : ''}`}
+                                                onClick={() => enableInteractions && setSelectedContact(c)}
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
@@ -354,6 +381,116 @@ export default function CRMClient({
                         </SotaGlassCard>
                     </SotaBentoItem>
                 )}
+
+                {/* Add Contact Form — gated by enable_crm_contacts */}
+                <SotaBentoItem colSpan={{ base: 12 }}>
+                    <SotaGlassCard glowColor={enableContacts ? "blue" : "none"}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                    <Plus className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-semibold text-tx">Añadir contacto</h3>
+                                    <p className="text-sm text-tx-muted">Crea contactos manualmente en tu CRM</p>
+                                </div>
+                            </div>
+                            {enableContacts ? (
+                                <button
+                                    onClick={() => setShowAddContact(!showAddContact)}
+                                    className="btn btn-primary text-sm inline-flex items-center gap-2 min-h-[44px] px-4"
+                                >
+                                    {showAddContact ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                    {showAddContact ? 'Cancelar' : 'Nuevo contacto'}
+                                </button>
+                            ) : (
+                                <PanelBadge variant="neutral" size="sm">
+                                    <Lock className="w-3.5 h-3.5 mr-1" /> Pro
+                                </PanelBadge>
+                            )}
+                        </div>
+                        {showAddContact && enableContacts && (
+                            <motion.form
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="border-t border-sf-2 pt-4 mt-2 overflow-hidden"
+                                action={handleCreateContact}
+                            >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input name="email" type="email" required placeholder="Email *" className="px-4 py-2.5 min-h-[44px] bg-sf-subtle rounded-xl text-sm border border-border placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-brand/50" />
+                                    <input name="first_name" placeholder="Nombre" className="px-4 py-2.5 min-h-[44px] bg-sf-subtle rounded-xl text-sm border border-border placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-brand/50" />
+                                    <input name="last_name" placeholder="Apellido" className="px-4 py-2.5 min-h-[44px] bg-sf-subtle rounded-xl text-sm border border-border placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-brand/50" />
+                                    <input name="phone" type="tel" placeholder="Teléfono" className="px-4 py-2.5 min-h-[44px] bg-sf-subtle rounded-xl text-sm border border-border placeholder:text-tx-muted focus:outline-none focus:ring-2 focus:ring-brand/50" />
+                                </div>
+                                {createError && (
+                                    <p className="text-sm text-red-500 mt-2">{createError}</p>
+                                )}
+                                <div className="flex justify-end mt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={isCreating}
+                                        className="btn btn-primary inline-flex items-center gap-2 text-sm min-h-[44px] px-6"
+                                    >
+                                        {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                        {isCreating ? 'Creando...' : 'Crear contacto'}
+                                    </button>
+                                </div>
+                            </motion.form>
+                        )}
+                    </SotaGlassCard>
+                </SotaBentoItem>
+
+                {/* Interaction Timeline — gated by enable_crm_interactions */}
+                <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>
+                    <SotaGlassCard
+                        glowColor={enableInteractions ? "gold" : "none"}
+                        className={`h-full transition-shadow hover:shadow-xl hover:-translate-y-0.5 duration-300 ${!enableInteractions ? 'opacity-60' : ''}`}
+                    >
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 flex-shrink-0">
+                                <History className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-tx">
+                                    Historial de interacciones
+                                </h3>
+                                <p className="text-sm text-tx-muted mt-1 leading-relaxed">
+                                    Timeline de compras, emails, chats y notas de cada contacto
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-6">
+                            {enableInteractions ? (
+                                selectedContact ? (
+                                    <div className="w-full space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-tx">{selectedContact.firstName} {selectedContact.lastName}</span>
+                                            <button onClick={() => setSelectedContact(null)} className="text-xs text-brand hover:underline">Cerrar</button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {selectedContact.orderCount > 0 && (
+                                                <div className="flex items-center gap-3 text-sm text-tx-sec py-2 border-l-2 border-brand pl-3">
+                                                    <MessageSquare className="w-4 h-4 text-brand" />
+                                                    <span>{selectedContact.orderCount} pedido{selectedContact.orderCount !== 1 ? 's' : ''} realizados</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-3 text-sm text-tx-muted py-2 border-l-2 border-sf-3 pl-3">
+                                                <UserPlus className="w-4 h-4" />
+                                                <span>Registrado el {formatDate(selectedContact.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-tx-muted">Selecciona un contacto de la tabla para ver su historial</p>
+                                )
+                            ) : (
+                                <PanelBadge variant="neutral" size="sm">
+                                    <Lock className="w-3.5 h-3.5 mr-1" /> Enterprise
+                                </PanelBadge>
+                            )}
+                        </div>
+                    </SotaGlassCard>
+                </SotaBentoItem>
 
                 {/* CRM Actions — Feature cards */}
                 <SotaBentoItem colSpan={{ base: 12, sm: 6 }}>

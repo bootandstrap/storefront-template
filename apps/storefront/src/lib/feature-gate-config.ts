@@ -95,6 +95,7 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_pos_line_discounts:  ['pos', 'posLineDiscounts'],
     enable_pos_customer_search: ['pos', 'posCustomerSearch'],
     enable_pos_multi_device:    ['pos', 'posMultiDevice'],
+    enable_pos_reports:         ['pos', 'posReports'],
     enable_pos_shifts:          ['pos', 'posShifts'],
     // ── Kiosk (granular) ─────────────────────────────────────
     enable_kiosk_analytics:     ['pos_kiosk', 'kioskAnalytics'],

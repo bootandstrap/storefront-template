@@ -3,7 +3,8 @@ import { getConfig } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { createClient } from '@/lib/supabase/server'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
-import { getClientIP } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
+import { logger } from '@/lib/logger'
 
 // ── Rate limiter: 10 return requests per minute per IP ──
 const returnsRateLimiter = createSmartRateLimiter({
@@ -16,7 +17,7 @@ const returnsRateLimiter = createSmartRateLimiter({
 export async function POST(request: NextRequest) {
     try {
         // Rate limit
-        const clientIp = getClientIP(request)
+        const clientIp = getClientIp(request)
         if (await returnsRateLimiter.isLimited(clientIp)) {
             return NextResponse.json(
                 { error: 'Too many requests. Please wait a moment.' },
@@ -86,13 +87,13 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (error) {
-            console.error('[returns] Supabase insert error:', error)
+            logger.error('[returns] Supabase insert error:', error)
             throw new Error('Failed to save return request')
         }
 
         return NextResponse.json({ return: returnRequest }, { status: 201 })
     } catch (err) {
-        console.error('[returns] Create error:', err)
+        logger.error('[returns] Create error:', err)
         return NextResponse.json(
             { error: err instanceof Error ? err.message : 'Failed to create return' },
             { status: 500 }
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         // Rate limit
-        const clientIp = getClientIP(request)
+        const clientIp = getClientIp(request)
         if (await returnsRateLimiter.isLimited(clientIp)) {
             return NextResponse.json(
                 { error: 'Too many requests. Please wait a moment.' },
@@ -157,13 +158,13 @@ export async function GET(request: NextRequest) {
         const { data: returns, error } = await query.order('created_at', { ascending: false })
             
         if (error) {
-            console.error('[returns] Supabase fetch error:', error)
+            logger.error('[returns] Supabase fetch error:', error)
             throw new Error('Failed to fetch returns')
         }
         
         return NextResponse.json({ returns })
     } catch (err) {
-        console.error('[returns] List error:', err)
+        logger.error('[returns] List error:', err)
         return NextResponse.json(
             { error: 'Failed to fetch returns' },
             { status: 500 }

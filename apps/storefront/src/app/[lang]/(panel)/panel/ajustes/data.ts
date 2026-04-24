@@ -15,8 +15,41 @@ import { SUPPORTED_CURRENCY_COUNT } from '@/lib/i18n/currencies'
 // ── Store Config Data ─────────────────────────────────────────────────────
 
 export async function fetchStoreConfigData(tenantId: string, lang: string) {
-    const { config, featureFlags } = await getConfigForTenant(tenantId)
-    return { config, featureFlags, lang }
+    const { config, featureFlags, planLimits } = await getConfigForTenant(tenantId)
+
+    // Normalize active languages/currencies for the unified RegionLocalePanel
+    const rawLangs = config.active_languages
+    const defaultLang = config.language ?? 'es'
+    const parsedLangs: string[] = Array.isArray(rawLangs)
+        ? rawLangs
+        : typeof rawLangs === 'string'
+            ? (() => { try { const p = JSON.parse(rawLangs); return Array.isArray(p) ? p : [rawLangs] } catch { return [rawLangs] } })()
+            : [defaultLang]
+    const activeLanguages = parsedLangs.includes(defaultLang)
+        ? parsedLangs
+        : [defaultLang, ...parsedLangs]
+
+    const rawCurrencies = config.active_currencies
+    const activeCurrencies: string[] = Array.isArray(rawCurrencies)
+        ? rawCurrencies
+        : typeof rawCurrencies === 'string'
+            ? (() => { try { const p = JSON.parse(rawCurrencies); return Array.isArray(p) ? p : [rawCurrencies] } catch { return [rawCurrencies] } })()
+            : [config.default_currency ?? 'eur']
+
+    const panelLang = (config as Record<string, unknown>).panel_language as string | null ?? config.language ?? 'es'
+
+    return {
+        config,
+        featureFlags,
+        lang,
+        i18nData: {
+            activeLanguages,
+            activeCurrencies,
+            maxLanguages: planLimits.max_languages ?? 1,
+            maxCurrencies: Math.min(planLimits.max_currencies ?? 1, SUPPORTED_CURRENCY_COUNT),
+            panelLang,
+        },
+    }
 }
 
 // ── I18n Data ─────────────────────────────────────────────────────────────

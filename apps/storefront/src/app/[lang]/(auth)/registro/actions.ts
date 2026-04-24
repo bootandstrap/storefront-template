@@ -7,6 +7,7 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit } from '@/lib/limits'
 import { logTenantError } from '@/lib/log-tenant-error'
+import { logger } from '@/lib/logger'
 
 export interface RegisterState {
     error: string | null
@@ -52,7 +53,7 @@ export async function registerAction(
         .eq('tenant_id', tenantId)
 
     if (countError) {
-        console.error('[register] FAIL-CLOSED: Customer count query failed:', countError.message)
+        logger.error('[register] FAIL-CLOSED: Customer count query failed:', countError.message)
         await logTenantError({
             source: 'registration',
             severity: 'error',
@@ -90,7 +91,7 @@ export async function registerAction(
         if (error.message.includes('Password')) {
             return { error: 'password_too_weak', success: false }
         }
-        console.error('[register] Supabase error:', error.message)
+        logger.error('[register] Supabase error:', error.message)
         return { error: 'unknown_error', success: false }
     }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { logger } from '@/lib/logger'
 
 // ── Types ──────────────────────────────────────────────────
 interface DnsRecord {
@@ -124,7 +125,7 @@ export default function EmailDomainClient({ lang }: { lang: string }) {
                 setConfig(await res.json())
             }
         } catch (e) {
-            console.error('Failed to load email domain config:', e)
+            logger.error('Failed to load email domain config:', e)
         } finally {
             setLoading(false)
         }

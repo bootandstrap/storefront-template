@@ -18,15 +18,12 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getSettingsTabs } from '@/lib/panel-policy'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import FeatureGate from '@/components/ui/FeatureGate'
 import { Settings } from 'lucide-react'
 import SettingsShell from './SettingsShell'
 
 import {
     fetchStoreConfigData,
-    fetchI18nData,
     fetchSubscriptionData,
-    fetchProjectData,
     fetchWifiData,
 } from './data'
 
@@ -64,11 +61,8 @@ export default async function SettingsPage({
     const tabLabelMap: Record<string, string> = {
         tienda: 'storeConfig',
         envios: 'shipping',
-        idiomas: 'languages',
-        analiticas: 'analytics',
         email: 'email',
         suscripcion: 'subscription',
-        proyecto: 'project',
         wifi: 'wifi',
         privacidad: 'privacy',
     }
@@ -86,40 +80,19 @@ export default async function SettingsPage({
             tabContent = (
                 <StoreConfigClient
                     config={data.config}
-                    featureFlags={data.featureFlags}
+                    featureFlags={{
+                        enable_seo: data.featureFlags.enable_seo,
+                        enable_social_media: data.featureFlags.enable_social_media,
+                        enable_multi_language: data.featureFlags.enable_multi_language,
+                    }}
                     lang={lang}
+                    i18nData={data.i18nData}
                 />
             )
             break
         }
         case 'envios': {
             tabContent = <ShippingClient />
-            break
-        }
-        case 'idiomas': {
-            if (!featureFlags.enable_multi_language) {
-                tabContent = <FeatureGate flag="enable_multi_language" lang={lang} />
-                break
-            }
-            const I18nClient = (await import('../idiomas/I18nClient')).default
-            const data = await fetchI18nData(tenantId, lang)
-            tabContent = (
-                <I18nClient
-                    data={data.data}
-                    labels={data.labels}
-                    panelLang={data.panelLang}
-                    lang={lang}
-                />
-            )
-            break
-        }
-        case 'analiticas': {
-            if (!featureFlags.enable_analytics) {
-                tabContent = <FeatureGate flag="enable_analytics" lang={lang} />
-                break
-            }
-            const { default: AnalyticsTabContent } = await import('./analytics-tab')
-            tabContent = <AnalyticsTabContent lang={lang} tenantId={tenantId} />
             break
         }
         case 'email': {
@@ -139,14 +112,6 @@ export default async function SettingsPage({
                     lang={lang}
                 />
             )
-            break
-        }
-        case 'proyecto': {
-            const { ProjectTimeline } = await import('../../../(shop)/cuenta/mi-proyecto/ProjectTimeline')
-            const data = await fetchProjectData(tenantId, lang)
-            tabContent = data.project
-                ? <ProjectTimeline project={data.project} />
-                : <p className="text-tx-muted text-sm">{data.t('panel.project.noProject')}</p>
             break
         }
         case 'wifi': {

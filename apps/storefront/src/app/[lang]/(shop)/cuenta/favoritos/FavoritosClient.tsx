@@ -7,6 +7,7 @@ import { Heart, Package, ShoppingBag, Trash2, ExternalLink } from 'lucide-react'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { useI18n } from '@/lib/i18n/provider'
 import { getRuntimeEnv } from '@/lib/runtime-env'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Lightweight product type for display (fetched client-side from Medusa)
@@ -89,7 +90,7 @@ export default function FavoritosClient() {
             })
             .catch(err => {
                 if (!controller.signal.aborted) {
-                    console.error('[wishlist] Failed to fetch products:', err)
+                    logger.error('[wishlist] Failed to fetch products:', err)
                     setProducts([])
                 }
             })

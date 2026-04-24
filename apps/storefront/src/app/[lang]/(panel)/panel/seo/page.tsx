@@ -4,14 +4,14 @@
  * Displays SEO health score, page audit, sitemap status, meta tag analysis.
  * Gated by enable_seo feature flag (module: SEO).
  * Tenant-scoped: all product queries are scoped to the authenticated tenant.
+ * SOTA 2026: ModuleShell wrapper with 3-tier awareness.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getProductCount, getCategoryCount } from '@/lib/medusa/admin'
-import FeatureGate from '@/components/ui/FeatureGate'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import ModuleShell from '@/components/panel/ModuleShell'
 import { Search } from 'lucide-react'
 import SEOClient from './SEOClient'
 
@@ -35,8 +35,26 @@ export default async function SEOPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    if (!featureFlags.enable_seo) {
-        return <FeatureGate flag="enable_seo" lang={lang} />
+    const isLocked = !featureFlags.enable_seo
+
+    const tierInfo = {
+        currentTier: featureFlags.enable_seo_tools
+            ? 'Avanzado'
+            : featureFlags.enable_seo
+                ? 'Standard'
+                : 'Free',
+        moduleKey: 'seo',
+        nextTierFeatures: isLocked ? [
+            t('panel.seo.feat.health') || 'SEO health score',
+            t('panel.seo.feat.meta') || 'Meta tags checker',
+            t('panel.seo.feat.sitemap') || 'Sitemap automático',
+        ] : !featureFlags.enable_seo_tools ? [
+            t('panel.seo.feat.keywords') || 'Análisis de keywords',
+            t('panel.seo.feat.reports') || 'Informes mensuales',
+            t('panel.seo.feat.linkBuilding') || 'Link building',
+        ] : undefined,
+        nextTierName: isLocked ? 'SEO Standard' : !featureFlags.enable_seo_tools ? 'SEO Avanzado' : undefined,
+        nextTierPrice: isLocked ? 15 : !featureFlags.enable_seo_tools ? 230 : undefined,
     }
 
     // Resolve tenant scope — all admin queries MUST be scoped
@@ -45,16 +63,18 @@ export default async function SEOPage({
     // Fetch content counts for SEO audit
     let productCount = 0
     let categoryCount = 0
-    try {
-        ;[productCount, categoryCount] = await Promise.all([
-            getProductCount(scope),
-            getCategoryCount(scope),
-        ])
-    } catch {
-        // degrade gracefully
+    if (!isLocked) {
+        try {
+            ;[productCount, categoryCount] = await Promise.all([
+                getProductCount(scope),
+                getCategoryCount(scope),
+            ])
+        } catch {
+            // degrade gracefully
+        }
     }
 
-    // Simulate SEO audit data (in production: crawl engine results)
+    // SEO audit data — derived from real config + Medusa product/category counts
     const seoData = {
         score: Math.min(100, Math.round(
             (config.meta_title ? 15 : 0) +
@@ -67,7 +87,7 @@ export default async function SEOPage({
             (config.social_instagram || config.social_facebook ? 5 : 0) +
             10 // base score for having a site
         )),
-        pagesIndexed: productCount + categoryCount + 3, // products + categories + home + about + contact
+        pagesIndexed: productCount + categoryCount + 3,
         metaIssues: [
             !config.meta_title,
             !config.meta_description,
@@ -77,20 +97,22 @@ export default async function SEOPage({
         hasMetaDescription: !!config.meta_description,
         hasFavicon: !!config.favicon_url,
         hasLogo: !!config.logo_url,
-        hasSitemap: true, // Next.js generates sitemap automatically
+        hasSitemap: true,
         productCount,
         categoryCount,
-        lastCrawl: new Date().toISOString(),
+        lastCrawl: null as string | null,
     }
 
     return (
-        <div className="space-y-6">
-            <PanelPageHeader
-                title={t('panel.seo.title')}
-                subtitle={t('panel.seo.subtitle')}
-                icon={<Search className="w-5 h-5" />}
-                badge={seoData.score}
-            />
+        <ModuleShell
+            icon={<Search className="w-5 h-5" />}
+            title={t('panel.seo.title') || 'SEO'}
+            subtitle={`${t('panel.seo.subtitle') || 'Optimización para motores de búsqueda'} — Score: ${seoData.score}/100`}
+            isLocked={isLocked}
+            gateFlag="enable_seo"
+            tierInfo={tierInfo}
+            lang={lang}
+        >
             <SEOClient
                 seoData={seoData}
                 labels={{
@@ -118,6 +140,6 @@ export default async function SEOPage({
                 }}
                 lang={lang}
             />
-        </div>
+        </ModuleShell>
     )
 }

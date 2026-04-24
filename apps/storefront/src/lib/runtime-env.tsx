@@ -27,7 +27,9 @@ const RUNTIME_ENV_KEYS = [
     'MEDUSA_BACKEND_URL',
     'MEDUSA_PUBLISHABLE_KEY',
     'STORE_URL',
-    'TENANT_ID',
+    // NOTE: TENANT_ID intentionally excluded — it's server-only. Client code
+    // that needs it should use NEXT_PUBLIC_TENANT_ID (build-time) or a
+    // server-side API call. Never inject internal UUIDs into the browser DOM.
 ] as const
 
 export type RuntimeEnvKey = typeof RUNTIME_ENV_KEYS[number]

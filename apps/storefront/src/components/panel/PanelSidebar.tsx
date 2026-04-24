@@ -21,13 +21,27 @@ import {
     Settings,
     Monitor,
     ChevronLeft,
+    ChevronDown,
     X,
     ExternalLink,
+    Package,
+    FolderTree,
+    Warehouse,
+    Award,
+    Image,
+    FileText,
+    Receipt,
+    Users,
+    Ticket,
+    Undo,
+    Star,
+    LayoutGrid,
 } from 'lucide-react'
 import {
     getPanelSections,
     type PanelSidebarLabels,
     type PanelFeatureFlags,
+    type PanelSubItem,
     type SectionKey,
 } from '@/lib/panel-policy'
 
@@ -53,6 +67,22 @@ const SECTION_ICONS: Record<SectionKey, typeof LayoutDashboard> = {
     modules: Puzzle,
     settings: Settings,
     pos: Monitor,
+}
+
+/** Map sub-item icon names to Lucide components */
+const SUB_ITEM_ICONS: Record<string, typeof Package> = {
+    'package': Package,
+    'folder-tree': FolderTree,
+    'warehouse': Warehouse,
+    'award': Award,
+    'image': Image,
+    'file-text': FileText,
+    'receipt': Receipt,
+    'users': Users,
+    'ticket': Ticket,
+    'undo': Undo,
+    'star': Star,
+    'grid': LayoutGrid,
 }
 
 /* ── Inline style constants (Turbopack-proof) ── */
@@ -215,6 +245,55 @@ export default function PanelSidebar({
         return pathname === href || pathname.startsWith(href + '/')
     }
 
+    /** Check if a sub-item's href matches the current URL (handles query params) */
+    const isSubItemActive = (href: string) => {
+        const [path, query] = href.split('?')
+        if (query) {
+            // For tab-based URLs like /panel/mi-tienda?tab=productos
+            return pathname === path && typeof window !== 'undefined' && window.location.search.includes(query)
+        }
+        return pathname === path || pathname.startsWith(path + '/')
+    }
+
+    /** Check if any sub-item in a section is active */
+    const isSectionOrChildActive = (section: typeof sections[number]) => {
+        if (isActive(section.href, section.exact)) return true
+        return section.subItems?.some(sub => isSubItemActive(sub.href)) ?? false
+    }
+
+    // ── Expanded sections state (persisted in localStorage) ──
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
+        try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('panel-sidebar-expanded') : null
+            return stored ? new Set(JSON.parse(stored)) : new Set<string>()
+        } catch { return new Set<string>() }
+    })
+
+    const toggleSection = useCallback((key: string) => {
+        setExpandedSections(prev => {
+            const next = new Set(prev)
+            if (next.has(key)) next.delete(key)
+            else next.add(key)
+            try { localStorage.setItem('panel-sidebar-expanded', JSON.stringify([...next])) } catch {}
+            return next
+        })
+    }, [])
+
+    // Auto-expand section if a child is active
+    useEffect(() => {
+        for (const section of sections) {
+            if (section.subItems?.some(sub => isSubItemActive(sub.href))) {
+                setExpandedSections(prev => {
+                    if (prev.has(section.key)) return prev
+                    const next = new Set(prev)
+                    next.add(section.key)
+                    return next
+                })
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname])
+
     const closeMobileMenu = () => setMobileOpen(false)
     const monogram = (businessName || 'B')[0].toUpperCase()
 
@@ -222,10 +301,12 @@ export default function PanelSidebar({
         ? readinessScore >= 80 ? '#22c55e' : readinessScore >= 40 ? '#f59e0b' : '#ef4444'
         : undefined
 
-    // ── Nav Item ──
+    // ── Nav Item with optional accordion sub-items ──
     const renderNavLink = (section: typeof sections[number], forCollapsed = false) => {
         const IconComponent = SECTION_ICONS[section.key]
-        const active = isActive(section.href, section.exact)
+        const active = isSectionOrChildActive(section)
+        const hasSubItems = !!section.subItems?.length && !forCollapsed
+        const isExpanded = expandedSections.has(section.key)
 
         const style: React.CSSProperties = {
             ...S.nav.base,
@@ -233,7 +314,29 @@ export default function PanelSidebar({
             ...(forCollapsed ? { justifyContent: 'center', padding: '10px 0' } : {}),
         }
 
-        return (
+        const linkOrButton = hasSubItems ? (
+            <button
+                type="button"
+                key={section.key}
+                style={style}
+                onClick={() => toggleSection(section.key)}
+                data-tour-id={`nav-${section.key}`}
+            >
+                {active && <span style={S.nav.activeBar} />}
+                <IconComponent style={S.icon} />
+                <span style={{ flex: 1, textAlign: 'left' }}>{section.label}</span>
+                {section.badge != null && section.badge > 0 && (
+                    <span style={S.badge}>
+                        {section.badge > 99 ? '99+' : section.badge}
+                    </span>
+                )}
+                <ChevronDown style={{
+                    width: 14, height: 14, transition: 'transform 0.2s',
+                    transform: isExpanded ? 'rotate(180deg)' : 'none',
+                    opacity: 0.5,
+                }} />
+            </button>
+        ) : (
             <Link
                 key={section.key}
                 href={section.href}
@@ -250,6 +353,67 @@ export default function PanelSidebar({
                 {!forCollapsed && section.badge != null && section.badge > 0 && (
                     <span style={S.badge}>
                         {section.badge > 99 ? '99+' : section.badge}
+                    </span>
+                )}
+            </Link>
+        )
+
+        if (!hasSubItems) return linkOrButton
+
+        return (
+            <div key={section.key}>
+                {linkOrButton}
+                <div style={{
+                    overflow: 'hidden',
+                    maxHeight: isExpanded ? `${section.subItems!.length * 36 + 8}px` : '0px',
+                    transition: 'max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    paddingLeft: 12,
+                }}>
+                    <div style={{ paddingTop: 2, paddingBottom: 2 }}>
+                        {section.subItems!.map(sub => renderSubItem(sub))}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // ── Sub-item renderer ──
+    const renderSubItem = (sub: PanelSubItem) => {
+        const active = isSubItemActive(sub.href)
+        const SubIcon = sub.icon ? SUB_ITEM_ICONS[sub.icon] : null
+
+        return (
+            <Link
+                key={sub.key}
+                href={sub.href}
+                onClick={closeMobileMenu}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? '#8BC34A' : 'rgba(255,255,255,0.45)',
+                    textDecoration: 'none',
+                    transition: 'color 0.15s, background 0.15s',
+                    background: active ? 'rgba(139,195,74,0.08)' : 'transparent',
+                }}
+            >
+                {sub.emoji ? (
+                    <span style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}>{sub.emoji}</span>
+                ) : SubIcon ? (
+                    <SubIcon style={{ width: 14, height: 14, flexShrink: 0, opacity: 0.7 }} />
+                ) : (
+                    <span style={{ width: 14, height: 14, flexShrink: 0 }} />
+                )}
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {sub.label}
+                </span>
+                {sub.badge != null && sub.badge > 0 && (
+                    <span style={{ ...S.badge, fontSize: 9, minWidth: 16, height: 16 }}>
+                        {sub.badge > 99 ? '99+' : sub.badge}
                     </span>
                 )}
             </Link>

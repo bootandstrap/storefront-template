@@ -317,8 +317,7 @@ async function OrderDetail({
                 if (!canReturn) return null
 
                 // Check for existing return request via SOTA Supabase layer
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                let existingReturns: any[] = []
+                let existingReturns: { id: string; status: string; [k: string]: unknown }[] = []
                 try {
                     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
                     const res = await fetch(`${baseUrl}/api/returns?order_id=${order.id}`, {
@@ -361,10 +360,9 @@ async function OrderDetail({
                 }
 
                 // Show return form
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const orderItems = (order.items || []).map((item: any) => ({
+                const orderItems = (order.items || []).map((item) => ({
                     id: String(item.id || ''),
-                    title: String(item.title || item.product_title || ''),
+                    title: String(item.title || ''),
                     quantity: Number(item.quantity || 1),
                     variant_title: item.variant_title ? String(item.variant_title) : undefined,
                     thumbnail: item.thumbnail ? String(item.thumbnail) : undefined,

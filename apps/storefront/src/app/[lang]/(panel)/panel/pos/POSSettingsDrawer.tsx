@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback, useTransition } from 'react'
-import { X, Settings, Save, Loader2, Check, Receipt, Volume2 } from 'lucide-react'
+import { X, Settings, Save, Loader2, Check, Receipt, Volume2, Timer, BarChart3, Wifi, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
 import { posLabel } from '@/lib/pos/pos-i18n'
@@ -31,11 +31,16 @@ interface Props {
     onClose: () => void
     initialValues: Record<string, unknown>
     labels: Record<string, string>
+    kioskFlags?: {
+        enable_kiosk_idle_timer: boolean
+        enable_kiosk_analytics: boolean
+        enable_kiosk_remote_management: boolean
+    }
 }
 
 // ── Component ─────────────────────────────────────────────────────
 
-export default function POSSettingsDrawer({ isOpen, onClose, initialValues, labels }: Props) {
+export default function POSSettingsDrawer({ isOpen, onClose, initialValues, labels, kioskFlags }: Props) {
     const [values, setValues] = useState<Record<string, unknown>>(initialValues)
     const [isPending, startTransition] = useTransition()
     const [saved, setSaved] = useState(false)
@@ -76,6 +81,12 @@ export default function POSSettingsDrawer({ isOpen, onClose, initialValues, labe
         { key: 'payment', label: '💳 Payment' },
         { key: 'experience', label: '✨ Experience' },
     ] as const
+
+    const showKioskSection = kioskFlags && (
+        kioskFlags.enable_kiosk_idle_timer ||
+        kioskFlags.enable_kiosk_analytics ||
+        kioskFlags.enable_kiosk_remote_management
+    )
 
     return (
         <AnimatePresence>
@@ -210,6 +221,109 @@ export default function POSSettingsDrawer({ isOpen, onClose, initialValues, labe
                                     </div>
                                 )
                             })}
+
+                            {/* Kiosk Settings Section */}
+                            {showKioskSection && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-tx-muted uppercase tracking-wider mb-3">
+                                        📱 Kiosk
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {/* Idle Timer */}
+                                        <div className={`rounded-xl border p-4 transition-all ${
+                                            kioskFlags!.enable_kiosk_idle_timer
+                                                ? 'border-sf-3 bg-sf-0'
+                                                : 'border-sf-3 bg-sf-0 opacity-50'
+                                        }`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Timer className="w-4 h-4 text-brand" />
+                                                    <span className="text-sm font-medium text-tx">Temporizador inactividad</span>
+                                                </div>
+                                                {!kioskFlags!.enable_kiosk_idle_timer && (
+                                                    <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                                        <Lock className="w-3 h-3" /> Pro
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-tx-muted mb-2">
+                                                Tiempo antes de mostrar pantalla de atracción
+                                            </p>
+                                            {kioskFlags!.enable_kiosk_idle_timer ? (
+                                                <div className="flex gap-2">
+                                                    {[30, 60, 120, 300].map(sec => (
+                                                        <button
+                                                            key={sec}
+                                                            onClick={() => updateValue('kiosk_idle_timeout', sec)}
+                                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                                (values.kiosk_idle_timeout ?? 60) === sec
+                                                                    ? 'bg-brand text-white'
+                                                                    : 'bg-sf-1 text-tx-sec hover:bg-sf-2'
+                                                            }`}
+                                                        >
+                                                            {sec < 60 ? `${sec}s` : `${sec / 60}m`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {/* Kiosk Analytics */}
+                                        <div className={`rounded-xl border p-4 transition-all ${
+                                            kioskFlags!.enable_kiosk_analytics
+                                                ? 'border-sf-3 bg-sf-0'
+                                                : 'border-sf-3 bg-sf-0 opacity-50'
+                                        }`}>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <BarChart3 className="w-4 h-4 text-emerald-500" />
+                                                    <span className="text-sm font-medium text-tx">Analíticas de kiosco</span>
+                                                </div>
+                                                {kioskFlags!.enable_kiosk_analytics ? (
+                                                    <span className="text-xs text-emerald-500 font-medium">Activo</span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                                        <Lock className="w-3 h-3" /> Enterprise
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-tx-muted mt-1">
+                                                {kioskFlags!.enable_kiosk_analytics
+                                                    ? 'Sesiones, duración media, productos más vistos en kiosco'
+                                                    : 'Métricas de uso del kiosco disponibles en Enterprise'
+                                                }
+                                            </p>
+                                        </div>
+
+                                        {/* Remote Management */}
+                                        <div className={`rounded-xl border p-4 transition-all ${
+                                            kioskFlags!.enable_kiosk_remote_management
+                                                ? 'border-sf-3 bg-sf-0'
+                                                : 'border-sf-3 bg-sf-0 opacity-50'
+                                        }`}>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Wifi className="w-4 h-4 text-blue-500" />
+                                                    <span className="text-sm font-medium text-tx">Gestión remota</span>
+                                                </div>
+                                                {kioskFlags!.enable_kiosk_remote_management ? (
+                                                    <span className="text-xs text-blue-500 font-medium">Activo</span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                                        <Lock className="w-3 h-3" /> Enterprise
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-tx-muted mt-1">
+                                                {kioskFlags!.enable_kiosk_remote_management
+                                                    ? 'Controla dispositivos kiosco remotamente, reinicia sesiones y actualiza menú'
+                                                    : 'Control remoto de dispositivos kiosco disponible en Enterprise'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer — Save */}

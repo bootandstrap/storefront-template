@@ -9,6 +9,7 @@
 
 import type { AsyncRateLimiter, RateLimiterConfig } from './rate-limit'
 import { createRateLimiter as createMemoryLimiter } from './rate-limit'
+import { logger } from '@/lib/logger'
 
 let redisClient: import('ioredis').default | null = null
 let redisAvailable = false
@@ -33,10 +34,10 @@ async function getRedisClient(): Promise<import('ioredis').default | null> {
         })
         await redisClient.connect()
         redisAvailable = true
-        console.log('[rate-limit] Redis connected for distributed rate limiting')
+        logger.info('[rate-limit] Redis connected for distributed rate limiting')
         return redisClient
     } catch (err) {
-        console.warn('[rate-limit] Redis unavailable, using in-memory fallback:', err)
+        logger.warn('[rate-limit] Redis unavailable, using in-memory fallback:', err)
         redisAvailable = false
         redisClient = null
         return null
@@ -76,7 +77,7 @@ export function createRedisRateLimiter(config: RateLimiterConfig): AsyncRateLimi
             } catch {
                 // Redis error → fallback to in-memory
                 redisAvailable = false
-                console.warn('[rate-limit] Redis error, falling back to in-memory')
+                logger.warn('[rate-limit] Redis error, falling back to in-memory')
                 return memLimiter.isLimited(key)
             }
         },

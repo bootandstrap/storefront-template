@@ -21,7 +21,17 @@ export const techTemplate: IndustryTemplate = {
     additionalCurrencies: ['usd'],
 
     governance: {
-        bundleName: 'Demo Tech',
+        modules: [
+            { module: 'ecommerce', tier: 'enterprise' },
+            { module: 'sales_channels', tier: 'enterprise' },
+            { module: 'crm', tier: 'pro' },
+            { module: 'chatbot', tier: 'pro' },
+            { module: 'automation', tier: 'pro' },
+            { module: 'email_marketing', tier: 'pro' },
+            { module: 'seo', tier: 'avanzado' },
+            { module: 'i18n', tier: 'pro' },
+            { module: 'auth_advanced', tier: 'pro' },
+        ],
         flagOverrides: {
             enable_ecommerce: true,
             enable_crm: true,

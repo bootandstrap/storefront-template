@@ -8,6 +8,7 @@ import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { ToggleBadgeSchema, SetBadgesSchema } from '@/lib/owner-validation'
 import { checkLimit } from '@/lib/limits'
 import { buildLimitError } from '@/lib/limit-errors'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Fetch products with their current badges
@@ -40,7 +41,7 @@ export async function getProductsWithBadges(): Promise<{
             })),
         }
     } catch (err) {
-        console.error('[panel/badges] Fetch failed:', err)
+        logger.error('[panel/badges] Fetch failed:', err)
         return {
             products: [],
             error: err instanceof Error ? err.message : 'Failed to fetch products',
@@ -99,7 +100,7 @@ export async function toggleBadge(
         logOwnerAction(tenantId, 'badge.toggle', { productId, badgeId, enabled, badgeCount: newBadges.length })
         return { success: true }
     } catch (err) {
-        console.error('[panel/badges] Toggle failed:', err)
+        logger.error('[panel/badges] Toggle failed:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -143,7 +144,7 @@ export async function setBadges(
         logOwnerAction(tenantId, 'badge.set', { productId, badges, badgeCount: badges.length })
         return { success: true }
     } catch (err) {
-        console.error('[panel/badges] Set failed:', err)
+        logger.error('[panel/badges] Set failed:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

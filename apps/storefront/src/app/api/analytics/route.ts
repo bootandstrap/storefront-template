@@ -14,6 +14,7 @@ import { getClientIp } from '@/lib/security/get-client-ip'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ANALYTICS_EVENT_SET } from '@/lib/registries/analytics-events'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
         } as never)
 
         if (insertError) {
-            console.error('[analytics] insert failed:', insertError.message)
+            logger.error('[analytics] insert failed:', insertError.message)
             return NextResponse.json(
                 { error: 'analytics_insert_failed' },
                 { status: 500 }
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ ok: true })
     } catch (err) {
-        console.error('[analytics] request failed:', err)
+        logger.error('[analytics] request failed:', err)
         return NextResponse.json(
             { error: 'analytics_unavailable' },
             { status: 503 }

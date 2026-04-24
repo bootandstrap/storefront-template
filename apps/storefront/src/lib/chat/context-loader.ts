@@ -1,3 +1,4 @@
+import 'server-only'
 /**
  * Context Loader — Supabase Storage
  * Reads markdown files from Supabase Storage bucket per tenant.
@@ -6,6 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CHAT_CONFIG } from './config'
+import { logger } from '@/lib/logger'
 
 // In-memory cache for document context, keyed by tenant_id:locale
 const contextCache: Map<string, { content: string; timestamp: number }> = new Map()
@@ -47,7 +49,7 @@ export async function loadDocumentContext(tenantId: string, locale: string = 'es
         }
 
         if (error || !files || files.length === 0) {
-            console.warn(`[ChatBot] No docs found for tenant ${tenantId} locale ${locale}`)
+            logger.warn(`[ChatBot] No docs found for tenant ${tenantId} locale ${locale}`)
             return 'No documentation available.'
         }
 
@@ -67,7 +69,7 @@ export async function loadDocumentContext(tenantId: string, locale: string = 'es
                 .download(filePath)
 
             if (dlError || !data) {
-                console.warn(`[ChatBot] Failed to download ${filePath}:`, dlError?.message)
+                logger.warn(`[ChatBot] Failed to download ${filePath}:`, dlError?.message)
                 continue
             }
 
@@ -89,7 +91,7 @@ export async function loadDocumentContext(tenantId: string, locale: string = 'es
         return truncatedContext
 
     } catch (error) {
-        console.error('[ChatBot] Context loader error:', error)
+        logger.error('[ChatBot] Context loader error:', error)
         return 'No documentation available.'
     }
 }

@@ -12,22 +12,17 @@ import { getConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { isPanelRole } from '@/lib/panel-access-policy'
-import PanelShell from '@/components/panel/PanelShell'
-import PanelOnboarding from '@/components/panel/PanelOnboarding'
-import AchievementProvider from '@/components/panel/AchievementProvider'
-import PanelDashboardStyles from '@/components/panel/PanelDashboardStyles'
+import {
+    PanelShell,
+    PanelOnboarding,
+    AchievementProvider,
+    KeyboardShortcutsGuide,
+} from '@/components/panel/layout-exports'
+import '@/styles/panel-premium.css'
 import { PanelThemeProvider } from '@/components/theme/PanelThemeProvider'
 import { calculateStoreReadiness } from '@/lib/store-readiness'
 import { evaluateAchievements, type AchievementContext } from '@/lib/achievements'
-import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { buildModuleInfoList } from '@/lib/governance/build-module-info'
-import KeyboardShortcutsGuide from '@/components/panel/KeyboardShortcutsGuide'
-import {
-    getProductCount,
-    getCategoryCount,
-    getOrdersThisMonth,
-    getRecentOrders,
-} from '@/lib/medusa/admin'
 
 export default async function PanelLayout({
     children,
@@ -105,8 +100,11 @@ export default async function PanelLayout({
     // Determine store URL for onboarding
     const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `/${lang}`
 
-    // Count active modules
-    const moduleFlags = [
+    // ── Unified metrics (React cache() dedup with dashboard) ──
+    const { getPanelMetrics } = await import('@/lib/panel-data-service')
+    const tenantId = config.tenant_id || ''
+    const metrics = await getPanelMetrics(tenantId, lang)
+    const activeModuleCount = [
         featureFlags.enable_carousel,
         featureFlags.enable_whatsapp_checkout,
         featureFlags.enable_cms_pages,
@@ -116,10 +114,9 @@ export default async function PanelLayout({
         featureFlags.enable_crm,
         featureFlags.enable_reviews,
         featureFlags.enable_pos,
-    ]
-    const activeModuleCount = moduleFlags.filter(Boolean).length
+    ].filter(Boolean).length
 
-    // ── Achievement evaluation for provider ──
+    // ── Achievement evaluation (uses shared metrics) ──
     let achievementUnlockedIds: string[] = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const storedAchievements: string[] = (config as any).achievements_unlocked || []
@@ -128,34 +125,14 @@ export default async function PanelLayout({
 
     if (config.onboarding_completed) {
         try {
-            const tenantId = config.tenant_id || ''
             const readiness = await calculateStoreReadiness(tenantId, lang)
             readinessScore = readiness.score
             readinessRemaining = readiness.checks.filter(c => !c.done).length
 
-            let productCount = 0
-            let categoryCount = 0
-            let ordersThisMonth = 0
-            let revenueThisMonth = 0
-
-            try {
-                const scope = await getTenantMedusaScope(tenantId)
-                const [pc, cc, otm, ro] = await Promise.all([
-                    getProductCount(scope),
-                    getCategoryCount(scope),
-                    getOrdersThisMonth(scope),
-                    getRecentOrders(5, scope),
-                ])
-                productCount = pc
-                categoryCount = cc
-                ordersThisMonth = otm
-                revenueThisMonth = ro.reduce((s, o) => s + (o.total ?? 0), 0)
-            } catch { /* degrade */ }
-
             const achCtx: AchievementContext = {
-                productCount,
-                categoryCount,
-                ordersThisMonth,
+                productCount: metrics.productCount,
+                categoryCount: metrics.categoryCount,
+                ordersThisMonth: metrics.ordersThisMonth,
                 hasLogo: !!config.logo_url,
                 hasContact: !!config.whatsapp_number || !!config.store_email,
                 hasPaymentMethod: featureFlags.enable_whatsapp_checkout || featureFlags.enable_online_payments || featureFlags.enable_cash_on_delivery || featureFlags.enable_bank_transfer,
@@ -163,7 +140,7 @@ export default async function PanelLayout({
                 activeModuleCount,
                 tourCompleted: !!config.onboarding_completed,
                 readinessScore: readiness.score,
-                revenueThisMonth,
+                revenueThisMonth: metrics.revenue.revenueThisMonth,
             }
             achievementUnlockedIds = evaluateAchievements(achCtx)
         } catch {
@@ -343,6 +320,7 @@ export default async function PanelLayout({
             defaultCurrency={config.default_currency}
             logoUrl={config.logo_url || undefined}
             readinessScore={readinessScore}
+            badges={{ modules: activeModuleCount }}
         >
             {/* Onboarding — SOTA wizard on first panel access (suppressed on immersive routes like POS) */}
             {!config.onboarding_completed && routeSegment !== 'pos' && (
@@ -384,7 +362,6 @@ export default async function PanelLayout({
             >
                 {children}
             </AchievementProvider>
-            <PanelDashboardStyles />
             <KeyboardShortcutsGuide />
         </PanelShell>
         </PanelThemeProvider>

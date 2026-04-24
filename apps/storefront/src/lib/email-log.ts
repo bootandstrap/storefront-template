@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export interface EmailLogEntry {
     id: string
@@ -47,7 +48,7 @@ export async function getEmailLogs(
     const { data, error, count } = await query
 
     if (error) {
-        console.error('[getEmailLogs] Error fetching email logs:', error)
+        logger.error('[getEmailLogs] Error fetching email logs:', error)
         return { logs: [], count: 0 }
     }
 

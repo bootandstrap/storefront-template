@@ -2,15 +2,19 @@
  * Medusa Admin API — Draft Orders Domain
  *
  * Used by the POS module to create in-store sales via draft orders.
- * Draft orders are converted to regular orders via /admin/orders/{id}/complete.
  *
- * Medusa v2 notes:
- * - Draft orders return IDs with `order_` prefix
- * - The legacy `/pay` endpoint does NOT exist in v2
- * - Use `/admin/orders/{id}/complete` to finalize a draft order
+ * Medusa v2 (draft-order plugin, v2.4+):
+ *   - `POST /admin/draft-orders` → creates draft + associated cart
+ *   - `POST /admin/draft-orders/{id}/convert-to-order` → creates REAL pending
+ *     order, visible in `/admin/orders`. Uses `convertDraftOrderWorkflow`.
+ *   - The v1 `/pay` and v2-early `/admin/orders/{id}/complete` endpoints
+ *     are DEPRECATED/BROKEN — completed drafts stay invisible in /admin/orders.
+ *
+ * @module lib/medusa/admin-draft-orders
  */
 import { adminFetch, normalizeAdminListParams } from './admin-core'
 import type { TenantMedusaScope, AdminListParams } from './admin-core'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,6 +62,7 @@ export interface CreateDraftOrderInput {
     region_id: string
     customer_id?: string
     email?: string
+    sales_channel_id?: string
     shipping_methods?: { option_id: string; price?: number }[]
     no_notification_order?: boolean
     metadata?: Record<string, unknown>
@@ -92,46 +97,75 @@ export async function createDraftOrder(
 }
 
 // ---------------------------------------------------------------------------
-// Complete Draft Order (Medusa v2: /admin/orders/{id}/complete)
+// Convert Draft Order to Real Order (Medusa v2.4+)
 // ---------------------------------------------------------------------------
 
 /**
- * Finalize a draft order, converting it to a completed order.
+ * Convert a draft order to a real, pending order.
  *
- * In Medusa v2, draft orders use `order_` prefix IDs and are completed
- * via `/admin/orders/{id}/complete`. The order stays in the draft-orders
- * collection but with status=completed. It does NOT appear in /admin/orders.
+ * Uses the official `convertDraftOrderWorkflow` via:
+ *   `POST /admin/draft-orders/{id}/convert-to-order`
  *
- * Dashboard queries have been updated to include completed draft orders
- * in KPI calculations.
+ * The resulting order is a first-class Medusa Order:
+ *   - Visible in `/admin/orders`
+ *   - Inventory reservations are created automatically
+ *   - Fulfillment workflows apply normally
+ *   - Medusa events (order.created) fire normally
+ *
+ * For backward compatibility, the old `registerDraftPayment()` name is
+ * preserved as an alias.
  */
-export async function registerDraftPayment(
+export async function convertDraftToOrder(
     draftOrderId: string,
     scope?: TenantMedusaScope | null
-): Promise<{ order_id: string | null; error: string | null }> {
-    // First, complete the draft order
-    const res = await adminFetch<{ order: { id: string; status: string; total?: number } }>(
-        `/admin/orders/${draftOrderId}/complete`,
+): Promise<{ order_id: string | null; display_id: number | null; error: string | null }> {
+    // Official v2.4+ endpoint: convert-to-order
+    const res = await adminFetch<{ order: { id: string; display_id: number; status: string } }>(
+        `/admin/draft-orders/${draftOrderId}/convert-to-order`,
         { method: 'POST' },
         scope
     )
 
     if (res.error) {
-        console.error('[pos] registerDraftPayment failed:', res.error, 'draftOrderId:', draftOrderId)
-        return { order_id: null, error: res.error }
+        logger.error('[pos] convertDraftToOrder failed', {
+            error: res.error,
+            draftOrderId,
+        })
+        return { order_id: null, display_id: null, error: res.error }
     }
 
-    const completedOrder = res.data?.order
-    if (!completedOrder || completedOrder.status !== 'completed') {
-        const errMsg = `Draft order completion returned unexpected status: ${completedOrder?.status ?? 'null'}`
-        console.error('[pos]', errMsg)
-        return { order_id: completedOrder?.id ?? draftOrderId, error: errMsg }
+    const order = res.data?.order
+    if (!order?.id) {
+        const errMsg = 'convert-to-order returned no order data'
+        logger.error('[pos] ' + errMsg, { draftOrderId })
+        return { order_id: null, display_id: null, error: errMsg }
     }
+
+    logger.info('[pos] Draft order converted to real order', {
+        draftOrderId,
+        orderId: order.id,
+        displayId: order.display_id,
+        status: order.status,
+    })
 
     return {
-        order_id: completedOrder.id,
+        order_id: order.id,
+        display_id: order.display_id,
         error: null,
     }
+}
+
+/**
+ * @deprecated Use `convertDraftToOrder()` which uses the correct
+ * Medusa v2.4+ convert-to-order workflow. This alias exists for
+ * backward compatibility during the transition.
+ */
+export async function registerDraftPayment(
+    draftOrderId: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ order_id: string | null; error: string | null }> {
+    const result = await convertDraftToOrder(draftOrderId, scope)
+    return { order_id: result.order_id, error: result.error }
 }
 
 // ---------------------------------------------------------------------------

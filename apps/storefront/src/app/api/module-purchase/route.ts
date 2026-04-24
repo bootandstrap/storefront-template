@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, CHECKOUT_GUARD } from '@/lib/security/api-rate-guard'
 import { getActiveModulesForTenant } from '@/lib/active-modules'
 import contract from '@/lib/governance/governance-contract.json'
+import { logger } from '@/lib/logger'
 
 const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
     || process.env.NEXT_PUBLIC_BSWEB_URL
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            console.error('[module-purchase] BSWEB error:', data)
+            logger.error('[module-purchase] BSWEB error:', data)
             return NextResponse.json(
                 { error: data.error || 'Checkout creation failed' },
                 { status: res.status }
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: checkoutUrl })
     } catch (err) {
-        console.error('[module-purchase] Unexpected error:', err)
+        logger.error('[module-purchase] Unexpected error:', err)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

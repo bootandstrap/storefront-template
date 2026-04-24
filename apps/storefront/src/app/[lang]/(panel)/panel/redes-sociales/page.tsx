@@ -3,12 +3,12 @@
  *
  * Manages social media connections (Instagram, Facebook, TikTok, Google Maps).
  * Gated by enable_social_media feature flag (module: RRSS).
+ * SOTA 2026: ModuleShell wrapper with tier awareness.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
-import FeatureGate from '@/components/ui/FeatureGate'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import ModuleShell from '@/components/panel/ModuleShell'
 import { Share2 } from 'lucide-react'
 import SocialMediaClient from './SocialMediaClient'
 
@@ -32,27 +32,38 @@ export default async function SocialMediaPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    if (!featureFlags.enable_social_media) {
-        return <FeatureGate flag="enable_social_media" lang={lang} />
+    const isLocked = !featureFlags.enable_social_media
+    const cfgAny = config as unknown as Record<string, unknown>
+
+    const tierInfo = {
+        currentTier: isLocked ? 'Free' : 'Activo',
+        moduleKey: 'rrss',
+        nextTierFeatures: isLocked ? [
+            t('panel.social.feat.links') || 'Enlaces sociales en tu tienda',
+            t('panel.social.feat.sharing') || 'Botones de compartir productos',
+            t('panel.social.feat.feed') || 'Feed de Instagram integrado',
+        ] : undefined,
+        nextTierName: isLocked ? 'RRSS Standard' : undefined,
+        nextTierPrice: isLocked ? 0 : undefined,
     }
 
     const connections = {
         instagram: !!config.social_instagram,
         facebook: !!config.social_facebook,
         tiktok: !!config.social_tiktok,
-        googleMaps: false, // placeholder — no config field yet
+        googleMaps: !!(cfgAny.social_google_maps),
     }
 
-    const connectedCount = Object.values(connections).filter(Boolean).length
-
     return (
-        <div className="space-y-6">
-            <PanelPageHeader
-                title={t('panel.social.title')}
-                subtitle={t('panel.social.subtitle')}
-                icon={<Share2 className="w-5 h-5" />}
-                badge={connectedCount}
-            />
+        <ModuleShell
+            icon={<Share2 className="w-5 h-5" />}
+            title={t('panel.social.title') || 'Redes Sociales'}
+            subtitle={t('panel.social.subtitle') || 'Conecta tus redes sociales para ampliar tu alcance'}
+            isLocked={isLocked}
+            gateFlag="enable_social_media"
+            tierInfo={tierInfo}
+            lang={lang}
+        >
             <SocialMediaClient
                 connections={connections}
                 socialLinks={{
@@ -80,6 +91,6 @@ export default async function SocialMediaPage({
                 }}
                 lang={lang}
             />
-        </div>
+        </ModuleShell>
     )
 }

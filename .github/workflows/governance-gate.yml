@@ -79,6 +79,14 @@ jobs:
           npx tsx scripts/template-drift-check.ts || true
           echo "✅ Template drift check complete"
 
+      - name: Admin/Owner CRUD Contract Tests
+        run: |
+          echo "🔐 Running Admin/Owner CRUD contract tests..."
+          cd apps/storefront
+          npx vitest run src/lib/__tests__/admin-owner-crud-contract.test.ts
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
   architecture-gate:
     name: "🏛️ Architecture Quality"
     runs-on: ubuntu-latest

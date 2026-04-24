@@ -80,10 +80,12 @@ const nextConfig: NextConfig = {
             value: "on",
           },
           {
-            // Forces HTTPS for 1 year (31536000s) including subdomains.
+            // Forces HTTPS for 2 years (63072000s) including subdomains.
             // Once set, browsers will refuse HTTP connections.
+            // 2-year max-age meets HSTS Preload List requirements for future inscription.
+            // To enable preload: submit domain at https://hstspreload.org, then add '; preload'.
             key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
+            value: "max-age=63072000; includeSubDomains",
           },
         ],
       },
@@ -123,29 +125,38 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // ── Old Panel Route Redirects ──────────────────
+  // ── Legacy Panel Route Redirects ──────────────────
+  // Consolidated panel: old individual routes → new tab-based hubs.
+  // These are permanent (301) edge redirects — faster than RSC redirect pages.
   async redirects() {
     return [
-      {
-        source: "/:lang/tienda",
-        destination: "/:lang/productos",
-        permanent: true,
-      },
-      {
-        source: "/:lang/panel/productos",
-        destination: "/:lang/panel/catalogo?tab=products",
-        permanent: true,
-      },
-      {
-        source: "/:lang/panel/categorias",
-        destination: "/:lang/panel/catalogo?tab=categories",
-        permanent: true,
-      },
-      {
-        source: "/:lang/panel/insignias",
-        destination: "/:lang/panel/catalogo",
-        permanent: true,
-      },
+      // ── Shop routes ──
+      { source: "/:lang/tienda", destination: "/:lang/productos", permanent: true },
+
+      // ── Mi Tienda hub ──
+      { source: "/:lang/panel/productos", destination: "/:lang/panel/mi-tienda?tab=productos", permanent: true },
+      { source: "/:lang/panel/categorias", destination: "/:lang/panel/mi-tienda?tab=categorias", permanent: true },
+      { source: "/:lang/panel/catalogo", destination: "/:lang/panel/mi-tienda", permanent: true },
+      { source: "/:lang/panel/carrusel", destination: "/:lang/panel/mi-tienda?tab=carrusel", permanent: true },
+      { source: "/:lang/panel/paginas", destination: "/:lang/panel/mi-tienda?tab=paginas", permanent: true },
+      { source: "/:lang/panel/insignias", destination: "/:lang/panel/mi-tienda?tab=insignias", permanent: true },
+      { source: "/:lang/panel/inventario", destination: "/:lang/panel/mi-tienda?tab=inventario", permanent: true },
+
+      // ── Ventas hub ──
+      { source: "/:lang/panel/pedidos", destination: "/:lang/panel/ventas?tab=pedidos", permanent: true },
+      { source: "/:lang/panel/clientes", destination: "/:lang/panel/ventas?tab=clientes", permanent: true },
+      { source: "/:lang/panel/devoluciones", destination: "/:lang/panel/ventas?tab=devoluciones", permanent: true },
+      { source: "/:lang/panel/resenas", destination: "/:lang/panel/ventas?tab=resenas", permanent: true },
+
+      // ── Ajustes hub ──
+      { source: "/:lang/panel/tienda", destination: "/:lang/panel/ajustes?tab=tienda", permanent: true },
+      { source: "/:lang/panel/envios", destination: "/:lang/panel/ajustes?tab=envios", permanent: true },
+      { source: "/:lang/panel/idiomas", destination: "/:lang/panel/ajustes?tab=idiomas", permanent: true },
+      { source: "/:lang/panel/email", destination: "/:lang/panel/ajustes?tab=email", permanent: true },
+      { source: "/:lang/panel/analiticas", destination: "/:lang/panel/ajustes?tab=analiticas", permanent: true },
+      { source: "/:lang/panel/suscripcion", destination: "/:lang/panel/ajustes?tab=suscripcion", permanent: true },
+      { source: "/:lang/panel/utilidades", destination: "/:lang/panel/ajustes?tab=wifi", permanent: true },
+      { source: "/:lang/panel/mi-proyecto", destination: "/:lang/panel/ajustes?tab=proyecto", permanent: true },
     ];
   },
 };

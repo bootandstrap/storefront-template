@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Shared guard — rejects if wishlist feature flag is disabled
@@ -31,7 +32,7 @@ export async function GET() {
         .order('created_at', { ascending: false })
 
     if (error) {
-        console.error('[wishlist] GET error:', error)
+        logger.error('[wishlist] GET error:', error)
         return NextResponse.json({ items: [] })
     }
 
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
         )
 
     if (error) {
-        console.error('[wishlist] POST error:', error)
+        logger.error('[wishlist] POST error:', error)
         return NextResponse.json(
             { error: 'Failed to add to wishlist' },
             { status: 500 }
@@ -139,7 +140,7 @@ export async function DELETE(req: NextRequest) {
         .eq('product_id', productId)
 
     if (error) {
-        console.error('[wishlist] DELETE error:', error)
+        logger.error('[wishlist] DELETE error:', error)
         return NextResponse.json(
             { error: 'Failed to remove from wishlist' },
             { status: 500 }

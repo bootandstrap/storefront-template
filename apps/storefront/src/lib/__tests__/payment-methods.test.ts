@@ -58,6 +58,7 @@ function makeFlags(overrides: Partial<FeatureFlags> = {}): FeatureFlags {
         enable_pos_line_discounts: false,
         enable_pos_customer_search: false,
         enable_pos_multi_device: false,
+        enable_pos_reports: false,
         enable_pos_shifts: false,
         enable_traffic_expansion: false,
         enable_traffic_analytics: false,

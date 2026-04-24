@@ -19,8 +19,8 @@ export async function getDailyStatsAction(
     try {
         const { appConfig } = await withPanelGuard()
 
-        // Enterprise gate
-        if (!appConfig?.featureFlags?.enable_pos_shifts) {
+        // Enterprise gate — daily analytics requires enable_pos_reports
+        if (!appConfig?.featureFlags?.enable_pos_reports) {
             return { stats: null, error: 'Upgrade to Enterprise for analytics' }
         }
 

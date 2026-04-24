@@ -87,3 +87,10 @@ export { SotaMetric } from './sota/SotaMetric'
 export { SotaFeatureGateWrapper } from './sota/SotaFeatureGateWrapper'
 export { SotaProgressRing } from './sota/SotaProgressRing'
 export { SotaEmptyState } from './sota/SotaEmptyState'
+
+// ─── Governance UX (2026 Refactor) ──────────────────────────────────────────
+export { default as UnsavedChangesBar } from './UnsavedChangesBar'
+export { default as LimitAwareCTA } from './LimitAwareCTA'
+export { default as ModuleShell } from './ModuleShell'
+export type { ModuleShellTierInfo, ModuleShellUsageMeter } from './ModuleShell'
+

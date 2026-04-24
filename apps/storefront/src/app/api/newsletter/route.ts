@@ -4,6 +4,7 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { isFeatureEnabled } from '@/lib/features'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { logger } from '@/lib/logger'
 
 // Phase 4.2: Rate limit — 5 req / 60s per IP (same pattern as billing/returns/chat)
 const newsletterRateLimiter = createSmartRateLimiter({
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
         )
 
     if (error) {
-        console.error('[newsletter] Subscribe error:', error)
+        logger.error('[newsletter] Subscribe error:', error)
         return NextResponse.json(
             { error: 'Failed to subscribe' },
             { status: 500 }

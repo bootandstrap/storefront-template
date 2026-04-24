@@ -1,3 +1,4 @@
+import 'server-only'
 /**
  * Unified Panel Guard — Higher-Order Function
  *

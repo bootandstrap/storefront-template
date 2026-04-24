@@ -24,19 +24,9 @@
 // Types
 // ---------------------------------------------------------------------------
 
-export type EmailTemplate =
-    | 'order_confirmation'
-    | 'order_shipped'
-    | 'order_delivered'
-    | 'order_cancelled'
-    | 'payment_failed'
-    | 'refund_processed'
-    | 'low_stock_alert'
-    | 'welcome'
-    | 'password_reset'
-    | 'account_verification'
-    | 'review_request'
-    | 'abandoned_cart'
+import type { EmailTemplate } from '@/emails/types'
+import { logger } from '@/lib/logger'
+export type { EmailTemplate }
 
 export interface EmailPayload {
     /** Recipient email address */
@@ -84,8 +74,8 @@ export interface TemplateGovernance {
  * Categories:
  *   system        — Handled by Supabase Auth, never reaches our pipeline
  *   essential     — Free with Web Base, 100/mo limit, no flag required
- *   transactional — Requires email_marketing basic tier (15 CHF/mo)
- *   marketing     — Requires email_marketing pro tier (30 CHF/mo)
+ *   transactional — Requires email_marketing.basic tier
+ *   marketing     — Requires email_marketing.pro tier
  */
 export const TEMPLATE_GOVERNANCE: Record<EmailTemplate, TemplateGovernance> = {
     // ── Category 0: SYSTEM (Supabase Auth — never reaches here) ──
@@ -107,6 +97,9 @@ export const TEMPLATE_GOVERNANCE: Record<EmailTemplate, TemplateGovernance> = {
     // ── Category 3: MARKETING (pro tier — specific flags) ──
     abandoned_cart:        { category: 'marketing',    requiredFlag: 'enable_abandoned_cart_emails',     audience: 'customer', description_es: 'Carrito abandonado' },
     review_request:        { category: 'marketing',    requiredFlag: 'enable_review_request_emails',    audience: 'customer', description_es: 'Solicitud de reseña' },
+
+    // ── Category 4: POS (pos module — transactional receipts) ──
+    pos_receipt:           { category: 'transactional', requiredFlag: 'enable_pos',                      audience: 'customer', description_es: 'Recibo de compra POS' },
 }
 
 /** Free essential email limit for tenants without email_marketing module */
@@ -132,8 +125,7 @@ export interface EmailProvider {
 const consoleProvider: EmailProvider = {
     name: 'console',
     async send(payload) {
-        console.log(`[EMAIL] To: ${payload.to} | Subject: ${payload.subject} | Template: ${payload.template}`)
-        console.log(`[EMAIL] Data:`, JSON.stringify(payload.data, null, 2))
+        logger.info(`[EMAIL] Dev mode — To: ${payload.to} | Subject: ${payload.subject} | Template: ${payload.template}`)
         return { success: true, messageId: `console-${Date.now()}` }
     },
 }
@@ -169,7 +161,7 @@ function createResendProvider(apiKey: string): EmailProvider {
                         Layout,
                     }
                     // Remove internal props before rendering
-                    delete emailProps._designSlug
+                    delete (emailProps as Record<string, unknown>)._designSlug
                     html = await render(React.createElement(Component, emailProps))
                 } catch {
                     // Fallback to legacy buildHtml if React Email fails
@@ -580,7 +572,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
         const provider = getDefaultProvider()
         return await provider.send(payload)
     } catch (e) {
-        console.error('[EMAIL] Failed to send:', e)
+        logger.error('[EMAIL] Failed to send:', e)
         return { success: false, error: e instanceof Error ? e.message : 'Unknown email error' }
     }
 }
@@ -643,7 +635,7 @@ export async function sendEmailForTenant(
         // ── Step 1: Flag check ──
         if (governance.requiredFlag && !flags[governance.requiredFlag]) {
             const upsellType = governance.category === 'marketing' ? 'marketing' as const : 'transactional' as const
-            console.log(`[EMAIL] Tenant ${tenantId}: ${payload.template} blocked (flag ${governance.requiredFlag} disabled)`)
+            logger.info('[EMAIL] Template blocked by flag', { tenantId, template: payload.template, flag: governance.requiredFlag })
             return {
                 success: false,
                 error: `${governance.description_es} requiere activar ${governance.requiredFlag}`,
@@ -662,7 +654,7 @@ export async function sendEmailForTenant(
         if (prefs) {
             const prefKey = `send_${payload.template}`
             if (prefKey in prefs && prefs[prefKey] === false) {
-                console.log(`[EMAIL] Tenant ${tenantId}: ${payload.template} disabled by owner preference`)
+                logger.info('[EMAIL] Template disabled by owner preference', { tenantId, template: payload.template })
                 return {
                     success: false,
                     error: `${governance.description_es} desactivado por el propietario`,
@@ -690,7 +682,7 @@ export async function sendEmailForTenant(
         if (hasEmailModule) {
             // Tenant has email_marketing module → use tier limit
             if (currentSends >= maxSends) {
-                console.warn(`[EMAIL] Tenant ${tenantId}: monthly limit reached (${currentSends}/${maxSends})`)
+                logger.warn(`[EMAIL] Tenant ${tenantId}: monthly limit reached (${currentSends}/${maxSends})`)
                 return {
                     success: false,
                     error: `Límite mensual alcanzado (${currentSends}/${maxSends}). Mejora tu plan para más envíos.`,
@@ -702,7 +694,7 @@ export async function sendEmailForTenant(
             if (governance.category !== 'essential') {
                 // This shouldn't happen (flag check above would catch it),
                 // but double-check: non-essential emails need a module
-                console.log(`[EMAIL] Tenant ${tenantId}: ${payload.template} blocked (no email module)`)
+                logger.info('[EMAIL] Template blocked (no email module)', { tenantId, template: payload.template })
                 return {
                     success: false,
                     error: `${governance.description_es} requiere el módulo Email Marketing`,
@@ -710,7 +702,7 @@ export async function sendEmailForTenant(
                 }
             }
             if (currentSends >= FREE_ESSENTIAL_LIMIT) {
-                console.warn(`[EMAIL] Tenant ${tenantId}: free essential limit reached (${currentSends}/${FREE_ESSENTIAL_LIMIT})`)
+                logger.warn(`[EMAIL] Tenant ${tenantId}: free essential limit reached (${currentSends}/${FREE_ESSENTIAL_LIMIT})`)
                 return {
                     success: false,
                     error: `Límite de emails gratuitos alcanzado (${currentSends}/${FREE_ESSENTIAL_LIMIT}). Contrata Email Marketing para más envíos.`,
@@ -728,7 +720,7 @@ export async function sendEmailForTenant(
         }
 
         if (!configTyped?.email_provider || !configTyped?.email_api_key) {
-            console.log(`[EMAIL] Tenant ${tenantId}: no provider configured, using console`)
+            logger.info('[EMAIL] No provider configured, using console', { tenantId })
             const result = await consoleProvider.send(payload)
             if (result.success) await incrementEmailCounter(supabase, tenantId, currentSends)
             return result
@@ -767,7 +759,7 @@ export async function sendEmailForTenant(
 
         return result
     } catch (e) {
-        console.error(`[EMAIL] Tenant ${tenantId} send failed:`, e)
+        logger.error(`[EMAIL] Tenant ${tenantId} send failed:`, e)
         return { success: false, error: e instanceof Error ? e.message : 'Unknown email error' }
     }
 }
@@ -788,7 +780,7 @@ async function incrementEmailCounter(
             .update({ email_sends_this_month: currentCount + 1 } as never)
             .eq('tenant_id', tenantId)
     } catch (e) {
-        console.error(`[EMAIL] Failed to increment email counter for tenant ${tenantId}:`, e)
+        logger.error(`[EMAIL] Failed to increment email counter for tenant ${tenantId}:`, e)
     }
 }
 
@@ -823,7 +815,7 @@ async function logEmailSend(
             },
         })
     } catch (e) {
-        console.error(`[EMAIL] Log insert failed for tenant ${tenantId}:`, e)
+        logger.error(`[EMAIL] Log insert failed for tenant ${tenantId}:`, e)
     }
 }
 

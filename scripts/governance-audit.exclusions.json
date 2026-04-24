@@ -1,0 +1,19 @@
+{
+    "___doc": "Keys excluded from governance UI coverage audit. Each key maps to a reason why it's not consumed in the storefront UI.",
+
+    "enable_google_auth": { "reason": "Key mismatch: codebase uses 'enable_google_oauth' — contract key should be updated to match" },
+    "enable_maintenance_mode": { "reason": "System flag — consumed in middleware, not UI components" },
+    "enable_owner_panel": { "reason": "System flag — consumed in middleware/layout, not UI components" },
+    "enable_admin_api": { "reason": "System flag — backend-only, no UI representation" },
+    "owner_advanced_modules_enabled": { "reason": "Meta flag — computed from module subscriptions, not directly consumed" },
+    "owner_lite_enabled": { "reason": "Meta flag — plan-level, consumed implicitly via module resolution" },
+    "require_auth_to_order": { "reason": "Checkout flow flag — consumed in checkout middleware, not panel UI" },
+    "enable_cookie_consent": { "reason": "Legal compliance flag — consumed in CookieBanner component, may not match exact key pattern" },
+
+    "max_admin_users": { "reason": "Backend-enforced — no panel UI for adding admin users yet" },
+    "max_requests_day": { "reason": "Infrastructure limit — enforced by rate limiter middleware, no UI" },
+    "max_file_upload_mb": { "reason": "Enforced server-side in upload actions, no visible UI counter" },
+    "storage_limit_mb": { "reason": "Enforced via StorageLimitBanner — may not match exact key grep" },
+    "max_customers": { "reason": "Read-only metric — customers self-register, no 'add' CTA to gate" },
+    "max_orders_month": { "reason": "Read-only metric — orders come from checkout, no 'add' CTA to gate" }
+}

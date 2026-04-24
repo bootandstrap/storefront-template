@@ -1,21 +1,24 @@
 'use client'
 
 /**
- * Store Config Editor — Owner Panel (SOTA rewrite)
+ * Store Config Editor — Owner Panel (SOTA rewrite + Unsaved Changes Guard)
  *
  * Features:
+ * - Shopify-style explicit save with floating UnsavedChangesBar
+ * - useFormGuard() for dirty tracking + beforeunload + save lifecycle
  * - PageEntrance animation
  * - Animated tab bar with layoutId indicator
  * - Animated tab content transitions (AnimatePresence)
  * - Focus ring transitions on inputs
- * - Animated save confirmation
  * - Animated announcement bar expand/collapse
+ *
+ * @module StoreConfigClient
+ * @locked 🟡 YELLOW — owner-facing settings
  */
 
-import { useState, useTransition } from 'react'
 import { useI18n } from '@/lib/i18n/provider'
 import { useToast } from '@/components/ui/Toaster'
-import { Loader2, Check, Store, Palette, Search, Share2, CreditCard, Truck, ExternalLink, Package, Globe } from 'lucide-react'
+import { Store, Palette, Search, Share2, CreditCard, Truck, ExternalLink, Package } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { StoreConfig } from '@/lib/config'
@@ -25,26 +28,63 @@ import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoG
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { STATIC_EXCHANGE_RATES } from '@/lib/currency-engine'
 import { SUPPORTED_LOCALES } from '@/lib/i18n'
+import { useFormGuard } from '@/lib/hooks/useFormGuard'
+import UnsavedChangesBar from '@/components/panel/UnsavedChangesBar'
+import RegionLocalePanel from './RegionLocalePanel'
+import { useState } from 'react'
 
 interface StoreConfigClientProps {
     config: StoreConfig
     featureFlags?: {
         enable_seo?: boolean
         enable_social_media?: boolean
+        enable_multi_language?: boolean
     }
     lang?: string
+    /** i18n data for the unified RegionLocalePanel */
+    i18nData?: {
+        activeLanguages: string[]
+        activeCurrencies: string[]
+        maxLanguages: number
+        maxCurrencies: number
+        panelLang: string
+    }
 }
 
 type Tab = 'general' | 'apariencia' | 'seo' | 'social' | 'pagos' | 'entrega'
 
-export default function StoreConfigClient({ config, featureFlags = {}, lang = 'es' }: StoreConfigClientProps) {
+export default function StoreConfigClient({ config, featureFlags = {}, lang = 'es', i18nData }: StoreConfigClientProps) {
     const { t } = useI18n()
     const [activeTab, setActiveTab] = useState<Tab>('general')
-    const [formData, setFormData] = useState(config)
-    const [isPending, startTransition] = useTransition()
     const toast = useToast()
-    const [saved, setSaved] = useState(false)
-    const [_saveError, setSaveError] = useState<string | null>(null)
+
+    // ── Shopify-style explicit save via useFormGuard ──
+    const {
+        values: formData,
+        isDirty,
+        dirtyFields,
+        dirtyCount,
+        isSaving,
+        saveError,
+        saveSuccess,
+        setValue,
+        save,
+        discard,
+    } = useFormGuard({
+        initialValues: config as StoreConfig & Record<string, unknown>,
+        onSave: async (values) => {
+            const result = await saveStoreConfig(values)
+            if (!result.success) {
+                throw new Error(result.error ?? 'Failed to save')
+            }
+        },
+        onSaveSuccess: () => {
+            toast.success('✓')
+        },
+        onSaveError: (error) => {
+            toast.error(error.message)
+        },
+    })
 
     // Build tabs dynamically — hide dedicated module tabs when modules are active
     const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -56,24 +96,9 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
         { id: 'entrega', label: t('panel.config.delivery'), icon: Truck },
     ]
 
+    // ── Field update helper ──
     const update = (key: keyof StoreConfig, value: unknown) => {
-        setFormData((prev) => ({ ...prev, [key]: value }))
-        setSaved(false)
-        setSaveError(null)
-    }
-
-    const handleSave = () => {
-        startTransition(async () => {
-            const result = await saveStoreConfig(formData)
-            if (result.success) {
-                setSaved(true)
-                setSaveError(null)
-                toast.success('✓')
-            } else {
-                setSaveError(result.error ?? 'Failed to save')
-                toast.error(result.error ?? 'Failed to save')
-            }
-        })
+        setValue(key as string, value)
     }
 
     const inputClass =
@@ -104,39 +129,52 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                     <textarea className={inputClass + ' resize-none'} rows={2} value={formData.store_address ?? ''} onChange={(e) => update('store_address', e.target.value)} />
                 </div>
 
-                {/* ── Default Currency & Language (always visible) ── */}
-                <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Globe className="w-4 h-4 text-brand" />
-                        <span className="text-sm font-bold text-tx">{t('panel.config.regionSettings') || 'Región y moneda'}</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className={labelClass}>{t('panel.config.defaultCurrency') || 'Moneda por defecto'}</label>
-                            <select
-                                className={inputClass}
-                                value={(formData.default_currency ?? 'eur').toLowerCase()}
-                                onChange={(e) => update('default_currency', e.target.value)}
-                            >
-                                {Object.keys(STATIC_EXCHANGE_RATES).map(code => (
-                                    <option key={code} value={code}>{code.toUpperCase()}</option>
-                                ))}
-                            </select>
+                {/* ── Region & Locale Panel (unified currency/language management) ── */}
+                {i18nData ? (
+                    <RegionLocalePanel
+                        defaultLanguage={(formData as any).language ?? 'es'}
+                        defaultCurrency={(formData.default_currency ?? 'eur').toLowerCase()}
+                        activeLanguages={i18nData.activeLanguages}
+                        activeCurrencies={i18nData.activeCurrencies}
+                        maxLanguages={i18nData.maxLanguages}
+                        maxCurrencies={i18nData.maxCurrencies}
+                        isMultiLanguageEnabled={!!featureFlags.enable_multi_language}
+                        panelLang={i18nData.panelLang}
+                        lang={lang}
+                        onDefaultCurrencyChange={(v) => update('default_currency', v)}
+                        onDefaultLanguageChange={(v) => update('language' as keyof StoreConfig, v)}
+                    />
+                ) : (
+                    /* Fallback: minimal defaults only (when i18nData not provided) */
+                    <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelClass}>{t('panel.config.defaultCurrency') || 'Moneda por defecto'}</label>
+                                <select
+                                    className={inputClass}
+                                    value={(formData.default_currency ?? 'eur').toLowerCase()}
+                                    onChange={(e) => update('default_currency', e.target.value)}
+                                >
+                                    {Object.keys(STATIC_EXCHANGE_RATES).map(code => (
+                                        <option key={code} value={code}>{code.toUpperCase()}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelClass}>{t('panel.config.storeLanguage') || 'Idioma de la tienda'}</label>
+                                <select
+                                    className={inputClass}
+                                    value={(formData as any).language ?? 'es'}
+                                    onChange={(e) => update('language' as keyof StoreConfig, e.target.value)}
+                                >
+                                    {SUPPORTED_LOCALES.map(loc => (
+                                        <option key={loc} value={loc}>{loc === 'es' ? '🇪🇸 Español' : loc === 'en' ? '🇬🇧 English' : loc === 'de' ? '🇩🇪 Deutsch' : loc === 'fr' ? '🇫🇷 Français' : loc === 'it' ? '🇮🇹 Italiano' : loc}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label className={labelClass}>{t('panel.config.storeLanguage') || 'Idioma de la tienda'}</label>
-                            <select
-                                className={inputClass}
-                                value={(formData as any).language ?? 'es'}
-                                onChange={(e) => update('language' as keyof StoreConfig, e.target.value)}
-                            >
-                                {SUPPORTED_LOCALES.map(loc => (
-                                    <option key={loc} value={loc}>{loc === 'es' ? '🇪🇸 Español' : loc === 'en' ? '🇬🇧 English' : loc === 'de' ? '🇩🇪 Deutsch' : loc === 'fr' ? '🇫🇷 Français' : loc === 'it' ? '🇮🇹 Italiano' : loc}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* ── Stock Mode (promoted from entrega tab) ── */}
                 <div className="rounded-xl border border-sf-3/30 bg-sf-0/30 p-4 space-y-4">
@@ -388,6 +426,7 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
             <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-inner overflow-x-auto p-1">
                 {tabs.map((tab) => {
                     const Icon = tab.icon
+                    const tabHasDirtyFields = hasTabDirtyFields(tab.id, dirtyFields)
                     return (
                         <button
                             key={tab.id}
@@ -409,6 +448,10 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                             <span className="relative z-10 flex items-center gap-2">
                                 <Icon className="w-4 h-4" />
                                 <span className="hidden sm:inline">{tab.label}</span>
+                                {/* Dirty indicator dot on tab */}
+                                {tabHasDirtyFields && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                )}
                             </span>
                         </button>
                     )
@@ -430,38 +473,63 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                 </motion.div>
             </AnimatePresence>
 
-            {/* Save button */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex items-center gap-3"
-            >
-                <button
-                    onClick={handleSave}
-                    disabled={isPending}
-                    className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                >
-                    {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isPending ? t('common.saving') : t('common.saveChanges')}
-                </button>
-                <AnimatePresence>
-                    {saved && (
-                        <motion.span
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -8 }}
-                            className="text-sm text-emerald-600 font-medium flex items-center gap-1"
-                        >
-                            <Check className="w-4 h-4" /> {t('common.saved')}
-                        </motion.span>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-
                     </div>
                 </SotaBentoItem>
             </SotaBentoGrid>
+
+            {/* ── Shopify-style floating save bar ── */}
+            <UnsavedChangesBar
+                isDirty={isDirty}
+                dirtyCount={dirtyCount}
+                isSaving={isSaving}
+                saveError={saveError}
+                saveSuccess={saveSuccess}
+                onSave={save}
+                onDiscard={discard}
+                labels={{
+                    unsavedChanges: t('panel.unsaved.title') || 'Unsaved changes',
+                    fieldChanged: t('panel.unsaved.fieldChanged') || 'field changed',
+                    fieldsChanged: t('panel.unsaved.fieldsChanged') || 'fields changed',
+                    save: t('common.saveChanges') || 'Save',
+                    discard: t('panel.unsaved.discard') || 'Discard',
+                    saving: t('common.saving') || 'Saving…',
+                    saved: t('common.saved') || 'Saved',
+                    errorPrefix: t('panel.unsaved.error') || 'Error:',
+                }}
+            />
         </PageEntrance>
     )
+}
+
+// ── Helper: determine if a tab has dirty fields ──
+// Maps config field prefixes to tabs so we can show a dot indicator
+
+const TAB_FIELD_MAP: Record<Tab, string[]> = {
+    general: [
+        'business_name', 'store_email', 'store_phone', 'whatsapp_number',
+        'store_address', 'default_currency', 'language', 'stock_mode', 'low_stock_threshold',
+    ],
+    apariencia: [
+        'hero_title', 'hero_subtitle', 'footer_description',
+        'announcement_bar_enabled', 'announcement_bar_text',
+    ],
+    seo: [
+        'meta_title', 'meta_description', 'google_analytics_id', 'facebook_pixel_id',
+    ],
+    social: [
+        'social_facebook', 'social_instagram', 'social_tiktok', 'social_twitter',
+    ],
+    pagos: [
+        'bank_name', 'bank_account_type', 'bank_account_number',
+        'bank_account_holder', 'bank_id_number',
+    ],
+    entrega: [
+        'min_order_amount', 'max_delivery_radius_km', 'delivery_info_text',
+    ],
+}
+
+function hasTabDirtyFields(tab: Tab, dirtyFields: Set<string>): boolean {
+    const fields = TAB_FIELD_MAP[tab]
+    if (!fields) return false
+    return fields.some(f => dirtyFields.has(f))
 }

@@ -12,6 +12,7 @@
  */
 
 import { getRuntimeEnv } from '@/lib/runtime-env'
+import { logger } from '@/lib/logger'
 
 const DEV_FALLBACK = 'http://localhost:9000'
 
@@ -29,7 +30,7 @@ export function getPublicMedusaUrl(): string {
 
     // In production, the env var MUST be set
     if (process.env.NODE_ENV === 'production') {
-        console.error(
+        logger.error(
             '[Medusa] NEXT_PUBLIC_MEDUSA_BACKEND_URL is not set. ' +
             'Check RuntimeEnvScript in layout.tsx and container env vars.'
         )

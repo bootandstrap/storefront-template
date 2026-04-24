@@ -16,6 +16,7 @@ import type { POSCartItem, POSSaleRecord } from '@/lib/pos/pos-config'
 import { safeVariantPrice } from '@/lib/pos/pos-config'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
 import { posLabel } from '@/lib/pos/pos-i18n'
+import type { AdminProductFull } from '@/lib/medusa/admin'
 
 // ── Co-occurrence storage ──
 
@@ -76,15 +77,15 @@ export function buildCoOccurrenceFromHistory(sales: POSSaleRecord[]): void {
 interface POSRecommendationsProps {
     cartItems: POSCartItem[]
     onAddItem: (item: POSCartItem) => void
-    /** All available products — raw Medusa format (prices in variant.calculated_price) */
-    allProducts: any[]
+    /** All available products — raw Medusa admin format */
+    allProducts: AdminProductFull[]
     labels: Record<string, string>
     defaultCurrency: string
     maxSuggestions?: number
 }
 
 interface Recommendation {
-    product: any           // raw Medusa product
+    product: AdminProductFull
     cartItem: POSCartItem  // pre-built cart item with safe price
     score: number          // co-occurrence count
     reason: string         // "Comprado con X"
@@ -132,7 +133,7 @@ export default function POSRecommendations({
         // Extract price safely from raw Medusa product variants
         return Array.from(scored.entries())
             .map(([title, { score, reason }]) => {
-                const product = allProducts.find((p: any) => p.title === title)
+                const product = allProducts.find((p) => p.title === title)
                 if (!product) return null
                 const variant = product.variants?.[0]
                 if (!variant) return null

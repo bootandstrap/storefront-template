@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/panel/data-export
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (error) {
-            console.error('[data-export] Failed to enqueue:', error.message)
+            logger.error('[data-export] Failed to enqueue:', error.message)
             return NextResponse.json({ error: 'Failed to start export' }, { status: 500 })
         }
 
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
         if (error instanceof Error && error.message.includes('Unauthorized')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-        console.error('[data-export] Error:', error)
+        logger.error('[data-export] Error:', error)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

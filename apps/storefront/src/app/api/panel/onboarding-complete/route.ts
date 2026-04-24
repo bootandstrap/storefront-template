@@ -11,6 +11,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { clearCachedConfig } from '@/lib/config'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
     try {
@@ -27,17 +28,17 @@ export async function POST(req: NextRequest) {
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[onboarding-complete] Config update failed:', error.message)
+            logger.error('[onboarding-complete] Config update failed:', error.message)
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
-        console.log('[onboarding-complete] ✅ Marked for tenant:', tenantId)
+        logger.info('[onboarding-complete] Marked completed', { tenantId })
         clearCachedConfig()
         return NextResponse.json({ success: true })
     } catch (err: unknown) {
         // withPanelGuard throws redirect on auth failure — if we get here
         // it's an unexpected error
-        console.error('[onboarding-complete] Unexpected:', err)
+        logger.error('[onboarding-complete] Unexpected:', err)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

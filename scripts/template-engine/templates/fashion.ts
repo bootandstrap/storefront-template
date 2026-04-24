@@ -20,7 +20,15 @@ export const fashionTemplate: IndustryTemplate = {
     countryPrefix: '+34',
 
     governance: {
-        bundleName: 'Demo Fashion',
+        modules: [
+            { module: 'ecommerce', tier: 'enterprise' },
+            { module: 'sales_channels', tier: 'enterprise' },
+            { module: 'email_marketing', tier: 'pro' },
+            { module: 'crm', tier: 'pro' },
+            { module: 'rrss', tier: 'instagram' },
+            { module: 'seo', tier: 'avanzado' },
+            { module: 'i18n', tier: 'pro' },
+        ],
         flagOverrides: {
             enable_ecommerce: true,
             enable_crm: true,

@@ -18,6 +18,8 @@ interface SotaMetricProps {
     accentColor?: string
     glowColor?: 'brand' | 'accent' | 'danger' | 'warning' | 'blue' | 'purple' | 'gold' | 'emerald' | 'none'
     className?: string
+    /** Footer slot — renders inside the glass card, below sparklines. Use for sub-badges, split indicators, etc. */
+    footer?: React.ReactNode
 }
 
 export function SotaMetric({
@@ -32,7 +34,8 @@ export function SotaMetric({
     sparklineData,
     accentColor = '#8BC34A',
     glowColor = 'brand',
-    className = ''
+    className = '',
+    footer,
 }: SotaMetricProps) {
     const isString = typeof value === 'string'
     
@@ -79,6 +82,12 @@ export function SotaMetric({
             {sparklineData && sparklineData.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-sf-3/30 relative z-10 w-full h-12">
                     <MiniChart data={sparklineData} height={40} label={label} />
+                </div>
+            )}
+
+            {footer && (
+                <div className="mt-3 pt-3 border-t border-sf-3/20">
+                    {footer}
                 </div>
             )}
         </SotaGlassCard>

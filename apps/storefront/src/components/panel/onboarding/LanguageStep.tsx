@@ -19,6 +19,7 @@ import {
     saveStorefrontLanguageAction,
     saveActiveLanguagesAction,
 } from '@/app/[lang]/(panel)/panel/actions'
+import { logger } from '@/lib/logger'
 
 interface LanguageStepProps {
     currentLanguage: string
@@ -97,7 +98,7 @@ export default function LanguageStep({
 
             setSaved(true)
         } catch (err) {
-            console.warn('[LanguageStep] Save failed:', err)
+            logger.warn('[LanguageStep] Save failed:', err)
         }
 
         setSaving(false)

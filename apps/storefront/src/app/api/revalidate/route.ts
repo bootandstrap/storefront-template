@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { timingSafeEqual } from 'node:crypto'
-import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
+import { checkRateLimit } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Internal revalidation endpoint (infrastructure — NOT a commercial API)
@@ -38,7 +40,7 @@ function isSecretValid(provided: string, expected: string): boolean {
 export async function POST(request: NextRequest) {
     try {
         // ── Rate limiting (30 req/min per IP) ──────────────────
-        const clientIP = getClientIP(request)
+        const clientIP = getClientIp(request)
         const rateCheck = checkRateLimit(`revalidate:${clientIP}`, 30, 60_000)
 
         if (!rateCheck.allowed) {
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
 
         // ── IP allowlist check ─────────────────────────────────
         if (ALLOWED_IPS && !ALLOWED_IPS.includes(clientIP)) {
-            console.warn(`[revalidate] Rejected request from ${clientIP} — not in allowlist`)
+            logger.warn(`[revalidate] Rejected request from ${clientIP} — not in allowlist`)
             return NextResponse.json(
                 { error: 'Forbidden — IP not in allowlist' },
                 { status: 403 }
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
             timestamp: new Date().toISOString(),
         })
     } catch (err) {
-        console.error('[revalidate] Error:', err)
+        logger.error('[revalidate] Error:', err)
         return NextResponse.json(
             { error: 'Revalidation failed' },
             { status: 500 }

@@ -5,6 +5,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 // ─── Fetch all reviews ────────────────────────────────────────
 export async function getReviews(statusFilter?: string) {
@@ -30,7 +31,7 @@ export async function getReviews(statusFilter?: string) {
     }>(`/admin/reviews${query}`, {}, scope)
 
     if (error || !data) {
-        console.error('[reviews] fetch failed:', error)
+        logger.error('[reviews] fetch failed:', error)
         return { reviews: [], stats: { total: 0, pending: 0, approved: 0, rejected: 0 } }
     }
 
@@ -48,7 +49,7 @@ export async function moderateReviewAction(reviewId: string, status: 'approved' 
     }, scope)
 
     if (error) {
-        console.error('[reviews] moderate failed:', error)
+        logger.error('[reviews] moderate failed:', error)
         return { success: false, error: 'Failed to moderate review' }
     }
 
@@ -68,7 +69,7 @@ export async function deleteReviewAction(reviewId: string) {
     }, scope)
 
     if (error) {
-        console.error('[reviews] delete failed:', error)
+        logger.error('[reviews] delete failed:', error)
         return { success: false, error: 'Failed to delete review' }
     }
 

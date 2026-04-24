@@ -11,7 +11,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories, getAdminProducts } from '@/lib/medusa/admin'
 import { getInventoryItems, getLowStockItems, getStockLocations } from '@/lib/medusa/admin-inventory'
 import { getProductsWithBadges } from '../insignias/actions'
-import { checkLimit } from '@/lib/limits'
+import { checkLimit, type LimitCheckResult } from '@/lib/limits'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { createClient } from '@/lib/supabase/server'
@@ -111,9 +111,11 @@ export async function fetchProductsData(
         productCount: productsData.count,
         maxProducts: planLimits.max_products,
         canAddProduct: productLimitCheck.allowed,
+        productLimitResult: productLimitCheck,
         categoryCount: categoriesData.count,
         maxCategories: planLimits.max_categories,
         canAddCategory: categoryLimitCheck.allowed,
+        categoryLimitResult: categoryLimitCheck,
         currentPage: query.page,
         pageSize: query.limit,
         initialSearch: query.q ?? '',
@@ -190,6 +192,7 @@ export async function fetchCarouselData(tenantId: string) {
     return {
         slides: slideList,
         canAdd: limitCheck.allowed,
+        slideLimitResult: limitCheck,
         slideCount: slideList.length,
         maxSlides: planLimits.max_carousel_slides,
     }
@@ -213,6 +216,7 @@ export async function fetchPagesData(tenantId: string) {
     return {
         pages: pageList,
         canAdd: limitCheck.allowed,
+        pageLimitResult: limitCheck,
         pageCount: pageList.length,
         maxPages: planLimits.max_cms_pages,
     }

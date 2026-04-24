@@ -29,7 +29,7 @@ import contract from '../governance-contract.json'
 import { FeatureFlagsSchema, PlanLimitsSchema, StoreConfigSchema } from '../governance/schemas'
 import { FALLBACK_CONFIG } from '../governance/defaults'
 import { FEATURE_GATE_MAP, PANEL_GATED_FLAGS } from '../feature-gate-config'
-import { ADVANCED_MODULES } from '../panel-policy'
+import { ROUTE_REDIRECT_MAP } from '../panel-policy'
 
 // ── Shared package consumers ──
 import {
@@ -258,20 +258,22 @@ describe('Governance Source of Truth — E2E Drift Detection', () => {
     // PANEL INTEGRATION
     // ────────────────────────────────────────────────
     describe('panel-policy integration', () => {
-        it('ADVANCED_MODULES keys are a subset of contract module keys', () => {
+        it('ROUTE_REDIRECT_MAP module routes reference valid contract modules', () => {
             const contractModuleKeys = new Set(contract.modules.keys)
-            for (const mod of ADVANCED_MODULES) {
-                // Panel-policy uses shorthand keys; verify they belong to known modules
-                // Not all panel routes map 1:1 to contract modules, but feature-gated ones should
-                if (mod.featureKey) {
-                    const gateEntry = FEATURE_GATE_MAP[mod.featureKey]
-                    if (gateEntry) {
-                        expect(
-                            contractModuleKeys.has(gateEntry.moduleKey),
-                            `ADVANCED_MODULES featureKey "${mod.featureKey}" maps to unknown module: ${gateEntry.moduleKey}`
-                        ).toBe(true)
-                    }
-                }
+            const moduleRoutes = Object.entries(ROUTE_REDIRECT_MAP)
+                .filter(([, v]) => v.section === 'modulos' && v.tab)
+            expect(moduleRoutes.length).toBeGreaterThan(0)
+            // Module tabs should map to known modules via FEATURE_GATE_MAP or contract
+            for (const [key] of moduleRoutes) {
+                // The route key itself should be a recognizable module identifier
+                expect(
+                    contractModuleKeys.has(key) ||
+                    contractModuleKeys.has(key.replace('-', '_')) ||
+                    key === 'redes-sociales' || // rrss module
+                    key === 'mensajes' ||        // email_marketing module
+                    key === 'automatizaciones',  // automation module
+                    `Module route '${key}' not found in contract modules`
+                ).toBe(true)
             }
         })
     })

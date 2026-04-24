@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePanel } from '@/lib/revalidate'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import type { AutomationConfig } from '@/lib/email-automations-shared'
+import { logger } from '@/lib/logger'
 
 interface ActionResult {
     success: boolean
@@ -38,7 +39,7 @@ export async function saveAutomationConfig(config: AutomationConfig): Promise<Ac
         )
 
     if (error) {
-        console.error(`[email] Failed to save automation config for tenant ${tenantId}:`, error.message)
+        logger.error(`[email] Failed to save automation config for tenant ${tenantId}:`, error.message)
         return { success: false, error: error.message }
     }
 
@@ -86,7 +87,7 @@ export async function saveEmailPreferences(preferences: EmailPreferences): Promi
         )
 
     if (error) {
-        console.error(`[email] Failed to save preferences for tenant ${tenantId}:`, error.message)
+        logger.error(`[email] Failed to save preferences for tenant ${tenantId}:`, error.message)
         return { success: false, error: error.message }
     }
 

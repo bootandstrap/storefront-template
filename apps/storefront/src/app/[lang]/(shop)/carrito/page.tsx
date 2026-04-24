@@ -26,7 +26,7 @@ export default function CarritoPage() {
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'COP'
+    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(locale, {

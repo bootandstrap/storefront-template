@@ -137,7 +137,7 @@ export const MODULE_FLAG_KEYS: Record<string, string[]> = {
     'enable_pos', 'enable_pos_kiosk', 'enable_pos_keyboard_shortcuts',
     'enable_pos_quick_sale', 'enable_pos_offline_cart',
     'enable_pos_thermal_printer', 'enable_pos_line_discounts',
-    'enable_pos_customer_search', 'enable_pos_multi_device', 'enable_pos_shifts',
+    'enable_pos_customer_search', 'enable_pos_multi_device', 'enable_pos_reports', 'enable_pos_shifts',
   ],
   capacidad: [
     'enable_traffic_expansion', 'enable_traffic_analytics', 'enable_traffic_autoscale',

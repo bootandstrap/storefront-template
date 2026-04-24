@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { ArrowRight, CheckCircle, Circle } from 'lucide-react'
 import { skipChecklistAction } from '@/app/[lang]/(panel)/panel/actions'
 import type { ReadinessCheck } from '@/lib/store-readiness'
+import { logger } from '@/lib/logger'
 
 export const PANEL_CHECKLIST_SKIPPED_KEY = 'panel_checklist_skipped'
 
@@ -89,7 +90,7 @@ export default function PanelChecklist({
         try {
             await skipChecklistAction()
         } catch (err) {
-            console.warn('[PanelChecklist] DB skip failed (non-blocking):', err)
+            logger.warn('[PanelChecklist] DB skip failed (non-blocking):', err)
         }
     }
 

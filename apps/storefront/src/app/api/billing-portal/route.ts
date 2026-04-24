@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
     || process.env.NEXT_PUBLIC_BSWEB_URL
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            console.error('[billing-portal] BSWEB error:', data)
+            logger.error('[billing-portal] BSWEB error', { status: res.status, error: data.error })
             return NextResponse.json(
                 { error: data.error || 'Portal creation failed' },
                 { status: res.status }
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: portalUrl })
     } catch (err) {
-        console.error('[billing-portal] Unexpected error:', err)
+        logger.error('[billing-portal] Unexpected error', { error: err instanceof Error ? err.message : String(err) })
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

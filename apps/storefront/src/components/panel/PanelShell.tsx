@@ -53,6 +53,8 @@ interface PanelShellProps {
     logoUrl?: string
     /** Store readiness score for sidebar health indicator */
     readinessScore?: number
+    /** Badge counts for sidebar navigation items */
+    badges?: Record<string, number>
     children: React.ReactNode
 }
 
@@ -73,6 +75,7 @@ export default function PanelShell({
     defaultCurrency,
     logoUrl,
     readinessScore,
+    badges,
     children,
 }: PanelShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
@@ -98,6 +101,7 @@ export default function PanelShell({
                     businessName={businessName}
                     labels={sidebarLabels}
                     featureFlags={featureFlags}
+                    badges={badges}
                     planName={planName}
                     logoUrl={logoUrl}
                     readinessScore={readinessScore}
@@ -118,6 +122,7 @@ export default function PanelShell({
                         labels={topbarLabels}
                         setupNudge={setupNudge}
                         defaultCurrency={defaultCurrency}
+                        planName={planName}
                         onMenuClick={() => setMobileOpen(true)}
                     />
                 )}

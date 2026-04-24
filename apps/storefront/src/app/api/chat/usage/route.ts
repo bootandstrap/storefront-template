@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatUsageTable } from '@/lib/chat/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
     try {
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
         })
 
     } catch (error) {
-        console.error('[ChatUsage] Error:', error)
+        logger.error('[ChatUsage] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

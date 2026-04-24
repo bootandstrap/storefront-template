@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRateLimit, getClientIP } from '@/lib/security/rate-limiter'
+import { checkRateLimit } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
 
 // ---------------------------------------------------------------------------
 // GET /api/health/ready — Readiness probe (Docker / Kubernetes / load balancer)
@@ -24,7 +25,7 @@ interface DependencyCheck {
 
 export async function GET(request: NextRequest) {
     // ── Rate limiting (60 req/min per IP) ──────────────────
-    const clientIP = getClientIP(request)
+    const clientIP = getClientIp(request)
     const rateCheck = checkRateLimit(`health:${clientIP}`, 60, 60_000)
 
     if (!rateCheck.allowed) {

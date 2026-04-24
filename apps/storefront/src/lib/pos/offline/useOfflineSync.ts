@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { CachedProduct, PendingSale } from './offline-store'
+import { logger } from '@/lib/logger'
 
 // ── Constants ──
 
@@ -270,7 +271,7 @@ export function useOfflineSync(): UseOfflineSyncReturn {
                 setPendingCount(count)
                 computeInventoryOffsets()
             } catch (err) {
-                console.error('[POS Offline] Failed to queue sale:', err)
+                logger.error('[POS Offline] Failed to queue sale:', err)
                 throw err
             }
         },

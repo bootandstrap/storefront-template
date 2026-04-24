@@ -1,5 +1,5 @@
 /**
- * Brand Layout — Basic tier (15 CHF/mo)
+ * Brand Layout — Basic tier (email_marketing.basic)
  *
  * Polished branded emails inspired by Stripe/Linear.
  * Full-width brand header with gradient, smart logo placement,

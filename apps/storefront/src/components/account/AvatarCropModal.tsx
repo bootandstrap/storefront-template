@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
+import { logger } from '@/lib/logger'
 
 interface AvatarCropModalProps {
     imageSrc: string
@@ -75,7 +76,7 @@ export default function AvatarCropModal({ imageSrc, onCropComplete, onCancel }: 
             const blob = await getCroppedBlob(imageSrc, croppedArea)
             onCropComplete(blob)
         } catch (err) {
-            console.error('Crop failed:', err)
+            logger.error('Crop failed:', err)
         } finally {
             setProcessing(false)
         }

@@ -11,6 +11,7 @@
  */
 
 import { adminFetch } from './admin-core'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,7 +100,7 @@ export async function setupShippingOptions(
             if (res.data?.shipping_option?.id) {
                 optionIds.push(res.data.shipping_option.id)
             } else {
-                console.warn(`[SHIPPING] Failed to create option "${opt.name}": ${res.error}`)
+                logger.warn(`[SHIPPING] Failed to create option "${opt.name}": ${res.error}`)
             }
         }
 
@@ -136,7 +137,7 @@ export async function setupTaxRegions(
                 }
             )
             if (res.error && !res.error.includes('already exists') && !res.error.includes('duplicate')) {
-                console.warn(`[TAX] Failed to create region ${region.country_code}: ${res.error}`)
+                logger.warn(`[TAX] Failed to create region ${region.country_code}: ${res.error}`)
             }
         }
         return { success: true }

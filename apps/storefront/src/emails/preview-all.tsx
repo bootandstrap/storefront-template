@@ -9,6 +9,7 @@ import { render } from '@react-email/render'
 import * as React from 'react'
 import * as fs from 'fs'
 import * as path from 'path'
+import { EMAIL_DESIGNS } from './email-template-registry'
 
 // Layouts
 import MinimalLayout from './layouts/MinimalLayout'
@@ -87,7 +88,8 @@ async function main() {
 
     for (const layout of layouts) {
         const badge = layout.name === 'minimal' ? 'free' : layout.name === 'brand' ? 'basic' : 'pro'
-        const label = layout.name === 'minimal' ? 'FREE' : layout.name === 'brand' ? '15 CHF/mo' : '30 CHF/mo'
+        const design = EMAIL_DESIGNS.find(d => d.slug === layout.name)
+        const label = design?.price_label || 'FREE'
         indexHtml += `<h2 class="section-title">${layout.name.charAt(0).toUpperCase() + layout.name.slice(1)} Layout <span class="badge badge-${badge}">${label}</span></h2>\n<div class="grid">\n`
 
         for (const template of templates) {

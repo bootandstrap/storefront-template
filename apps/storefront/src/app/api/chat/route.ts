@@ -19,7 +19,8 @@ import { CHAT_TIERS, type ChatTier } from '@/lib/chat/client-config'
 import { createClient } from '@/lib/supabase/server'
 import { chatUsageTable } from '@/lib/chat/db'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
-import { getClientIP } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
+import { logger } from '@/lib/logger'
 
 // ── Server-side rate limiter for chat (10 requests per minute per IP+tenant) ──
 const chatRateLimiter = createSmartRateLimiter({
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
         }
 
         // ── Server-side rate limit: 10 req/min per IP+tenant ──
-        const clientIp = getClientIP(request)
+        const clientIp = getClientIp(request)
         const rateLimitKey = `${tenantId}:${clientIp}`
         if (await chatRateLimiter.isLimited(rateLimitKey)) {
             return NextResponse.json(
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
 
         // Check API key
         if (!CHAT_CONFIG.apiKey) {
-            console.error('[ChatBot] CHAT_LLM_API_KEY not configured')
+            logger.error('[ChatBot] CHAT_LLM_API_KEY not configured')
             return NextResponse.json({ error: 'Chat service not configured' }, { status: 500 })
         }
 
@@ -219,7 +220,7 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
             const errorText = await response.text()
-            console.error(`[ChatBot] LLM API error (${response.status}):`, errorText)
+            logger.error(`[ChatBot] LLM API error (${response.status}):`, errorText)
             return NextResponse.json({ error: `Failed to generate response: ${response.status}` }, { status: 500 })
         }
 
@@ -249,7 +250,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid chat payload' }, { status: 400 })
         }
 
-        console.error('[ChatBot] Error:', error)
+        logger.error('[ChatBot] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

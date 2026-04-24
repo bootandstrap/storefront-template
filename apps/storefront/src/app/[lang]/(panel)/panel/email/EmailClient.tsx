@@ -76,6 +76,7 @@ interface Props {
         enable_abandoned_cart_emails: boolean
         enable_email_campaigns: boolean
         enable_email_templates: boolean
+        enable_email_segmentation: boolean
     }
     hasProvider: boolean
     labels: Labels
@@ -721,13 +722,82 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl"
+                        className="space-y-4"
                     >
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <Send className="w-8 h-8 text-tx-muted" />
+                        {/* Campaign builder hero */}
+                        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                                    <Send className="w-6 h-6 text-purple-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-tx">Campañas de Email</h3>
+                                    <p className="text-sm text-tx-muted mt-1">
+                                        Envía newsletters y campañas a tus clientes. Selecciona audiencia, elige plantilla y programa el envío.
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-tx-muted">{labels.campaignsPlaceholder}</p>
+                        </div>
+
+                        {/* Audience Segmentation — gated by enable_email_segmentation */}
+                        <div className={`bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 ${
+                            !flags.enable_email_segmentation ? 'opacity-60' : ''
+                        }`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                        <BarChart3 className="w-5 h-5 text-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-tx">Segmentación de audiencia</h4>
+                                        <p className="text-xs text-tx-muted">Filtra quién recibe tu campaña</p>
+                                    </div>
+                                </div>
+                                {!flags.enable_email_segmentation && (
+                                    <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                        <Lock className="w-3 h-3" /> Enterprise
+                                    </span>
+                                )}
+                            </div>
+                            {flags.enable_email_segmentation ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {[
+                                            { label: 'Todos los clientes', desc: 'Envía a toda tu base', icon: '👥' },
+                                            { label: 'Con compras', desc: 'Solo clientes que han comprado', icon: '🛍️' },
+                                            { label: 'Nuevos (30d)', desc: 'Registrados últimos 30 días', icon: '✨' },
+                                        ].map(seg => (
+                                            <button
+                                                key={seg.label}
+                                                className="text-left p-4 rounded-xl border border-sf-3 hover:border-brand/30 hover:bg-brand-subtle/10 transition-all group"
+                                            >
+                                                <span className="text-2xl block mb-2">{seg.icon}</span>
+                                                <span className="text-sm font-medium text-tx group-hover:text-brand transition-colors">{seg.label}</span>
+                                                <span className="text-xs text-tx-muted block mt-0.5">{seg.desc}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-tx-muted">
+                                    La segmentación avanzada está disponible en el tier Enterprise.
+                                    Sin segmentación, las campañas se envían a todos los suscriptores.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Send campaign CTA */}
+                        <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-6 text-center">
+                            <p className="text-sm text-tx-muted mb-4">
+                                Selecciona una plantilla, configura tu audiencia y programa tu envío.
+                            </p>
+                            <button
+                                disabled
+                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] px-8 opacity-60 cursor-not-allowed"
+                            >
+                                <Send className="w-4 h-4" />
+                                Crear campaña (próximamente)
+                            </button>
                         </div>
                     </motion.div>
                 )}

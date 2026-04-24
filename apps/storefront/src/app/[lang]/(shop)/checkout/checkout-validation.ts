@@ -4,6 +4,7 @@ import { getConfig, getRequiredTenantId } from '@/lib/config'
 import { checkLimit } from '@/lib/limits'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Rate limiter — 10 checkout attempts per cart per 60 seconds
@@ -91,7 +92,7 @@ export async function validateMaxOrdersMonth(): Promise<{ allowed: boolean; erro
 
         // MANDATORY: scope to tenant's sales channel — fail-closed
         if (!scope?.medusaSalesChannelId) {
-            console.error('[checkout-validation] No sales_channel_id resolved — blocking checkout (fail-closed)')
+            logger.error('[checkout-validation] No sales_channel_id resolved — blocking checkout (fail-closed)')
             return { allowed: false, error: 'Service temporarily unavailable. Please try again.' }
         }
         query = query.eq('sales_channel_id', scope.medusaSalesChannelId)

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
-    getPanelNavigation,
+    getPanelSections,
     isAdvancedPanelRouteEnabled,
+    shouldAllowPanelRoute,
     type PanelFeatureFlags,
 } from '../panel-policy'
 
@@ -33,120 +34,66 @@ function fullFlags(): PanelFeatureFlags {
 
 function baseLabels() {
     return {
-        dashboard: 'Dashboard',
-        catalog: 'Catalog',
-        orders: 'Orders',
-        customers: 'Customers',
-        utilities: 'Utilities',
-        storeConfig: 'Store',
-        shipping: 'Shipping',
-        myProject: 'My Project',
+        home: 'Home',
+        myStore: 'My Store',
+        sales: 'Sales',
         modules: 'Modules',
-        carousel: 'Carousel',
-        whatsapp: 'WhatsApp',
-        pages: 'Pages',
-        analytics: 'Analytics',
-        badges: 'Badges',
-        chatbot: 'Chatbot',
-        returns: 'Returns',
-        crm: 'CRM',
-        reviews: 'Reviews',
+        settings: 'Settings',
         pos: 'POS',
-        capacidad: 'Capacity',
-        seo: 'SEO',
-        socialMedia: 'Social Media',
-        i18n: 'i18n',
-        automations: 'Automations',
-        authAdvanced: 'Auth Advanced',
-        salesChannels: 'Sales Channels',
         ownerPanel: 'Owner Panel',
-        backToStore: 'Back',
-        groupOperations: 'Operations',
-        groupContent: 'Content',
-        groupSettings: 'Settings',
+        backToStore: 'Back to store',
     }
 }
 
 describe('panel-modules', () => {
-    it('shows advanced modules by default (no flags set)', () => {
-        const nav = getPanelNavigation({
+    it('getPanelSections returns primary sections', () => {
+        const sections = getPanelSections({
             lang: 'es',
             labels: baseLabels(),
             featureFlags: baseFlags(),
         })
 
-        expect(nav.essentialItems).toHaveLength(9)
-        expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
-        expect(nav.moduleItems.length).toBeGreaterThan(0)
+        const keys = sections.map(s => s.key)
+        expect(keys).toContain('home')
+        expect(keys).toContain('myStore')
+        expect(keys).toContain('sales')
+        expect(keys).toContain('settings')
     })
 
-    it('hides advanced modules in owner lite mode', () => {
-        const nav = getPanelNavigation({
-            lang: 'es',
-            labels: baseLabels(),
-            featureFlags: liteFlags(),
-        })
-
-        expect(nav.essentialItems).toHaveLength(9)
-        expect(nav.essentialItems.map(item => item.key)).toContain('myProject')
-        expect(nav.moduleItems).toHaveLength(0)
+    it('all primary routes are allowed', () => {
+        expect(shouldAllowPanelRoute('mi-tienda', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('ventas', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('ajustes', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('modulos', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('pos', baseFlags())).toBe(true)
     })
 
-    it('shows feature-flagged advanced modules when fully enabled', () => {
-        const flags = fullFlags()
-        flags.enable_analytics = false
-
-        const nav = getPanelNavigation({
-            lang: 'es',
-            labels: baseLabels(),
-            featureFlags: flags,
-        })
-
-        expect(nav.moduleItems.map(item => item.key)).toEqual([
-            'carousel',
-            'whatsapp',
-            'pages',
-            'badges',
-        ])
+    it('legacy routes are allowed (redirects handle them)', () => {
+        expect(shouldAllowPanelRoute('carrusel', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('productos', baseFlags())).toBe(true)
+        expect(shouldAllowPanelRoute('pedidos', baseFlags())).toBe(true)
     })
 
-    it('excludes badges when enable_product_badges is off', () => {
-        const flags = fullFlags()
-        flags.enable_analytics = false
-        flags.enable_product_badges = false
-
-        const nav = getPanelNavigation({
-            lang: 'es',
-            labels: baseLabels(),
-            featureFlags: flags,
-        })
-
-        expect(nav.moduleItems.map(item => item.key)).not.toContain('badges')
+    it('unknown routes are blocked (fail-closed)', () => {
+        expect(shouldAllowPanelRoute('nonexistent', baseFlags())).toBe(false)
+        expect(shouldAllowPanelRoute('admin', baseFlags())).toBe(false)
     })
 
-    it('blocks advanced routes in owner lite mode', () => {
-        expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', liteFlags())).toBe(false)
-        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', liteFlags())).toBe(false)
+    it('legacy routes are allowed at guard level (redirected by next.config.ts)', () => {
+        // Legacy routes like carrusel, insignias are permanently redirected by
+        // next.config.ts (301) before reaching the route guard. The guard allows
+        // them because they map to valid sections in ROUTE_REDIRECT_MAP.
+        expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', liteFlags())).toBe(true)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', liteFlags())).toBe(true)
     })
 
-    it('allows advanced routes when fully enabled and feature flag matches', () => {
-        const flags = fullFlags()
-        flags.enable_carousel = false
-
-        expect(
-            isAdvancedPanelRouteEnabled('/es/panel/carrusel', flags)
-        ).toBe(false)
-        expect(
-            isAdvancedPanelRouteEnabled('/es/panel/insignias', flags)
-        ).toBe(true)
+    it('primary routes always pass the guard', () => {
+        expect(isAdvancedPanelRouteEnabled('/es/panel/mi-tienda', liteFlags())).toBe(true)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/ventas', liteFlags())).toBe(true)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/ajustes', liteFlags())).toBe(true)
     })
 
-    it('blocks insignias when enable_product_badges is off', () => {
-        const flags = fullFlags()
-        flags.enable_product_badges = false
-
-        expect(
-            isAdvancedPanelRouteEnabled('/es/panel/insignias', flags)
-        ).toBe(false)
+    it('unknown routes are blocked by the guard', () => {
+        expect(isAdvancedPanelRouteEnabled('/es/panel/nonexistent', liteFlags())).toBe(false)
     })
 })

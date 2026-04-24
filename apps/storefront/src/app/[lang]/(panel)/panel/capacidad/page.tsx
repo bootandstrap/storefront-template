@@ -4,12 +4,12 @@
  * Server component: loads traffic config, plan limits, backup governance.
  * Feature gate: enable_traffic_expansion must be true.
  * Vault tab: gated by enable_backups flag.
+ * SOTA 2026: ModuleShell wrapper with 3-tier awareness + usage meter.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
-import FeatureGate from '@/components/ui/FeatureGate'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import ModuleShell from '@/components/panel/ModuleShell'
 import { Gauge } from 'lucide-react'
 import { getRequestCount, isRateLimitEnabled } from '@/lib/rate-limit'
 import CapacidadShell from './CapacidadShell'
@@ -32,17 +32,37 @@ export default async function CapacidadPage({
     const { tenantId, appConfig } = await withPanelGuard()
     const { config, featureFlags, planLimits } = appConfig
 
-    // Gate: enable_traffic_expansion must be true
-    if (!featureFlags.enable_traffic_expansion) {
-        return <FeatureGate flag="enable_traffic_expansion" lang={lang} />
-    }
+    const isLocked = !featureFlags.enable_traffic_expansion
+    const maxRequestsDay = planLimits.max_requests_day ?? 25000
 
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // Fetch real traffic counter from Upstash Redis (graceful fallback to 0)
+    const tierInfo = {
+        currentTier: featureFlags.enable_traffic_autoscale
+            ? 'Enterprise'
+            : featureFlags.enable_traffic_analytics
+                ? 'Pro'
+                : isLocked ? 'Free' : 'Básico',
+        moduleKey: 'capacidad',
+        nextTierFeatures: isLocked ? [
+            t('panel.capacidad.feat.expansion') || '25.000 req/día',
+            t('panel.capacidad.feat.gauge') || 'Medidor de tráfico en tiempo real',
+            t('panel.capacidad.feat.alerts') || 'Alertas de capacidad',
+        ] : !featureFlags.enable_traffic_analytics ? [
+            t('panel.capacidad.feat.analytics') || 'Analíticas de tráfico detalladas',
+            t('panel.capacidad.feat.100k') || '100.000 req/día',
+        ] : !featureFlags.enable_traffic_autoscale ? [
+            t('panel.capacidad.feat.autoscale') || 'Auto-escalado automático',
+            t('panel.capacidad.feat.unlimited') || 'Capacidad ilimitada',
+        ] : undefined,
+        nextTierName: isLocked ? 'Capacidad Básico' : !featureFlags.enable_traffic_analytics ? 'Capacidad Pro' : !featureFlags.enable_traffic_autoscale ? 'Capacidad Enterprise' : undefined,
+        nextTierPrice: isLocked ? 10 : !featureFlags.enable_traffic_analytics ? 25 : !featureFlags.enable_traffic_autoscale ? 50 : undefined,
+    }
+
+    // Fetch real traffic counter from Upstash Redis
     let requestsToday = 0
-    if (isRateLimitEnabled()) {
+    if (!isLocked && isRateLimitEnabled()) {
         try {
             requestsToday = await getRequestCount(tenantId)
         } catch {
@@ -51,12 +71,20 @@ export default async function CapacidadPage({
     }
 
     return (
-        <div className="space-y-6">
-            <PanelPageHeader
-                title={t('panel.capacidad.title') || 'Capacidad'}
-                subtitle={t('panel.capacidad.subtitle') || 'Traffic & hosting capacity'}
-                icon={<Gauge className="w-5 h-5" />}
-            />
+        <ModuleShell
+            icon={<Gauge className="w-5 h-5" />}
+            title={t('panel.capacidad.title') || 'Capacidad'}
+            subtitle={t('panel.capacidad.subtitle') || 'Tráfico y capacidad de hosting'}
+            isLocked={isLocked}
+            gateFlag="enable_traffic_expansion"
+            tierInfo={tierInfo}
+            usageMeter={!isLocked ? {
+                current: requestsToday,
+                max: maxRequestsDay,
+                label: t('panel.capacidad.reqDay') || 'req/día',
+            } : undefined}
+            lang={lang}
+        >
             <CapacidadShell
                 lang={lang}
                 businessName={config.business_name || ''}
@@ -72,24 +100,24 @@ export default async function CapacidadPage({
                     trafficAutoscale: featureFlags.enable_traffic_autoscale,
                 }}
                 limits={{
-                    maxRequestsDay: planLimits.max_requests_day,
+                    maxRequestsDay,
                     requestsToday,
                 }}
                 labels={{
                     title: t('panel.capacidad.title') || 'Capacidad',
-                    subtitle: t('panel.capacidad.subtitle') || 'Traffic & hosting capacity',
-                    dailyTraffic: t('panel.capacidad.dailyTraffic') || 'Daily Traffic',
-                    requestsToday: t('panel.capacidad.requestsToday') || 'Requests today',
-                    maxRequestsDay: t('panel.capacidad.maxRequestsDay') || 'Daily limit',
-                    expansion: t('panel.capacidad.expansion') || 'Traffic Expansion',
-                    expansionDesc: t('panel.capacidad.expansionDesc') || 'Increase your daily request capacity to handle traffic spikes.',
-                    analytics: t('panel.capacidad.analytics') || 'Traffic Analytics',
-                    analyticsDesc: t('panel.capacidad.analyticsDesc') || 'Detailed traffic analytics and visitor insights.',
-                    autoscale: t('panel.capacidad.autoscale') || 'Auto-Scale',
-                    autoscaleDesc: t('panel.capacidad.autoscaleDesc') || 'Automatically scale resources during traffic peaks.',
-                    active: t('common.active') || 'Active',
-                    inactive: t('common.inactive') || 'Inactive',
-                    comingSoon: t('common.comingSoon') || 'Coming Soon',
+                    subtitle: t('panel.capacidad.subtitle') || 'Tráfico y capacidad de hosting',
+                    dailyTraffic: t('panel.capacidad.dailyTraffic') || 'Tráfico diario',
+                    requestsToday: t('panel.capacidad.requestsToday') || 'Solicitudes hoy',
+                    maxRequestsDay: t('panel.capacidad.maxRequestsDay') || 'Límite diario',
+                    expansion: t('panel.capacidad.expansion') || 'Expansión de tráfico',
+                    expansionDesc: t('panel.capacidad.expansionDesc') || 'Aumenta tu capacidad para picos de tráfico.',
+                    analytics: t('panel.capacidad.analytics') || 'Analíticas de tráfico',
+                    analyticsDesc: t('panel.capacidad.analyticsDesc') || 'Estadísticas detalladas de visitantes.',
+                    autoscale: t('panel.capacidad.autoscale') || 'Auto-escalado',
+                    autoscaleDesc: t('panel.capacidad.autoscaleDesc') || 'Escala recursos automáticamente en picos.',
+                    active: t('common.active') || 'Activo',
+                    inactive: t('common.inactive') || 'Inactivo',
+                    comingSoon: t('common.comingSoon') || 'Próximamente',
                     upgradeModule: t('featureGate.upgradeModule') || 'Upgrade',
                 }}
                 // Vault tab props
@@ -125,7 +153,6 @@ export default async function CapacidadPage({
                     },
                 }}
             />
-        </div>
+        </ModuleShell>
     )
 }
-

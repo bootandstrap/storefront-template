@@ -3,6 +3,7 @@
  */
 import { adminFetch, normalizeAdminListParams, assertScope } from './admin-core'
 import type { TenantMedusaScope, AdminListParams } from './admin-core'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -420,7 +421,7 @@ export async function getOrderNotes(
     _orderId: string,
     _scope?: TenantMedusaScope | null
 ): Promise<OrderNote[]> {
-    console.warn('[admin-orders] getOrderNotes: /admin/notes is removed in Medusa v2. Returning empty.')
+    logger.warn('[admin-orders] getOrderNotes: /admin/notes is removed in Medusa v2. Returning empty.')
     return []
 }
 
@@ -433,7 +434,7 @@ export async function createOrderNote(
     _value: string,
     _scope?: TenantMedusaScope | null
 ): Promise<{ note: OrderNote | null; error: string | null }> {
-    console.warn('[admin-orders] createOrderNote: /admin/notes is removed in Medusa v2.')
+    logger.warn('[admin-orders] createOrderNote: /admin/notes is removed in Medusa v2.')
     return { note: null, error: 'Order notes are not available in Medusa v2' }
 }
 
@@ -444,7 +445,7 @@ export async function deleteOrderNote(
     _noteId: string,
     _scope?: TenantMedusaScope | null
 ): Promise<{ error: string | null }> {
-    console.warn('[admin-orders] deleteOrderNote: /admin/notes is removed in Medusa v2.')
+    logger.warn('[admin-orders] deleteOrderNote: /admin/notes is removed in Medusa v2.')
     return { error: 'Order notes are not available in Medusa v2' }
 }
 

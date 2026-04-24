@@ -2,7 +2,15 @@
  * POS Server Actions
  *
  * Server-side actions for the POS module. Uses Medusa draft orders
- * to record in-store sales that appear in the normal order flow.
+ * converted via the `convertDraftOrderWorkflow` to create REAL orders
+ * visible in `/admin/orders`. POS-specific data (payment method, receipt,
+ * shift) is persisted via the custom POS Medusa module.
+ *
+ * Flow:
+ *   1. POST /admin/draft-orders         → create draft
+ *   2. POST /admin/draft-orders/{id}/convert-to-order → real order
+ *   3. POST /admin/pos/transactions     → POS metadata
+ *   4. POST /admin/pos/shifts/{id}      → update shift aggregates
  */
 'use server'
 
@@ -10,10 +18,12 @@ import { revalidatePath } from 'next/cache'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
-import { createDraftOrder, registerDraftPayment } from '@/lib/medusa/admin-draft-orders'
+import { createDraftOrder, convertDraftToOrder } from '@/lib/medusa/admin-draft-orders'
+import { recordPOSTransaction, updateShiftAggregates } from '@/lib/pos/medusa-pos-module'
 import { getAdminProductsFull, getAdminCustomers } from '@/lib/medusa/admin'
 import type { AdminProductFull, AdminCustomer } from '@/lib/medusa/admin'
 import type { PaymentMethod } from '@/lib/pos/pos-config'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,14 +39,23 @@ interface CreatePOSSaleInput {
     items: POSSaleItem[]
     payment_method: PaymentMethod
     customer_id?: string
+    customer_name?: string
     discount_amount?: number
     note?: string
+    /** Active shift ID — transaction will be linked and shift aggregates updated */
+    shift_id?: string
+    /** Terminal identifier for multi-device tracking */
+    terminal_id?: string
+    /** Cash tendered (for change calculation on cash payments) */
+    cash_tendered?: number
 }
 
 interface POSSaleResult {
     success: boolean
     order_id?: string
+    display_id?: number
     draft_order_id?: string
+    transaction_id?: string
     error?: string
 }
 
@@ -61,7 +80,7 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
             return { success: false, error: 'No region configured' }
         }
 
-        // Create draft order
+        // ─── Step 1: Create draft order ───────────────────────────────
         const { draft_order, error: createError } = await createDraftOrder({
             region_id: regionId,
             items: input.items.map(i => ({
@@ -71,54 +90,174 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
             })),
             customer_id: input.customer_id,
             email: input.customer_id ? undefined : 'pos-venta@tienda.local',
+            sales_channel_id: scope?.medusaSalesChannelId,
             no_notification_order: true,
             metadata: {
                 source: 'pos',
                 payment_method: input.payment_method,
                 discount_amount: input.discount_amount || 0,
                 note: input.note || '',
+                shift_id: input.shift_id || null,
+                terminal_id: input.terminal_id || null,
             },
         }, scope)
 
         if (createError || !draft_order) {
-            // Detect stale variant errors from Medusa and convert to STALE_CART
             const errStr = createError || 'Failed to create draft order'
+            // Detect stale variant errors from Medusa
             if (errStr.includes('do not exist') || errStr.includes('not published')) {
                 return { success: false, error: 'STALE_CART: Some items in cart no longer exist.' }
             }
             return { success: false, error: errStr }
         }
 
-        // Register payment (mark as paid → converts to order)
-        const { order_id, error: payError } = await registerDraftPayment(
+        // ─── Step 2: Convert draft to REAL order ──────────────────────
+        const { order_id, display_id, error: convertError } = await convertDraftToOrder(
             draft_order.id,
             scope
         )
 
-        if (payError) {
+        if (convertError) {
+            logger.error('[pos] Sale draft created but conversion failed', {
+                draftOrderId: draft_order.id,
+                error: convertError,
+            })
             return {
                 success: false,
                 draft_order_id: draft_order.id,
-                error: payError,
+                error: convertError,
             }
         }
 
+        // ─── Step 3: Record POS transaction in POS module ────────────
+        // Calculate total from items
+        const totalAmount = input.items.reduce(
+            (sum, item) => sum + (item.unit_price * item.quantity),
+            0
+        )
+
+        const receiptNumber = `POS-${display_id ?? Date.now()}`
+        const paymentMethodMap: Record<string, 'cash' | 'card' | 'mixed' | 'voucher' | 'other'> = {
+            cash: 'cash',
+            card: 'card',
+            mixed: 'mixed',
+            twint: 'other',
+        }
+
+        let transactionId: string | undefined
+
+        // Only record if we have a session context (shift implies session)
+        if (input.shift_id) {
+            const { transaction, error: txError } = await recordPOSTransaction({
+                session_id: input.shift_id, // Using shift_id as session context
+                order_id: order_id || undefined,
+                amount: totalAmount,
+                currency_code: draft_order.currency_code || 'eur',
+                payment_method: paymentMethodMap[input.payment_method] || 'other',
+                cash_tendered: input.cash_tendered,
+                receipt_number: receiptNumber,
+                customer_name: input.customer_name,
+                line_items_snapshot: input.items.map(i => ({
+                    variant_id: i.variant_id,
+                    quantity: i.quantity,
+                    unit_price: i.unit_price,
+                })),
+                discount_percent: input.discount_amount ? undefined : undefined,
+                notes: input.note,
+            }, scope)
+
+            if (txError) {
+                // Non-fatal: order was created, just POS metadata failed
+                logger.warn('[pos] Transaction record failed (order still created)', {
+                    orderId: order_id,
+                    error: txError,
+                })
+            } else {
+                transactionId = transaction?.id
+            }
+
+            // ─── Step 4: Update shift aggregates ─────────────────────
+            const { error: shiftError } = await updateShiftAggregates(
+                input.shift_id,
+                totalAmount,
+                input.payment_method,
+                scope
+            )
+            if (shiftError) {
+                logger.warn('[pos] Shift aggregate update failed', {
+                    shiftId: input.shift_id,
+                    error: shiftError,
+                })
+            }
+        }
+
+        // ─── Revalidate & Audit ──────────────────────────────────────
         revalidatePath('/[lang]/panel/pedidos', 'page')
         revalidatePath('/[lang]/panel', 'page')
 
+        // ─── CRM: Update customer metadata with POS purchase data ────
+        if (input.customer_id && order_id) {
+            try {
+                await updateCustomerPOSMetadata(
+                    input.customer_id,
+                    totalAmount,
+                    order_id,
+                    scope
+                )
+            } catch {
+                // Non-fatal: CRM metadata update should never block sale
+                logger.warn('[pos] CRM metadata update failed', {
+                    customerId: input.customer_id,
+                    orderId: order_id,
+                })
+            }
+        }
+
+        // ─── Audit Log ───────────────────────────────────────────────
         logOwnerAction(tenantId, 'pos.create_sale', {
             itemCount: input.items.length,
             paymentMethod: input.payment_method,
             orderId: order_id,
+            displayId: display_id,
             draftOrderId: draft_order.id,
+            transactionId,
+            shiftId: input.shift_id,
+            totalAmount,
+            customerId: input.customer_id || null,
+            terminalId: input.terminal_id || null,
+            description: `POS sale #${display_id ?? 'N/A'} — ${input.items.length} items — ${input.payment_method}`,
         })
+
+        // ─── Email Receipt (non-blocking) ────────────────────────────
+        // Send digital receipt to customer if they have an email
+        if (input.customer_id && order_id) {
+            sendPOSReceiptEmail(tenantId, input.customer_id, {
+                order_id,
+                display_id: display_id ?? undefined,
+                items: input.items,
+                total: totalAmount,
+                payment_method: input.payment_method,
+                currency_code: draft_order.currency_code || 'eur',
+            }, scope).catch(err => {
+                logger.warn('[pos] Email receipt failed (non-blocking)', {
+                    customerId: input.customer_id,
+                    orderId: order_id,
+                    error: err instanceof Error ? err.message : String(err),
+                })
+            })
+        }
 
         return {
             success: true,
             order_id: order_id || undefined,
+            display_id: display_id ?? undefined,
             draft_order_id: draft_order.id,
+            transaction_id: transactionId,
         }
     } catch (err) {
+        logger.error('[pos] createPOSSale exception', {
+            error: err instanceof Error ? err.message : 'Unknown error',
+        })
         return {
             success: false,
             error: err instanceof Error ? err.message : 'Unknown error',
@@ -498,4 +637,109 @@ export async function addVariantCurrencyPrice(input: {
             error: err instanceof Error ? err.message : 'Failed to add price',
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// CRM Integration — Update customer POS metadata on each sale
+// ---------------------------------------------------------------------------
+
+/**
+ * Update Medusa customer metadata with POS purchase stats.
+ * Uses customer's `metadata` field — no schema changes needed.
+ *
+ * Tracked fields:
+ * - `pos_total_purchases`: number of POS sales
+ * - `pos_total_spent`: cumulative amount (minor units)
+ * - `pos_last_purchase`: ISO date of last POS purchase
+ * - `pos_last_order_id`: last POS order ID
+ *
+ * These tie directly into the loyalty engine and CRM module.
+ */
+async function updateCustomerPOSMetadata(
+    customerId: string,
+    saleAmount: number,
+    orderId: string,
+    scope: Awaited<ReturnType<typeof getTenantMedusaScope>>
+): Promise<void> {
+    const { adminFetch } = await import('@/lib/medusa/admin-core')
+
+    // Fetch current customer metadata
+    const customerRes = await adminFetch<{
+        customer: { id: string; metadata: Record<string, unknown> | null }
+    }>(`/admin/customers/${customerId}`, {}, scope)
+
+    const currentMeta = customerRes.data?.customer?.metadata ?? {}
+    const prevTotal = typeof currentMeta.pos_total_purchases === 'number'
+        ? currentMeta.pos_total_purchases
+        : 0
+    const prevSpent = typeof currentMeta.pos_total_spent === 'number'
+        ? currentMeta.pos_total_spent
+        : 0
+
+    // Update with incremented values
+    await adminFetch(`/admin/customers/${customerId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+            metadata: {
+                ...currentMeta,
+                pos_total_purchases: prevTotal + 1,
+                pos_total_spent: prevSpent + saleAmount,
+                pos_last_purchase: new Date().toISOString(),
+                pos_last_order_id: orderId,
+            },
+        }),
+    }, scope)
+}
+
+// ---------------------------------------------------------------------------
+// Email Receipt — Send digital receipt to customer via governance email engine
+// ---------------------------------------------------------------------------
+
+/**
+ * Send POS receipt email to customer.
+ * Looks up customer email from Medusa, then sends via `sendEmailForTenant`.
+ * Gated by `enable_pos` flag and email governance (rate limits, toggles).
+ */
+async function sendPOSReceiptEmail(
+    tenantId: string,
+    customerId: string,
+    saleData: {
+        order_id: string
+        display_id?: number
+        items: { variant_id: string; quantity: number; unit_price: number }[]
+        total: number
+        payment_method: string
+        currency_code: string
+    },
+    scope: Awaited<ReturnType<typeof getTenantMedusaScope>>
+): Promise<void> {
+    const { adminFetch } = await import('@/lib/medusa/admin-core')
+
+    // Fetch customer email
+    const customerRes = await adminFetch<{
+        customer: { id: string; email?: string; first_name?: string; last_name?: string }
+    }>(`/admin/customers/${customerId}`, {}, scope)
+
+    const customer = customerRes.data?.customer
+    if (!customer?.email || customer.email.endsWith('@tienda.local')) {
+        return // No real email — skip
+    }
+
+    // Send via governance-aware email engine
+    const { sendEmailForTenant } = await import('@/lib/email')
+    await sendEmailForTenant(tenantId, {
+        template: 'pos_receipt',
+        to: customer.email,
+        subject: `Recibo de compra #${saleData.display_id ?? saleData.order_id.slice(-6)}`,
+        data: {
+            customerName: [customer.first_name, customer.last_name].filter(Boolean).join(' ') || undefined,
+            orderId: saleData.order_id,
+            displayId: saleData.display_id,
+            items: saleData.items,
+            total: saleData.total,
+            paymentMethod: saleData.payment_method,
+            currencyCode: saleData.currency_code,
+            date: new Date().toISOString(),
+        },
+    })
 }

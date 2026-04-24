@@ -2,14 +2,17 @@
  * Ventas — Server-side data fetchers
  *
  * RSC Slot data layer for the Sales hub.
+ * KPI metrics (revenue, counts) come from the unified panel-data-service.
+ * Paginated order list is fetched independently for table display.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { getAdminOrders, getOrdersThisMonth, getAdminCustomers } from '@/lib/medusa/admin'
+import { getAdminOrders, getAdminCustomers } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
-import { getConfigForTenant } from '@/lib/config'
-import { resolveCurrencyContext, sumRevenueByCurrency, formatAmount } from '@/lib/currency-engine'
+import { getPanelMetrics } from '@/lib/panel-data-service'
+import { formatAmount } from '@/lib/currency-engine'
+import { checkLimit } from '@/lib/limits'
 import { fetchReturns } from '../devoluciones/actions'
 import { getReviews } from '../resenas/actions'
 
@@ -21,42 +24,40 @@ export async function fetchOrdersData(
     rawSearchParams: Record<string, string | string[] | undefined>,
 ) {
     const scope = await getTenantMedusaScope(tenantId)
-    const appConfig = await getConfigForTenant(tenantId)
-    const { config, featureFlags } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
+
+    // Shared metrics — same data as dashboard (React cache() dedup)
+    const shared = await getPanelMetrics(tenantId, lang)
 
     const query = parsePanelListQuery(rawSearchParams, {
         defaultLimit: 20,
         allowedStatuses: ['all', 'pending', 'completed', 'canceled'],
     })
 
-    const [{ orders, count }, ordersThisMonth, { orders: allOrders }] = await Promise.all([
-        getAdminOrders({
-            limit: query.limit,
-            offset: query.offset,
-            q: query.q,
-            status: query.status,
-        }, scope),
-        getOrdersThisMonth(scope),
-        getAdminOrders({ limit: 500, status: 'all' }, scope),
-    ])
+    // Paginated order list for the table (independent fetch)
+    const { orders, count } = await getAdminOrders({
+        limit: query.limit,
+        offset: query.offset,
+        q: query.q,
+        status: query.status,
+    }, scope)
 
     const pendingCount = orders.filter(o => o.status === 'pending').length
     const completedCount = orders.filter(o => o.status === 'completed').length
-    const currencyCtx = resolveCurrencyContext(config, featureFlags)
-    // Exclude canceled orders from revenue calculations
-    const revenueEligibleOrders = allOrders.filter(o => o.status !== 'canceled' && o.status !== 'cancelled')
-    const revenueBreakdown = sumRevenueByCurrency(revenueEligibleOrders, currencyCtx)
-    const primaryRevenue = revenueBreakdown.find(r => r.code === currencyCtx.primary)
-    const formattedRevenue = formatAmount(primaryRevenue?.amount ?? 0, currencyCtx.primary, lang)
-    const secondaryRevenues = revenueBreakdown
-        .filter(r => r.code !== currencyCtx.primary && r.amount > 0)
+
+    // Revenue metrics from shared data — guaranteed consistent with dashboard
+    const { revenue } = shared
+    const formattedRevenue = revenue.formattedRevenue
+    const secondaryRevenues = revenue.secondaryRevenues
         .map(r => `+${formatAmount(r.amount, r.code, lang)}`)
         .join(' ')
 
-    const posOrderCount = allOrders.filter(o => (o.metadata as Record<string, unknown> | null)?.source === 'pos').length
-    const onlineOrderCount = allOrders.length - posOrderCount
+    // POS/Online counts from shared month orders
+    const posOrderCount = shared.monthOrders.filter(o =>
+        (o.metadata as Record<string, unknown> | null)?.source === 'pos'
+    ).length
+    const onlineOrderCount = shared.monthOrders.length - posOrderCount
     const rawChannel = rawSearchParams?.channel as string | undefined
     const initialChannel = (rawChannel === 'pos' || rawChannel === 'online') ? rawChannel : 'all'
 
@@ -201,6 +202,7 @@ export async function fetchReviewsData(lang: string) {
 
 export async function fetchPromotionsData(tenantId: string, lang: string) {
     const scope = await getTenantMedusaScope(tenantId)
+    const shared = await getPanelMetrics(tenantId, lang)
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
@@ -208,9 +210,14 @@ export async function fetchPromotionsData(tenantId: string, lang: string) {
     const { getPromotions } = await import('@/lib/medusa/admin-promotions')
     const { promotions, count } = await getPromotions({ limit: 100 }, scope)
 
+    // Governance: active promotions limit
+    const activeCount = promotions.filter(p => !p.is_disabled).length
+    const promotionLimitResult = checkLimit(shared.planLimits, 'max_promotions_active', activeCount)
+
     return {
         promotions,
         totalCount: count,
+        promotionLimitResult,
         lang,
         labels: {
             title: t('panel.promotions.title') || 'Promotions',

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { FileDown, Loader2, Check } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
+import { logger } from '@/lib/logger'
 
 interface DownloadInvoiceButtonProps {
     orderId: string
@@ -93,7 +94,7 @@ export default function DownloadInvoiceButton(props: DownloadInvoiceButtonProps)
             setDone(true)
             setTimeout(() => setDone(false), 2000)
         } catch (err) {
-            console.error('PDF generation failed:', err)
+            logger.error('PDF generation failed:', err)
         } finally {
             setGenerating(false)
         }

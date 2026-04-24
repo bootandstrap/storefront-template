@@ -23,6 +23,8 @@
  * @locked 🟡 EXTEND — add strategies, don't remove the interface
  */
 
+import { logger } from '@/lib/logger'
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -75,14 +77,14 @@ async function upstashCommand<T = unknown>(
         })
 
         if (!res.ok) {
-            console.warn(`[rate-limit] Upstash error: ${res.status} ${res.statusText}`)
+            logger.warn(`[rate-limit] Upstash error: ${res.status} ${res.statusText}`)
             return null
         }
 
         const data = await res.json() as { result: T }
         return data.result
     } catch (err) {
-        console.warn('[rate-limit] Upstash unreachable, failing open:', err)
+        logger.warn('[rate-limit] Upstash unreachable, failing open:', err)
         return null
     }
 }

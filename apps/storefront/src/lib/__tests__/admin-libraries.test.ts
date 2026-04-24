@@ -64,8 +64,11 @@ describe('Sprint 3: admin-orders module extensions', () => {
         expect(typeof mod.createOrderRefund).toBe('function')
     })
 
-    it('exports order notes CRUD', async () => {
+    it('exports order notes CRUD (deprecated but present in module)', async () => {
         const mod = await import('@/lib/medusa/admin-orders')
+        // Note: These are @deprecated (Medusa v2 removed /admin/notes).
+        // They remain in admin-orders.ts for backward compat but are
+        // removed from the admin.ts barrel export.
         expect(mod.getOrderNotes).toBeDefined()
         expect(mod.createOrderNote).toBeDefined()
         expect(mod.deleteOrderNote).toBeDefined()
@@ -174,9 +177,8 @@ describe('Admin barrel re-exports', () => {
         expect(barrel.createFulfillmentWithTracking).toBeDefined()
         expect(barrel.addTrackingToFulfillment).toBeDefined()
         expect(barrel.createOrderRefund).toBeDefined()
-        expect(barrel.getOrderNotes).toBeDefined()
-        expect(barrel.createOrderNote).toBeDefined()
-        expect(barrel.deleteOrderNote).toBeDefined()
+        // Note: getOrderNotes/createOrderNote/deleteOrderNote removed from barrel
+        // (deprecated Medusa v2 — still in admin-orders.ts for backward compat)
         expect(barrel.createReturnRequest).toBeDefined()
         expect(barrel.receiveReturn).toBeDefined()
         expect(barrel.getAdminCustomerDetail).toBeDefined()

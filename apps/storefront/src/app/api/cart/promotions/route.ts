@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireFlag, policyErrorResponse, PolicyError } from '@/lib/policy-engine'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // POST /api/cart/promotions — Apply a promo code to a cart
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
         if (!res.ok) {
             const text = await res.text()
-            console.error(`[promotions] Medusa error ${res.status}:`, text)
+            logger.error(`[promotions] Medusa error ${res.status}:`, text)
             return NextResponse.json(
                 { error: 'Invalid promotion code' },
                 { status: 400 }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ cart: data.cart })
     } catch (err) {
         if (err instanceof PolicyError) return policyErrorResponse(err)
-        console.error('[promotions] Error applying code:', err)
+        logger.error('[promotions] Error applying code:', err)
         return NextResponse.json(
             { error: 'Failed to apply promotion code' },
             { status: 500 }
@@ -108,7 +109,7 @@ export async function DELETE(request: NextRequest) {
 
         if (!res.ok) {
             const text = await res.text()
-            console.error(`[promotions] Medusa error ${res.status}:`, text)
+            logger.error(`[promotions] Medusa error ${res.status}:`, text)
             return NextResponse.json(
                 { error: 'Failed to remove code' },
                 { status: 400 }
@@ -119,7 +120,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ cart: data.cart })
     } catch (err) {
         if (err instanceof PolicyError) return policyErrorResponse(err)
-        console.error('[promotions] Error removing code:', err)
+        logger.error('[promotions] Error removing code:', err)
         return NextResponse.json(
             { error: 'Failed to remove promotion code' },
             { status: 500 }

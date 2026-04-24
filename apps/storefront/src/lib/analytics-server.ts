@@ -9,6 +9,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 type ServerAnalyticsEvent =
     | 'order_placed'
@@ -35,6 +36,6 @@ export async function emitServerEvent(
         } as never)
     } catch (err) {
         // Non-blocking — never fail a business flow for analytics
-        console.error('[analytics-server] emit failed:', err)
+        logger.error('[analytics-server] emit failed:', err)
     }
 }

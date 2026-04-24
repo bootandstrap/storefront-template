@@ -1,3 +1,4 @@
+import 'server-only'
 /**
  * Chat Usage Logger
  * Logs detailed metrics to the database.
@@ -6,6 +7,7 @@
 
 import { chatLogsTable } from '@/lib/chat/db'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 interface UsageParams {
     tenantId: string
@@ -64,6 +66,6 @@ export async function logChatRequest({
         }
 
     } catch (error) {
-        console.error('[UsageLogger] Failed to log usage:', error)
+        logger.error('[UsageLogger] Failed to log usage:', error)
     }
 }

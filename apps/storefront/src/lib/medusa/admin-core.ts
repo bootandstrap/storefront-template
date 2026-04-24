@@ -10,6 +10,7 @@
  *   MEDUSA_ADMIN_PASSWORD   — admin user password
  */
 import { type TenantMedusaScope } from './tenant-scope'
+import { logger } from '@/lib/logger'
 
 export type { TenantMedusaScope } from './tenant-scope'
 
@@ -18,7 +19,7 @@ const MEDUSA_ADMIN_EMAIL = process.env.MEDUSA_ADMIN_EMAIL || 'admin@medusajs.com
 const MEDUSA_ADMIN_PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD
 
 if (!MEDUSA_ADMIN_PASSWORD) {
-    console.error('[medusa-admin] CRITICAL: MEDUSA_ADMIN_PASSWORD env var is not set. Owner Panel will not work.')
+    logger.error('[medusa-admin] CRITICAL: MEDUSA_ADMIN_PASSWORD env var is not set. Owner Panel will not work.')
 }
 
 // ---------------------------------------------------------------------------
@@ -51,7 +52,7 @@ async function getAdminToken(): Promise<string> {
 
         if (!res.ok) {
             const body = await res.text()
-            console.error('[medusa-admin] Auth failed:', res.status, body)
+            logger.error('[medusa-admin] Auth failed', { status: res.status, body })
             throw new Error(`Medusa auth failed: ${res.status}`)
         }
 
@@ -60,7 +61,7 @@ async function getAdminToken(): Promise<string> {
         gMedusa.__medusaTokenExpiry = now + TOKEN_TTL_MS
         return token
     } catch (err) {
-        console.error('[medusa-admin] Auth error:', err)
+        logger.error('[medusa-admin] Auth error:', err)
         throw new Error('Failed to authenticate with Medusa Admin API')
     }
 }
@@ -182,7 +183,7 @@ export async function adminFetch<T>(
             })
             if (!retryRes.ok) {
                 const errBody = await retryRes.text()
-                console.error('[medusa-admin] Retry failed:', retryRes.status, errBody)
+                logger.error('[medusa-admin] Retry failed', { status: retryRes.status, body: errBody })
                 return { data: null, error: `Medusa Admin API error: ${retryRes.status} — ${errBody}` }
             }
             try {
@@ -195,7 +196,7 @@ export async function adminFetch<T>(
 
         if (!res.ok) {
             const errBody = await res.text()
-            console.error('[medusa-admin] Request failed:', res.status, errBody)
+            logger.error('[medusa-admin] Request failed', { status: res.status, body: errBody })
             return { data: null, error: `Medusa Admin API error: ${res.status} — ${errBody}` }
         }
 
@@ -206,7 +207,7 @@ export async function adminFetch<T>(
             return { data: null, error: `Medusa Admin API returned non-JSON response (status ${res.status})` }
         }
     } catch (err) {
-        console.error('[medusa-admin]', err)
+        logger.error('[medusa-admin]', err)
         return { data: null, error: 'Failed to connect to Medusa Admin API' }
     }
 }
@@ -235,14 +236,14 @@ export async function uploadFiles(
 
         if (!res.ok) {
             const errBody = await res.text()
-            console.error('[medusa-admin] Upload failed:', res.status, errBody)
+            logger.error('[medusa-admin] Upload failed', { status: res.status, body: errBody })
             return { files: [], error: `Upload failed: ${res.status}` }
         }
 
         const json = await res.json()
         return { files: json.files ?? [], error: null }
     } catch (err) {
-        console.error('[medusa-admin] Upload error:', err)
+        logger.error('[medusa-admin] Upload error:', err)
         return { files: [], error: err instanceof Error ? err.message : 'Upload failed' }
     }
 }

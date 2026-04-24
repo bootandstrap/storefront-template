@@ -32,6 +32,7 @@ import {
 // ---------------------------------------------------------------------------
 
 import type { ModuleInfo } from './types'
+import { logger } from '@/lib/logger'
 export type { ModuleInfo }
 
 export interface OnboardingWizardProps {
@@ -148,7 +149,7 @@ export default function OnboardingWizard({
             // Persist onboarding_completed via server action
             await completeOnboardingAction()
         } catch (err) {
-            console.warn('[OnboardingWizard] Server action failed:', err)
+            logger.warn('[OnboardingWizard] Server action failed:', err)
         }
 
         // Optimistic localStorage fail-safe
@@ -170,7 +171,7 @@ export default function OnboardingWizard({
         try {
             await completeOnboardingAction()
         } catch (err) {
-            console.warn('[OnboardingWizard] Skip failed:', err)
+            logger.warn('[OnboardingWizard] Skip failed:', err)
         }
 
         try {

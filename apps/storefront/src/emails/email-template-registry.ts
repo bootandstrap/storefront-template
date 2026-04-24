@@ -13,15 +13,14 @@
  * Zone: 🟡 EXTEND — add templates freely
  */
 
-import * as React from 'react'
-import type { EmailTemplate } from '@/lib/email'
-import type { LayoutComponent } from './layouts/types'
+import type { ComponentType } from 'react'
+import type { EmailTemplate, LayoutComponent } from './types'
 
 // ---------------------------------------------------------------------------
 // Lazy imports to avoid bundling all templates when only one is needed
 // ---------------------------------------------------------------------------
 
-const templateLoaders: Record<EmailTemplate, () => Promise<{ default: React.ComponentType<any> }>> = {
+const templateLoaders: Record<EmailTemplate, () => Promise<{ default: ComponentType<any> }>> = {
     order_confirmation: () => import('@/emails/OrderConfirmation'),
     order_shipped: () => import('@/emails/OrderShipped'),
     order_delivered: () => import('@/emails/OrderDelivered'),
@@ -34,6 +33,7 @@ const templateLoaders: Record<EmailTemplate, () => Promise<{ default: React.Comp
     account_verification: () => import('@/emails/AccountVerification'),
     review_request: () => import('@/emails/ReviewRequest'),
     abandoned_cart: () => import('@/emails/AbandonedCart'),
+    pos_receipt: () => import('@/emails/POSReceipt'),
 }
 
 // ---------------------------------------------------------------------------
@@ -149,11 +149,32 @@ export const DEFAULT_SUBJECTS: Record<EmailTemplate, Record<string, string>> = {
         fr: '🛒 Vous avez oublié quelque chose !',
         it: '🛒 Hai dimenticato qualcosa!',
     },
+    pos_receipt: {
+        es: '🧾 Recibo de compra',
+        en: '🧾 Purchase Receipt',
+        de: '🧾 Kaufbeleg',
+        fr: '🧾 Reçu d\'achat',
+        it: '🧾 Ricevuta d\'acquisto',
+    },
 }
 
 // ---------------------------------------------------------------------------
 // Design registry
 // ---------------------------------------------------------------------------
+
+/**
+ * Email module tier prices — SSOT: governance contract
+ * modules.catalog[email_marketing].tiers[].price_chf
+ * Update these if contract prices change.
+ */
+const EMAIL_TIER_PRICES = {
+    basic: 15,
+    pro: 30,
+} as const
+
+function formatTierPrice(tier: keyof typeof EMAIL_TIER_PRICES): string {
+    return `${EMAIL_TIER_PRICES[tier]} CHF/mo`
+}
 
 export interface EmailDesign {
     slug: string
@@ -177,14 +198,14 @@ export const EMAIL_DESIGNS: EmailDesign[] = [
         name: 'Brand Premium',
         description_es: 'Con logo, colores de marca y footer personalizado.',
         requiredTier: 'basic',
-        price_label: '15 CHF/mo',
+        price_label: formatTierPrice('basic'),
     },
     {
         slug: 'modern',
         name: 'Modern Pro',
         description_es: 'Diseño premium oscuro con gradientes, sombras sofisticadas y tipografía moderna.',
         requiredTier: 'pro',
-        price_label: '30 CHF/mo',
+        price_label: formatTierPrice('pro'),
     },
 ]
 
@@ -202,7 +223,7 @@ export function getDesignBySlug(slug: string): EmailDesign {
  */
 export async function loadEmailTemplate(
     template: EmailTemplate,
-): Promise<React.ComponentType<any>> {
+): Promise<ComponentType<any>> {
     const loader = templateLoaders[template]
     if (!loader) {
         throw new Error(`Unknown email template: ${template}`)

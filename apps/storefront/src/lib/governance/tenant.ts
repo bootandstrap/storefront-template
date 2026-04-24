@@ -7,6 +7,8 @@
  * Sync via: scripts/sync-governance.sh
  */
 
+import { logger } from '@/lib/logger'
+
 export function isBuildPhase(): boolean {
     return process.env.NEXT_PHASE === 'phase-production-build'
 }
@@ -25,7 +27,7 @@ export function getRequiredTenantId(): string {
         )
     }
 
-    console.warn(
+    logger.warn(
         '[config] ⚠️ TENANT_ID not set — queries will return no data. Set TENANT_ID in .env for local dev.',
     )
     return '__dev_no_tenant__'

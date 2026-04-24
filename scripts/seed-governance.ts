@@ -54,15 +54,23 @@ if (fs.existsSync(envPath)) {
     }
 }
 
-// ── Contract-Driven Flags ───────────────────────────────────
-// ALL flags → true, except enable_maintenance_mode → false
-const CONTRACT_FLAGS: Record<string, boolean> = Object.fromEntries(
-    contract.flags.keys.map(k => [k, k !== 'enable_maintenance_mode'])
+// ── Contract-Driven Baseline Flags ──────────────────────────
+// All flags OFF by default — modules turn them ON via flag_effects
+const BASELINE_FLAGS: Record<string, boolean> = Object.fromEntries(
+    contract.flags.keys.map(k => [k, false])
 )
+// These are always ON regardless of modules (core platform features)
+const ALWAYS_ON_FLAGS: string[] = [
+    'enable_cookie_consent',
+    'enable_whatsapp_contact',   // base web always has WhatsApp contact
+    'enable_whatsapp_checkout',  // base web includes WhatsApp checkout
+    'enable_guest_checkout',     // always allow guest checkout
+    'owner_lite_enabled',        // owner panel always accessible
+    'enable_owner_panel',        // owner panel always accessible
+]
 
-// ── Contract-Driven Limits (Enterprise Max) ─────────────────
-// Explicit enterprise maximums for known keys
-const ENTERPRISE_MAXIMUMS: Record<string, number> = {
+// ── Contract-Driven Limits (generous maximums for local demo) ──
+const GENEROUS_LIMITS: Record<string, number> = {
     max_products: 10000,
     max_customers: 100000,
     max_orders_month: 50000,
@@ -91,27 +99,56 @@ const ENTERPRISE_MAXIMUMS: Record<string, number> = {
     max_pos_kiosk_devices: 50,
     max_backups: 12,
     backup_frequency_hours: 6,
+    max_automations: 50,
 }
 
-// Derive from contract: any numeric key not in ENTERPRISE_MAXIMUMS → 9999
-const CONTRACT_LIMITS: Record<string, unknown> = Object.fromEntries(
-    contract.limits.keys.map(k => {
-        if (k === 'plan_name') return [k, 'enterprise']
-        if (k === 'plan_tier') return [k, 'enterprise']
-        if (k === 'plan_expires_at') return [k, null]
-        return [k, ENTERPRISE_MAXIMUMS[k] ?? 9999]
-    })
-)
+/**
+ * Resolve flags from module subscriptions.
+ * Takes a list of {moduleKey, tierKey} and applies flag_effects from the contract.
+ */
+function resolveModuleFlags(modules: Array<{ module: string; tier: string }>): Record<string, boolean> {
+    const flags = { ...BASELINE_FLAGS }
 
-// ── Template → Governance Mapping ───────────────────────────
+    // Always-on flags
+    for (const flag of ALWAYS_ON_FLAGS) {
+        if (flag in flags) flags[flag] = true
+    }
 
-interface GovernanceProfile {
-    bundleName: string
-    /** Flag overrides (merged on top of CONTRACT_FLAGS) */
-    flagOverrides?: Record<string, boolean>
-    /** Limit overrides (merged on top of CONTRACT_LIMITS) */
+    // Apply each purchased module's flag_effects
+    for (const { module: moduleKey, tier: tierKey } of modules) {
+        const mod = (contract as any).modules.catalog.find((m: any) => m.key === moduleKey)
+        if (!mod) continue
+        const tier = mod.tiers.find((t: any) => t.key === tierKey)
+        if (!tier?.flag_effects) continue
+
+        for (const [flag, value] of Object.entries(tier.flag_effects)) {
+            if (flag in flags) flags[flag] = value as boolean
+        }
+    }
+
+    // Maintenance mode always OFF for demo tenants
+    flags.enable_maintenance_mode = false
+
+    return flags
+}
+
+// ── Industry Templates — Module-Driven ──────────────────────
+// Each template represents a type of business and defines:
+// 1. Which modules they purchase (with tier)
+// 2. Store branding/config
+// 3. Limit overrides (if any — defaults are generous for demo)
+//
+// Flags are AUTO-DERIVED from the contract flag_effects.
+// This matches the BNS model: Web Base (1500 CHF) + Module add-ons.
+
+interface IndustryTemplate {
+    /** Human-readable name of the industry */
+    industryName: string
+    /** Modules this business would purchase, with their tier */
+    modules: Array<{ module: string; tier: string }>
+    /** Limit overrides for this industry (on top of GENEROUS_LIMITS) */
     limitOverrides?: Record<string, unknown>
-    /** Store config */
+    /** Store branding */
     storeConfig: {
         business_name: string
         description: string
@@ -122,9 +159,19 @@ interface GovernanceProfile {
     }
 }
 
-const TEMPLATE_GOVERNANCE: Record<string, GovernanceProfile> = {
+const INDUSTRY_TEMPLATES: Record<string, IndustryTemplate> = {
+
+    // ── Frutería / Tienda de alimentos ──────────────────
     'fresh-produce': {
-        bundleName: 'full-commerce',
+        industryName: 'Frutería / Alimentos frescos',
+        modules: [
+            { module: 'ecommerce', tier: 'pro' },        // Full ecommerce with reviews + wishlist
+            { module: 'pos', tier: 'pro' },               // POS with kiosk + shortcuts for counter sales
+            { module: 'sales_channels', tier: 'pro' },    // WhatsApp + online payments + COD
+            { module: 'email_marketing', tier: 'basic' }, // Transactional emails
+            { module: 'i18n', tier: 'basic' },            // Multi-language (tourism areas)
+            { module: 'seo', tier: 'medio' },             // Basic SEO tools
+        ],
         storeConfig: {
             business_name: 'Frutas Frescas del Campo',
             description: 'Frutas y verduras frescas directas del campo a tu mesa.',
@@ -134,22 +181,45 @@ const TEMPLATE_GOVERNANCE: Record<string, GovernanceProfile> = {
             language: 'es',
         },
     },
-    'fashion': {
-        bundleName: 'web-ecommerce',
-        flagOverrides: {
-            enable_pos: false,
-            enable_pos_offline_cart: false,
-            enable_pos_multi_device: false,
-            enable_pos_kiosk: false,
-            enable_pos_keyboard_shortcuts: false,
-            enable_pos_quick_sale: false,
-            enable_pos_thermal_printer: false,
-            enable_pos_line_discounts: false,
-            enable_pos_customer_search: false,
-            enable_pos_shifts: false,
-            enable_chatbot: false,
+
+    // ── Campifruit (real client — Colombia) ─────────────
+    'campifruit': {
+        industryName: 'Frutería colombiana',
+        modules: [
+            { module: 'ecommerce', tier: 'pro' },
+            { module: 'pos', tier: 'enterprise' },        // Full POS (shifts, reports, multi-device)
+            { module: 'pos_kiosk', tier: 'basic' },        // Basic kiosk
+            { module: 'sales_channels', tier: 'pro' },
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'crm', tier: 'basic' },              // Basic CRM for customer tracking
+            { module: 'seo', tier: 'medio' },
+        ],
+        storeConfig: {
+            business_name: 'Campifruit',
+            description: 'Frutas frescas seleccionadas directamente del campo colombiano.',
+            contact_phone: '+57 310 456 7890',
+            primary_color: '#2E7D32',
+            accent_color: '#66BB6A',
+            language: 'es',
         },
-        limitOverrides: { max_chatbot_messages_month: 0, max_pos_payment_methods: 0 },
+    },
+
+    // ── Tienda de moda online ───────────────────────────
+    'fashion': {
+        industryName: 'Tienda de moda online',
+        modules: [
+            { module: 'ecommerce', tier: 'enterprise' },  // Full ecommerce (comparisons, returns)
+            { module: 'sales_channels', tier: 'enterprise' }, // All payment methods
+            { module: 'email_marketing', tier: 'pro' },    // Abandoned cart, review requests
+            { module: 'crm', tier: 'pro' },                // Segments + export
+            { module: 'rrss', tier: 'instagram' },         // Instagram + social sharing
+            { module: 'seo', tier: 'avanzado' },           // Full SEO suite
+            { module: 'i18n', tier: 'pro' },               // Multi-language + multi-currency
+        ],
+        limitOverrides: {
+            max_pos_payment_methods: 0,                    // No POS needed
+            max_pos_kiosk_devices: 0,
+        },
         storeConfig: {
             business_name: 'Urban Style Boutique',
             description: 'Moda urbana sostenible. Ropa, calzado y accesorios.',
@@ -159,8 +229,20 @@ const TEMPLATE_GOVERNANCE: Record<string, GovernanceProfile> = {
             language: 'es',
         },
     },
+
+    // ── Restaurante / Hostelería ────────────────────────
     'restaurant': {
-        bundleName: 'demo-all-max',
+        industryName: 'Restaurante / Bar',
+        modules: [
+            { module: 'ecommerce', tier: 'basic' },       // Basic online ordering
+            { module: 'pos', tier: 'enterprise' },         // Full POS with shifts, thermal printer
+            { module: 'pos_kiosk', tier: 'enterprise' },   // Self-service kiosks
+            { module: 'sales_channels', tier: 'pro' },     // WhatsApp + cash + card
+            { module: 'chatbot', tier: 'pro' },            // AI chatbot for menu questions
+            { module: 'automation', tier: 'basic' },       // Basic automations
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'rrss', tier: 'google_maps' },       // Google Maps listing
+        ],
         storeConfig: {
             business_name: 'La Cocina del Chef',
             description: 'Cocina tradicional española con toques de autor.',
@@ -170,19 +252,57 @@ const TEMPLATE_GOVERNANCE: Record<string, GovernanceProfile> = {
             language: 'es',
         },
     },
-    'campifruit': {
-        bundleName: 'full-commerce',
+
+    // ── Peluquería / Salón de belleza ───────────────────
+    'beauty': {
+        industryName: 'Peluquería / Salón de belleza',
+        modules: [
+            { module: 'ecommerce', tier: 'basic' },       // Product catalog (sell products)
+            { module: 'pos', tier: 'basic' },              // Basic POS for in-store
+            { module: 'sales_channels', tier: 'basic' },   // WhatsApp bookings
+            { module: 'crm', tier: 'basic' },              // Track client preferences
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'rrss', tier: 'instagram' },
+        ],
         storeConfig: {
-            business_name: 'Campifruit',
-            description: 'Frutas frescas seleccionadas directamente del campo colombiano.',
-            contact_phone: '+57 310 456 7890',
-            primary_color: '#2E7D32',
-            accent_color: '#66BB6A',
+            business_name: 'Estilo & Belleza',
+            description: 'Tu salón de belleza de confianza.',
+            contact_phone: '+34 634 567 890',
+            primary_color: '#e91e63',
+            accent_color: '#f8bbd0',
             language: 'es',
         },
-        limitOverrides: {},
+    },
+
+    // ── Demo completo (todas las funciones al máximo) ───
+    'demo-full': {
+        industryName: 'Demo completo (todos los módulos)',
+        modules: [
+            { module: 'ecommerce', tier: 'enterprise' },
+            { module: 'pos', tier: 'enterprise' },
+            { module: 'pos_kiosk', tier: 'enterprise' },
+            { module: 'sales_channels', tier: 'enterprise' },
+            { module: 'email_marketing', tier: 'enterprise' },
+            { module: 'crm', tier: 'pro' },
+            { module: 'chatbot', tier: 'pro' },
+            { module: 'automation', tier: 'pro' },
+            { module: 'i18n', tier: 'pro' },
+            { module: 'seo', tier: 'avanzado' },
+            { module: 'rrss', tier: 'google_maps_instagram' },
+            { module: 'auth_advanced', tier: 'enterprise' },
+            { module: 'capacidad', tier: 'enterprise' },
+        ],
+        storeConfig: {
+            business_name: 'BNS Demo Store',
+            description: 'Demostración completa de todas las funcionalidades.',
+            contact_phone: '+34 600 000 000',
+            primary_color: '#1a237e',
+            accent_color: '#7c4dff',
+            language: 'es',
+        },
     },
 }
+
 
 // ── .env Writer ─────────────────────────────────────────────
 
@@ -223,9 +343,11 @@ export async function seedGovernance(
     templateId: string = 'fresh-produce',
     log: (icon: string, msg: string) => void = (i, m) => console.log(`  ${i} ${m}`)
 ): Promise<string | null> {
-    const profile = TEMPLATE_GOVERNANCE[templateId]
-    if (!profile) {
-        log('⚠️', `No governance profile for template "${templateId}", using fresh-produce`)
+    const template = INDUSTRY_TEMPLATES[templateId]
+    if (!template) {
+        const available = Object.keys(INDUSTRY_TEMPLATES).join(', ')
+        log('⚠️', `Unknown template "${templateId}". Available: ${available}`)
+        log('ℹ️', 'Falling back to fresh-produce')
         return seedGovernance(tenantId, 'fresh-produce', log)
     }
 
@@ -270,14 +392,14 @@ export async function seedGovernance(
             const { data: newTenantId, error: provisionErr } = await (supabase.rpc as any)(
                 'provision_tenant',
                 {
-                    p_name: profile.storeConfig.business_name,
+                    p_name: template.storeConfig.business_name,
                     p_slug: 'dev-local',
                     p_domain: 'localhost:3000',
-                    p_plan: 'enterprise',
-                    p_language: profile.storeConfig.language || 'es',
+                    p_plan: 'modular',
+                    p_language: template.storeConfig.language || 'es',
                     p_country_prefix: '+34',
-            p_currency: templateId === 'campifruit' ? 'cop' : 'eur',
-            p_timezone: templateId === 'campifruit' ? 'America/Bogota' : 'Europe/Madrid',
+                    p_currency: templateId === 'campifruit' ? 'cop' : 'eur',
+                    p_timezone: templateId === 'campifruit' ? 'America/Bogota' : 'Europe/Madrid',
                 }
             ) as { data: string | null; error: { message: string } | null }
 
@@ -325,14 +447,17 @@ export async function seedGovernance(
         .update({ status: 'active', deployment_status: 'active' })
         .eq('id', effectiveTenantId)
 
-    log('🏛️', `Seeding governance for template: ${templateId} (bundle: ${profile.bundleName})`)
+    // ── Log module configuration ──
+    log('🏛️', `Industry template: ${template.industryName} (${templateId})`)
+    log('📦', `Modules (${template.modules.length}):`)
+    for (const m of template.modules) {
+        log('  📌', `${m.module} → ${m.tier}`)
+    }
     log('📋', `Contract: ${contract.flags.count} flags, ${contract.limits.count} limits`)
 
-    // ── Phase 1: Seed feature_flags (contract-driven, schema-drift resilient) ──
-    const flags = {
-        ...CONTRACT_FLAGS,
-        ...(profile.flagOverrides || {}),
-    }
+    // ── Phase 1: Resolve flags from modules (contract-driven) ──
+    const flags = resolveModuleFlags(template.modules)
+    const activeFlags = Object.entries(flags).filter(([, v]) => v === true).length
 
     let flagsSeeded = false
     let flagsToInsert = { tenant_id: effectiveTenantId, ...flags }
@@ -345,7 +470,7 @@ export async function seedGovernance(
 
         if (!flagErr) {
             const insertedCount = Object.keys(flagsToInsert).length - 1 // minus tenant_id
-            log('✅', `Feature flags seeded (${insertedCount}/${contract.flags.count} from contract)`)
+            log('✅', `Feature flags seeded (${insertedCount}/${contract.flags.count} — ${activeFlags} active)`)
             flagsSeeded = true
             break
         }
@@ -366,10 +491,19 @@ export async function seedGovernance(
         log('⚠️', 'Feature flags partially seeded (schema drift)')
     }
 
-    // ── Phase 2: Seed plan_limits (contract-driven) ──
-    const limits = {
-        ...CONTRACT_LIMITS,
-        ...(profile.limitOverrides || {}),
+    // ── Phase 2: Seed plan_limits (generous + template overrides) ──
+    const limits: Record<string, unknown> = Object.fromEntries(
+        contract.limits.keys.map(k => {
+            if (k === 'plan_name') return [k, 'modular']
+            if (k === 'plan_tier') return [k, null]
+            if (k === 'plan_expires_at') return [k, null]
+            return [k, GENEROUS_LIMITS[k] ?? 9999]
+        })
+    )
+
+    // Apply template overrides (e.g., fashion has max_pos_payment_methods: 0)
+    if (template.limitOverrides) {
+        Object.assign(limits, template.limitOverrides)
     }
 
     const { error: limitErr } = await supabase
@@ -390,12 +524,12 @@ export async function seedGovernance(
         .from('config')
         .upsert({
             tenant_id: effectiveTenantId,
-            business_name: profile.storeConfig.business_name,
-            whatsapp_number: profile.storeConfig.contact_phone,
-            primary_color: profile.storeConfig.primary_color,
-            accent_color: profile.storeConfig.accent_color,
-            language: profile.storeConfig.language || 'es',
-            footer_description: profile.storeConfig.description,
+            business_name: template.storeConfig.business_name,
+            whatsapp_number: template.storeConfig.contact_phone,
+            primary_color: template.storeConfig.primary_color,
+            accent_color: template.storeConfig.accent_color,
+            language: template.storeConfig.language || 'es',
+            footer_description: template.storeConfig.description,
             color_preset: 'custom',
             theme_mode: 'light',
             active_languages: ['es'],
@@ -406,7 +540,7 @@ export async function seedGovernance(
     if (cfgErr) {
         log('❌', `Config error: ${cfgErr.message}`)
     } else {
-        log('✅', `Config seeded (${profile.storeConfig.business_name})`)
+        log('✅', `Config seeded (${template.storeConfig.business_name})`)
     }
 
     // ── Phase 4: Post-verification ──
@@ -431,6 +565,18 @@ export async function seedGovernance(
 if (require.main === module) {
     const tenantId = process.env.TENANT_ID || ''
     const templateId = process.argv[2] || 'fresh-produce'
+
+    console.log('')
+    console.log('════════════════════════════════════════════════')
+    console.log('  🏛️  GOVERNANCE SEEDER — Module-Driven')
+    console.log('════════════════════════════════════════════════')
+    console.log(`  Available templates:`)
+    for (const [key, tmpl] of Object.entries(INDUSTRY_TEMPLATES)) {
+        const modCount = tmpl.modules.length
+        const modNames = tmpl.modules.map(m => `${m.module}:${m.tier}`).join(', ')
+        console.log(`    ${key === templateId ? '→' : ' '} ${key}: ${tmpl.industryName} (${modCount} modules: ${modNames})`)
+    }
+    console.log('')
 
     seedGovernance(tenantId || null, templateId).then((id) => {
         if (id) {

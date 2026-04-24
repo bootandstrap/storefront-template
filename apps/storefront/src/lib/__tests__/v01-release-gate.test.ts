@@ -92,31 +92,18 @@ describe('v0.1 Release Gate — Structural Integrity', () => {
 
     // ── Panel Policy Completeness ──
 
-    it('ADVANCED_MODULES all have valid featureKey references', () => {
-        // Read panel-policy source (require() doesn't work with vitest path aliases)
+    it('ROUTE_REDIRECT_MAP has module routes pointing to valid sections', () => {
         const policySource = readFileSync(join(SRC, 'panel-policy.ts'), 'utf-8')
-        const featureFlagKeys = [
-            'enable_carousel', 'enable_whatsapp_checkout', 'enable_cms_pages',
-            'enable_analytics', 'enable_chatbot', 'enable_self_service_returns',
-            'enable_crm', 'enable_reviews', 'enable_pos', 'enable_traffic_expansion',
-            'enable_product_badges', 'enable_seo', 'enable_social_media',
-            'enable_multi_language', 'enable_automations', 'enable_auth_advanced',
-            'enable_sales_channels',
-        ]
 
-        // Extract featureKey values from ADVANCED_MODULES array
-        const featureKeyMatches = policySource.match(/featureKey:\s*['"]([^'"]+)['"]/g) || []
-        const referencedKeys = featureKeyMatches.map(m => {
-            const match = m.match(/featureKey:\s*['"]([^'"]+)['"]/)
-            return match ? match[1] : ''
-        }).filter(Boolean)
+        // Verify ROUTE_REDIRECT_MAP exists and has entries
+        expect(policySource).toContain('ROUTE_REDIRECT_MAP')
 
-        expect(referencedKeys.length).toBeGreaterThan(0)
-        for (const key of referencedKeys) {
+        const validSections = ['mi-tienda', 'ventas', 'ajustes', 'modulos', 'pos']
+        for (const section of validSections) {
             expect(
-                featureFlagKeys,
-                `ADVANCED_MODULES references unknown featureKey "${key}"`
-            ).toContain(key)
+                policySource.includes(`section: '${section}'`),
+                `ROUTE_REDIRECT_MAP should have entries pointing to section '${section}'`
+            ).toBe(true)
         }
     })
 

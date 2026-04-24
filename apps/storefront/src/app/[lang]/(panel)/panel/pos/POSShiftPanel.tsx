@@ -14,6 +14,12 @@ import {
 import { motion } from 'framer-motion'
 import type { POSShift } from '@/lib/pos/pos-config'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
+import {
+    openShiftAction,
+    closeShiftAction,
+    getActiveShiftAction,
+    listShiftsAction,
+} from '@/lib/pos/shifts/shift-actions'
 
 interface POSShiftPanelProps {
     onClose: () => void
@@ -40,19 +46,23 @@ export default function POSShiftPanel({
         formatPOSCurrency(amount, defaultCurrency),
     [defaultCurrency])
 
-    // Load current shift + history
+    // Load current shift + history from server
     useEffect(() => {
         (async () => {
             try {
-                const { getCurrentShift, getShiftHistory } = await import('@/lib/pos/shifts/shift-manager')
-                const [shift, history] = await Promise.all([
-                    getCurrentShift(),
-                    getShiftHistory(5),
+                const [activeResult, historyResult] = await Promise.all([
+                    getActiveShiftAction(),
+                    listShiftsAction(),
                 ])
-                setCurrentShift(shift)
-                setShiftHistory(history)
-                setView(shift ? 'status' : 'status')
-            } catch { /* IDB unavailable */ }
+                if (activeResult.shift) {
+                    // Map server shift to local POSShift shape
+                    const mapped = mapServerShift(activeResult.shift)
+                    setCurrentShift(mapped)
+                }
+                if (historyResult.shifts) {
+                    setShiftHistory(historyResult.shifts.map(mapServerShift).slice(0, 5))
+                }
+            } catch { /* server unavailable */ }
             setLoading(false)
         })()
     }, [])
@@ -66,41 +76,44 @@ export default function POSShiftPanel({
         return () => window.removeEventListener('keydown', handler)
     }, [onClose])
 
-    // Open shift handler
+    // Open shift handler — via server action
     const handleOpenShift = useCallback(async () => {
         const amount = Math.round(parseFloat(cashInput) * 100)
         if (isNaN(amount) || amount < 0) return
 
         try {
-            const { openShift } = await import('@/lib/pos/shifts/shift-manager')
-            const shift = await openShift(amount)
-            setCurrentShift(shift)
-            onShiftChange?.(shift)
+            const result = await openShiftAction({
+                operator: 'owner', // Default operator
+                expected_cash: amount,
+            })
+            if (result.shift) {
+                const mapped = mapServerShift(result.shift)
+                setCurrentShift(mapped)
+                onShiftChange?.(mapped)
+            }
             setCashInput('')
             setView('status')
         } catch { /* */ }
     }, [cashInput, onShiftChange])
 
-    // Close shift handler
+    // Close shift handler — via server action
     const handleCloseShift = useCallback(async () => {
         if (!currentShift) return
         const closingAmount = Math.round(parseFloat(cashInput) * 100)
         if (isNaN(closingAmount) || closingAmount < 0) return
 
         try {
-            const { closeShift } = await import('@/lib/pos/shifts/shift-manager')
-            const closed = await closeShift(
-                currentShift.id,
-                closingAmount,
-                currentShift.total_sales,
-                currentShift.total_revenue
-            )
+            const result = await closeShiftAction({
+                shift_id: currentShift.id,
+                actual_cash: closingAmount,
+            })
             setCurrentShift(null)
             onShiftChange?.(null)
             setCashInput('')
             setView('status')
-            if (closed) {
-                setShiftHistory(prev => [closed, ...prev].slice(0, 5))
+            if (result.shift) {
+                const mapped = mapServerShift(result.shift)
+                setShiftHistory(prev => [mapped, ...prev].slice(0, 5))
             }
         } catch { /* */ }
     }, [currentShift, cashInput, onShiftChange])
@@ -500,4 +513,33 @@ function VarianceDisplay({
             </span>
         </div>
     )
+}
+
+/* ─────────────────────────────────────────────────
+ * Map server PosShift → frontend POSShift shape
+ * ───────────────────────────────────────────────── */
+
+function mapServerShift(server: {
+    id: string
+    status: string
+    expected_cash: number
+    actual_cash: number | null
+    discrepancy: number | null
+    transaction_count: number
+    total_revenue: number
+    closed_at: string | null
+    created_at: string
+}): import('@/lib/pos/pos-config').POSShift {
+    return {
+        id: server.id,
+        opened_at: server.created_at,
+        closed_at: server.closed_at ?? undefined,
+        opening_cash: server.expected_cash,
+        closing_cash: server.actual_cash ?? undefined,
+        expected_cash: server.expected_cash,
+        cash_difference: server.discrepancy ?? undefined,
+        total_sales: server.transaction_count,
+        total_revenue: server.total_revenue,
+        status: server.status as 'open' | 'closed',
+    }
 }

@@ -23,6 +23,31 @@ async function isRateLimited(ip: string, isApi: boolean): Promise<boolean> {
 const SUPPORTED_LOCALES = ['en', 'es', 'de', 'fr', 'it']
 const LOCALE_PATTERN = /^\/([a-z]{2})(\/|$)/
 
+function getPreferredLocale(request: NextRequest): string {
+    // 1. Check cookie first (previously saved preference)
+    const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value
+    if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+        return cookieLocale
+    }
+
+    // 2. Check Accept-Language header
+    const acceptLang = request.headers.get('accept-language')
+    if (acceptLang) {
+        const preferred = acceptLang
+            .split(',')
+            .map(lang => {
+                const [code, qStr] = lang.trim().split(';q=')
+                return { code: code.split('-')[0].toLowerCase(), q: qStr ? parseFloat(qStr) : 1 }
+            })
+            .sort((a, b) => b.q - a.q)
+            .find(l => SUPPORTED_LOCALES.includes(l.code))
+
+        if (preferred) return preferred.code
+    }
+
+    return 'es' // DEFAULT_LOCALE
+}
+
 // ---------------------------------------------------------------------------
 // Localized route slug → canonical slug mapping
 // Used to rewrite incoming localized URLs to file-system canonical paths
@@ -170,9 +195,15 @@ export async function proxy(request: NextRequest) {
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
     request.headers.set('x-csp-nonce', nonce)
     const isDev = process.env.NODE_ENV === 'development'
+    // In dev: drop the nonce from CSP so 'unsafe-inline' takes effect
+    // (CSP Level 2+ ignores 'unsafe-inline' when a nonce is present)
+    // This allows react-rewrite and other dev tools to inject scripts
+    const scriptSrc = isDev
+        ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`
+        : `script-src 'self' 'nonce-${nonce}' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`
     const csp = [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`,
+        scriptSrc,
         `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
         `font-src 'self' https://fonts.gstatic.com`,
         `img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://images.unsplash.com https://www.facebook.com`,
@@ -230,10 +261,16 @@ export async function proxy(request: NextRequest) {
         // Rewrite localized slugs to canonical paths
         const rewritten = rewriteLocalizedPath(path, lang)
         if (rewritten) {
-            const url = request.nextUrl.clone()
-            url.pathname = rewritten
-            return NextResponse.rewrite(url)
+             const url = request.nextUrl.clone()
+             url.pathname = rewritten
+             return NextResponse.rewrite(url)
         }
+    } else if (!path.startsWith('/api/')) {
+        // Missing locale in path -> redirect with preferred locale
+        const locale = getPreferredLocale(request)
+        const url = request.nextUrl.clone()
+        url.pathname = `/${locale}${path}`
+        return NextResponse.redirect(url)
     }
 
     // Create Supabase client with cookie forwarding
@@ -324,4 +361,9 @@ export async function proxy(request: NextRequest) {
     // Conditional routes (/carrito, /checkout) — allow all
     // The checkout page itself checks the require_auth_to_order flag server-side
     return response
+}
+
+export const config = {
+    // Match all paths except static files and API routes
+    matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }

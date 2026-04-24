@@ -6,9 +6,12 @@
 #   • Redis (existing local, Docker, or local redis-server)
 #   • Medusa backend (native — hot-reload)
 #   • Storefront (native — hot-reload or production build)
+#   • react-rewrite visual editor (optional)
 #
-# Usage: ./dev.sh          (dev mode — Turbopack HMR)
-#        ./dev.sh --prod   (production build — pnpm build + start)
+# Usage: ./dev.sh             (interactive menu)
+#        ./dev.sh --prod      (production build — skip menu)
+#        ./dev.sh --rewrite   (dev + visual editor — skip menu)
+#        ./dev.sh --medusa    (medusa only — skip menu)
 # Stop:  Ctrl+C
 # ============================================
 
@@ -19,13 +22,8 @@ REDIS_CONTAINER_NAME="ecommerce-redis-dev"
 DEV_REDIS_PID_FILE="$ROOT_DIR/.dev-redis.pid"
 STOREFRONT_PORT="${STOREFRONT_PORT:-3000}"
 PROD_MODE=0
-
-# Parse arguments
-for arg in "$@"; do
-    case "$arg" in
-        --prod|--production) PROD_MODE=1 ;;
-    esac
-done
+REWRITE_MODE=0
+MEDUSA_ONLY=0
 
 cd "$ROOT_DIR"
 
@@ -34,7 +32,49 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
+
+# ── Parse CLI flags (non-interactive) ─────
+FLAG_SET=0
+for arg in "$@"; do
+    case "$arg" in
+        --prod|--production) PROD_MODE=1; FLAG_SET=1 ;;
+        --rewrite)           REWRITE_MODE=1; FLAG_SET=1 ;;
+        --medusa)            MEDUSA_ONLY=1; FLAG_SET=1 ;;
+        --dev)               FLAG_SET=1 ;;
+    esac
+done
+
+# ── Interactive menu (when no flags) ──────
+if [[ "$FLAG_SET" -eq 0 ]]; then
+    echo ""
+    echo -e "${GREEN}🍊 E-Commerce Template${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo -e "  ${BOLD}${CYAN}1)${NC}  ${GREEN}▶ Development${NC}         ${DIM}— Full stack with Turbopack HMR${NC}"
+    echo -e "  ${BOLD}${CYAN}2)${NC}  ${YELLOW}▶ Production${NC}          ${DIM}— Full stack with production build${NC}"
+    echo -e "  ${BOLD}${CYAN}3)${NC}  ${BLUE}▶ Medusa Only${NC}          ${DIM}— Backend API only (no storefront)${NC}"
+    echo -e "  ${BOLD}${CYAN}4)${NC}  ${GREEN}▶ Dev + Visual Editor${NC}  ${DIM}— Full stack + react-rewrite overlay${NC}"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -ne "  ${BOLD}Select mode [1-4]:${NC} "
+    read -r CHOICE
+
+    case "${CHOICE:-1}" in
+        1) ;;
+        2) PROD_MODE=1 ;;
+        3) MEDUSA_ONLY=1 ;;
+        4) REWRITE_MODE=1 ;;
+        *)
+            echo -e "  ${RED}✗ Invalid option '${CHOICE}'. Exiting.${NC}"
+            exit 1
+            ;;
+    esac
+    echo ""
+fi
 
 PIDS=()
 REDIS_DOCKER_STARTED=0
@@ -139,6 +179,10 @@ start_service() {
 
 if [[ "$PROD_MODE" -eq 1 ]]; then
     echo -e "${GREEN}🍊 E-Commerce Template — Starting ${YELLOW}PRODUCTION${GREEN} Environment${NC}"
+elif [[ "$MEDUSA_ONLY" -eq 1 ]]; then
+    echo -e "${GREEN}🍊 E-Commerce Template — Starting ${BLUE}Medusa Only${GREEN} Environment${NC}"
+elif [[ "$REWRITE_MODE" -eq 1 ]]; then
+    echo -e "${GREEN}🍊 E-Commerce Template — Starting Development + ${YELLOW}Visual Editor${GREEN} Environment${NC}"
 else
     echo -e "${GREEN}🍊 E-Commerce Template — Starting Development Environment${NC}"
 fi
@@ -164,7 +208,11 @@ fi
 
 # ── Clean stale ports ─────────────────────
 echo -e "\n${BLUE}[pre]${NC} Cleaning stale ports & cache..."
-for PORT in "$STOREFRONT_PORT" 3001 9000; do
+CLEAN_PORTS=(9000)
+if [[ "$MEDUSA_ONLY" -eq 0 ]]; then
+    CLEAN_PORTS+=("$STOREFRONT_PORT")
+fi
+for PORT in "${CLEAN_PORTS[@]}"; do
     STALE_PIDS="$(lsof -ti :"$PORT" 2>/dev/null || true)"
     if [[ -n "$STALE_PIDS" ]]; then
         while IFS= read -r pid; do
@@ -176,21 +224,34 @@ for PORT in "$STOREFRONT_PORT" 3001 9000; do
 done
 
 # ── Clean .next cache for fresh build ─────
-if [[ -d "$ROOT_DIR/apps/storefront/.next" ]]; then
+if [[ "$MEDUSA_ONLY" -eq 0 ]] && [[ -d "$ROOT_DIR/apps/storefront/.next" ]]; then
     rm -rf "$ROOT_DIR/apps/storefront/.next"
     echo -e "  ${GREEN}✓${NC} Cleaned .next cache"
 fi
 
 # ── Ensure storefront env symlink ──────────
-if [[ -f "$ROOT_DIR/.env" ]]; then
-    echo -e "${YELLOW}→${NC} Linking .env → apps/storefront/.env.local"
-    ln -sfn "$ROOT_DIR/.env" "$ROOT_DIR/apps/storefront/.env.local"
-else
-    echo -e "${YELLOW}⚠${NC} .env not found at $ROOT_DIR/.env (continuing)"
+if [[ "$MEDUSA_ONLY" -eq 0 ]]; then
+    if [[ -f "$ROOT_DIR/.env" ]]; then
+        echo -e "${YELLOW}→${NC} Linking .env → apps/storefront/.env.local"
+        ln -sfn "$ROOT_DIR/.env" "$ROOT_DIR/apps/storefront/.env.local"
+    else
+        echo -e "${YELLOW}⚠${NC} .env not found at $ROOT_DIR/.env (continuing)"
+    fi
 fi
 
+# ── Determine total steps ─────────────────
+if [[ "$MEDUSA_ONLY" -eq 1 ]]; then
+    TOTAL_STEPS=2
+elif [[ "$REWRITE_MODE" -eq 1 ]]; then
+    TOTAL_STEPS=4
+else
+    TOTAL_STEPS=3
+fi
+STEP=0
+
 # ── 1. Redis ───────────────────────────────
-echo -e "\n${BLUE}[1/3]${NC} Ensuring Redis on localhost:6379..."
+STEP=$((STEP + 1))
+echo -e "\n${BLUE}[${STEP}/${TOTAL_STEPS}]${NC} Ensuring Redis on localhost:6379..."
 
 if is_port_open 6379; then
     REDIS_READY=1
@@ -237,7 +298,8 @@ else
 fi
 
 # ── 2. Medusa Backend ─────────────────────
-echo -e "\n${BLUE}[2/3]${NC} Starting Medusa backend..."
+STEP=$((STEP + 1))
+echo -e "\n${BLUE}[${STEP}/${TOTAL_STEPS}]${NC} Starting Medusa backend..."
 
 # Source .env so MEDUSA_ADMIN_EMAIL/PASSWORD are available
 if [[ -f "$ROOT_DIR/.env" ]]; then
@@ -269,54 +331,70 @@ for i in {1..45}; do
     sleep 2
 done
 if [[ "$MEDUSA_UP" -eq 0 ]]; then
-    echo -e "  ${YELLOW}⚠${NC} Medusa not yet healthy — starting storefront anyway"
-fi
-
-# ── 2.5. Governance Pre-flight Check ──────
-# Ensures local tenant governance is seeded before storefront starts.
-# This eliminates the "maintenance mode loop" during local dev.
-GOVERNANCE_CHECK_SCRIPT="$ROOT_DIR/scripts/governance-check.ts"
-if [[ -f "$GOVERNANCE_CHECK_SCRIPT" ]] && [[ -n "${LOCAL_TENANT_ID:-${TENANT_ID:-}}" ]]; then
-    echo -e "\n${BLUE}[gov]${NC} Running governance pre-flight check..."
-    if npx tsx "$GOVERNANCE_CHECK_SCRIPT" 2>&1 | sed 's/^/  [gov] /'; then
-        echo -e "  ${GREEN}✓${NC} Governance check passed"
+    if [[ "$MEDUSA_ONLY" -eq 0 ]]; then
+        echo -e "  ${YELLOW}⚠${NC} Medusa not yet healthy — starting storefront anyway"
     else
-        echo -e "  ${YELLOW}⚠${NC} Governance check had issues (storefront may show maintenance mode)"
-        echo -e "  ${YELLOW}→${NC} Run manually: npx tsx scripts/governance-check.ts --force-seed"
+        echo -e "  ${YELLOW}⚠${NC} Medusa not yet healthy — still booting"
     fi
-else
-    echo -e "\n${BLUE}[gov]${NC} ${YELLOW}Skipping${NC} governance check (no TENANT_ID set or script missing)"
 fi
 
-# ── 3. Next.js Storefront ─────────────────
-if [[ "$PROD_MODE" -eq 1 ]]; then
-    echo -e "\n${BLUE}[3/3]${NC} Building Storefront for production..."
-    (cd "$ROOT_DIR/apps/storefront" && REDIS_URL="$DEV_REDIS_URL" pnpm build 2>&1 | sed 's/^/  [build] /')
-    BUILD_EXIT=$?
-    if [[ "$BUILD_EXIT" -ne 0 ]]; then
-        echo -e "  ${RED}✗ Production build failed (exit $BUILD_EXIT)${NC}"
-        exit 1
+if [[ "$MEDUSA_ONLY" -eq 0 ]]; then
+    # ── 2.5. Governance Pre-flight Check ──────
+    # Ensures local tenant governance is seeded before storefront starts.
+    # This eliminates the "maintenance mode loop" during local dev.
+    GOVERNANCE_CHECK_SCRIPT="$ROOT_DIR/scripts/governance-check.ts"
+    if [[ -f "$GOVERNANCE_CHECK_SCRIPT" ]] && [[ -n "${LOCAL_TENANT_ID:-${TENANT_ID:-}}" ]]; then
+        echo -e "\n${BLUE}[gov]${NC} Running governance pre-flight check..."
+        if npx tsx "$GOVERNANCE_CHECK_SCRIPT" 2>&1 | sed 's/^/  [gov] /'; then
+            echo -e "  ${GREEN}✓${NC} Governance check passed"
+        else
+            echo -e "  ${YELLOW}⚠${NC} Governance check had issues (storefront may show maintenance mode)"
+            echo -e "  ${YELLOW}→${NC} Run manually: npx tsx scripts/governance-check.ts --force-seed"
+        fi
+    else
+        echo -e "\n${BLUE}[gov]${NC} ${YELLOW}Skipping${NC} governance check (no TENANT_ID set or script missing)"
     fi
-    echo -e "  ${GREEN}✓${NC} Build complete — starting production server on :${STOREFRONT_PORT}"
-    start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm start --port '$STOREFRONT_PORT'"
-else
-    echo -e "\n${BLUE}[3/3]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."
-    start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev --port '$STOREFRONT_PORT'"
+
+    # ── 3. Next.js Storefront ─────────────────
+    STEP=$((STEP + 1))
+    if [[ "$PROD_MODE" -eq 1 ]]; then
+        echo -e "\n${BLUE}[${STEP}/${TOTAL_STEPS}]${NC} Building Storefront for production..."
+        (cd "$ROOT_DIR/apps/storefront" && REDIS_URL="$DEV_REDIS_URL" pnpm build 2>&1 | sed 's/^/  [build] /')
+        BUILD_EXIT=$?
+        if [[ "$BUILD_EXIT" -ne 0 ]]; then
+            echo -e "  ${RED}✗ Production build failed (exit $BUILD_EXIT)${NC}"
+            exit 1
+        fi
+        echo -e "  ${GREEN}✓${NC} Build complete — starting production server on :${STOREFRONT_PORT}"
+        start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm start --port '$STOREFRONT_PORT'"
+    else
+        echo -e "\n${BLUE}[${STEP}/${TOTAL_STEPS}]${NC} Starting Storefront on port ${STOREFRONT_PORT}..."
+        start_service "storefront" "$ROOT_DIR/apps/storefront" "REDIS_URL='$DEV_REDIS_URL' pnpm dev --port '$STOREFRONT_PORT'"
+    fi
 fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [[ "$PROD_MODE" -eq 1 ]]; then
     echo -e "${GREEN}🚀 Production environment starting!${NC}"
+elif [[ "$MEDUSA_ONLY" -eq 1 ]]; then
+    echo -e "${GREEN}🚀 Medusa-only environment starting!${NC}"
+elif [[ "$REWRITE_MODE" -eq 1 ]]; then
+    echo -e "${GREEN}🚀 Development + Visual Editor environment starting!${NC}"
 else
     echo -e "${GREEN}🚀 Development environment starting!${NC}"
 fi
-echo -e "   Storefront:   ${BLUE}http://localhost:${STOREFRONT_PORT}${NC}"
+if [[ "$MEDUSA_ONLY" -eq 0 ]]; then
+    echo -e "   Storefront:   ${BLUE}http://localhost:${STOREFRONT_PORT}${NC}"
+fi
 echo -e "   Medusa API:   ${BLUE}http://localhost:9000${NC}"
 echo -e "   Medusa Admin: ${BLUE}http://localhost:9000/app${NC}"
 if [[ "$REDIS_READY" -eq 1 ]]; then
     echo -e "   Redis:        ${BLUE}localhost:6379${NC}"
 else
     echo -e "   Redis:        ${YELLOW}disabled for this run${NC}"
+fi
+if [[ "$REWRITE_MODE" -eq 1 ]]; then
+    echo -e "   Visual Editor:${BLUE} auto-detected port${NC}  (opens browser after storefront is ready)"
 fi
 echo ""
 echo -e "   Press ${YELLOW}Ctrl+C${NC} to stop all services"
@@ -326,6 +404,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo -e "\n${BLUE}[health]${NC} Waiting for services to become ready..."
 MEDUSA_HEALTHY=0
 STOREFRONT_HEALTHY=0
+
+# In medusa-only mode, mark storefront as "healthy" so we don't wait for it
+if [[ "$MEDUSA_ONLY" -eq 1 ]]; then
+    STOREFRONT_HEALTHY=1
+fi
 
 for i in {1..90}; do
     if [[ "$MEDUSA_HEALTHY" -eq 0 ]]; then
@@ -354,8 +437,20 @@ done
 if [[ "$MEDUSA_HEALTHY" -eq 0 ]] || [[ "$STOREFRONT_HEALTHY" -eq 0 ]]; then
     echo -e "\n${YELLOW}⚠ Some services may still be starting. Check the logs above.${NC}"
     [[ "$MEDUSA_HEALTHY" -eq 0 ]] && echo -e "  ${YELLOW}→ Medusa not yet responding on :9000${NC}"
-    [[ "$STOREFRONT_HEALTHY" -eq 0 ]] && echo -e "  ${YELLOW}→ Storefront not yet responding on :${STOREFRONT_PORT}${NC}"
+    [[ "$MEDUSA_ONLY" -eq 0 ]] && [[ "$STOREFRONT_HEALTHY" -eq 0 ]] && echo -e "  ${YELLOW}→ Storefront not yet responding on :${STOREFRONT_PORT}${NC}"
     echo ""
+fi
+
+# ── 4. react-rewrite Visual Editor (optional) ──
+if [[ "$REWRITE_MODE" -eq 1 ]] && [[ "$STOREFRONT_HEALTHY" -eq 1 ]]; then
+    STEP=$((STEP + 1))
+    echo -e "${BLUE}[${STEP}/${TOTAL_STEPS}]${NC} Starting react-rewrite visual editor..."
+    start_service "rewrite" "$ROOT_DIR/apps/storefront" "npx react-rewrite '$STOREFRONT_PORT'"
+    echo -e "  ${GREEN}✓${NC} Visual editor starting — browser will open automatically"
+    echo -e "  ${YELLOW}→${NC} Edit UI visually: changes write directly to source files"
+elif [[ "$REWRITE_MODE" -eq 1 ]]; then
+    echo -e "${YELLOW}⚠${NC} Storefront not healthy — skipping react-rewrite. Run manually:"
+    echo -e "  ${BLUE}cd apps/storefront && npx react-rewrite ${STOREFRONT_PORT}${NC}"
 fi
 
 wait "${PIDS[@]}"

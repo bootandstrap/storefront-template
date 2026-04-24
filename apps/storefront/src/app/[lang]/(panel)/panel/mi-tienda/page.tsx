@@ -17,7 +17,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getMyStoreTabs } from '@/lib/panel-policy'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import FeatureGate from '@/components/ui/FeatureGate'
+import GhostPreview from '@/components/ui/GhostPreview'
 import { Store } from 'lucide-react'
 import MyStoreShell from './MyStoreShell'
 
@@ -104,7 +104,7 @@ export default async function MyStorePage({
         }
         case 'insignias': {
             if (!featureFlags.enable_product_badges) {
-                tabContent = <FeatureGate flag="enable_product_badges" lang={lang} />
+                tabContent = <GhostPreview flag="enable_product_badges" lang={lang} />
                 break
             }
             const { products, error } = await fetchBadgesData()
@@ -113,7 +113,7 @@ export default async function MyStorePage({
         }
         case 'carrusel': {
             if (!featureFlags.enable_carousel) {
-                tabContent = <FeatureGate flag="enable_carousel" lang={lang} />
+                tabContent = <GhostPreview flag="enable_carousel" lang={lang} />
                 break
             }
             const data = await fetchCarouselData(tenantId)
@@ -121,6 +121,7 @@ export default async function MyStorePage({
                 <CarouselClient
                     slides={data.slides}
                     canAdd={data.canAdd}
+                    slideLimitResult={data.slideLimitResult}
                     slideCount={data.slideCount}
                     maxSlides={data.maxSlides}
                 />
@@ -129,7 +130,7 @@ export default async function MyStorePage({
         }
         case 'paginas': {
             if (!featureFlags.enable_cms_pages) {
-                tabContent = <FeatureGate flag="enable_cms_pages" lang={lang} />
+                tabContent = <GhostPreview flag="enable_cms_pages" lang={lang} />
                 break
             }
             const data = await fetchPagesData(tenantId)
@@ -137,6 +138,7 @@ export default async function MyStorePage({
                 <PagesClient
                     pages={data.pages}
                     canAdd={data.canAdd}
+                    pageLimitResult={data.pageLimitResult}
                     pageCount={data.pageCount}
                     maxPages={data.maxPages}
                 />

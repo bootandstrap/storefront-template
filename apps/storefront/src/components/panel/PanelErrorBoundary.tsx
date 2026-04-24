@@ -14,6 +14,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { logger } from '@/lib/logger'
 
 interface Props {
     error: Error & { digest?: string }
@@ -22,7 +23,7 @@ interface Props {
 
 export default function PanelErrorBoundary({ error, reset }: Props) {
     useEffect(() => {
-        console.error('[PanelError]', error)
+        logger.error('[PanelError]', error)
     }, [error])
 
     return (

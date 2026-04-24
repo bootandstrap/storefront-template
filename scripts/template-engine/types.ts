@@ -55,8 +55,11 @@ export interface OrderPattern {
 }
 
 export interface GovernanceProfile {
-    bundleName: string
-    /** Flag overrides (merged on top of contract flags) */
+    /** Which modules this business would purchase (with tier) */
+    modules: Array<{ module: string; tier: string }>
+    /** @deprecated Use `modules` instead. Kept for backward compat during migration. */
+    bundleName?: string
+    /** Flag overrides (merged on top of module-derived flags) */
     flagOverrides?: Record<string, boolean>
     /** Limit overrides (merged on top of contract limits) */
     limitOverrides?: Record<string, unknown>

@@ -17,6 +17,7 @@ import 'server-only'
 
 import type { RetentionPolicy, BackupManifestEntry } from './backup-types'
 import { RETENTION_TIERS } from './backup-types'
+import { logger } from '@/lib/logger'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ export async function executeRetention(
     )
 
     if (rpcError || !rpcData) {
-        console.error('[backup-retention] Failed to list backups:', rpcError)
+        logger.error('[backup-retention] Failed to list backups:', rpcError)
         return { kept: [], deleted: [], total_freed_bytes: 0 }
     }
 
@@ -181,16 +182,19 @@ export async function executeRetention(
                 .remove([name])
 
             if (error) {
-                console.error(`[backup-retention] Failed to delete ${name}:`, error.message)
+                logger.error(`[backup-retention] Failed to delete ${name}:`, error.message)
             }
         } catch (err) {
-            console.error(`[backup-retention] Error deleting ${name}:`, err)
+            logger.error(`[backup-retention] Error deleting ${name}:`, err)
         }
     }
 
-    console.log(
-        `[backup-retention] ${tenantSlug}: kept=${plan.kept.length}, deleted=${plan.deleted.length}, freed=${(plan.total_freed_bytes / 1024).toFixed(1)} KB`
-    )
+    logger.info('[backup-retention] Cleanup complete', {
+        tenantSlug,
+        kept: plan.kept.length,
+        deleted: plan.deleted.length,
+        freed_kb: +(plan.total_freed_bytes / 1024).toFixed(1),
+    })
 
     return plan
 }

@@ -26,6 +26,7 @@ import { gunzip } from 'zlib'
 import { promisify } from 'util'
 import type { TenantBackup, BackupProduct, BackupCategory } from './backup-types'
 import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logger } from '@/lib/logger'
 
 const gunzipAsync = promisify(gunzip)
 
@@ -63,7 +64,7 @@ export async function downloadBackup(backupKey: string): Promise<TenantBackup | 
             .download(backupKey)
 
         if (error || !blob) {
-            console.error('[backup-restore] Download failed:', error?.message)
+            logger.error('[backup-restore] Download failed:', error?.message)
             return null
         }
 
@@ -82,13 +83,13 @@ export async function downloadBackup(backupKey: string): Promise<TenantBackup | 
 
         // Validate version
         if (backup.version !== '1.0') {
-            console.error('[backup-restore] Unsupported backup version:', backup.version)
+            logger.error('[backup-restore] Unsupported backup version:', backup.version)
             return null
         }
 
         return backup
     } catch (err) {
-        console.error('[backup-restore] Parse error:', err)
+        logger.error('[backup-restore] Parse error:', err)
         return null
     }
 }

@@ -11,6 +11,7 @@
  */
 import type { MetadataRoute } from 'next'
 import { getConfig } from '@/lib/config'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
             ],
         }
     } catch (error) {
-        console.error('[manifest] Failed to fetch config, returning fallback:', error)
+        logger.error('[manifest] Failed to fetch config, returning fallback:', error)
         return {
             name: 'BootandStrap Store',
             short_name: 'Store',

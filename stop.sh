@@ -2,7 +2,8 @@
 # ============================================
 # stop.sh — Stop all development services
 # ============================================
-# Stops: Medusa, Storefront (3000+3001), Redis
+# Stops: Medusa, Storefront, Redis, react-rewrite,
+#        react-email preview, and orphaned workers
 # Cleans: .next cache to avoid stale builds
 #
 # Usage: ./stop.sh [--no-cache-clean]
@@ -27,6 +28,8 @@ done
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
+DIM='\033[2m'
 NC='\033[0m'
 
 command_exists() {
@@ -37,74 +40,66 @@ docker_ready() {
     command_exists docker && docker info >/dev/null 2>&1
 }
 
-stop_port() {
-    local port="$1"
-    local pids
-    pids="$(lsof -ti :"$port" 2>/dev/null || true)"
-    if [[ -z "$pids" ]]; then
-        return 0
-    fi
-    local count=0
-    while IFS= read -r pid; do
-        [[ -z "$pid" ]] && continue
-        echo -e "  ${YELLOW}→${NC} Killing PID ${pid} on port ${port}"
-        kill "$pid" 2>/dev/null || true
-        count=$((count + 1))
-    done <<< "$pids"
-
-    # Wait briefly, then force-kill stragglers
-    sleep 0.3
-    pids="$(lsof -ti :"$port" 2>/dev/null || true)"
-    if [[ -n "$pids" ]]; then
-        while IFS= read -r pid; do
-            [[ -z "$pid" ]] && continue
-            kill -9 "$pid" 2>/dev/null || true
-        done <<< "$pids"
-    fi
-    return $count
-}
-
 echo -e "${YELLOW}⏹  Stopping development services...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 STOPPED=0
 
-# ── Stop known service ports ─────────────────
-# Kill 3000 + 3001 (fallback port) + 9000 (Medusa)
-for PORT in "$STOREFRONT_PORT" 3001 9000; do
+# ── All known dev ports ──────────────────────
+# 3000  = Storefront (Next.js)
+# 3001  = Storefront fallback / alt port
+# 3333  = react-email preview server
+# 3456  = react-rewrite proxy
+# 3457  = react-rewrite WebSocket
+# 9000  = Medusa API
+# 6379  = Redis (local)
+DEV_PORTS=("$STOREFRONT_PORT" 3001 3333 3456 3457 9000 6379)
+
+echo -e "\n${BLUE}[1/4]${NC} Killing processes on dev ports..."
+for PORT in "${DEV_PORTS[@]}"; do
     PORT_PIDS="$(lsof -ti :"$PORT" 2>/dev/null || true)"
     if [[ -n "$PORT_PIDS" ]]; then
         while IFS= read -r pid; do
             [[ -z "$pid" ]] && continue
-            echo -e "  ${YELLOW}→${NC} Stopping process on port ${PORT} (PID: ${pid})"
+            # Get process name for nicer output
+            PROC_NAME="$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")"
+            echo -e "  ${YELLOW}→${NC} :${PORT}  PID ${pid}  ${DIM}(${PROC_NAME})${NC}"
             kill "$pid" 2>/dev/null || true
             STOPPED=$((STOPPED + 1))
         done <<< "$PORT_PIDS"
     fi
 done
 
-# Force-kill stragglers after a brief wait
+# Brief wait, then force-kill stragglers
 sleep 0.5
-for PORT in "$STOREFRONT_PORT" 3001 9000; do
+for PORT in "${DEV_PORTS[@]}"; do
     STALE="$(lsof -ti :"$PORT" 2>/dev/null || true)"
     if [[ -n "$STALE" ]]; then
         while IFS= read -r pid; do
             [[ -z "$pid" ]] && continue
-            echo -e "  ${RED}→${NC} Force-killing PID ${pid} on port ${PORT}"
+            echo -e "  ${RED}→${NC} Force-killing PID ${pid} on :${PORT}"
             kill -9 "$pid" 2>/dev/null || true
         done <<< "$STALE"
     fi
 done
 
-# ── Kill orphaned Medusa / Next workers by name ──
-# Zombie pattern: @medusajs/cli spawns child processes (--types workers)
-# that survive after parent dies. They don't bind ports, so lsof misses them.
-for pattern in "@medusajs/cli" "next-server" "next dev"; do
+# ── Kill orphaned workers by name ────────────
+echo -e "\n${BLUE}[2/4]${NC} Killing orphaned workers..."
+PROCESS_PATTERNS=(
+    "@medusajs/cli"
+    "next-server"
+    "next dev"
+    "react-rewrite"
+    "react-email"
+    "turbopack"
+)
+
+for pattern in "${PROCESS_PATTERNS[@]}"; do
     ORPHANS="$(pgrep -f "$pattern" 2>/dev/null || true)"
     if [[ -n "$ORPHANS" ]]; then
         while IFS= read -r pid; do
             [[ -z "$pid" ]] && continue
-            echo -e "  ${YELLOW}→${NC} Killing orphan ${pattern} (PID: ${pid})"
+            echo -e "  ${YELLOW}→${NC} Killing orphan ${DIM}${pattern}${NC} (PID: ${pid})"
             kill "$pid" 2>/dev/null || true
             STOPPED=$((STOPPED + 1))
         done <<< "$ORPHANS"
@@ -113,7 +108,7 @@ done
 
 # Wait and force-kill any survivors
 sleep 0.5
-for pattern in "@medusajs/cli" "next-server" "next dev"; do
+for pattern in "${PROCESS_PATTERNS[@]}"; do
     STALE="$(pgrep -f "$pattern" 2>/dev/null || true)"
     if [[ -n "$STALE" ]]; then
         while IFS= read -r pid; do
@@ -124,7 +119,9 @@ for pattern in "@medusajs/cli" "next-server" "next dev"; do
     fi
 done
 
-# ── Stop local redis started by dev.sh ───────
+# ── Stop Redis ───────────────────────────────
+echo -e "\n${BLUE}[3/4]${NC} Stopping Redis..."
+
 if [[ -f "$DEV_REDIS_PID_FILE" ]]; then
     REDIS_PID="$(cat "$DEV_REDIS_PID_FILE" 2>/dev/null || true)"
     if [[ -n "${REDIS_PID:-}" ]] && kill -0 "$REDIS_PID" 2>/dev/null; then
@@ -135,7 +132,6 @@ if [[ -f "$DEV_REDIS_PID_FILE" ]]; then
     rm -f "$DEV_REDIS_PID_FILE"
 fi
 
-# ── Stop Redis container if Docker is available ──
 if docker_ready; then
     if docker ps -q --filter "name=^${REDIS_CONTAINER_NAME}$" | grep -q .; then
         echo -e "  ${YELLOW}→${NC} Stopping Redis container (${REDIS_CONTAINER_NAME})"
@@ -146,20 +142,48 @@ if docker_ready; then
         echo -e "  ${GREEN}✓${NC} Redis container not running"
     fi
 else
-    echo -e "  ${YELLOW}⚠${NC} Docker unavailable; skipped container cleanup"
+    echo -e "  ${DIM}Docker unavailable; skipped container cleanup${NC}"
 fi
 
-# ── Clean .next cache ────────────────────────
+# ── Clean caches ─────────────────────────────
+echo -e "\n${BLUE}[4/4]${NC} Cleaning caches..."
+
 if [[ "$CLEAN_CACHE" -eq 1 ]]; then
     if [[ -d "$ROOT_DIR/apps/storefront/.next" ]]; then
         rm -rf "$ROOT_DIR/apps/storefront/.next"
         echo -e "  ${GREEN}✓${NC} Cleaned storefront .next cache"
+    else
+        echo -e "  ${DIM}No .next cache to clean${NC}"
     fi
+    # Clean Turbo persistent caches (prevents stale module graph)
+    for turbo_dir in "$ROOT_DIR/.turbo" "$ROOT_DIR/packages/shared/.turbo" "$ROOT_DIR/apps/medusa/.turbo" "$ROOT_DIR/apps/storefront/node_modules/.cache"; do
+        if [[ -d "$turbo_dir" ]]; then
+            rm -rf "$turbo_dir"
+            echo -e "  ${GREEN}✓${NC} Cleaned $(basename "$(dirname "$turbo_dir")")/$(basename "$turbo_dir")"
+        fi
+    done
+else
+    echo -e "  ${DIM}Cache clean skipped (--no-cache-clean)${NC}"
 fi
 
+# ── Final verification ───────────────────────
 echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [[ "$STOPPED" -gt 0 ]]; then
     echo -e "${GREEN}✅ ${STOPPED} service(s) stopped.${NC}"
 else
     echo -e "${GREEN}✅ No running services found.${NC}"
+fi
+
+# Quick port verification
+STILL_OPEN=""
+for PORT in "${DEV_PORTS[@]}"; do
+    if lsof -ti :"$PORT" >/dev/null 2>&1; then
+        STILL_OPEN="${STILL_OPEN} :${PORT}"
+    fi
+done
+if [[ -n "$STILL_OPEN" ]]; then
+    echo -e "${YELLOW}⚠ Ports still in use:${STILL_OPEN}${NC}"
+else
+    echo -e "${GREEN}✓ All dev ports clear.${NC}"
 fi

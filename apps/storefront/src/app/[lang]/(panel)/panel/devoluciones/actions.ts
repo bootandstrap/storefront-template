@@ -17,10 +17,26 @@ import {
     receiveReturn
 } from '@/lib/medusa/admin'
 
+interface ReturnRequest {
+    id: string
+    tenant_id: string
+    order_id: string
+    status: string
+    items: ReturnItem[]
+    created_at: string
+    [key: string]: unknown
+}
+
+interface ReturnItem {
+    id: string
+    quantity: number
+    reason?: string
+}
+
 /**
  * Fetch all return requests from Supabase pre-validation layer.
  */
-export async function fetchReturns(): Promise<{ returns: any[]; error?: string }> {
+export async function fetchReturns(): Promise<{ returns: ReturnRequest[]; error?: string }> {
     try {
         const { tenantId } = await withPanelGuard()
         const supabase = await createClient()
@@ -62,7 +78,7 @@ export async function approveReturnAction(
         }
 
         // 2. Map items from the original request
-        const medusaItems = (req.items as any[] || []).map(i => ({
+        const medusaItems = (req.items as ReturnItem[] || []).map(i => ({
             id: i.id,
             quantity: i.quantity,
             reason: i.reason

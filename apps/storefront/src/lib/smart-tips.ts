@@ -30,6 +30,21 @@ export interface SmartTipContext {
   maintenanceOff: boolean
   activeModuleCount: number
   readinessScore: number
+  // ── Governance-native extensions ──
+  /** Product limit usage percentage (0-100) */
+  productLimitPct?: number
+  /** Order limit usage percentage (0-100) */
+  orderLimitPct?: number
+  /** Storage limit usage percentage (0-100) */
+  storageLimitPct?: number
+  /** Whether chatbot module is available but not active */
+  chatbotAvailableNotActive?: boolean
+  /** Whether SEO module is available but not active */
+  seoAvailableNotActive?: boolean
+  /** Whether CRM module is available but not active */
+  crmAvailableNotActive?: boolean
+  /** Current plan name */
+  planName?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +151,57 @@ const TIPS: (SmartTipDef & { condition: (ctx: SmartTipContext) => boolean })[] =
     targetPages: ['panel'],
     category: 'growth',
     condition: ctx => ctx.readinessScore >= 80,
+  },
+  // ── Governance-Aware Tips (2026 Refactor) ──
+  {
+    id: 'limit_products_warning',
+    emoji: '⚠️',
+    messageKey: 'smartTip.productsApproachingLimit',
+    actionKey: 'smartTip.goToModules',
+    actionHref: '/panel/modulos',
+    targetPages: ['panel', 'mi-tienda'],
+    category: 'growth',
+    condition: ctx => (ctx.productLimitPct ?? 0) >= 75 && (ctx.productLimitPct ?? 0) < 100,
+  },
+  {
+    id: 'limit_orders_warning',
+    emoji: '📈',
+    messageKey: 'smartTip.ordersApproachingLimit',
+    actionKey: 'smartTip.goToModules',
+    actionHref: '/panel/modulos',
+    targetPages: ['panel', 'ventas'],
+    category: 'growth',
+    condition: ctx => (ctx.orderLimitPct ?? 0) >= 80,
+  },
+  {
+    id: 'recommend_chatbot',
+    emoji: '🤖',
+    messageKey: 'smartTip.recommendChatbot',
+    actionKey: 'smartTip.goToModules',
+    actionHref: '/panel/modulos',
+    targetPages: ['panel'],
+    category: 'growth',
+    condition: ctx => !!ctx.chatbotAvailableNotActive && ctx.ordersThisMonth >= 10,
+  },
+  {
+    id: 'recommend_seo',
+    emoji: '🔍',
+    messageKey: 'smartTip.recommendSEO',
+    actionKey: 'smartTip.goToModules',
+    actionHref: '/panel/modulos',
+    targetPages: ['panel'],
+    category: 'growth',
+    condition: ctx => !!ctx.seoAvailableNotActive && ctx.productCount >= 10,
+  },
+  {
+    id: 'recommend_crm',
+    emoji: '👥',
+    messageKey: 'smartTip.recommendCRM',
+    actionKey: 'smartTip.goToModules',
+    actionHref: '/panel/modulos',
+    targetPages: ['panel', 'ventas'],
+    category: 'growth',
+    condition: ctx => !!ctx.crmAvailableNotActive && ctx.ordersThisMonth >= 20,
   },
 ]
 

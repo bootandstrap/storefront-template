@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { addToCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { trackEvent } from '@/lib/analytics'
+import { logger } from '@/lib/logger'
 
 interface AddToCartButtonProps {
     variantId: string
@@ -51,11 +52,11 @@ export default function AddToCartButton({
                 }, 2000)
                 return { success: true, message: 'Added' }
             }
-            console.error('[AddToCart] Server action returned no cart', { variantId, cartId })
+            logger.error('[AddToCart] Server action returned no cart', { variantId, cartId })
             error(t('product.addToCartError'))
             return { success: false, message: 'Error' }
         } catch (err) {
-            console.error('[AddToCart] Failed:', err)
+            logger.error('[AddToCart] Failed:', err)
             error(t('product.addToCartError'))
             return { success: false, message: 'Error' }
         }

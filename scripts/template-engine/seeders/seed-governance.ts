@@ -85,7 +85,7 @@ function detectMode(template: IndustryTemplate): ProvisionerMode {
         return process.env.PROVISIONER_MODE as ProvisionerMode
     }
     // Template engine is always local or demo
-    if (process.env.DEMO_MODE === 'true' || template.governance.bundleName?.includes('Demo')) {
+    if (process.env.DEMO_MODE === 'true') {
         return 'demo'
     }
     return 'local'

@@ -20,7 +20,16 @@ export const restaurantTemplate: IndustryTemplate = {
     countryPrefix: '+34',
 
     governance: {
-        bundleName: 'Demo Restaurant',
+        modules: [
+            { module: 'ecommerce', tier: 'basic' },
+            { module: 'pos', tier: 'enterprise' },
+            { module: 'pos_kiosk', tier: 'enterprise' },
+            { module: 'sales_channels', tier: 'pro' },
+            { module: 'chatbot', tier: 'pro' },
+            { module: 'automation', tier: 'basic' },
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'rrss', tier: 'google_maps' },
+        ],
         flagOverrides: {
             enable_ecommerce: true,
             enable_pos: true,

@@ -10,6 +10,7 @@
  */
 
 import { withPanelGuard } from '@/lib/panel-guard'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,7 +79,7 @@ export async function getAuthActivityAction(): Promise<AuthStats> {
 
         return { totalUsers, recentActivity }
     } catch (err) {
-        console.error('[auth/actions] Failed to fetch auth activity:', err)
+        logger.error('[auth/actions] Failed to fetch auth activity:', err)
         return { totalUsers: 0, recentActivity: [] }
     }
 }

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'edge'
 
@@ -11,7 +12,7 @@ async function handleSignout(request: NextRequest) {
         await supabase.auth.signOut()
     } catch (e) {
         // Continue even if Supabase fails to ensure we still drop local cookies
-        console.error('Supabase signout failed during edge handler:', e)
+        logger.error('Supabase signout failed during edge handler:', e)
     }
 
     // Infer locale from referer to redirect to localized home

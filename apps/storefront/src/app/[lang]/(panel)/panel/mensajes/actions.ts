@@ -6,6 +6,7 @@ import { checkLimit } from '@/lib/limits'
 import { buildLimitError } from '@/lib/limit-errors'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { TemplateInputSchema, TemplateUpdateSchema } from '@/lib/owner-validation'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,7 +64,7 @@ export async function createTemplate(
             })
 
         if (error) {
-            console.error('[panel/messages] Create failed:', error)
+            logger.error('[panel/messages] Create failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -71,7 +72,7 @@ export async function createTemplate(
         logOwnerAction(tenantId, 'whatsapp.create_template', { name: validInput.name, isDefault: validInput.is_default })
         return { success: true }
     } catch (err) {
-        console.error('[panel/messages] Error:', err)
+        logger.error('[panel/messages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -103,7 +104,7 @@ export async function updateTemplate(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/messages] Update failed:', error)
+            logger.error('[panel/messages] Update failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -111,7 +112,7 @@ export async function updateTemplate(
         logOwnerAction(tenantId, 'whatsapp.update_template', { templateId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
-        console.error('[panel/messages] Error:', err)
+        logger.error('[panel/messages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -129,7 +130,7 @@ export async function deleteTemplate(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/messages] Delete failed:', error)
+            logger.error('[panel/messages] Delete failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -137,7 +138,7 @@ export async function deleteTemplate(
         logOwnerAction(tenantId, 'whatsapp.delete_template', { templateId: id })
         return { success: true }
     } catch (err) {
-        console.error('[panel/messages] Error:', err)
+        logger.error('[panel/messages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

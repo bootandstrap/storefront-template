@@ -21,6 +21,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger'
+
 // ── Types ─────────────────────────────────────────────────────────────────
 
 export type AnalyticsEventType =
@@ -177,7 +179,7 @@ class BootandStrapAnalytics {
             })
 
             if (!response.ok) {
-                console.warn('[analytics] Flush failed:', response.status)
+                logger.warn('[analytics] Flush failed:', response.status)
                 // Re-buffer failed events (max 1 retry)
                 this.buffer.unshift(...batch.slice(0, MAX_BUFFER_SIZE))
             }

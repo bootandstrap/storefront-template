@@ -23,6 +23,9 @@ import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
+import LimitAwareCTA from '@/components/panel/LimitAwareCTA'
+import ResourceBadge from '@/components/panel/ResourceBadge'
+import type { LimitCheckResult } from '@/lib/limits'
 interface CarouselSlide {
     id: string
     title: string | null
@@ -39,11 +42,12 @@ interface CarouselSlide {
 interface Props {
     slides: CarouselSlide[]
     canAdd: boolean
+    slideLimitResult?: LimitCheckResult
     slideCount: number
     maxSlides: number
 }
 
-export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }: Props) {
+export default function CarouselClient({ slides, canAdd, slideLimitResult, slideCount, maxSlides }: Props) {
     const { t } = useI18n()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -116,23 +120,39 @@ export default function CarouselClient({ slides, canAdd, slideCount, maxSlides }
                 subtitle={t('panel.carousel.subtitle')}
                 icon={<Images className="w-5 h-5" />}
                 action={
-                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="carousel_slides_limit" variant="badge">
-                        <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={isPending || !canAdd}
+                    slideLimitResult ? (
+                        <LimitAwareCTA
+                            label={t('panel.carousel.addSlide')}
+                            icon={<Plus className="w-4 h-4" />}
+                            limitResult={slideLimitResult}
                             onClick={() => { resetForm(); setShowForm(true) }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            {t('panel.carousel.addSlide')}
-                        </button>
-                    </SotaFeatureGateWrapper>
+                            upgradeHref="modulos"
+                            isLoading={isPending}
+                            showCounter
+                        />
+                    ) : (
+                        <SotaFeatureGateWrapper isLocked={!canAdd} flag="carousel_slides_limit" variant="badge">
+                            <button
+                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                disabled={isPending || !canAdd}
+                                onClick={() => { resetForm(); setShowForm(true) }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                {t('panel.carousel.addSlide')}
+                            </button>
+                        </SotaFeatureGateWrapper>
+                    )
                 }
             />
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
-                {slideCount} / {maxSlides} {t('panel.carousel.slides')}
-                {!canAdd && <span className="text-red-500 ml-2">— {t('limits.maxReached')}</span>}
-            </motion.p>
+            {slideLimitResult ? (
+                <ResourceBadge limitResult={slideLimitResult} label={t('panel.carousel.slides')} showProgress />
+            ) : (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
+                    {slideCount} / {maxSlides} {t('panel.carousel.slides')}
+                    {!canAdd && <span className="text-red-500 ml-2">— {t('limits.maxReached')}</span>}
+                </motion.p>
+            )}
 
             <AnimatePresence>
                 {error && (

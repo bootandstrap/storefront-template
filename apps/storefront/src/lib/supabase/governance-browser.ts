@@ -14,6 +14,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 let governanceBrowserClient: SupabaseClient | null = null
 
@@ -33,7 +34,7 @@ export function getGovernanceBrowserClient(): SupabaseClient | null {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!url || !key) {
-        console.warn('[governance-browser] Missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY — realtime disabled')
+        logger.warn('[governance-browser] Missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY — realtime disabled')
         return null
     }
 

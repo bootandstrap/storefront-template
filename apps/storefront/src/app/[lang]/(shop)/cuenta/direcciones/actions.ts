@@ -6,6 +6,7 @@ import {
     updateAuthAddress,
     deleteAuthAddress,
 } from '@/lib/medusa/auth-medusa'
+import { logger } from '@/lib/logger'
 
 // ─── Create address ───────────────────────────────────────────
 export async function createAddressAction(formData: {
@@ -36,7 +37,7 @@ export async function createAddressAction(formData: {
         revalidatePath('/[lang]/cuenta/direcciones', 'page')
         return { success: true, address }
     } catch (err) {
-        console.error('[address] create failed:', err)
+        logger.error('[address] create failed:', err)
         return { success: false, error: 'Failed to create address' }
     }
 }
@@ -73,7 +74,7 @@ export async function updateAddressAction(
         revalidatePath('/[lang]/cuenta/direcciones', 'page')
         return { success: true, address }
     } catch (err) {
-        console.error('[address] update failed:', err)
+        logger.error('[address] update failed:', err)
         return { success: false, error: 'Failed to update address' }
     }
 }
@@ -85,7 +86,7 @@ export async function deleteAddressAction(addressId: string) {
         revalidatePath('/[lang]/cuenta/direcciones', 'page')
         return { success: true }
     } catch (err) {
-        console.error('[address] delete failed:', err)
+        logger.error('[address] delete failed:', err)
         return { success: false, error: 'Failed to delete address' }
     }
 }
@@ -99,7 +100,7 @@ export async function setDefaultAddressAction(addressId: string) {
         revalidatePath('/[lang]/cuenta/direcciones', 'page')
         return { success: true }
     } catch (err) {
-        console.error('[address] setDefault failed:', err)
+        logger.error('[address] setDefault failed:', err)
         return { success: false, error: 'Failed to set default address' }
     }
 }

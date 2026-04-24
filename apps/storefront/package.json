@@ -77,6 +77,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "react-rewrite-cli": "^0.1.1",
     "receiptline": "^4.0.0",
     "tailwindcss": "^4",
     "tailwindcss-animate": "^1.0.7",

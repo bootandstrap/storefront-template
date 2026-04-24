@@ -12,6 +12,7 @@ import {
 import type { MedusaCart, MedusaLineItem } from '@/lib/medusa/client'
 import { getPublicMedusaUrl } from '@/lib/medusa/url'
 import { getRuntimeEnv } from '@/lib/runtime-env'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Context type
@@ -98,7 +99,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
             } catch (err) {
                 // Cart may have expired or Medusa unreachable — clear stale ID
-                console.warn('[CartContext] Cart hydration failed:', err)
+                logger.warn('[CartContext] Cart hydration failed:', err)
                 localStorage.removeItem(CART_ID_KEY)
                 setCartIdState(null)
             } finally {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requirePanelAuth } from '@/lib/panel-auth'
+import { logger } from '@/lib/logger'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const RESEND_API_URL = 'https://api.resend.com'
@@ -32,30 +33,13 @@ interface ResendDomain {
     records: DnsRecord[]
 }
 
-// Helper: get tenant context
-function getTenantContext() {
-    const tenantId = process.env.TENANT_ID
-    if (!tenantId) return null
-
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    )
-    return { tenantId, supabase }
-}
-
 /**
  * GET /api/panel/email-domain
  * Returns current custom domain configuration + DNS records
  */
 export async function GET() {
     try {
-        const ctx = getTenantContext()
-        if (!ctx) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const { tenantId, supabase } = ctx
+        const { tenantId, supabase } = await requirePanelAuth()
 
         // Check governance flag
         const { data: flagsRaw } = await supabase
@@ -116,7 +100,7 @@ export async function GET() {
                     }
                 }
             } catch (e) {
-                console.error('[email-domain] Failed to fetch Resend domain:', e)
+                logger.error('[email-domain] Failed to fetch Resend domain:', e)
             }
         }
 
@@ -128,7 +112,7 @@ export async function GET() {
             records,
         })
     } catch (e) {
-        console.error('[email-domain] GET error:', e)
+        logger.error('[email-domain] GET error:', e)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }
@@ -140,12 +124,7 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
     try {
-        const ctx = getTenantContext()
-        if (!ctx) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const { tenantId, supabase } = ctx
+        const { tenantId, supabase } = await requirePanelAuth()
 
         // Check governance flag
         const { data: flagsRaw } = await supabase
@@ -215,7 +194,7 @@ export async function POST(req: NextRequest) {
 
         if (!resendRes.ok) {
             const err = await resendRes.text()
-            console.error('[email-domain] Resend create domain failed:', err)
+            logger.error('[email-domain] Resend create domain failed:', err)
             return NextResponse.json(
                 { error: `Failed to register domain: ${err}` },
                 { status: 502 }
@@ -243,7 +222,7 @@ export async function POST(req: NextRequest) {
             message: 'Domain registered. Add the DNS records shown below, then click Verify.',
         })
     } catch (e) {
-        console.error('[email-domain] POST error:', e)
+        logger.error('[email-domain] POST error:', e)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }
@@ -254,12 +233,7 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE() {
     try {
-        const ctx = getTenantContext()
-        if (!ctx) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const { tenantId, supabase } = ctx
+        const { tenantId, supabase } = await requirePanelAuth()
 
         const { data: configRaw } = await supabase
             .from('config')
@@ -277,7 +251,7 @@ export async function DELETE() {
                     headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
                 })
             } catch (e) {
-                console.error('[email-domain] Resend delete failed:', e)
+                logger.error('[email-domain] Resend delete failed:', e)
             }
         }
 
@@ -293,7 +267,7 @@ export async function DELETE() {
 
         return NextResponse.json({ success: true, message: 'Custom domain removed' })
     } catch (e) {
-        console.error('[email-domain] DELETE error:', e)
+        logger.error('[email-domain] DELETE error:', e)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

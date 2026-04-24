@@ -96,16 +96,7 @@ NODE_ENV=production
 EOF
 echo "✓ Generated .env file: ${ENV_FILE}"
 
-# ── 3. Prepare SQL with placeholders replaced ───────────
-SQL_OUT="${ROOT_DIR}/scripts/.provision-${CLIENT_SLUG}.sql"
-sed -e "s/__TENANT_SLUG__/${CLIENT_SLUG}/g" \
-    -e "s/__TENANT_NAME__/${CLIENT_NAME}/g" \
-    -e "s/__OWNER_EMAIL__/${OWNER_EMAIL}/g" \
-    -e "s/__DOMAIN__/${CLIENT_DOMAIN}/g" \
-    "${SCRIPT_DIR}/provision-tenant.sql" > "$SQL_OUT"
-echo "✓ Generated SQL script: ${SQL_OUT}"
-
-# ── 4. Output next steps ────────────────────────────────
+# ── 3. Output next steps ────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════╗"
 echo "║              ✅ Provisioning Complete          ║"
@@ -114,15 +105,15 @@ echo ""
 echo "TENANT_ID: ${TENANT_ID}"
 echo ""
 echo "Next steps:"
-echo "  1. Run tenant SQL against Supabase:"
-echo "     psql \$DATABASE_URL < ${SQL_OUT}"
+echo "  1. Copy .env for local dev:"
+echo "     cp ${ENV_FILE} .env"
 echo ""
-echo "  2. Copy .env for local dev:"
-echo "     cp ${ENV_FILE} apps/storefront/.env.local"
-echo "     cp ${ENV_FILE} apps/medusa/.env"
+echo "  2. Seed governance (flags, limits, config):"
+echo "     TENANT_ID=${TENANT_ID} npx tsx scripts/seed-governance.ts ${SEED_PROFILE}"
 echo ""
-echo "  3. Seed Medusa products:"
-echo "     cd apps/medusa && npx medusa db:migrate && SEED_PROFILE=${SEED_PROFILE} npx medusa exec ./src/scripts/seed.ts"
+echo "  3. Run Medusa migrations + seed:"
+echo "     cd apps/medusa && npx medusa db:migrate"
+echo "     npx tsx scripts/seed-demo.ts --template=${SEED_PROFILE}"
 echo ""
 echo "  4. For Dokploy deployment:"
 echo "     - Set all env vars from ${ENV_FILE} in Dokploy"
@@ -130,3 +121,4 @@ echo "     - Configure domains: ${CLIENT_DOMAIN}, api.${CLIENT_DOMAIN}"
 echo "     - Enable SSL"
 echo ""
 echo "📄 Full guide: docs/guides/DEPLOYMENT.md"
+

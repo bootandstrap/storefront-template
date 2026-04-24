@@ -37,7 +37,7 @@ interface SEOData {
     hasSitemap: boolean
     productCount: number
     categoryCount: number
-    lastCrawl: string
+    lastCrawl: string | null
 }
 
 interface Labels {
@@ -339,7 +339,7 @@ export default function SEOClient({ seoData, labels, lang }: SEOClientProps) {
                                             </div>
                                             <div className="mt-3 flex items-center gap-2 text-xs text-[var(--color-gray-400,#9ca3af)]">
                                                 <RefreshCw className="w-3 h-3" />
-                                                <span>{labels.lastCrawl}: {new Date(seoData.lastCrawl).toLocaleDateString(lang)}</span>
+                                                <span>{labels.lastCrawl}: {seoData.lastCrawl ? new Date(seoData.lastCrawl).toLocaleDateString(lang) : 'Auto-indexing'}</span>
                                             </div>
                                         </div>
 

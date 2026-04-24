@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Download, Shield, AlertTriangle, Clock, CheckCircle2,
-    Loader2, FileArchive, Trash2, X,
+    Loader2, FileArchive, Trash2,
 } from 'lucide-react'
 
 interface ExportRecord {
@@ -90,7 +90,8 @@ export default function DataPrivacySection({ lang = 'es' }: DataPrivacySectionPr
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tenant_id: process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID,
+                    // tenant_id is resolved server-side by BSWEB from the
+                    // authenticated session — no need to expose env vars in client.
                     reason: 'Owner-initiated via panel',
                 }),
             })

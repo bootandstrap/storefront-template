@@ -22,7 +22,14 @@ export const freshProduceTemplate: IndustryTemplate = {
     additionalCurrencies: [],
 
     governance: {
-        bundleName: 'Demo Fresh',
+        modules: [
+            { module: 'ecommerce', tier: 'pro' },
+            { module: 'pos', tier: 'pro' },
+            { module: 'sales_channels', tier: 'pro' },
+            { module: 'chatbot', tier: 'basic' },
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'seo', tier: 'medio' },
+        ],
         flagOverrides: {
             enable_ecommerce: true,
             enable_pos: true,

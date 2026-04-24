@@ -1,7 +1,6 @@
 'use client'
 
-import type { Metadata } from 'next'
-export const metadata: Metadata = { title: 'Detalle de pedido', robots: { index: false } }
+// NOTE: metadata moved to layout — cannot export from 'use client'
 
 
 import { useState } from 'react'

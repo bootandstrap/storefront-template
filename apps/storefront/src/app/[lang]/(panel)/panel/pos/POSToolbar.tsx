@@ -14,7 +14,7 @@ interface POSToolbarProps {
     lastSyncTime: Date | null
     currentShift: POSShift | null
     panelView: string | null
-    setPanelView: (view: any) => void
+    setPanelView: (view: string | null) => void
     canAccessHistory: boolean
     canAccessDashboard: boolean
     canAccessShifts: boolean
@@ -153,7 +153,7 @@ export default function POSToolbar({
     }, [moreOpen])
 
     const togglePanel = (view: string) => {
-        setPanelView((v: string | null) => v === view ? null : view)
+        setPanelView(panelView === view ? null : view)
     }
 
     const handleFeatureClick = (canAccess: boolean, flag: string, action: () => void) => {

@@ -15,6 +15,7 @@
 import 'server-only'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export interface TenantMedusaScope {
     tenantId: string
@@ -64,7 +65,7 @@ function getScopeClient() {
     const serviceKey = process.env.GOVERNANCE_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!url || !serviceKey) {
-        console.error(
+        logger.error(
             '[tenant-scope] GOVERNANCE_SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY) is required for tenant_medusa_scope access. ' +
             'This table has RLS USING(false) — anon key cannot read it.'
         )
@@ -87,7 +88,7 @@ export async function getTenantMedusaScope(tenantId: string): Promise<TenantMedu
     try {
         const client = getScopeClient()
         if (!client) {
-            console.warn(`[tenant-scope] No service-role client available — cannot resolve scope for tenant ${tenantId}`)
+            logger.warn(`[tenant-scope] No service-role client available — cannot resolve scope for tenant ${tenantId}`)
             return null
         }
 
@@ -98,18 +99,18 @@ export async function getTenantMedusaScope(tenantId: string): Promise<TenantMedu
             .maybeSingle()
 
         if (error) {
-            console.warn(`[tenant-scope] Failed to resolve Medusa scope for tenant ${tenantId}: ${error.message}`)
+            logger.warn(`[tenant-scope] Failed to resolve Medusa scope for tenant ${tenantId}: ${error.message}`)
             return null
         }
 
         if (!data) {
-            console.warn(`[tenant-scope] No scope mapping found for tenant ${tenantId}`)
+            logger.warn(`[tenant-scope] No scope mapping found for tenant ${tenantId}`)
             return null
         }
 
         return assertTenantMedusaScopeRow(tenantId, data as TenantMedusaScopeRow)
     } catch (e) {
-        console.warn(`[tenant-scope] Error resolving scope:`, e)
+        logger.warn(`[tenant-scope] Error resolving scope:`, e)
         return null
     }
 }

@@ -6,6 +6,7 @@ import { checkLimit } from '@/lib/limits'
 import { buildLimitError } from '@/lib/limit-errors'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { SlideInputSchema, SlideUpdateSchema } from '@/lib/owner-validation'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,7 +70,7 @@ export async function createSlide(
             })
 
         if (error) {
-            console.error('[panel/carousel] Create failed:', error)
+            logger.error('[panel/carousel] Create failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -77,7 +78,7 @@ export async function createSlide(
         logOwnerAction(tenantId, 'carousel.create', { type: validInput.type, title: validInput.title })
         return { success: true }
     } catch (err) {
-        console.error('[panel/carousel] Error:', err)
+        logger.error('[panel/carousel] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -100,7 +101,7 @@ export async function updateSlide(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/carousel] Update failed:', error)
+            logger.error('[panel/carousel] Update failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -108,7 +109,7 @@ export async function updateSlide(
         logOwnerAction(tenantId, 'carousel.update', { slideId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
-        console.error('[panel/carousel] Error:', err)
+        logger.error('[panel/carousel] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -126,7 +127,7 @@ export async function deleteSlide(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/carousel] Delete failed:', error)
+            logger.error('[panel/carousel] Delete failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -134,7 +135,7 @@ export async function deleteSlide(
         logOwnerAction(tenantId, 'carousel.delete', { slideId: id })
         return { success: true }
     } catch (err) {
-        console.error('[panel/carousel] Error:', err)
+        logger.error('[panel/carousel] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -160,7 +161,7 @@ export async function reorderSlides(
         logOwnerAction(tenantId, 'carousel.reorder', { count: orderedIds.length })
         return { success: true }
     } catch (err) {
-        console.error('[panel/carousel] Reorder error:', err)
+        logger.error('[panel/carousel] Reorder error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

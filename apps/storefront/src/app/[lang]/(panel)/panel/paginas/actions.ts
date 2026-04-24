@@ -7,6 +7,7 @@ import { buildLimitError } from '@/lib/limit-errors'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { PageInputSchema, PageUpdateSchema } from '@/lib/owner-validation'
 import { sanitizeHtml } from '@/lib/security/sanitize-html'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +56,7 @@ export async function createPage(
             })
 
         if (error) {
-            console.error('[panel/pages] Create failed:', error)
+            logger.error('[panel/pages] Create failed:', error)
             if (error.message.includes('duplicate')) {
                 return { success: false, error: 'A page with this slug already exists' }
             }
@@ -66,7 +67,7 @@ export async function createPage(
         logOwnerAction(tenantId, 'page.create', { slug: validInput.slug, title: validInput.title })
         return { success: true }
     } catch (err) {
-        console.error('[panel/pages] Error:', err)
+        logger.error('[panel/pages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -97,7 +98,7 @@ export async function updatePage(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/pages] Update failed:', error)
+            logger.error('[panel/pages] Update failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -105,7 +106,7 @@ export async function updatePage(
         logOwnerAction(tenantId, 'page.update', { pageId: id, fields: Object.keys(updates) })
         return { success: true }
     } catch (err) {
-        console.error('[panel/pages] Error:', err)
+        logger.error('[panel/pages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -123,7 +124,7 @@ export async function deletePage(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/pages] Delete failed:', error)
+            logger.error('[panel/pages] Delete failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -131,7 +132,7 @@ export async function deletePage(
         logOwnerAction(tenantId, 'page.delete', { pageId: id })
         return { success: true }
     } catch (err) {
-        console.error('[panel/pages] Error:', err)
+        logger.error('[panel/pages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -150,7 +151,7 @@ export async function togglePagePublish(
             .eq('tenant_id', tenantId)
 
         if (error) {
-            console.error('[panel/pages] Toggle failed:', error)
+            logger.error('[panel/pages] Toggle failed:', error)
             return { success: false, error: error.message }
         }
 
@@ -158,7 +159,7 @@ export async function togglePagePublish(
         logOwnerAction(tenantId, 'page.toggle_publish', { pageId: id, published })
         return { success: true }
     } catch (err) {
-        console.error('[panel/pages] Error:', err)
+        logger.error('[panel/pages] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

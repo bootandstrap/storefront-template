@@ -13,6 +13,7 @@
 import { createGovernanceClient } from '@/lib/supabase/governance'
 import { checkLimit, type LimitCheckResult } from '@/lib/limits'
 import type { PlanLimits } from '@/lib/config'
+import { logger } from '@/lib/logger'
 
 /**
  * Check if a tenant has remaining order capacity for the current month.
@@ -54,7 +55,7 @@ export async function checkOrderLimit(
     }) as { data: number | null; error: { message: string } | null }
 
     if (error) {
-        console.error('[order-limits] RPC error:', error.message)
+        logger.error('[order-limits] RPC error:', error.message)
         // Fail-open: allow the order if we can't check (avoid blocking revenue)
         // Log the error for monitoring
         return {

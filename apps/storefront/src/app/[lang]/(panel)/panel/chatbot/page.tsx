@@ -3,12 +3,12 @@
  *
  * Settings + usage dashboard for the tenant's AI chatbot.
  * Gated by enable_chatbot feature flag via withPanelGuard.
+ * SOTA 2026: ModuleShell wrapper with tier-aware usage meter.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
-import FeatureGate from '@/components/ui/FeatureGate'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import ModuleShell from '@/components/panel/ModuleShell'
 import { Bot } from 'lucide-react'
 import { ChatbotPanelClient } from './ChatbotPanelClient'
 
@@ -28,16 +28,30 @@ export default async function ChatbotPage({
 }) {
     const { lang } = await params
     const { appConfig } = await withPanelGuard()
-    const { featureFlags, config } = appConfig
+    const { featureFlags, planLimits, config } = appConfig
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    if (!featureFlags.enable_chatbot) {
-        return <FeatureGate flag="enable_chatbot" lang={lang} />
+    const isLocked = !featureFlags.enable_chatbot
+    const maxMessages = planLimits.max_chatbot_messages_month ?? 500
+
+    const tierInfo = {
+        currentTier: maxMessages >= 5000 ? 'Pro' : isLocked ? 'Free' : 'Básico',
+        moduleKey: 'chatbot',
+        nextTierFeatures: isLocked ? [
+            t('panel.chatbot.feat.widget') || 'Widget IA en tu tienda',
+            t('panel.chatbot.feat.messages') || '500 mensajes/mes',
+            t('panel.chatbot.feat.config') || 'Configuración de tono y modelo',
+        ] : maxMessages < 5000 ? [
+            t('panel.chatbot.feat.moreMessages') || '5.000 mensajes/mes',
+            t('panel.chatbot.feat.rag') || 'RAG avanzado con catálogo',
+            t('panel.chatbot.feat.integrations') || 'Integraciones (Calendly, Google)',
+        ] : undefined,
+        nextTierName: isLocked ? 'Chatbot Básico' : maxMessages < 5000 ? 'Chatbot Pro' : undefined,
+        nextTierPrice: isLocked ? 20 : maxMessages < 5000 ? 40 : undefined,
     }
 
     // Extract chatbot config fields for inline editing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cfgAny = config as unknown as Record<string, unknown>
     const chatbotConfig = {
         chatbot_name: cfgAny.chatbot_name ?? '',
@@ -48,12 +62,20 @@ export default async function ChatbotPage({
     }
 
     return (
-        <div className="space-y-6">
-            <PanelPageHeader
-                title={t('panel.chatbot.title')}
-                subtitle={t('panel.chatbot.subtitle')}
-                icon={<Bot className="w-5 h-5" />}
-            />
+        <ModuleShell
+            icon={<Bot className="w-5 h-5" />}
+            title={t('panel.chatbot.title') || 'Chatbot IA'}
+            subtitle={t('panel.chatbot.subtitle') || 'Asistente inteligente para tu tienda'}
+            isLocked={isLocked}
+            gateFlag="enable_chatbot"
+            tierInfo={tierInfo}
+            usageMeter={!isLocked ? {
+                current: 0, // TODO: wire to real chatbot usage from chat_messages count
+                max: maxMessages,
+                label: t('panel.chatbot.messagesMonth') || 'mensajes/mes',
+            } : undefined}
+            lang={lang}
+        >
             <ChatbotPanelClient
                 locale={lang}
                 chatbotConfig={chatbotConfig}
@@ -78,7 +100,6 @@ export default async function ChatbotPage({
                     ratePaying: t('panel.chatbot.ratePaying'),
                 }}
             />
-        </div>
+        </ModuleShell>
     )
 }
-

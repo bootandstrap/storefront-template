@@ -99,6 +99,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_pos_line_discounts: true,
                 enable_pos_customer_search: true,
                 enable_pos_multi_device: true,
+                enable_pos_reports: true,
                 enable_pos_shifts: true,
                 // Kiosk (granular)
                 enable_kiosk_analytics: true,

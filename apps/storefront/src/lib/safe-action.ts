@@ -39,6 +39,7 @@ import { getConfigForTenant, type AppConfig } from './config'
 import { checkLimit, type LimitableResource } from './limits'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OwnerActionCategory } from './panel/log-owner-action'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Metadata Schema — every action self-describes
@@ -61,7 +62,7 @@ export const actionClient = createSafeActionClient({
   defineMetadataSchema: () => metadataSchema,
   handleServerError(error) {
     // Structured error for client consumption
-    console.error('[safe-action] Server error:', error.message)
+    logger.error('[safe-action] Server error:', error.message)
     return error.message
   },
 })
@@ -109,12 +110,12 @@ export const panelAction = actionClient.use(async ({ next, metadata }) => {
     } as any)
   } catch (err) {
     // Non-blocking — audit logging should never break the action
-    console.warn(`[audit] Failed to log: ${metadata.category}.${metadata.actionName}`, err)
+    logger.warn(`[audit] Failed to log: ${metadata.category}.${metadata.actionName}`, err)
   }
 
   // Warn on slow actions (>2s)
   if (duration > 2000) {
-    console.warn(`[slow-action] ${metadata.category}.${metadata.actionName}: ${duration}ms`)
+    logger.warn(`[slow-action] ${metadata.category}.${metadata.actionName}: ${duration}ms`)
   }
 
   return result

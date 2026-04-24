@@ -11,6 +11,7 @@
 import { useState, useTransition } from 'react'
 import { ArrowRight, X } from 'lucide-react'
 import { dismissTipAction } from '@/app/[lang]/(panel)/panel/actions'
+import { logger } from '@/lib/logger'
 
 interface SmartTipProps {
   tipId: string
@@ -43,7 +44,7 @@ export default function SmartTip({ tipId, emoji, message, actionLabel, actionHre
     try { localStorage.setItem(`dismissed-tip-${tipId}`, '1') } catch { /* quota exceeded — ignore */ }
     startTransition(() => {
       dismissTipAction(tipId).catch(err => {
-        console.warn('[SmartTip] Failed to persist dismiss:', err)
+        logger.warn('[SmartTip] Failed to persist dismiss:', err)
       })
     })
   }

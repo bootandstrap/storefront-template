@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { checkResourceLimit, checkMultipleResourceLimits, getResourceKeys, type ResourceKey } from '@/lib/enforcement/limit-guard'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/panel/limits?resource=products
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
         if (error instanceof Error && error.message.includes('Unauthorized')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-        console.error('[limits] Error:', error)
+        logger.error('[limits] Error:', error)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

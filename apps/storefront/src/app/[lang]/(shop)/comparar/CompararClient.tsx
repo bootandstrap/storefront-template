@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Scale, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react'
 import { useCompare } from '@/contexts/CompareContext'
+import { logger } from '@/lib/logger'
 
 interface CompareProduct {
     id: string
@@ -51,7 +52,7 @@ export default function CompararClient({ lang }: { lang: string }) {
                 }
                 setProducts(results)
             } catch {
-                console.error('Failed to fetch comparison products')
+                logger.error('Failed to fetch comparison products')
             } finally {
                 setLoading(false)
             }

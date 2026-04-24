@@ -2,6 +2,7 @@
 
 import { Component, type ReactNode } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 interface ErrorLabels {
     title?: string
@@ -36,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('ErrorBoundary caught:', error, errorInfo)
+        logger.error('ErrorBoundary caught', { error, errorInfo })
     }
 
     reset = () => {

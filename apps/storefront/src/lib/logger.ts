@@ -54,22 +54,31 @@ function formatEntry(
 }
 
 function createLogger(context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null } = {}) {
+    /** Normalize any log data to Record<string, unknown> for JSON output */
+    function normalizeData(data: unknown): Record<string, unknown> | undefined {
+        if (data === undefined || data === null) return undefined
+        if (typeof data === 'string') return { detail: data }
+        if (data instanceof Error) return { error: data.message, stack: data.stack }
+        if (typeof data === 'object') return data as Record<string, unknown>
+        return { value: data }
+    }
+
     return {
-        debug(message: string, data?: Record<string, unknown>) {
+        debug(message: string, data?: unknown) {
             if (process.env.NODE_ENV === 'production') return // skip debug in prod
-            console.debug(formatEntry('debug', message, data, context))
+            console.debug(formatEntry('debug', message, normalizeData(data), context))
         },
 
-        info(message: string, data?: Record<string, unknown>) {
-            console.log(formatEntry('info', message, data, context))
+        info(message: string, data?: unknown) {
+            console.log(formatEntry('info', message, normalizeData(data), context))
         },
 
-        warn(message: string, data?: Record<string, unknown>) {
-            console.warn(formatEntry('warn', message, data, context))
+        warn(message: string, data?: unknown) {
+            console.warn(formatEntry('warn', message, normalizeData(data), context))
         },
 
-        error(message: string, data?: Record<string, unknown>) {
-            console.error(formatEntry('error', message, data, context))
+        error(message: string, data?: unknown) {
+            console.error(formatEntry('error', message, normalizeData(data), context))
         },
 
         /**

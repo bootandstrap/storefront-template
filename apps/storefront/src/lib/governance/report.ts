@@ -7,8 +7,10 @@
  * Sync via: scripts/sync-governance.sh
  */
 
+import { logger } from '@/lib/logger'
+
 export function reportDegradedMode(tenantId: string, message: string): void {
-    console.error(
+    logger.error(
         JSON.stringify({
             level: 'error',
             service: 'storefront',

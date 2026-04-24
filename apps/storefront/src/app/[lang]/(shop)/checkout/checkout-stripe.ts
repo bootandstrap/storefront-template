@@ -4,6 +4,7 @@ import { getConfig } from '@/lib/config'
 import { isFeatureEnabled } from '@/lib/features'
 import { validateMinOrderAmount, validateMaxOrdersMonth, checkCheckoutRateLimit } from './checkout-validation'
 import { medusaStore } from './checkout-medusa'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Stripe configuration check
@@ -57,7 +58,7 @@ export async function initializePaymentSession(
 
         return { success: true }
     } catch (err) {
-        console.error('[checkout] initializePaymentSession failed:', err)
+        logger.error('[checkout] initializePaymentSession failed:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -103,7 +104,7 @@ export async function getStripeClientSecret(
 
         return { clientSecret }
     } catch (err) {
-        console.error('[checkout] getStripeClientSecret failed:', err)
+        logger.error('[checkout] getStripeClientSecret failed:', err)
         return { clientSecret: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -123,7 +124,7 @@ export async function getPaymentStatus(
         const session = res.cart.payment_sessions?.[0]
         return { status: session?.status ?? null }
     } catch (err) {
-        console.error('[checkout] getPaymentStatus failed:', err)
+        logger.error('[checkout] getPaymentStatus failed:', err)
         return { status: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

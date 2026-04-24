@@ -12,6 +12,7 @@ import 'server-only'
 
 import * as Sentry from '@sentry/nextjs'
 import { logTenantError } from '@/lib/log-tenant-error'
+import { logger } from '@/lib/logger'
 
 type ErrorSeverity = 'error' | 'warning' | 'critical'
 type ErrorSource = 'webhook' | 'registration' | 'medusa' | 'config' | 'rls' | 'build' | 'checkout' | 'chat' | 'returns' | string
@@ -57,7 +58,7 @@ export async function reportError({
         }
     } catch {
         // Sentry failure should never block
-        console.error('[reportError] Sentry capture failed')
+        logger.error('[reportError] Sentry capture failed')
     }
 
     // 2. Supabase tenant_errors table — always (the fallback)

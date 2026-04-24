@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmailForTenant, sendEmail, type EmailTemplate } from '@/lib/email'
 import { getConfig } from '@/lib/config'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     // ── Auth: shared secret (MANDATORY) ──
     const secret = process.env.MEDUSA_EVENTS_SECRET
     if (!secret) {
-        console.error('[medusa-events] MEDUSA_EVENTS_SECRET is not configured — rejecting all requests')
+        logger.error('[medusa-events] MEDUSA_EVENTS_SECRET is not configured — rejecting all requests')
         return NextResponse.json(
             { error: 'Webhook not configured. Set MEDUSA_EVENTS_SECRET.' },
             { status: 503 }
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 if (!customer_email) {
-                    console.warn('[medusa-events] order.placed: no customer email')
+                    logger.warn('[medusa-events] order.placed: no customer email')
                     break
                 }
 
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
                     await sendEmail(emailPayload)
                 }
 
-                console.log(`[medusa-events] order.placed email sent to ${customer_email}`)
+                logger.info('[medusa-events] order.placed email sent', { customer_email })
                 break
             }
 
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 if (!customer_email) {
-                    console.warn('[medusa-events] order.shipped: no customer email')
+                    logger.warn('[medusa-events] order.shipped: no customer email')
                     break
                 }
 
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
                     await sendEmail(emailPayload)
                 }
 
-                console.log(`[medusa-events] order.shipped email sent to ${customer_email}`)
+                logger.info('[medusa-events] order.shipped email sent', { customer_email })
                 break
             }
 
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
                 // Low stock alerts go to the store owner, not the customer
                 const recipientEmail = owner_email || process.env.STORE_OWNER_EMAIL
                 if (!recipientEmail) {
-                    console.warn('[medusa-events] low_stock: no owner email configured')
+                    logger.warn('[medusa-events] low_stock: no owner email configured')
                     break
                 }
 
@@ -185,17 +186,17 @@ export async function POST(request: NextRequest) {
                     await sendEmail(emailPayload)
                 }
 
-                console.log(`[medusa-events] low_stock alert sent to ${recipientEmail}`)
+                logger.info('[medusa-events] low_stock alert sent', { recipientEmail, sku })
                 break
             }
 
             default:
-                console.log(`[medusa-events] Unhandled event type: ${payload.event_type}`)
+                logger.warn('[medusa-events] Unhandled event type', { event_type: payload.event_type })
         }
 
         return NextResponse.json({ received: true })
     } catch (err) {
-        console.error('[medusa-events] Error processing event:', err)
+        logger.error('[medusa-events] Error processing event:', err)
         return NextResponse.json(
             { error: 'Processing error' },
             { status: 500 }

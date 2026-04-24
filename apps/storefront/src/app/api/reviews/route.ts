@@ -20,6 +20,7 @@ import { buildLimitError } from '@/lib/limit-errors'
 import { createClient } from '@/lib/supabase/server'
 import { adminFetch } from '@/lib/medusa/admin-core'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
     try {
@@ -84,13 +85,13 @@ export async function POST(req: NextRequest) {
         }, scope)
 
         if (error) {
-            console.error('[reviews] Submit failed:', error)
+            logger.error('[reviews] Submit failed:', error)
             return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 })
         }
 
         return NextResponse.json({ success: true, status: 'pending' })
     } catch (err) {
-        console.error('[reviews] Error:', err)
+        logger.error('[reviews] Error:', err)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

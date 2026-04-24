@@ -6,16 +6,14 @@
  * Data from Medusa customers + Supabase analytics.
  * Tenant-scoped: all Medusa queries are scoped to the authenticated tenant.
  *
- * B4 fix: migrated from getConfig() to withPanelGuard() for proper auth.
+ * SOTA 2026: ModuleShell wrapper, no mock data, proper types.
  */
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminCustomers } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { withPanelGuard } from '@/lib/panel-guard'
-import FeatureGate from '@/components/ui/FeatureGate'
-import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
+import ModuleShell from '@/components/panel/ModuleShell'
 import { Users } from 'lucide-react'
 import CRMClient from './CRMClient'
 
@@ -40,98 +38,118 @@ export default async function CRMPage({
     const t = createTranslator(dictionary)
 
     const isLocked = !featureFlags.enable_crm
+    const maxContacts = planLimits.max_crm_contacts ?? 200
 
-    let count = 0
-    let customers: any[] = []
-
-    if (!isLocked) {
-        // Resolve tenant scope — all admin queries MUST be scoped
-        const scope = await getTenantMedusaScope(tenantId)
-        
-        // Fetch total customers for quick stat
-        const res = await getAdminCustomers({ limit: 10, offset: 0 }, scope)
-        customers = res.customers
-        count = res.count
-    } else {
-        // Mock data for preview when locked
-        count = 1450
-        customers = [
-            { id: '1', email: 'john.doe@example.com', first_name: 'John', last_name: 'Doe', orders: [{}, {}], created_at: new Date().toISOString() },
-            { id: '2', email: 'mary.smith@example.com', first_name: 'Mary', last_name: 'Smith', orders: [{}], created_at: new Date(Date.now() - 5 * 86400000).toISOString() },
-            { id: '3', email: 'alex.j@example.com', first_name: 'Alex', last_name: 'Johnson', orders: [], created_at: new Date(Date.now() - 40 * 86400000).toISOString() },
-            { id: '4', email: 'sarah.w@example.com', first_name: 'Sarah', last_name: 'Williams', orders: [{}, {}, {}], created_at: new Date(Date.now() - 10 * 86400000).toISOString() }
-        ]
+    // Resolve tier info
+    const tierInfo = {
+        currentTier: featureFlags.enable_crm_segmentation ? 'Pro' : featureFlags.enable_crm ? 'Básico' : 'Free',
+        moduleKey: 'crm',
+        nextTierFeatures: isLocked ? [
+            t('panel.crm.feat.contacts') || 'Lista de contactos + notas',
+            t('panel.crm.feat.interactions') || 'Historial de interacciones',
+            t('panel.crm.feat.export') || 'Exportar CSV',
+        ] : featureFlags.enable_crm && !featureFlags.enable_crm_segmentation ? [
+            t('panel.crm.feat.segmentation') || 'Segmentación / etiquetas',
+            t('panel.crm.feat.moreContacts') || 'Hasta 5.000 contactos',
+            t('panel.crm.feat.export') || 'Exportar CSV',
+        ] : undefined,
+        nextTierName: isLocked ? 'CRM Básico' : !featureFlags.enable_crm_segmentation ? 'CRM Pro' : undefined,
+        nextTierPrice: isLocked ? 15 : !featureFlags.enable_crm_segmentation ? 30 : undefined,
     }
 
-    // Build segments from customer data
+    let count = 0
+    let customers: {
+        id: string
+        email: string
+        firstName: string
+        lastName: string
+        orderCount: number
+        createdAt: string
+    }[] = []
+
+    if (!isLocked) {
+        const scope = await getTenantMedusaScope(tenantId)
+        // Fetch a meaningful batch — not just 10
+        const res = await getAdminCustomers({ limit: 50, offset: 0 }, scope)
+        count = res.count
+        customers = res.customers.map(c => ({
+            id: c.id,
+            email: c.email,
+            firstName: c.first_name ?? '',
+            lastName: c.last_name ?? '',
+            orderCount: c.orders?.length ?? 0,
+            createdAt: c.created_at,
+        }))
+    }
+
+    // Build segments from REAL customer data only
     const segments = {
         total: count,
-        withOrders: customers.filter(c => c.orders && c.orders.length > 0).length,
+        withOrders: customers.filter(c => c.orderCount > 0).length,
         recent: customers.filter(c => {
-            if (!c.created_at) return false
-            // eslint-disable-next-line react-hooks/purity
+            if (!c.createdAt) return false
             const days30Ago = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            return new Date(c.created_at) > days30Ago
+            return new Date(c.createdAt) > days30Ago
         }).length,
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cfgAny = config as unknown as Record<string, unknown>
 
     return (
-        <SotaFeatureGateWrapper flag="enable_crm" isLocked={isLocked}>
-            <div className="space-y-6">
-                <PanelPageHeader
-                    title={t('panel.crm.title')}
-                    subtitle={t('panel.crm.subtitle')}
-                    icon={<Users className="w-5 h-5" />}
-                    badge={count}
-                />
-                <CRMClient
-                    segments={segments}
-                    totalCustomers={count}
-                    maxContacts={planLimits.max_crm_contacts}
-                    enableSegmentation={featureFlags.enable_crm_segmentation}
-                    enableExport={featureFlags.enable_crm_export}
-                    crmConfig={{
-                        crm_auto_tag_customers: cfgAny.crm_auto_tag_customers ?? false,
-                        crm_new_customer_tag: cfgAny.crm_new_customer_tag ?? '',
-                        crm_notify_new_contact: cfgAny.crm_notify_new_contact ?? false,
-                        crm_export_format: cfgAny.crm_export_format ?? 'csv',
-                    }}
-                    customers={customers.map(c => ({
-                        id: c.id,
-                        email: c.email,
-                        firstName: c.first_name ?? '',
-                        lastName: c.last_name ?? '',
-                        orderCount: c.orders?.length ?? 0,
-                        createdAt: c.created_at,
-                    }))}
-                    lang={lang}
-                    labels={{
-                        title: t('panel.crm.title'),
-                        subtitle: t('panel.crm.subtitle'),
-                        totalContacts: t('panel.crm.totalContacts'),
-                        withOrders: t('panel.crm.withOrders'),
-                        newLast30d: t('panel.crm.newLast30d'),
-                        usageOf: t('panel.crm.usageOf'),
-                        segmentation: t('panel.crm.segmentation'),
-                        segmentationDesc: t('panel.crm.segmentationDesc'),
-                        exportContacts: t('panel.crm.exportContacts'),
-                        exportDesc: t('panel.crm.exportDesc'),
-                        comingSoon: t('panel.crm.comingSoon'),
-                        noData: t('panel.crm.noData'),
-                        contactHeader: t('panel.crm.contactHeader'),
-                        emailHeader: t('panel.crm.emailHeader'),
-                        ordersHeader: t('panel.crm.ordersHeader'),
-                        joinedHeader: t('panel.crm.joinedHeader'),
-                        searchPlaceholder: t('panel.crm.searchPlaceholder'),
-                        downloading: t('panel.crm.downloading'),
-                        exportSuccess: t('panel.crm.exportSuccess'),
-                        allContacts: t('panel.crm.allContacts'),
-                    }}
-                />
-            </div>
-        </SotaFeatureGateWrapper>
+        <ModuleShell
+            icon={<Users className="w-5 h-5" />}
+            title={t('panel.crm.title') || 'CRM'}
+            subtitle={t('panel.crm.subtitle') || 'Gestión de clientes y relaciones comerciales'}
+            isLocked={isLocked}
+            gateFlag="enable_crm"
+            tierInfo={tierInfo}
+            usageMeter={!isLocked ? {
+                current: count,
+                max: maxContacts,
+                label: t('panel.crm.contacts') || 'contactos',
+            } : undefined}
+            lang={lang}
+        >
+            <CRMClient
+                segments={segments}
+                totalCustomers={count}
+                maxContacts={maxContacts}
+                enableSegmentation={featureFlags.enable_crm_segmentation}
+                enableExport={featureFlags.enable_crm_export}
+                enableContacts={featureFlags.enable_crm_contacts}
+                enableInteractions={featureFlags.enable_crm_interactions}
+                crmConfig={{
+                    crm_auto_tag_customers: cfgAny.crm_auto_tag_customers ?? false,
+                    crm_new_customer_tag: cfgAny.crm_new_customer_tag ?? '',
+                    crm_notify_new_contact: cfgAny.crm_notify_new_contact ?? false,
+                    crm_export_format: cfgAny.crm_export_format ?? 'csv',
+                }}
+                customers={customers}
+                lang={lang}
+                labels={{
+                    title: t('panel.crm.title'),
+                    subtitle: t('panel.crm.subtitle'),
+                    totalContacts: t('panel.crm.totalContacts'),
+                    withOrders: t('panel.crm.withOrders'),
+                    newLast30d: t('panel.crm.newLast30d'),
+                    usageOf: t('panel.crm.usageOf'),
+                    segmentation: t('panel.crm.segmentation'),
+                    segmentationDesc: t('panel.crm.segmentationDesc'),
+                    exportContacts: t('panel.crm.exportContacts'),
+                    exportDesc: t('panel.crm.exportDesc'),
+                    comingSoon: t('panel.crm.comingSoon'),
+                    noData: t('panel.crm.noData'),
+                    contactHeader: t('panel.crm.contactHeader'),
+                    emailHeader: t('panel.crm.emailHeader'),
+                    ordersHeader: t('panel.crm.ordersHeader'),
+                    joinedHeader: t('panel.crm.joinedHeader'),
+                    searchPlaceholder: t('panel.crm.searchPlaceholder'),
+                    downloading: t('panel.crm.downloading'),
+                    exportSuccess: t('panel.crm.exportSuccess'),
+                    allContacts: t('panel.crm.allContacts'),
+                }}
+            />
+        </ModuleShell>
     )
 }
+

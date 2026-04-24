@@ -19,6 +19,7 @@ import Link from 'next/link'
 import OrderNotifications from '@/components/panel/OrderNotifications'
 import PanelLanguageSwitch from '@/components/panel/PanelLanguageSwitch'
 import PanelThemeToggle from '@/components/panel/PanelThemeToggle'
+import SubscriptionPill from '@/components/panel/SubscriptionPill'
 
 interface PanelTopbarProps {
     ownerName: string
@@ -42,6 +43,8 @@ interface PanelTopbarProps {
     } | null
     /** Governance SSOT currency for notification formatting */
     defaultCurrency: string
+    /** Plan name for SubscriptionPill */
+    planName?: string
     onMenuClick: () => void
 }
 
@@ -61,6 +64,7 @@ export default function PanelTopbar({
     labels,
     setupNudge,
     defaultCurrency,
+    planName,
     onMenuClick,
 }: PanelTopbarProps) {
     const pathname = usePathname()
@@ -180,6 +184,11 @@ export default function PanelTopbar({
                     >
                         <Search className="w-4 h-4" />
                     </button>
+
+                    {/* Subscription Pill (desktop) */}
+                    {planName && (
+                        <SubscriptionPill planName={planName} className="hidden sm:inline-flex" />
+                    )}
 
                     <OrderNotifications defaultCurrency={defaultCurrency} />
                     <PanelThemeToggle />

@@ -20,6 +20,7 @@ import { clearCachedConfig } from '@/lib/config'
 import { revalidatePath } from 'next/cache'
 import { NOTIFICATION_EVENT_KEYS, NOTIFICATION_CHANNEL_KEYS } from '@/lib/registries/notification-events'
 import { SUPPORTED_CURRENCY_CODES } from '@/lib/i18n/currencies'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -67,12 +68,12 @@ async function updateConfig(
       return { success: true }
     }
     // Unexpected return — treat as failure
-    console.warn('[panel-action] RPC returned unexpected value:', rpcResult)
+    logger.warn('[panel-action] RPC returned unexpected value:', rpcResult)
   }
 
   // Fallback: RPC may not be deployed yet — try direct update via auth client
   if (rpcError?.code === 'PGRST202' || rpcError?.message?.includes('Could not find')) {
-    console.warn('[panel-action] RPC update_owner_config not found, falling back to direct update')
+    logger.warn('[panel-action] RPC update_owner_config not found, falling back to direct update')
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
 
@@ -84,11 +85,11 @@ async function updateConfig(
       .select()
 
     if (error) {
-      console.error('[panel-action] Config update failed:', error.message)
+      logger.error('[panel-action] Config update failed:', error.message)
       return { success: false, error: error.message }
     }
     if (!data || data.length === 0) {
-      console.error('[panel-action] Config update failed: 0 rows affected (RLS rejection)')
+      logger.error('[panel-action] Config update failed: 0 rows affected (RLS rejection)')
       return { success: false, error: 'No se encontraron permisos suficientes o la configuración no existe (RLS)' }
     }
 
@@ -97,7 +98,7 @@ async function updateConfig(
   }
 
   // RPC exists but returned an error
-  console.error('[panel-action] Config RPC failed:', rpcError.message)
+  logger.error('[panel-action] Config RPC failed:', rpcError.message)
   return { success: false, error: rpcError.message }
 }
 
@@ -376,7 +377,7 @@ export async function saveOnboardingConfigAction(
       })
     } catch {
       // Non-blocking
-      console.warn('[audit] Failed to log config change')
+      logger.warn('[audit] Failed to log config change')
     }
   }
   return result

@@ -410,6 +410,7 @@ const UPSELL_TOOLTIPS: Record<string, { tier: string; labelKey: string; label: s
     enable_pos_line_discounts:      { tier: 'Enterprise', labelKey: 'panel.pos.upsell.discounts', label: 'Descuentos por línea — Disponible en POS Enterprise' },
     enable_pos_customer_search:     { tier: 'Enterprise', labelKey: 'panel.pos.upsell.customer', label: 'Búsqueda de clientes — Disponible en POS Enterprise' },
     enable_pos_multi_device:        { tier: 'Enterprise', labelKey: 'panel.pos.upsell.multiDevice', label: 'Multi-dispositivo — Disponible en POS Enterprise' },
+    enable_pos_reports:             { tier: 'Enterprise', labelKey: 'panel.pos.upsell.reports', label: 'Dashboard & Analíticas — Disponible en POS Enterprise' },
 }
 
 /**

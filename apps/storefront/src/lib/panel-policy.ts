@@ -57,6 +57,21 @@ export interface PanelSidebarLabels {
 
 export type SectionKey = 'home' | 'myStore' | 'sales' | 'modules' | 'settings' | 'pos'
 
+/** Sub-item within an expandable sidebar section */
+export interface PanelSubItem {
+    key: string
+    label: string
+    href: string
+    /** Lucide icon name (lowercase) */
+    icon?: string
+    /** Badge count */
+    badge?: number
+    /** Feature flag that gates this sub-item */
+    featureKey?: keyof PanelFeatureFlags
+    /** Module emoji (for module sub-items) */
+    emoji?: string
+}
+
 export interface PanelNavSection {
     key: SectionKey
     href: string
@@ -68,6 +83,8 @@ export interface PanelNavSection {
     badge?: number
     /** Exact match for active state (dashboard) */
     exact?: boolean
+    /** Expandable sub-items (accordion navigation) */
+    subItems?: PanelSubItem[]
 }
 
 // ── Tab Types (for section sub-navigation) ────────────────────────────────
@@ -124,6 +141,7 @@ export function getPanelSections({
             label: labels.modules,
             icon: 'modules',
             visible: true,
+            badge: badges.modules,
         },
         {
             key: 'settings',
@@ -140,6 +158,11 @@ export function getPanelSections({
             visible: !!featureFlags.enable_pos,
         },
     ]
+
+    // — Inject sub-items per section —
+    for (const section of sections) {
+        section.subItems = getPanelSectionSubItems(section.key, lang, featureFlags, badges)
+    }
 
     return sections.filter(s => s.visible)
 }
@@ -170,14 +193,15 @@ export function getSalesTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
 }
 
 export function getSettingsTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
+    // Phase 4 (2026): Simplified from 9 → 6 tabs.
+    // - 'idiomas' absorbed into tienda via RegionLocalePanel
+    // - 'analiticas' moved to dedicated module page
+    // - 'proyecto' removed (low usage, accessible via customer portal)
     const tabs: PanelTab[] = [
         { key: 'tienda', label: 'panel.tabs.storeConfig', visible: true },
         { key: 'envios', label: 'panel.tabs.shipping', visible: true },
-        { key: 'idiomas', label: 'panel.tabs.languages', featureKey: 'enable_multi_language', visible: !!featureFlags.enable_multi_language },
-        { key: 'analiticas', label: 'panel.tabs.analytics', featureKey: 'enable_analytics', visible: !!featureFlags.enable_analytics },
         { key: 'email', label: 'panel.tabs.email', visible: true },
         { key: 'suscripcion', label: 'panel.tabs.subscription', visible: true },
-        { key: 'proyecto', label: 'panel.tabs.project', visible: true },
         { key: 'wifi', label: 'panel.tabs.wifi', visible: true },
         { key: 'privacidad', label: 'panel.tabs.privacy', visible: true },
     ]
@@ -209,6 +233,95 @@ export function getModuleTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
     }
 
     return tabs
+}
+
+// ── Sub-Item Builder ──────────────────────────────────────────────────────
+
+/** Module page definitions for sidebar sub-items */
+const MODULE_SUB_ITEMS: Array<{ key: string; label: string; featureKey: keyof PanelFeatureFlags; emoji: string }> = [
+    { key: 'chatbot', label: 'Chatbot', featureKey: 'enable_chatbot', emoji: '🤖' },
+    { key: 'crm', label: 'CRM', featureKey: 'enable_crm', emoji: '👥' },
+    { key: 'seo', label: 'SEO', featureKey: 'enable_seo', emoji: '📊' },
+    { key: 'redes-sociales', label: 'Redes Sociales', featureKey: 'enable_social_media', emoji: '📱' },
+    { key: 'mensajes', label: 'Mensajes', featureKey: 'enable_whatsapp_checkout', emoji: '💬' },
+    { key: 'automatizaciones', label: 'Automatizaciones', featureKey: 'enable_automations', emoji: '⚡' },
+    { key: 'canales', label: 'Canales', featureKey: 'enable_sales_channels', emoji: '📡' },
+    { key: 'capacidad', label: 'Capacidad', featureKey: 'enable_traffic_expansion', emoji: '📦' },
+    { key: 'auth', label: 'Auth Avanzado', featureKey: 'enable_auth_advanced', emoji: '🔐' },
+]
+
+/**
+ * Generate sub-items for a sidebar section based on feature flags.
+ * - Mi Tienda: promotes visible tabs to sub-items
+ * - Ventas: promotes visible tabs to sub-items
+ * - Módulos: marketplace + each active module page
+ * - Home, Settings, POS: no sub-items
+ */
+export function getPanelSectionSubItems(
+    sectionKey: SectionKey,
+    lang: string,
+    featureFlags: PanelFeatureFlags,
+    badges?: Record<string, number>,
+): PanelSubItem[] | undefined {
+    switch (sectionKey) {
+        case 'myStore': {
+            const tabs = getMyStoreTabs(featureFlags)
+            if (tabs.length <= 1) return undefined
+            return tabs.map(tab => ({
+                key: tab.key,
+                label: tab.label,
+                href: `/${lang}/panel/mi-tienda?tab=${tab.key}`,
+                icon: TAB_ICONS[tab.key],
+                featureKey: tab.featureKey,
+            }))
+        }
+        case 'sales': {
+            const tabs = getSalesTabs(featureFlags)
+            if (tabs.length <= 1) return undefined
+            return tabs.map(tab => ({
+                key: tab.key,
+                label: tab.label,
+                href: `/${lang}/panel/ventas?tab=${tab.key}`,
+                icon: TAB_ICONS[tab.key],
+                badge: tab.key === 'pedidos' ? badges?.orders : undefined,
+                featureKey: tab.featureKey,
+            }))
+        }
+        case 'modules': {
+            const items: PanelSubItem[] = [
+                { key: 'marketplace', label: 'Marketplace', href: `/${lang}/panel/modulos`, icon: 'grid', emoji: '🏪' },
+            ]
+            for (const mod of MODULE_SUB_ITEMS) {
+                if (featureFlags[mod.featureKey]) {
+                    items.push({
+                        key: mod.key,
+                        label: mod.label,
+                        href: `/${lang}/panel/${mod.key}`,
+                        featureKey: mod.featureKey,
+                        emoji: mod.emoji,
+                    })
+                }
+            }
+            return items.length > 1 ? items : undefined
+        }
+        default:
+            return undefined
+    }
+}
+
+/** Lucide icon names for tab sub-items */
+const TAB_ICONS: Record<string, string> = {
+    productos: 'package',
+    categorias: 'folder-tree',
+    inventario: 'warehouse',
+    insignias: 'award',
+    carrusel: 'image',
+    paginas: 'file-text',
+    pedidos: 'receipt',
+    clientes: 'users',
+    promociones: 'ticket',
+    devoluciones: 'undo',
+    resenas: 'star',
 }
 
 // ── Route Resolution ──────────────────────────────────────────────────────
@@ -326,76 +439,7 @@ export function getPanelFallbackRoute(lang: string): string {
     return `/${lang}/panel`
 }
 
-// ── Legacy Compatibility Exports ──────────────────────────────────────────
-// These are kept so that existing code (layout, proxy, guards) continues to
-// work while we migrate. They delegate to the new section-based system.
 
-export interface PanelNavItem {
-    key: string
-    href: string
-    label: string
-    exact?: boolean
-    group?: string
-}
-
-/** @deprecated — Use getPanelSections() instead */
-export function getPanelNavigationGrouped(opts: {
-    lang: string
-    labels: Record<string, string>
-    featureFlags: PanelFeatureFlags
-}): { operations: PanelNavItem[]; content: PanelNavItem[]; settings: PanelNavItem[] } {
-    // Map to the new sections for backward compat during migration
-    const sections = getPanelSections({
-        lang: opts.lang,
-        labels: {
-            home: opts.labels.dashboard || 'Home',
-            myStore: opts.labels.catalog || 'My Store',
-            sales: opts.labels.orders || 'Sales',
-            modules: opts.labels.modules || 'Modules',
-            settings: opts.labels.storeConfig || 'Settings',
-            pos: opts.labels.pos || 'POS',
-            ownerPanel: opts.labels.ownerPanel || 'Owner Panel',
-            backToStore: opts.labels.backToStore || 'Back to store',
-        },
-        featureFlags: opts.featureFlags,
-    })
-
-    const operations = sections
-        .filter(s => ['home', 'sales'].includes(s.key))
-        .map(s => ({ key: s.key, href: s.href, label: s.label, exact: s.exact }))
-
-    const content = sections
-        .filter(s => ['myStore', 'modules'].includes(s.key))
-        .map(s => ({ key: s.key, href: s.href, label: s.label }))
-
-    const settings = sections
-        .filter(s => ['settings', 'pos'].includes(s.key))
-        .map(s => ({ key: s.key, href: s.href, label: s.label }))
-
-    return { operations, content, settings }
-}
-
-/** @deprecated — Use getPanelSections() instead */
-export function getPanelNavigation(opts: {
-    lang: string
-    labels: Record<string, string>
-    featureFlags: PanelFeatureFlags
-}): { essentialItems: PanelNavItem[]; moduleItems: PanelNavItem[] } {
-    const grouped = getPanelNavigationGrouped(opts)
-    return {
-        essentialItems: [...grouped.operations, ...grouped.content, ...grouped.settings],
-        moduleItems: [],
-    }
-}
-
-// Keep ADVANCED_MODULES export for backward compat (used by layout proxy)
-export const ADVANCED_MODULES = Object.keys(ROUTE_REDIRECT_MAP)
-    .filter(k => ROUTE_REDIRECT_MAP[k].section === 'modulos' && k !== 'modulos')
-    .map(k => ({
-        key: k,
-        segment: k,
-        featureKey: undefined as string | undefined,
-    }))
 
 export function isAdvancedPanelRouteEnabled(
     pathname: string,

@@ -4,7 +4,7 @@
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
-    "count": 81,
+    "count": 82,
     "keys": [
       "enable_2fa",
       "enable_abandoned_cart_emails",
@@ -59,6 +59,7 @@
       "enable_pos_multi_device",
       "enable_pos_offline_cart",
       "enable_pos_quick_sale",
+      "enable_pos_reports",
       "enable_pos_shifts",
       "enable_pos_thermal_printer",
       "enable_product_badges",
@@ -146,6 +147,7 @@
           "enable_pos_line_discounts",
           "enable_pos_customer_search",
           "enable_pos_multi_device",
+          "enable_pos_reports",
           "enable_pos_shifts",
           "enable_product_badges"
         ]
@@ -958,6 +960,7 @@
               "enable_pos": true,
               "enable_pos_kiosk": true,
               "enable_pos_shifts": true,
+              "enable_pos_reports": true,
               "enable_pos_quick_sale": true,
               "enable_pos_multi_device": true,
               "enable_pos_offline_cart": true,

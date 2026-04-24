@@ -1,3 +1,4 @@
+import 'server-only'
 /**
  * Module Setup Registry — SSOT for per-module onboarding experiences
  *

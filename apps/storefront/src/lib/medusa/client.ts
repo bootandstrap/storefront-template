@@ -1,4 +1,5 @@
 import { resolveRegionId } from './region'
+import { logger } from '@/lib/logger'
 
 const MEDUSA_BACKEND_URL =
     process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
@@ -40,7 +41,7 @@ async function medusaFetch<T>(
         try {
             return await attempt(retryController.signal)
         } catch (retryErr) {
-            console.error(`[medusa] ${path} failed after retry`, retryErr)
+            logger.error(`[medusa] ${path} failed after retry`, retryErr)
             throw retryErr
         } finally {
             clearTimeout(retryTimer)

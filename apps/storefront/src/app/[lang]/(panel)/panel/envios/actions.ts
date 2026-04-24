@@ -5,6 +5,7 @@ import { getAdminShippingOptions, updateAdminShippingOption } from '@/lib/medusa
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import type { AdminShippingOption } from '@/lib/medusa/admin'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // List shipping options (Medusa Admin API — zero Supabase)
@@ -19,7 +20,7 @@ export async function listShippingOptions(): Promise<{
         const { shipping_options } = await getAdminShippingOptions(scope)
         return { options: shipping_options }
     } catch (err) {
-        console.error('[panel/envios] listShippingOptions error:', err)
+        logger.error('[panel/envios] listShippingOptions error:', err)
         return { options: [], error: err instanceof Error ? err.message : 'Error loading shipping options' }
     }
 }
@@ -47,7 +48,7 @@ export async function updateShippingPrice(
         logOwnerAction(tenantId, 'shipping.update_price', { optionId, amount, currencyCode })
         return { success: true }
     } catch (err) {
-        console.error('[panel/envios] updateShippingPrice error:', err)
+        logger.error('[panel/envios] updateShippingPrice error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Error updating price' }
     }
 }
@@ -72,7 +73,7 @@ export async function updateShippingName(
         logOwnerAction(tenantId, 'shipping.update_name', { optionId, name: name.trim() })
         return { success: true }
     } catch (err) {
-        console.error('[panel/envios] updateShippingName error:', err)
+        logger.error('[panel/envios] updateShippingName error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Error updating name' }
     }
 }

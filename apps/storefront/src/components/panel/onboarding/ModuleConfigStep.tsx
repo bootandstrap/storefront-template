@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronLeft, ChevronRight, ArrowRight, Settings2 } from 'lucide-react'
 import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
 import type { ModuleInfo } from './types'
+import { logger } from '@/lib/logger'
 
 interface ModuleConfigStepProps {
     modules: ModuleInfo[]
@@ -708,7 +709,7 @@ export default function ModuleConfigStep({
             }
             setSavedModules(prev => new Set(prev).add(mod.key))
         } catch (err) {
-            console.warn('[ModuleConfigStep] Save failed:', err)
+            logger.warn('[ModuleConfigStep] Save failed:', err)
         }
         setSaving(false)
     }, [fields, values, hasEditableFields, mod?.key])

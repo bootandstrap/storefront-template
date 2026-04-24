@@ -12,6 +12,7 @@ import ProductReviews from '@/components/products/ProductReviews'
 import ProductTabs from '@/components/products/ProductTabs'
 import ProductViewTracker from '@/components/products/ProductViewTracker'
 import RecentlyViewed from '@/components/products/RecentlyViewed'
+import ShareButtons from '@/components/products/ShareButtons'
 import { Truck, ShieldCheck, RotateCcw, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -115,19 +116,30 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 />
 
                 {/* Delivery info — trust badges */}
-                <div className="mt-8 border-t border-sf-3 pt-6 flex flex-wrap gap-6">
-                    <div className="flex items-center gap-3 text-sm text-tx-sec">
-                        <Truck className="w-5 h-5 text-brand shrink-0" />
-                        <span>{t('product.deliveryAvailable')}</span>
+                <div className="mt-8 border-t border-sf-3 pt-6 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-6">
+                        <div className="flex items-center gap-3 text-sm text-tx-sec">
+                            <Truck className="w-5 h-5 text-brand shrink-0" />
+                            <span>{t('product.deliveryAvailable')}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-tx-sec">
+                            <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
+                            <span>{t('product.qualityGuarantee')}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-tx-sec">
+                            <RotateCcw className="w-5 h-5 text-brand shrink-0" />
+                            <span>{t('product.easyReturns') || 'Easy returns'}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-tx-sec">
-                        <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
-                        <span>{t('product.qualityGuarantee')}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-tx-sec">
-                        <RotateCcw className="w-5 h-5 text-brand shrink-0" />
-                        <span>{t('product.easyReturns') || 'Easy returns'}</span>
-                    </div>
+
+                    {/* Social sharing — gated by enable_social_sharing (RRSS module) */}
+                    {featureFlags.enable_social_sharing && (
+                        <ShareButtons
+                            url={`${process.env.NEXT_PUBLIC_SITE_URL || ''}/${lang}/productos/${product.handle}`}
+                            title={product.title}
+                            thumbnail={product.thumbnail}
+                        />
+                    )}
                 </div>
 
                 {/* Product Tabs: Description | Details | Reviews */}

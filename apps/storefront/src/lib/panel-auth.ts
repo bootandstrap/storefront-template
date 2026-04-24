@@ -12,6 +12,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PANEL_ALLOWED_ROLES, isPanelRole, type PanelRole } from '@/lib/panel-access-policy'
+import { logger } from '@/lib/logger'
 
 // Re-use the centralized PANEL_ALLOWED_ROLES from panel-access-policy.ts
 const PANEL_ROLES = PANEL_ALLOWED_ROLES
@@ -157,7 +158,7 @@ export async function reconcileLegacyOwnerRole(
         .eq('id', input.userId)
 
     if (profileError) {
-        console.warn(`[panel-auth] Failed to promote ${input.userId} to owner: ${profileError.message}`)
+        logger.warn(`[panel-auth] Failed to promote ${input.userId} to owner: ${profileError.message}`)
         return input.currentRole ?? null
     }
 

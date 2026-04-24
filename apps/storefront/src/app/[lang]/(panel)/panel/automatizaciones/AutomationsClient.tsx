@@ -17,7 +17,7 @@ import {
     Zap, XCircle, RotateCcw, Truck,
     Webhook, MessageCircle, Send, Mail,
     Settings, Save, Loader2, Check, ChevronDown, ChevronUp,
-    Bell, Activity, CheckCircle2,
+    Bell, Activity, CheckCircle2, Lock,
 } from 'lucide-react'
 import { NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS, type ChannelKey } from '@/lib/registries/notification-events'
 import {
@@ -40,6 +40,7 @@ interface ChannelConfigs {
 interface AutomationsClientProps {
     channels: ChannelConfigs
     events: Record<string, string[]>
+    enableCustomWebhooks: boolean
     labels: {
         tabChannels: string
         tabEvents: string
@@ -78,7 +79,7 @@ type TabId = 'channels' | 'events' | 'log'
 // Component
 // ---------------------------------------------------------------------------
 
-export default function AutomationsClient({ channels: initialChannels, events: initialEvents, labels, lang }: AutomationsClientProps) {
+export default function AutomationsClient({ channels: initialChannels, events: initialEvents, enableCustomWebhooks, labels, lang }: AutomationsClientProps) {
     const [tab, setTab] = useState<TabId>('channels')
     const [channels, setChannels] = useState<ChannelConfigs>(initialChannels)
     const [events, setEvents] = useState<Record<string, string[]>>(initialEvents)
@@ -201,12 +202,16 @@ export default function AutomationsClient({ channels: initialChannels, events: i
                         const isEnabled = channels[ch]?.enabled ?? false
                         const isExpanded = expanded === ch
                         const isEmail = ch === 'email'
+                        const isWebhook = ch === 'webhook'
+                        const webhookLocked = isWebhook && !enableCustomWebhooks
 
                         return (
                             <div
                                 key={ch}
                                 className={`rounded-2xl border transition-all ${
-                                    isEnabled ? 'border-brand/30 bg-brand-subtle/20' : 'border-sf-3 bg-sf-0'
+                                    webhookLocked
+                                        ? 'border-sf-3 bg-sf-0 opacity-60'
+                                        : isEnabled ? 'border-brand/30 bg-brand-subtle/20' : 'border-sf-3 bg-sf-0'
                                 }`}
                             >
                                 {/* Card header */}
@@ -229,18 +234,23 @@ export default function AutomationsClient({ channels: initialChannels, events: i
                                         {/* Toggle */}
                                         <button
                                             onClick={() => toggleChannel(ch)}
-                                            disabled={isEmail || isPending}
+                                            disabled={isEmail || webhookLocked || isPending}
                                             className={`relative w-12 h-7 rounded-full transition-colors ${
                                                 isEnabled ? 'bg-brand' : 'bg-sf-3'
-                                            } ${isEmail ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            } ${(isEmail || webhookLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                                             aria-label={`Toggle ${meta.label}`}
                                         >
                                             <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
                                                 isEnabled ? 'translate-x-5' : ''
                                             }`} />
                                         </button>
+                                        {webhookLocked && (
+                                            <span className="flex items-center gap-1 text-xs text-tx-muted">
+                                                <Lock className="w-3 h-3" /> Pro
+                                            </span>
+                                        )}
                                         {/* Expand (not for email) */}
-                                        {!isEmail && (
+                                        {!isEmail && !webhookLocked && (
                                             <button
                                                 onClick={() => setExpanded(isExpanded ? null : ch)}
                                                 className="p-1.5 rounded-lg hover:bg-sf-1 text-tx-muted"

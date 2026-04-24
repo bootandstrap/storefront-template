@@ -81,7 +81,7 @@ export async function authenticatedMedusaFetch<T>(
         try {
             return await attempt(retryController.signal)
         } catch (retryErr) {
-            console.error(`[medusa:auth] ${path} failed after retry`, retryErr)
+            logger.error(`[medusa:auth] ${path} failed after retry`, retryErr)
             throw retryErr
         } finally {
             clearTimeout(retryTimer)
@@ -96,6 +96,7 @@ export async function authenticatedMedusaFetch<T>(
 // ---------------------------------------------------------------------------
 
 import type { MedusaOrder, MedusaAddress } from './client'
+import { logger } from '@/lib/logger'
 
 interface AuthOrderListResponse {
     orders: MedusaOrder[]

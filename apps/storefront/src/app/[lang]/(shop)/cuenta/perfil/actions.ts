@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export interface ProfileState {
     success: boolean
@@ -32,7 +33,7 @@ export async function updateProfileAction(
         .eq('id', user.id)
 
     if (error) {
-        console.error('[profile] Update failed:', error.message)
+        logger.error('[profile] Update failed:', error.message)
         return { success: false, error: 'update_failed' }
     }
 

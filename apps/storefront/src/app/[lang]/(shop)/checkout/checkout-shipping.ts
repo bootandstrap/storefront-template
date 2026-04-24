@@ -1,6 +1,7 @@
 'use server'
 
 import { medusaStore } from './checkout-medusa'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,7 +52,7 @@ export async function setCartAddress(
         })
         return { success: true }
     } catch (err) {
-        console.error('[checkout] setCartAddress failed:', err)
+        logger.error('[checkout] setCartAddress failed:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -83,7 +84,7 @@ export async function getShippingOptions(
         return { options }
     } catch (err) {
         // Graceful fallback: no fulfillment provider configured → no shipping options
-        console.warn('[checkout] getShippingOptions fallback (no provider?):', err)
+        logger.warn('[checkout] getShippingOptions fallback (no provider?):', err)
         return { options: [] }
     }
 }
@@ -103,7 +104,7 @@ export async function setShippingMethod(
         })
         return { success: true }
     } catch (err) {
-        console.error('[checkout] setShippingMethod failed:', err)
+        logger.error('[checkout] setShippingMethod failed:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -139,7 +140,7 @@ export async function getCartTotals(
             },
         }
     } catch (err) {
-        console.error('[checkout] getCartTotals failed:', err)
+        logger.error('[checkout] getCartTotals failed:', err)
         return { totals: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

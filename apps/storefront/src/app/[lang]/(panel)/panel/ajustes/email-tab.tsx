@@ -153,6 +153,7 @@ export default async function EmailTabContent({
     const abandonedCartFlag = isFeatureEnabled(featureFlags, 'enable_abandoned_cart_emails')
     const campaignsFlag = isFeatureEnabled(featureFlags, 'enable_email_campaigns')
     const templatesFlag = isFeatureEnabled(featureFlags, 'enable_email_templates')
+    const segmentationFlag = isFeatureEnabled(featureFlags, 'enable_email_segmentation')
 
     const { getEmailLogs } = await import('@/lib/email-log')
     const [automationConfig, emailPreferences, emailStats, emailLogsData] = await Promise.all([
@@ -202,6 +203,7 @@ export default async function EmailTabContent({
                 enable_abandoned_cart_emails: abandonedCartFlag,
                 enable_email_campaigns: campaignsFlag,
                 enable_email_templates: templatesFlag,
+                enable_email_segmentation: segmentationFlag,
             }}
             hasProvider={hasProvider}
             labels={labels}

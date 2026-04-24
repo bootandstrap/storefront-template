@@ -1,3 +1,4 @@
+import 'server-only'
 /**
  * logOwnerAction — Audit logging helper for owner panel actions
  *
@@ -10,6 +11,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export type OwnerActionCategory =
     | 'product'
@@ -88,7 +90,7 @@ export async function logOwnerAction(
         })
     } catch (err) {
         // Non-blocking — audit logging should never break the action
-        console.warn('[audit] Failed to log owner action:', action, err)
+        logger.warn('[audit] Failed to log owner action', { action, error: err })
     }
 }
 

@@ -27,6 +27,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { getGovernanceBrowserClient } from '@/lib/supabase/governance-browser'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,7 +114,7 @@ export function usePOSSync({
 
         const client = getGovernanceBrowserClient()
         if (!client) {
-            console.warn('[pos-sync] No Supabase client — multi-device disabled')
+            logger.warn('[pos-sync] No Supabase client — multi-device disabled')
             return
         }
 
@@ -131,7 +132,7 @@ export function usePOSSync({
             // Double-check: ignore own events (belt-and-suspenders with self:false)
             if (event.senderId === SESSION_ID) return
 
-            console.info(
+            logger.info(
                 `[pos-sync] Received ${event.type} from ${event.senderId.slice(0, 8)}…`
             )
             onEventRef.current?.(event)
@@ -151,10 +152,10 @@ export function usePOSSync({
                     session_id: SESSION_ID,
                     joined_at: new Date().toISOString(),
                 })
-                console.info(`[pos-sync] Connected to ${channelName} (session: ${SESSION_ID.slice(0, 8)}…)`)
+                logger.info(`[pos-sync] Connected to ${channelName} (session: ${SESSION_ID.slice(0, 8)}…)`)
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                 setConnected(false)
-                console.warn(`[pos-sync] Channel ${status} for ${channelName}`)
+                logger.warn(`[pos-sync] Channel ${status} for ${channelName}`)
             }
         })
 

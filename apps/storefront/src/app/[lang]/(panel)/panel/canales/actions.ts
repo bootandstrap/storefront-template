@@ -13,6 +13,7 @@
 import { withPanelGuard } from '@/lib/panel-guard'
 import { adminFetch } from '@/lib/medusa/admin-core'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,7 +112,7 @@ export async function getSalesChannelsAction(): Promise<SalesChannelsData> {
 
         return { channels, metrics, currentChannelId }
     } catch (err) {
-        console.error('[canales/actions] Failed to fetch sales channels:', err)
+        logger.error('[canales/actions] Failed to fetch sales channels:', err)
         return { channels: [], metrics: {}, currentChannelId: null }
     }
 }

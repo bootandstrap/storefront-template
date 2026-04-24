@@ -14,7 +14,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getSalesTabs } from '@/lib/panel-policy'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import FeatureGate from '@/components/ui/FeatureGate'
+import GhostPreview from '@/components/ui/GhostPreview'
 import { ShoppingCart } from 'lucide-react'
 import SalesShell from './SalesShell'
 
@@ -92,7 +92,7 @@ export default async function SalesPage({
         }
         case 'devoluciones': {
             if (!featureFlags.enable_self_service_returns) {
-                tabContent = <FeatureGate flag="enable_self_service_returns" lang={lang} />
+                tabContent = <GhostPreview flag="enable_self_service_returns" lang={lang} />
                 break
             }
             const data = await fetchReturnsData(lang)
@@ -101,7 +101,7 @@ export default async function SalesPage({
         }
         case 'resenas': {
             if (!featureFlags.enable_reviews) {
-                tabContent = <FeatureGate flag="enable_reviews" lang={lang} />
+                tabContent = <GhostPreview flag="enable_reviews" lang={lang} />
                 break
             }
             const data = await fetchReviewsData(lang)

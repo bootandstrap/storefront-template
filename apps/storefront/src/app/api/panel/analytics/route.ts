@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/panel/analytics
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
         if (error instanceof Error && error.message.includes('Unauthorized')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-        console.error('[analytics] Error:', error)
+        logger.error('[analytics] Error:', error)
         return NextResponse.json({ error: 'Internal error' }, { status: 500 })
     }
 }

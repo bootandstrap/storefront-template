@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatLogsTable, chatSettingsTable, profilesTable } from '@/lib/chat/db'
+import { logger } from '@/lib/logger'
 
 interface LogEntry {
     tokens_used?: number
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
         })
 
     } catch (error) {
-        console.error('[ChatStats] Error:', error)
+        logger.error('[ChatStats] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

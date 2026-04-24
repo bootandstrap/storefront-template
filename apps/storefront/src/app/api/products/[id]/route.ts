@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
+import { logger } from '@/lib/logger'
 
 // Medusa product IDs: prod_XXXX (alphanumeric + underscores)
 const VALID_PRODUCT_ID = /^prod_[a-zA-Z0-9]+$/
@@ -48,7 +49,7 @@ export async function GET(
         const data = await res.json()
         return NextResponse.json({ product: data.product })
     } catch (error) {
-        console.error('[Products API] Error:', error)
+        logger.error('[Products API] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

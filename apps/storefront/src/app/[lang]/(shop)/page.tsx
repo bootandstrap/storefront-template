@@ -15,6 +15,7 @@ import {
   CategoryGridSkeleton,
   ProductGridSkeleton,
 } from '@/components/ui/Skeleton'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,11 +62,11 @@ export default async function HomePage({
         .eq('active', true)
         .order('sort_order', { ascending: true })
       if (error) {
-        console.warn('[homepage] carousel_slides query error:', error.message)
+        logger.warn('[homepage] carousel_slides query error:', error.message)
       }
       carouselSlides = data ?? []
     } catch (err) {
-      console.warn('[homepage] carousel_slides fetch failed:', err)
+      logger.warn('[homepage] carousel_slides fetch failed:', err)
     }
   }
 

@@ -11,6 +11,7 @@ import {
     createAdminRefund,
 } from '@/lib/medusa/admin'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
+import { logger } from '@/lib/logger'
 
 export async function fulfillOrder(
     orderId: string
@@ -32,7 +33,7 @@ export async function fulfillOrder(
         logOwnerAction(tenantId, 'order.fulfill', { orderId })
         return { success: true }
     } catch (err) {
-        console.error('[panel/orders] Fulfill error:', err)
+        logger.error('[panel/orders] Fulfill error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -57,7 +58,7 @@ export async function cancelOrder(
         logOwnerAction(tenantId, 'order.cancel', { orderId })
         return { success: true }
     } catch (err) {
-        console.error('[panel/orders] Cancel error:', err)
+        logger.error('[panel/orders] Cancel error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -89,7 +90,7 @@ export async function refundOrder(
         logOwnerAction(tenantId, 'order.refund', { orderId, paymentId, amount })
         return { success: true }
     } catch (err) {
-        console.error('[panel/orders] Refund error:', err)
+        logger.error('[panel/orders] Refund error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

@@ -10,6 +10,7 @@
 import { revalidatePanel } from '@/lib/revalidate'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { sanitizeModuleConfig } from '@/lib/owner-config'
+import { logger } from '@/lib/logger'
 
 export async function saveModuleConfigAction(
   moduleKey: string,
@@ -43,14 +44,14 @@ export async function saveModuleConfigAction(
       .eq('tenant_id', tenantId)
 
     if (error) {
-      console.error(`[panel/module-config/${moduleKey}] Save failed:`, error)
+      logger.error(`[panel/module-config/${moduleKey}] Save failed:`, error)
       return { success: false, error: error.message }
     }
 
     revalidatePanel('all')
     return { success: true }
   } catch (err) {
-    console.error(`[panel/module-config/${moduleKey}] Error:`, err)
+    logger.error(`[panel/module-config/${moduleKey}] Error:`, err)
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

@@ -6,6 +6,7 @@
 
 import { chatSettingsTable } from '@/lib/chat/db'
 import { CHAT_CONFIG } from './config'
+import { logger } from '@/lib/logger'
 
 interface ChatSettings {
     anonymousMessageLimit: number
@@ -52,7 +53,7 @@ export async function getChatSettings(tenantId: string): Promise<ChatSettings> {
         }
 
         if (!data || data.length === 0) {
-            console.warn('[ChatSettings] Using file defaults for tenant:', tenantId)
+            logger.warn('[ChatSettings] Using file defaults for tenant:', tenantId)
             return getDefaultSettings()
         }
 
@@ -77,7 +78,7 @@ export async function getChatSettings(tenantId: string): Promise<ChatSettings> {
         return settings
 
     } catch (error) {
-        console.error('[ChatSettings] Error loading:', error)
+        logger.error('[ChatSettings] Error loading:', error)
         return getDefaultSettings()
     }
 }

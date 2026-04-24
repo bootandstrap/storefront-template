@@ -193,6 +193,7 @@ export const FeatureFlagsSchema = z.object({
     enable_pos_line_discounts: z.boolean(),
     enable_pos_customer_search: z.boolean(),
     enable_pos_multi_device: z.boolean(),
+    enable_pos_reports: z.boolean(),
     enable_pos_shifts: z.boolean(),
     // Kiosk (granular)
     enable_kiosk_analytics: z.boolean(),

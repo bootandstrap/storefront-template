@@ -9,7 +9,8 @@
  * from BSWEB/industry-templates.ts (cross-repo import not possible).
  *
  * Usage:
- *   npx tsx scripts/seed-demo.ts                  # Full seed (clean + seed all)
+ *   npx tsx scripts/seed-demo.ts                  # Standard seed (clean + products + orders + gov)
+ *   npx tsx scripts/seed-demo.ts --full             # Full seed (+ carousel, pages, promos, chatbot, newsletter)
  *   npx tsx scripts/seed-demo.ts --clean-only     # Just wipe products (no re-seed)
  *   npx tsx scripts/seed-demo.ts --skip-orders    # Seed products but skip orders
  *   npx tsx scripts/seed-demo.ts --template=fashion  # (future: different template)
@@ -654,6 +655,7 @@ async function main() {
     const args = process.argv.slice(2)
     const cleanOnly = args.includes('--clean-only')
     const skipOrders = args.includes('--skip-orders')
+    const fullSeed = args.includes('--full')
     const templateArg = args.find(a => a.startsWith('--template='))?.split('=')[1] || 'campifruit'
 
     const template = TEMPLATES[templateArg]
@@ -673,7 +675,7 @@ async function main() {
     console.log('═══════════════════════════════════════════════════════════════')
     console.log(`  Template:   ${template.id} (${template.products.length} products, ${template.categories.length} categories)`)
     console.log(`  Medusa:     ${MEDUSA_URL}`)
-    console.log(`  Mode:       ${cleanOnly ? 'CLEAN ONLY' : skipOrders ? 'PRODUCTS ONLY' : 'FULL (products + customers + orders)'}`)
+    console.log(`  Mode:       ${cleanOnly ? 'CLEAN ONLY' : skipOrders ? 'PRODUCTS ONLY' : fullSeed ? 'FULL (products + orders + content)' : 'STANDARD (products + orders)'}`)
     if (TENANT_ID) console.log(`  Tenant:     ${TENANT_ID}`)
     console.log('')
 
@@ -762,6 +764,19 @@ async function main() {
         log('⚠️', `Governance: ${err instanceof Error ? err.message : err}`)
     }
 
+    // ── Content (carousel, CMS, promos, chatbot, newsletter) ──
+    let contentSeeded = false
+    if (fullSeed && TENANT_ID) {
+        console.log('\n  ── Content ──')
+        try {
+            const { seedContent } = require('./seed-content')
+            await seedContent(TENANT_ID, template.id, undefined, log)
+            contentSeeded = true
+        } catch (err) {
+            log('⚠️', `Content: ${err instanceof Error ? err.message : err}`)
+        }
+    }
+
     // ── Summary ──
     const elapsed = Math.round(performance.now() - startTime)
     console.log('')
@@ -773,6 +788,7 @@ async function main() {
     console.log(`  Products:     ${productsSeeded} created, ${template.products.length} total`)
     console.log(`  Customers:    ${customersSeeded} created`)
     console.log(`  Orders:       ${ordersSeeded} created`)
+    if (fullSeed) console.log(`  Content:      ${contentSeeded ? '✅ carousel + pages + promos + chatbot + newsletter' : '⚠️ skipped (no TENANT_ID)'}`)
     console.log(`  Time:         ${elapsed}ms (${(elapsed / 1000).toFixed(1)}s)`)
     console.log('')
     console.log('  📋 Next steps:')

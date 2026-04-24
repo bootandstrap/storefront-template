@@ -20,6 +20,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getGovernanceBrowserClient } from '@/lib/supabase/governance-browser'
+import { logger } from '@/lib/logger'
 
 /** Debounce delay to batch rapid changes (e.g., setBatchOverrides writes 44 flags) */
 const DEBOUNCE_MS = 1500
@@ -52,18 +53,16 @@ export function useRealtimeGovernance(tenantId: string | undefined) {
 
         channel
             .on('broadcast', { event: 'governance_change' }, (payload) => {
-                console.info(
-                    `[realtime-governance] Received change:`,
-                    payload?.payload?.table,
-                    payload?.payload?.operation,
+                logger.info(
+                    `[realtime-governance] Received change: ${payload?.payload?.table} ${payload?.payload?.operation}`
                 )
                 handleGovernanceChange()
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.info(`[realtime-governance] Subscribed to ${channelName}`)
+                    logger.info(`[realtime-governance] Subscribed to ${channelName}`)
                 } else if (status === 'CHANNEL_ERROR') {
-                    console.warn(`[realtime-governance] Channel error for ${channelName}`)
+                    logger.warn(`[realtime-governance] Channel error for ${channelName}`)
                 }
             })
 

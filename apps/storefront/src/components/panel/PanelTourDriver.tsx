@@ -21,6 +21,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { driver, type DriveStep, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { completeTourAction } from '@/app/[lang]/(panel)/panel/actions'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -155,7 +156,7 @@ export default function PanelTourDriver({
             try {
                 await completeTourAction()
             } catch (err) {
-                console.warn('[PanelTourDriver] Tour completion save failed:', err)
+                logger.warn('[PanelTourDriver] Tour completion save failed:', err)
             }
             try {
                 localStorage.setItem('bns-tour-done', '1')

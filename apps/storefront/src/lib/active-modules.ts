@@ -16,6 +16,7 @@
 
 import { createGovernanceClient } from '@/lib/supabase/governance'
 import { deriveActiveModulesFromFlags } from '@/lib/governance/derive-modules'
+import { logger } from '@/lib/logger'
 
 export interface ActiveModuleInfo {
     moduleKey: string
@@ -85,7 +86,7 @@ export async function getActiveModulesForTenant(tenantId: string): Promise<Activ
         .in('status', ['paid', 'active', 'completed', 'confirmed']) as { data: OrderRow[] | null; error: { message: string } | null }
 
     if (error) {
-        console.error('[active-modules] Error fetching module orders:', error)
+        logger.error('[active-modules] Error fetching module orders:', error)
     }
 
     // Build tier lookup from orders

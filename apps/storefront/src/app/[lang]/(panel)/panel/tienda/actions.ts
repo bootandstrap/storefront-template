@@ -5,6 +5,7 @@ import type { StoreConfig } from '@/lib/config'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { StoreConfigUpdateSchema } from '@/lib/owner-validation'
+import { logger } from '@/lib/logger'
 
 // Whitelist of config columns that can be updated from Owner Panel
 const ALLOWED_CONFIG_FIELDS: (keyof StoreConfig)[] = [
@@ -80,13 +81,13 @@ export async function saveStoreConfig(
                 p_updates: sanitized
             })
             rpcError = rpcErr
-        } catch (e: any) {
+        } catch (e: unknown) {
             rpcError = e
         }
 
         // 2. Fallback to direct UPDATE if RPC is missing/fails (for local dev environments not fully synced)
         if (rpcError) {
-            console.warn('[panel/config] RPC failed, attempting direct update fallback:', rpcError)
+            logger.warn('[panel/config] RPC failed, attempting direct update fallback:', rpcError)
             const { error: fallbackError } = await supabase
                 .from('config')
                 .update(sanitized)
@@ -94,7 +95,7 @@ export async function saveStoreConfig(
                 .eq('tenant_id', tenantId)
 
             if (fallbackError) {
-                console.error('[panel/config] Both RPC and Fallback failed:', fallbackError)
+                logger.error('[panel/config] Both RPC and Fallback failed:', fallbackError)
                 return { success: false, error: fallbackError.message }
             }
         }
@@ -103,7 +104,7 @@ export async function saveStoreConfig(
         logOwnerAction(tenantId, 'settings.save_config', { fields: Object.keys(sanitized) })
         return { success: true }
     } catch (err) {
-        console.error('[panel/config] Error:', err)
+        logger.error('[panel/config] Error:', err)
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

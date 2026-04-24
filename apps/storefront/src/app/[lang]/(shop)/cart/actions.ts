@@ -8,6 +8,7 @@ import {
     getCart as medusaGetCart,
     type MedusaCart,
 } from '@/lib/medusa/client'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Server Actions for cart mutations
@@ -34,7 +35,7 @@ export async function addToCartAction(
             // Stale cart recovery: if the existing cart fails (e.g., wrong region,
             // deleted during re-seed), create a fresh cart and retry once
             if (cartId) {
-                console.warn('[cart] Stale cart detected, creating fresh cart...', cartId)
+                logger.warn('[cart] Stale cart detected, creating fresh cart...', cartId)
                 const freshCart = await medusaCreateCart()
                 const cart = await medusaAddToCart(freshCart.id, variantId, quantity)
                 return { cart, cartId: freshCart.id }
@@ -42,7 +43,7 @@ export async function addToCartAction(
             throw addErr
         }
     } catch (err) {
-        console.error('[cart] addToCart failed:', err)
+        logger.error('[cart] addToCart failed:', err)
         return { cart: null, cartId: null }
     }
 }
@@ -55,7 +56,7 @@ export async function updateCartItemAction(
     try {
         return await medusaUpdateCartItem(cartId, lineItemId, quantity)
     } catch (err) {
-        console.error('[cart] updateCartItem failed:', err)
+        logger.error('[cart] updateCartItem failed:', err)
         return null
     }
 }
@@ -67,7 +68,7 @@ export async function removeFromCartAction(
     try {
         return await medusaRemoveFromCart(cartId, lineItemId)
     } catch (err) {
-        console.error('[cart] removeFromCart failed:', err)
+        logger.error('[cart] removeFromCart failed:', err)
         return null
     }
 }
@@ -78,7 +79,7 @@ export async function getCartAction(
     try {
         return await medusaGetCart(cartId)
     } catch (err) {
-        console.error('[cart] getCart failed:', err)
+        logger.error('[cart] getCart failed:', err)
         return null
     }
 }

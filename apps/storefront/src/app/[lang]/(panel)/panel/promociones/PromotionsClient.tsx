@@ -23,12 +23,15 @@ import {
     Tag,
 } from 'lucide-react'
 import type { AdminPromotion, CreatePromotionInput } from '@/lib/medusa/admin-promotions'
+import LimitAwareCTA from '@/components/panel/LimitAwareCTA'
+import type { LimitCheckResult } from '@/lib/limits'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
     promotions: AdminPromotion[]
     totalCount: number
+    promotionLimitResult?: LimitCheckResult
     lang: string
     labels: {
         title: string
@@ -81,7 +84,7 @@ function getTypeColor(type: string) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function PromotionsClient({ promotions: initialPromotions, lang, labels }: Props) {
+export default function PromotionsClient({ promotions: initialPromotions, promotionLimitResult, lang, labels }: Props) {
     const [promotions, setPromotions] = useState(initialPromotions)
     const [search, setSearch] = useState('')
     const [showCreate, setShowCreate] = useState(false)
@@ -202,13 +205,25 @@ export default function PromotionsClient({ promotions: initialPromotions, lang, 
                         className="w-full pl-9 pr-3 py-2 rounded-xl border border-sf-3/30 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                 </div>
-                <button
-                    onClick={() => setShowCreate(!showCreate)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    {labels.create}
-                </button>
+                {promotionLimitResult ? (
+                    <LimitAwareCTA
+                        label={labels.create}
+                        icon={<Plus className="w-4 h-4" />}
+                        limitResult={promotionLimitResult}
+                        onClick={() => setShowCreate(!showCreate)}
+                        upgradeHref="modulos"
+                        isLoading={isPending}
+                        showCounter
+                    />
+                ) : (
+                    <button
+                        onClick={() => setShowCreate(!showCreate)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {labels.create}
+                    </button>
+                )}
             </div>
 
             {/* Create Form */}

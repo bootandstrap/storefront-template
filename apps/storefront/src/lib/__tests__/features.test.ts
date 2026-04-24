@@ -55,6 +55,7 @@ const mockFlags: FeatureFlags = {
     enable_pos_line_discounts: false,
     enable_pos_customer_search: false,
     enable_pos_multi_device: false,
+    enable_pos_reports: false,
     enable_pos_shifts: false,
     owner_lite_enabled: true,
     owner_advanced_modules_enabled: false,

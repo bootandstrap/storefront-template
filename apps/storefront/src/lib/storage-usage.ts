@@ -11,6 +11,7 @@
 
 import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import type { TenantStorageUsage } from '@/lib/backup/backup-types'
+import { logger } from '@/lib/logger'
 
 /** Average image size estimate in bytes — ONLY used as fallback */
 const AVG_IMAGE_SIZE_BYTES = 800 * 1024
@@ -39,7 +40,7 @@ export async function getTenantStorageUsage(
         }
 
         // RPC not available → return zeros
-        console.warn('[storage-usage] RPC unavailable, returning empty:', error?.message)
+        logger.warn('[storage-usage] RPC unavailable, returning empty:', error?.message)
         return {
             images: { count: 0, bytes: 0, mb: 0 },
             backups: { count: 0, bytes: 0, mb: 0 },

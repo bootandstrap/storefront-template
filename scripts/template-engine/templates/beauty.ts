@@ -20,7 +20,14 @@ export const beautyTemplate: IndustryTemplate = {
     countryPrefix: '+34',
 
     governance: {
-        bundleName: 'Demo Beauty',
+        modules: [
+            { module: 'ecommerce', tier: 'basic' },
+            { module: 'pos', tier: 'basic' },
+            { module: 'sales_channels', tier: 'basic' },
+            { module: 'crm', tier: 'basic' },
+            { module: 'email_marketing', tier: 'basic' },
+            { module: 'rrss', tier: 'instagram' },
+        ],
         flagOverrides: {
             enable_ecommerce: true,
             enable_pos: true,

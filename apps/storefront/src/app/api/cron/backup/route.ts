@@ -16,6 +16,7 @@ import { executeFullBackup } from '@/lib/backup/backup-executor'
 import { executeRetention } from '@/lib/backup/backup-retention'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getTenantSlug } from '@/lib/backup/tenant-slug'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
     try {
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
             },
         })
     } catch (err) {
-        console.error('[cron/backup] Error:', err)
+        logger.error('[cron/backup] Error:', err)
         return NextResponse.json(
             { error: err instanceof Error ? err.message : 'Internal error' },
             { status: 500 }

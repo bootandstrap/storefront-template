@@ -18,6 +18,7 @@ import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getAdminCustomers, updateCustomerMetadata } from '@/lib/medusa/admin'
 import { adminFetch } from '@/lib/medusa/admin-core'
+import { logger } from '@/lib/logger'
 
 interface ActionResult {
     success: boolean
@@ -67,7 +68,7 @@ export async function createCrmContact(data: {
     }, scope)
 
     if (error) {
-        console.error('[crm] Create contact failed:', error)
+        logger.error('[crm] Create contact failed:', error)
         return { success: false, error: error.includes('already exists') ? 'Este contacto ya existe' : error }
     }
 

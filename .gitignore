@@ -74,3 +74,6 @@ secrets/
 
 # Allow shared package dist for publishing
 !packages/shared/dist/
+
+# Generated email previews (build artifacts)
+apps/storefront/email-previews/

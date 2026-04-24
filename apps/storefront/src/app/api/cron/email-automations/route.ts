@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { getConfig } from '@/lib/config'
 import { processAbandonedCarts, processReviewRequests, DEFAULT_AUTOMATION_CONFIG } from '@/lib/email-automations'
 import type { AutomationConfig, AbandonedCart, DeliveredOrder } from '@/lib/email-automations-shared'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -57,9 +58,9 @@ async function fetchAbandonedCarts(delayHours: number, defaultCurrency: string):
         if (!res.ok) {
             // Medusa v2 removed /admin/carts — 404 is expected
             if (res.status === 404) {
-                console.warn('[email-automations] /admin/carts not available in Medusa v2. Abandoned cart emails skipped.')
+                logger.warn('[email-automations] /admin/carts not available in Medusa v2. Abandoned cart emails skipped.')
             } else {
-                console.warn(`[email-automations] Failed to fetch abandoned carts: HTTP ${res.status}`)
+                logger.warn(`[email-automations] Failed to fetch abandoned carts: HTTP ${res.status}`)
             }
             return []
         }
@@ -84,7 +85,7 @@ async function fetchAbandonedCarts(delayHours: number, defaultCurrency: string):
                 abandoned_at: new Date(c.created_at as string),
             }))
     } catch (err) {
-        console.error('[email-automations] Error fetching abandoned carts:', err)
+        logger.error('[email-automations] Error fetching abandoned carts:', err)
         return []
     }
 }
@@ -108,7 +109,7 @@ async function fetchDeliveredOrders(delayDays: number): Promise<DeliveredOrder[]
         )
 
         if (!res.ok) {
-            console.warn(`[email-automations] Failed to fetch delivered orders: HTTP ${res.status}`)
+            logger.warn(`[email-automations] Failed to fetch delivered orders: HTTP ${res.status}`)
             return []
         }
 
@@ -128,7 +129,7 @@ async function fetchDeliveredOrders(delayDays: number): Promise<DeliveredOrder[]
                 })),
             }))
     } catch (err) {
-        console.error('[email-automations] Error fetching delivered orders:', err)
+        logger.error('[email-automations] Error fetching delivered orders:', err)
         return []
     }
 }
@@ -236,7 +237,7 @@ export async function POST(request: Request) {
             monthly_email_limit: monthlyLimit,
         })
     } catch (err) {
-        console.error('[email-automations] Cron endpoint error:', err)
+        logger.error('[email-automations] Cron endpoint error:', err)
         return NextResponse.json(
             { error: 'Internal error', details: err instanceof Error ? err.message : 'Unknown' },
             { status: 500 }

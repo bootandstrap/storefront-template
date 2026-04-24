@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatSettingsTable, profilesTable } from '@/lib/chat/db'
 import { clearSettingsCache } from '@/lib/chat/settings-loader'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
     try {
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (fetchError) {
-            console.error('[ChatSettings] Error fetching:', fetchError)
+            logger.error('[ChatSettings] Error fetching:', fetchError)
             return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
         }
 
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ settings: publicSettings })
 
     } catch (error) {
-        console.error('[ChatSettings] Error:', error)
+        logger.error('[ChatSettings] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
@@ -134,7 +135,7 @@ export async function PUT(request: NextRequest) {
             }, { onConflict: 'tenant_id,key' })
 
         if (error) {
-            console.error('[ChatSettings] Update error:', error)
+            logger.error('[ChatSettings] Update error:', error)
             return NextResponse.json({ error: 'Failed to update setting' }, { status: 500 })
         }
 
@@ -142,7 +143,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ success: true, key, value })
 
     } catch (error) {
-        console.error('[ChatSettings] Error:', error)
+        logger.error('[ChatSettings] Error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

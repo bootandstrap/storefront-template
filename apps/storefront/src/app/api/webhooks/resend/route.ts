@@ -22,6 +22,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,7 +60,7 @@ function verifySignature(
 ): boolean {
     // If no secret configured, skip verification (dev mode)
     if (!RESEND_WEBHOOK_SECRET) {
-        console.warn('[resend-webhook] No RESEND_WEBHOOK_SECRET configured — skipping verification')
+        logger.warn('[resend-webhook] No RESEND_WEBHOOK_SECRET configured — skipping verification')
         return true
     }
 
@@ -93,7 +94,7 @@ async function incrementEmailCounter(tenantId: string): Promise<void> {
 
         if (rpcError) {
             // Fallback: direct update (less safe but functional)
-            console.warn('[resend-webhook] RPC not available, using direct update:', rpcError.message)
+            logger.warn('[resend-webhook] RPC not available, using direct update:', rpcError.message)
 
             const { data: config } = await supabase
                 .from('config')
@@ -110,9 +111,9 @@ async function incrementEmailCounter(tenantId: string): Promise<void> {
                 .eq('tenant_id', tenantId)
         }
 
-        console.info(`[resend-webhook] Incremented email counter for tenant ${tenantId}`)
+        logger.info(`[resend-webhook] Incremented email counter for tenant ${tenantId}`)
     } catch (err) {
-        console.error('[resend-webhook] Failed to increment counter:', err)
+        logger.error('[resend-webhook] Failed to increment counter:', err)
     }
 }
 
@@ -147,11 +148,11 @@ async function updateEmailLogStatus(
                 .eq('message_id', messageId)
 
             if (error) {
-                console.error('[resend-webhook] Error updating email_log:', error)
+                logger.error('[resend-webhook] Error updating email_log:', error)
             }
         }
     } catch (err) {
-        console.error('[resend-webhook] Failed to update email_log:', err)
+        logger.error('[resend-webhook] Failed to update email_log:', err)
     }
 }
 
@@ -205,7 +206,7 @@ export async function POST(request: Request): Promise<Response> {
         const messageId = payload.data.email_id
 
         if (!tenantId) {
-            console.warn('[resend-webhook] No tenant_id in payload or env — ignoring')
+            logger.warn('[resend-webhook] No tenant_id in payload or env — ignoring')
             return NextResponse.json({ received: true, warning: 'no_tenant_id' })
         }
 
@@ -247,7 +248,7 @@ export async function POST(request: Request): Promise<Response> {
 
         return NextResponse.json({ received: true })
     } catch (err) {
-        console.error('[resend-webhook] Processing error:', err)
+        logger.error('[resend-webhook] Processing error:', err)
         return NextResponse.json(
             { error: 'Internal Server Error' },
             { status: 500 }

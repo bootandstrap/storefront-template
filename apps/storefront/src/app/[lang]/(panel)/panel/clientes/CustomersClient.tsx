@@ -237,10 +237,10 @@ export default function CustomersClient({
             {/* Customer list */}
             {(() => {
                 const filterTerm = searchParams.get('filter') || 'all'
-                const displayCustomers = customers.filter((c: any) => {
-                    if (filterTerm === 'has_orders') return c.has_account || c.orders?.length > 0
+                const displayCustomers = customers.filter((c) => {
+                    if (filterTerm === 'has_orders') return (c as Customer & { has_account?: boolean }).has_account || (c.orders?.length ?? 0) > 0
                     if (filterTerm === 'recent') return new Date(c.created_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
-                    if (filterTerm === 'vip') return c.has_account 
+                    if (filterTerm === 'vip') return (c as Customer & { has_account?: boolean }).has_account 
                     return true
                 })
 

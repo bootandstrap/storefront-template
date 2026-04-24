@@ -5,6 +5,7 @@ import { isFeatureEnabled } from '@/lib/features'
 import { emitServerEvent } from '@/lib/analytics-server'
 import { validateMinOrderAmount, validateMaxOrdersMonth, checkCheckoutRateLimit } from './checkout-validation'
 import { medusaStore } from './checkout-medusa'
+import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +37,7 @@ export async function completeCart(
 
         return { order: null, error: 'Cart completion did not create an order' }
     } catch (err) {
-        console.error('[checkout] completeCart failed:', err)
+        logger.error('[checkout] completeCart failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -102,7 +103,7 @@ export async function submitBankTransferOrder(
 
         return result
     } catch (err) {
-        console.error('[checkout] submitBankTransferOrder failed:', err)
+        logger.error('[checkout] submitBankTransferOrder failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -162,7 +163,7 @@ export async function submitCODOrder(
 
         return result
     } catch (err) {
-        console.error('[checkout] submitCODOrder failed:', err)
+        logger.error('[checkout] submitCODOrder failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }
@@ -222,7 +223,7 @@ export async function submitWhatsAppOrder(
 
         return result
     } catch (err) {
-        console.error('[checkout] submitWhatsAppOrder failed:', err)
+        logger.error('[checkout] submitWhatsAppOrder failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
 }

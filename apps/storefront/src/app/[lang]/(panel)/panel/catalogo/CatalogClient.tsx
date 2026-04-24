@@ -1,43 +1,49 @@
 'use client'
 
 /**
- * CatalogClient — Tabbed Products + Categories with inline badges (SOTA rewrite)
+ * CatalogClient — Tabbed Products + Categories orchestrator
  *
- * SOTA upgrades:
- * - confirm() → PanelConfirmDialog
- * - Emoji buttons (📝🟢✏️🗑️) → lucide icons (Eye/EyeOff, Pencil, Trash2, Tag)
- * - No animation → PageEntrance + ListStagger
- * - Static tab bar → animated tabs with layoutId
- * - Inline `fixed` modals → SlideOver
- * - Static error div → AnimatePresence error/success banners
- * - Basic empty state → premium empty state
- * - Static badge area → AnimatePresence collapsible
- * - Status badges → dark mode compatible
+ * Decomposed from the original 1087-line monolith into focused sub-components:
+ *   - ProductsTab:               Product grid, search/filter, badges, pagination
+ *   - CategoriesTab:             Category grid, empty state, CRUD actions
+ *   - ProductFormSlideOverInline: Product create/edit form with image upload
+ *   - CategoryFormSlideOver:      Category create/edit form
+ *
+ * This file retains:
+ *   - Tab switching + animated transitions
+ *   - All state management (product, category, form state)
+ *   - All action handlers (CRUD, toggle, image upload/delete)
+ *   - Confirm dialogs + price label sheet
+ *
+ * @module CatalogClient
+ * @locked 🟡 YELLOW — orchestrator layer
  */
 
 import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useLimitGuard } from '@/hooks/useLimitGuard'
-import {
-    Package, Plus, Search, X, Layers, ChevronDown, ChevronUp,
-    Upload, Trash2, ImageIcon, Eye, EyeOff, Pencil, Tag, Loader2,
-    ChevronLeft, ChevronRight, Barcode, AlertTriangle,
-} from 'lucide-react'
+import { Package, Layers } from 'lucide-react'
 import { createProduct, updateProduct, removeProduct, uploadProductImage, removeProductImage } from '../productos/actions'
 import { createCategory, editCategory, removeCategory } from '../categorias/actions'
 import { toggleBadge } from '../insignias/actions'
-import { AVAILABLE_BADGES, type BadgeId } from '../insignias/badges'
+import type { BadgeId } from '../insignias/badges'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import { PageEntrance, SlideOver } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SlideOver } from '@/components/panel/PanelAnimations'
 import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
-import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
-import MultiPriceEditor, { medusaPricesToForm } from '@/components/panel/MultiPriceEditor'
+import { medusaPricesToForm } from '@/components/panel/MultiPriceEditor'
 import { isZeroDecimal } from '@/lib/i18n/currencies'
+import type { LimitCheckResult } from '@/lib/limits'
+
+// ── Extracted sub-components ──
+import ProductsTab from './ProductsTab'
+import CategoriesTab from './CategoriesTab'
+import ProductFormSlideOverInline from './ProductFormSlideOverInline'
+import CategoryFormSlideOver from './CategoryFormSlideOver'
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -101,9 +107,11 @@ interface Props {
     productCount: number
     maxProducts: number
     canAddProduct: boolean
+    productLimitResult?: LimitCheckResult
     categoryCount: number
     maxCategories: number
     canAddCategory: boolean
+    categoryLimitResult?: LimitCheckResult
     currentPage: number
     pageSize: number
     initialSearch: string
@@ -125,9 +133,11 @@ export default function CatalogClient({
     productCount,
     maxProducts,
     canAddProduct,
+    productLimitResult,
     categoryCount,
     maxCategories,
     canAddCategory,
+    categoryLimitResult,
     currentPage,
     pageSize,
     initialSearch,
@@ -157,9 +167,7 @@ export default function CatalogClient({
     const [formPrices, setFormPrices] = useState<Record<string, string>>({ [defaultCurrency]: '' })
     const [formCategory, setFormCategory] = useState('')
     const [formStatus, setFormStatus] = useState<'published' | 'draft'>('published')
-    const [expandedBadges, setExpandedBadges] = useState<string | null>(null)
     const [isUploading, setIsUploading] = useState(false)
-    const [dragOver, setDragOver] = useState(false)
     const [showLabels, setShowLabels] = useState(false)
 
     // ── Category state ──
@@ -168,7 +176,6 @@ export default function CatalogClient({
     const [categoryError, setCategoryError] = useState<string | null>(null)
     const [catName, setCatName] = useState('')
     const [catDescription, setCatDescription] = useState('')
-
 
     // ── Confirm dialogs ──
     const productDeleteDialog = useConfirmDialog({
@@ -188,6 +195,7 @@ export default function CatalogClient({
     const canGoPrev = currentPage > 1
     const canGoNext = currentPage < totalPages
 
+    // ── Query helpers ──
     const updateQuery = (updates: Record<string, string | undefined>) => {
         const next = new URLSearchParams(searchParams.toString())
         for (const [key, value] of Object.entries(updates)) {
@@ -214,7 +222,6 @@ export default function CatalogClient({
     const openEditProduct = (product: AdminProductFull) => {
         setFormTitle(product.title)
         setFormDescription(product.description ?? '')
-        // Build multi-price map from existing variant prices
         const variantPrices = product.variants?.[0]?.prices ?? []
         setFormPrices(medusaPricesToForm(variantPrices))
         setFormCategory(product.categories?.[0]?.id ?? '')
@@ -226,7 +233,6 @@ export default function CatalogClient({
     const handleProductSubmit = () => {
         startTransition(async () => {
             setProductError(null)
-            // Convert form prices to action format
             const pricesArray = Object.entries(formPrices)
                 .filter(([, val]) => val && val.trim() !== '' && parseFloat(val) >= 0)
                 .map(([code, val]) => ({ currency: code, amount: parseFloat(val) }))
@@ -286,25 +292,6 @@ export default function CatalogClient({
         })
     }
 
-    const getPrice = (product: AdminProductFull) => {
-        const price = product.variants?.[0]?.prices?.[0]
-        if (!price) return '—'
-        const code = price.currency_code.toLowerCase()
-        const displayAmount = isZeroDecimal(code) ? price.amount : price.amount / 100
-        return new Intl.NumberFormat(undefined, {
-            style: 'currency', currency: price.currency_code,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: isZeroDecimal(code) ? 0 : 2,
-        }).format(displayAmount)
-    }
-
-    /** Count how many active currencies are missing a price for this product */
-    const getMissingPriceCount = (product: AdminProductFull): number => {
-        const variantPrices = product.variants?.[0]?.prices ?? []
-        const configuredCurrencies = new Set(variantPrices.map(p => p.currency_code.toLowerCase()))
-        return activeCurrencies.filter(c => !configuredCurrencies.has(c)).length
-    }
-
     // ── Image handlers ──
     const handleImageUpload = async (file: File) => {
         if (!editingProduct) return
@@ -315,14 +302,14 @@ export default function CatalogClient({
             const result = await uploadProductImage(editingProduct.id, formData)
             if (result.success) { router.refresh(); toast.success(labels.imageAdded) }
             else {
-                    const err = result.error ?? 'Upload failed'
-                    setProductError(err)
-                    if (!handleLimitError(err, (k) => k)) toast.error(err)
-                }
+                const err = result.error ?? 'Upload failed'
+                setProductError(err)
+                if (!handleLimitError(err, (k) => k)) toast.error(err)
+            }
         } finally { setIsUploading(false) }
     }
 
-    const handleImageDelete = async (imageUrl: string) => {
+    const handleImageDelete = (imageUrl: string) => {
         if (!editingProduct) return
         startTransition(async () => {
             const result = await removeProductImage(editingProduct.id, imageUrl)
@@ -330,20 +317,6 @@ export default function CatalogClient({
             else { setProductError(result.error ?? 'Error'); toast.error(result.error ?? 'Error') }
         })
     }
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault(); setDragOver(false)
-        const file = e.dataTransfer.files[0]
-        if (file && file.type.startsWith('image/')) handleImageUpload(file)
-    }
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) handleImageUpload(file)
-        e.target.value = ''
-    }
-
-    const filtered = products
 
     // ── Category helpers ──
 
@@ -390,9 +363,18 @@ export default function CatalogClient({
         })
     }
 
-    // ── Shared styles ──
-    const inputClass = 'w-full px-4 py-2.5 rounded-xl bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-soft transition-all'
-    const labelClass = 'block text-xs font-semibold text-tx-muted uppercase tracking-wide mb-1.5'
+    // ── Price helper for label sheet ──
+    const getPrice = (product: AdminProductFull) => {
+        const price = product.variants?.[0]?.prices?.[0]
+        if (!price) return '—'
+        const code = price.currency_code.toLowerCase()
+        const displayAmount = isZeroDecimal(code) ? price.amount : price.amount / 100
+        return new Intl.NumberFormat(undefined, {
+            style: 'currency', currency: price.currency_code,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: isZeroDecimal(code) ? 0 : 2,
+        }).format(displayAmount)
+    }
 
     // ── Tabs config ──
     const tabs = [
@@ -446,576 +428,149 @@ export default function CatalogClient({
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════ */}
-            {/* PRODUCTS TAB                                                   */}
+            {/* TAB CONTENT                                                    */}
             {/* ═══════════════════════════════════════════════════════════════ */}
             <AnimatePresence mode="wait">
                 {activeTab === 'productos' && (
-                    <motion.div
-                        key="products"
-                        initial={{ opacity: 0, x: -12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 12 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-4"
-                    >
-                        {/* Toolbar */}
-                        <div className="flex items-center justify-between flex-wrap gap-3">
-                            <p className="text-xs text-tx-muted">
-                                {productCount} / {maxProducts} {labels.products}
-                                {!canAddProduct && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    className="btn border border-sf-3/30 bg-sf-0/50 backdrop-blur-md shadow-sm flex items-center gap-2 min-h-[44px] text-sm font-medium text-tx-sec hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                    disabled={products.length === 0}
-                                    onClick={() => setShowLabels(true)}
-                                    title="Print price labels"
-                                >
-                                    <Barcode className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Labels</span>
-                                </button>
-                                <SotaFeatureGateWrapper isLocked={!canAddProduct} flag="max_products_limit" variant="badge">
-                                    <button
-                                        className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                        disabled={isPending || !canAddProduct}
-                                        onClick={() => { resetProductForm(); setShowProductForm(true) }}
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        {labels.addProduct}
-                                    </button>
-                                </SotaFeatureGateWrapper>
-                            </div>
-                        </div>
-
-                        {/* Filters */}
-                        <div className="flex gap-3 flex-wrap">
-                            <div className="relative flex-1 min-w-[200px]">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
-                                <input
-                                    type="text"
-                                    placeholder={labels.searchPlaceholder}
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') applyProductSearch() }}
-                                    aria-label={labels.searchPlaceholder}
-                                    className={`${inputClass} pl-10 min-h-[44px]`}
-                                />
-                            </div>
-                            <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-xl overflow-hidden p-1">
-                                {(['all', 'published', 'draft'] as const).map(s => (
-                                    <button
-                                        key={s}
-                                        onClick={() => {
-                                            setStatusFilter(s)
-                                            updateQuery({ status: s === 'all' ? undefined : s, page: '1', tab: 'productos' })
-                                        }}
-                                        aria-pressed={statusFilter === s}
-                                        className={`px-3 py-2 min-h-[40px] text-sm font-medium rounded-lg transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med ${
-                                            statusFilter === s ? 'text-white' : 'text-tx-sec hover:bg-sf-1'
-                                        }`}
-                                    >
-                                        {statusFilter === s && (
-                                            <motion.div
-                                                layoutId="catalog-status-filter"
-                                                className="absolute inset-0 bg-brand rounded-lg"
-                                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                            />
-                                        )}
-                                        <span className="relative z-10">
-                                            {s === 'all' ? labels.all : s === 'published' ? labels.published : labels.draft}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Error banner */}
-                        <AnimatePresence>
-                            {productError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -8 }}
-                                    className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
-                                >
-                                    <span>{productError}</span>
-                                    <button onClick={() => setProductError(null)} aria-label="Dismiss error" className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Product grid with inline badges */}
-                        {filtered.length === 0 ? (
-                            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl">
-                                <div className="empty-state">
-                                    <div className="empty-state-icon">
-                                        <Package className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
-                                    </div>
-                                    <h3 className="text-lg font-bold font-display text-tx mb-2">
-                                        {labels.noProducts}
-                                    </h3>
-                                    <p className="text-sm text-tx-sec leading-relaxed mb-6">
-                                        {labels.noProducts}
-                                    </p>
-                                    <SotaFeatureGateWrapper isLocked={!canAddProduct} flag="max_products_limit" variant="badge">
-                                        <button
-                                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                            disabled={isPending || !canAddProduct}
-                                            onClick={() => { resetProductForm(); setShowProductForm(true) }}
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            {labels.addProduct}
-                                        </button>
-                                    </SotaFeatureGateWrapper>
-                                </div>
-                            </div>
-                        ) : (
-                            <ListStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filtered.map(product => {
-                                    const productBadges = badgeMap[product.id] || []
-                                    const isExpanded = expandedBadges === product.id
-
-                                    return (
-                                        <StaggerItem key={product.id}>
-                                            <motion.div
-                                                whileHover={{ y: -2 }}
-                                                className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
-                                            >
-                                                {/* Thumbnail */}
-                                                <div className="aspect-[4/3] bg-sf-1 relative flex items-center justify-center cursor-pointer" onClick={() => openEditProduct(product)}>
-                                                    {product.thumbnail ? (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                                        <img src={product.thumbnail} alt={product.title} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <Package className="w-10 h-10 text-tx-faint" />
-                                                    )}
-                                                    <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                        product.status === 'published'
-                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                    }`}>
-                                                        {product.status === 'published' ? labels.published : labels.draft}
-                                                    </span>
-                                                    {/* Active badges on thumbnail */}
-                                                    {productBadges.length > 0 && (
-                                                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                                                            {productBadges.map(bid => {
-                                                                const badge = AVAILABLE_BADGES.find(b => b.id === bid)
-                                                                if (!badge) return null
-                                                                return (
-                                                                    <span key={bid} className={`text-xs px-1.5 py-0.5 rounded-full ${badge.color}`}>
-                                                                        {badge.emoji}
-                                                                    </span>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Info */}
-                                                <div className="p-4">
-                                                    <h3 className="font-bold text-tx truncate cursor-pointer hover:text-brand transition-colors" onClick={() => openEditProduct(product)}>{product.title}</h3>
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-lg font-bold text-brand">{getPrice(product)}</span>
-                                                            {activeCurrencies.length > 1 && getMissingPriceCount(product) > 0 && (
-                                                                <span
-                                                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                                                    title={`${getMissingPriceCount(product)} moneda(s) sin precio`}
-                                                                >
-                                                                    <AlertTriangle className="w-3 h-3" />
-                                                                    {getMissingPriceCount(product)}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-xs text-tx-muted">
-                                                            {product.categories?.[0]?.name || labels.noCategory}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Badge toggles (collapsible) */}
-                                                    <div className="mt-3 pt-3 border-t border-sf-2">
-                                                        <button
-                                                            onClick={() => setExpandedBadges(isExpanded ? null : product.id)}
-                                                            className="flex items-center gap-1.5 text-xs text-tx-muted hover:text-tx-sec transition-colors w-full"
-                                                        >
-                                                            <Tag className="w-3 h-3" />
-                                                            {labels.badgesLabel}
-                                                            <span className="text-tx-faint">({productBadges.length})</span>
-                                                            {isExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
-                                                        </button>
-                                                        <AnimatePresence>
-                                                            {isExpanded && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2 }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                                        {AVAILABLE_BADGES.map(badge => {
-                                                                            const isEnabled = productBadges.includes(badge.id)
-                                                                            return (
-                                                                                <motion.button
-                                                                                    key={badge.id}
-                                                                                    whileTap={{ scale: 0.93 }}
-                                                                                    onClick={() => handleToggleBadge(product.id, badge.id, isEnabled)}
-                                                                                    disabled={isPending}
-                                                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                                                                                        isEnabled
-                                                                                            ? badge.color + ' ring-1 ring-offset-1 ring-current/20'
-                                                                                            : 'bg-sf-1 text-tx-muted hover:bg-sf-2'
-                                                                                    } ${isPending ? 'opacity-50' : ''}`}
-                                                                                >
-                                                                                    {badge.emoji} {badge.label}
-                                                                                </motion.button>
-                                                                            )
-                                                                        })}
-                                                                    </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-
-                                                    {/* Actions */}
-                                                    <div className="flex gap-1 mt-3 pt-3 border-t border-sf-2">
-                                                        <motion.button
-                                                            whileTap={{ scale: 0.93 }}
-                                                            onClick={() => handleToggleStatus(product)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
-                                                            disabled={isPending}
-                                                            aria-label={product.status === 'published' ? labels.draft : labels.published}
-                                                        >
-                                                            {product.status === 'published'
-                                                                ? <><EyeOff className="w-3.5 h-3.5" /> {labels.draft}</>
-                                                                : <><Eye className="w-3.5 h-3.5" /> {labels.published}</>
-                                                            }
-                                                        </motion.button>
-                                                        <motion.button
-                                                            whileTap={{ scale: 0.93 }}
-                                                            onClick={() => openEditProduct(product)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
-                                                            disabled={isPending}
-                                                            aria-label={labels.edit}
-                                                        >
-                                                            <Pencil className="w-3.5 h-3.5" /> {labels.edit}
-                                                        </motion.button>
-                                                        <motion.button
-                                                            whileTap={{ scale: 0.93 }}
-                                                            onClick={() => handleDeleteProduct(product.id)}
-                                                            className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
-                                                            disabled={isPending}
-                                                            aria-label={labels.delete}
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </motion.button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        </StaggerItem>
-                                    )
-                                })}
-                            </ListStagger>
-                        )}
-
-                        {/* Pagination */}
-                        {productCount > pageSize && (
-                            <div className="flex items-center justify-between pt-2">
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => updateQuery({ page: String(currentPage - 1), tab: 'productos' })}
-                                    disabled={!canGoPrev}
-                                    className="btn btn-ghost inline-flex items-center gap-1.5 disabled:opacity-50"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                    {labels.previous}
-                                </motion.button>
-                                <p className="text-sm text-tx-muted tabular-nums">
-                                    {currentPage} / {totalPages}
-                                </p>
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => updateQuery({ page: String(currentPage + 1), tab: 'productos' })}
-                                    disabled={!canGoNext}
-                                    className="btn btn-ghost inline-flex items-center gap-1.5 disabled:opacity-50"
-                                >
-                                    {labels.next}
-                                    <ChevronRight className="w-4 h-4" />
-                                </motion.button>
-                            </div>
-                        )}
-                    </motion.div>
+                    <ProductsTab
+                        products={products}
+                        badgeMap={badgeMap}
+                        productCount={productCount}
+                        maxProducts={maxProducts}
+                        canAddProduct={canAddProduct}
+                        productLimitResult={productLimitResult}
+                        activeCurrencies={activeCurrencies}
+                        search={search}
+                        setSearch={setSearch}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        onApplySearch={applyProductSearch}
+                        onAddClick={() => { resetProductForm(); setShowProductForm(true) }}
+                        onEditClick={openEditProduct}
+                        onDeleteClick={handleDeleteProduct}
+                        onToggleStatus={handleToggleStatus}
+                        onToggleBadge={handleToggleBadge}
+                        onShowLabels={() => setShowLabels(true)}
+                        productError={productError}
+                        setProductError={setProductError}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        canGoPrev={canGoPrev}
+                        canGoNext={canGoNext}
+                        onPageChange={(page) => updateQuery({ page: String(page), tab: 'productos' })}
+                        onFilterChange={updateQuery}
+                        isPending={isPending}
+                        labels={{
+                            products: labels.products,
+                            addProduct: labels.addProduct,
+                            noProducts: labels.noProducts,
+                            published: labels.published,
+                            draft: labels.draft,
+                            all: labels.all,
+                            searchPlaceholder: labels.searchPlaceholder,
+                            noCategory: labels.noCategory,
+                            edit: labels.edit,
+                            delete: labels.delete,
+                            maxReached: labels.maxReached,
+                            previous: labels.previous,
+                            next: labels.next,
+                            badgesLabel: labels.badgesLabel,
+                            badgesAvailable: labels.badgesAvailable,
+                        }}
+                    />
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════════ */}
-                {/* CATEGORIES TAB                                                 */}
-                {/* ═══════════════════════════════════════════════════════════════ */}
                 {activeTab === 'categorias' && (
-                    <motion.div
-                        key="categories"
-                        initial={{ opacity: 0, x: 12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -12 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-4"
-                    >
-                        {/* Toolbar */}
-                        <div className="flex items-center justify-between flex-wrap gap-3">
-                            <p className="text-xs text-tx-muted">
-                                {categoryCount} / {maxCategories} {labels.categories}
-                                {!canAddCategory && <span className="text-red-500 ml-2">— {labels.maxReached}</span>}
-                            </p>
-                            <SotaFeatureGateWrapper isLocked={!canAddCategory} flag="max_categories_limit" variant="badge">
-                                <button
-                                    className="btn btn-primary flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                    disabled={isPending || !canAddCategory}
-                                    onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    {labels.addCategory}
-                                </button>
-                            </SotaFeatureGateWrapper>
-                        </div>
-
-                        {/* Error banner */}
-                        <AnimatePresence>
-                            {categoryError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -8 }}
-                                    className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
-                                >
-                                    <span>{categoryError}</span>
-                                    <button onClick={() => setCategoryError(null)} aria-label="Dismiss error" className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Category grid */}
-                        {categories.length === 0 ? (
-                            <div className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl">
-                                <div className="empty-state">
-                                    <div className="empty-state-icon">
-                                        <Layers className="w-8 h-8 text-tx-muted" strokeWidth={1.5} />
-                                    </div>
-                                    <h3 className="text-lg font-bold font-display text-tx mb-2">
-                                        {labels.noCategories}
-                                    </h3>
-                                    <p className="text-sm text-tx-sec leading-relaxed mb-6">
-                                        {labels.noCategories}
-                                    </p>
-                                    <SotaFeatureGateWrapper isLocked={!canAddCategory} flag="max_categories_limit" variant="badge">
-                                        <button
-                                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                            disabled={isPending || !canAddCategory}
-                                            onClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            {labels.addCategory}
-                                        </button>
-                                    </SotaFeatureGateWrapper>
-                                </div>
-                            </div>
-                        ) : (
-                            <ListStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {categories.map(cat => (
-                                    <StaggerItem key={cat.id}>
-                                        <motion.div
-                                            whileHover={{ y: -2 }}
-                                            className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-5 transition-shadow hover:shadow-lg"
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2.5 rounded-xl bg-brand-subtle text-brand">
-                                                        <Layers className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold text-tx">{cat.name}</h3>
-                                                        <p className="text-xs text-tx-muted mt-0.5">/{cat.handle}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {cat.description && (
-                                                <p className="text-sm text-tx-muted mt-3 line-clamp-2">{cat.description}</p>
-                                            )}
-                                            <div className="flex gap-1 mt-4 pt-3 border-t border-sf-2">
-                                                <motion.button
-                                                    whileTap={{ scale: 0.93 }}
-                                                    onClick={() => openEditCategory(cat)}
-                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-sf-1 text-tx-muted hover:text-brand transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med"
-                                                    disabled={isPending}
-                                                    aria-label={`${labels.edit} ${cat.name}`}
-                                                >
-                                                    <Pencil className="w-3.5 h-3.5" /> {labels.edit}
-                                                </motion.button>
-                                                <motion.button
-                                                    whileTap={{ scale: 0.93 }}
-                                                    onClick={() => handleDeleteCategory(cat.id)}
-                                                    className="p-2 min-h-[40px] rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-tx-muted hover:text-red-500 transition-colors flex-1 flex items-center justify-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
-                                                    disabled={isPending}
-                                                    aria-label={`${labels.delete} ${cat.name}`}
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" /> {labels.delete}
-                                                </motion.button>
-                                            </div>
-                                        </motion.div>
-                                    </StaggerItem>
-                                ))}
-                            </ListStagger>
-                        )}
-                    </motion.div>
+                    <CategoriesTab
+                        categories={categories}
+                        categoryCount={categoryCount}
+                        maxCategories={maxCategories}
+                        canAddCategory={canAddCategory}
+                        categoryLimitResult={categoryLimitResult}
+                        categoryError={categoryError}
+                        setCategoryError={setCategoryError}
+                        onAddClick={() => { resetCategoryForm(); setShowCategoryForm(true) }}
+                        onEditClick={openEditCategory}
+                        onDeleteClick={handleDeleteCategory}
+                        isPending={isPending}
+                        labels={{
+                            categories: labels.categories,
+                            addCategory: labels.addCategory,
+                            noCategories: labels.noCategories,
+                            edit: labels.edit,
+                            delete: labels.delete,
+                            maxReached: labels.maxReached,
+                        }}
+                    />
                 )}
             </AnimatePresence>
 
             {/* ── Product Form SlideOver ── */}
-            <SlideOver isOpen={showProductForm} onClose={resetProductForm} title={editingProduct ? labels.editProduct : labels.addProduct}>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>{labels.name} *</label>
-                        <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className={inputClass} autoFocus />
-                    </div>
-                    <div>
-                        <label className={labelClass}>{labels.description}</label>
-                        <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} className={`${inputClass} min-h-[80px] resize-y`} rows={3} />
-                    </div>
-                    {/* Multi-currency price editor */}
-                    <MultiPriceEditor
-                        prices={formPrices}
-                        onChange={setFormPrices}
-                        activeCurrencies={activeCurrencies}
-                        defaultCurrency={defaultCurrency}
-                        label={labels.price}
-                        showWarnings={activeCurrencies.length > 1}
-                        disabled={isPending}
-                    />
-                    <div>
-                        <label className={labelClass}>{labels.category}</label>
-                        <select value={formCategory} onChange={e => setFormCategory(e.target.value)} className={inputClass}>
-                            <option value="">{labels.noCategory}</option>
-                            {categories.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={labelClass}>{labels.status}</label>
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setFormStatus('published')}
-                                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
-                                    formStatus === 'published'
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-300 dark:ring-emerald-800'
-                                        : 'bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-sec hover:bg-sf-1'
-                                }`}
-                            >
-                                <Eye className="w-4 h-4" />
-                                {labels.published}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setFormStatus('draft')}
-                                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-2 ${
-                                    formStatus === 'draft'
-                                        ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800'
-                                        : 'bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm text-tx-sec hover:bg-sf-1'
-                                }`}
-                            >
-                                <EyeOff className="w-4 h-4" />
-                                {labels.draft}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Image upload section — only when editing */}
-                    {editingProduct && (
-                        <div>
-                            <label className={labelClass}>{labels.images}</label>
-                            {editingProduct.images && editingProduct.images.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {editingProduct.images.map(img => (
-                                        <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden bg-sf-0/50 backdrop-blur-md border border-sf-3/30">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={img.url} alt="" className="w-full h-full object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleImageDelete(img.url)}
-                                                disabled={isPending}
-                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                                            >
-                                                <Trash2 className="w-4 h-4 text-white" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <div
-                                onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-                                onDragLeave={() => setDragOver(false)}
-                                onDrop={handleDrop}
-                                className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
-                                    dragOver ? 'border-brand bg-brand-subtle' : 'border-sf-3 hover:border-brand'
-                                } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
-                            >
-                                <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    onChange={handleFileSelect}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    disabled={isUploading}
-                                />
-                                <Upload className="w-6 h-6 mx-auto text-tx-muted mb-1" />
-                                <p className="text-sm text-tx-sec">
-                                    {isUploading ? labels.uploading : labels.dropzone}
-                                </p>
-                                <p className="text-xs text-tx-muted mt-0.5">{labels.dropzoneHint}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {!editingProduct && (
-                        <p className="text-xs text-tx-muted flex items-center gap-1.5">
-                            <ImageIcon className="w-3.5 h-3.5" />
-                            {labels.saveFirst}
-                        </p>
-                    )}
-
-                    <div className="flex gap-3 pt-2">
-                        <button onClick={handleProductSubmit} disabled={isPending || !formTitle.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
-                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {isPending ? '...' : editingProduct ? labels.save : labels.create}
-                        </button>
-                        <button onClick={resetProductForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
-                    </div>
-                </div>
-            </SlideOver>
+            <ProductFormSlideOverInline
+                isOpen={showProductForm}
+                onClose={resetProductForm}
+                editingProduct={editingProduct}
+                formTitle={formTitle}
+                setFormTitle={setFormTitle}
+                formDescription={formDescription}
+                setFormDescription={setFormDescription}
+                formPrices={formPrices}
+                setFormPrices={setFormPrices}
+                formCategory={formCategory}
+                setFormCategory={setFormCategory}
+                formStatus={formStatus}
+                setFormStatus={setFormStatus}
+                categories={categories}
+                activeCurrencies={activeCurrencies}
+                defaultCurrency={defaultCurrency}
+                onSubmit={handleProductSubmit}
+                onImageUpload={handleImageUpload}
+                onImageDelete={handleImageDelete}
+                isPending={isPending}
+                isUploading={isUploading}
+                labels={{
+                    editProduct: labels.editProduct,
+                    addProduct: labels.addProduct,
+                    name: labels.name,
+                    description: labels.description,
+                    price: labels.price,
+                    category: labels.category,
+                    noCategory: labels.noCategory,
+                    status: labels.status,
+                    published: labels.published,
+                    draft: labels.draft,
+                    images: labels.images,
+                    dropzone: labels.dropzone,
+                    dropzoneHint: labels.dropzoneHint,
+                    uploading: labels.uploading,
+                    saveFirst: labels.saveFirst,
+                    save: labels.save,
+                    create: labels.create,
+                    cancel: labels.cancel,
+                }}
+            />
 
             {/* ── Category Form SlideOver ── */}
-            <SlideOver isOpen={showCategoryForm} onClose={resetCategoryForm} title={editingCategory ? labels.editCategory : labels.addCategory}>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>{labels.categoryName} *</label>
-                        <input value={catName} onChange={e => setCatName(e.target.value)} className={inputClass} autoFocus />
-                    </div>
-                    <div>
-                        <label className={labelClass}>{labels.categoryDescription}</label>
-                        <textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} className={`${inputClass} min-h-[60px] resize-y`} rows={2} />
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <button onClick={handleCategorySubmit} disabled={isPending || !catName.trim()} className="btn btn-primary flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2">
-                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {isPending ? '...' : editingCategory ? labels.save : labels.create}
-                        </button>
-                        <button onClick={resetCategoryForm} className="btn btn-ghost min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med">{labels.cancel}</button>
-                    </div>
-                </div>
-            </SlideOver>
+            <CategoryFormSlideOver
+                isOpen={showCategoryForm}
+                onClose={resetCategoryForm}
+                editingCategory={editingCategory}
+                catName={catName}
+                setCatName={setCatName}
+                catDescription={catDescription}
+                setCatDescription={setCatDescription}
+                onSubmit={handleCategorySubmit}
+                isPending={isPending}
+                labels={{
+                    editCategory: labels.editCategory,
+                    addCategory: labels.addCategory,
+                    categoryName: labels.categoryName,
+                    categoryDescription: labels.categoryDescription,
+                    save: labels.save,
+                    create: labels.create,
+                    cancel: labels.cancel,
+                }}
+            />
 
             {/* ── Price Label SlideOver ── */}
             <SlideOver

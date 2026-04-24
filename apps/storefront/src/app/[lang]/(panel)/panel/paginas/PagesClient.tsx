@@ -22,6 +22,9 @@ import PanelPageHeader from '@/components/panel/PanelPageHeader'
 import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
 import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
 import { SotaFeatureGateWrapper } from '@/components/panel/sota/SotaFeatureGateWrapper'
+import LimitAwareCTA from '@/components/panel/LimitAwareCTA'
+import ResourceBadge from '@/components/panel/ResourceBadge'
+import type { LimitCheckResult } from '@/lib/limits'
 interface CMSPage {
     id: string
     slug: string
@@ -33,11 +36,12 @@ interface CMSPage {
 interface Props {
     pages: CMSPage[]
     canAdd: boolean
+    pageLimitResult?: LimitCheckResult
     pageCount: number
     maxPages: number
 }
 
-export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Props) {
+export default function PagesClient({ pages, canAdd, pageLimitResult, pageCount, maxPages }: Props) {
     const { t } = useI18n()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -121,22 +125,38 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                 icon={<FileText className="w-5 h-5" />}
                 badge={pageCount}
                 action={
-                    <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_pages_limit" variant="badge">
-                        <button
-                            className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                            disabled={isPending || !canAdd}
+                    pageLimitResult ? (
+                        <LimitAwareCTA
+                            label={t('panel.pages.addPage')}
+                            icon={<Plus className="w-4 h-4" />}
+                            limitResult={pageLimitResult}
                             onClick={() => { resetForm(); setShowForm(true) }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            {t('panel.pages.addPage')}
-                        </button>
-                    </SotaFeatureGateWrapper>
+                            upgradeHref="modulos"
+                            isLoading={isPending}
+                            showCounter
+                        />
+                    ) : (
+                        <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_pages_limit" variant="badge">
+                            <button
+                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                disabled={isPending || !canAdd}
+                                onClick={() => { resetForm(); setShowForm(true) }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                {t('panel.pages.addPage')}
+                            </button>
+                        </SotaFeatureGateWrapper>
+                    )
                 }
             />
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
-                {pageCount} / {maxPages} {t('panel.pages.pages')}
-            </motion.p>
+            {pageLimitResult ? (
+                <ResourceBadge limitResult={pageLimitResult} label={t('panel.pages.pages')} showProgress />
+            ) : (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tx-muted">
+                    {pageCount} / {maxPages} {t('panel.pages.pages')}
+                </motion.p>
+            )}
 
             <AnimatePresence>
                 {error && (
@@ -230,16 +250,27 @@ export default function PagesClient({ pages, canAdd, pageCount, maxPages }: Prop
                         <p className="text-sm text-tx-sec leading-relaxed mb-6">
                             {t('panel.pages.emptyHint') || 'Create custom pages for your store — about us, FAQ, policies, and more.'}
                         </p>
-                        <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_pages_limit" variant="badge">
-                            <button
-                                className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
-                                disabled={isPending || !canAdd}
+                        {pageLimitResult ? (
+                            <LimitAwareCTA
+                                label={t('panel.pages.addPage')}
+                                icon={<Plus className="w-4 h-4" />}
+                                limitResult={pageLimitResult}
                                 onClick={() => { resetForm(); setShowForm(true) }}
-                            >
-                                <Plus className="w-4 h-4" />
-                                {t('panel.pages.addPage')}
-                            </button>
-                        </SotaFeatureGateWrapper>
+                                upgradeHref="modulos"
+                                isLoading={isPending}
+                            />
+                        ) : (
+                            <SotaFeatureGateWrapper isLocked={!canAdd} flag="max_pages_limit" variant="badge">
+                                <button
+                                    className="btn btn-primary inline-flex items-center gap-2 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2"
+                                    disabled={isPending || !canAdd}
+                                    onClick={() => { resetForm(); setShowForm(true) }}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {t('panel.pages.addPage')}
+                                </button>
+                            </SotaFeatureGateWrapper>
+                        )}
                     </div>
                 </motion.div>
             ) : (

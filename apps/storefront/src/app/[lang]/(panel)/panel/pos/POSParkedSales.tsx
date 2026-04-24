@@ -38,6 +38,8 @@ interface POSParkedSalesProps {
     onResume: (items: CartItem[]) => void
     labels: Record<string, string>
     defaultCurrency: string
+    /** When true, syncs parked sales to Medusa draft orders (Enterprise: multi-device) */
+    multiDevice?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -77,12 +79,48 @@ export default function POSParkedSales({
     onResume,
     labels,
     defaultCurrency,
+    multiDevice = false,
 }: POSParkedSalesProps) {
     const [sales, setSales] = useState<ParkedSale[]>([])
+    const [syncing, setSyncing] = useState(false)
 
     useEffect(() => {
-        setSales(getParkedSales())
-    }, [])
+        const local = getParkedSales()
+        setSales(local)
+
+        // If multi-device, also load parked sales from server and merge
+        if (multiDevice) {
+            setSyncing(true)
+            import('@/lib/pos/parked/parked-actions').then(mod => {
+                mod.listParkedSalesAction().then(result => {
+                    if (result.sales.length > 0) {
+                        const localIds = new Set(local.map(s => s.id))
+                        const serverOnly = result.sales
+                            .filter(s => !localIds.has(s.id))
+                            .map(s => ({
+                                id: s.id,
+                                items: s.items.map(i => ({
+                                    id: i.variant_id,
+                                    product_id: '',
+                                    title: i.title,
+                                    variant_title: null,
+                                    thumbnail: null,
+                                    sku: null,
+                                    unit_price: i.unit_price,
+                                    quantity: i.quantity,
+                                    currency_code: defaultCurrency,
+                                })),
+                                parkedAt: s.parked_at,
+                                customerName: s.customer_name,
+                                note: s.note,
+                                serverId: s.id, // Track server origin
+                            } as ParkedSale & { serverId?: string }))
+                        setSales(prev => [...prev, ...serverOnly])
+                    }
+                }).finally(() => setSyncing(false))
+            }).catch(() => setSyncing(false))
+        }
+    }, [multiDevice, defaultCurrency])
 
     // ── Escape key to dismiss ──
     useEffect(() => {
@@ -110,16 +148,43 @@ export default function POSParkedSales({
     const handleResume = (sale: ParkedSale) => {
         removeParkedSale(sale.id)
         setSales(prev => prev.filter(s => s.id !== sale.id))
+
+        // Also unpark from server if multi-device
+        if (multiDevice && (sale as ParkedSale & { serverId?: string }).serverId) {
+            import('@/lib/pos/parked/parked-actions').then(mod => {
+                mod.unparkSaleAction((sale as ParkedSale & { serverId?: string }).serverId!)
+            }).catch(() => { /* non-blocking */ })
+        }
+
         onResume(sale.items)
         onClose()
     }
 
     const handleDelete = (id: string) => {
+        const sale = sales.find(s => s.id === id)
         removeParkedSale(id)
         setSales(prev => prev.filter(s => s.id !== id))
+
+        // Also unpark from server if multi-device
+        if (multiDevice && sale && (sale as ParkedSale & { serverId?: string }).serverId) {
+            import('@/lib/pos/parked/parked-actions').then(mod => {
+                mod.unparkSaleAction((sale as ParkedSale & { serverId?: string }).serverId!)
+            }).catch(() => { /* non-blocking */ })
+        }
     }
 
     const handleClearAll = () => {
+        // Unpark all from server if multi-device
+        if (multiDevice) {
+            const serverSales = sales.filter(s => (s as ParkedSale & { serverId?: string }).serverId)
+            if (serverSales.length > 0) {
+                import('@/lib/pos/parked/parked-actions').then(mod => {
+                    serverSales.forEach(s => {
+                        mod.unparkSaleAction((s as ParkedSale & { serverId?: string }).serverId!)
+                    })
+                }).catch(() => { /* non-blocking */ })
+            }
+        }
         clearParkedSales()
         setSales([])
     }
