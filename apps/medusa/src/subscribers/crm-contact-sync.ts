@@ -44,7 +44,7 @@ export default withGovernanceGate("enable_crm", async ({
                 phone: order.shipping_address?.phone ?? undefined,
                 source: "order",
                 stage: "customer",
-            })
+            } as any)
 
             console.log(JSON.stringify({
                 level: "info",

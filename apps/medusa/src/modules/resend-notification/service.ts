@@ -13,7 +13,7 @@
 import {
     AbstractNotificationProviderService,
 } from "@medusajs/framework/utils"
-import type { Logger } from "@medusajs/framework/types"
+import type { Logger, NotificationTypes } from "@medusajs/framework/types"
 import { Resend } from "resend"
 
 // ── Types ────────────────────────────────────────────────────────
@@ -68,25 +68,22 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     /**
      * Send a notification via Resend.
      *
-     * @param notification - The notification payload from Medusa
-     * @returns Provider-specific response data
+     * Implements the abstract method from AbstractNotificationProviderService.
+     * Only handles email channel — other channels are silently skipped.
      */
-    async send(notification: {
-        to: string
-        channel: string
-        template?: string
-        data?: Record<string, unknown>
-    }): Promise<Record<string, unknown>> {
+    async send(
+        notification: NotificationTypes.ProviderSendNotificationDTO
+    ): Promise<NotificationTypes.ProviderSendNotificationResultsDTO> {
         // Only handle email channel
         if (notification.channel !== "email") {
             this.logger.debug(`[resend-notification] Skipping non-email channel: ${notification.channel}`)
-            return { sent: false, reason: "non-email channel" }
+            return {}
         }
 
         const data = notification.data as unknown as NotificationData
         if (!data?.to && !notification.to) {
             this.logger.warn("[resend-notification] No recipient — skipping")
-            return { sent: false, reason: "no recipient" }
+            return {}
         }
 
         try {
@@ -104,15 +101,16 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 `[resend-notification] Email sent to ${data?.to || notification.to} (${data?.subject || "no subject"})`
             )
 
-            return { sent: true, id: result.data?.id }
+            return { id: result.data?.id }
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error)
             this.logger.error(`[resend-notification] Failed to send email: ${msg}`)
 
             // Don't throw — notification failures should not break order flows
-            return { sent: false, error: msg }
+            return {}
         }
     }
 }
 
 export default ResendNotificationProviderService
+

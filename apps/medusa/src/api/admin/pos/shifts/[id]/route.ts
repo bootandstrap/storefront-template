@@ -58,7 +58,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
             }
         }
 
-        const shift = await service.updatePosShifts(id, update)
+        const shift = await service.updatePosShifts(id, update as any)
         res.json({ shift })
     } catch {
         res.status(404).json({ message: `Shift ${id} not found` })

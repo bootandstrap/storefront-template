@@ -45,7 +45,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const transaction = await service.createPosTransactions({
         ...body,
         status: "completed",
-    })
+    } as any)
 
     res.status(201).json({ transaction })
 }
