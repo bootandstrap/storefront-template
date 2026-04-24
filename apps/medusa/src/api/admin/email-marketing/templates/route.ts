@@ -35,7 +35,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     const service = req.scope.resolve(EMAIL_MARKETING_MODULE) as EmailMarketingModuleService
 
-    const template = await service.createEmailTemplates(body)
+    const template = await service.createEmailTemplates(body as any)
 
     res.status(201).json({ template })
 }

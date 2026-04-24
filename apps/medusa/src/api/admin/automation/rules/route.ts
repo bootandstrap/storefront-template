@@ -11,7 +11,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const service = req.scope.resolve(AUTOMATION_MODULE) as AutomationModuleService
 
     const filters: Record<string, unknown> = {}
-    if (status) filters.status = status
+    if (status) filters.is_active = status === "active"
     if (trigger_event) filters.trigger_event = trigger_event
 
     const rules = await service.listAutomationRules(filters, {
@@ -42,8 +42,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     const rule = await service.createAutomationRules({
         ...body,
-        status: "active",
-    })
+        is_active: true,
+    } as any)
 
     res.status(201).json({ rule })
 }

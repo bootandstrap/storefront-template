@@ -44,7 +44,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         ...body,
         status: "draft",
         scheduled_at: body.scheduled_at ? new Date(body.scheduled_at) : undefined,
-    })
+    } as any)
 
     res.status(201).json({ campaign })
 }
