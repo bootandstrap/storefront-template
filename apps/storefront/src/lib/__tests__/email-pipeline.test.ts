@@ -14,6 +14,10 @@ vi.mock('@/lib/supabase/admin', () => ({
         from: vi.fn(() => ({
             select: vi.fn(() => ({
                 eq: vi.fn(() => ({
+                    maybeSingle: vi.fn(() => ({
+                        data: null,
+                        error: null,
+                    })),
                     single: vi.fn(() => ({
                         data: null,
                         error: null,

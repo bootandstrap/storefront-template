@@ -218,6 +218,7 @@ export default async function PanelLayout({
             pos: t('panel.section.pos'),
             ownerPanel: t('panel.nav.ownerPanel'),
             backToStore: t('panel.nav.backToStore'),
+            health: t('storeHealth.title'),
         },
         featureFlags,
     })
@@ -281,6 +282,7 @@ export default async function PanelLayout({
                 pos: t('panel.section.pos'),
                 ownerPanel: t('panel.nav.ownerPanel'),
                 backToStore: t('panel.nav.backToStore'),
+                health: t('storeHealth.title'),
             }}
             featureFlags={{
                 enable_carousel: featureFlags.enable_carousel,
@@ -367,4 +369,3 @@ export default async function PanelLayout({
         </PanelThemeProvider>
     )
 }
-

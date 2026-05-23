@@ -89,6 +89,7 @@ describe('Config Schema Alignment (Governance Contract)', () => {
                 enable_transactional_emails: true,
                 enable_review_request_emails: true,
                 enable_email_segmentation: true,
+                enable_custom_email_domain: true,
                 // POS
                 enable_pos: true,
                 enable_pos_kiosk: true,

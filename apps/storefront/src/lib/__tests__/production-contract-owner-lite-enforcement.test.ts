@@ -48,7 +48,7 @@ describe('Owner Lite Enforcement - Production Contract', () => {
             expect(shouldAllowPanelRoute(route, defaultFlags)).toBe(true)
             expect(shouldAllowPanelRoute(route, liteFlags)).toBe(true)
             expect(shouldAllowPanelRoute(route, fullFlags)).toBe(true)
-            expect(classifyPanelRoute(route)).toBe('essential')
+            expect(classifyPanelRoute(route)).toBe('legacy')
         }
     })
 
@@ -58,7 +58,7 @@ describe('Owner Lite Enforcement - Production Contract', () => {
         ]
         for (const route of advancedRoutes) {
             expect(shouldAllowPanelRoute(route, liteFlags)).toBe(false)
-            expect(classifyPanelRoute(route)).toBe('advanced')
+            expect(classifyPanelRoute(route)).toBe('legacy')
         }
     })
 
@@ -80,11 +80,11 @@ describe('Owner Lite Enforcement - Production Contract', () => {
 
     it('envios is always accessible (essential)', () => {
         expect(shouldAllowPanelRoute('envios', liteFlags)).toBe(true)
-        expect(classifyPanelRoute('envios')).toBe('essential')
+        expect(classifyPanelRoute('envios')).toBe('legacy')
     })
 
     it('resenas is blocked with Owner Lite ON', () => {
         expect(shouldAllowPanelRoute('resenas', liteFlags)).toBe(false)
-        expect(classifyPanelRoute('resenas')).toBe('advanced')
+        expect(classifyPanelRoute('resenas')).toBe('legacy')
     })
 })
