@@ -71,14 +71,14 @@ jobs:
         run: |
           # Fetch active tenants with github_repo set
           response=$(curl -sf \
-            "${SUPABASE_URL}/rest/v1/tenants?select=slug,github_repo&status=eq.active&github_repo=not.is.null" \
+            "${SUPABASE_URL}/rest/v1/tenants?select=slug,github_repo_url&status=eq.active&github_repo_url=not.is.null" \
             -H "apikey: ${SUPABASE_SERVICE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
             -H "Content-Type: application/json")
           
-          # Extract repo names into JSON array
-          repos=$(echo "$response" | jq -c '[.[].github_repo]')
-          count=$(echo "$response" | jq 'length')
+          # Extract owner/repo names from stored GitHub URLs
+          repos=$(echo "$response" | jq -c '[.[] | .github_repo_url | select(. != null and . != "") | sub("^https://github.com/"; "") | sub("/$"; "")]')
+          count=$(echo "$repos" | jq 'length')
           
           echo "repos=${repos}" >> $GITHUB_OUTPUT
           echo "count=${count}" >> $GITHUB_OUTPUT
