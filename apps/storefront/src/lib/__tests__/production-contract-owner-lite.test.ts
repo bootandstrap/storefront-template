@@ -76,8 +76,8 @@ describe('Production Contract: Owner Lite Gating', () => {
             expect(shouldAllowPanelRoute(route, defaultFlags)).toBe(true)
         })
 
-        it.each(ESSENTIAL_ROUTES)('"%s" classifies as essential', (route) => {
-            expect(classifyPanelRoute(route)).toBe('essential')
+        it.each(ESSENTIAL_ROUTES)('"%s" resolves through the legacy route guard', (route) => {
+            expect(classifyPanelRoute(route)).toBe('legacy')
         })
     })
 
@@ -90,14 +90,14 @@ describe('Production Contract: Owner Lite Gating', () => {
             expect(shouldAllowPanelRoute(route, fullFlags)).toBe(true)
         })
 
-        it.each(ADVANCED_ROUTES)('"%s" classifies as advanced', (route) => {
-            expect(classifyPanelRoute(route)).toBe('advanced')
+        it.each(ADVANCED_ROUTES)('"%s" resolves through the legacy route guard', (route) => {
+            expect(classifyPanelRoute(route)).toBe('legacy')
         })
     })
 
     describe('critical: devoluciones uses central guard', () => {
-        it('devoluciones is classified as advanced route', () => {
-            expect(classifyPanelRoute('devoluciones')).toBe('advanced')
+        it('devoluciones is classified as a legacy route', () => {
+            expect(classifyPanelRoute('devoluciones')).toBe('legacy')
         })
 
         it('devoluciones is blocked in lite mode', () => {
@@ -110,8 +110,8 @@ describe('Production Contract: Owner Lite Gating', () => {
     })
 
     describe('critical: chatbot uses central guard', () => {
-        it('chatbot is classified as advanced route', () => {
-            expect(classifyPanelRoute('chatbot')).toBe('advanced')
+        it('chatbot is classified as a legacy route', () => {
+            expect(classifyPanelRoute('chatbot')).toBe('legacy')
         })
 
         it('chatbot is blocked in lite mode', () => {

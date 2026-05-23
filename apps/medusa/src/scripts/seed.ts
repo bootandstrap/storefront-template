@@ -27,8 +27,9 @@ import {
   updateStoresStep,
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows";
-import { ApiKey } from "../../.medusa/types/query-entry-points";
-
+type ApiKeyRecord = {
+  id: string;
+};
 // ─────────────────────────────────────────────────────────────
 // Template Configuration — override via env vars per client
 // ─────────────────────────────────────────────────────────────
@@ -414,7 +415,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
 
   // ── Publishable API Key ────────────────────────────────────
   logger.info("Seeding publishable API key...");
-  let publishableApiKey: ApiKey | null = null;
+  let publishableApiKey: ApiKeyRecord | null = null;
   const { data } = await query.graph({
     entity: "api_key",
     fields: ["id"],
@@ -433,7 +434,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
         ],
       },
     });
-    publishableApiKey = publishableApiKeyResult as ApiKey;
+    publishableApiKey = publishableApiKeyResult as ApiKeyRecord;
   }
 
   try {

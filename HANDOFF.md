@@ -23,7 +23,7 @@
 - [ ] Repo creado en GitHub (`bootandstrap/store-{slug}`)
 - [ ] Deploy en Dokploy (Redis + Medusa + Storefront)
 - [ ] Medusa arrancado y accesible (`:9000/health` → 200)
-- [ ] Storefront accesible (`/api/readiness` → `{"status":"ok"}`)
+- [ ] Storefront accesible (`/api/health/ready` → `{"status":"ok","probe":"readiness"}`)
 - [ ] SuperAdmin → Deploy tab → verificar timeline verde
 
 ---

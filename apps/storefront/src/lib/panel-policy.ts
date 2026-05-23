@@ -51,6 +51,7 @@ export interface PanelSidebarLabels {
     pos: string
     ownerPanel: string
     backToStore: string
+    health: string
 }
 
 // ── Navigation Types ──────────────────────────────────────────────────────
@@ -331,6 +332,8 @@ const TAB_ICONS: Record<string, string> = {
  * Used by redirect pages and the panel layout for route guards.
  */
 export const ROUTE_REDIRECT_MAP: Record<string, { section: string; tab?: string }> = {
+    // Legacy dashboard alias -> panel home
+    'dashboard': { section: 'home' },
     // Old standalone routes → new section tabs
     'catalogo': { section: 'mi-tienda', tab: 'productos' },
     'productos': { section: 'mi-tienda', tab: 'productos' },
@@ -366,6 +369,15 @@ export const ROUTE_REDIRECT_MAP: Record<string, { section: string; tab?: string 
     'modulos': { section: 'modulos' },
 }
 
+const OWNER_LITE_BLOCKED_LEGACY_ROUTES = new Set([
+    'analiticas',
+    'carrusel',
+    'devoluciones',
+    'insignias',
+    'paginas',
+    'resenas',
+])
+
 // ── Route Classification (kept for backward compat with layout guards) ────
 
 const ALL_KNOWN_ROUTES = new Set([
@@ -398,6 +410,16 @@ export function shouldAllowPanelRoute(
     if (classification === 'legacy') {
         const redirect = ROUTE_REDIRECT_MAP[route]
         if (!redirect) return false
+
+        if (featureFlags.owner_lite_enabled && !featureFlags.owner_advanced_modules_enabled) {
+            if (redirect.section === 'modulos' && redirect.tab) {
+                return false
+            }
+
+            if (OWNER_LITE_BLOCKED_LEGACY_ROUTES.has(route)) {
+                return false
+            }
+        }
 
         // Module routes need their feature flag
         if (redirect.section === 'modulos' && redirect.tab) {
