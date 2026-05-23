@@ -25,7 +25,7 @@ jobs:
   lighthouse:
     name: Lighthouse Audit
     runs-on: ubuntu-latest
-    if: ${{ github.repository != 'bootandstrap/storefront-template' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    if: ${{ github.repository != 'bootandstrap/storefront-template' && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && vars.STORE_DOMAIN != '')) }}
 
     steps:
       - name: Checkout
