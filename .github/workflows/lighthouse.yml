@@ -1,11 +1,7 @@
-name: Lighthouse CI
+name: Lighthouse Build Audit
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'apps/storefront/**'
-  pull_request:
     branches: [main]
     paths:
       - 'apps/storefront/**'
@@ -44,6 +40,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           MEDUSA_BACKEND_URL: http://localhost:9000
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+          NEXT_PUBLIC_STORE_URL: http://localhost:3000
           TENANT_ID: ci-tenant
         run: pnpm build
 

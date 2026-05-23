@@ -39,10 +39,12 @@ jobs:
 
       # ── Architectural Gate (Sentrux) ────────────────
       - name: Install Sentrux
-        run: curl -fsSL https://raw.githubusercontent.com/sentrux/sentrux/main/install.sh | sh
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/sentrux/sentrux/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Architecture check (Sentrux)
-        run: ~/.local/bin/sentrux gate .
+        run: sentrux gate .
 
       # ── Governance SSOT Checks ──
       - name: Shared package contract tests
@@ -247,9 +249,12 @@ jobs:
 
       - name: Start storefront
         run: |
-          cd apps/storefront
-          PORT=3000 node .next/standalone/server.js &
-          bash ../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
+          cd apps/storefront/.next/standalone
+          mkdir -p apps/storefront/.next
+          cp -R ../static apps/storefront/.next/static
+          cp -R ../../public apps/storefront/public
+          PORT=3000 node apps/storefront/server.js &
+          bash ../../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
         env:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
@@ -281,13 +286,11 @@ jobs:
 
   # ── Lighthouse CI ──────────────────────────────
   lighthouse:
-    if: github.repository != 'bootandstrap/storefront-template'
+    if: github.repository != 'bootandstrap/storefront-template' && github.event_name == 'pull_request'
     name: Lighthouse CI
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: build
-    # Only run on PRs to main
-    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout
@@ -314,8 +317,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           MEDUSA_BACKEND_URL: http://localhost:9000
+          TENANT_ID: ci-tenant
 
       - name: Run Lighthouse CI
         run: |
@@ -334,11 +339,10 @@ jobs:
 
   # ── Failure Notification ────────────────────────
   notify-failure:
-    if: github.repository != 'bootandstrap/storefront-template'
     name: Notify on Failure
     runs-on: ubuntu-latest
     needs: [build, unit-tests, medusa-tests]
-    if: failure()
+    if: github.repository != 'bootandstrap/storefront-template' && failure()
     steps:
       - name: Send failure notification
         run: |

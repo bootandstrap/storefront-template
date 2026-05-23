@@ -103,15 +103,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Sentrux architecture check
+      - name: Install Sentrux
         run: |
-          if command -v sentrux &> /dev/null; then
-            echo "🏛️ Running Sentrux gate..."
-            sentrux gate .
-          else
-            echo "⚠️ Sentrux not available in CI — skipping architecture check"
-            echo "Install with: npm i -g @sentrux/cli"
-          fi
+          curl -fsSL https://raw.githubusercontent.com/sentrux/sentrux/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Sentrux architecture check
+        run: sentrux gate .
 
   medusa-typecheck:
     name: "⚡ Medusa Type Check"

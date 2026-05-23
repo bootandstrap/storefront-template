@@ -55,7 +55,7 @@ async function getStripe(): Promise<any> {
     // @ts-ignore — stripe is an optional peer dependency, only available at runtime
     const mod = await import('stripe')
     const Stripe = mod.default || mod
-    _stripe = new Stripe(key, { apiVersion: '2024-12-18.acacia' })
+    _stripe = new Stripe(key, { apiVersion: '2025-02-24.acacia' })
     return _stripe
 }
 

@@ -1,7 +1,7 @@
 {
     "ci": {
         "collect": {
-            "startServerCommand": "pnpm start",
+            "startServerCommand": "cd apps/storefront/.next/standalone && mkdir -p apps/storefront/.next && cp -R ../static apps/storefront/.next/static && cp -R ../../public apps/storefront/public && NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=placeholder NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000 NEXT_PUBLIC_STORE_URL=http://localhost:3000 MEDUSA_BACKEND_URL=http://localhost:9000 TENANT_ID=ci-tenant node apps/storefront/server.js",
             "startServerReadyPattern": "Ready in",
             "url": [
                 "http://localhost:3000"

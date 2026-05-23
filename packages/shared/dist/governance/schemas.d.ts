@@ -286,7 +286,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_user_registration: z.ZodBoolean;
     enable_guest_checkout: z.ZodBoolean;
     require_auth_to_order: z.ZodBoolean;
-    enable_google_auth: z.ZodBoolean;
+    enable_google_oauth: z.ZodBoolean;
     enable_email_auth: z.ZodBoolean;
     enable_apple_oauth: z.ZodDefault<z.ZodBoolean>;
     enable_facebook_oauth: z.ZodDefault<z.ZodBoolean>;
@@ -332,6 +332,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_transactional_emails: z.ZodDefault<z.ZodBoolean>;
     enable_review_request_emails: z.ZodDefault<z.ZodBoolean>;
     enable_email_segmentation: z.ZodDefault<z.ZodBoolean>;
+    enable_custom_email_domain: z.ZodDefault<z.ZodBoolean>;
     enable_pos: z.ZodBoolean;
     enable_pos_kiosk: z.ZodBoolean;
     enable_pos_keyboard_shortcuts: z.ZodBoolean;
@@ -341,6 +342,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_pos_line_discounts: z.ZodBoolean;
     enable_pos_customer_search: z.ZodBoolean;
     enable_pos_multi_device: z.ZodBoolean;
+    enable_pos_reports: z.ZodDefault<z.ZodBoolean>;
     enable_pos_shifts: z.ZodBoolean;
     enable_kiosk_analytics: z.ZodDefault<z.ZodBoolean>;
     enable_kiosk_idle_timer: z.ZodDefault<z.ZodBoolean>;
@@ -357,6 +359,8 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_auth_advanced: z.ZodBoolean;
     enable_sales_channels: z.ZodBoolean;
     enable_reservation_checkout: z.ZodDefault<z.ZodBoolean>;
+    enable_backups: z.ZodDefault<z.ZodBoolean>;
+    enable_manual_backup: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     enable_whatsapp_checkout: boolean;
     enable_online_payments: boolean;
@@ -366,7 +370,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_user_registration: boolean;
     enable_guest_checkout: boolean;
     require_auth_to_order: boolean;
-    enable_google_auth: boolean;
+    enable_google_oauth: boolean;
     enable_email_auth: boolean;
     enable_apple_oauth: boolean;
     enable_facebook_oauth: boolean;
@@ -412,6 +416,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_transactional_emails: boolean;
     enable_review_request_emails: boolean;
     enable_email_segmentation: boolean;
+    enable_custom_email_domain: boolean;
     enable_pos: boolean;
     enable_pos_kiosk: boolean;
     enable_pos_keyboard_shortcuts: boolean;
@@ -421,6 +426,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_pos_line_discounts: boolean;
     enable_pos_customer_search: boolean;
     enable_pos_multi_device: boolean;
+    enable_pos_reports: boolean;
     enable_pos_shifts: boolean;
     enable_kiosk_analytics: boolean;
     enable_kiosk_idle_timer: boolean;
@@ -437,6 +443,8 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_auth_advanced: boolean;
     enable_sales_channels: boolean;
     enable_reservation_checkout: boolean;
+    enable_backups: boolean;
+    enable_manual_backup: boolean;
 }, {
     enable_whatsapp_checkout: boolean;
     enable_online_payments: boolean;
@@ -446,7 +454,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_user_registration: boolean;
     enable_guest_checkout: boolean;
     require_auth_to_order: boolean;
-    enable_google_auth: boolean;
+    enable_google_oauth: boolean;
     enable_email_auth: boolean;
     enable_ecommerce: boolean;
     enable_reviews: boolean;
@@ -510,6 +518,8 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_transactional_emails?: boolean | undefined;
     enable_review_request_emails?: boolean | undefined;
     enable_email_segmentation?: boolean | undefined;
+    enable_custom_email_domain?: boolean | undefined;
+    enable_pos_reports?: boolean | undefined;
     enable_kiosk_analytics?: boolean | undefined;
     enable_kiosk_idle_timer?: boolean | undefined;
     enable_kiosk_remote_management?: boolean | undefined;
@@ -517,6 +527,8 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_social_sharing?: boolean | undefined;
     enable_custom_webhooks?: boolean | undefined;
     enable_reservation_checkout?: boolean | undefined;
+    enable_backups?: boolean | undefined;
+    enable_manual_backup?: boolean | undefined;
 }>;
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>;
 export declare const PlanLimitsSchema: z.ZodObject<{
@@ -550,6 +562,8 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_pos_payment_methods: z.ZodNumber;
     max_automations: z.ZodDefault<z.ZodNumber>;
     max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
+    max_backups: z.ZodDefault<z.ZodNumber>;
+    backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     max_products: number;
     max_customers: number;
@@ -581,6 +595,8 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_pos_payment_methods: number;
     max_automations: number;
     max_pos_kiosk_devices: number;
+    max_backups: number;
+    backup_frequency_hours: number;
 }, {
     max_products: number;
     max_customers: number;
@@ -612,6 +628,8 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_pos_payment_methods: number;
     max_automations?: number | undefined;
     max_pos_kiosk_devices?: number | undefined;
+    max_backups?: number | undefined;
+    backup_frequency_hours?: number | undefined;
 }>;
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>;
 export declare const TenantStatusSchema: z.ZodEnum<["active", "paused", "suspended", "maintenance_free"]>;
@@ -894,7 +912,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_user_registration: z.ZodBoolean;
         enable_guest_checkout: z.ZodBoolean;
         require_auth_to_order: z.ZodBoolean;
-        enable_google_auth: z.ZodBoolean;
+        enable_google_oauth: z.ZodBoolean;
         enable_email_auth: z.ZodBoolean;
         enable_apple_oauth: z.ZodDefault<z.ZodBoolean>;
         enable_facebook_oauth: z.ZodDefault<z.ZodBoolean>;
@@ -940,6 +958,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_transactional_emails: z.ZodDefault<z.ZodBoolean>;
         enable_review_request_emails: z.ZodDefault<z.ZodBoolean>;
         enable_email_segmentation: z.ZodDefault<z.ZodBoolean>;
+        enable_custom_email_domain: z.ZodDefault<z.ZodBoolean>;
         enable_pos: z.ZodBoolean;
         enable_pos_kiosk: z.ZodBoolean;
         enable_pos_keyboard_shortcuts: z.ZodBoolean;
@@ -949,6 +968,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_pos_line_discounts: z.ZodBoolean;
         enable_pos_customer_search: z.ZodBoolean;
         enable_pos_multi_device: z.ZodBoolean;
+        enable_pos_reports: z.ZodDefault<z.ZodBoolean>;
         enable_pos_shifts: z.ZodBoolean;
         enable_kiosk_analytics: z.ZodDefault<z.ZodBoolean>;
         enable_kiosk_idle_timer: z.ZodDefault<z.ZodBoolean>;
@@ -965,6 +985,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_auth_advanced: z.ZodBoolean;
         enable_sales_channels: z.ZodBoolean;
         enable_reservation_checkout: z.ZodDefault<z.ZodBoolean>;
+        enable_backups: z.ZodDefault<z.ZodBoolean>;
+        enable_manual_backup: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         enable_whatsapp_checkout: boolean;
         enable_online_payments: boolean;
@@ -974,7 +996,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_user_registration: boolean;
         enable_guest_checkout: boolean;
         require_auth_to_order: boolean;
-        enable_google_auth: boolean;
+        enable_google_oauth: boolean;
         enable_email_auth: boolean;
         enable_apple_oauth: boolean;
         enable_facebook_oauth: boolean;
@@ -1020,6 +1042,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_transactional_emails: boolean;
         enable_review_request_emails: boolean;
         enable_email_segmentation: boolean;
+        enable_custom_email_domain: boolean;
         enable_pos: boolean;
         enable_pos_kiosk: boolean;
         enable_pos_keyboard_shortcuts: boolean;
@@ -1029,6 +1052,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_pos_line_discounts: boolean;
         enable_pos_customer_search: boolean;
         enable_pos_multi_device: boolean;
+        enable_pos_reports: boolean;
         enable_pos_shifts: boolean;
         enable_kiosk_analytics: boolean;
         enable_kiosk_idle_timer: boolean;
@@ -1045,6 +1069,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_auth_advanced: boolean;
         enable_sales_channels: boolean;
         enable_reservation_checkout: boolean;
+        enable_backups: boolean;
+        enable_manual_backup: boolean;
     }, {
         enable_whatsapp_checkout: boolean;
         enable_online_payments: boolean;
@@ -1054,7 +1080,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_user_registration: boolean;
         enable_guest_checkout: boolean;
         require_auth_to_order: boolean;
-        enable_google_auth: boolean;
+        enable_google_oauth: boolean;
         enable_email_auth: boolean;
         enable_ecommerce: boolean;
         enable_reviews: boolean;
@@ -1118,6 +1144,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_transactional_emails?: boolean | undefined;
         enable_review_request_emails?: boolean | undefined;
         enable_email_segmentation?: boolean | undefined;
+        enable_custom_email_domain?: boolean | undefined;
+        enable_pos_reports?: boolean | undefined;
         enable_kiosk_analytics?: boolean | undefined;
         enable_kiosk_idle_timer?: boolean | undefined;
         enable_kiosk_remote_management?: boolean | undefined;
@@ -1125,6 +1153,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_social_sharing?: boolean | undefined;
         enable_custom_webhooks?: boolean | undefined;
         enable_reservation_checkout?: boolean | undefined;
+        enable_backups?: boolean | undefined;
+        enable_manual_backup?: boolean | undefined;
     }>;
     planLimits: z.ZodObject<{
         max_products: z.ZodNumber;
@@ -1157,6 +1187,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_pos_payment_methods: z.ZodNumber;
         max_automations: z.ZodDefault<z.ZodNumber>;
         max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
+        max_backups: z.ZodDefault<z.ZodNumber>;
+        backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
         max_products: number;
         max_customers: number;
@@ -1188,6 +1220,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations: number;
         max_pos_kiosk_devices: number;
+        max_backups: number;
+        backup_frequency_hours: number;
     }, {
         max_products: number;
         max_customers: number;
@@ -1219,6 +1253,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
         max_pos_kiosk_devices?: number | undefined;
+        max_backups?: number | undefined;
+        backup_frequency_hours?: number | undefined;
     }>;
     planExpired: z.ZodBoolean;
     tenantStatus: z.ZodEnum<["active", "paused", "suspended", "maintenance_free"]>;
@@ -1326,7 +1362,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_user_registration: boolean;
         enable_guest_checkout: boolean;
         require_auth_to_order: boolean;
-        enable_google_auth: boolean;
+        enable_google_oauth: boolean;
         enable_email_auth: boolean;
         enable_apple_oauth: boolean;
         enable_facebook_oauth: boolean;
@@ -1372,6 +1408,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_transactional_emails: boolean;
         enable_review_request_emails: boolean;
         enable_email_segmentation: boolean;
+        enable_custom_email_domain: boolean;
         enable_pos: boolean;
         enable_pos_kiosk: boolean;
         enable_pos_keyboard_shortcuts: boolean;
@@ -1381,6 +1418,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_pos_line_discounts: boolean;
         enable_pos_customer_search: boolean;
         enable_pos_multi_device: boolean;
+        enable_pos_reports: boolean;
         enable_pos_shifts: boolean;
         enable_kiosk_analytics: boolean;
         enable_kiosk_idle_timer: boolean;
@@ -1397,6 +1435,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_auth_advanced: boolean;
         enable_sales_channels: boolean;
         enable_reservation_checkout: boolean;
+        enable_backups: boolean;
+        enable_manual_backup: boolean;
     };
     planLimits: {
         max_products: number;
@@ -1429,6 +1469,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations: number;
         max_pos_kiosk_devices: number;
+        max_backups: number;
+        backup_frequency_hours: number;
     };
     planExpired: boolean;
     tenantStatus: "active" | "paused" | "suspended" | "maintenance_free";
@@ -1534,7 +1576,7 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_user_registration: boolean;
         enable_guest_checkout: boolean;
         require_auth_to_order: boolean;
-        enable_google_auth: boolean;
+        enable_google_oauth: boolean;
         enable_email_auth: boolean;
         enable_ecommerce: boolean;
         enable_reviews: boolean;
@@ -1598,6 +1640,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_transactional_emails?: boolean | undefined;
         enable_review_request_emails?: boolean | undefined;
         enable_email_segmentation?: boolean | undefined;
+        enable_custom_email_domain?: boolean | undefined;
+        enable_pos_reports?: boolean | undefined;
         enable_kiosk_analytics?: boolean | undefined;
         enable_kiosk_idle_timer?: boolean | undefined;
         enable_kiosk_remote_management?: boolean | undefined;
@@ -1605,6 +1649,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         enable_social_sharing?: boolean | undefined;
         enable_custom_webhooks?: boolean | undefined;
         enable_reservation_checkout?: boolean | undefined;
+        enable_backups?: boolean | undefined;
+        enable_manual_backup?: boolean | undefined;
     };
     planLimits: {
         max_products: number;
@@ -1637,6 +1683,8 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
         max_pos_kiosk_devices?: number | undefined;
+        max_backups?: number | undefined;
+        backup_frequency_hours?: number | undefined;
     };
     planExpired: boolean;
     tenantStatus: "active" | "paused" | "suspended" | "maintenance_free";
@@ -1946,6 +1994,8 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_pos_payment_methods: z.ZodNumber;
         max_automations: z.ZodDefault<z.ZodNumber>;
         max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
+        max_backups: z.ZodDefault<z.ZodNumber>;
+        backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
         max_products: number;
         max_customers: number;
@@ -1977,6 +2027,8 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations: number;
         max_pos_kiosk_devices: number;
+        max_backups: number;
+        backup_frequency_hours: number;
     }, {
         max_products: number;
         max_customers: number;
@@ -2008,6 +2060,8 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
         max_pos_kiosk_devices?: number | undefined;
+        max_backups?: number | undefined;
+        backup_frequency_hours?: number | undefined;
     }>>;
     tenant_status: z.ZodNullable<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
@@ -2133,6 +2187,8 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations: number;
         max_pos_kiosk_devices: number;
+        max_backups: number;
+        backup_frequency_hours: number;
     } | null;
     tenant_status: string | null;
 }, {
@@ -2258,6 +2314,8 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
         max_pos_kiosk_devices?: number | undefined;
+        max_backups?: number | undefined;
+        backup_frequency_hours?: number | undefined;
     } | null;
     tenant_status: string | null;
 }>;
