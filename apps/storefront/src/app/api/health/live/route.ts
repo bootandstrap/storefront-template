@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { SCHEMA_VERSION } from '@/lib/supabase/schema-version'
 
 /**
  * Liveness probe — /api/health/live
@@ -11,6 +12,7 @@ export function GET() {
         {
             status: 'ok',
             probe: 'liveness',
+            schemaVersion: SCHEMA_VERSION,
             timestamp: new Date().toISOString(),
         },
         {

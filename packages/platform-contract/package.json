@@ -1,0 +1,45 @@
+{
+    "name": "@bootandstrap/platform-contract",
+    "version": "0.1.0",
+    "description": "Shared platform contract primitives for tenant identity, roles, and owner experience",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "type-check": "tsc --noEmit",
+        "test": "vitest run",
+        "test:run": "vitest run",
+        "changeset": "changeset",
+        "version": "changeset version",
+        "release": "npm run build && changeset publish",
+        "clean": "rm -rf dist",
+        "prepack": "npm run clean && npm run build"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.9.0",
+        "vitest": "^3.0.0"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com",
+        "access": "restricted"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bootandstrap/storefront-template.git",
+        "directory": "packages/platform-contract"
+    },
+    "license": "UNLICENSED"
+}

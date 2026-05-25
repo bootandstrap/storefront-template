@@ -11,11 +11,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PANEL_ALLOWED_ROLES, isPanelRole, type PanelRole } from '@/lib/panel-access-policy'
+import { resolveTenantContext } from '@bootandstrap/tenant-context'
+import { type PanelRole } from '@/lib/panel-access-policy'
 import { logger } from '@/lib/logger'
-
-// Re-use the centralized PANEL_ALLOWED_ROLES from panel-access-policy.ts
-const PANEL_ROLES = PANEL_ALLOWED_ROLES
 
 export interface PanelAuthResult {
     supabase: Awaited<ReturnType<typeof createClient>>
@@ -39,20 +37,19 @@ export async function requirePanelAuth(): Promise<PanelAuthResult> {
         .single()
 
     // Determine role: profile > user_metadata fallback
-    const resolvedRole = profile?.role ?? user.user_metadata?.role ?? null
+    const context = resolveTenantContext({
+        profileRole: profile?.role ?? null,
+        metadataRole: user.user_metadata?.role ?? null,
+        profileTenantId: profile?.tenant_id ?? null,
+        envTenantId: process.env.TENANT_ID ?? null,
+    })
 
-    if (!resolvedRole || !PANEL_ROLES.includes(resolvedRole as PanelRole)) {
+    if (!context.isPanelRole) {
         throw new Error('Insufficient permissions')
     }
 
-    const role = resolvedRole as PanelRole
-
-    // Tenant resolution:
-    // - owner: tenant_id MUST come from profile (DB truth)
-    // - super_admin: can use profile tenant_id OR fall back to env TENANT_ID
-    //   (super_admins are platform-level, may not have a tenant-scoped profile)
-    const tenantId = profile?.tenant_id
-        ?? (role === 'super_admin' ? process.env.TENANT_ID : null)
+    const role = context.role as PanelRole
+    const tenantId = context.tenantId
 
     if (!tenantId) {
         throw new Error(`Role "${role}" requires a tenant_id. User ${user.id} has none in profile and no env fallback.`)
@@ -164,4 +161,3 @@ export async function reconcileLegacyOwnerRole(
 
     return 'owner'
 }
-

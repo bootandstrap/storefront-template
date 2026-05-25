@@ -1,0 +1,141 @@
+name: Publish Platform Kernel Packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/platform-contract/**'
+      - 'packages/tenant-context/**'
+      - '.changeset/**'
+      - '.github/workflows/publish-platform-kernel.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/platform-contract/**'
+      - 'packages/tenant-context/**'
+      - '.changeset/**'
+      - '.github/workflows/publish-platform-kernel.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-platform-kernel
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test kernel packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Type check platform-contract
+        run: pnpm --filter @bootandstrap/platform-contract type-check
+
+      - name: Type check tenant-context
+        run: pnpm --filter @bootandstrap/tenant-context type-check
+
+      - name: Validate publication contract
+        working-directory: apps/storefront
+        run: pnpm exec vitest run src/lib/__tests__/shared-package-publication-contract.test.ts
+
+  publish:
+    name: Version & Publish kernel packages
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@bootandstrap'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve pending releases
+        run: |
+          pnpm exec changeset status --output=.changeset/status.json
+          node <<'NODE'
+          const fs = require('node:fs')
+          const status = JSON.parse(fs.readFileSync('.changeset/status.json', 'utf8'))
+          const targetPackages = new Map(
+            (status.releases || [])
+              .filter((entry) => ['@bootandstrap/platform-contract', '@bootandstrap/tenant-context'].includes(entry.name))
+              .map((entry) => [entry.name, entry.newVersion])
+          )
+          const env = fs.createWriteStream(process.env.GITHUB_ENV, { flags: 'a' })
+          const platformVersion = targetPackages.get('@bootandstrap/platform-contract') || ''
+          const tenantVersion = targetPackages.get('@bootandstrap/tenant-context') || ''
+          env.write(`PUBLISH_PLATFORM_CONTRACT=${platformVersion ? 'true' : 'false'}\n`)
+          env.write(`PUBLISH_TENANT_CONTEXT=${tenantVersion ? 'true' : 'false'}\n`)
+          env.write(`PLATFORM_CONTRACT_VERSION=${platformVersion}\n`)
+          env.write(`TENANT_CONTEXT_VERSION=${tenantVersion}\n`)
+          env.end()
+          NODE
+
+      - name: Apply changesets version
+        if: env.PUBLISH_PLATFORM_CONTRACT == 'true' || env.PUBLISH_TENANT_CONTEXT == 'true'
+        run: pnpm exec changeset version
+
+      - name: Publish @bootandstrap/platform-contract
+        if: env.PUBLISH_PLATFORM_CONTRACT == 'true'
+        working-directory: packages/platform-contract
+        run: npm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @bootandstrap/tenant-context
+        if: env.PUBLISH_TENANT_CONTEXT == 'true'
+        working-directory: packages/tenant-context
+        run: npm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version changes
+        if: env.PUBLISH_PLATFORM_CONTRACT == 'true' || env.PUBLISH_TENANT_CONTEXT == 'true'
+        run: |
+          git add .
+          git commit -m "chore: release platform kernel packages" || true
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Platform kernel publish summary" >> $GITHUB_STEP_SUMMARY
+          if [ "${PUBLISH_PLATFORM_CONTRACT}" = "true" ]; then
+            echo "- @bootandstrap/platform-contract v${PLATFORM_CONTRACT_VERSION}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- @bootandstrap/platform-contract: no release" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${PUBLISH_TENANT_CONTEXT}" = "true" ]; then
+            echo "- @bootandstrap/tenant-context v${TENANT_CONTEXT_VERSION}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- @bootandstrap/tenant-context: no release" >> $GITHUB_STEP_SUMMARY
+          fi

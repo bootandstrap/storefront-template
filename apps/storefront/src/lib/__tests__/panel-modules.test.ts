@@ -85,9 +85,10 @@ describe('panel-modules', () => {
         expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', liteFlags())).toBe(false)
     })
 
-    it('default guard still allows advanced legacy routes before owner lite gating', () => {
+    it('default guard respects feature flags before owner lite gating', () => {
         expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', baseFlags())).toBe(true)
-        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', baseFlags())).toBe(true)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', baseFlags())).toBe(false)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', fullFlags())).toBe(true)
     })
 
     it('primary routes always pass the guard', () => {

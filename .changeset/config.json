@@ -7,6 +7,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [],
+  "ignore": ["storefront", "apps/medusa"],
   "___dependency_note___": "The shared package is published to GitHub Packages (GHPR), not npmjs. See publish-shared.yml."
 }

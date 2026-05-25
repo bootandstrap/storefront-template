@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+    getPanelSections,
     getPanelFallbackRoute,
     shouldAllowPanelRoute,
     type PanelRouteKey,
@@ -84,6 +85,28 @@ describe('panel-route-guards', () => {
     it('returns panel fallback route with current locale', () => {
         expect(getPanelFallbackRoute('es')).toBe('/es/panel')
         expect(getPanelFallbackRoute('en')).toBe('/en/panel')
+    })
+
+    it('collapses panel navigation to home only in starter collaborative mode', () => {
+        const sections = getPanelSections({
+            lang: 'es',
+            labels: {
+                home: 'Mi Proyecto',
+                myStore: 'Mi Tienda',
+                sales: 'Ventas',
+                modules: 'Módulos',
+                settings: 'Ajustes',
+                pos: 'POS',
+                ownerPanel: 'Panel',
+                backToStore: 'Volver',
+            },
+            featureFlags: defaultFlags,
+            ownerExperienceMode: 'starter_collaborative',
+        })
+
+        expect(sections).toHaveLength(1)
+        expect(sections[0]?.key).toBe('home')
+        expect(sections[0]?.label).toBe('Mi Proyecto')
     })
 
     it('denies unknown routes (fail-closed, P1-2)', () => {

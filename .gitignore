@@ -74,6 +74,8 @@ secrets/
 
 # Allow shared package dist for publishing
 !packages/shared/dist/
+!packages/platform-contract/dist/
+!packages/tenant-context/dist/
 
 # Generated email previews (build artifacts)
 apps/storefront/email-previews/

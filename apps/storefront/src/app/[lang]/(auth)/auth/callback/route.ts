@@ -16,7 +16,8 @@ export async function GET(
         const supabase = await createClient()
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-            let role: string | null = data.user?.user_metadata?.role ?? null
+            const metadataRole = data.user?.user_metadata?.role ?? null
+            let role: string | null = metadataRole
             let profileTenantId: string | null = null
 
             if (data.user?.id) {
@@ -40,6 +41,10 @@ export async function GET(
             const destination = resolvePostLoginDestination({
                 lang,
                 role,
+                profileRole: role,
+                metadataRole,
+                profileTenantId,
+                envTenantId: process.env.TENANT_ID ?? null,
                 requestedRedirect: next,
             })
 

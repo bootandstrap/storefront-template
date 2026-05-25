@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/security/rate-limiter'
 import { getClientIp } from '@/lib/security/get-client-ip'
+import { SCHEMA_VERSION } from '@/lib/supabase/schema-version'
 
 // ---------------------------------------------------------------------------
 // GET /api/health/ready — Readiness probe (Docker / Kubernetes / load balancer)
@@ -123,6 +124,7 @@ export async function GET(request: NextRequest) {
         {
             status: overall,
             probe: 'readiness',
+            schemaVersion: SCHEMA_VERSION,
             timestamp: new Date().toISOString(),
             uptime_seconds: Math.floor(process.uptime()),
             checks,

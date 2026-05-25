@@ -2,12 +2,38 @@ import { describe, it, expect } from 'vitest'
 import { resolvePostLoginDestination } from '../auth-routing'
 
 describe('resolvePostLoginDestination', () => {
-    it('sends owner role to panel by default', () => {
+    it('sends owner role to panel when profile tenant context exists', () => {
+        expect(
+            resolvePostLoginDestination({
+                lang: 'es',
+                role: 'owner',
+                profileTenantId: 'tenant-owner',
+            })
+        ).toBe('/es/panel')
+    })
+
+    it('keeps legacy role-only behavior for callers that have not been migrated yet', () => {
         expect(resolvePostLoginDestination({ lang: 'es', role: 'owner' })).toBe('/es/panel')
     })
 
-    it('sends super_admin to panel (panel role)', () => {
-        expect(resolvePostLoginDestination({ lang: 'es', role: 'super_admin' })).toBe('/es/panel')
+    it('sends super_admin to panel when fallback tenant context exists', () => {
+        expect(
+            resolvePostLoginDestination({
+                lang: 'es',
+                role: 'super_admin',
+                envTenantId: 'tenant-env',
+            })
+        ).toBe('/es/panel')
+    })
+
+    it('keeps panel roles without tenant context out of /panel', () => {
+        expect(
+            resolvePostLoginDestination({
+                lang: 'es',
+                role: 'owner',
+                profileTenantId: null,
+            })
+        ).toBe('/es/cuenta')
     })
 
     it('sends non-panel roles to account by default', () => {
