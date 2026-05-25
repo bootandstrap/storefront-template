@@ -41,15 +41,17 @@ Este archivo es el entrypoint corto para sesiones de desarrollo IA/Codex en este
 - `verificado`: `pnpm pack:contracts` genera tarballs reales consumibles por `BOOTANDSTRAP_WEB`
 - `verificado`: el workflow `publish-platform-kernel.yml` ya valida en `pull_request` y soporta `workflow_dispatch` para release manual una vez exista en `main`
 - `verificado`: `pnpm exec changeset status --output=.changeset/status.json` proyecta `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: publish remoto a GitHub Packages aun pendiente; en la auditoria de `2026-05-25` el workflow aun no existe en la rama remota `main`
+- `verificado`: publish remoto real ejecutado el `2026-05-25`
+- `verificado`: versiones publicadas reales `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
+- `parcialmente verificado`: el consumidor cross-owner sigue pendiente por auth a GH Packages desde `BOOTANDSTRAP_WEB`
 
 ## Siguiente orden preferido
 
-1. Llevar el workflow de publish a `main`
-2. Publicar paquetes del kernel
-2. Mantener green el contrato `source -> pack -> install artifact -> consumer tests`
-3. Expandir `TenantContext` solo donde quite drift real
-4. No abrir `starter-engine` compartido antes de cerrar paquete/versionado y consumers base
+1. Resolver auth de consumo cross-owner desde `BOOTANDSTRAP_WEB`
+2. Migrar `BOOTANDSTRAP_WEB` a `@bootandstrap/platform-contract@0.2.0`
+3. Migrar `BOOTANDSTRAP_WEB` a `@bootandstrap/tenant-context@1.0.0`
+4. Mantener green el contrato `source -> pack -> install artifact -> consumer tests`
+5. No abrir `starter-engine` compartido antes de cerrar paquete/versionado y consumers base
 
 ## Validacion focalizada
 

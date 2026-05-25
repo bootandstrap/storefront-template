@@ -26,7 +26,8 @@ Dejar un entrypoint corto y vivo para retomar `Phase 1`, owner starter runtime y
 - `verificado`: el workflow de publish ya tiene gate en `pull_request` y `workflow_dispatch` para release manual post-merge
 - `verificado`: el smoke `source -> pack -> install artifact -> consumer tests` fue revalidado el `2026-05-25`
 - `verificado`: `changeset status` proyecta ahora `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: falta publish real a GitHub Packages y consumo por version publicada
+- `verificado`: publish real a GitHub Packages ejecutado en `main` el `2026-05-25`
+- `parcialmente verificado`: el consumo por version publicada sigue bloqueado en `BOOTANDSTRAP_WEB` por auth cross-owner a GH Packages
 
 ## Lo mas importante que NO olvidar
 
@@ -37,9 +38,9 @@ Dejar un entrypoint corto y vivo para retomar `Phase 1`, owner starter runtime y
 
 ## Siguiente backlog ejecutable
 
-1. Llevar el workflow `publish-platform-kernel.yml` a `main`
-2. Ejecutar publish remoto de paquetes del kernel
-3. Confirmar install del consumidor desde version publicada
+1. Resolver auth de install desde `BOOTANDSTRAP_WEB`
+2. Confirmar install del consumidor desde `@bootandstrap/platform-contract@0.2.0`
+3. Confirmar install del consumidor desde `@bootandstrap/tenant-context@1.0.0`
 4. Mantener green el contrato `source -> pack -> install artifact -> tests`
 5. Posponer `starter-engine` compartido hasta cerrar consumo por release
 

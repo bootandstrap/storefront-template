@@ -78,6 +78,7 @@ Notas:
 - `storefront` y `apps/medusa` estan ignorados en `.changeset/config.json`.
 - El release de estos paquetes no debe introducir bump semantico en apps consumidoras.
 - `verificado`: en la auditoria de `2026-05-25`, `changeset status` proyecta `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`.
+- `verificado`: el workflow de `main` publico esas mismas versiones el `2026-05-25`.
 
 ## Publicacion CI
 
@@ -101,9 +102,9 @@ Comportamiento:
 2. `verificado`: correr `pnpm pack:contracts`
 3. `verificado`: instalar los `.tgz` en `BOOTANDSTRAP_WEB` y revalidar su suite focalizada
 4. `verificado`: revisar `pnpm exec changeset status --output=.changeset/status.json`
-5. `parcialmente verificado`: semver candidato actual `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`; falta aceptar si `1.0.0` es el corte deseado
-6. `no verificado`: ejecutar el workflow `.github/workflows/publish-platform-kernel.yml`
-7. `no verificado`: actualizar el consumidor `BOOTANDSTRAP_WEB` para fijar versiones publicadas
+5. `verificado`: semver publicado `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
+6. `verificado`: ejecutar el workflow `.github/workflows/publish-platform-kernel.yml`
+7. `parcialmente verificado`: actualizar el consumidor `BOOTANDSTRAP_WEB` para fijar versiones publicadas; bloqueado por auth a GH Packages
 8. `no verificado`: ejecutar `npm ci` limpio del consumidor usando registry
 9. `no verificado`: revalidar browser owner autenticado y smoke del dashboard starter
 
@@ -111,4 +112,5 @@ Comportamiento:
 
 - Las dependencias `file:` entre worktrees siguen siendo utiles para desarrollo local, pero no sustituyen la estrategia de artefacto publicado.
 - `tenant-context` puede recibir bumps mas agresivos si cambia una dependencia interna pre-1.0; revisar siempre `changeset status` antes de publicar.
-- `verificado`: mientras este workflow no viva en la rama remota `main`, el publish CI real sigue bloqueado aunque la worktree local este lista
+- `verificado`: el publish CI real ya quedo resuelto
+- `verificado`: el siguiente bloqueo real es auth de lectura desde `BOOTANDSTRAP_WEB` hacia paquetes `restricted` bajo el owner `bootandstrap`

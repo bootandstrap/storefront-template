@@ -14,25 +14,24 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 - `verificado`: el contrato `source -> pack -> install artifact -> consumer tests` ya fue validado localmente
 - `verificado`: `shared-package-publication-contract.test.ts` ya cubre tambien `pull_request` y `workflow_dispatch` del workflow de release
 - `verificado`: `changeset status` proyecta `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: sigue faltando publicacion remota a GitHub Packages; el workflow aun no existe en la rama remota `main`
+- `verificado`: publicacion remota real completada en `main`
+- `verificado`: `@bootandstrap/platform-contract@0.2.0` publicado
+- `verificado`: `@bootandstrap/tenant-context@1.0.0` publicado
+- `parcialmente verificado`: consumo cross-owner desde `BOOTANDSTRAP_WEB` bloqueado por auth a GH Packages
 - `parcialmente verificado`: sigue faltando validacion browser autenticada owner despues de consumir versiones publicadas
 
 ## Bloqueantes para llamar esto listo para produccion
 
-1. `no verificado`: llevar el workflow de publish a la rama remota `main`
-2. `no verificado`: ejecutar publish remoto de `@bootandstrap/platform-contract`
-3. `no verificado`: ejecutar publish remoto de `@bootandstrap/tenant-context`
-4. `no verificado`: fijar consumo por version publicada en `BOOTANDSTRAP_WEB`
-5. `no verificado`: validar `npm ci` limpio del consumidor usando registry, no `file:` ni tarball local
-6. `no verificado`: validar browser owner autenticado real tras consumir versiones publicadas
+1. `no verificado`: resolver auth de `BOOTANDSTRAP_WEB` hacia GH Packages
+2. `no verificado`: fijar consumo por version publicada en `BOOTANDSTRAP_WEB`
+3. `no verificado`: validar `npm ci` limpio del consumidor usando registry, no `file:` ni tarball local
+4. `no verificado`: validar browser owner autenticado real tras consumir versiones publicadas
 
 ## Backlog inmediato por orden
 
-1. Llevar `publish-platform-kernel.yml` a `main`
-2. Confirmar si `@bootandstrap/tenant-context@1.0.0` es el semver inicial aceptado
-3. Ejecutar workflow de publish real
-4. Sustituir `file:` por versiones publicadas en `BOOTANDSTRAP_WEB`
-5. Revalidar las suites focalizadas de consumidor y runtime owner
+1. Resolver si el consumidor usara PAT/secret `read:packages` o acceso de package a repo
+2. Sustituir `file:` por versiones publicadas en `BOOTANDSTRAP_WEB`
+3. Revalidar las suites focalizadas de consumidor y runtime owner
 
 ## Reglas de continuidad
 
