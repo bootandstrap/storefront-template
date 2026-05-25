@@ -1,0 +1,45 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@bootandstrap/platform-contract",
+          "type": "minor"
+        },
+        {
+          "name": "@bootandstrap/tenant-context",
+          "type": "minor"
+        }
+      ],
+      "summary": "Make `platform-contract` and `tenant-context` publishable through GitHub Packages with built `dist` artifacts, explicit package metadata, and a shared pack workflow.\n\nAlso generalize `tenant-context` so auth-scoped `profileTenantId` is preserved for non-panel actors while panel authorization still depends on `isPanelRole`.",
+      "id": "funny-bananas-hear"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bootandstrap/platform-contract",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "funny-bananas-hear"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@bootandstrap/tenant-context",
+      "type": "major",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "funny-bananas-hear"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "storefront",
+      "type": "none",
+      "oldVersion": "0.1.1",
+      "changesets": [],
+      "newVersion": "0.1.1"
+    }
+  ]
+}

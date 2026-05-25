@@ -1,6 +1,6 @@
 {
     "name": "@bootandstrap/tenant-context",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "Shared tenant context resolver for BootandStrap control-plane and tenant runtime surfaces",
     "type": "module",
     "main": "./dist/index.js",
