@@ -16,6 +16,8 @@
  * @locked 🔴 PLATFORM — Core navigation logic.
  */
 
+import type { OwnerExperienceMode } from '@bootandstrap/platform-contract'
+
 // ── Feature Flags ─────────────────────────────────────────────────────────
 
 export interface PanelFeatureFlags {
@@ -104,13 +106,28 @@ export function getPanelSections({
     lang,
     labels,
     featureFlags,
+    ownerExperienceMode,
     badges = {},
 }: {
     lang: string
     labels: PanelSidebarLabels
     featureFlags: PanelFeatureFlags
+    ownerExperienceMode?: OwnerExperienceMode | null
     badges?: Record<string, number>
 }): PanelNavSection[] {
+    if (ownerExperienceMode === 'starter_collaborative') {
+        return [
+            {
+                key: 'home',
+                href: `/${lang}/panel`,
+                label: labels.home,
+                icon: 'home',
+                visible: true,
+                exact: true,
+            },
+        ]
+    }
+
     const sections: PanelNavSection[] = [
         {
             key: 'home',
@@ -368,20 +385,70 @@ export const ROUTE_REDIRECT_MAP: Record<string, { section: string; tab?: string 
 
 // ── Route Classification (kept for backward compat with layout guards) ────
 
-const ALL_KNOWN_ROUTES = new Set([
-    // New primary routes
-    'mi-tienda', 'ventas', 'ajustes', 'modulos', 'pos',
-    // Legacy routes (still have redirect pages)
-    ...Object.keys(ROUTE_REDIRECT_MAP),
+const ESSENTIAL_PANEL_ROUTES = new Set([
+    'dashboard',
+    'mi-tienda',
+    'ventas',
+    'ajustes',
+    'modulos',
+    'pos',
+    'catalogo',
+    'pedidos',
+    'clientes',
+    'tienda',
+    'envios',
+    'mi-proyecto',
+    'categorias',
+    'productos',
+    'inventario',
+    'email',
+    'suscripcion',
+    'utilidades',
 ])
+
+const ADVANCED_PANEL_ROUTES = new Set([
+    'carrusel',
+    'mensajes',
+    'paginas',
+    'analiticas',
+    'insignias',
+    'chatbot',
+    'devoluciones',
+    'crm',
+    'resenas',
+    'seo',
+    'redes-sociales',
+    'automatizaciones',
+    'auth',
+    'canales',
+    'capacidad',
+])
+
+const ADVANCED_ROUTE_FEATURE_MAP: Partial<Record<string, keyof PanelFeatureFlags>> = {
+    carrusel: 'enable_carousel',
+    mensajes: 'enable_whatsapp_checkout',
+    paginas: 'enable_cms_pages',
+    analiticas: 'enable_analytics',
+    insignias: 'enable_product_badges',
+    chatbot: 'enable_chatbot',
+    devoluciones: 'enable_self_service_returns',
+    crm: 'enable_crm',
+    resenas: 'enable_reviews',
+    seo: 'enable_seo',
+    'redes-sociales': 'enable_social_media',
+    automatizaciones: 'enable_automations',
+    auth: 'enable_auth_advanced',
+    canales: 'enable_sales_channels',
+    capacidad: 'enable_traffic_expansion',
+}
 
 export type PanelRouteKey = string
 
 export function classifyPanelRoute(
     segment: string
-): 'primary' | 'legacy' | 'unknown' {
-    if (['mi-tienda', 'ventas', 'ajustes', 'modulos', 'pos'].includes(segment)) return 'primary'
-    if (ROUTE_REDIRECT_MAP[segment]) return 'legacy'
+): 'essential' | 'advanced' | 'unknown' {
+    if (ESSENTIAL_PANEL_ROUTES.has(segment)) return 'essential'
+    if (ADVANCED_PANEL_ROUTES.has(segment)) return 'advanced'
     return 'unknown'
 }
 
@@ -391,23 +458,17 @@ export function shouldAllowPanelRoute(
 ): boolean {
     const classification = classifyPanelRoute(route)
 
-    // Primary routes always allowed
-    if (classification === 'primary') return true
+    if (classification === 'essential') {
+        return true
+    }
 
-    // Legacy routes: check if the destination section/tab is feature-gated
-    if (classification === 'legacy') {
-        const redirect = ROUTE_REDIRECT_MAP[route]
-        if (!redirect) return false
-
-        // Module routes need their feature flag
-        if (redirect.section === 'modulos' && redirect.tab) {
-            const moduleTab = getModuleTabs(featureFlags).find(t => t.key === redirect.tab)
-            // marketplace tab is always allowed
-            if (redirect.tab === 'marketplace') return true
-            return !!moduleTab
+    if (classification === 'advanced') {
+        if (featureFlags.owner_lite_enabled && !featureFlags.owner_advanced_modules_enabled) {
+            return false
         }
 
-        return true
+        const featureKey = ADVANCED_ROUTE_FEATURE_MAP[route]
+        return featureKey ? Boolean(featureFlags[featureKey]) : true
     }
 
     // Unknown routes: fail-closed

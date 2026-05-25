@@ -44,12 +44,14 @@ import {
     type PanelSubItem,
     type SectionKey,
 } from '@/lib/panel-policy'
+import type { OwnerExperienceMode } from '@bootandstrap/platform-contract'
 
 interface PanelSidebarProps {
     lang: string
     businessName: string
     labels: PanelSidebarLabels
     featureFlags: PanelFeatureFlags
+    ownerExperienceMode?: OwnerExperienceMode
     badges?: Record<string, number>
     planName?: string
     logoUrl?: string
@@ -175,6 +177,7 @@ export default function PanelSidebar({
     businessName,
     labels,
     featureFlags,
+    ownerExperienceMode,
     badges = {},
     planName,
     logoUrl,
@@ -238,7 +241,7 @@ export default function PanelSidebar({
         return () => window.removeEventListener('keydown', handleEscape)
     }, [mobileOpen])
 
-    const sections = getPanelSections({ lang, labels, featureFlags, badges })
+    const sections = getPanelSections({ lang, labels, featureFlags, ownerExperienceMode, badges })
 
     const isActive = (href: string, exact?: boolean) => {
         if (exact) return pathname === href

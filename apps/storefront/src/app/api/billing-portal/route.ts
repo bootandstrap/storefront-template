@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveTenantContext } from '@bootandstrap/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
@@ -30,7 +31,14 @@ export async function POST(req: NextRequest) {
             .eq('id', user.id)
             .single()
 
-        if (!profile?.tenant_id || !['owner', 'super_admin'].includes(profile.role)) {
+        const tenantContext = resolveTenantContext({
+            profileRole: profile?.role ?? null,
+            metadataRole: user.user_metadata?.role ?? null,
+            profileTenantId: profile?.tenant_id ?? null,
+            envTenantId: process.env.TENANT_ID ?? null,
+        })
+
+        if (!tenantContext.isPanelRole || tenantContext.tenantId !== profile?.tenant_id) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 

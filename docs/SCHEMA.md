@@ -7,6 +7,21 @@
 
 Both repos (`ecommerce-template` + `BOOTANDSTRAP_WEB`) share one Supabase PostgreSQL instance, `public` schema. Medusa also uses `public` — do NOT set `databaseSchema` in medusa-config.
 
+## Generated Type Ownership
+
+- `verificado`: `BOOTANDSTRAP_WEB` is the canonical owner for generated shared Supabase types.
+- `verificado`: `BOOTANDSTRAP_WEB/src/types/supabase.ts` is the generated artifact that storefront consumers must mirror.
+- `verificado`: `ecommerce-template/apps/storefront/src/lib/supabase/database.types.ts` is a synced consumer copy, not an independently owned source of truth.
+- `verificado`: `ecommerce-template/apps/storefront/src/lib/supabase/schema-version.ts` is the synced schema version artifact consumed by tenant health/reporting surfaces.
+- `verificado`: sync is executed with `scripts/sync-supabase-types.mjs`.
+
+### Sync Procedure
+
+1. Regenerate or update `BOOTANDSTRAP_WEB/src/types/supabase.ts` from the real shared Supabase project.
+2. In `ecommerce-template`, run `BOOTANDSTRAP_WEB_ROOT=/path/to/bootandstrap-web pnpm sync:supabase-types`.
+3. Commit the updated `apps/storefront/src/lib/supabase/database.types.ts` in the same change that consumes the new schema contract.
+4. CI re-checks parity via `scripts/sync-supabase-types.mjs --check` and blocks merge on drift.
+
 ## Table Ownership
 
 ### Governance Tables (owned by BOOTANDSTRAP_WEB)

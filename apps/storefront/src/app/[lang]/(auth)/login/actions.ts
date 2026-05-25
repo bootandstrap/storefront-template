@@ -43,7 +43,8 @@ export async function loginAction(
 
     // Use user from signIn response directly (avoids cookie timing issues)
     const user = data.user
-    let role: string | null = user?.user_metadata?.role ?? null
+    const metadataRole = user?.user_metadata?.role ?? null
+    let role: string | null = metadataRole
     let profileTenantId: string | null = null
 
     if (user) {
@@ -68,6 +69,10 @@ export async function loginAction(
     const destination = resolvePostLoginDestination({
         lang,
         role,
+        profileRole: role,
+        metadataRole,
+        profileTenantId,
+        envTenantId: process.env.TENANT_ID ?? null,
         requestedRedirect,
     })
 

@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   public: {
     Tables: {
       abandoned_cart_notifications: {
@@ -3374,6 +3379,38 @@ export type Database = {
           total_tenants?: number
         }
         Relationships: []
+      }
+      idempotency_keys: {
+        Row: {
+          created_at: string
+          expires_at: string
+          key: string
+          result: Json
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          key: string
+          result: Json
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          key?: string
+          result?: Json
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idempotency_keys_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       image: {
         Row: {
@@ -7810,6 +7847,364 @@ export type Database = {
           },
         ]
       }
+      starter_blueprint_phases: {
+        Row: {
+          blueprint_id: string
+          config: Json
+          created_at: string
+          default_status: string
+          default_visible_features: string[]
+          description: string | null
+          id: string
+          phase_key: string
+          phase_type: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          blueprint_id: string
+          config?: Json
+          created_at?: string
+          default_status?: string
+          default_visible_features?: string[]
+          description?: string | null
+          id?: string
+          phase_key: string
+          phase_type: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          blueprint_id?: string
+          config?: Json
+          created_at?: string
+          default_status?: string
+          default_visible_features?: string[]
+          description?: string | null
+          id?: string
+          phase_key?: string
+          phase_type?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_blueprint_phases_blueprint_id_fkey"
+            columns: ["blueprint_id"]
+            isOneToOne: false
+            referencedRelation: "starter_blueprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      starter_blueprint_requests: {
+        Row: {
+          asset_requirements: Json
+          blueprint_phase_id: string
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_required: boolean
+          request_key: string
+          request_status: string
+          request_type: string
+          sort_order: number
+          title: string
+          updated_at: string
+          validation_rules: Json
+        }
+        Insert: {
+          asset_requirements?: Json
+          blueprint_phase_id: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          request_key: string
+          request_status?: string
+          request_type: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          validation_rules?: Json
+        }
+        Update: {
+          asset_requirements?: Json
+          blueprint_phase_id?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          request_key?: string
+          request_status?: string
+          request_type?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          validation_rules?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_blueprint_requests_blueprint_phase_id_fkey"
+            columns: ["blueprint_phase_id"]
+            isOneToOne: false
+            referencedRelation: "starter_blueprint_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      starter_blueprints: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      starter_project_phases: {
+        Row: {
+          admin_notes: string | null
+          client_action_state: string
+          completed_at: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          is_active: boolean
+          phase_key: string
+          phase_status: string
+          phase_type: string
+          sort_order: number
+          started_at: string | null
+          starter_project_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+          visible_features: string[]
+        }
+        Insert: {
+          admin_notes?: string | null
+          client_action_state?: string
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          is_active?: boolean
+          phase_key: string
+          phase_status?: string
+          phase_type: string
+          sort_order?: number
+          started_at?: string | null
+          starter_project_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+          visible_features?: string[]
+        }
+        Update: {
+          admin_notes?: string | null
+          client_action_state?: string
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          is_active?: boolean
+          phase_key?: string
+          phase_status?: string
+          phase_type?: string
+          sort_order?: number
+          started_at?: string | null
+          starter_project_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          visible_features?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_project_phases_starter_project_id_fkey"
+            columns: ["starter_project_id"]
+            isOneToOne: false
+            referencedRelation: "starter_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "starter_project_phases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      starter_project_requests: {
+        Row: {
+          admin_notes: string | null
+          asset_requirements: Json
+          completed_at: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_required: boolean
+          request_key: string
+          request_status: string
+          request_type: string
+          response_payload: Json
+          sort_order: number
+          starter_project_phase_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+          validation_rules: Json
+          visible_to_owner: boolean
+        }
+        Insert: {
+          admin_notes?: string | null
+          asset_requirements?: Json
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          request_key: string
+          request_status?: string
+          request_type: string
+          response_payload?: Json
+          sort_order?: number
+          starter_project_phase_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+          validation_rules?: Json
+          visible_to_owner?: boolean
+        }
+        Update: {
+          admin_notes?: string | null
+          asset_requirements?: Json
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          request_key?: string
+          request_status?: string
+          request_type?: string
+          response_payload?: Json
+          sort_order?: number
+          starter_project_phase_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          validation_rules?: Json
+          visible_to_owner?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_project_requests_starter_project_phase_id_fkey"
+            columns: ["starter_project_phase_id"]
+            isOneToOne: false
+            referencedRelation: "starter_project_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "starter_project_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      starter_projects: {
+        Row: {
+          blueprint_id: string | null
+          created_at: string
+          current_phase_key: string | null
+          id: string
+          last_synced_at: string | null
+          overview: Json
+          owner_panel_mode: string
+          project_status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          blueprint_id?: string | null
+          created_at?: string
+          current_phase_key?: string | null
+          id?: string
+          last_synced_at?: string | null
+          overview?: Json
+          owner_panel_mode?: string
+          project_status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          blueprint_id?: string | null
+          created_at?: string
+          current_phase_key?: string | null
+          id?: string
+          last_synced_at?: string | null
+          overview?: Json
+          owner_panel_mode?: string
+          project_status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_projects_blueprint_id_fkey"
+            columns: ["blueprint_id"]
+            isOneToOne: false
+            referencedRelation: "starter_blueprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "starter_projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promotion: {
         Row: {
           campaign_id: string | null
@@ -8347,6 +8742,27 @@ export type Database = {
           publishable_key_id?: string
           sales_channel_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rate_limit_entries: {
+        Row: {
+          expires_at: string
+          hit_count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          expires_at: string
+          hit_count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          expires_at?: string
+          hit_count?: number
+          key?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -9925,6 +10341,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_segments: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          segment_key: string
+          tenant_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          segment_key: string
+          tenant_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          segment_key?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_segments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           country: string | null
@@ -9938,6 +10392,7 @@ export type Database = {
           id: string
           is_demo: boolean | null
           name: string
+          owner_experience_mode: string
           owner_email: string | null
           plan_tier: string
           provisioning_error: string | null
@@ -9963,6 +10418,7 @@ export type Database = {
           id?: string
           is_demo?: boolean | null
           name: string
+          owner_experience_mode?: string
           owner_email?: string | null
           plan_tier?: string
           provisioning_error?: string | null
@@ -9988,6 +10444,7 @@ export type Database = {
           id?: string
           is_demo?: boolean | null
           name?: string
+          owner_experience_mode?: string
           owner_email?: string | null
           plan_tier?: string
           provisioning_error?: string | null
@@ -10411,6 +10868,14 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: { p_key: string; p_max_hits: number; p_window_ms: number }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after_ms: number
+        }[]
+      }
       check_rls_gaps: {
         Args: never
         Returns: {
@@ -10440,6 +10905,8 @@ export type Database = {
             Args: { p_event_id: string; p_stale_threshold?: string }
             Returns: boolean
           }
+      cleanup_expired_idempotency_keys: { Args: never; Returns: number }
+      cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_health_snapshots: { Args: never; Returns: undefined }
       cleanup_old_jobs: { Args: never; Returns: undefined }
       cleanup_revalidation_queue: { Args: never; Returns: undefined }
@@ -10799,4 +11266,3 @@ export const Constants = {
     },
   },
 } as const
-

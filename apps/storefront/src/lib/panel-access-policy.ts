@@ -10,14 +10,8 @@
  * Centralizing this prevents role mismatches across authorization layers.
  */
 
-/** Roles permitted to access the Owner Panel */
-export const PANEL_ALLOWED_ROLES = ['owner', 'super_admin'] as const
-
-export type PanelRole = (typeof PANEL_ALLOWED_ROLES)[number]
-
-/**
- * Check if a role string is a valid panel role.
- */
-export function isPanelRole(role: string | null | undefined): role is PanelRole {
-    return !!role && (PANEL_ALLOWED_ROLES as readonly string[]).includes(role)
-}
+export {
+    PANEL_ALLOWED_ROLES,
+    isPanelRole,
+    type PanelRole,
+} from '@bootandstrap/platform-contract'

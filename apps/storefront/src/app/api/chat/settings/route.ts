@@ -6,10 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
-import { chatSettingsTable, profilesTable } from '@/lib/chat/db'
+import { chatSettingsTable } from '@/lib/chat/db'
 import { clearSettingsCache } from '@/lib/chat/settings-loader'
+import { getChatPanelContext } from '@/lib/chat/panel-access'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
@@ -21,8 +21,6 @@ export async function GET(req: NextRequest) {
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })
         }
-
-        const supabase = await createClient()
 
         // Fetch settings for this tenant (with fallback for pre-migration schema)
         let data: Array<{ key: string; value: string | null; description?: string; updated_at?: string }> | null = null
@@ -58,17 +56,9 @@ export async function GET(req: NextRequest) {
         })
 
         // Check auth for full access
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (user) {
-            const { data: profile } = await profilesTable()
-                .select('role')
-                .eq('id', user.id)
-                .single()
-
-            if (profile?.role === 'owner' || profile?.role === 'super_admin') {
-                return NextResponse.json({ settings, raw: data })
-            }
+        const access = await getChatPanelContext(tenantId)
+        if (access.isPanelAccessAllowed) {
+            return NextResponse.json({ settings, raw: data })
         }
 
         // Public: return only safe config
@@ -101,19 +91,11 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })
         }
 
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        const access = await getChatPanelContext(tenantId)
+        if (!access.isAuthenticated) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-
-        // Check if owner/admin
-        const { data: profile } = await profilesTable()
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.role !== 'owner' && profile?.role !== 'super_admin') {
+        if (!access.isPanelAccessAllowed) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
@@ -131,7 +113,7 @@ export async function PUT(request: NextRequest) {
                 key,
                 value: String(value),
                 updated_at: new Date().toISOString(),
-                updated_by: user.id
+                updated_by: access.userId
             }, { onConflict: 'tenant_id,key' })
 
         if (error) {

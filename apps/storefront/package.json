@@ -14,7 +14,9 @@
     "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@bootandstrap/platform-contract": "workspace:*",
     "@bootandstrap/shared": "workspace:*",
+    "@bootandstrap/tenant-context": "workspace:*",
     "@number-flow/react": "^0.6.0",
     "@openfeature/server-sdk": "^1.17.0",
     "@point-of-sale/receipt-printer-encoder": "^3.0.3",

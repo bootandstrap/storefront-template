@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { isPanelRole } from '@/lib/panel-access-policy'
+import { resolveTenantContext } from '@bootandstrap/tenant-context'
 import { API_RATE_LIMIT, PAGE_RATE_LIMIT } from '@/lib/security/rate-limit'
 import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
 
@@ -331,30 +331,23 @@ export async function proxy(request: NextRequest) {
         // super_admin may not have a profiles row, so check user_metadata as fallback
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, tenant_id')
             .eq('id', user.id)
             .single()
 
-        const resolvedRole = profile?.role ?? user.user_metadata?.role ?? null
+        const tenantContext = resolveTenantContext({
+            profileRole: profile?.role ?? null,
+            metadataRole: user.user_metadata?.role ?? null,
+            profileTenantId: profile?.tenant_id ?? null,
+            envTenantId: process.env.TENANT_ID ?? null,
+        })
 
-        if (!isPanelRole(resolvedRole)) {
+        if (!tenantContext.isPanelRole) {
             const accountUrl = request.nextUrl.clone()
             accountUrl.pathname = lang ? `/${lang}/cuenta` : '/cuenta'
             return NextResponse.redirect(accountUrl)
         }
 
-        // ── Feature-flag sub-route guard ──
-        const panelSegment = pathAfterLang.replace('panel/', '').split('/')[0] || ''
-        if (panelSegment) {
-            const { shouldAllowPanelRoute } = await import('@/lib/panel-policy')
-            const { getConfig } = await import('@/lib/config')
-            const appConfig = await getConfig()
-            if (!shouldAllowPanelRoute(panelSegment as import('@/lib/panel-policy').PanelRouteKey, appConfig.featureFlags)) {
-                const fallbackUrl = request.nextUrl.clone()
-                fallbackUrl.pathname = lang ? `/${lang}/panel` : '/panel'
-                return NextResponse.redirect(fallbackUrl)
-            }
-        }
         return response
     }
 

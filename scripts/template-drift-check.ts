@@ -224,7 +224,7 @@ function checkWorkflows(): DriftIssue[] {
         return issues
     }
 
-    const requiredWorkflows = ['deploy.yml', 'build-medusa.yml', 'publish-shared.yml']
+    const requiredWorkflows = ['deploy.yml', 'build-medusa.yml', 'publish-shared.yml', 'publish-platform-kernel.yml']
     const existingWorkflows = readdirSync(workflowDir)
 
     for (const wf of requiredWorkflows) {

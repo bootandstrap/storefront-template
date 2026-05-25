@@ -2,7 +2,7 @@
 
 SaaS-managed e-commerce template: Next.js 16, Medusa v2, Supabase. White-labeled storefronts governed via feature flags, plan limits, and dynamic theming.
 
-> Last updated: 2026-04-14
+> Last updated: 2026-05-25
 
 ## Stack
 
@@ -36,6 +36,9 @@ ecommerce-template/
 
 | Doc | Contents |
 |-----|----------|
+| [AGENTS.md](AGENTS.md) | **Codex / AI session start** — active worktree rules, read order, next moves |
+| [docs/plans/2026-05-25-agentic-development-start-here.md](docs/plans/2026-05-25-agentic-development-start-here.md) | **Live handoff** — current state, next backlog, validation path |
+| [docs/plans/2026-05-25-phase1-production-readiness-board.md](docs/plans/2026-05-25-phase1-production-readiness-board.md) | **Execution board** — exact blockers, readiness checklist, next batch |
 | [GEMINI.md](GEMINI.md) | **AI agent guide** — zone map 🟢🟡🔴⚫, invariants, playbook |
 | [HANDOFF.md](HANDOFF.md) | **Human ops checklist** — new tenant onboarding, assets, go-live |
 | [docs/](docs/) | Architecture, schema, flows, contracts, dev setup |

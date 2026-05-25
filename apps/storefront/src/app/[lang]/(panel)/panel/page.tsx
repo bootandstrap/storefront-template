@@ -19,6 +19,9 @@
 
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { withPanelGuard } from '@/lib/panel-guard'
+import StarterPanelDashboard from '@/components/panel/starter/StarterPanelDashboard'
+import { resolveOwnerExperienceModeForTenant } from '@/lib/starter-build/owner-mode'
+import { getStarterOwnerProject } from '@/lib/starter-build/queries'
 import { SotaBentoGrid } from '@/components/panel'
 import { buildDashboardContext } from './_lib/dashboard-context'
 
@@ -47,7 +50,25 @@ export default async function PanelDashboard({
     params: Promise<{ lang: string }>
 }) {
     const { lang } = await params
-    const { tenantId } = await withPanelGuard()
+    const { tenantId, supabase, appConfig } = await withPanelGuard()
+    const ownerExperienceMode = await resolveOwnerExperienceModeForTenant({
+        tenantId,
+        supabase: supabase as any,
+        config: appConfig.config as Record<string, unknown>,
+    })
+
+    if (ownerExperienceMode === 'starter_collaborative') {
+        const project = await getStarterOwnerProject(tenantId, supabase)
+
+        return (
+            <StarterPanelDashboard
+                lang={lang}
+                customerName={appConfig.config.business_name}
+                supportEmail={appConfig.config.store_email || 'support@bootandstrap.com'}
+                project={project}
+            />
+        )
+    }
 
     // Single data fetch — all governance + Medusa + Supabase
     const ctx = await buildDashboardContext(tenantId, lang)

@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
-import { chatLogsTable, chatSettingsTable, profilesTable } from '@/lib/chat/db'
+import { chatLogsTable, chatSettingsTable } from '@/lib/chat/db'
+import { getChatPanelContext } from '@/lib/chat/panel-access'
 import { logger } from '@/lib/logger'
 
 interface LogEntry {
@@ -24,19 +24,11 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Tenant not configured' }, { status: 500 })
         }
 
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        const access = await getChatPanelContext(tenantId)
+        if (!access.isAuthenticated) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-
-        // Check owner/admin
-        const { data: profile } = await profilesTable()
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.role !== 'owner' && profile?.role !== 'super_admin') {
+        if (!access.isPanelAccessAllowed) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 

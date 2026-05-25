@@ -23,6 +23,7 @@ import PanelMobileNav from '@/components/panel/PanelMobileNav'
 import PanelKeyboardShortcuts, { DEFAULT_PANEL_SHORTCUTS } from '@/components/panel/PanelKeyboardShortcuts'
 import type { CommandItem, CommandPaletteLabels } from '@/components/panel/CommandPalette'
 import type { PanelFeatureFlags, PanelSidebarLabels } from '@/lib/panel-policy'
+import type { OwnerExperienceMode } from '@bootandstrap/platform-contract'
 
 interface PanelShellProps {
     tenantId?: string
@@ -31,6 +32,7 @@ interface PanelShellProps {
     businessName: string
     sidebarLabels: PanelSidebarLabels
     featureFlags: PanelFeatureFlags
+    ownerExperienceMode?: OwnerExperienceMode
     breadcrumbMap: Record<string, string>
     greetings: {
         morning: string
@@ -65,6 +67,7 @@ export default function PanelShell({
     businessName,
     sidebarLabels,
     featureFlags,
+    ownerExperienceMode,
     breadcrumbMap,
     greetings,
     topbarLabels,
@@ -82,6 +85,7 @@ export default function PanelShell({
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const pathname = usePathname()
     const isPOS = pathname.includes('/pos')
+    const isStarterCollaborative = ownerExperienceMode === 'starter_collaborative'
 
     // ── Realtime governance: live push of flag/limit/module changes ──
     useRealtimeGovernance(tenantId)
@@ -101,6 +105,7 @@ export default function PanelShell({
                     businessName={businessName}
                     labels={sidebarLabels}
                     featureFlags={featureFlags}
+                    ownerExperienceMode={ownerExperienceMode}
                     badges={badges}
                     planName={planName}
                     logoUrl={logoUrl}
@@ -148,7 +153,7 @@ export default function PanelShell({
             <PanelKeyboardShortcuts groups={DEFAULT_PANEL_SHORTCUTS} />
 
             {/* Mobile bottom tab bar */}
-            {!isPOS && (
+            {!isPOS && !isStarterCollaborative && (
                 <PanelMobileNav
                     lang={lang}
                     labels={{

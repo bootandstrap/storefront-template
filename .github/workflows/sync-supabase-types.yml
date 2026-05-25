@@ -1,0 +1,56 @@
+name: Supabase Types Sync
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/storefront/src/lib/supabase/database.types.ts'
+      - 'apps/storefront/src/lib/supabase/schema-version.ts'
+      - 'apps/storefront/src/lib/__tests__/supabase-types-sync-contract.test.ts'
+      - 'docs/SCHEMA.md'
+      - 'scripts/sync-supabase-types.mjs'
+      - '.github/workflows/sync-supabase-types.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/storefront/src/lib/supabase/database.types.ts'
+      - 'apps/storefront/src/lib/supabase/schema-version.ts'
+      - 'docs/SCHEMA.md'
+      - 'scripts/sync-supabase-types.mjs'
+      - '.github/workflows/sync-supabase-types.yml'
+
+jobs:
+  supabase-types-sync:
+    if: github.repository != 'bootandstrap/storefront-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout ecommerce-template
+        uses: actions/checkout@v4
+
+      - name: Checkout canonical BOOTANDSTRAP_WEB
+        uses: actions/checkout@v4
+        with:
+          repository: webnorka/bootandstrap-web
+          path: BOOTANDSTRAP_WEB
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check synced Supabase generated types
+        run: pnpm run check:supabase-types -- --source-root "$GITHUB_WORKSPACE/BOOTANDSTRAP_WEB"
+
+      - name: Run Supabase sync contract test
+        run: |
+          cd apps/storefront
+          pnpm exec vitest run src/lib/__tests__/supabase-types-sync-contract.test.ts --reporter=verbose

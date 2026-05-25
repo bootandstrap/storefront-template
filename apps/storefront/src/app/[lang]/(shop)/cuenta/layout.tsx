@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
 import AccountSidebar from '@/components/account/AccountSidebar'
-import { isPanelRole } from '@/lib/panel-access-policy'
+import { resolveTenantContext } from '@bootandstrap/tenant-context'
 
 import { cookies } from 'next/headers'
 
@@ -32,7 +32,7 @@ export default async function CuentaLayout({
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, tenant_id')
         .eq('id', user.id)
         .single()
 
@@ -40,7 +40,14 @@ export default async function CuentaLayout({
     const isSimulating = cookieStore.get('simulating_client')?.value === 'true'
 
     // Owners should always use the Owner Panel, not customer account
-    if (isPanelRole(profile?.role) && !isSimulating) {
+    const tenantContext = resolveTenantContext({
+        profileRole: profile?.role ?? null,
+        metadataRole: user.user_metadata?.role ?? null,
+        profileTenantId: profile?.tenant_id ?? null,
+        envTenantId: process.env.TENANT_ID ?? null,
+    })
+
+    if (tenantContext.defaultPostLoginPath === '/panel' && !isSimulating) {
         redirect(`/${lang}/panel`)
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConfig } from '@/lib/config'
 import type { AppConfig } from '@/lib/config'
+import { SCHEMA_VERSION } from '@/lib/supabase/schema-version'
 import {
     shouldCircuitSkipFetch,
     getCachedConfig,
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
 
     const response = {
         status: degradedMode ? 'degraded' : 'healthy',
+        schemaVersion: SCHEMA_VERSION,
         timestamp: new Date().toISOString(),
         latency_ms: Date.now() - t0,
         governance: {
