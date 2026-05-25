@@ -260,18 +260,22 @@ describe('Governance Source of Truth — E2E Drift Detection', () => {
     describe('panel-policy integration', () => {
         it('ROUTE_REDIRECT_MAP module routes reference valid contract modules', () => {
             const contractModuleKeys = new Set(contract.modules.keys)
+            const routeToModuleKey: Record<string, string> = {
+                'redes-sociales': 'rrss',
+                mensajes: 'email_marketing',
+                automatizaciones: 'automation',
+                canales: 'sales_channels',
+                auth: 'auth_advanced',
+            }
             const moduleRoutes = Object.entries(ROUTE_REDIRECT_MAP)
                 .filter(([, v]) => v.section === 'modulos' && v.tab)
             expect(moduleRoutes.length).toBeGreaterThan(0)
             // Module tabs should map to known modules via FEATURE_GATE_MAP or contract
             for (const [key] of moduleRoutes) {
                 // The route key itself should be a recognizable module identifier
+                const resolvedKey = routeToModuleKey[key] ?? key.replace('-', '_')
                 expect(
-                    contractModuleKeys.has(key) ||
-                    contractModuleKeys.has(key.replace('-', '_')) ||
-                    key === 'redes-sociales' || // rrss module
-                    key === 'mensajes' ||        // email_marketing module
-                    key === 'automatizaciones',  // automation module
+                    contractModuleKeys.has(resolvedKey),
                     `Module route '${key}' not found in contract modules`
                 ).toBe(true)
             }

@@ -240,6 +240,7 @@ export default async function PanelLayout({
             pos: t('panel.section.pos'),
             ownerPanel: t('panel.nav.ownerPanel'),
             backToStore: t('panel.nav.backToStore'),
+            health: t('storeHealth.title'),
         },
         featureFlags,
         ownerExperienceMode,
@@ -311,6 +312,7 @@ export default async function PanelLayout({
                 pos: t('panel.section.pos'),
                 ownerPanel: t('panel.nav.ownerPanel'),
                 backToStore: t('panel.nav.backToStore'),
+                health: t('storeHealth.title'),
             }}
             ownerExperienceMode={ownerExperienceMode}
             featureFlags={{

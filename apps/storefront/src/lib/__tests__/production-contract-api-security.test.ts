@@ -15,6 +15,9 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const API_DIR = join(__dirname, '../../app/api')
+const CANONICAL_ROUTE_MAP: Record<string, string> = {
+    'billing/portal/route.ts': 'billing-portal/route.ts',
+}
 
 // ── Endpoints that MUST require authentication ──
 const AUTH_REQUIRED_ENDPOINTS = [
@@ -48,6 +51,13 @@ const FLAG_GATED_ENDPOINTS: Record<string, string> = {
 }
 
 function readRoute(relativePath: string): string | null {
+    const canonicalPath = CANONICAL_ROUTE_MAP[relativePath] ?? relativePath
+    const fullPath = join(API_DIR, canonicalPath)
+    if (!existsSync(fullPath)) return null
+    return readFileSync(fullPath, 'utf-8')
+}
+
+function readRawRoute(relativePath: string): string | null {
     const fullPath = join(API_DIR, relativePath)
     if (!existsSync(fullPath)) return null
     return readFileSync(fullPath, 'utf-8')
@@ -146,6 +156,15 @@ describe('Production Contract: API Endpoint Security', () => {
     })
 
     describe('billing portal authorization', () => {
+        it('legacy /api/billing/portal route preserves POST and redirects to canonical endpoint', () => {
+            const source = readRawRoute('billing/portal/route.ts')
+            if (!source) return
+
+            expect(source).toContain('/api/billing-portal')
+            expect(source).toContain('308')
+            expect(source).toContain('NextResponse.redirect')
+        })
+
         it('validates owner/super_admin role before creating portal session', () => {
             const source = readRoute('billing/portal/route.ts')
             if (!source) return

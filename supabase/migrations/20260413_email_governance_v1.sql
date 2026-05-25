@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS email_preferences (
 ALTER TABLE email_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Service role full access (storefront uses admin client)
+DROP POLICY IF EXISTS "service_email_preferences" ON email_preferences;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE tablename = 'email_preferences' AND policyname = 'service_email_preferences'

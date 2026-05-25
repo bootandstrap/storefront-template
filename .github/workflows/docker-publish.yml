@@ -57,7 +57,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Docker meta
         id: meta
@@ -94,6 +94,11 @@ jobs:
     steps:
       - name: Deploy Storefront via Dokploy
         run: |
+          if [ -z "${{ secrets.DOKPLOY_URL }}" ] || [ -z "${{ secrets.DOKPLOY_API_TOKEN }}" ] || [ -z "${{ secrets.DOKPLOY_STOREFRONT_APP_ID }}" ]; then
+            echo "ℹ️ Dokploy secrets missing for source template repo — skipping redeploy"
+            exit 0
+          fi
+
           curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/trpc/application.redeploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Content-Type: application/json" \

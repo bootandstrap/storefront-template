@@ -77,6 +77,7 @@ const FLAG_MODULE_MAP: Record<string, [moduleKey: string, i18nSuffix: string]> =
     enable_transactional_emails:['email_marketing', 'transactionalEmails'],
     enable_review_request_emails:['email_marketing', 'reviewRequestEmails'],
     enable_email_segmentation:  ['email_marketing', 'emailSegmentation'],
+    enable_custom_email_domain: ['email_marketing', 'customEmailDomain'],
     // ── SEO / Analytics ───────────────────────────────────────
     enable_analytics:           ['seo', 'analytics'],
     enable_seo:                 ['seo', 'seo'],

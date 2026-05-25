@@ -5,7 +5,7 @@
 #
 # Triggered: manually or after deploy completes.
 
-name: Lighthouse CI
+name: Lighthouse Deploy Audit
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
         required: true
         type: string
   workflow_run:
-    workflows: ['Deploy']
+    workflows: ['Build & Deploy Storefront']
     types: [completed]
 
 permissions:
@@ -23,10 +23,9 @@ permissions:
 
 jobs:
   lighthouse:
-    if: github.repository != 'bootandstrap/storefront-template'
     name: Lighthouse Audit
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.repository != 'bootandstrap/storefront-template' && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && vars.STORE_DOMAIN != '')) }}
 
     steps:
       - name: Checkout
@@ -49,38 +48,17 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         id: lighthouse
         with:
+          configPath: ./apps/storefront/lighthouserc.deploy.json
           urls: |
             ${{ steps.url.outputs.target }}
             ${{ steps.url.outputs.target }}/es/productos
           runs: 3
           temporaryPublicStorage: true
 
-      - name: Check Performance Score
+      - name: Summarize Lighthouse assertions
         run: |
-          echo "🔍 Lighthouse Results:"
-          echo "${{ steps.lighthouse.outputs.manifest }}" | jq '.[].summary' || true
-
-          # Parse performance score from first run
-          PERF_SCORE=$(echo "${{ steps.lighthouse.outputs.manifest }}" | jq -r '.[0].summary.performance // 0')
-          A11Y_SCORE=$(echo "${{ steps.lighthouse.outputs.manifest }}" | jq -r '.[0].summary.accessibility // 0')
-
-          PERF_INT=$(echo "$PERF_SCORE * 100" | bc | cut -d. -f1)
-          A11Y_INT=$(echo "$A11Y_SCORE * 100" | bc | cut -d. -f1)
-
-          echo "Performance: ${PERF_INT}%"
-          echo "Accessibility: ${A11Y_INT}%"
-
-          if [ "${PERF_INT}" -lt 80 ]; then
-            echo "❌ Performance score ${PERF_INT}% is below 80% threshold"
-            exit 1
-          fi
-
-          if [ "${A11Y_INT}" -lt 80 ]; then
-            echo "❌ Accessibility score ${A11Y_INT}% is below 80% threshold"
-            exit 1
-          fi
-
-          echo "✅ All scores above threshold"
+          echo "🔍 Lighthouse assertion results:"
+          echo '${{ steps.lighthouse.outputs.assertionResults }}' | jq '.' || true
 
       - name: Upload Lighthouse Report
         if: always()

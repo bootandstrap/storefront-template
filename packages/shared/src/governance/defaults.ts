@@ -117,7 +117,7 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_user_registration: false,
         enable_guest_checkout: false,
         require_auth_to_order: false,
-        enable_google_auth: false,
+        enable_google_oauth: false,
         enable_email_auth: false,
         enable_ecommerce: false,
         enable_reviews: false,
@@ -160,6 +160,7 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_transactional_emails: false,
         enable_review_request_emails: false,
         enable_email_segmentation: false,
+        enable_custom_email_domain: false,
         // POS
         enable_pos: false,
         enable_pos_kiosk: false,
@@ -170,6 +171,7 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_pos_line_discounts: false,
         enable_pos_customer_search: false,
         enable_pos_multi_device: false,
+        enable_pos_reports: false,
         enable_pos_shifts: false,
         // Kiosk (granular)
         enable_kiosk_analytics: false,
@@ -189,6 +191,9 @@ export const FALLBACK_CONFIG: AppConfig = {
         enable_auth_advanced: false,
         enable_sales_channels: false,
         enable_reservation_checkout: false,
+        // Backup & Storage
+        enable_backups: false,
+        enable_manual_backup: false,
         // Auth Advanced (granular)
         enable_apple_oauth: false,
         enable_facebook_oauth: false,
@@ -227,6 +232,8 @@ export const FALLBACK_CONFIG: AppConfig = {
         max_crm_contacts: 0,
         max_automations: 0,
         max_pos_kiosk_devices: 0,
+        max_backups: 0,
+        backup_frequency_hours: 0,
     },
     planExpired: false,
     tenantStatus: 'active',

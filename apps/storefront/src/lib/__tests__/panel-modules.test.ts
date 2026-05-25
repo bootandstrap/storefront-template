@@ -42,6 +42,7 @@ function baseLabels() {
         pos: 'POS',
         ownerPanel: 'Owner Panel',
         backToStore: 'Back to store',
+        health: 'Health',
     }
 }
 
@@ -79,11 +80,15 @@ describe('panel-modules', () => {
         expect(shouldAllowPanelRoute('admin', baseFlags())).toBe(false)
     })
 
-    it('legacy advanced routes stay blocked in owner lite mode at guard level', () => {
-        // Edge redirects remap these URLs before the user lands on the hub route,
-        // but the guard itself remains fail-closed for advanced surfaces.
+    it('owner lite guard blocks advanced legacy routes', () => {
         expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', liteFlags())).toBe(false)
         expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', liteFlags())).toBe(false)
+    })
+
+    it('default guard respects feature flags before owner lite gating', () => {
+        expect(isAdvancedPanelRouteEnabled('/es/panel/carrusel', baseFlags())).toBe(true)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', baseFlags())).toBe(false)
+        expect(isAdvancedPanelRouteEnabled('/es/panel/insignias', fullFlags())).toBe(true)
     })
 
     it('primary routes always pass the guard', () => {

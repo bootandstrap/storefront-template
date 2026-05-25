@@ -85,6 +85,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_user_registration: boolean;
     enable_guest_checkout: boolean;
     require_auth_to_order: boolean;
+    enable_google_oauth: boolean;
     enable_email_auth: boolean;
     enable_apple_oauth: boolean;
     enable_facebook_oauth: boolean;
@@ -152,7 +153,6 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_auth_advanced: boolean;
     enable_sales_channels: boolean;
     enable_reservation_checkout: boolean;
-    enable_google_oauth: boolean;
 }, {
     enable_whatsapp_checkout: boolean;
     enable_online_payments: boolean;
@@ -162,6 +162,7 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_user_registration: boolean;
     enable_guest_checkout: boolean;
     require_auth_to_order: boolean;
+    enable_google_oauth: boolean;
     enable_email_auth: boolean;
     enable_apple_oauth: boolean;
     enable_facebook_oauth: boolean;
@@ -229,7 +230,6 @@ export declare const FeatureFlagsSchema: z.ZodObject<{
     enable_auth_advanced: boolean;
     enable_sales_channels: boolean;
     enable_reservation_checkout: boolean;
-    enable_google_oauth: boolean;
 }>;
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>;
 export declare const PlanLimitsSchema: z.ZodObject<{

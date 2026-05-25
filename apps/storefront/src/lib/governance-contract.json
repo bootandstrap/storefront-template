@@ -1,6 +1,6 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-04-24T12:47:55.328Z",
+  "generated_at": "2026-05-23T13:17:25.049Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
@@ -237,7 +237,7 @@
     }
   },
   "limits": {
-    "count": 31,
+    "count": 32,
     "keys": [
       "backup_frequency_hours",
       "max_admin_users",
@@ -259,6 +259,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -292,6 +293,7 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
+      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -360,7 +362,9 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 5,
-            "features": "[\"Google OAuth\"]",
+            "features": [
+              "Google OAuth"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_google_oauth": true
@@ -373,7 +377,9 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 12,
-            "features": "[\"Google + Apple + Facebook\"]",
+            "features": [
+              "Google + Apple + Facebook"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_apple_oauth": true,
@@ -388,7 +394,10 @@
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 25,
-            "features": "[\"2FA\",\"Magic Link\"]",
+            "features": [
+              "2FA",
+              "Magic Link"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_2fa": true,
@@ -417,7 +426,9 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 20,
-            "features": "[\"5 automatizaciones\"]",
+            "features": [
+              "5 automatizaciones"
+            ],
             "recommended": false,
             "stripe_price_ids": {
               "CHF": "price_1TKQipFWa7WMiJl2PwzsXwTP"
@@ -427,7 +438,10 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 40,
-            "features": "[\"Ilimitadas\",\"Webhooks custom\"]",
+            "features": [
+              "Ilimitadas",
+              "Webhooks custom"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_admin_api": true,
@@ -464,11 +478,14 @@
             ],
             "recommended": false,
             "flag_effects": {
+              "enable_backups": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 3,
               "max_requests_day": 25000,
-              "storage_limit_mb": 500
+              "storage_limit_mb": 500,
+              "backup_frequency_hours": 168
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzohFWa7WMiJl2G6rsOwKH"
@@ -486,12 +503,16 @@
             ],
             "recommended": true,
             "flag_effects": {
+              "enable_backups": true,
+              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 6,
               "max_requests_day": 100000,
-              "storage_limit_mb": 2000
+              "storage_limit_mb": 2000,
+              "backup_frequency_hours": 24
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzojFWa7WMiJl209zNlXeQ"
@@ -510,13 +531,17 @@
             ],
             "recommended": false,
             "flag_effects": {
+              "enable_backups": true,
+              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_autoscale": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
+              "max_backups": 12,
               "max_requests_day": 99999,
-              "storage_limit_mb": 10000
+              "storage_limit_mb": 10000,
+              "backup_frequency_hours": 6
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzomFWa7WMiJl2SNUJ2Ly4"
@@ -538,7 +563,11 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 20,
-            "features": "[\"Widget chatbot en tu web\",\"500 mensajes/mes\",\"RAG sobre tus documentos\"]",
+            "features": [
+              "Widget chatbot en tu web",
+              "500 mensajes/mes",
+              "RAG sobre tus documentos"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_chatbot": true
@@ -554,7 +583,11 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 40,
-            "features": "[\"5000 mensajes/mes\",\"RAG avanzado\",\"Integración Calendly/Google\"]",
+            "features": [
+              "5000 mensajes/mes",
+              "RAG avanzado",
+              "Integración Calendly/Google"
+            ],
             "recommended": true,
             "flag_effects": {
               "enable_chatbot": true
@@ -582,7 +615,11 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 15,
-            "features": "[\"Lista de contactos + notas\",\"Historial de interacciones\",\"Max 200 contactos\"]",
+            "features": [
+              "Lista de contactos + notas",
+              "Historial de interacciones",
+              "Max 200 contactos"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_crm": true,
@@ -600,7 +637,11 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 30,
-            "features": "[\"Max 5000 contactos\",\"Segmentación / etiquetas\",\"Exportar CSV\"]",
+            "features": [
+              "Max 5000 contactos",
+              "Segmentación / etiquetas",
+              "Exportar CSV"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_crm": true,
@@ -632,8 +673,14 @@
           {
             "key": "basic",
             "name": "Básico",
-            "price_chf": 25,
-            "features": "[\"50 productos / 5 categorías\",\"100 pedidos/mes / 100 clientes\",\"Carrito + Checkout + Cuentas\",\"Seguimiento y direcciones\",\"Búsqueda de productos\"]",
+            "price_chf": 15,
+            "features": [
+              "50 productos / 5 categorías",
+              "100 pedidos/mes / 100 clientes",
+              "Carrito + Checkout + Cuentas",
+              "Seguimiento y direcciones",
+              "Búsqueda de productos"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_carousel": true,
@@ -666,7 +713,13 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 45,
-            "features": "[\"200 productos / 20 categorías\",\"500 pedidos/mes / 500 clientes\",\"Insignias + Productos relacionados\",\"Promociones (max 5 activas)\",\"Reseñas + Wishlist + CMS + Carousel\"]",
+            "features": [
+              "200 productos / 20 categorías",
+              "500 pedidos/mes / 500 clientes",
+              "Insignias + Productos relacionados",
+              "Promociones (max 5 activas)",
+              "Reseñas + Wishlist + CMS + Carousel"
+            ],
             "recommended": true,
             "flag_effects": {
               "enable_reviews": true,
@@ -708,7 +761,13 @@
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 75,
-            "features": "[\"Productos y categorías ilimitados\",\"5000 pedidos/mes / Clientes ∞\",\"Devoluciones self-service\",\"API externa\",\"Todo de Pro incluido\"]",
+            "features": [
+              "Productos y categorías ilimitados",
+              "5000 pedidos/mes / Clientes ∞",
+              "Devoluciones self-service",
+              "API externa",
+              "Todo de Pro incluido"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_reviews": true,
@@ -765,7 +824,11 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 15,
-            "features": "[\"Emails transaccionales (pedido, envío, bienvenida)\",\"500 emails/mes\",\"Templates predefinidos\"]",
+            "features": [
+              "Emails transaccionales (pedido, envío, bienvenida)",
+              "500 emails/mes",
+              "Templates predefinidos"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_email_notifications": true,
@@ -782,7 +845,12 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 30,
-            "features": "[\"2000 emails/mes\",\"Abandono de carrito automático\",\"Review requests post-compra\",\"Delay configurable (1h/3h/24h)\"]",
+            "features": [
+              "2000 emails/mes",
+              "Abandono de carrito automático",
+              "Review requests post-compra",
+              "Delay configurable (1h/3h/24h)"
+            ],
             "recommended": true,
             "flag_effects": {
               "enable_email_templates": true,
@@ -802,7 +870,13 @@
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 50,
-            "features": "[\"10.000 emails/mes\",\"Campañas manuales\",\"Segmentación de clientes\",\"Templates custom (editor no-code)\",\"Métricas: opens, clicks, bounces\"]",
+            "features": [
+              "10.000 emails/mes",
+              "Campañas manuales",
+              "Segmentación de clientes",
+              "Templates custom (editor no-code)",
+              "Métricas: opens, clicks, bounces"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_newsletter": true,
@@ -838,7 +912,10 @@
             "key": "basic",
             "name": "2 Idiomas",
             "price_chf": 15,
-            "features": "[\"2 idiomas + 1 moneda\",\"URLs localizadas\"]",
+            "features": [
+              "2 idiomas + 1 moneda",
+              "URLs localizadas"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_multi_language": true
@@ -855,7 +932,10 @@
             "key": "pro",
             "name": "5 Idiomas + Monedas",
             "price_chf": 35,
-            "features": "[\"5 idiomas + 5 monedas\",\"Conversión automática\"]",
+            "features": [
+              "5 idiomas + 5 monedas",
+              "Conversión automática"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_multi_currency": true,
@@ -1063,9 +1143,15 @@
           {
             "key": "standard",
             "name": "Standard",
-            "price_chf": 0,
-            "features": "[\"Instagram + FB + Google Maps\",\"Links en footer + header\"]",
-            "recommended": false
+            "price_chf": 95,
+            "features": [
+              "Instagram + FB + Google Maps",
+              "Links en footer + header"
+            ],
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TZGidFWa7WMiJl2FecwsEp6"
+            }
           },
           {
             "key": "instagram",
@@ -1155,7 +1241,11 @@
             "key": "basic",
             "name": "Básico",
             "price_chf": 15,
-            "features": "[\"WhatsApp Checkout + Contacto\",\"5 templates WhatsApp\",\"1 método de pago\"]",
+            "features": [
+              "WhatsApp Checkout + Contacto",
+              "5 templates WhatsApp",
+              "1 método de pago"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_whatsapp_contact": true,
@@ -1173,7 +1263,13 @@
             "key": "pro",
             "name": "Pro",
             "price_chf": 30,
-            "features": "[\"15 templates WhatsApp\",\"Pago con tarjeta (Stripe)\",\"Efectivo contra entrega\",\"Newsletter (1000 suscriptores)\",\"3 métodos de pago\"]",
+            "features": [
+              "15 templates WhatsApp",
+              "Pago con tarjeta (Stripe)",
+              "Efectivo contra entrega",
+              "Newsletter (1000 suscriptores)",
+              "3 métodos de pago"
+            ],
             "recommended": true,
             "flag_effects": {
               "enable_newsletter": true,
@@ -1195,7 +1291,13 @@
             "key": "enterprise",
             "name": "Enterprise",
             "price_chf": 50,
-            "features": "[\"Templates ilimitados\",\"Transferencia bancaria\",\"Reservas (usuario registrado)\",\"Newsletter (5000 suscriptores)\",\"Métodos de pago ∞\"]",
+            "features": [
+              "Templates ilimitados",
+              "Transferencia bancaria",
+              "Reservas (usuario registrado)",
+              "Newsletter (5000 suscriptores)",
+              "Métodos de pago ∞"
+            ],
             "recommended": false,
             "flag_effects": {
               "enable_newsletter": true,
@@ -1228,6 +1330,19 @@
         "payment_type": "subscription",
         "tiers": [
           {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": [
+              "Analytics avanzadas",
+              "Google Search Console"
+            ],
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
+            }
+          },
+          {
             "key": "medio",
             "name": "MEDIO",
             "price_chf": 85,
@@ -1243,16 +1358,6 @@
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzppFWa7WMiJl25rzFvm40"
-            }
-          },
-          {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 15,
-            "features": "[\"Analytics avanzadas\",\"Google Search Console\"]",
-            "recommended": false,
-            "stripe_price_ids": {
-              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
             }
           },
           {

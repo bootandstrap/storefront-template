@@ -18,7 +18,7 @@ echo ""
 # -- 1. Duplicate CREATE TABLE -------------------------------------------------
 echo "── Check 1: Duplicate CREATE TABLE statements"
 DUPES=$(grep -ih 'CREATE TABLE' "$MIGRATION_DIR"/*.sql 2>/dev/null | \
-    sed -E 's/.*CREATE[[:space:]]+TABLE[[:space:]]+(IF[[:space:]]+NOT[[:space:]]+EXISTS[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*).*/\2/' | \
+    sed -E 's/.*CREATE[[:space:]]+TABLE[[:space:]]+(IF[[:space:]]+NOT[[:space:]]+EXISTS[[:space:]]+)?(([a-zA-Z_][a-zA-Z0-9_]*\.)?([a-zA-Z_][a-zA-Z0-9_]*)).*/\4/' | \
     sort | uniq -d || true)
 
 if [ -n "$DUPES" ]; then
@@ -55,8 +55,15 @@ echo ""
 
 # -- 3. plan_tier in canonical migration ---------------------------------------
 echo "── Check 3: plan_tier in canonical migration"
-CANONICAL="$MIGRATION_DIR/20260209_multi_tenant_foundation.sql"
-if [ -f "$CANONICAL" ]; then
+if [ -f "$MIGRATION_DIR/001_schema_core.sql" ]; then
+    CANONICAL="$MIGRATION_DIR/001_schema_core.sql"
+elif [ -f "$MIGRATION_DIR/20260209_multi_tenant_foundation.sql" ]; then
+    CANONICAL="$MIGRATION_DIR/20260209_multi_tenant_foundation.sql"
+else
+    CANONICAL=""
+fi
+
+if [ -n "$CANONICAL" ] && [ -f "$CANONICAL" ]; then
     if grep -q 'plan_tier' "$CANONICAL" 2>/dev/null; then
         echo "  ✅ plan_tier present"
     else

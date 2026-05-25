@@ -7,20 +7,35 @@
  * Any schema change that breaks these tests requires explicit attention.
  */
 import { describe, it, expect } from 'vitest';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 import { StoreConfigSchema, FeatureFlagsSchema, PlanLimitsSchema, AppConfigSchema, TenantStatusSchema, GovernanceRpcResultSchema, } from '../schemas';
 import { FALLBACK_CONFIG } from '../defaults';
+function loadCanonicalContract() {
+    const candidates = [
+        resolve(process.cwd(), '../../apps/storefront/src/lib/governance-contract.json'),
+        resolve(process.cwd(), 'src/governance/generated/contract.json'),
+    ];
+    for (const candidate of candidates) {
+        if (existsSync(candidate)) {
+            return JSON.parse(readFileSync(candidate, 'utf-8'));
+        }
+    }
+    throw new Error(`governance-contract.json not found in candidates:\n${candidates.join('\n')}`);
+}
+const contract = loadCanonicalContract();
 describe('Governance Contract Tests', () => {
     // ── Schema Integrity ──────────────────────────────────────────────
     it('FALLBACK_CONFIG validates against AppConfigSchema', () => {
         expect(() => AppConfigSchema.parse(FALLBACK_CONFIG)).not.toThrow();
     });
-    it('FeatureFlags has exactly 79 flags', () => {
+    it('FeatureFlags matches the canonical contract count', () => {
         const shape = FeatureFlagsSchema.shape;
-        expect(Object.keys(shape)).toHaveLength(79);
+        expect(Object.keys(shape)).toHaveLength(contract.flags.count);
     });
-    it('PlanLimits has exactly 30 fields', () => {
+    it('PlanLimits matches the canonical contract count', () => {
         const shape = PlanLimitsSchema.shape;
-        expect(Object.keys(shape)).toHaveLength(30);
+        expect(Object.keys(shape)).toHaveLength(contract.limits.count);
     });
     it('StoreConfig has exactly 88 fields', () => {
         const shape = StoreConfigSchema.shape;

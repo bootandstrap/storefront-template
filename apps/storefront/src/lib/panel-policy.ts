@@ -53,6 +53,7 @@ export interface PanelSidebarLabels {
     pos: string
     ownerPanel: string
     backToStore: string
+    health: string
 }
 
 // ── Navigation Types ──────────────────────────────────────────────────────
@@ -348,6 +349,8 @@ const TAB_ICONS: Record<string, string> = {
  * Used by redirect pages and the panel layout for route guards.
  */
 export const ROUTE_REDIRECT_MAP: Record<string, { section: string; tab?: string }> = {
+    // Legacy dashboard alias -> panel home
+    'dashboard': { section: 'home' },
     // Old standalone routes → new section tabs
     'catalogo': { section: 'mi-tienda', tab: 'productos' },
     'productos': { section: 'mi-tienda', tab: 'productos' },
@@ -383,46 +386,16 @@ export const ROUTE_REDIRECT_MAP: Record<string, { section: string; tab?: string 
     'modulos': { section: 'modulos' },
 }
 
-// ── Route Classification (kept for backward compat with layout guards) ────
-
-const ESSENTIAL_PANEL_ROUTES = new Set([
-    'dashboard',
-    'mi-tienda',
-    'ventas',
-    'ajustes',
-    'modulos',
-    'pos',
-    'catalogo',
-    'pedidos',
-    'clientes',
-    'tienda',
-    'envios',
-    'mi-proyecto',
-    'categorias',
-    'productos',
-    'inventario',
-    'email',
-    'suscripcion',
-    'utilidades',
-])
-
-const ADVANCED_PANEL_ROUTES = new Set([
-    'carrusel',
-    'mensajes',
-    'paginas',
+const OWNER_LITE_BLOCKED_LEGACY_ROUTES = new Set([
     'analiticas',
-    'insignias',
-    'chatbot',
+    'carrusel',
     'devoluciones',
-    'crm',
+    'insignias',
+    'paginas',
     'resenas',
-    'seo',
-    'redes-sociales',
-    'automatizaciones',
-    'auth',
-    'canales',
-    'capacidad',
 ])
+
+// ── Route Classification (kept for backward compat with layout guards) ────
 
 const ADVANCED_ROUTE_FEATURE_MAP: Partial<Record<string, keyof PanelFeatureFlags>> = {
     carrusel: 'enable_carousel',
@@ -446,9 +419,11 @@ export type PanelRouteKey = string
 
 export function classifyPanelRoute(
     segment: string
-): 'essential' | 'advanced' | 'unknown' {
-    if (ESSENTIAL_PANEL_ROUTES.has(segment)) return 'essential'
-    if (ADVANCED_PANEL_ROUTES.has(segment)) return 'advanced'
+): 'primary' | 'legacy' | 'unknown' {
+    if (['mi-tienda', 'ventas', 'ajustes', 'modulos', 'pos'].includes(segment)) {
+        return 'primary'
+    }
+    if (ROUTE_REDIRECT_MAP[segment]) return 'legacy'
     return 'unknown'
 }
 
@@ -458,13 +433,22 @@ export function shouldAllowPanelRoute(
 ): boolean {
     const classification = classifyPanelRoute(route)
 
-    if (classification === 'essential') {
+    if (classification === 'primary') {
         return true
     }
 
-    if (classification === 'advanced') {
+    if (classification === 'legacy') {
+        const redirect = ROUTE_REDIRECT_MAP[route]
+        if (!redirect) return false
+
         if (featureFlags.owner_lite_enabled && !featureFlags.owner_advanced_modules_enabled) {
-            return false
+            if (redirect.section === 'modulos' && redirect.tab) {
+                return false
+            }
+
+            if (OWNER_LITE_BLOCKED_LEGACY_ROUTES.has(route)) {
+                return false
+            }
         }
 
         const featureKey = ADVANCED_ROUTE_FEATURE_MAP[route]

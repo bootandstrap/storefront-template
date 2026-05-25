@@ -9,14 +9,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenantContext } from '@bootandstrap/tenant-context'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
+import { getClientIp } from '@/lib/security/get-client-ip'
 import { logger } from '@/lib/logger'
 
 const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
     || process.env.NEXT_PUBLIC_BSWEB_URL
     || 'https://bootandstrap.com'
+const billingPortalRateLimiter = createSmartRateLimiter({
+    limit: 10,
+    windowMs: 60_000,
+    name: 'billing-portal',
+})
 
 export async function POST(req: NextRequest) {
     try {
+        const clientIp = getClientIp(req)
+        if (await billingPortalRateLimiter.isLimited(clientIp)) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please wait a moment.' },
+                { status: 429 }
+            )
+        }
+
         // Auth check
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -43,11 +59,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Get tenant's Stripe customer ID
-        const { data: tenant } = await supabase
+        const adminClient = createAdminClient()
+        const tenantResponse = await adminClient
             .from('tenants')
             .select('stripe_customer_id')
             .eq('id', profile.tenant_id)
             .single()
+        const tenant = tenantResponse.data as { stripe_customer_id: string | null } | null
 
         if (!tenant?.stripe_customer_id) {
             return NextResponse.json(

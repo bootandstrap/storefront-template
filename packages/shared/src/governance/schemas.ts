@@ -114,7 +114,7 @@ export const StoreConfigSchema = z.object({
 
 export type StoreConfig = z.infer<typeof StoreConfigSchema>
 
-// ─── FeatureFlags (79 flags) ──────────────────────────────────────────────
+// ─── FeatureFlags (83 flags) ──────────────────────────────────────────────
 
 export const FeatureFlagsSchema = z.object({
     // Checkout
@@ -128,7 +128,7 @@ export const FeatureFlagsSchema = z.object({
     enable_user_registration: z.boolean(),
     enable_guest_checkout: z.boolean(),
     require_auth_to_order: z.boolean(),
-    enable_google_auth: z.boolean(),
+    enable_google_oauth: z.boolean(),
     enable_email_auth: z.boolean(),
     // Auth Advanced (granular)
     enable_apple_oauth: z.boolean().default(false),
@@ -181,6 +181,7 @@ export const FeatureFlagsSchema = z.object({
     enable_transactional_emails: z.boolean().default(false),
     enable_review_request_emails: z.boolean().default(false),
     enable_email_segmentation: z.boolean().default(false),
+    enable_custom_email_domain: z.boolean().default(false),
     // POS
     enable_pos: z.boolean(),
     enable_pos_kiosk: z.boolean(),
@@ -191,6 +192,7 @@ export const FeatureFlagsSchema = z.object({
     enable_pos_line_discounts: z.boolean(),
     enable_pos_customer_search: z.boolean(),
     enable_pos_multi_device: z.boolean(),
+    enable_pos_reports: z.boolean().default(false),
     enable_pos_shifts: z.boolean(),
     // Kiosk (granular)
     enable_kiosk_analytics: z.boolean().default(false),
@@ -210,11 +212,14 @@ export const FeatureFlagsSchema = z.object({
     enable_auth_advanced: z.boolean(),
     enable_sales_channels: z.boolean(),
     enable_reservation_checkout: z.boolean().default(false),
+    // Backup & Storage (Phase 6 — 2026-04)
+    enable_backups: z.boolean().default(false),
+    enable_manual_backup: z.boolean().default(false),
 })
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>
 
-// ─── PlanLimits (30 fields) ───────────────────────────────────────────────
+// ─── PlanLimits (32 fields) ───────────────────────────────────────────────
 
 export const PlanLimitsSchema = z.object({
     max_products: z.number(),
@@ -247,6 +252,9 @@ export const PlanLimitsSchema = z.object({
     max_pos_payment_methods: z.number(),
     max_automations: z.number().default(0),
     max_pos_kiosk_devices: z.number().default(0),
+    // Backup & Storage (Phase 6 — 2026-04)
+    max_backups: z.number().default(0),
+    backup_frequency_hours: z.number().default(0),
 })
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>

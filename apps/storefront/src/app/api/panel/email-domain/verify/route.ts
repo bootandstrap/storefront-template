@@ -13,6 +13,20 @@ export async function POST() {
     try {
         const { tenantId, supabase } = await requirePanelAuth()
 
+        const { data: flagsRaw } = await supabase
+            .from('feature_flags')
+            .select('flags')
+            .eq('tenant_id', tenantId)
+            .single()
+
+        const flags = flagsRaw as { flags?: Record<string, boolean> } | null
+        if (!flags?.flags?.enable_custom_email_domain) {
+            return NextResponse.json(
+                { error: 'Custom email domain requires email_marketing Enterprise tier' },
+                { status: 403 }
+            )
+        }
+
         // Get domain ID from config
         const { data: config } = await supabase
             .from('config')
