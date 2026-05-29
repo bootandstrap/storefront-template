@@ -5,7 +5,9 @@
 | Doc | Contents |
 |-----|----------|
 | [`../AGENTS.md`](../AGENTS.md) | Active AI/Codex entrypoint for this worktree |
-| [`plans/2026-05-25-agentic-development-start-here.md`](plans/2026-05-25-agentic-development-start-here.md) | Live continuation handoff for Phase 1 |
+| [`../../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md`](../../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md) | Cross-system P0/P1 execution prompt with exact current blockers |
+| [`plans/2026-05-27-next-session-handoff-prompt.md`](plans/2026-05-27-next-session-handoff-prompt.md) | Cross-repo prompt ready to paste for the next session |
+| [`plans/2026-05-25-agentic-development-start-here.md`](plans/2026-05-25-agentic-development-start-here.md) | Runtime continuation handoff for Phase 1 |
 | [`plans/2026-05-25-phase1-production-readiness-board.md`](plans/2026-05-25-phase1-production-readiness-board.md) | Exact blockers and release-readiness checklist for Phase 1 |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, domain split, stack patterns |
 | [`SCHEMA.md`](SCHEMA.md) | Database tables, ownership, RLS, governance RPCs |

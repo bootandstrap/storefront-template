@@ -208,17 +208,28 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+    v_table TEXT;
 BEGIN
     -- Delete all dependent rows, then the tenant itself.
-    -- ON DELETE CASCADE on FKs handles most of this, but we
-    -- explicitly delete for tables that might not have cascade.
-    DELETE FROM analytics_events WHERE tenant_id = p_tenant_id;
-    DELETE FROM cms_pages WHERE tenant_id = p_tenant_id;
-    DELETE FROM whatsapp_templates WHERE tenant_id = p_tenant_id;
-    DELETE FROM carousel_slides WHERE tenant_id = p_tenant_id;
-    DELETE FROM plan_limits WHERE tenant_id = p_tenant_id;
-    DELETE FROM feature_flags WHERE tenant_id = p_tenant_id;
-    DELETE FROM config WHERE tenant_id = p_tenant_id;
+    -- Some production databases can drift on optional tenant tables during
+    -- long-lived migrations. Guard each child delete so the canonical RPC
+    -- works both before and after those tables exist.
+    FOREACH v_table IN ARRAY ARRAY[
+        'analytics_events',
+        'cms_pages',
+        'whatsapp_templates',
+        'carousel_slides',
+        'plan_limits',
+        'feature_flags',
+        'tenant_medusa_scope',
+        'config'
+    ] LOOP
+        IF to_regclass(format('public.%I', v_table)) IS NOT NULL THEN
+            EXECUTE format('DELETE FROM %I WHERE tenant_id = $1', v_table) USING p_tenant_id;
+        END IF;
+    END LOOP;
+
     DELETE FROM tenants WHERE id = p_tenant_id;
 
     IF NOT FOUND THEN
@@ -367,4 +378,3 @@ DROP TRIGGER IF EXISTS trg_broadcast_module_orders ON module_orders;
 CREATE TRIGGER trg_broadcast_module_orders
     AFTER INSERT OR UPDATE ON module_orders
     FOR EACH ROW EXECUTE FUNCTION broadcast_governance_change();
-

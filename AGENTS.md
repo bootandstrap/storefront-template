@@ -1,6 +1,6 @@
 # AGENTS.md — ecommerce-template
 
-Fecha de referencia: `2026-05-25`
+Fecha de referencia: `2026-05-27`
 
 ## Scope
 
@@ -15,13 +15,16 @@ Este archivo es el entrypoint corto para sesiones de desarrollo IA/Codex en este
 ## Leer primero
 
 1. `docs/plans/2026-05-25-agentic-development-start-here.md`
-2. `docs/plans/2026-05-24-owner-starter-panel-migration.md`
-3. `docs/plans/2026-05-25-phase1-production-readiness-board.md`
-4. `docs/operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
-5. `docs/SCHEMA.md`
-6. `docs/README.md`
-7. `README.md`
-8. `GEMINI.md` solo si hace falta contexto adicional amplio
+2. `../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md` para continuidad P0/P1 exacta
+3. `docs/plans/2026-05-27-next-session-handoff-prompt.md` para continuidad cross-repo exacta
+4. `docs/plans/2026-05-24-owner-starter-panel-migration.md`
+5. `docs/plans/2026-05-25-phase1-production-readiness-board.md`
+6. `docs/operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
+7. `../bootandstrap-web/starter-collaborative-mode/docs/operations/TENANT_LAUNCH_PROTOCOL.md` si la sesion toca lifecycle/launch/auth de tenant
+8. `docs/SCHEMA.md`
+9. `docs/README.md`
+10. `README.md`
+11. `GEMINI.md` solo si hace falta contexto adicional amplio
 
 ## Reglas duras
 
@@ -41,15 +44,23 @@ Este archivo es el entrypoint corto para sesiones de desarrollo IA/Codex en este
 - `verificado`: `pnpm pack:contracts` genera tarballs reales consumibles por `BOOTANDSTRAP_WEB`
 - `verificado`: el workflow `publish-platform-kernel.yml` ya valida en `pull_request` y soporta `workflow_dispatch` para release manual una vez exista en `main`
 - `verificado`: `pnpm exec changeset status --output=.changeset/status.json` proyecta `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: publish remoto a GitHub Packages aun pendiente; en la auditoria de `2026-05-25` el workflow aun no existe en la rama remota `main`
+- `verificado`: publish remoto real ejecutado el `2026-05-25`
+- `verificado`: versiones publicadas reales `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
+- `verificado`: el consumidor `BOOTANDSTRAP_WEB` ya consume versiones publicadas
+- `verificado`: el runtime de registro customer ahora vuelve a enlazar `profiles.tenant_id`
+- `verificado`: el protocolo smoke/live ahora depende del mismo access kit owner + QA customer
+- `verificado`: el worktree runtime ya puede resolver `.env.worktree` como source of truth local sin tocar el repo original sucio
+- `verificado`: `scripts/governance-check.ts --dry-run` ya vuelve a pasar desde el root del monorepo contra `local-dev`
+- `verificado`: smoke local autenticado `owner -> /es/panel` y `qa customer -> /es/cuenta` ya pasó en `http://localhost:3002` contra `local-dev`
+- `verificado`: el SQL canónico del runtime ya incluye `tenant_medusa_scope` en cleanup y ahora debe tolerar drift de tablas opcionales al reaplicarse
+- `parcialmente verificado`: siguen existiendo errores `tsc` preexistentes ajenos a este slice
 
 ## Siguiente orden preferido
 
-1. Llevar el workflow de publish a `main`
-2. Publicar paquetes del kernel
-2. Mantener green el contrato `source -> pack -> install artifact -> consumer tests`
-3. Expandir `TenantContext` solo donde quite drift real
-4. No abrir `starter-engine` compartido antes de cerrar paquete/versionado y consumers base
+1. Mantener el runtime y sus migraciones alineados con el source-of-truth operativo cross-repo
+2. Soportar el smoke tenant real end-to-end como evidencia canónica, no como script aislado
+3. No reabrir deuda de `.env`/worktree ni volver a tocar repos originales sucios
+4. No abrir `starter-engine` compartido antes de cerrar lifecycle/launch protocol base
 
 ## Validacion focalizada
 
@@ -80,4 +91,4 @@ pnpm exec vitest run \
 
 - `verificado`: no hay que “limpiar” este worktree borrando cambios; primero hay que consolidarlos en commits intencionales
 - `verificado`: los `dist/` de `packages/platform-contract` y `packages/tenant-context` ahora son artefactos versionables, no basura local
-- `no verificado`: release remoto ejecutado y versiones fijadas desde registry
+- `verificado`: release remoto ejecutado y versiones fijadas desde registry

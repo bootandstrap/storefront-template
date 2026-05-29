@@ -31,6 +31,8 @@ The setup script will:
 - ✅ Run database migrations
 - ✅ Seed demo data
 
+If this repo is opened through a git worktree and root `.env` points outside the worktree, create `.env.worktree` and let `./dev.sh` pick it automatically before `.env`.
+
 ## URLs
 
 | Service | URL |
@@ -48,13 +50,13 @@ To get a fully-featured dev tenant with all modules at max tier:
 npx tsx scripts/demo-tenant-engine.ts --up
 ```
 
-See `DEVELOPMENT.md` for details.
+Use `--local` when the goal is local worktree development and avoid treating `local-dev` as evidence of production launch readiness. See `DEVELOPMENT.md` for details.
 
 ## Common Issues
 
 | Issue | Fix |
 |-------|-----|
-| Storefront shows "Maintenance Mode" | Check `GOVERNANCE_SUPABASE_ANON_KEY` in `.env` |
+| Storefront shows "Maintenance Mode" | Check `GOVERNANCE_SUPABASE_ANON_KEY` in `.env.worktree` or the env file selected by `./dev.sh` |
 | Medusa boot fails | Ensure PostgreSQL is running + check `DATABASE_URL` |
 | Redis connection errors | Redis is optional — `dev.sh` handles this gracefully |
 | "Invalid API key" | Check `NEXT_PUBLIC_SUPABASE_ANON_KEY` matches your Supabase project |
@@ -64,8 +66,8 @@ See `DEVELOPMENT.md` for details.
 If you prefer manual configuration:
 
 ```bash
-cp .env.template .env
-# Edit .env with your values
+cp .env.template .env.worktree
+# Edit .env.worktree with your local values when working from a git worktree
 pnpm install
 cd apps/medusa && npx medusa db:migrate
 cd ../.. && ./dev.sh

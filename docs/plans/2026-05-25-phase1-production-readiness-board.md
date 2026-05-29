@@ -1,6 +1,6 @@
 # Phase 1 Production Readiness Board — ecommerce-template
 
-Fecha de referencia: `2026-05-25`
+Fecha de referencia: `2026-05-29`
 
 ## Objetivo
 
@@ -14,25 +14,24 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 - `verificado`: el contrato `source -> pack -> install artifact -> consumer tests` ya fue validado localmente
 - `verificado`: `shared-package-publication-contract.test.ts` ya cubre tambien `pull_request` y `workflow_dispatch` del workflow de release
 - `verificado`: `changeset status` proyecta `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: sigue faltando publicacion remota a GitHub Packages; el workflow aun no existe en la rama remota `main`
-- `parcialmente verificado`: sigue faltando validacion browser autenticada owner despues de consumir versiones publicadas
+- `verificado`: publicacion remota real completada en `main`
+- `verificado`: `@bootandstrap/platform-contract@0.2.0` publicado
+- `verificado`: `@bootandstrap/tenant-context@1.0.0` publicado
+- `verificado`: `BOOTANDSTRAP_WEB` ya consume las versiones publicadas desde registry y `npm ci` real del consumidor ya pasó
+- `verificado`: el smoke local autenticado owner + QA customer ya pasó sobre `local-dev`
+- `parcialmente verificado`: el loop smoke real quedó validado históricamente, pero sigue abierta la deuda de cleanup físico automático y evidencia estructurada canónica
 
 ## Bloqueantes para llamar esto listo para produccion
 
-1. `no verificado`: llevar el workflow de publish a la rama remota `main`
-2. `no verificado`: ejecutar publish remoto de `@bootandstrap/platform-contract`
-3. `no verificado`: ejecutar publish remoto de `@bootandstrap/tenant-context`
-4. `no verificado`: fijar consumo por version publicada en `BOOTANDSTRAP_WEB`
-5. `no verificado`: validar `npm ci` limpio del consumidor usando registry, no `file:` ni tarball local
-6. `no verificado`: validar browser owner autenticado real tras consumir versiones publicadas
+1. `refutado`: que el source-of-truth SQL de runtime ya esté alineado por sí solo; `delete_tenant()` seguía necesitando tolerancia a drift de tablas opcionales
+2. `parcialmente verificado`: el runtime local está listo para desarrollo y smoke local, pero no sustituye el smoke tenant real del control-plane
+3. `parcialmente verificado`: siguen existiendo errores `tsc` preexistentes ajenos a este slice
 
 ## Backlog inmediato por orden
 
-1. Llevar `publish-platform-kernel.yml` a `main`
-2. Confirmar si `@bootandstrap/tenant-context@1.0.0` es el semver inicial aceptado
-3. Ejecutar workflow de publish real
-4. Sustituir `file:` por versiones publicadas en `BOOTANDSTRAP_WEB`
-5. Revalidar las suites focalizadas de consumidor y runtime owner
+1. Mantener verde el contrato `source -> pack -> install artifact -> consumer`
+2. Mantener las migraciones/runtime alineadas con el protocolo de lifecycle cross-repo
+3. No reintroducir rutas locales/shared `.env` que rompan aislamiento de worktree
 
 ## Reglas de continuidad
 
@@ -60,5 +59,5 @@ pnpm pack:contracts
 
 ## Nota para IA/Codex
 
-- `verificado`: el siguiente batch correcto en este repo es release-readiness, no feature expansion
-- `verificado`: si la publicacion remota ya ocurrio, este doc debe actualizarse antes de seguir con `Workstream C`
+- `verificado`: el siguiente batch correcto en este repo es soporte del lifecycle canónico y limpieza de source-of-truth, no feature expansion
+- `verificado`: si cambia el protocolo smoke/live/delete en `BOOTANDSTRAP_WEB`, este board debe reflejarlo antes de seguir

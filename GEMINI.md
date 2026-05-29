@@ -2,6 +2,7 @@
 
 > AI agent guide for operating and customizing tenant storefronts.
 > Last updated: 2026-04-17 (post-logger migration + integration audit).
+> For live continuity and the next operator handoff, start with `../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md`.
 
 ### Agent Rules
 - **NO QUICK FIXES**: Never use graceful fallbacks, try/catch band-aids, or silent failures as a substitute for proper integration. Every feature must be intentionally developed, fully wired, and production-complete. If a table is needed, create the migration. If a module is needed, register it. No half-measures.
@@ -22,6 +23,7 @@ npx tsx scripts/seed-demo.ts        # Seed demo data
 ```
 
 **Critical**: `GOVERNANCE_SUPABASE_ANON_KEY` must be set (governance project, NOT tenant). Without it → maintenance mode.
+**Critical**: in git worktrees, prefer `.env.worktree` or `BOOTANDSTRAP_ENV_FILE`; do not treat a shared root `.env` symlink as writable source of truth.
 
 ## 1. What This Repo Is
 
@@ -61,7 +63,7 @@ All of: `lib/medusa/`, `lib/supabase/`, `lib/security/`, `lib/config.ts`, `lib/f
 
 ### ⚫ PLATFORM — Not in this repo
 
-Medusa image, Supabase migrations, CI/CD, Dokploy config, `.env` vars.
+Medusa image, Supabase migrations, CI/CD, Dokploy config, deploy-time env vars.
 
 ## 3. Customization Playbook
 
@@ -125,7 +127,7 @@ All production logging via `logger` from `lib/logger.ts`. Zero `console.log` cal
 5. SEO structure preserved.
 6. i18n engine intact.
 7. Medusa data flow respected.
-8. `.env` never modified manually.
+8. Do not edit a root `.env` symlink that points to another dirty repo; in worktrees prefer `.env.worktree` or `BOOTANDSTRAP_ENV_FILE`.
 9. `proxy.ts` untouched.
 10. Panel pages locked.
 11. No `console.log` in production code.
@@ -200,7 +202,7 @@ Flags are **auto-derived** from `contract.modules.catalog[].tiers[].flag_effects
 ## 12. DON'Ts
 
 - Hardcode text (use dictionaries). Remove `Suspense` boundaries. Import server-only in client.
-- Edit `config.ts`, `features.ts`, `limits.ts`, `.env`. Use unregistered Tailwind colors.
+- Edit `config.ts`, `features.ts`, `limits.ts`, a shared root `.env` symlink, or use unregistered Tailwind colors.
 - Delete `loading.tsx`/`error.tsx`. Change URL slugs. Disable strict TS.
 - Render `PanelPageHeader` in Client. Use `className="col-span-N"` for Bento.
 - Use `console.log` in production code. Import `getClientIP` from `rate-limiter.ts`.
