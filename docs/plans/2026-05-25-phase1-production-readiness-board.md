@@ -19,18 +19,19 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 - `verificado`: `@bootandstrap/tenant-context@1.0.0` publicado
 - `verificado`: `BOOTANDSTRAP_WEB` ya consume las versiones publicadas desde registry y `npm ci` real del consumidor ya pasó
 - `verificado`: el smoke local autenticado owner + QA customer ya pasó sobre `local-dev`
-- `parcialmente verificado`: el loop smoke real quedó validado históricamente, pero sigue abierta la deuda de cleanup físico automático y evidencia estructurada canónica
+- `verificado`: el `delete_tenant()` SQL canónico ya fue alineado con tolerancia a drift y reaplicado en producción
+- `verificado`: el loop smoke real `create -> deploy -> owner login -> QA login -> cleanup` ya quedó revalidado desde el control-plane el `2026-05-29`
+- `verificado`: el cleanup físico automático y la evidencia estructurada canónica ya existen en el runner del control-plane
 
 ## Bloqueantes para llamar esto listo para produccion
 
-1. `refutado`: que el source-of-truth SQL de runtime ya esté alineado por sí solo; `delete_tenant()` seguía necesitando tolerancia a drift de tablas opcionales
-2. `parcialmente verificado`: el runtime local está listo para desarrollo y smoke local, pero no sustituye el smoke tenant real del control-plane
-3. `parcialmente verificado`: siguen existiendo errores `tsc` preexistentes ajenos a este slice
+1. `parcialmente verificado`: el runtime local está listo para desarrollo y smoke local, pero no sustituye la validación continua del control-plane productivo
+2. `parcialmente verificado`: siguen existiendo errores `tsc` preexistentes ajenos a este slice
 
 ## Backlog inmediato por orden
 
 1. Mantener verde el contrato `source -> pack -> install artifact -> consumer`
-2. Mantener las migraciones/runtime alineadas con el protocolo de lifecycle cross-repo
+2. Mantener `delete_tenant()` alineado con el protocolo real de lifecycle cross-repo
 3. No reintroducir rutas locales/shared `.env` que rompan aislamiento de worktree
 
 ## Reglas de continuidad
