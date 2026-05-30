@@ -1,6 +1,6 @@
 # AGENTS.md — ecommerce-template
 
-Fecha de referencia: `2026-05-27`
+Fecha de referencia: `2026-05-30`
 
 ## Scope
 
@@ -8,23 +8,24 @@ Este archivo es el entrypoint corto para sesiones de desarrollo IA/Codex en este
 
 ## Worktree activo
 
-- `verificado`: worktree activo `/Users/webnorka/.config/superpowers/worktrees/ecommerce-template/starter-owner-panel`
-- `verificado`: rama esperada `starter-owner-panel`
-- `parcialmente verificado`: el worktree esta sano para seguir desarrollando, pero no esta limpio de git porque contiene trabajo valido en curso de `Phase 1`
+- `verificado`: worktree activo `/Users/webnorka/.config/superpowers/worktrees/ecommerce-template/p0p1-runtime-main`
+- `verificado`: rama esperada `promote/p0p1-runtime-main`
+- `verificado`: el worktree esta limpio y sirve como companion runtime del cierre P0/P1 cross-repo
 
 ## Leer primero
 
-1. `docs/plans/2026-05-25-agentic-development-start-here.md`
-2. `../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md` para continuidad P0/P1 exacta
-3. `docs/plans/2026-05-27-next-session-handoff-prompt.md` para continuidad cross-repo exacta
-4. `docs/plans/2026-05-24-owner-starter-panel-migration.md`
+1. `docs/plans/2026-05-30-next-session-handoff-prompt.md`
+2. `../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md` para continuidad cross-repo exacta
+3. `../bootandstrap-web/p0p1-main-promotion/docs/operations/2026-05-29-p0p1-lifecycle-evidence.md`
+4. `docs/plans/2026-05-25-agentic-development-start-here.md`
 5. `docs/plans/2026-05-25-phase1-production-readiness-board.md`
-6. `docs/operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
-7. `../bootandstrap-web/starter-collaborative-mode/docs/operations/TENANT_LAUNCH_PROTOCOL.md` si la sesion toca lifecycle/launch/auth de tenant
-8. `docs/SCHEMA.md`
-9. `docs/README.md`
-10. `README.md`
-11. `GEMINI.md` solo si hace falta contexto adicional amplio
+6. `docs/plans/2026-05-24-owner-starter-panel-migration.md`
+7. `docs/operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
+8. `../bootandstrap-web/p0p1-main-promotion/docs/operations/TENANT_LAUNCH_PROTOCOL.md` si la sesion toca lifecycle/launch/auth de tenant
+9. `docs/SCHEMA.md`
+10. `docs/README.md`
+11. `README.md`
+12. `GEMINI.md` solo si hace falta contexto adicional amplio
 
 ## Reglas duras
 
@@ -53,12 +54,14 @@ Este archivo es el entrypoint corto para sesiones de desarrollo IA/Codex en este
 - `verificado`: `scripts/governance-check.ts --dry-run` ya vuelve a pasar desde el root del monorepo contra `local-dev`
 - `verificado`: smoke local autenticado `owner -> /es/panel` y `qa customer -> /es/cuenta` ya pasó en `http://localhost:3002` contra `local-dev`
 - `verificado`: el SQL canónico del runtime ya incluye `tenant_medusa_scope` en cleanup y ahora debe tolerar drift de tablas opcionales al reaplicarse
+- `verificado`: el loop real `create -> deploy -> owner login -> QA login -> cleanup` ya quedó revalidado desde el control-plane el `2026-05-29`
+- `verificado`: la evidencia operativa canónica del lifecycle ya vive en el control-plane, no en este repo
 - `parcialmente verificado`: siguen existiendo errores `tsc` preexistentes ajenos a este slice
 
 ## Siguiente orden preferido
 
 1. Mantener el runtime y sus migraciones alineados con el source-of-truth operativo cross-repo
-2. Soportar el smoke tenant real end-to-end como evidencia canónica, no como script aislado
+2. Soportar el siguiente drill no demo sin reabrir drift entre SQL canónico, auth y lifecycle protocol
 3. No reabrir deuda de `.env`/worktree ni volver a tocar repos originales sucios
 4. No abrir `starter-engine` compartido antes de cerrar lifecycle/launch protocol base
 
@@ -89,6 +92,6 @@ pnpm exec vitest run \
 
 ## Higiene de repo
 
-- `verificado`: no hay que “limpiar” este worktree borrando cambios; primero hay que consolidarlos en commits intencionales
+- `verificado`: este worktree ya esta limpio; el siguiente batch debe entrar como cambios nuevos e intencionales
 - `verificado`: los `dist/` de `packages/platform-contract` y `packages/tenant-context` ahora son artefactos versionables, no basura local
 - `verificado`: release remoto ejecutado y versiones fijadas desde registry

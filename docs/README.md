@@ -5,8 +5,8 @@
 | Doc | Contents |
 |-----|----------|
 | [`../AGENTS.md`](../AGENTS.md) | Active AI/Codex entrypoint for this worktree |
-| [`../../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md`](../../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md) | Cross-system P0/P1 execution prompt with exact current blockers |
-| [`plans/2026-05-27-next-session-handoff-prompt.md`](plans/2026-05-27-next-session-handoff-prompt.md) | Cross-repo prompt ready to paste for the next session |
+| [`../../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md`](../../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md) | Cross-system handoff prompt with exact remaining gaps to 100% |
+| [`plans/2026-05-30-next-session-handoff-prompt.md`](plans/2026-05-30-next-session-handoff-prompt.md) | Runtime handoff ready to paste for the next session |
 | [`plans/2026-05-25-agentic-development-start-here.md`](plans/2026-05-25-agentic-development-start-here.md) | Runtime continuation handoff for Phase 1 |
 | [`plans/2026-05-25-phase1-production-readiness-board.md`](plans/2026-05-25-phase1-production-readiness-board.md) | Exact blockers and release-readiness checklist for Phase 1 |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, domain split, stack patterns |

@@ -1,6 +1,6 @@
 # Phase 1 Production Readiness Board — ecommerce-template
 
-Fecha de referencia: `2026-05-29`
+Fecha de referencia: `2026-05-30`
 
 ## Objetivo
 
@@ -22,6 +22,7 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 - `verificado`: el `delete_tenant()` SQL canónico ya fue alineado con tolerancia a drift y reaplicado en producción
 - `verificado`: el loop smoke real `create -> deploy -> owner login -> QA login -> cleanup` ya quedó revalidado desde el control-plane el `2026-05-29`
 - `verificado`: el cleanup físico automático y la evidencia estructurada canónica ya existen en el runner del control-plane
+- `verificado`: la continuidad cross-repo ya queda anclada en `../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md`
 
 ## Bloqueantes para llamar esto listo para produccion
 
@@ -32,7 +33,8 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 
 1. Mantener verde el contrato `source -> pack -> install artifact -> consumer`
 2. Mantener `delete_tenant()` alineado con el protocolo real de lifecycle cross-repo
-3. No reintroducir rutas locales/shared `.env` que rompan aislamiento de worktree
+3. Soportar el siguiente drill no demo sin reintroducir drift entre runtime y control-plane
+4. No reintroducir rutas locales/shared `.env` que rompan aislamiento de worktree
 
 ## Reglas de continuidad
 
@@ -40,6 +42,7 @@ Dejar un board corto y ejecutable para terminar `Phase 1` sin reabrir decisiones
 - `verificado`: si cambias un paquete, revalida tambien el consumidor
 - `verificado`: si la validacion difiere entre carpeta viva y artefacto empaquetado, manda el artefacto empaquetado
 - `verificado`: no usar `build` global roto como argumento para bloquear este slice si la deuda es previa
+- `verificado`: si cambia el handoff canónico del control-plane, este board debe actualizarse en el mismo batch
 
 ## Validacion rapida
 

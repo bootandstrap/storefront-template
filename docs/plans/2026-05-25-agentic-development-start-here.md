@@ -1,19 +1,21 @@
 # Agentic Development Start Here — ecommerce-template
 
-Fecha de referencia: `2026-05-25`
+Fecha de referencia: `2026-05-30`
 
 ## Objetivo
 
-Dejar un entrypoint corto y vivo para retomar `Phase 1`, owner starter runtime y release del kernel sin reauditar toda la sesion.
+Dejar un entrypoint corto y vivo para retomar el companion runtime del cierre P0/P1 sin reauditar toda la sesion.
 
 ## Read order minimo
 
 1. `../../AGENTS.md`
-2. `2026-05-24-owner-starter-panel-migration.md`
-3. `2026-05-25-phase1-production-readiness-board.md`
-4. `../operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
-5. `../SCHEMA.md`
-6. `../README.md`
+2. `2026-05-30-next-session-handoff-prompt.md`
+3. `../../../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md`
+4. `2026-05-25-phase1-production-readiness-board.md`
+5. `2026-05-24-owner-starter-panel-migration.md`
+6. `../operations/PLATFORM_KERNEL_PACKAGE_RELEASES.md`
+7. `../SCHEMA.md`
+8. `../README.md`
 
 ## Estado actual
 
@@ -26,7 +28,10 @@ Dejar un entrypoint corto y vivo para retomar `Phase 1`, owner starter runtime y
 - `verificado`: el workflow de publish ya tiene gate en `pull_request` y `workflow_dispatch` para release manual post-merge
 - `verificado`: el smoke `source -> pack -> install artifact -> consumer tests` fue revalidado el `2026-05-25`
 - `verificado`: `changeset status` proyecta ahora `@bootandstrap/platform-contract@0.2.0` y `@bootandstrap/tenant-context@1.0.0`
-- `parcialmente verificado`: falta publish real a GitHub Packages y consumo por version publicada
+- `verificado`: publish real a GitHub Packages y consumo por version publicada ya quedaron cerrados
+- `verificado`: el `delete_tenant()` SQL canónico ya tolera drift de tablas opcionales
+- `verificado`: el loop real `create -> deploy -> owner login -> QA login -> cleanup` ya quedó revalidado desde el control-plane el `2026-05-29`
+- `parcialmente verificado`: la evidencia operativa del lifecycle vive en el control-plane; este repo solo debe mantenerse alineado
 
 ## Lo mas importante que NO olvidar
 
@@ -37,11 +42,10 @@ Dejar un entrypoint corto y vivo para retomar `Phase 1`, owner starter runtime y
 
 ## Siguiente backlog ejecutable
 
-1. Llevar el workflow `publish-platform-kernel.yml` a `main`
-2. Ejecutar publish remoto de paquetes del kernel
-3. Confirmar install del consumidor desde version publicada
-4. Mantener green el contrato `source -> pack -> install artifact -> tests`
-5. Posponer `starter-engine` compartido hasta cerrar consumo por release
+1. Mantener green el contrato `source -> pack -> install artifact -> tests`
+2. Mantener alineado `delete_tenant()` y el protocolo lifecycle cross-repo
+3. Soportar el siguiente drill no demo sin reintroducir drift de auth o source-of-truth
+4. Posponer `starter-engine` compartido hasta cerrar el siguiente corte operativo
 
 ## Validacion rapida
 
@@ -76,6 +80,6 @@ pnpm exec vitest run \
 
 ## Higiene y continuidad
 
-- `parcialmente verificado`: repo sano para seguir desarrollando
-- `no verificado`: repo listo para merge final
-- `verificado`: el siguiente punto de limpieza real es consolidar commits intencionales, no “hacer reset”
+- `verificado`: repo sano para seguir desarrollando
+- `verificado`: repo limpio para abrir el siguiente batch intencional
+- `verificado`: el siguiente punto de limpieza real es mantener docs y SQL canónico alineados, no “hacer reset”

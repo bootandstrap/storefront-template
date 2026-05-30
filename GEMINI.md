@@ -1,8 +1,8 @@
 # GEMINI — Tenant Storefront Guide
 
 > AI agent guide for operating and customizing tenant storefronts.
-> Last updated: 2026-04-17 (post-logger migration + integration audit).
-> For live continuity and the next operator handoff, start with `../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md`.
+> Last updated: 2026-05-30 (post-P0/P1 lifecycle closure + production deploy-chain anchoring).
+> For live continuity and the next operator handoff, start with `../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md`.
 
 ### Agent Rules
 - **NO QUICK FIXES**: Never use graceful fallbacks, try/catch band-aids, or silent failures as a substitute for proper integration. Every feature must be intentionally developed, fully wired, and production-complete. If a table is needed, create the migration. If a module is needed, register it. No half-measures.

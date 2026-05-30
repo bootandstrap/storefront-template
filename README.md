@@ -2,7 +2,7 @@
 
 SaaS-managed e-commerce template: Next.js 16, Medusa v2, Supabase. White-labeled storefronts governed via feature flags, plan limits, and dynamic theming.
 
-> Last updated: 2026-05-29
+> Last updated: 2026-05-30
 
 ## Stack
 
@@ -36,8 +36,8 @@ ecommerce-template/
 
 | Doc | Contents |
 |-----|----------|
-| [../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md](../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md) | **Cross-system P0/P1 prompt** — current production blockers, exact execution order |
-| [docs/plans/2026-05-27-next-session-handoff-prompt.md](docs/plans/2026-05-27-next-session-handoff-prompt.md) | **Cross-repo next-session prompt** — exact continuity state, blockers, execution order |
+| [../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md](../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md) | **Cross-system handoff** — exact remaining gaps to 100%, execution order, evidence expected |
+| [docs/plans/2026-05-30-next-session-handoff-prompt.md](docs/plans/2026-05-30-next-session-handoff-prompt.md) | **Runtime handoff** — this repo's continuity state, constraints, and next support role |
 | [AGENTS.md](AGENTS.md) | **Codex / AI session start** — active worktree rules, read order, next moves |
 | [docs/plans/2026-05-25-agentic-development-start-here.md](docs/plans/2026-05-25-agentic-development-start-here.md) | **Runtime entrypoint** — current state, next backlog, validation path |
 | [docs/plans/2026-05-25-phase1-production-readiness-board.md](docs/plans/2026-05-25-phase1-production-readiness-board.md) | **Execution board** — exact blockers, readiness checklist, next batch |
@@ -67,6 +67,7 @@ ecommerce-template/
 - `verificado`: `local-dev` es un tenant utilitario interno; no sustituye el smoke tenant real como evidencia de launch readiness.
 - `verificado`: en worktrees, la fuente local de entorno preferida es `.env.worktree` o `BOOTANDSTRAP_ENV_FILE`, no un `.env` compartido/symlinked.
 - `parcialmente verificado`: el runtime ya tiene observabilidad y smoke local suficientes para desarrollo, pero la evidencia canónica del loop completo sigue viviendo en el control-plane y sus docs operativas.
+- `verificado`: para continuidad operativa, el entrypoint canónico de la próxima sesión es `../bootandstrap-web/p0p1-main-promotion/docs/plans/2026-05-30-next-session-handoff-prompt.md`.
 
 ## License
 
