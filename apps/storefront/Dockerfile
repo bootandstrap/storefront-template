@@ -8,7 +8,9 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/platform-contract/package.json ./packages/platform-contract/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/tenant-context/package.json ./packages/tenant-context/
 COPY apps/storefront/package.json ./apps/storefront/
 
 RUN pnpm install --prod=false --filter storefront...
@@ -19,9 +21,13 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/platform-contract/node_modules ./packages/platform-contract/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules 
+COPY --from=deps /app/packages/tenant-context/node_modules ./packages/tenant-context/node_modules
 COPY --from=deps /app/apps/storefront/node_modules ./apps/storefront/node_modules
+COPY packages/platform-contract ./packages/platform-contract
 COPY packages/shared ./packages/shared
+COPY packages/tenant-context ./packages/tenant-context
 COPY apps/storefront ./apps/storefront
 COPY pnpm-workspace.yaml package.json ./
 
