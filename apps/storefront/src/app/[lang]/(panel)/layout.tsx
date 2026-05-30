@@ -346,7 +346,7 @@ export default async function PanelLayout({
             planName={isStarterCollaborative ? undefined : planLimits.plan_name}
             commandPaletteItems={commandPaletteItems}
             commandPaletteLabels={commandPaletteLabels}
-            setupNudge={!isStarterCollaborative && config.onboarding_completed && readinessScore < 60 && readinessRemaining > 0 ? {
+            setupNudge={!isStarterCollaborative && config.onboarding_completed && readinessScore != null && readinessScore < 60 && readinessRemaining > 0 ? {
                 label: t('panel.topbar.stepsLeft').replace('{{count}}', String(readinessRemaining)),
                 href: `/${lang}/panel`,
             } : null}
