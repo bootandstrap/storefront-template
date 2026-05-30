@@ -12,7 +12,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveTenantContext } from '@bootandstrap/tenant-context'
-import { type PanelRole } from '@/lib/panel-access-policy'
+import { isPanelRole, type PanelRole } from '@/lib/panel-access-policy'
 import { logger } from '@/lib/logger'
 
 export interface PanelAuthResult {
