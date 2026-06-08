@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
             envTenantId: process.env.TENANT_ID ?? null,
         })
 
-        if (!tenantContext.isPanelRole || tenantContext.tenantId !== profile?.tenant_id) {
+        const isBillingPortalRole = tenantContext.role === 'owner' || tenantContext.role === 'super_admin'
+        if (!isBillingPortalRole || tenantContext.tenantId !== profile?.tenant_id) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 

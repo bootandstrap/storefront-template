@@ -40,6 +40,7 @@ const DEFAULT_LABELS: PanelSidebarLabels = {
     pos: 'POS',
     ownerPanel: 'Panel',
     backToStore: 'Volver a la tienda',
+    health: 'Salud',
 }
 
 const ALL_FLAGS_ON: PanelFeatureFlags = {

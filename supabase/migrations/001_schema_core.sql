@@ -27,6 +27,8 @@
 -- 19. 20260403_add_language_preferences_to_config.sql
 -- 20. 20260404_add_missing_feature_flags.sql
 -- 21. 20260404_create_return_requests.sql
+-- 22. 20260412_custom_email_domain.sql
+-- 23. 20260413_email_governance_v1.sql
 --
 -- ============================================================================
 
@@ -175,6 +177,12 @@ ALTER TABLE config ADD COLUMN IF NOT EXISTS facebook_pixel_id TEXT;
 -- Custom CSS
 ALTER TABLE config ADD COLUMN IF NOT EXISTS custom_css TEXT;
 
+-- Custom email domain support
+ALTER TABLE config ADD COLUMN IF NOT EXISTS custom_email_domain TEXT;
+ALTER TABLE config ADD COLUMN IF NOT EXISTS custom_email_domain_status TEXT DEFAULT 'none'
+    CHECK (custom_email_domain_status IN ('none', 'pending', 'verified', 'failed'));
+ALTER TABLE config ADD COLUMN IF NOT EXISTS custom_email_domain_id TEXT;
+
 -- ---------------------------------------------------------------------------
 -- 4. New feature flags
 -- ---------------------------------------------------------------------------
@@ -236,6 +244,9 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_templates_tenant ON whatsapp_templates(t
 CREATE INDEX IF NOT EXISTS idx_cms_pages_tenant ON cms_pages(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_tenant ON analytics_events(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_tenant ON profiles(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_config_email_domain_status
+    ON config (custom_email_domain_status)
+    WHERE custom_email_domain IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 8. Update RLS policies for tenant isolation
@@ -958,6 +969,10 @@ WHERE active_languages IS NULL OR array_length(active_languages, 1) IS NULL;
 COMMENT ON COLUMN public.config.panel_language IS 'Preferred language for the Owner Panel UI';
 COMMENT ON COLUMN public.config.storefront_language IS 'Primary language for the Storefront';
 
+COMMENT ON COLUMN public.config.custom_email_domain IS 'Custom sender domain for email delivery (e.g. campifruit.co). Enterprise email_marketing tier only.';
+COMMENT ON COLUMN public.config.custom_email_domain_status IS 'DNS verification status: none | pending | verified | failed';
+COMMENT ON COLUMN public.config.custom_email_domain_id IS 'Resend domain ID for API operations (verification, deletion)';
+
 -- 6. Fix explicit UPDATE policy for config table
 -- The original FOR ALL policy sometimes fails to apply correctly for UPDATE on some Postgres versions
 -- without an explicit WITH CHECK clause.
@@ -1043,6 +1058,62 @@ CREATE TABLE IF NOT EXISTS return_requests (
 
 ALTER TABLE return_requests ENABLE ROW LEVEL SECURITY;
 
+-- ┌──────────────────────────────────────────────────────────────────────────┐
+-- │ Source: 20260413_email_governance_v1.sql                              │
+-- └──────────────────────────────────────────────────────────────────────────┘
+
+-- Owner-controlled per-tenant email preferences.
+-- Kept in the squashed legacy migration so data-plane local bootstraps
+-- stay complete without introducing post-cutoff control-plane DDL.
+CREATE TABLE IF NOT EXISTS email_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,
+    send_order_confirmation BOOLEAN DEFAULT true,
+    send_payment_failed BOOLEAN DEFAULT true,
+    send_order_shipped BOOLEAN DEFAULT true,
+    send_order_delivered BOOLEAN DEFAULT true,
+    send_order_cancelled BOOLEAN DEFAULT true,
+    send_refund_processed BOOLEAN DEFAULT true,
+    send_welcome BOOLEAN DEFAULT true,
+    send_low_stock_alert BOOLEAN DEFAULT true,
+    send_abandoned_cart BOOLEAN DEFAULT true,
+    send_review_request BOOLEAN DEFAULT true,
+    template_design TEXT DEFAULT 'minimal',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE email_preferences ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "service_email_preferences" ON email_preferences;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'email_preferences' AND policyname = 'service_email_preferences'
+  ) THEN
+    CREATE POLICY "service_email_preferences" ON email_preferences
+      FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION trg_create_email_preferences()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO email_preferences (tenant_id) VALUES (NEW.id)
+  ON CONFLICT (tenant_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_email_preferences ON tenants;
+CREATE TRIGGER trg_email_preferences
+  AFTER INSERT ON tenants
+  FOR EACH ROW EXECUTE FUNCTION trg_create_email_preferences();
+
+DROP TRIGGER IF EXISTS update_email_preferences_updated_at ON email_preferences;
+CREATE TRIGGER update_email_preferences_updated_at
+  BEFORE UPDATE ON email_preferences
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Tenants can manage their own return requests
 DROP POLICY IF EXISTS "return_requests_tenant_isolation" ON return_requests;
 CREATE POLICY "return_requests_tenant_isolation" ON return_requests
@@ -1059,4 +1130,3 @@ CREATE POLICY "return_requests_tenant_isolation" ON return_requests
 
 CREATE INDEX IF NOT EXISTS idx_return_requests_tenant ON return_requests(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_return_requests_order ON return_requests(order_id);
-

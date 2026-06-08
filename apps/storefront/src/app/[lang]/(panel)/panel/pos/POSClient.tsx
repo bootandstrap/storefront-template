@@ -23,30 +23,47 @@ import {
     INITIAL_CART,
     calculateCartTotals,
     safeVariantPrice,
-    type POSCartItem,
-    type POSSale,
-    type PaymentMethod,
-    type POSDiscount,
-    type PaymentProcessingState,
-    type POSPanelView,
-    type POSShift,
-    type POSRefund,
-} from '@/lib/pos/pos-config'
-import type { POSProduct, POSCategory } from '@/lib/pos/pos-product-types'
-import type { FeatureFlags, PlanLimits } from '@/lib/config'
-import { charge } from '@/lib/pos/payments/payment-adapter'
-import { usePOSSounds, triggerHaptic } from '@/lib/pos/usePOSSounds'
-import { useBarcodeScanner } from '@/lib/pos/useBarcodeScanner'
-import { useOfflineSync } from '@/lib/pos/offline/useOfflineSync'
-import { usePrinterConnection, type BusinessInfo } from '@/lib/pos/usePrinterConnection'
-import { usePOSSync, type POSSyncEvent } from '@/lib/pos/usePOSSync'
-import { getEnabledPOSPaymentMethods, isPOSHistoryAvailable, isPOSDashboardAvailable, formatPOSCurrency } from '@/lib/pos/pos-utils'
-import { posLabel } from '@/lib/pos/pos-i18n'
-import { PageEntrance } from '@/components/panel/PanelAnimations'
-import { createPOSSale, searchPOSProducts } from './actions'
-import { POSProductGrid, POSCart, POSPaymentOverlay, POSOfflineBanner, POSToolbar, getParkedSales } from './pos-components'
-import POSSidePanelManager from './POSSidePanelManager'
-import POSMobileCartSheet from './POSMobileCartSheet'
+} from './pos-client-types'
+import type {
+    POSCartItem,
+    POSSale,
+    PaymentMethod,
+    POSDiscount,
+    PaymentProcessingState,
+    POSPanelView,
+    POSShift,
+    POSRefund,
+    POSProduct,
+    POSCategory,
+    FeatureFlags,
+    PlanLimits,
+} from './pos-client-types'
+import {
+    charge,
+    usePOSSounds,
+    triggerHaptic,
+    useBarcodeScanner,
+    useOfflineSync,
+    usePrinterConnection,
+    usePOSSync,
+    getEnabledPOSPaymentMethods,
+    isPOSHistoryAvailable,
+    isPOSDashboardAvailable,
+    formatPOSCurrency,
+    posLabel,
+    PageEntrance,
+    createPOSSale,
+    searchPOSProducts,
+    POSProductGrid,
+    POSCart,
+    POSPaymentOverlay,
+    POSOfflineBanner,
+    POSToolbar,
+    getParkedSales,
+    POSSidePanelManager,
+    POSMobileCartSheet,
+} from './pos-client-runtime'
+import type { BusinessInfo, POSSyncEvent } from './pos-client-runtime'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 

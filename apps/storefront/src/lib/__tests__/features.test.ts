@@ -46,6 +46,7 @@ const mockFlags: FeatureFlags = {
     enable_abandoned_cart_emails: false,
     enable_email_campaigns: false,
     enable_email_templates: false,
+    enable_custom_email_domain: false,
     enable_pos: false,
     enable_pos_kiosk: false,
     enable_pos_keyboard_shortcuts: false,

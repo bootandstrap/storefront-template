@@ -24,25 +24,33 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useLimitGuard } from '@/hooks/useLimitGuard'
 import { Package, Layers } from 'lucide-react'
-import { createProduct, updateProduct, removeProduct, uploadProductImage, removeProductImage } from '../productos/actions'
-import { createCategory, editCategory, removeCategory } from '../categorias/actions'
-import { toggleBadge } from '../insignias/actions'
-import type { BadgeId } from '../insignias/badges'
-import type { AdminProductFull } from '@/lib/medusa/admin'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import { PageEntrance, SlideOver } from '@/components/panel/PanelAnimations'
-import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
-import { motion, AnimatePresence } from 'framer-motion'
-import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
-import { medusaPricesToForm } from '@/components/panel/MultiPriceEditor'
-import { isZeroDecimal } from '@/lib/i18n/currencies'
 import type { LimitCheckResult } from '@/lib/limits'
-
-// ── Extracted sub-components ──
-import ProductsTab from './ProductsTab'
-import CategoriesTab from './CategoriesTab'
-import ProductFormSlideOverInline from './ProductFormSlideOverInline'
-import CategoryFormSlideOver from './CategoryFormSlideOver'
+import {
+    createProduct,
+    updateProduct,
+    removeProduct,
+    uploadProductImage,
+    removeProductImage,
+    createCategory,
+    editCategory,
+    removeCategory,
+    toggleBadge,
+    PanelPageHeader,
+    PageEntrance,
+    SlideOver,
+    PanelConfirmDialog,
+    useConfirmDialog,
+    motion,
+    AnimatePresence,
+    PriceLabelSheet,
+    medusaPricesToForm,
+    isZeroDecimal,
+    ProductsTab,
+    CategoriesTab,
+    ProductFormSlideOverInline,
+    CategoryFormSlideOver,
+} from './catalog-deps'
+import type { BadgeId, AdminProductFull, PriceLabelItem } from './catalog-deps'
 
 // ---------------------------------------------------------------------------
 // Types
