@@ -101,8 +101,8 @@ jobs:
         repo: ${{ fromJson(needs.resolve-tenants.outputs.repos) }}
     steps:
       - name: Template Sync
-        if: inputs.dry_run != 'true'
-        uses: AndreasAugworsky/actions-template-sync@v2
+        if: github.event.inputs.dry_run != 'true'
+        uses: AndreasAugustin/actions-template-sync@v2
         with:
           source_repo_path: bootandstrap/storefront-template
           upstream_branch: main
@@ -114,7 +114,7 @@ jobs:
           github_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
 
       - name: Dry Run Log
-        if: inputs.dry_run == 'true'
+        if: github.event.inputs.dry_run == 'true'
         run: |
           echo "🔍 DRY RUN: Would sync to ${{ matrix.repo }}"
           echo "  Source: bootandstrap/storefront-template@main"
