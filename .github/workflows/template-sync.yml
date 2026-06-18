@@ -69,9 +69,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          # Fetch active tenants with github_repo set
+          # Fetch deployed tenants with github_repo set.
+          # Tenant commercial status (`trial`, `active`, etc.) is not a safe sync gate:
+          # a live deployed tenant can remain `trial` while still needing platform drift fixes.
           response=$(curl -sf \
-            "${SUPABASE_URL}/rest/v1/tenants?select=slug,github_repo_url&status=eq.active&github_repo_url=not.is.null" \
+            "${SUPABASE_URL}/rest/v1/tenants?select=slug,github_repo_url,status,deployment_status&deployment_status=eq.active&github_repo_url=not.is.null" \
             -H "apikey: ${SUPABASE_SERVICE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
             -H "Content-Type: application/json")
