@@ -100,18 +100,23 @@ jobs:
       matrix:
         repo: ${{ fromJson(needs.resolve-tenants.outputs.repos) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Template Sync
         if: github.event.inputs.dry_run != 'true'
         uses: AndreasAugustin/actions-template-sync@v2
         with:
+          source_gh_token: ${{ github.token }}
+          target_gh_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
           source_repo_path: bootandstrap/storefront-template
           upstream_branch: main
           pr_title: "🔄 Platform update — ${{ github.event.head_commit.message }}"
           pr_labels: "platform-update,automated"
           pr_commit_msg: "chore: sync platform updates from template"
-          is_force: false
           is_pr_cleanup: true
-          github_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
 
       - name: Dry Run Log
         if: github.event.inputs.dry_run == 'true'
