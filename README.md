@@ -2,19 +2,19 @@
 
 SaaS-managed e-commerce template: Next.js 16, Medusa v2, Supabase. White-labeled storefronts governed via feature flags, plan limits, and dynamic theming.
 
-> Last updated: 2026-05-29
+> Last updated: 2026-06-25
 
 ## Stack
 
-| Component | Role |
-|-----------|------|
-| **Next.js 16** | Storefront (App Router, Server Components, Streaming) |
-| **Medusa v2** | Headless commerce (catalog, cart, orders, payments) |
-| **Supabase** | Auth, PostgreSQL, Storage CDN |
-| **Stripe** | Payments |
-| **Redis** | Event bus, rate limiting, cache |
-| **Tailwind CSS v4** | Styling (`@theme inline`) |
-| **Turborepo + pnpm** | Monorepo orchestration |
+| Component            | Role                                                  |
+| -------------------- | ----------------------------------------------------- |
+| **Next.js 16**       | Storefront (App Router, Server Components, Streaming) |
+| **Medusa v2**        | Headless commerce (catalog, cart, orders, payments)   |
+| **Supabase**         | Auth, PostgreSQL, Storage CDN                         |
+| **Stripe**           | Payments                                              |
+| **Redis**            | Event bus, rate limiting, cache                       |
+| **Tailwind CSS v4**  | Styling (`@theme inline`)                             |
+| **Turborepo + pnpm** | Monorepo orchestration                                |
 
 ## Architecture
 
@@ -34,16 +34,13 @@ ecommerce-template/
 
 ## Documentation
 
-| Doc | Contents |
-|-----|----------|
-| [../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md](../bootandstrap-web/starter-collaborative-mode/docs/plans/2026-05-29-priority-execution-handoff-prompt.md) | **Cross-system P0/P1 prompt** — current production blockers, exact execution order |
-| [docs/plans/2026-05-27-next-session-handoff-prompt.md](docs/plans/2026-05-27-next-session-handoff-prompt.md) | **Cross-repo next-session prompt** — exact continuity state, blockers, execution order |
-| [AGENTS.md](AGENTS.md) | **Codex / AI session start** — active worktree rules, read order, next moves |
-| [docs/plans/2026-05-25-agentic-development-start-here.md](docs/plans/2026-05-25-agentic-development-start-here.md) | **Runtime entrypoint** — current state, next backlog, validation path |
-| [docs/plans/2026-05-25-phase1-production-readiness-board.md](docs/plans/2026-05-25-phase1-production-readiness-board.md) | **Execution board** — exact blockers, readiness checklist, next batch |
-| [GEMINI.md](GEMINI.md) | **AI agent guide** — zone map 🟢🟡🔴⚫, invariants, playbook |
-| [HANDOFF.md](HANDOFF.md) | **Human ops checklist** — new tenant onboarding, assets, go-live |
-| [docs/](docs/) | Architecture, schema, flows, contracts, dev setup |
+| Doc                                                                                      | Contents                                                                                            |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [GEMINI.md](GEMINI.md)                                                                   | **AI agent guide** — zone map 🟢🟡🔴⚫, invariants, playbook                                        |
+| [AGENTS.md](AGENTS.md)                                                                   | **Repo-local Ponytail guardrails** — execution ladder, anti-overengineering, no semantic downgrades |
+| [HANDOFF.md](HANDOFF.md)                                                                 | **Human ops checklist** — new tenant onboarding, assets, go-live                                    |
+| [docs/README.md](docs/README.md)                                                         | **Docs index** — architecture, schema, flows, contracts, dev setup, Ponytail adoption               |
+| [docs/plans/2026-06-19-ponytail-adoption.md](docs/plans/2026-06-19-ponytail-adoption.md) | Repo-local Ponytail adoption, limits, and hierarchy vs `GEMINI.md`                                  |
 
 ## Email System
 
@@ -51,22 +48,16 @@ ecommerce-template/
 
 ## Testing
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm test:run` | Unit tests |
-| `npx playwright test` | E2E smoke (5 critical paths) |
-| `sentrux check .` | Architecture boundaries |
-| `bash scripts/release-gate.sh` | Full gate |
+| Command                        | Purpose                      |
+| ------------------------------ | ---------------------------- |
+| `pnpm test:run`                | Unit tests                   |
+| `npx playwright test`          | E2E smoke (5 critical paths) |
+| `sentrux check .`              | Architecture boundaries      |
+| `bash scripts/release-gate.sh` | Full gate                    |
 
 ## Governance
 
-81 feature flags, 31 plan limits, 13 modules. All fetched at runtime via `getConfig()` from central Supabase.
-
-## Operational Notes
-
-- `verificado`: `local-dev` es un tenant utilitario interno; no sustituye el smoke tenant real como evidencia de launch readiness.
-- `verificado`: en worktrees, la fuente local de entorno preferida es `.env.worktree` o `BOOTANDSTRAP_ENV_FILE`, no un `.env` compartido/symlinked.
-- `parcialmente verificado`: el runtime ya tiene observabilidad y smoke local suficientes para desarrollo, pero la evidencia canónica del loop completo sigue viviendo en el control-plane y sus docs operativas.
+Current runtime SSOT: `apps/storefront/src/lib/governance-contract.json` with `83` feature flags, `31` plan limits, and `13` modules. Control-plane ownership remains in `BOOTANDSTRAP_WEB`.
 
 ## License
 

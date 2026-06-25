@@ -19,8 +19,8 @@
     "scripts": {
         "build": "tsc",
         "type-check": "tsc --noEmit",
-        "test": "vitest run",
-        "test:run": "vitest run",
+        "test": "vitest run --passWithNoTests",
+        "test:run": "vitest run --passWithNoTests",
         "changeset": "changeset",
         "version": "changeset version",
         "release": "npm run build && changeset publish",

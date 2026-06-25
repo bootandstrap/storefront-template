@@ -101,7 +101,7 @@ describe('v0.1 Release Gate — Structural Integrity', () => {
         const validSections = ['mi-tienda', 'ventas', 'ajustes', 'modulos', 'pos']
         for (const section of validSections) {
             expect(
-                policySource.includes(`section: '${section}'`),
+                new RegExp(`section:\\s*['"]${section}['"]`).test(policySource),
                 `ROUTE_REDIRECT_MAP should have entries pointing to section '${section}'`
             ).toBe(true)
         }

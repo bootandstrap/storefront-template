@@ -7,7 +7,7 @@
  *
  * @locked 🔴 CANONICAL — ecommerce-template/packages/shared is the source of truth.
  */
-import { z } from 'zod';
+import { z } from "zod";
 // ─── StoreConfig ──────────────────────────────────────────────────────────
 export const StoreConfigSchema = z.object({
     id: z.string(),
@@ -59,11 +59,11 @@ export const StoreConfigSchema = z.object({
     sentry_dsn: z.string().nullable(),
     custom_css: z.string().nullable(),
     // Inventory & Stock (Phase 1.7)
-    stock_mode: z.enum(['always_in_stock', 'managed']),
+    stock_mode: z.enum(["always_in_stock", "managed"]),
     low_stock_threshold: z.number(),
     // Shipping & Tax (Phase 1.9)
     free_shipping_threshold: z.number(),
-    tax_display_mode: z.enum(['tax_included', 'tax_excluded']),
+    tax_display_mode: z.enum(["tax_included", "tax_excluded"]),
     // Onboarding
     onboarding_completed: z.boolean(),
     // Module-specific config fields
@@ -108,7 +108,7 @@ export const StoreConfigSchema = z.object({
     panel_language: z.string().nullable().default(null),
     storefront_language: z.string().nullable().default(null),
 });
-// ─── FeatureFlags (83 flags) ──────────────────────────────────────────────
+// ─── FeatureFlags (contract-aligned) ──────────────────────────────────────
 export const FeatureFlagsSchema = z.object({
     // Checkout
     enable_whatsapp_checkout: z.boolean(),
@@ -205,11 +205,10 @@ export const FeatureFlagsSchema = z.object({
     enable_auth_advanced: z.boolean(),
     enable_sales_channels: z.boolean(),
     enable_reservation_checkout: z.boolean().default(false),
-    // Backup & Storage (Phase 6 — 2026-04)
     enable_backups: z.boolean().default(false),
     enable_manual_backup: z.boolean().default(false),
 });
-// ─── PlanLimits (32 fields) ───────────────────────────────────────────────
+// ─── PlanLimits (contract-aligned) ────────────────────────────────────────
 export const PlanLimitsSchema = z.object({
     max_products: z.number(),
     max_customers: z.number(),
@@ -240,17 +239,15 @@ export const PlanLimitsSchema = z.object({
     max_crm_contacts: z.number(),
     max_pos_payment_methods: z.number(),
     max_automations: z.number().default(0),
-    max_pos_kiosk_devices: z.number().default(0),
-    // Backup & Storage (Phase 6 — 2026-04)
     max_backups: z.number().default(0),
     backup_frequency_hours: z.number().default(0),
 });
 // ─── Tenant Status ────────────────────────────────────────────────────────
 export const TenantStatusSchema = z.enum([
-    'active',
-    'paused',
-    'suspended',
-    'maintenance_free',
+    "active",
+    "paused",
+    "suspended",
+    "maintenance_free",
 ]);
 // ─── AppConfig (composite) ────────────────────────────────────────────────
 export const AppConfigSchema = z.object({

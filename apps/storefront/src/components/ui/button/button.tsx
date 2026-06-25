@@ -194,6 +194,18 @@ export const Button = ({
 
     noTextPadding = isLinkType || noTextPadding;
 
+    const leadingIconNode = isValidElement(IconLeading)
+        ? IconLeading
+        : isReactComponent(IconLeading)
+        ? <IconLeading data-icon="leading" className={styles.common.icon} />
+        : null
+
+    const trailingIconNode = isValidElement(IconTrailing)
+        ? IconTrailing
+        : isReactComponent(IconTrailing)
+        ? <IconTrailing data-icon="trailing" className={styles.common.icon} />
+        : null
+
     let props = {};
 
     if (href) {
@@ -229,8 +241,7 @@ export const Button = ({
             )}
         >
             {/* Leading icon */}
-            {isValidElement(IconLeading) && IconLeading}
-            {isReactComponent(IconLeading) && <IconLeading data-icon="leading" className={styles.common.icon} />}
+            {leadingIconNode}
 
             {loading && (
                 <svg
@@ -262,8 +273,7 @@ export const Button = ({
             )}
 
             {/* Trailing icon */}
-            {isValidElement(IconTrailing) && IconTrailing}
-            {isReactComponent(IconTrailing) && <IconTrailing data-icon="trailing" className={styles.common.icon} />}
+            {trailingIconNode}
         </Component>
     );
 };

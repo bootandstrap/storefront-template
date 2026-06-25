@@ -9,29 +9,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenantContext } from '@bootandstrap/tenant-context'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { createSmartRateLimiter } from '@/lib/security/rate-limit-factory'
-import { getClientIp } from '@/lib/security/get-client-ip'
+import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { logger } from '@/lib/logger'
 
 const BSWEB_URL = process.env.BSWEB_INTERNAL_URL
     || process.env.NEXT_PUBLIC_BSWEB_URL
     || 'https://bootandstrap.com'
-const billingPortalRateLimiter = createSmartRateLimiter({
-    limit: 10,
-    windowMs: 60_000,
-    name: 'billing-portal',
-})
 
 export async function POST(req: NextRequest) {
     try {
-        const clientIp = getClientIp(req)
-        if (await billingPortalRateLimiter.isLimited(clientIp)) {
-            return NextResponse.json(
-                { error: 'Too many requests. Please wait a moment.' },
-                { status: 429 }
-            )
-        }
+        const rateLimitResult = await withRateLimit(req, PANEL_GUARD)
+        if (rateLimitResult.limited) return rateLimitResult.response!
 
         // Auth check
         const supabase = await createClient()
@@ -54,18 +42,20 @@ export async function POST(req: NextRequest) {
             envTenantId: process.env.TENANT_ID ?? null,
         })
 
-        if (!tenantContext.isPanelRole || tenantContext.tenantId !== profile?.tenant_id) {
+        if (
+            !tenantContext.isPanelRole
+            || !tenantContext.tenantId
+            || (profile?.tenant_id && tenantContext.tenantId !== profile.tenant_id)
+        ) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         // Get tenant's Stripe customer ID
-        const adminClient = createAdminClient()
-        const tenantResponse = await adminClient
+        const { data: tenant } = await supabase
             .from('tenants')
             .select('stripe_customer_id')
-            .eq('id', profile.tenant_id)
+            .eq('id', tenantContext.tenantId)
             .single()
-        const tenant = tenantResponse.data as { stripe_customer_id: string | null } | null
 
         if (!tenant?.stripe_customer_id) {
             return NextResponse.json(

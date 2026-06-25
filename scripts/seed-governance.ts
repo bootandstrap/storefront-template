@@ -96,7 +96,6 @@ const GENEROUS_LIMITS: Record<string, number> = {
     max_reviews_per_product: 50,
     max_wishlist_items: 200,
     max_chatbot_messages_month: 10000,
-    max_pos_kiosk_devices: 50,
     max_backups: 12,
     backup_frequency_hours: 6,
     max_automations: 50,
@@ -218,7 +217,6 @@ const INDUSTRY_TEMPLATES: Record<string, IndustryTemplate> = {
         ],
         limitOverrides: {
             max_pos_payment_methods: 0,                    // No POS needed
-            max_pos_kiosk_devices: 0,
         },
         storeConfig: {
             business_name: 'Urban Style Boutique',

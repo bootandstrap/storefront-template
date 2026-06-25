@@ -15,14 +15,13 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const API_DIR = join(__dirname, '../../app/api')
-const CANONICAL_ROUTE_MAP: Record<string, string> = {
-    'billing/portal/route.ts': 'billing-portal/route.ts',
-}
+const BILLING_PORTAL_CANONICAL = 'billing-portal/route.ts'
+const BILLING_PORTAL_LEGACY = 'billing/portal/route.ts'
 
 // ── Endpoints that MUST require authentication ──
 const AUTH_REQUIRED_ENDPOINTS = [
     'returns/route.ts',
-    'billing/portal/route.ts',
+    BILLING_PORTAL_CANONICAL,
     'wishlist/route.ts',
     'panel/onboarding-complete/route.ts',
 ]
@@ -33,7 +32,7 @@ const AUTH_REQUIRED_ENDPOINTS = [
 // ── Endpoints that MUST have rate limiting ──
 const RATE_LIMITED_ENDPOINTS = [
     'returns/route.ts',
-    'billing/portal/route.ts',
+    BILLING_PORTAL_CANONICAL,
     'chat/route.ts',
     'orders/lookup/route.ts',
     'analytics/route.ts',
@@ -51,13 +50,6 @@ const FLAG_GATED_ENDPOINTS: Record<string, string> = {
 }
 
 function readRoute(relativePath: string): string | null {
-    const canonicalPath = CANONICAL_ROUTE_MAP[relativePath] ?? relativePath
-    const fullPath = join(API_DIR, canonicalPath)
-    if (!existsSync(fullPath)) return null
-    return readFileSync(fullPath, 'utf-8')
-}
-
-function readRawRoute(relativePath: string): string | null {
     const fullPath = join(API_DIR, relativePath)
     if (!existsSync(fullPath)) return null
     return readFileSync(fullPath, 'utf-8')
@@ -123,13 +115,14 @@ describe('Production Contract: API Endpoint Security', () => {
                 // Must import rate limiting (either factory or basic)
                 const hasSmartLimiter = source.includes('createSmartRateLimiter')
                 const hasBasicLimiter = source.includes('checkRateLimit')
+                const hasGuardWrapper = source.includes('withRateLimit')
                 expect(
-                    hasSmartLimiter || hasBasicLimiter,
+                    hasSmartLimiter || hasBasicLimiter || hasGuardWrapper,
                     `${endpoint} must have rate limiting`
                 ).toBe(true)
 
-                // Must return 429 for rate-limited requests
-                expect(source).toContain('429')
+                // Must either return 429 directly or delegate to the shared 429 helper
+                expect(source.includes('429') || hasGuardWrapper).toBe(true)
             }
         )
     })
@@ -156,32 +149,35 @@ describe('Production Contract: API Endpoint Security', () => {
     })
 
     describe('billing portal authorization', () => {
-        it('legacy /api/billing/portal route preserves POST and redirects to canonical endpoint', () => {
-            const source = readRawRoute('billing/portal/route.ts')
+        it('validates owner/super_admin role before creating portal session', () => {
+            const source = readRoute(BILLING_PORTAL_CANONICAL)
+            if (!source) return
+
+            // Must resolve role and tenant through the shared tenant-context boundary.
+            expect(source).toContain('resolveTenantContext')
+            expect(source).toContain('profileRole: profile?.role ?? null')
+            expect(source).toContain('metadataRole: user.user_metadata?.role ?? null')
+            expect(source).toContain('403')
+        })
+
+        it('reads tenant billing data through a tenant-scoped lookup', () => {
+            const source = readRoute(BILLING_PORTAL_CANONICAL)
+            if (!source) return
+
+            expect(source).toContain(".from('tenants')")
+            expect(source).toContain(".eq('id', tenantContext.tenantId)")
+            expect(source).toContain('stripe_customer_id')
+            expect(source).not.toMatch(/SERVICE_ROLE|serviceRole|service_role/i)
+        })
+    })
+
+    describe('legacy billing route', () => {
+        it('redirects POST /api/billing/portal to the canonical billing portal route', () => {
+            const source = readRoute(BILLING_PORTAL_LEGACY)
             if (!source) return
 
             expect(source).toContain('/api/billing-portal')
             expect(source).toContain('308')
-            expect(source).toContain('NextResponse.redirect')
-        })
-
-        it('validates owner/super_admin role before creating portal session', () => {
-            const source = readRoute('billing/portal/route.ts')
-            if (!source) return
-
-            // Must check role from profiles
-            expect(source).toContain("'owner'")
-            expect(source).toContain("'super_admin'")
-            expect(source).toContain('403')
-        })
-
-        it('uses admin client for tenant data access (RLS bypass)', () => {
-            const source = readRoute('billing/portal/route.ts')
-            if (!source) return
-
-            // Must import and use admin client for tenants query
-            expect(source).toContain("from '@/lib/supabase/admin'")
-            expect(source).toContain('createAdminClient')
         })
     })
 })

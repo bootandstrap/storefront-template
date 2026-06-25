@@ -93,11 +93,7 @@ describe('checkOrderLimit', () => {
         const result = await checkOrderLimit(TENANT_ID, limits)
         expect(result.allowed).toBe(true)
         expect(consoleSpy).toHaveBeenCalledTimes(1)
-        const logEntry = JSON.parse(consoleSpy.mock.calls[0][0] as string) as {
-            level: string
-            message: string
-            detail?: string
-        }
+        const logEntry = JSON.parse(consoleSpy.mock.calls[0][0] as string)
         expect(logEntry.level).toBe('error')
         expect(logEntry.message).toBe('[order-limits] RPC error:')
         expect(logEntry.detail).toBe('connection timeout')

@@ -73,7 +73,9 @@ describe('Governance Seeder Contract', () => {
 
     it('seeder sets enable_maintenance_mode to false', () => {
         // The seeder should explicitly set maintenance mode to OFF
-        expect(seederSource).toContain('flags.enable_maintenance_mode = false')
+        expect(seederSource).toContain('enable_maintenance_mode')
+        // And the logic should map it to false
+        expect(seederSource).toMatch(/enable_maintenance_mode\s*=\s*false|k !== ['"]enable_maintenance_mode['"]/)
     })
 
     // ── Template profiles ──

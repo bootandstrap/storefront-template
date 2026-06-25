@@ -128,6 +128,13 @@ function fulfillmentLabel(status: string): { label: string; variant: 'success' |
 
 type ChannelFilter = 'all' | 'pos' | 'online'
 
+function getOrderDisplayLabel(order: AdminOrderFull): string {
+    const displayId = typeof order.display_id === 'number' || typeof order.display_id === 'string'
+        ? String(order.display_id).trim()
+        : ''
+    return displayId || order.id.slice(-6)
+}
+
 function getOrderChannel(order: AdminOrderFull): 'pos' | 'online' {
     const meta = order.metadata as Record<string, unknown> | null
     return meta?.source === 'pos' ? 'pos' : 'online'
@@ -369,7 +376,7 @@ export default function OrdersClient({
 
                 {/* Channel filter — POS vs Online */}
                 <div className="flex gap-1 bg-sf-0/50 backdrop-blur-md rounded-xl border border-sf-3/30 shadow-inner p-1">
-                    {([{ key: 'all', label: 'All', count: undefined }, { key: 'pos', label: 'POS', count: metrics.posOrderCount }, { key: 'online', label: 'Online', count: metrics.onlineOrderCount }] as { key: ChannelFilter; label: string; count?: number }[]).map(ch => (
+                    {([{ key: 'all', label: labels.all, count: undefined }, { key: 'pos', label: 'POS', count: metrics.posOrderCount }, { key: 'online', label: 'Online', count: metrics.onlineOrderCount }] as { key: ChannelFilter; label: string; count?: number }[]).map(ch => (
                         <button
                             key={ch.key}
                             onClick={() => {
@@ -446,6 +453,7 @@ export default function OrdersClient({
                 <ListStagger className="space-y-3 relative">
                     {filteredOrders.map(order => {
                         const isExpanded = expandedId === order.id
+                        const displayLabel = getOrderDisplayLabel(order)
                         const customerName = [order.customer?.first_name, order.customer?.last_name].filter(Boolean).join(' ') || order.email || '—'
                         const fulfillment = fulfillmentLabel(order.fulfillment_status)
 
@@ -456,12 +464,12 @@ export default function OrdersClient({
                                     <button
                                         onClick={() => setExpandedId(isExpanded ? null : order.id)}
                                         aria-expanded={isExpanded}
-                                        aria-label={`${labels.viewDetail} #${order.display_id}`}
+                                        aria-label={`${labels.viewDetail} #${displayLabel}`}
                                         className="w-full flex items-center justify-between px-5 py-4 min-h-[56px] hover:bg-sf-1 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-inset"
                                     >
                                         <div className="flex items-center gap-4 flex-wrap">
                                             <span className="font-bold text-brand text-sm">
-                                                #{order.display_id}
+                                                #{displayLabel}
                                             </span>
                                             {/* Channel badge */}
                                             {getOrderChannel(order) === 'pos' ? (

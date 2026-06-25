@@ -10,17 +10,11 @@
 import { logger } from '@/lib/logger'
 
 export function reportDegradedMode(tenantId: string, message: string): void {
-    logger.error(
-        JSON.stringify({
-            level: 'error',
-            service: 'storefront',
-            timestamp: new Date().toISOString(),
-            tenant_id: tenantId,
-            severity: 'critical',
-            error: message,
-            action: 'degraded_mode_activated',
-        }),
-    )
+    logger.withTenant(tenantId).error('degraded_mode_activated', {
+        severity: 'critical',
+        error: message,
+        action: 'degraded_mode_activated',
+    })
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const anonKey = process.env.GOVERNANCE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

@@ -160,7 +160,7 @@ function ModuleCardSkeleton({ index }: { index: number }) {
             </div>
 
             {/* Shimmer overlay animation */}
-            <style jsx>{`
+            <style>{`
                 .shimmer-loading {
                     background: linear-gradient(
                         90deg,

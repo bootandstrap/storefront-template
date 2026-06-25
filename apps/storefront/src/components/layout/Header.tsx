@@ -105,7 +105,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                     {t('nav.products')}
                                 </Link>
                             )}
-                            {featureFlags.enable_whatsapp_contact && (
+                            {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
                                 <a
                                     href={`https://wa.me/${config.whatsapp_number}`}
                                     target="_blank"
@@ -229,7 +229,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         >
                             {t('nav.products')}
                         </Link>
-                        {featureFlags.enable_whatsapp_contact && (
+                        {featureFlags.enable_whatsapp_contact && config.whatsapp_number && (
                             <a
                                 href={`https://wa.me/${config.whatsapp_number}`}
                                 target="_blank"

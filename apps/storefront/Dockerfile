@@ -13,7 +13,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/tenant-context/package.json ./packages/tenant-context/
 COPY apps/storefront/package.json ./apps/storefront/
 
-RUN pnpm install --prod=false --filter storefront...
+RUN pnpm install --frozen-lockfile --prod=false --filter storefront...
 
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app

@@ -7,7 +7,7 @@
  *
  * @locked 🔴 CANONICAL — ecommerce-template/packages/shared is the source of truth.
  */
-import { z } from 'zod';
+import { z } from "zod";
 export declare const StoreConfigSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodNullable<z.ZodString>;
@@ -561,7 +561,6 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_crm_contacts: z.ZodNumber;
     max_pos_payment_methods: z.ZodNumber;
     max_automations: z.ZodDefault<z.ZodNumber>;
-    max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
     max_backups: z.ZodDefault<z.ZodNumber>;
     backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
@@ -594,7 +593,6 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_crm_contacts: number;
     max_pos_payment_methods: number;
     max_automations: number;
-    max_pos_kiosk_devices: number;
     max_backups: number;
     backup_frequency_hours: number;
 }, {
@@ -627,7 +625,6 @@ export declare const PlanLimitsSchema: z.ZodObject<{
     max_crm_contacts: number;
     max_pos_payment_methods: number;
     max_automations?: number | undefined;
-    max_pos_kiosk_devices?: number | undefined;
     max_backups?: number | undefined;
     backup_frequency_hours?: number | undefined;
 }>;
@@ -1186,7 +1183,6 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_crm_contacts: z.ZodNumber;
         max_pos_payment_methods: z.ZodNumber;
         max_automations: z.ZodDefault<z.ZodNumber>;
-        max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
         max_backups: z.ZodDefault<z.ZodNumber>;
         backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
@@ -1219,7 +1215,6 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations: number;
-        max_pos_kiosk_devices: number;
         max_backups: number;
         backup_frequency_hours: number;
     }, {
@@ -1252,7 +1247,6 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
-        max_pos_kiosk_devices?: number | undefined;
         max_backups?: number | undefined;
         backup_frequency_hours?: number | undefined;
     }>;
@@ -1468,7 +1462,6 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations: number;
-        max_pos_kiosk_devices: number;
         max_backups: number;
         backup_frequency_hours: number;
     };
@@ -1682,7 +1675,6 @@ export declare const AppConfigSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
-        max_pos_kiosk_devices?: number | undefined;
         max_backups?: number | undefined;
         backup_frequency_hours?: number | undefined;
     };
@@ -1993,7 +1985,6 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_crm_contacts: z.ZodNumber;
         max_pos_payment_methods: z.ZodNumber;
         max_automations: z.ZodDefault<z.ZodNumber>;
-        max_pos_kiosk_devices: z.ZodDefault<z.ZodNumber>;
         max_backups: z.ZodDefault<z.ZodNumber>;
         backup_frequency_hours: z.ZodDefault<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
@@ -2026,7 +2017,6 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations: number;
-        max_pos_kiosk_devices: number;
         max_backups: number;
         backup_frequency_hours: number;
     }, {
@@ -2059,7 +2049,6 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
-        max_pos_kiosk_devices?: number | undefined;
         max_backups?: number | undefined;
         backup_frequency_hours?: number | undefined;
     }>>;
@@ -2186,7 +2175,6 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations: number;
-        max_pos_kiosk_devices: number;
         max_backups: number;
         backup_frequency_hours: number;
     } | null;
@@ -2313,7 +2301,6 @@ export declare const GovernanceRpcResultSchema: z.ZodObject<{
         max_crm_contacts: number;
         max_pos_payment_methods: number;
         max_automations?: number | undefined;
-        max_pos_kiosk_devices?: number | undefined;
         max_backups?: number | undefined;
         backup_frequency_hours?: number | undefined;
     } | null;

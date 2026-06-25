@@ -128,6 +128,7 @@ export default async function PanelLayout({
     let readinessScore: number | undefined
     let readinessRemaining = 0
     let activeModuleCount = 0
+    let readiness: Awaited<ReturnType<typeof calculateStoreReadiness>> | null = null
 
     if (!isStarterCollaborative) {
         const { getPanelMetrics } = await import('@/lib/panel-data-service')
@@ -144,12 +145,16 @@ export default async function PanelLayout({
             featureFlags.enable_pos,
         ].filter(Boolean).length
 
-        if (config.onboarding_completed) {
-            try {
-                const readiness = await calculateStoreReadiness(tenantId, lang)
-                readinessScore = readiness.score
-                readinessRemaining = readiness.checks.filter(c => !c.done).length
+        try {
+            readiness = await calculateStoreReadiness(tenantId, lang)
+            readinessScore = readiness.score
+            readinessRemaining = readiness.checks.filter(c => !c.done).length
+        } catch {
+            // Degrade gracefully
+        }
 
+        if (config.onboarding_completed && readiness) {
+            try {
                 const achCtx: AchievementContext = {
                     productCount: metrics.productCount,
                     categoryCount: metrics.categoryCount,

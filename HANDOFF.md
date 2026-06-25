@@ -1,7 +1,7 @@
 # 🚀 HANDOFF — Checklist Operativa de Nuevo Tenant
 
 > Lista maestra para el equipo humano. Cubre TODO lo que hay que hacer cuando se vende una nueva web a un cliente.
-> Última actualización: 2026-04-14.
+> Última actualización: 2026-06-25.
 
 ---
 
@@ -13,18 +13,19 @@
 
 ---
 
-## Fase 1: Provisioning (Automático)
+## Fase 1: Provisioning desde Control Plane
 
-> El sistema hace esto al completarse el pago. Solo verificar que terminó OK.
+> `BOOTANDSTRAP_WEB` es el owner del control plane. El flujo puede ejecutar repo/deploy/seed automáticamente cuando GitHub, Dokploy, billing y recovery quedan sanos. Si cualquier prerequisito queda bloqueado, el operador debe tratarlo como `manual_required`; no llamar automático a un paso que aún requiere consola, credenciales o decisión humana.
 
 - [ ] Stripe checkout completado → webhook `checkout.session.completed` recibido
 - [ ] `provision_tenant` RPC ejecutado (5 tablas: tenants, config, feature_flags, plan_limits, tenant_domains)
 - [ ] Suscripción de mantenimiento creada (40 CHF/mo, 30 días trial)
-- [ ] Repo creado en GitHub (`bootandstrap/store-{slug}`)
-- [ ] Deploy en Dokploy (Redis + Medusa + Storefront)
+- [ ] Repo creado en GitHub (`bootandstrap/store-{slug}`) o recovery muestra el paso manual exacto
+- [ ] Deploy en Dokploy (Redis + Medusa + Storefront) o recovery muestra el bloqueo exacto
 - [ ] Medusa arrancado y accesible (`:9000/health` → 200)
 - [ ] Storefront accesible (`/api/health/ready` → `{"status":"ok","probe":"readiness"}`)
-- [ ] SuperAdmin → Deploy tab → verificar timeline verde
+- [ ] SuperAdmin → tenant detail → verificar recovery `healthy`; si aparece `blocked_by_prereq` o `manual_required`, ejecutar el paso manual documentado antes de go-live
+- [ ] No inferir self-service completo desde un runtime sano; la prueba de control plane vive en `BOOTANDSTRAP_WEB`
 
 ---
 

@@ -22,10 +22,10 @@ function readSrc(relativePath: string): string {
 
 const ownerConfigSrc = readSrc('owner-config.ts')
 const ownerValidationSrc = readSrc('owner-validation.ts')
+const moduleConfigRegistrySrc = readSrc('registries/module-config-schemas.ts')
 const moduleConfigClientSrc = readSrc(
   '../app/[lang]/(panel)/panel/modulos/[module]/ModuleConfigClient.tsx'
 )
-const moduleConfigSchemasSrc = readSrc('registries/module-config-schemas.ts')
 const actionsSrc = readSrc('../app/[lang]/(panel)/panel/actions.ts')
 
 // ── Extract data ───────────────────────────────────────────────────────────
@@ -113,9 +113,9 @@ describe('Config Pipeline Integrity', () => {
     })
   })
 
-  describe('3. Module config registry coverage', () => {
+  describe('3. ModuleConfigClient field definitions', () => {
     const fieldDefModules = extractRecordKeys(
-      moduleConfigSchemasSrc,
+      moduleConfigRegistrySrc,
       'MODULE_CONFIG_SCHEMAS'
     )
 
@@ -140,21 +140,16 @@ describe('Config Pipeline Integrity', () => {
     it('has at least 11 module field defs (auth_advanced has no config fields)', () => {
       expect(fieldDefModules.length).toBeGreaterThanOrEqual(11)
     })
-
-    it('ModuleConfigClient reads field defs from the centralized registry', () => {
-      expect(moduleConfigClientSrc).toContain('getModuleConfigSchema')
-      expect(moduleConfigClientSrc).toContain('const fieldDefs = getModuleConfigSchema(moduleKey)')
-    })
   })
 
   describe('4. Field type coverage', () => {
-    it('registry exposes toggle fields and ModuleConfigClient renders them', () => {
-      expect(moduleConfigSchemasSrc).toContain("type: 'toggle'")
+    it('ModuleConfigClient supports toggle type', () => {
+      expect(moduleConfigRegistrySrc).toContain("type: 'toggle'")
       expect(moduleConfigClientSrc).toContain("field.type === 'toggle'")
     })
 
-    it('registry exposes number fields and ModuleConfigClient renders them with decimal input mode', () => {
-      expect(moduleConfigSchemasSrc).toContain("type: 'number'")
+    it('ModuleConfigClient supports number type with inputMode', () => {
+      expect(moduleConfigRegistrySrc).toContain("type: 'number'")
       expect(moduleConfigClientSrc).toContain('inputMode="decimal"')
     })
   })

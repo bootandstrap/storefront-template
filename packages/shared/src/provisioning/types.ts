@@ -226,5 +226,4 @@ export const ENTERPRISE_MAX_LIMITS: Record<string, number | string | null> = {
     max_crm_contacts: 100000,
     max_pos_payment_methods: 10,
     max_automations: 100,
-    max_pos_kiosk_devices: 50,
 }

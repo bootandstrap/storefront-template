@@ -10,22 +10,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock supabase admin
 vi.mock('@/lib/supabase/admin', () => ({
-    createAdminClient: vi.fn(() => ({
-        from: vi.fn(() => ({
-            select: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                    maybeSingle: vi.fn(() => ({
-                        data: null,
-                        error: null,
-                    })),
-                    single: vi.fn(() => ({
-                        data: null,
-                        error: null,
+    createAdminClient: vi.fn(() => {
+        const queryResult = (table: string) => {
+            switch (table) {
+                case 'feature_flags':
+                    return { data: { flags: {} }, error: null }
+                default:
+                    return { data: null, error: null }
+            }
+        }
+
+        return {
+            from: vi.fn((table: string) => ({
+                select: vi.fn(() => ({
+                    eq: vi.fn(() => ({
+                        single: vi.fn(async () => queryResult(table)),
+                        maybeSingle: vi.fn(async () => queryResult(table)),
                     })),
                 })),
+                update: vi.fn(() => ({
+                    eq: vi.fn(async () => ({ data: null, error: null })),
+                })),
+                insert: vi.fn(async () => ({ data: null, error: null })),
             })),
-        })),
-    })),
+        }
+    }),
 }))
 
 describe('Email Pipeline', () => {

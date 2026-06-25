@@ -164,17 +164,21 @@ describe('Security Posture — Enterprise Invariants', () => {
                 service: string
                 timestamp: string
                 message: string
+                tenant_id: string
+                severity: string
+                error: string
+                action: string
             }
-            const log = JSON.parse(outerLog.message)
 
             // Required APM fields
             expect(outerLog.level).toBe('error')
             expect(outerLog.service).toBe('storefront')
             expect(outerLog.timestamp).toBeDefined()
-            expect(log.tenant_id).toBe('tenant-test-1')
-            expect(log.severity).toBe('critical')
-            expect(log.error).toBe('Supabase timeout')
-            expect(log.action).toBe('degraded_mode_activated')
+            expect(outerLog.message).toBe('degraded_mode_activated')
+            expect(outerLog.tenant_id).toBe('tenant-test-1')
+            expect(outerLog.severity).toBe('critical')
+            expect(outerLog.error).toBe('Supabase timeout')
+            expect(outerLog.action).toBe('degraded_mode_activated')
         })
 
         it('timestamp is ISO-8601 format', () => {

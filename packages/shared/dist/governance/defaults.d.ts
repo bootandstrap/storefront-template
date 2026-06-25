@@ -11,6 +11,6 @@
  *
  * @locked 🔴 CANONICAL — ecommerce-template/packages/shared is the source of truth.
  */
-import type { AppConfig } from './schemas';
+import type { AppConfig } from "./schemas";
 export declare const FALLBACK_CONFIG: AppConfig;
 //# sourceMappingURL=defaults.d.ts.map

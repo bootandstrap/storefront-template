@@ -477,11 +477,11 @@ export default function PanelSidebar({
                 <Link href={`/${lang}/panel`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, fontSize: 12, color: S.text.secondary, textDecoration: 'none' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: healthColor, boxShadow: `0 0 6px ${healthColor}50`, flexShrink: 0 }} />
                     <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{readinessScore}%</span>
-                    <span style={{ color: S.text.muted }}>Health</span>
+                    <span style={{ color: S.text.muted }}>{labels.health}</span>
                 </Link>
             )}
             {readinessScore != null && compact && (
-                <Link href={`/${lang}/panel`} title={`${readinessScore}% Health`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, textDecoration: 'none' }}>
+                <Link href={`/${lang}/panel`} title={`${readinessScore}% ${labels.health}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, textDecoration: 'none' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: healthColor, boxShadow: `0 0 6px ${healthColor}50` }} />
                 </Link>
             )}

@@ -1,6 +1,6 @@
 {
   "$schema": "governance-contract/v2",
-  "generated_at": "2026-05-23T13:17:25.049Z",
+  "generated_at": "2026-05-20T20:28:18.012Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
@@ -237,7 +237,7 @@
     }
   },
   "limits": {
-    "count": 32,
+    "count": 31,
     "keys": [
       "backup_frequency_hours",
       "max_admin_users",
@@ -259,7 +259,6 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
-      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -293,7 +292,6 @@
       "max_newsletter_subscribers",
       "max_orders_month",
       "max_payment_methods",
-      "max_pos_kiosk_devices",
       "max_pos_payment_methods",
       "max_products",
       "max_promotions_active",
@@ -431,7 +429,7 @@
             ],
             "recommended": false,
             "stripe_price_ids": {
-              "CHF": "price_1TKQipFWa7WMiJl2PwzsXwTP"
+              "CHF": "price_1TZGiBFWa7WMiJl2ZrBCR8CO"
             }
           },
           {
@@ -478,14 +476,11 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_backups": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 3,
               "max_requests_day": 25000,
-              "storage_limit_mb": 500,
-              "backup_frequency_hours": 168
+              "storage_limit_mb": 500
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzohFWa7WMiJl2G6rsOwKH"
@@ -503,16 +498,12 @@
             ],
             "recommended": true,
             "flag_effects": {
-              "enable_backups": true,
-              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 6,
               "max_requests_day": 100000,
-              "storage_limit_mb": 2000,
-              "backup_frequency_hours": 24
+              "storage_limit_mb": 2000
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzojFWa7WMiJl209zNlXeQ"
@@ -531,17 +522,13 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_backups": true,
-              "enable_manual_backup": true,
               "enable_traffic_analytics": true,
               "enable_traffic_autoscale": true,
               "enable_traffic_expansion": true
             },
             "limit_effects": {
-              "max_backups": 12,
               "max_requests_day": 99999,
-              "storage_limit_mb": 10000,
-              "backup_frequency_hours": 6
+              "storage_limit_mb": 10000
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzomFWa7WMiJl2SNUJ2Ly4"
@@ -673,7 +660,7 @@
           {
             "key": "basic",
             "name": "Básico",
-            "price_chf": 15,
+            "price_chf": 25,
             "features": [
               "50 productos / 5 categorías",
               "100 pedidos/mes / 100 clientes",
@@ -1071,7 +1058,7 @@
               "enable_pos_kiosk": true
             },
             "stripe_price_ids": {
-              "CHF": "price_1TKQinFWa7WMiJl2ULYhscTg"
+              "CHF": "price_1TZGiXFWa7WMiJl2airgRGer"
             }
           },
           {
@@ -1091,7 +1078,7 @@
               "enable_kiosk_remote_management": true
             },
             "stripe_price_ids": {
-              "CHF": "price_1TKQioFWa7WMiJl2nT4qtw1z"
+              "CHF": "price_1TZGiYFWa7WMiJl2S1M75LdP"
             }
           },
           {
@@ -1108,7 +1095,7 @@
               "enable_kiosk_idle_timer": true
             },
             "stripe_price_ids": {
-              "CHF": "price_1TKQinFWa7WMiJl2HSlDnx2X"
+              "CHF": "price_1TZGibFWa7WMiJl2kc3AF34F"
             }
           }
         ]
@@ -1330,19 +1317,6 @@
         "payment_type": "subscription",
         "tiers": [
           {
-            "key": "standard",
-            "name": "Standard",
-            "price_chf": 15,
-            "features": [
-              "Analytics avanzadas",
-              "Google Search Console"
-            ],
-            "recommended": false,
-            "stripe_price_ids": {
-              "CHF": "price_1TKQioFWa7WMiJl2hlErruKJ"
-            }
-          },
-          {
             "key": "medio",
             "name": "MEDIO",
             "price_chf": 85,
@@ -1358,6 +1332,19 @@
             },
             "stripe_price_ids": {
               "CHF": "price_1TGzppFWa7WMiJl25rzFvm40"
+            }
+          },
+          {
+            "key": "standard",
+            "name": "Standard",
+            "price_chf": 15,
+            "features": [
+              "Analytics avanzadas",
+              "Google Search Console"
+            ],
+            "recommended": false,
+            "stripe_price_ids": {
+              "CHF": "price_1TZGimFWa7WMiJl2fOPyyuwI"
             }
           },
           {

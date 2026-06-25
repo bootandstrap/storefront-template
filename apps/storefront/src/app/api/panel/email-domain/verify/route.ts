@@ -5,6 +5,10 @@ import { logger } from '@/lib/logger'
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const RESEND_API_URL = 'https://api.resend.com'
 
+interface TenantFlags {
+    flags?: Record<string, boolean>
+}
+
 /**
  * POST /api/panel/email-domain/verify
  * Triggers DNS verification for the custom domain
@@ -19,8 +23,8 @@ export async function POST() {
             .eq('tenant_id', tenantId)
             .single()
 
-        const flags = flagsRaw as { flags?: Record<string, boolean> } | null
-        if (!flags?.flags?.enable_custom_email_domain) {
+        const flagsData = flagsRaw as TenantFlags | null
+        if (!flagsData?.flags?.enable_custom_email_domain) {
             return NextResponse.json(
                 { error: 'Custom email domain requires email_marketing Enterprise tier' },
                 { status: 403 }

@@ -37,7 +37,7 @@ export function PageEntrance({ children, className = '', delay = 0 }: PageEntran
             transition={{ duration: 0.4, ease: EASE_EXPO_OUT, delay }}
             className={className}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -74,7 +74,7 @@ export function ListStagger({ children, className = '' }: ListStaggerProps) {
             animate="show"
             className={className}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -83,7 +83,7 @@ export function ListStagger({ children, className = '' }: ListStaggerProps) {
 export function StaggerItem({ children, className = '' }: { children: ReactNode; className?: string }) {
     return (
         <motion.div variants={staggerItem} className={className}>
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -107,7 +107,7 @@ export function ExpandableSection({ isOpen, children, className = '' }: Expandab
                     transition={{ duration: 0.25, ease: EASE_EXPO_OUT }}
                     className={`overflow-hidden ${className}`}
                 >
-                    {children}
+                    {children as any}
                 </motion.div>
             )}
         </AnimatePresence>
@@ -224,7 +224,7 @@ export function SlideOver({ isOpen, onClose, title, subtitle, children, width = 
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto px-6 py-5">
-                            {children}
+                            {children as any}
                         </div>
                     </motion.div>
                 </>
@@ -410,7 +410,7 @@ export function ScrollReveal({
             className={`${isVisible ? animClass : 'opacity-0'} ${className}`}
             style={{ animationDelay: `${delay}ms` }}
         >
-            {children}
+            {children as any}
         </div>
     )
 }
@@ -432,7 +432,7 @@ export function HoverScale({ children, className = '', scale = 1.02 }: HoverScal
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -457,7 +457,7 @@ export function GlowPulse({
 }: GlowPulseProps) {
     return (
         <span className={`relative inline-flex ${className}`}>
-            {children}
+            {children as any}
             <motion.span
                 className="absolute rounded-full"
                 style={{
@@ -510,7 +510,7 @@ export function FloatAnimation({
                 ease: 'easeInOut',
             }}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -542,7 +542,7 @@ export function FadeInStagger({
                 },
             }}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -563,7 +563,7 @@ export function FadeInStaggerItem({
                 },
             }}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -583,7 +583,7 @@ export function PageTransition({ children, className = '' }: PageTransitionProps
             transition={{ duration: 0.5, ease: EASE_EXPO_OUT }}
             className={className}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
@@ -598,7 +598,7 @@ interface ShineEffectProps {
 export function ShineEffect({ children, className = '' }: ShineEffectProps) {
     return (
         <div className={`card-shine ${className}`}>
-            {children}
+            {children as any}
         </div>
     )
 }
@@ -619,7 +619,7 @@ export function PressScale({ children, className = '', pressScale = 0.97 }: Pres
             whileTap={{ scale: pressScale }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         >
-            {children}
+            {children as any}
         </motion.div>
     )
 }
