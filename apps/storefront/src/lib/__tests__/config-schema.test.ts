@@ -238,7 +238,7 @@ describe("Config Schema Alignment (Governance Contract)", () => {
 
   describe("Governance Contract integrity", () => {
     it("contract has expected structure", () => {
-      expect(contract.$schema).toBe("governance-contract/v2");
+      expect(contract.$schema).toBe("governance-contract/v3");
       expect(contract.flags.count).toBeGreaterThanOrEqual(43);
       expect(contract.limits.count).toBeGreaterThanOrEqual(27);
       expect(contract.modules.count).toBeGreaterThanOrEqual(10);

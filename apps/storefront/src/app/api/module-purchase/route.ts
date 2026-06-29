@@ -1,7 +1,7 @@
 /**
  * POST /api/module-purchase
  *
- * Proxies a module checkout request to BSWEB's /api/module-checkout.
+ * Resolves a semantic commercial product and requests checkout from BSWEB.
  * This keeps the purchase flow in-panel (Option A) — the owner clicks
  * "Contratar", we create a Stripe Checkout Session via BSWEB, and redirect.
  *
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { module_key, tier_id } = body;
+    const { module_key, tier_id, currency = "CHF", billing_interval } = body;
 
     if (!module_key || typeof module_key !== "string") {
       return NextResponse.json(
@@ -77,6 +77,19 @@ export async function POST(req: NextRequest) {
         { error: "Invalid module_key" },
         { status: 400 },
       );
+    }
+
+    const targetTier = targetModule.tiers.find((tier) => tier.key === tier_id)
+      ?? (!tier_id ? targetModule.tiers[0] : undefined);
+    if (!targetTier) {
+      return NextResponse.json({ error: "Invalid module tier" }, { status: 400 });
+    }
+    const selectedPrice = targetTier.prices.find(
+      (price) => price.currency === String(currency).toUpperCase()
+        && (billing_interval === undefined || price.interval === billing_interval),
+    );
+    if (!selectedPrice) {
+      return NextResponse.json({ error: "Commercial price is not available" }, { status: 409 });
     }
 
     if (targetModule.requires && targetModule.requires.length > 0) {
@@ -109,8 +122,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Forward to BSWEB module-checkout endpoint
-    const res = await fetch(`${BSWEB_URL}/api/module-checkout`, {
+    const res = await fetch(`${BSWEB_URL}/api/commercial-checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -118,8 +130,10 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         tenant_id: tenantContext.tenantId,
-        module_key,
-        tier_id: tier_id || undefined,
+        product_key: targetTier.commercial_product_key,
+        currency: selectedPrice.currency,
+        billing_interval: selectedPrice.interval,
+        idempotency_key: crypto.randomUUID(),
         success_url: `${origin}/${locale}/panel/ajustes?tab=suscripcion&module_purchased=${encodeURIComponent(module_key)}`,
         cancel_url: `${origin}/${locale}/panel/ajustes?tab=suscripcion`,
       }),

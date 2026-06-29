@@ -36,6 +36,11 @@ export interface GovernanceContract {
         keys: string[]
         catalog: ModuleCatalogEntry[]
     }
+    commercial_catalog: {
+        revision: number
+        currencies: string[]
+        products: CommercialProductEntry[]
+    }
     pricing: {
         maintenance_chf_month: number
         web_base_chf_onetime: number
@@ -57,9 +62,29 @@ export interface ModuleCatalogEntry {
 export interface ModuleTierEntry {
     key: string
     name: string
+    commercial_product_key: string
+    prices: CommercialPriceEntry[]
     price_chf: number
     features: string[]
     recommended: boolean
+}
+
+export interface CommercialPriceEntry {
+    currency: string
+    interval: 'month' | 'year' | null
+    amount_minor: number
+    tax_behavior: 'inclusive'
+}
+
+export interface CommercialProductEntry {
+    product_key: string
+    product_type: 'web_base' | 'maintenance' | 'module'
+    billing_model: 'recurring' | 'one_time'
+    access_policy: 'subscription' | 'permanent' | 'fixed_duration'
+    access_duration_days: number | null
+    name: string
+    description: string | null
+    prices: CommercialPriceEntry[]
 }
 
 export default contract

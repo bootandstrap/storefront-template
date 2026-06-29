@@ -25,7 +25,7 @@ describe('POST /api/module-purchase', () => {
         mockSingle.mockResolvedValue({ data: { tenant_id: 'tenant-1', role: 'owner' } })
     })
 
-    it('maps checkout_url -> url and forwards tier_id + internal token', async () => {
+    it('maps checkout_url -> url and forwards a semantic product key', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
@@ -43,7 +43,7 @@ describe('POST /api/module-purchase', () => {
             },
             body: JSON.stringify({
                 module_key: 'crm',
-                tier_id: 'tier-abc',
+                tier_id: 'basic',
             }),
         })
 
@@ -57,9 +57,11 @@ describe('POST /api/module-purchase', () => {
         const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
         const body = JSON.parse(String(options?.body))
 
-        expect(body.tier_id).toBe('tier-abc')
-        expect(body.tier).toBeUndefined()
+        expect(fetchMock.mock.calls[0]?.[0]).toBe('https://control.example.com/api/commercial-checkout')
+        expect(body.product_key).toMatch(/^module\.crm\./)
+        expect(body.currency).toBe('CHF')
+        expect(body).not.toHaveProperty('tier_id')
+        expect(body.idempotency_key).toMatch(/^[0-9a-f-]{36}$/)
         expect((options?.headers as Record<string, string>)['x-bns-internal-token']).toBe('test-internal-token')
     })
 })
-

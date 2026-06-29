@@ -15,6 +15,8 @@ const sampleModule: ModuleCatalogEntry = {
         {
             key: 'basic',
             name: 'Basic',
+            commercial_product_key: 'module.chatbot.basic',
+            prices: [{ currency: 'CHF', interval: 'month', amount_minor: 2000, tax_behavior: 'inclusive' }],
             price_chf: 20,
             features: ['Widget web', '500 mensajes/mes'],
             recommended: false,
