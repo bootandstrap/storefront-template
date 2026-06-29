@@ -1,6 +1,6 @@
 {
   "$schema": "governance-contract/v3",
-  "generated_at": "2026-06-28T16:31:37.305Z",
+  "generated_at": "2026-06-29T11:50:44.065Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
@@ -1743,7 +1743,7 @@
     ]
   },
   "commercial_catalog": {
-    "revision": 3,
+    "revision": 4,
     "currencies": [
       "CHF",
       "EUR"
