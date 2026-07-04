@@ -78,6 +78,9 @@ describe('shared package publication contract', () => {
         expect(workflow).toContain("branches: [main]")
         expect(workflow).toContain("github.event_name == 'push'")
         expect(workflow).toContain("github.event_name == 'workflow_dispatch'")
+        expect(workflow).toContain(
+            "github.repository == 'bootandstrap/storefront-template'"
+        )
     })
 
     it('builds platform-contract before type-checking its tenant-context consumer', () => {

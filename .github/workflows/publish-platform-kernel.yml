@@ -57,7 +57,9 @@ jobs:
   publish:
     name: Version & Publish kernel packages
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.repository == 'bootandstrap/storefront-template' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
