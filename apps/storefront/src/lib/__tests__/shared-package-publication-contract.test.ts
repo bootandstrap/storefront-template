@@ -103,12 +103,13 @@ describe('shared package publication contract', () => {
     })
 
     it.each(['build-medusa.yml', 'docker-publish.yml'])(
-        '%s authenticates to GHCR with the scoped Actions token',
+        '%s prefers the source package credential with an Actions-token fallback',
         (workflowName) => {
             const workflow = readWorkflow(workflowName)
 
-            expect(workflow).toContain('password: ${{ secrets.GITHUB_TOKEN }}')
-            expect(workflow).not.toContain('secrets.GHCR_TOKEN')
+            expect(workflow).toContain(
+                'password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}'
+            )
         }
     )
 })
