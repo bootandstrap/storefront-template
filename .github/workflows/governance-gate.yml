@@ -14,6 +14,7 @@
 name: Governance Quality Gate
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main, develop]
   push:
@@ -22,6 +23,7 @@ on:
       - 'packages/shared/**'
       - 'apps/storefront/src/lib/governance-contract.json'
       - 'apps/medusa/src/**'
+      - '.github/workflows/governance-gate.yml'
 
 concurrency:
   group: governance-gate-${{ github.ref }}
