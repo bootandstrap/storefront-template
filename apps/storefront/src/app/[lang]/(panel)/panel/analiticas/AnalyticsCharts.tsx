@@ -15,18 +15,17 @@
  * @module AnalyticsCharts
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import PanelChart, { makeLineDataset, makeBarDataset, makeDoughnutDataset } from '@/components/panel/PanelChart'
 import {
     type CurrencyContext,
-    type CurrencyRevenue,
     formatAmount,
     getCurrencyChartColor,
     getCurrencySymbol,
 } from '@/lib/currency-engine'
 import type { MultiCurrencyRevenue, TopProduct } from '@/lib/medusa/admin-analytics'
 import type { ChartOptions, TooltipItem } from 'chart.js'
-import { BarChart3, PieChart, TrendingUp, Award } from 'lucide-react'
+import { PieChart, TrendingUp, Award } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -154,7 +153,10 @@ function RevenueTrendChart({
     labels: { revenue: string; orders: string; chartTitle: string }
 }) {
     const [activeCurrency, setActiveCurrency] = useState<string | null>(null)
-    const displayCurrencies = activeCurrency ? [activeCurrency] : currencyCtx.active
+    const displayCurrencies = useMemo(
+        () => (activeCurrency ? [activeCurrency] : currencyCtx.active),
+        [activeCurrency, currencyCtx.active],
+    )
 
     const chartData = useMemo(() => {
         const dayLabels = revenueByDay.map(d => {
@@ -202,7 +204,16 @@ function RevenueTrendChart({
         }
 
         return { labels: dayLabels, datasets }
-    }, [revenueByDay, ordersByDay, displayCurrencies, currencyCtx.isMulti, lang, labels])
+    }, [
+        revenueByDay,
+        ordersByDay,
+        displayCurrencies,
+        activeCurrency,
+        currencyCtx.isMulti,
+        currencyCtx.primary,
+        lang,
+        labels,
+    ])
 
     const options = useMemo((): ChartOptions<'bar'> => ({
         interaction: { intersect: false, mode: 'index' as const },

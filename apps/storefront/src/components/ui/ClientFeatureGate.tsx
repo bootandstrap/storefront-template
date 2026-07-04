@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getModuleActivationUrl, FEATURE_GATE_MAP } from '@/lib/feature-gate-config'
 import { useI18n } from '@/lib/i18n/provider'
-import { Sparkles, ArrowRight, Zap, Shield, X, Info } from 'lucide-react'
+import { Sparkles, ArrowRight, Zap, Shield, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClientFeatureGateProps {

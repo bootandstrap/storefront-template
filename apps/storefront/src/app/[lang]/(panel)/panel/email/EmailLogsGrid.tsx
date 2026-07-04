@@ -16,6 +16,8 @@ const STATUS_COLORS: Record<string, string> = {
     failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 }
 
+const EMAIL_STATUSES = ['all', 'sent', 'delivered', 'opened', 'clicked', 'bounced', 'failed'] as const
+
 interface Props {
     logsData: { logs: EmailLogEntry[]; count: number }
     queryParams: {
@@ -33,7 +35,7 @@ export default function EmailLogsGrid({ logsData, queryParams }: Props) {
     const [search, setSearch] = useState(queryParams.search)
     const [statusFilter, setStatusFilter] = useState(queryParams.status)
     const [isPending, setIsPending] = useState(false)
-    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+    const searchParamsString = typeof window !== 'undefined' ? window.location.search : ''
 
     // ── Universal Persistence ───────────────────────────────────────────
     useEffect(() => {
@@ -59,7 +61,8 @@ export default function EmailLogsGrid({ logsData, queryParams }: Props) {
 
     useEffect(() => {
         // Automatically save meaningful query parameters
-        if (searchParams) {
+        if (searchParamsString) {
+            const searchParams = new URLSearchParams(searchParamsString)
             const currentSearch = searchParams.get('q') || ''
             const currentStatus = searchParams.get('status') || 'all'
             const newPage = searchParams.get('page') || '1'
@@ -67,7 +70,7 @@ export default function EmailLogsGrid({ logsData, queryParams }: Props) {
             sessionStorage.setItem('email_logs_status', currentStatus)
             sessionStorage.setItem('email_logs_page', newPage)
         }
-    }, [searchParams?.toString()])
+    }, [searchParamsString])
 
     // Apply filters
     const applyFilters = useCallback((newSearch?: string, newStatus?: string, newPage: number = 1) => {
@@ -97,20 +100,20 @@ export default function EmailLogsGrid({ logsData, queryParams }: Props) {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl p-4">
                 
                 <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-                    {['all', 'sent', 'delivered', 'opened', 'clicked', 'bounced', 'failed'].map((s) => (
+                    {EMAIL_STATUSES.map((status) => (
                         <button
-                            key={s}
+                            key={status}
                             onClick={() => {
-                                setStatusFilter(s as any)
-                                applyFilters(undefined, s, 1)
+                                setStatusFilter(status)
+                                applyFilters(undefined, status, 1)
                             }}
                             className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
-                                statusFilter === s
+                                statusFilter === status
                                     ? 'bg-brand text-white shadow-md'
                                     : 'text-tx-sec hover:bg-sf-1'
                             }`}
                         >
-                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
                         </button>
                     ))}
                 </div>

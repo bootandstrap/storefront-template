@@ -14,7 +14,7 @@
  * Persists via server actions (not fetch) for reliable auth propagation.
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import WelcomeStep from './WelcomeStep'
@@ -22,10 +22,8 @@ import ModuleMatrixStep from './ModuleMatrixStep'
 import LanguageStep from './LanguageStep'
 import ModuleConfigStep from './ModuleConfigStep'
 import CompletionStep from './CompletionStep'
-import {
-    completeOnboardingAction,
-    completeTourAction,
-} from '@/app/[lang]/(panel)/panel/actions'
+import { useLocalStorageFlag } from '@/lib/client-runtime'
+import { completeOnboardingAction } from '@/app/[lang]/(panel)/panel/actions'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +53,6 @@ export interface OnboardingWizardProps {
 // ---------------------------------------------------------------------------
 
 const STEP_LABELS = ['welcome', 'modules', 'language', 'config', 'complete'] as const
-type StepKey = (typeof STEP_LABELS)[number]
 
 // ---------------------------------------------------------------------------
 // Animation variants (directional slide)
@@ -116,15 +113,7 @@ export default function OnboardingWizard({
         [translations]
     )
 
-    // Check localStorage on mount — if already completed, don't show
-    const [dismissed, setDismissed] = useState(false)
-    useEffect(() => {
-        try {
-            if (localStorage.getItem('bns-onboarding-done') === '1') {
-                setDismissed(true)
-            }
-        } catch { /* noop */ }
-    }, [])
+    const dismissed = useLocalStorageFlag('bns-onboarding-done')
 
     const goNext = useCallback(() => {
         setDirection(1)
@@ -181,7 +170,6 @@ export default function OnboardingWizard({
         router.refresh()
     }, [isCompleting, router])
 
-    // If localStorage says done, don't render
     if (dismissed) return null
 
     // If tour was requested, we need the PanelTourDriver

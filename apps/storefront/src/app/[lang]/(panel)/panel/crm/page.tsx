@@ -19,6 +19,10 @@ import CRMClient from './CRMClient'
 
 export const dynamic = 'force-dynamic'
 
+function getRecentCustomerCutoff(days: number) {
+    return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
     const { lang } = await params
     const dictionary = await getDictionary(lang as Locale)
@@ -83,13 +87,13 @@ export default async function CRMPage({
     }
 
     // Build segments from REAL customer data only
+    const recentCustomerCutoff = getRecentCustomerCutoff(30)
     const segments = {
         total: count,
         withOrders: customers.filter(c => c.orderCount > 0).length,
         recent: customers.filter(c => {
             if (!c.createdAt) return false
-            const days30Ago = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            return new Date(c.createdAt) > days30Ago
+            return new Date(c.createdAt) > recentCustomerCutoff
         }).length,
     }
 
@@ -152,4 +156,3 @@ export default async function CRMPage({
         </ModuleShell>
     )
 }
-

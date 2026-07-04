@@ -1,0 +1,517 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "version": "1.0",
+    "description": "Table ownership map for BootandStrap platform. Used by CI to enforce migration boundaries.",
+    "tables": {
+        "tenants": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Provisioned via provision_tenant() RPC"
+        },
+        "config": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Owner Panel can update branding/WhatsApp/store config"
+        },
+        "feature_flags": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false
+        },
+        "plan_limits": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false
+        },
+        "plan_presets": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "tenant_deletion_runs": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Durable terminal-deletion workflow ledger"
+        },
+        "commercial_products": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Canonical governance commercial product catalog"
+        },
+        "commercial_prices": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Versioned governance prices projected to payment providers"
+        },
+        "catalog_change_sets": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "catalog_change_items": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "stripe_catalog_mappings": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "catalog_sync_runs": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "catalog_sync_items": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false
+        },
+        "tenant_product_grants": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Control-plane entitlement projection consumed by tenant runtimes"
+        },
+        "audit_log": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Immutable append-only from SuperAdmin actions"
+        },
+        "tenant_errors": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Storefront inserts errors; SuperAdmin reads and resolves"
+        },
+        "profiles": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Created by Supabase Auth trigger + managed by SuperAdmin"
+        },
+        "stripe_webhook_events": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "tenant_medusa_scope": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "whatsapp_templates": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "customers": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "leads": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "modules": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true,
+            "notes": "Catalog managed by SuperAdmin, read by storefront"
+        },
+        "module_tiers": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "module_rules": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "plans": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "subscriptions": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "subscription_modules": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "cart_sessions": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "cart_items": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "abandoned_cart_notifications": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "module_orders": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "module_order_items": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "module_order_payments": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "order_status_history": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "promotions": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "promotion_redemptions": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": false
+        },
+        "module_reviews": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Customers write; SuperAdmin moderates"
+        },
+        "review_votes": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true
+        },
+        "module_wishlists": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true
+        },
+        "testimonials": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "analytics_events": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true,
+            "notes": "Storefront writes events, Control Plane manages schema (tenant_id). Shared because both planes need DDL access."
+        },
+        "analytics_daily_summary": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true,
+            "notes": "Storefront aggregates daily stats, Control Plane manages schema (tenant_id). Shared because both planes need DDL access."
+        },
+        "chat_settings": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "chat_usage": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true
+        },
+        "chat_logs": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true
+        },
+        "chat_daily_stats": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true
+        },
+        "content_blocks": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "pricing": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "offers": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "cp_writes": true
+        },
+        "carousel_slides": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true,
+            "notes": "Owner Panel manages carousel content"
+        },
+        "cms_pages": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true,
+            "notes": "Owner Panel manages CMS pages"
+        },
+        "project_milestones": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true
+        },
+        "audit_logs": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Legacy plural alias for audit_log — deprecated"
+        },
+        "revalidation_queue": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Async cache invalidation queue — SuperAdmin enqueues, worker processes"
+        },
+        "site_settings": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Legal and site configuration — managed by SuperAdmin"
+        },
+        "site_feature_flags": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Platform-level feature flags (distinct from per-tenant feature_flags)"
+        },
+        "web_vitals_events": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Web performance metrics from corporate site"
+        },
+        "product_wishlists": {
+            "owner": "data-plane",
+            "readers": [],
+            "dp_writes": true,
+            "notes": "Customer product favorites (Medusa product IDs)"
+        },
+        "newsletter_subscribers": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Footer newsletter signups"
+        },
+        "return_requests": {
+            "owner": "data-plane",
+            "readers": [
+                "control-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Customer-initiated return requests"
+        },
+        "module_flag_map": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Maps module+tier to feature flags and plan limits"
+        },
+        "project_phases": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "6-phase project lifecycle, auto-created on tenant provisioning"
+        },
+        "async_jobs": {
+            "owner": "control-plane",
+            "readers": [],
+            "dp_writes": false,
+            "notes": "Async job queue for deploy, email, revalidate, reconcile operations"
+        },
+        "system_defaults": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": false,
+            "notes": "Centralized default values for Web Base plan limits"
+        },
+        "email_automation_config": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true,
+            "notes": "Email automation settings — schema managed by CP, data written by DP"
+        },
+        "email_preferences": {
+            "owner": "control-plane",
+            "readers": [
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "notes": "Owner email preferences — schema managed by CP, data updated by DP"
+        },
+        "email_log": {
+            "owner": "shared",
+            "readers": [
+                "control-plane",
+                "data-plane"
+            ],
+            "dp_writes": true,
+            "cp_writes": true,
+            "notes": "Email send history — schema managed by CP, data written by DP"
+        }
+    }
+}

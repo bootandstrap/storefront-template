@@ -11,7 +11,7 @@ export interface EmailLogEntry {
     provider: string | null
     message_id: string | null
     error_detail: string | null
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
     sent_at: string
 }
 
@@ -26,8 +26,7 @@ export async function getEmailLogs(
 ): Promise<{ logs: EmailLogEntry[]; count: number }> {
     const supabase = createAdminClient()
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
         .from('email_log')
         .select('*', { count: 'exact' })
         .eq('tenant_id', tenantId)

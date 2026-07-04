@@ -6,7 +6,6 @@
  */
 'use client'
 
-import { useEffect, useState } from 'react'
 import { WifiOff, RefreshCw, CheckCircle2, AlertCircle, CloudUpload } from 'lucide-react'
 import type { SyncStatus } from '@/lib/pos/offline/useOfflineSync'
 
@@ -27,22 +26,9 @@ export default function POSOfflineBanner({
     onSyncNow,
     labels,
 }: POSOfflineBannerProps) {
-    const [visible, setVisible] = useState(false)
-    const [dismissed, setDismissed] = useState(false)
+    const visible = !isOnline || syncStatus === 'syncing' || syncStatus === 'error' || pendingCount > 0
 
-    // Show banner when offline or syncing or has pending sales
-    useEffect(() => {
-        if (!isOnline || syncStatus === 'syncing' || pendingCount > 0) {
-            setVisible(true)
-            setDismissed(false)
-        } else if (syncStatus === 'synced' && isOnline) {
-            // Show "synced" briefly then hide
-            const timer = setTimeout(() => setVisible(false), 3000)
-            return () => clearTimeout(timer)
-        }
-    }, [isOnline, syncStatus, pendingCount])
-
-    if (!visible || dismissed) return null
+    if (!visible) return null
 
     // ── State configs ──
     const config = !isOnline

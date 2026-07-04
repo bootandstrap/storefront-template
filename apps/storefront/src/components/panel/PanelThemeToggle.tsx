@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useHydrated } from '@/lib/client-runtime'
 
 /**
  * PanelThemeToggle — SOTA-styled dark mode toggle for the Owner Panel.
@@ -13,9 +13,7 @@ import { useEffect, useState } from 'react'
  */
 export default function PanelThemeToggle() {
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => setMounted(true), [])
+    const mounted = useHydrated()
 
     // Prevent hydration mismatch
     if (!mounted) return <div className="w-8 h-8" />

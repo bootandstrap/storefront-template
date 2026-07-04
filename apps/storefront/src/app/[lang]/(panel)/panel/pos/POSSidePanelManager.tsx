@@ -80,7 +80,6 @@ export default function POSSidePanelManager({
     canSplitPayment,
     canLoyalty,
     canEndOfDay,
-    currentShift,
     onShiftChange,
     shiftHistory,
     refundOrderId,

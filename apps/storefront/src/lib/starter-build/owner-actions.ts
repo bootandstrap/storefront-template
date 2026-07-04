@@ -2,6 +2,7 @@
 
 import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import type {
     StarterRequestAsset,
@@ -75,9 +76,9 @@ function getNextOwnerRequestStatus(currentStatus: StarterRequestStatus): Starter
     return currentStatus === 'completed' ? 'completed' : 'submitted'
 }
 
-async function getStarterRequestForOwner(requestId: string): Promise<StarterOwnerRequestRow & { db: any }> {
+async function getStarterRequestForOwner(requestId: string): Promise<StarterOwnerRequestRow & { db: SupabaseClient }> {
     const { supabase, tenantId } = await requirePanelAuth()
-    const db = supabase as any
+    const db = supabase as unknown as SupabaseClient
 
     const { data, error } = await db
         .from('starter_project_requests')
@@ -128,7 +129,7 @@ function validateUploadFiles(request: StarterOwnerRequestRow, files: File[]) {
     }
 }
 
-async function buildSignedAssets(db: any, assets: StarterRequestAsset[]) {
+async function buildSignedAssets(db: SupabaseClient, assets: StarterRequestAsset[]) {
     if (assets.length === 0) return assets
 
     const paths = assets.map((asset) => asset.path)

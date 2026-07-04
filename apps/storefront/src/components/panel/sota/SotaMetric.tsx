@@ -26,7 +26,6 @@ export function SotaMetric({
     label,
     value,
     icon,
-    isCurrency,
     locale = 'es',
     href,
     subtitle,

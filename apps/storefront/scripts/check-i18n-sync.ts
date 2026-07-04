@@ -113,7 +113,7 @@ function main() {
             totalIssues += issues.length
 
             if (process.argv.includes('--fix')) {
-                let fixedDict = { ...loadDict(locale) }
+                const fixedDict = { ...loadDict(locale) }
                 // Remove extra
                 for (const issue of extra) {
                     delete fixedDict[issue.key]

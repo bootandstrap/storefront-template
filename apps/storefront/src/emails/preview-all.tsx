@@ -95,13 +95,14 @@ async function main() {
         for (const template of templates) {
             const fileName = `${template.name}-${layout.name}.html`
             try {
+                const PreviewComponent = template.Component as unknown as React.ComponentType<Record<string, unknown>>
                 const html = await render(
-                    React.createElement(template.Component, {
+                    React.createElement(PreviewComponent, {
                         Layout: layout.Component,
                         storeName: 'CampiFruit',
                         storeUrl: 'https://campifruit.com',
                         brandColor: '#2D5016',
-                    } as any)
+                    })
                 )
                 fs.writeFileSync(path.join(outDir, fileName), html)
                 indexHtml += `  <div class="card"><a href="${fileName}" target="_blank">

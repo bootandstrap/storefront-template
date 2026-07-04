@@ -62,7 +62,6 @@ export async function generateMetadata({
     }
 }
 
-
 export default async function ShopLayout({
     children,
     params,
@@ -249,4 +248,3 @@ export default async function ShopLayout({
         </ThemeProvider>
     )
 }
-

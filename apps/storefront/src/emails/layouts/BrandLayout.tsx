@@ -25,7 +25,6 @@ export default function BrandLayout({
     const lighter = adjustBrightness(brandColor, 15)
     const darker = adjustBrightness(brandColor, -15)
     const veryLight = adjustBrightness(brandColor, 85)
-    const accentFaint = hexToRgba(brandColor, 0.06)
     const accentMedium = hexToRgba(brandColor, 0.1)
 
     return (

@@ -6,7 +6,6 @@
  * SOTA 2026: ModuleShell for locked state, fullscreen POSClient when active.
  */
 
-import { getConfigForTenant } from '@/lib/config'
 import type { StoreConfig } from '@/lib/config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories } from '@/lib/medusa/admin'

@@ -1,4 +1,4 @@
-import { Heading, Text, Section, Hr } from '@react-email/components'
+import { Heading, Text, Section } from '@react-email/components'
 import MinimalLayout from './layouts/MinimalLayout'
 import type { LayoutComponent } from './layouts/types'
 import * as React from 'react'

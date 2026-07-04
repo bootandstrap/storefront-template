@@ -12,6 +12,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { adjustStockLevel } from '@/lib/medusa/admin-inventory'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
@@ -46,9 +47,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true })
     } catch (error) {
         logger.error('[inventory-update] Error:', error)
-        return NextResponse.json(
-            { error: 'Failed to update stock' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(error)
     }
 }

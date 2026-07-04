@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageCircle, Phone, Mail, MapPin } from 'lucide-react'
+import { Phone, Mail, MapPin } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'

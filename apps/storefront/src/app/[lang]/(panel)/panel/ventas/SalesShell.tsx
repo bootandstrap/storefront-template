@@ -16,7 +16,7 @@ interface SalesShellProps {
     children: React.ReactNode
 }
 
-export default function SalesShell({ tabs, activeTab, lang, children }: SalesShellProps) {
+export default function SalesShell({ tabs, activeTab, children }: SalesShellProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()

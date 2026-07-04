@@ -45,7 +45,10 @@ export default function DashboardChart({
     
     // Active currency toggle for multi-currency view
     const [activeCurrency, setActiveCurrency] = useState<string | null>(null)
-    const displayCurrencies = activeCurrency ? [activeCurrency] : currencyCtx.active
+    const displayCurrencies = useMemo(
+        () => activeCurrency ? [activeCurrency] : currencyCtx.active,
+        [activeCurrency, currencyCtx.active],
+    )
 
     // Build chart data with per-currency revenue lines
     const chartData = useMemo(() => {

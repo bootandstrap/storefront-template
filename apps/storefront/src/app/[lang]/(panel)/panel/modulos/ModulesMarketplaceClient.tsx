@@ -37,7 +37,7 @@ import ModuleCheckoutButton from '@/components/panel/ModuleCheckoutButton'
 import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoGrid'
 import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
-import { PageEntrance, CountUp } from '@/components/panel/PanelAnimations'
+import { PageEntrance } from '@/components/panel/PanelAnimations'
 import dynamic from 'next/dynamic'
 import type { SkillTreeModule } from '@/components/panel/SkillTree'
 

@@ -20,6 +20,32 @@ interface CompletionStepProps {
     t: (key: string, fallback?: string) => string
 }
 
+const COMPLETION_CONFETTI_COLORS = [
+    '#22c55e',
+    '#3b82f6',
+    '#f59e0b',
+    '#ec4899',
+    '#8b5cf6',
+    '#06b6d4',
+    '#ef4444',
+    '#10b981',
+] as const
+
+function getDeterministicFraction(seed: number) {
+    const raw = Math.sin(seed * 12.9898) * 43758.5453
+    return raw - Math.floor(raw)
+}
+
+const COMPLETION_CONFETTI_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+    left: 30 + getDeterministicFraction(i + 1) * 40,
+    y: -100 - getDeterministicFraction(i + 21) * 200,
+    x: (getDeterministicFraction(i + 41) - 0.5) * 300,
+    rotate: getDeterministicFraction(i + 61) * 720,
+    duration: 1.5 + getDeterministicFraction(i + 81),
+    delay: getDeterministicFraction(i + 101) * 0.3,
+    color: COMPLETION_CONFETTI_COLORS[i % COMPLETION_CONFETTI_COLORS.length],
+}))
+
 export default function CompletionStep({
     storeName,
     activeModuleCount,
@@ -83,30 +109,27 @@ export default function CompletionStep({
             {/* Confetti particles */}
             {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    {Array.from({ length: 20 }).map((_, i) => (
+                    {COMPLETION_CONFETTI_PARTICLES.map((particle, i) => (
                         <motion.div
                             key={i}
                             className="absolute w-2 h-2 rounded-full"
                             style={{
-                                left: `${30 + Math.random() * 40}%`,
+                                left: `${particle.left}%`,
                                 top: '40%',
-                                backgroundColor: [
-                                    '#22c55e', '#3b82f6', '#f59e0b', '#ec4899',
-                                    '#8b5cf6', '#06b6d4', '#ef4444', '#10b981'
-                                ][i % 8],
+                                backgroundColor: particle.color,
                             }}
                             initial={{ y: 0, x: 0, opacity: 1, scale: 1 }}
                             animate={{
-                                y: -100 - Math.random() * 200,
-                                x: (Math.random() - 0.5) * 300,
+                                y: particle.y,
+                                x: particle.x,
                                 opacity: 0,
                                 scale: 0,
-                                rotate: Math.random() * 720,
+                                rotate: particle.rotate,
                             }}
                             transition={{
-                                duration: 1.5 + Math.random(),
+                                duration: particle.duration,
                                 ease: 'easeOut',
-                                delay: Math.random() * 0.3,
+                                delay: particle.delay,
                             }}
                         />
                     ))}

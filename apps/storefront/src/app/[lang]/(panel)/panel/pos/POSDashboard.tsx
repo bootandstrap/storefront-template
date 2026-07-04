@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react
 import {
     X, TrendingUp, ShoppingCart, Receipt, Banknote,
     ChevronLeft, ChevronRight, BarChart3, Package, ArrowUpRight,
-    ArrowDownRight, Calendar, Download,
+    ArrowDownRight, Calendar,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { DailyStats, PaymentMethod } from '@/lib/pos/pos-config'

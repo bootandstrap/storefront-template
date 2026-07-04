@@ -14,7 +14,6 @@
 import type { Locale } from '.'
 import {
     CURRENCIES as SHARED_CURRENCIES,
-    CURRENCY_SYMBOL_MAP,
     CURRENCY_INTL_MAP,
     type CurrencyInfo,
 } from '@bootandstrap/shared'

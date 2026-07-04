@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { checkLimit, type LimitCheckResult } from '../limits'
+import { checkLimit } from '../limits'
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import type { PlanLimits } from '../config'

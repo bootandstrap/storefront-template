@@ -1,5 +1,4 @@
 import {
-    OWNER_EXPERIENCE_MODES,
     normalizeOwnerExperienceMode,
     type OwnerExperienceMode,
 } from '@bootandstrap/platform-contract'
@@ -15,7 +14,6 @@ export function isStarterCollaborativeMode(config: Record<string, unknown> | nul
 export async function resolveOwnerExperienceModeForTenant({
     tenantId,
     supabase,
-    config,
 }: {
     tenantId?: string | null
     supabase?: { from: (table: string) => { select: (columns: string) => { eq: (column: string, value: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null, error: { message?: string } | null }> } } } }

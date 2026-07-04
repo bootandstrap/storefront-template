@@ -17,7 +17,6 @@ import {
     type CurrencyAwareOrder,
     sumRevenueByCurrency,
     revenueByDayAndCurrency,
-    groupOrdersByCurrency,
 } from '@/lib/currency-engine'
 
 // ---------------------------------------------------------------------------
@@ -109,7 +108,7 @@ async function fetchOrdersForRange(
 
     // Filter out canceled orders from revenue calculations
     const regularOrders = (regularRes.data?.orders ?? []).filter(
-        o => (o as any).status !== 'canceled' && (o as any).status !== 'cancelled'
+        o => o.status !== 'canceled' && o.status !== 'cancelled'
     )
 
     // Normalize draft orders to match the regular order shape

@@ -37,7 +37,6 @@ export interface ChatWidgetProps {
 export function ChatWidget({
     locale = 'es',
     tier = 'visitor',
-    userId,
     isEnabled = true,
     businessName = '',
     planMessageLimit,
@@ -182,7 +181,6 @@ export function ChatWidget({
     const handlePromptInjection = (prompt: string) => {
         setInput(prompt)
         // Auto-submit for quick actions
-        const syntheticEvent = { preventDefault: () => { } } as React.FormEvent
         // Set input then submit on next tick
         setTimeout(() => {
             const form = document.querySelector('[data-chat-form]') as HTMLFormElement | null

@@ -99,6 +99,7 @@ describe('panel-route-guards', () => {
                 pos: 'POS',
                 ownerPanel: 'Panel',
                 backToStore: 'Volver',
+                health: 'Salud',
             },
             featureFlags: defaultFlags,
             ownerExperienceMode: 'starter_collaborative',

@@ -10,6 +10,7 @@ import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { updatePromotion, deletePromotion } from '@/lib/medusa/admin-promotions'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function PATCH(
     request: NextRequest,
@@ -31,10 +32,7 @@ export async function PATCH(
         return NextResponse.json({ ok: true })
     } catch (err) {
         logger.error('[api/panel/promotions/[id]] PATCH error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }
 
@@ -57,9 +55,6 @@ export async function DELETE(
         return NextResponse.json({ ok: true })
     } catch (err) {
         logger.error('[api/panel/promotions/[id]] DELETE error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }

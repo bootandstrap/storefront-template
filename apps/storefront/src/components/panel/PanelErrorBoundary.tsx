@@ -12,6 +12,7 @@
  */
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { logger } from '@/lib/logger'
@@ -68,13 +69,13 @@ export default function PanelErrorBoundary({ error, reset }: Props) {
                         <RefreshCw className="w-4 h-4" />
                         Reintentar
                     </button>
-                    <a
+                    <Link
                         href="/panel"
                         className="px-4 py-2.5 text-sm font-medium rounded-xl border border-brd-pri text-tx-sec hover:bg-sf-sec transition-colors flex items-center gap-2"
                     >
                         <Home className="w-4 h-4" />
                         Ir al panel
-                    </a>
+                    </Link>
                 </div>
             </div>
         </motion.div>

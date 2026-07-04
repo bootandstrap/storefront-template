@@ -229,8 +229,9 @@ export default function PanelChart({
 
     // Cleanup on unmount
     useEffect(() => {
+        const chart = chartRef.current
         return () => {
-            chartRef.current?.destroy()
+            chart?.destroy()
         }
     }, [])
 

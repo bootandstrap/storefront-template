@@ -1,6 +1,7 @@
 "use client";
 
 import type { MouseEventHandler, ReactNode } from "react";
+import Image from "next/image";
 import { X as CloseX } from "@untitledui/icons";
 import { Dot } from "@/components/ui/foundations/dot-icon";
 import { cx } from "@/lib/utils/cn";
@@ -277,7 +278,7 @@ export const BadgeWithFlag = <T extends BadgeTypes>(props: BadgeWithFlagProps<T>
 
     return (
         <span className={cx(colors.common, sizes[type][size], colors.styles[color].root)}>
-            <img src={`https://www.untitledui.com/images/flags/${flag}.svg`} className="size-4 max-w-none rounded-full" alt={`${flag} flag`} />
+            <Image src={`https://www.untitledui.com/images/flags/${flag}.svg`} width={16} height={16} unoptimized className="size-4 max-w-none rounded-full" alt={`${flag} flag`} />
             {children}
         </span>
     );
@@ -315,7 +316,7 @@ export const BadgeWithImage = <T extends BadgeTypes>(props: BadgeWithImageProps<
 
     return (
         <span className={cx(colors.common, sizes[type][size], colors.styles[color].root)}>
-            <img src={imgSrc} className="size-4 max-w-none rounded-full" alt="Badge image" />
+            <Image src={imgSrc} width={16} height={16} unoptimized className="size-4 max-w-none rounded-full" alt="Badge image" />
             {children}
         </span>
     );

@@ -13,7 +13,6 @@
 
 import { useState, useCallback } from 'react'
 import {
-    Printer,
     Wifi,
     WifiOff,
     X,
@@ -26,7 +25,6 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePrinterConnection } from '@/lib/pos/usePrinterConnection'
-import { posLabel } from '@/lib/pos/pos-i18n'
 
 type PaperWidth = '80mm' | '58mm'
 

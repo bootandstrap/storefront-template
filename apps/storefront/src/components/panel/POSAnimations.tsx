@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion'
+import { motion, useSpring, useTransform } from 'framer-motion'
 
 // ─── Animated Number (spring counter) ───────────────────────────────────────
 
@@ -233,4 +233,3 @@ export function ConfettiBurst({ trigger, count = 80, className = '' }: ConfettiB
 
     return <div ref={containerRef} className={`pointer-events-none absolute inset-0 ${className}`} aria-hidden />
 }
-

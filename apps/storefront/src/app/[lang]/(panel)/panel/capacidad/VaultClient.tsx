@@ -138,7 +138,41 @@ export default function VaultClient({
         setLoading(false)
     }, [])
 
-    useEffect(() => { fetchData() }, [fetchData])
+    useEffect(() => {
+        let active = true
+
+        const loadData = async () => {
+            setLoading(true)
+            try {
+                const [storageRes, backupsRes] = await Promise.all([
+                    fetch('/api/panel/vault'),
+                    fetch('/api/panel/vault/backups'),
+                ])
+
+                if (!active) return
+
+                if (storageRes.ok) {
+                    const data = await storageRes.json()
+                    if (active) setUsage(data.usage)
+                }
+
+                if (backupsRes.ok) {
+                    const data = await backupsRes.json()
+                    if (active) setBackups(data.backups ?? [])
+                }
+            } catch {
+                // silently fail
+            }
+
+            if (active) setLoading(false)
+        }
+
+        void loadData()
+
+        return () => {
+            active = false
+        }
+    }, [])
 
     const triggerBackup = useCallback(async () => {
         setBackupInProgress(true)

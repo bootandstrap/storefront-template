@@ -246,7 +246,6 @@ export async function executeRestore(
     const productsResult = await restoreProducts(backup.data.products, scope)
     errors.push(...productsResult.errors)
 
-    const totalCreated = categoriesResult.created + productsResult.created
     const totalFailed = categoriesResult.failed + productsResult.failed
 
     return {

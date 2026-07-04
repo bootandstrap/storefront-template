@@ -135,7 +135,7 @@ export async function getAuthOrder(id: string): Promise<MedusaOrder | null> {
         // Flatten payment_collections into payments for backward compat
         const order = res.order
         if (order?.payment_collections?.length && (!order.payments || order.payments.length === 0)) {
-            order.payments = order.payment_collections.flatMap(pc => (pc as any).payments ?? [])
+            order.payments = order.payment_collections.flatMap(pc => pc.payments ?? [])
         }
         return order
     } catch {

@@ -16,6 +16,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useToast } from '@/components/ui/Toaster'
 import { Mail, Send, Clock, BarChart3, ShoppingCart, Star, Palette, Lock, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -167,12 +168,12 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                             <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
                                 {labels.providerWarning}
                             </p>
-                            <a
+                            <Link
                                 href="/panel/ajustes?tab=tienda"
                                 className="text-sm text-brand hover:underline mt-1 inline-block"
                             >
                                 {labels.providerWarningAction} →
-                            </a>
+                            </Link>
                         </div>
                     </motion.div>
                 )}
@@ -356,12 +357,12 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                     <span className="text-tx-muted">
                                         ⬆️ Amplía a 500/mes con Email Marketing
                                     </span>
-                                    <a
+                                    <Link
                                         href="/panel/modulos"
                                         className="text-brand hover:underline font-medium"
                                     >
                                         Ver módulo →
-                                    </a>
+                                    </Link>
                                 </div>
                             )}
                             {stats.monthly_limit > 0 && stats.monthly_limit < 10000 && (
@@ -369,12 +370,12 @@ export default function EmailClient({ config, stats, flags, hasProvider, labels,
                                     <span className="text-tx-muted">
                                         ⬆️ {stats.monthly_limit < 2000 ? 'Pro: 2.000/mes + automatizaciones' : 'Enterprise: 10.000/mes + dominio propio'}
                                     </span>
-                                    <a
+                                    <Link
                                         href="/panel/modulos"
                                         className="text-brand hover:underline font-medium"
                                     >
                                         Mejorar →
-                                    </a>
+                                    </Link>
                                 </div>
                             )}
                         </motion.div>

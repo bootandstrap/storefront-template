@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePanelAuth } from '@/lib/panel-auth'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const RESEND_API_URL = 'https://api.resend.com'
@@ -113,7 +114,7 @@ export async function GET() {
         })
     } catch (e) {
         logger.error('[email-domain] GET error:', e)
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(e)
     }
 }
 
@@ -223,7 +224,7 @@ export async function POST(req: NextRequest) {
         })
     } catch (e) {
         logger.error('[email-domain] POST error:', e)
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(e)
     }
 }
 
@@ -268,6 +269,6 @@ export async function DELETE() {
         return NextResponse.json({ success: true, message: 'Custom domain removed' })
     } catch (e) {
         logger.error('[email-domain] DELETE error:', e)
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(e)
     }
 }

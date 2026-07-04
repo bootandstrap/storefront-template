@@ -210,7 +210,7 @@ export function getSalesTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
     return tabs.filter(t => t.visible)
 }
 
-export function getSettingsTabs(featureFlags: PanelFeatureFlags): PanelTab[] {
+export function getSettingsTabs(_featureFlags: PanelFeatureFlags): PanelTab[] {
     // Phase 4 (2026): Simplified from 9 → 6 tabs.
     // - 'idiomas' absorbed into tienda via RegionLocalePanel
     // - 'analiticas' moved to dedicated module page

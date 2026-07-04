@@ -1,235 +1,74 @@
-# GEMINI — Tenant Storefront Guide
+# Gemini Adapter — ecommerce-template
 
-> AI agent guide for operating and customizing tenant storefronts.
-> Last updated: 2026-06-25 (runtime/control-plane boundary refresh).
+Workspace harness: `../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md`.
 
-### Agent Rules
+Role: this repo is the **canonical tenant runtime template**. It owns reusable
+storefront, tenant panel and Medusa-integrated runtime behavior. It does not own
+SaaS lifecycle, provisioning authority, recovery policy or billing control-plane
+semantics.
 
-- **NO QUICK FIXES**: Never use graceful fallbacks, try/catch band-aids, or silent failures as a substitute for proper integration. Every feature must be intentionally developed, fully wired, and production-complete. If a table is needed, create the migration. If a module is needed, register it. No half-measures.
-- **Premium quality only**: Every piece of code must be SOTA, intentionally integrated, and fully functional. No MVPs, no placeholders, no "we'll fix it later".
-- **Programmatic debugging first**: use `tsc`, `vitest`, `curl`, terminal, grep. Write test scripts if needed.
-- **Chrome DevTools MCP second**: only if the issue is runtime/browser-only.
-- **Browser agent LAST RESORT ONLY**: never use browser subagent unless absolutely required.
-- After major CSS/import changes: `./stop.sh && rm -rf apps/storefront/.next apps/storefront/node_modules/.cache && ./dev.sh`
+## Template-first propagation
 
-## 0. Local Dev
+Reusable fixes originate and pass here before propagation to tenant repos.
+Campifruit may reproduce a runtime defect, but it does not become the source of
+the generic fix. Record source verification separately from runtime proof.
 
-Full guide: [`docs/guides/DEVELOPMENT.md`](docs/guides/DEVELOPMENT.md).
+If the workspace harness is unavailable, preserve this boundary as the fail-safe.
 
-```bash
-pnpm install
-npx tsx scripts/seed-demo.ts        # Seed demo data
-./dev.sh                             # ALWAYS use this, never pnpm dev directly
-```
+## Read before editing
 
-**Critical**: `GOVERNANCE_SUPABASE_ANON_KEY` must be set (governance project, NOT tenant). Without it → maintenance mode.
+1. Workspace harness when available
+2. `AGENTS.md`
+3. `docs/ARCHITECTURE.md`
+4. `docs/PRODUCTION_CONTRACTS.md`
+5. `.agent/workflows/dev.md` or `.agent/workflows/customize.md`
+6. `docs/SCHEMA.md`, `docs/FLOWS.md` or `docs/MODULE_SDK.md` for the affected domain
 
-## 1. What This Repo Is
+## Zone map
 
-Tenant storefront from BootandStrap template. Connects to Medusa v2 (commerce), Supabase (auth/config/governance), BootandStrap SaaS (feature flags).
+### Customize
 
-**Your job**: customize look, feel, content, branding.
-**Not your job**: commerce engine, auth, governance, API layer.
+- branding tokens, tenant-safe home composition and public assets;
+- shared copy through all five locale dictionaries;
+- email content without altering platform-owned layout contracts.
 
-### Control-plane boundary
+### Extend carefully
 
-- `BOOTANDSTRAP_WEB` owns the SaaS control plane, lifecycle, deploy recovery, scheduled termination and final tenant termination semantics.
-- `ecommerce-template` is the tenant runtime/template. Do not infer complete self-service onboarding, admin-plane ownership or provisioning completeness from a green storefront runtime.
-- A healthy `campifruit`-style tenant proves runtime health only. It is not evidence that the full control plane is complete.
-- Keep manual DNS, credentials, branding, catalog, handoff or recovery steps explicit. Do not call them automatic unless the control plane executes them end to end.
-- `scheduled termination` is reversible offboarding before final cleanup. Final destructive termination is irreversible and not a restore path.
-- There is no persistent vault in the MVP; do not document credential retention as if it exists.
+- product, cart, checkout, account and reusable UI components;
+- shop routes while preserving i18n, SEO and Medusa flow.
 
-## 2. Zone Map
+### Platform-sensitive
 
-### 🟢 CUSTOMIZE — Safe to modify
+- `apps/storefront/src/lib/medusa/`, `lib/supabase/`, `lib/security/`;
+- governance config/flags/limits and panel runtime;
+- API routes, auth, proxy, analytics, email registry/layouts;
+- Medusa image, migrations, CI/CD and environment contracts.
 
-| Path                                          | Controls                                                                                       |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `globals.css`                                 | Design tokens (Tailwind v4 `@theme inline`, flat hex). After changes: `rm -rf .next` → restart |
-| `components/home/`                            | Homepage sections (Hero, CategoryGrid, FeaturedProducts, TrustSection)                         |
-| `components/layout/Header.tsx` / `Footer.tsx` | Navigation, logo, links                                                                        |
-| `lib/i18n/dictionaries/*.json`                | All text (5 locales: en, es, de, fr, it). Keep in sync                                         |
-| `public/`                                     | Logo, favicon, OG images, fonts, client images                                                 |
-| `app/[lang]/(shop)/page.tsx`                  | Homepage section composition                                                                   |
-| `src/emails/*.tsx`                            | Email template **content** only (text, CTAs, data display)                                     |
+Platform-sensitive does not mean “never fix”. It means require contract evidence,
+focused tests and source ownership before editing.
 
-### 🟡 EXTEND — Modify carefully, preserve contracts
+## Runtime invariants
 
-| Path                   | Preserve                                  |
-| ---------------------- | ----------------------------------------- |
-| `components/products/` | `AddToCartButton` + Medusa data flow      |
-| `components/cart/`     | `CartContext` integration                 |
-| `components/checkout/` | Payment registry + Stripe                 |
-| `components/account/`  | Supabase auth + Medusa queries            |
-| `components/ui/`       | Reusable primitives — extend, don't break |
-| `app/[lang]/(shop)/`   | Route structure (SEO + i18n slugs)        |
+- Preserve feature-flag and limit enforcement.
+- Keep server-only modules out of client bundles.
+- Preserve auth, checkout, payment and Medusa data flow.
+- Keep five locales synchronized.
+- Use structured logging; do not introduce production `console.log`.
+- Do not hardcode commercial prices or governance outputs.
+- Do not weaken strict types, release gates, audit or schema ownership.
 
-### 🔴 LOCKED — Never modify
+## Verification
 
-All of: `lib/medusa/`, `lib/supabase/`, `lib/security/`, `lib/config.ts`, `lib/features.ts`, `lib/limits.ts`, `lib/feature-gate-config.ts`, `lib/panel-*.ts`, `lib/policy-engine.ts`, `lib/logger.ts`, `proxy.ts`, `app/api/`, `app/[lang]/(panel)/`, `app/[lang]/(auth)/`, `components/panel/PanelLoadingSkeleton.tsx`, `components/panel/PanelErrorBoundary.tsx`, `components/WebVitalsReporter.tsx`, `lib/analytics/`, `lib/i18n/index.ts|locale.ts|currencies.ts`, `src/emails/layouts/`, `src/emails/email-template-registry.ts`, `lib/email.ts`, `styles/panel-premium.css`.
-
-### ⚫ PLATFORM — Not in this repo
-
-Medusa image, Supabase migrations, CI/CD, Dokploy config, `.env` vars.
-
-## 3. Customization Playbook
-
-### 3.1 Branding
-
-Logo → `public/logo.svg`. Favicon → `src/app/favicon.ico`. Colors → `globals.css` `@theme inline`. ⚠️ `@theme inline` replaces ALL default Tailwind palettes.
-
-### 3.2 Homepage
-
-Edit `page.tsx` — reorder/add/remove sections. New sections → `components/home/`. Wrap in `<ScrollReveal>`.
-
-### 3.3 Product cards
-
-Edit `components/products/ProductCard.tsx`. Keep `AddToCartButton`, Medusa data, flag checks.
-
-### 3.4 Translations
-
-Edit `lib/i18n/dictionaries/{locale}.json`. Keep 5 locales in sync. Missing keys → `en` fallback.
-
-### 3.5 New pages
-
-`app/[lang]/(shop)/{page-name}/page.tsx`. Use `lang` param + `getDictionary(lang)`.
-
-### 3.6 Email content
-
-Edit `src/emails/*.tsx`. Layouts are 🔴 LOCKED. 3 tiers: `minimal` (free), `brand` (email_marketing.basic), `modern` (email_marketing.pro). Prices from `EMAIL_TIER_PRICES` in `email-template-registry.ts`.
-
-### 3.7 PWA
-
-Edit `public/manifest.json`: `name`, `short_name`, `theme_color`, `background_color`, icons (192px + 512px PNG).
-
-## 4. Panel Architecture
-
-### Server/Client Split
-
-`page.tsx` renders `<PanelPageHeader>` + passes data to `*Client.tsx`. Never render `PanelPageHeader` inside Client — causes double header.
-
-### Bento Grid
-
-Always use `<SotaBentoItem colSpan={N}>` (inline style). Never `className="col-span-N"` — Turbopack purges it.
-
-### Dashboard Data (SSOT)
-
-`panel-data-service.ts` → React `cache()` functions for all metrics. Zero Medusa calls for dashboard — all data from Medusa store API with `cache()`. Layout: CompactHero → KPIs → 30d Chart → TodaysFocus → RecentOrders → GovernanceStrip.
-
-### Server Actions
-
-`useTransition` + `setOptimisticState` for server actions in Client Components.
-
-### CSS Architecture
-
-`styles/panel-premium.css` — static CSS file (previously runtime injection via `dangerouslySetInnerHTML`). Imported in `(panel)/layout.tsx`.
-
-## 5. Security Patterns
-
-### `server-only` Guards
-
-All server modules that access `createAdminClient()` or `cookies()` MUST have `import 'server-only'` at line 1. Currently guarded: `panel-guard.ts`, `log-owner-action.ts`, `chat/db.ts`, `chat/context-loader.ts`, `chat/usage-logger.ts`, `module-setup-registry.ts`.
-
-### Rate Limiting
-
-- Canonical IP extraction: `getClientIp()` from `lib/security/get-client-ip.ts`. **Do NOT import from `rate-limiter.ts`** (deprecated re-export).
-- Smart rate limiters: `createSmartRateLimiter()` from `rate-limit-factory.ts` (Redis with memory fallback).
-- Infrastructure rate limiter: `checkRateLimit()` from `rate-limiter.ts` (in-memory only, for health/revalidate).
-
-### Structured Logging
-
-All production logging via `logger` from `lib/logger.ts`. Zero `console.log` calls. Format: JSON with `tenant_id`, `request_id`, `trace_id`.
-
-## 6. Invariants
-
-1. Feature flag checks stay.
-2. `getConfig()` untouched.
-3. Auth flow intact.
-4. API routes untouched.
-5. SEO structure preserved.
-6. i18n engine intact.
-7. Medusa data flow respected.
-8. `.env` never modified manually.
-9. `proxy.ts` untouched.
-10. Panel pages locked.
-11. No `console.log` in production code.
-12. All server modules have `server-only` guard.
-
-## 7. Testing & Deployment
+Use the repo-declared runtime. For the active slice:
 
 ```bash
-sentrux check .                                    # Architecture (score: 6270)
-npx vitest run src/__tests__/governance/           # Governance tests
-npx tsx scripts/audit-governance-ui.ts --strict    # 100% flag/limit/module coverage
-pnpm test:run                                      # Full unit tests
-pnpm build                                         # Build
-bash scripts/release-gate.sh                       # Full gate
+CI=true npx -y pnpm@9.15.4 exec vitest run src/lib/__tests__/agent-doc-contract.test.ts
+CI=true npx -y pnpm@9.15.4 exec turbo type-check --filter=storefront
+CI=true npx -y pnpm@9.15.4 test:run
+CI=true npx -y pnpm@9.15.4 build
+bash scripts/release-gate.sh
+git diff --check
 ```
 
-Deploy: `git push origin main` → GH Actions → GHCR → Dokploy (~4 min). Rollback: revert + push.
-
-## 8. Loading/Error Coverage (100%)
-
-43 `loading.tsx` + 43 `error.tsx` = 100% panel coverage.
-
-| Variant | Pages                                                                                                                                                        |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `table` | catalogo, categorias, clientes, crm, devoluciones, inventario, mi-tienda, paginas, pedidos, productos, resenas, tienda, ventas, automatizaciones, analiticas |
-| `cards` | canales, capacidad, carrusel, insignias, mensajes, modulos, pos, utilidades                                                                                  |
-| `form`  | ajustes, auth, chatbot, email, envios, idiomas, mi-proyecto, modulos/[module], redes-sociales, seo, suscripcion                                              |
-
-## 9. Governance UI Components
-
-### LimitAwareCTA — Resource-Gated Add Buttons
-
-Replaces raw `<button>` + `SotaFeatureGateWrapper` for all "Add" actions. Receives `LimitCheckResult` from server data loader.
-
-**Pattern**: RSC page → `data.ts` calls `checkLimit()` → passes `limitResult` to Client → `<LimitAwareCTA limitResult={...}>Add</LimitAwareCTA>`.
-
-### ResourceBadge — Usage Counter
-
-Compact `current/max` badge with severity coloring (ok/warning/critical) + micro progress bar.
-
-### SubscriptionPill — Plan Indicator
-
-Topbar badge with tier-aware gradient. Rendered in `PanelTopbar`.
-
-## 10. Seed Pipeline
-
-```bash
-npx tsx scripts/seed-demo.ts --template=campifruit           # Products + Orders + Gov
-npx tsx scripts/seed-demo.ts --template=campifruit --full    # + Carousel + Pages + Promos + Chatbot + Newsletter
-npx tsx scripts/seed-governance.ts campifruit                # Governance only
-npx tsx scripts/seed-content.ts --template=campifruit        # Content only (standalone)
-npx tsx scripts/seed-content.ts --only=carousel,pages        # Specific content types
-```
-
-### Industry Templates (Module-Driven)
-
-| Template        | Industry            | Modules                                                                                                                                           |
-| --------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fresh-produce` | Frutería            | ecommerce:pro, pos:pro, sales_channels:pro, email_marketing:basic, i18n:basic, seo:medio                                                          |
-| `campifruit`    | Frutería colombiana | ecommerce:pro, pos:enterprise, pos_kiosk:basic, sales_channels:pro, email_marketing:basic, crm:basic, seo:medio                                   |
-| `fashion`       | Moda online         | ecommerce:enterprise, sales_channels:enterprise, email_marketing:pro, crm:pro, rrss:instagram, seo:avanzado, i18n:pro                             |
-| `restaurant`    | Restauración        | ecommerce:basic, pos:enterprise, pos_kiosk:enterprise, sales_channels:pro, chatbot:pro, automation:basic, email_marketing:basic, rrss:google_maps |
-| `beauty`        | Belleza / Spa       | ecommerce:basic, pos:basic, sales_channels:basic, crm:basic, email_marketing:basic, rrss:instagram                                                |
-| `demo-full`     | Demo completo       | All 13 modules at max tier                                                                                                                        |
-
-Flags are **auto-derived** from `contract.modules.catalog[].tiers[].flag_effects`. No plan tiers (starter/pro/enterprise). BNS model = Web Base + Module add-ons.
-
-## 11. Governance Contract
-
-- **SSOT**: `apps/storefront/src/lib/governance-contract.json` (`83` flags, `31` limits, `13` modules)
-- **Audit**: `npx tsx scripts/audit-governance-ui.ts --strict` → must return 100%
-- **Module prices**: `contract.modules.catalog[].tiers[].price_chf` → never hardcode CHF values
-- **Custom modules**: POS, CRM, Email Marketing, Automation, Product Reviews — all auto-migrated via `docker-entrypoint.sh`
-
-## 12. DON'Ts
-
-- Hardcode text (use dictionaries). Remove `Suspense` boundaries. Import server-only in client.
-- Edit `config.ts`, `features.ts`, `limits.ts`, `.env`. Use unregistered Tailwind colors.
-- Delete `loading.tsx`/`error.tsx`. Change URL slugs. Disable strict TS.
-- Render `PanelPageHeader` in Client. Use `className="col-span-N"` for Bento.
-- Use `console.log` in production code. Import `getClientIP` from `rate-limiter.ts`.
-- Hardcode prices (use `EMAIL_TIER_PRICES` or contract). Modify email layouts or registry.
+Add governance audit, schema ownership and Sentrux check/gate when affected.
+Do not reset `.sentrux/baseline.json` until final closure.

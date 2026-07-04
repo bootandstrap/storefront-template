@@ -10,7 +10,6 @@ import {
     getStripeClientSecret,
     submitBankTransferOrder,
     submitCODOrder,
-    submitWhatsAppOrder,
     setCartAddress,
     getShippingOptions,
     setShippingMethod,
@@ -153,13 +152,15 @@ export default function CheckoutModal({
             setLoadingMethods(false)
         }
         if (isOpen) loadMethods()
-    }, [isOpen, featureFlags])
+    }, [isOpen, featureFlags, planLimits])
 
     // Reset on close / add body class for overlay management
+    const cartItemCount = cart?.items?.length ?? 0
+
     useEffect(() => {
         if (isOpen) {
             document.body.classList.add('drawer-open')
-            trackEvent('checkout_start', { item_count: cart?.items?.length ?? 0 })
+            trackEvent('checkout_start', { item_count: cartItemCount })
         } else {
             document.body.classList.remove('drawer-open')
             setStep('info')
@@ -172,7 +173,7 @@ export default function CheckoutModal({
         return () => {
             document.body.classList.remove('drawer-open')
         }
-    }, [isOpen])
+    }, [isOpen, cartItemCount])
 
     // ---------------------------------------------------------------------------
     // Navigation

@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { getEnabledMethods, type PaymentMethod } from '../payment-methods'
+import { getEnabledMethods } from '../payment-methods'
 import type { FeatureFlags, PlanLimits } from '../config'
 
 // All payment flags ON
@@ -68,7 +68,7 @@ describe('Checkout Payment Contract', () => {
 
     it('disabling a flag removes its method', () => {
         const methods = getEnabledMethods(
-            flagsWith({ enable_whatsapp_checkout: false } as any)
+            flagsWith({ enable_whatsapp_checkout: false })
         )
         expect(methods.find(m => m.id === 'whatsapp')).toBeUndefined()
         expect(methods.length).toBeLessThan(4)
@@ -80,7 +80,7 @@ describe('Checkout Payment Contract', () => {
             enable_online_payments: false,
             enable_cash_on_delivery: false,
             enable_bank_transfer: false,
-        } as any))
+        }))
         expect(methods).toHaveLength(0)
     })
 

@@ -25,7 +25,6 @@ const DATA_PROCESSORS = [
 
 export default function PrivacyPolicyClient({
     lang,
-    t,
     businessName,
     domain,
     contactEmail,

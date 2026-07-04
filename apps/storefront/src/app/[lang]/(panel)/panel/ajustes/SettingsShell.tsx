@@ -16,7 +16,7 @@ interface SettingsShellProps {
     children: React.ReactNode
 }
 
-export default function SettingsShell({ tabs, activeTab, lang, children }: SettingsShellProps) {
+export default function SettingsShell({ tabs, activeTab, children }: SettingsShellProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()

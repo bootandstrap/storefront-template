@@ -77,7 +77,7 @@ export default function OrderNotifications({ defaultCurrency }: { defaultCurrenc
         // Poll every 30 seconds
         const interval = setInterval(checkNewOrders, 30000)
         return () => clearInterval(interval)
-    }, [t])
+    }, [t, defaultCurrency])
 
     const handleToggle = useCallback(() => {
         setIsOpen(prev => !prev)

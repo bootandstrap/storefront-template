@@ -86,6 +86,7 @@ const mockFlags: FeatureFlags = {
     enable_transactional_emails: false,
     enable_review_request_emails: false,
     enable_email_segmentation: false,
+    enable_custom_email_domain: false,
     // Kiosk (granular)
     enable_kiosk_analytics: false,
     enable_kiosk_idle_timer: false,

@@ -5,7 +5,7 @@
  * Mocks the Stripe Terminal and Twint handlers.
  */
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { charge, isTerminalState, getProcessingLabel } from '../payment-adapter'
 import type { PaymentProcessingState } from '@/lib/pos/pos-config'
 

@@ -68,7 +68,6 @@ export default function ChatSuggestedPrompts({
     tier,
     locale,
     onPrompt,
-    businessName,
 }: ChatSuggestedPromptsProps) {
     const tierConfig = CHAT_TIERS[tier]
     const prompts = (SUGGESTED_PROMPTS[locale] || SUGGESTED_PROMPTS.es)

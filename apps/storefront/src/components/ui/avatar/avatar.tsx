@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, type ReactNode, useState } from "react";
+import Image from "next/image";
 import { User01 } from "@untitledui/icons";
 import { cx } from "@/lib/utils/cn";
 import { AvatarOnlineIndicator, VerifiedTick } from "./base-components";
@@ -67,7 +68,7 @@ export const Avatar = ({
     contrastBorder = true,
     size = "md",
     src,
-    alt,
+    alt = "",
     initials,
     placeholder,
     placeholderIcon: PlaceholderIcon,
@@ -81,7 +82,7 @@ export const Avatar = ({
 
     const renderMainContent = () => {
         if (src && !isFailed) {
-            return <img data-avatar-img className="size-full rounded-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
+            return <Image data-avatar-img fill sizes="96px" unoptimized className="rounded-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
         }
 
         if (initials) {

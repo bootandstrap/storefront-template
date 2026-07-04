@@ -10,7 +10,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import {
     X, SplitSquareVertical, Plus, Trash2, Check,
-    Banknote, CreditCard, Smartphone,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { PaymentMethod, SplitPaymentEntry } from '@/lib/pos/pos-config'
@@ -24,13 +23,6 @@ interface POSSplitPaymentProps {
     onConfirm: (splits: SplitPaymentEntry[]) => void
     onCancel: () => void
     labels: Record<string, string>
-}
-
-const METHOD_ICONS: Record<PaymentMethod, typeof Banknote> = {
-    cash: Banknote,
-    card_terminal: CreditCard,
-    twint: Smartphone,
-    manual_card: CreditCard,
 }
 
 const METHOD_COLORS: Record<PaymentMethod, string> = {
@@ -185,7 +177,6 @@ export default function POSSplitPayment({
                     {/* ── Split entries ── */}
                     <AnimatePresence initial={false}>
                         {splits.map((split, idx) => {
-                            const Icon = METHOD_ICONS[split.method]
                             const color = METHOD_COLORS[split.method]
                             const pct = total > 0 ? Math.round((split.amount / total) * 100) : 0
                             return (

@@ -18,10 +18,10 @@
  */
 import 'server-only'
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const globalForAdmin = globalThis as unknown as {
-    __supabaseAdminClient?: ReturnType<typeof createSupabaseClient>
+    __supabaseAdminClient?: SupabaseClient
 }
 
 /**
@@ -29,7 +29,7 @@ const globalForAdmin = globalThis as unknown as {
  * All governance reads go through RLS or SECURITY DEFINER RPCs.
  * Singleton — reused across requests in the same process.
  */
-export function createAdminClient() {
+export function createAdminClient(): SupabaseClient {
     if (globalForAdmin.__supabaseAdminClient) return globalForAdmin.__supabaseAdminClient
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL

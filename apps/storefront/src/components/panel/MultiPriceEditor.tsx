@@ -17,7 +17,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, AlertTriangle, X, DollarSign } from 'lucide-react'
-import { CURRENCY_MAP, isZeroDecimal, type CurrencyInfo } from '@/lib/i18n/currencies'
+import { CURRENCY_MAP, isZeroDecimal } from '@/lib/i18n/currencies'
 
 // ---------------------------------------------------------------------------
 // Types

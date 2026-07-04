@@ -35,14 +35,14 @@ describe('getEnabledPOSPaymentMethods', () => {
     it('returns all 4 methods when max_pos_payment_methods is 0 (unlimited)', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 0,
-        } as any)
+        })
         expect(methods).toHaveLength(4)
     })
 
     it('Basic tier: limit=1 → only cash', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 1,
-        } as any)
+        })
         expect(methods).toHaveLength(1)
         expect(methods[0]).toBe('cash')
     })
@@ -50,7 +50,7 @@ describe('getEnabledPOSPaymentMethods', () => {
     it('limit=2 → cash + card_terminal', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 2,
-        } as any)
+        })
         expect(methods).toHaveLength(2)
         expect(methods).toEqual(['cash', 'card_terminal'])
     })
@@ -58,7 +58,7 @@ describe('getEnabledPOSPaymentMethods', () => {
     it('Pro tier: limit=3 → cash + card_terminal + twint', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 3,
-        } as any)
+        })
         expect(methods).toHaveLength(3)
         expect(methods).toEqual(['cash', 'card_terminal', 'twint'])
     })
@@ -66,14 +66,14 @@ describe('getEnabledPOSPaymentMethods', () => {
     it('Enterprise: limit=4 or higher → all methods', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 4,
-        } as any)
+        })
         expect(methods).toHaveLength(4)
     })
 
     it('limit=999 → still only returns the 4 defined methods', () => {
         const methods = getEnabledPOSPaymentMethods({
             max_pos_payment_methods: 999,
-        } as any)
+        })
         expect(methods).toHaveLength(4)
     })
 
@@ -84,7 +84,7 @@ describe('getEnabledPOSPaymentMethods', () => {
     })
 
     it('returns all when max_pos_payment_methods is missing from limits', () => {
-        const methods = getEnabledPOSPaymentMethods({} as any)
+        const methods = getEnabledPOSPaymentMethods({})
         expect(methods).toHaveLength(4)
     })
 })
@@ -149,7 +149,7 @@ describe('formatPOSCurrency', () => {
     })
 
     it('throws when currencyCode missing (strict governance)', () => {
-        expect(() => (formatPOSCurrency as any)(1500)).toThrow()
+        expect(() => Reflect.apply(formatPOSCurrency, null, [1500])).toThrow()
     })
 
     it('uppercases currency code', () => {

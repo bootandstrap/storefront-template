@@ -4,6 +4,10 @@ SaaS-managed e-commerce template: Next.js 16, Medusa v2, Supabase. White-labeled
 
 > Last updated: 2026-06-25
 
+Role: canonical tenant runtime template. In the shared workspace, start with
+[`../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md`](../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md);
+reusable runtime changes originate here before tenant propagation.
+
 ## Stack
 
 | Component            | Role                                                  |
@@ -36,11 +40,12 @@ ecommerce-template/
 
 | Doc                                                                                      | Contents                                                                                            |
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [Workspace harness](../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md)                  | **Cross-repo authority** — ownership, template-first propagation and runtime proof                  |
 | [GEMINI.md](GEMINI.md)                                                                   | **AI agent guide** — zone map 🟢🟡🔴⚫, invariants, playbook                                        |
 | [AGENTS.md](AGENTS.md)                                                                   | **Repo-local Ponytail guardrails** — execution ladder, anti-overengineering, no semantic downgrades |
 | [HANDOFF.md](HANDOFF.md)                                                                 | **Human ops checklist** — new tenant onboarding, assets, go-live                                    |
 | [docs/README.md](docs/README.md)                                                         | **Docs index** — architecture, schema, flows, contracts, dev setup, Ponytail adoption               |
-| [docs/plans/2026-06-19-ponytail-adoption.md](docs/plans/2026-06-19-ponytail-adoption.md) | Repo-local Ponytail adoption, limits, and hierarchy vs `GEMINI.md`                                  |
+| [docs/plans/2026-06-19-ponytail-adoption.md](docs/plans/2026-06-19-ponytail-adoption.md) | Repo-local Ponytail adoption, limits, and hierarchy under the workspace harness                     |
 
 ## Email System
 

@@ -10,8 +10,7 @@ import { describe, it, expect } from 'vitest'
 // ---------------------------------------------------------------------------
 
 describe('POS History — Type contracts', () => {
-    it('exports POSSaleRecord with required fields', async () => {
-        const mod = await import('@/lib/pos/pos-config')
+    it('exports POSSaleRecord with required fields', () => {
         // Type shape check
         const sample: import('@/lib/pos/pos-config').POSSaleRecord = {
             id: 'test-sale-1',

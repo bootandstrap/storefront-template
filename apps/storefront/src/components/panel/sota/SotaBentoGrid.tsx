@@ -39,32 +39,6 @@ interface SotaBentoItemProps {
  * with @theme inline aggressively purges col-span-* utilities even with
  * static string maps. Inline styles are unpurgeable.
  */
-function resolveSpanStyle(
-    prefix: 'gridColumn' | 'gridRow',
-    span?: SotaResponsiveSpan
-): React.CSSProperties {
-    if (!span) return {}
-
-    // Simple scalar value → always span N
-    if (typeof span === 'number') {
-        return { [prefix]: `span ${span} / span ${span}` }
-    }
-    if (span === 'auto') {
-        return { [prefix]: 'auto' }
-    }
-    if (span === 'full') {
-        return { [prefix]: '1 / -1' }
-    }
-
-    // Responsive object → we pick the largest defined breakpoint
-    // since the grid container already handles responsive column count via CSS
-    const value = span.xl ?? span.lg ?? span.md ?? span.sm ?? span.base
-    if (!value) return {}
-    if (value === 'auto') return { [prefix]: 'auto' }
-    if (value === 'full') return { [prefix]: '1 / -1' }
-    return { [prefix]: `span ${value} / span ${value}` }
-}
-
 export function SotaBentoItem({
     children,
     colSpan,

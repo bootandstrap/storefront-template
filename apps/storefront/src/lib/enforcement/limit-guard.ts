@@ -59,7 +59,7 @@ async function countSupabaseResource(
 ): Promise<number> {
     const admin = createAdminClient()
     try {
-        let query = (admin as any).from(table).select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId)
+        let query = admin.from(table).select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId)
         if (extra?.since) {
             query = query.gte('created_at', extra.since.toISOString())
         }
@@ -174,13 +174,14 @@ export async function checkResourceLimit(
     const admin = createAdminClient()
     let limitValue = Infinity
     try {
-        const { data } = await (admin as any)
+        const { data } = await admin
             .from('plan_limits')
             .select(def.limitKey)
             .eq('tenant_id', tenantId)
             .single()
-        if (data && data[def.limitKey] != null) {
-            limitValue = Number(data[def.limitKey])
+        const row = data as Record<string, unknown> | null
+        if (row && row[def.limitKey] != null) {
+            limitValue = Number(row[def.limitKey])
         }
     } catch {
         // Fail-open: no limit found → allow

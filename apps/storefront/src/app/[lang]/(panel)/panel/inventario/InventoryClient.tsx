@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { Package, AlertTriangle, Search, Save, X, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import type { InventoryItem, LowStockItem, StockLocation } from '@/lib/medusa/admin-inventory'
 import { updateStock } from './actions'
@@ -199,9 +200,12 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     {item.thumbnail ? (
-                                                        <img
+                                                        <Image
                                                             src={item.thumbnail}
                                                             alt=""
+                                                            width={32}
+                                                            height={32}
+                                                            unoptimized
                                                             className="w-8 h-8 rounded-lg object-cover"
                                                         />
                                                     ) : (

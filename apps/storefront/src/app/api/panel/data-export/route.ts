@@ -3,6 +3,7 @@ import { withPanelGuard } from '@/lib/panel-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 /**
  * POST /api/panel/data-export
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
         // Check cooldown (1 per 24h)
         const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-        const { data: recent } = await (admin as any)
+        const { data: recent } = await admin
             .from('async_jobs')
             .select('id')
             .eq('tenant_id', tenantId)
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Enqueue GDPR export job
-        const { error } = await (admin as any).from('async_jobs').insert({
+        const { error } = await admin.from('async_jobs').insert({
             tenant_id: tenantId,
             job_type: 'tenant_backup',
             payload: {
@@ -55,22 +56,23 @@ export async function POST(req: NextRequest) {
         }
 
         // Audit log
-        await (admin as any).from('audit_log').insert({
-            tenant_id: tenantId,
-            action: 'gdpr_data_export_requested',
-            metadata: { source: 'owner_panel', timestamp: new Date().toISOString() },
-        }).catch(() => { })
+        try {
+            await admin.from('audit_log').insert({
+                tenant_id: tenantId,
+                action: 'gdpr_data_export_requested',
+                metadata: { source: 'owner_panel', timestamp: new Date().toISOString() },
+            })
+        } catch {
+            logger.warn('[data-export] Failed to write audit log')
+        }
 
         return NextResponse.json({
             success: true,
             message: 'Export started. You will receive a download link via email.',
         })
     } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
         logger.error('[data-export] Error:', error)
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(error)
     }
 }
 
@@ -79,12 +81,12 @@ export async function POST(req: NextRequest) {
  *
  * Returns the status of the most recent data export request.
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const { tenantId } = await withPanelGuard()
         const admin = createAdminClient()
 
-        const { data: jobs } = await (admin as any)
+        const { data: jobs } = await admin
             .from('async_jobs')
             .select('id, status, created_at, completed_at, result')
             .eq('tenant_id', tenantId)
@@ -103,9 +105,6 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ exports })
     } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(error)
     }
 }

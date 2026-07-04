@@ -6,7 +6,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react'
 import {
     X, Clock, DollarSign, AlertTriangle, CheckCircle,
     Play, Square, ArrowUpDown, Timer, TrendingUp,
@@ -30,6 +30,19 @@ interface POSShiftPanelProps {
 
 type ShiftView = 'status' | 'open' | 'close' | 'history'
 
+function subscribeToMinuteClock(callback: () => void) {
+    const intervalId = window.setInterval(callback, 60_000)
+    return () => window.clearInterval(intervalId)
+}
+
+function getMinuteClockSnapshot() {
+    return Math.floor(Date.now() / 60_000)
+}
+
+function getMinuteClockServerSnapshot() {
+    return 0
+}
+
 export default function POSShiftPanel({
     onClose,
     onShiftChange,
@@ -41,6 +54,11 @@ export default function POSShiftPanel({
     const [view, setView] = useState<ShiftView>('status')
     const [cashInput, setCashInput] = useState('')
     const [loading, setLoading] = useState(true)
+    const currentMinute = useSyncExternalStore(
+        subscribeToMinuteClock,
+        getMinuteClockSnapshot,
+        getMinuteClockServerSnapshot,
+    )
 
     const formatCurrency = useCallback((amount: number) =>
         formatPOSCurrency(amount, defaultCurrency),
@@ -120,7 +138,7 @@ export default function POSShiftPanel({
 
     // Calculate shift duration
     const shiftDuration = currentShift
-        ? Math.floor((Date.now() - new Date(currentShift.opened_at).getTime()) / 60000)
+        ? Math.max(0, currentMinute - Math.floor(new Date(currentShift.opened_at).getTime() / 60_000))
         : 0
     const durationStr = `${Math.floor(shiftDuration / 60)}h ${shiftDuration % 60}m`
 

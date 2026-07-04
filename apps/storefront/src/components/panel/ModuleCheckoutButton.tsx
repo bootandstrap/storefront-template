@@ -75,7 +75,7 @@ export default function ModuleCheckoutButton({
         } finally {
             setLoading(false)
         }
-    }, [moduleKey, tierKey, locale, loading, disabled])
+    }, [moduleKey, tierKey, locale, loading, disabled, errorLabels?.generic, errorLabels?.network, errorLabels?.noUrl])
 
     const baseClass = variant === 'activate'
         ? `bg-gradient-to-r ${colorGradient || 'from-brand to-accent'} text-white hover:opacity-90`

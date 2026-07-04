@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore, useCallback } from 'react'
+import { useSyncExternalStore } from 'react'
 
 // ---------------------------------------------------------------------------
 // Consent preferences hook — reads from localStorage

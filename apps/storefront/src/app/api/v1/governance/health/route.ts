@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     let tenantStatus = 'unknown'
 
     try {
-        const tenantId = getRequiredTenantId()
+        getRequiredTenantId()
         const cached = getCachedConfig()
 
         if (cached) {

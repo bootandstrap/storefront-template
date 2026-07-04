@@ -29,12 +29,17 @@ import { createCategory, editCategory, removeCategory } from '../categorias/acti
 import { toggleBadge } from '../insignias/actions'
 import type { BadgeId } from '../insignias/badges'
 import type { AdminProductFull } from '@/lib/medusa/admin'
-import PanelPageHeader from '@/components/panel/PanelPageHeader'
-import { PageEntrance, SlideOver } from '@/components/panel/PanelAnimations'
-import PanelConfirmDialog, { useConfirmDialog } from '@/components/panel/PanelConfirmDialog'
+import {
+    PanelPageHeader,
+    PageEntrance,
+    SlideOver,
+    PanelConfirmDialog,
+    useConfirmDialog,
+    PriceLabelSheet,
+    type PriceLabelItem,
+    medusaPricesToForm,
+} from '@/components/panel'
 import { motion, AnimatePresence } from 'framer-motion'
-import PriceLabelSheet, { type PriceLabelItem } from '@/components/panel/PriceLabelSheet'
-import { medusaPricesToForm } from '@/components/panel/MultiPriceEditor'
 import { isZeroDecimal } from '@/lib/i18n/currencies'
 import type { LimitCheckResult } from '@/lib/limits'
 

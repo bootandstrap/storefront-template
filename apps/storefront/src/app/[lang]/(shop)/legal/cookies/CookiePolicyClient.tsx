@@ -17,6 +17,18 @@ type CookieEntry = {
     duration: string
 }
 
+interface CookieTableProps {
+    cookies: CookieEntry[]
+    headings: {
+        name: string
+        provider: string
+        purpose: string
+        type: string
+        duration: string
+    }
+    purposeMap: Record<string, string>
+}
+
 const COOKIE_INVENTORY: Record<string, CookieEntry[]> = {
     necessary: [
         { name: 'sb-*-auth-token', provider: 'Supabase', purpose: 'auth_session', type: 'HTTP', duration: '7 days' },
@@ -42,6 +54,35 @@ const BROWSER_INSTRUCTIONS = [
     { name: 'Safari', url: 'https://support.apple.com/guide/safari/manage-cookies-sfri11471' },
     { name: 'Edge', url: 'https://support.microsoft.com/help/4027947' },
 ]
+
+function CookieTable({ cookies, headings, purposeMap }: CookieTableProps) {
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+                <thead>
+                    <tr className="border-b border-sf-3">
+                        <th className="text-left py-2 pr-3 font-semibold text-tx">{headings.name}</th>
+                        <th className="text-left py-2 pr-3 font-semibold text-tx">{headings.provider}</th>
+                        <th className="text-left py-2 pr-3 font-semibold text-tx">{headings.purpose}</th>
+                        <th className="text-left py-2 pr-3 font-semibold text-tx">{headings.type}</th>
+                        <th className="text-left py-2 font-semibold text-tx">{headings.duration}</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-sf-3/50">
+                    {cookies.map((cookie, index) => (
+                        <tr key={index}>
+                            <td className="py-2 pr-3 font-mono text-tx">{cookie.name}</td>
+                            <td className="py-2 pr-3">{cookie.provider}</td>
+                            <td className="py-2 pr-3">{purposeMap[cookie.purpose] || cookie.purpose}</td>
+                            <td className="py-2 pr-3">{cookie.type}</td>
+                            <td className="py-2">{cookie.duration}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    )
+}
 
 export default function CookiePolicyClient({
     lang,
@@ -78,34 +119,12 @@ export default function CookiePolicyClient({
             fb_tracking: 'Track visits from Meta ads',
             fb_click: 'Track clicks from Meta ads',
         }
-
-    function CookieTable({ cookies }: { cookies: CookieEntry[] }) {
-        return (
-            <div className="overflow-x-auto">
-                <table className="w-full text-[11px]">
-                    <thead>
-                        <tr className="border-b border-sf-3">
-                            <th className="text-left py-2 pr-3 font-semibold text-tx">{isEs ? 'Nombre' : 'Name'}</th>
-                            <th className="text-left py-2 pr-3 font-semibold text-tx">{isEs ? 'Proveedor' : 'Provider'}</th>
-                            <th className="text-left py-2 pr-3 font-semibold text-tx">{isEs ? 'Propósito' : 'Purpose'}</th>
-                            <th className="text-left py-2 pr-3 font-semibold text-tx">{isEs ? 'Tipo' : 'Type'}</th>
-                            <th className="text-left py-2 font-semibold text-tx">{isEs ? 'Duración' : 'Duration'}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-sf-3/50">
-                        {cookies.map((c, i) => (
-                            <tr key={i}>
-                                <td className="py-2 pr-3 font-mono text-tx">{c.name}</td>
-                                <td className="py-2 pr-3">{c.provider}</td>
-                                <td className="py-2 pr-3">{purposeMap[c.purpose] || c.purpose}</td>
-                                <td className="py-2 pr-3">{c.type}</td>
-                                <td className="py-2">{c.duration}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        )
+    const cookieTableHeadings = {
+        name: isEs ? 'Nombre' : 'Name',
+        provider: isEs ? 'Proveedor' : 'Provider',
+        purpose: isEs ? 'Propósito' : 'Purpose',
+        type: isEs ? 'Tipo' : 'Type',
+        duration: isEs ? 'Duración' : 'Duration',
     }
 
     const sections = [
@@ -137,7 +156,11 @@ export default function CookiePolicyClient({
                             : 'These cookies are essential for basic store operation. They cannot be disabled.'
                         }
                     </p>
-                    <CookieTable cookies={COOKIE_INVENTORY.necessary} />
+                    <CookieTable
+                        cookies={COOKIE_INVENTORY.necessary}
+                        headings={cookieTableHeadings}
+                        purposeMap={purposeMap}
+                    />
                 </div>
             ),
         },
@@ -155,7 +178,11 @@ export default function CookiePolicyClient({
                             : 'These help us understand how our store is used. They are only activated with your consent.'
                         }
                     </p>
-                    <CookieTable cookies={COOKIE_INVENTORY.analytics} />
+                    <CookieTable
+                        cookies={COOKIE_INVENTORY.analytics}
+                        headings={cookieTableHeadings}
+                        purposeMap={purposeMap}
+                    />
                 </div>
             ),
         },
@@ -173,7 +200,11 @@ export default function CookiePolicyClient({
                             : 'These cookies are used to display relevant ads. They are only activated with your consent.'
                         }
                     </p>
-                    <CookieTable cookies={COOKIE_INVENTORY.marketing} />
+                    <CookieTable
+                        cookies={COOKIE_INVENTORY.marketing}
+                        headings={cookieTableHeadings}
+                        purposeMap={purposeMap}
+                    />
                 </div>
             ),
         },

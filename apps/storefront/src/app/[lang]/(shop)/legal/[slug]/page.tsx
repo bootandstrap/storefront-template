@@ -1,4 +1,4 @@
-import { getDictionary, createTranslator, type Locale, SUPPORTED_LOCALES } from '@/lib/i18n'
+import { SUPPORTED_LOCALES } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'

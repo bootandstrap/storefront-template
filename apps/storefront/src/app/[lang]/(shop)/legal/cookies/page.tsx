@@ -17,8 +17,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function CookiePolicyPage({ params }: { params: Promise<{ lang: string }> }) {
     const { lang } = await params
-    const dictionary = await getDictionary(lang as Locale)
-    const t = createTranslator(dictionary)
 
     let businessName = ''
     let contactEmail = ''

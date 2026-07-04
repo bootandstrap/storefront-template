@@ -92,6 +92,7 @@ export function usePOSSync({
     enabled,
     onEvent,
 }: UsePOSSyncOptions): UsePOSSyncReturn {
+    const syncEnabled = Boolean(tenantId && enabled)
     const [connected, setConnected] = useState(false)
     const [deviceCount, setDeviceCount] = useState(0)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,9 +107,7 @@ export function usePOSSync({
 
     // ── Subscribe to POS channel ──
     useEffect(() => {
-        if (!tenantId || !enabled) {
-            setConnected(false)
-            setDeviceCount(0)
+        if (!syncEnabled || !tenantId) {
             return
         }
 
@@ -165,10 +164,8 @@ export function usePOSSync({
             if (debounceRef.current) clearTimeout(debounceRef.current)
             channel.unsubscribe()
             channelRef.current = null
-            setConnected(false)
-            setDeviceCount(0)
         }
-    }, [tenantId, enabled])
+    }, [tenantId, syncEnabled])
 
     // ── Broadcast function ──
     const broadcast = useCallback(
@@ -206,8 +203,8 @@ export function usePOSSync({
     )
 
     return {
-        connected,
-        deviceCount,
+        connected: syncEnabled ? connected : false,
+        deviceCount: syncEnabled ? deviceCount : 0,
         broadcast,
     }
 }

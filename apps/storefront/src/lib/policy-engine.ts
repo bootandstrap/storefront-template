@@ -13,7 +13,7 @@
  */
 
 import { getConfig } from '@/lib/config'
-import type { FeatureFlags, PlanLimits } from '@/lib/config'
+import type { FeatureFlags } from '@/lib/config'
 import { checkLimit, type LimitableResource, type LimitCheckResult } from '@/lib/limits'
 import { NextResponse } from 'next/server'
 

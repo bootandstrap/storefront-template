@@ -153,7 +153,7 @@ function PlatformCard({
 
 type TabId = 'connections' | 'feed' | 'settings'
 
-export default function SocialMediaClient({ connections, socialLinks, labels, lang }: SocialMediaClientProps) {
+export default function SocialMediaClient({ connections, socialLinks, labels }: SocialMediaClientProps) {
     const [activeTab, setActiveTab] = useState<TabId>('connections')
 
     const tabs: { id: TabId; label: string }[] = [

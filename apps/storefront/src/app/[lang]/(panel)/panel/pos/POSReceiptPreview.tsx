@@ -161,10 +161,6 @@ export default function POSReceiptPreview({
     open,
     onClose,
 }: POSReceiptPreviewProps) {
-    // Skip rendering entirely in production
-    if (!IS_DEV) return null
-    if (!open) return null
-
     const [paperWidth, setPaperWidth] = useState<PaperWidth>(48)
     const [expanded, setExpanded] = useState(false)
 
@@ -174,6 +170,8 @@ export default function POSReceiptPreview({
     }, [sale, businessName, businessAddress, businessNIF, businessPhone, paperWidth])
 
     const panelWidth = expanded ? 'w-96' : 'w-80'
+
+    if (!IS_DEV || !open) return null
 
     return (
         <div className={`fixed right-0 top-0 bottom-0 ${panelWidth} z-40 flex flex-col

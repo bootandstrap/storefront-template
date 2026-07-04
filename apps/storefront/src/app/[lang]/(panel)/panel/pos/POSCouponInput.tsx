@@ -12,7 +12,6 @@ import { Tag, X, Check, Loader2, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCoupon, POSDiscount } from '@/lib/pos/pos-config'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
-import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Local coupon storage ──
 

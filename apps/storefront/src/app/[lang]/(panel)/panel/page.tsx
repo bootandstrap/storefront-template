@@ -53,7 +53,7 @@ export default async function PanelDashboard({
     const { tenantId, supabase, appConfig } = await withPanelGuard()
     const ownerExperienceMode = await resolveOwnerExperienceModeForTenant({
         tenantId,
-        supabase: supabase as any,
+        supabase: supabase as unknown as NonNullable<Parameters<typeof resolveOwnerExperienceModeForTenant>[0]['supabase']>,
         config: appConfig.config as Record<string, unknown>,
     })
 

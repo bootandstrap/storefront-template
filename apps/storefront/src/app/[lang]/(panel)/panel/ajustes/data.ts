@@ -7,7 +7,6 @@
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfigForTenant } from '@/lib/config'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getActiveModulesForTenant } from '@/lib/active-modules'
 import { SUPPORTED_CURRENCY_COUNT } from '@/lib/i18n/currencies'

@@ -132,7 +132,7 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                 {/* ── Region & Locale Panel (unified currency/language management) ── */}
                 {i18nData ? (
                     <RegionLocalePanel
-                        defaultLanguage={(formData as any).language ?? 'es'}
+                        defaultLanguage={formData.language ?? 'es'}
                         defaultCurrency={(formData.default_currency ?? 'eur').toLowerCase()}
                         activeLanguages={i18nData.activeLanguages}
                         activeCurrencies={i18nData.activeCurrencies}
@@ -142,7 +142,7 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                         panelLang={i18nData.panelLang}
                         lang={lang}
                         onDefaultCurrencyChange={(v) => update('default_currency', v)}
-                        onDefaultLanguageChange={(v) => update('language' as keyof StoreConfig, v)}
+                        onDefaultLanguageChange={(v) => update('language', v)}
                     />
                 ) : (
                     /* Fallback: minimal defaults only (when i18nData not provided) */
@@ -164,8 +164,8 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                                 <label className={labelClass}>{t('panel.config.storeLanguage') || 'Idioma de la tienda'}</label>
                                 <select
                                     className={inputClass}
-                                    value={(formData as any).language ?? 'es'}
-                                    onChange={(e) => update('language' as keyof StoreConfig, e.target.value)}
+                                    value={formData.language ?? 'es'}
+                                    onChange={(e) => update('language', e.target.value)}
                                 >
                                     {SUPPORTED_LOCALES.map(loc => (
                                         <option key={loc} value={loc}>{loc === 'es' ? '🇪🇸 Español' : loc === 'en' ? '🇬🇧 English' : loc === 'de' ? '🇩🇪 Deutsch' : loc === 'fr' ? '🇫🇷 Français' : loc === 'it' ? '🇮🇹 Italiano' : loc}</option>
@@ -185,34 +185,34 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                     <div className="flex items-center gap-3">
                         <div
                             role="switch"
-                            aria-checked={(formData as any).stock_mode === 'managed'}
+                            aria-checked={formData.stock_mode === 'managed'}
                             tabIndex={0}
-                            onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed') }}
+                            onClick={() => update('stock_mode', formData.stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') update('stock_mode', formData.stock_mode === 'managed' ? 'always_in_stock' : 'managed') }}
                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-med focus-visible:ring-offset-2 ${
-                                (formData as any).stock_mode === 'managed' ? 'bg-brand' : 'bg-sf-3'
+                                formData.stock_mode === 'managed' ? 'bg-brand' : 'bg-sf-3'
                             }`}
                         >
                             <motion.span
                                 layout
                                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                 className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ${
-                                    (formData as any).stock_mode === 'managed' ? 'translate-x-5' : 'translate-x-0'
+                                    formData.stock_mode === 'managed' ? 'translate-x-5' : 'translate-x-0'
                                 }`}
                             />
                         </div>
                         <div className="flex-1">
                             <label
                                 className="text-sm font-medium text-tx-sec cursor-pointer"
-                                onClick={() => update('stock_mode' as keyof StoreConfig, (formData as any).stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
+                                onClick={() => update('stock_mode', formData.stock_mode === 'managed' ? 'always_in_stock' : 'managed')}
                             >
-                                {(formData as any).stock_mode === 'managed'
+                                {formData.stock_mode === 'managed'
                                     ? (t('panel.config.stockManaged') || 'Stock gestionado')
                                     : (t('panel.config.stockAlwaysAvailable') || 'Siempre disponible')
                                 }
                             </label>
                             <p className="text-[11px] text-tx-faint mt-0.5">
-                                {(formData as any).stock_mode === 'managed'
+                                {formData.stock_mode === 'managed'
                                     ? (t('panel.config.stockManagedDesc') || 'Los productos necesitan cantidades de stock. Se ocultan cuando se agotan.')
                                     : (t('panel.config.stockAlwaysDesc') || 'Todos los productos están siempre disponibles. Ideal para servicios o negocios sin inventario.')
                                 }
@@ -220,7 +220,7 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                         </div>
                     </div>
                     <AnimatePresence>
-                        {(formData as any).stock_mode === 'managed' && (
+                        {formData.stock_mode === 'managed' && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
@@ -233,8 +233,8 @@ export default function StoreConfigClient({ config, featureFlags = {}, lang = 'e
                                         className={inputClass}
                                         type="number"
                                         min={0}
-                                        value={(formData as any).low_stock_threshold ?? 5}
-                                        onChange={(e) => update('low_stock_threshold' as keyof StoreConfig, parseInt(e.target.value) || 0)}
+                                        value={formData.low_stock_threshold ?? 5}
+                                        onChange={(e) => update('low_stock_threshold', parseInt(e.target.value) || 0)}
                                         placeholder="5"
                                     />
                                     <p className="text-[10px] text-tx-faint mt-1">{t('panel.config.lowStockThresholdDesc') || 'Se mostrará una alerta cuando un producto tenga menos de estas unidades.'}</p>

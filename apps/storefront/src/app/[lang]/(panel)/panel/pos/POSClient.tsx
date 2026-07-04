@@ -31,17 +31,24 @@ import {
     type POSPanelView,
     type POSShift,
     type POSRefund,
-} from '@/lib/pos/pos-config'
-import type { POSProduct, POSCategory } from '@/lib/pos/pos-product-types'
+    type POSCategory,
+    charge,
+    usePOSSounds,
+    triggerHaptic,
+    useBarcodeScanner,
+    useOfflineSync,
+    usePrinterConnection,
+    type BusinessInfo,
+    usePOSSync,
+    type POSSyncEvent,
+    getEnabledPOSPaymentMethods,
+    isPOSHistoryAvailable,
+    isPOSDashboardAvailable,
+    formatPOSCurrency,
+    posLabel,
+} from '@/lib/pos'
 import type { FeatureFlags, PlanLimits } from '@/lib/config'
-import { charge } from '@/lib/pos/payments/payment-adapter'
-import { usePOSSounds, triggerHaptic } from '@/lib/pos/usePOSSounds'
-import { useBarcodeScanner } from '@/lib/pos/useBarcodeScanner'
-import { useOfflineSync } from '@/lib/pos/offline/useOfflineSync'
-import { usePrinterConnection, type BusinessInfo } from '@/lib/pos/usePrinterConnection'
-import { usePOSSync, type POSSyncEvent } from '@/lib/pos/usePOSSync'
-import { getEnabledPOSPaymentMethods, isPOSHistoryAvailable, isPOSDashboardAvailable, formatPOSCurrency } from '@/lib/pos/pos-utils'
-import { posLabel } from '@/lib/pos/pos-i18n'
+import type { AdminProductFull } from '@/lib/medusa/admin'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { createPOSSale, searchPOSProducts } from './actions'
 import { POSProductGrid, POSCart, POSPaymentOverlay, POSOfflineBanner, POSToolbar, getParkedSales } from './pos-components'
@@ -51,9 +58,7 @@ import POSMobileCartSheet from './POSMobileCartSheet'
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface POSClientProps {
-    /* Products arrive as AdminProductFull[] from server but we pass them through to
-       POSProductGrid unchanged. Using any[] as the bridge type avoids coupling to Medusa SDK types. */
-    products: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+    products: AdminProductFull[]
     categories: POSCategory[]
     defaultCurrency: string
     businessName: string
@@ -92,12 +97,11 @@ export default function POSClient({
     const [currentShift, setCurrentShift] = useState<POSShift | null>(null)
     const [refundOrderId, setRefundOrderId] = useState<string | null>(null)
     const [refundReceipt, setRefundReceipt] = useState<POSRefund | null>(null)
-    const [serverProducts, setServerProducts] = useState<any[]>([])
+    const [serverProducts, setServerProducts] = useState<AdminProductFull[]>([])
     const [parkedSalesCount, setParkedSalesCount] = useState(0)
     const [mobileCartOpen, setMobileCartOpen] = useState(false)
     const [shiftHistory, setShiftHistory] = useState<POSShift[]>([])
     const [couponCode, setCouponCode] = useState<string | undefined>(undefined)
-    const [syncNotification, setSyncNotification] = useState<string | null>(null)
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const router = useRouter()
 
@@ -111,11 +115,8 @@ export default function POSClient({
 
     // ── Multi-device sync ──
     const handlePOSSyncEvent = useCallback((event: POSSyncEvent) => {
-        if (event.type === 'sale_completed' || event.type === 'shift_changed') {
-            setSyncNotification(`${event.type === 'sale_completed' ? 'Sale completed' : `Shift ${event.payload?.action || 'updated'}`} on another device`)
-            setTimeout(() => setSyncNotification(null), 3000)
-        }
-    }, [])
+        if (event.type === 'sale_completed' || event.type === 'shift_changed') router.refresh()
+    }, [router])
 
     const { broadcast: syncBroadcast } = usePOSSync({
         tenantId,
@@ -159,32 +160,56 @@ export default function POSClient({
         [defaultCurrency],
     )
 
+    const toggleKiosk = useCallback(() => {
+        if (!canKiosk) return
+        if (!document.fullscreenElement) { document.documentElement.requestFullscreen?.(); setIsKiosk(true) }
+        else { document.exitFullscreen?.(); setIsKiosk(false) }
+    }, [canKiosk])
+
     // ── Products with offline inventory offsets ──
     const adjustedProducts = useMemo(() => {
-        let baseProducts = products as any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+        let baseProducts = products
         if (serverProducts.length > 0) {
-            const localIds = new Set(products.map((p: any) => p.id)) // eslint-disable-line @typescript-eslint/no-explicit-any
-            const extras = serverProducts.filter((p: any) => !localIds.has(p.id)) // eslint-disable-line @typescript-eslint/no-explicit-any
+            const localIds = new Set(products.map(product => product.id))
+            const extras = serverProducts.filter(product => !localIds.has(product.id))
             baseProducts = [...products, ...extras]
         }
 
         if (Object.keys(offlineInventoryOffsets).length === 0) return baseProducts
 
-        return baseProducts.map((p: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-            if (!p.variants || p.variants.length === 0) return p
-            const hasOffset = p.variants.some((v: any) => offlineInventoryOffsets[v.id]) // eslint-disable-line @typescript-eslint/no-explicit-any
-            if (!hasOffset) return p
+        return baseProducts.map(product => {
+            if (product.variants.length === 0) return product
+            const hasOffset = product.variants.some(variant => offlineInventoryOffsets[variant.id])
+            if (!hasOffset) return product
 
             return {
-                ...p,
-                variants: p.variants.map((v: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-                    const offset = offlineInventoryOffsets[v.id]
-                    if (!offset) return v
-                    return { ...v, inventory_quantity: Math.max(0, (v.inventory_quantity ?? 0) - offset) }
+                ...product,
+                variants: product.variants.map(variant => {
+                    const offset = offlineInventoryOffsets[variant.id]
+                    if (!offset) return variant
+                    return { ...variant, inventory_quantity: Math.max(0, (variant.inventory_quantity ?? 0) - offset) }
                 }),
             }
         })
     }, [products, serverProducts, offlineInventoryOffsets])
+
+    const offlineProducts = useMemo<AdminProductFull[]>(() => cachedProducts.map(product => ({
+        ...product,
+        handle: '',
+        description: null,
+        subtitle: null,
+        images: [],
+        options: [],
+        metadata: null,
+        created_at: product.updated_at,
+        variants: product.variants.map(variant => ({
+            ...variant,
+            title: variant.title ?? '',
+            options: [],
+            manage_inventory: variant.manage_inventory ?? false,
+        })),
+        categories: product.categories.map(category => ({ ...category, handle: '' })),
+    })), [cachedProducts])
 
     const taxRate = typeof posConfig.tax_rate === 'number' ? posConfig.tax_rate : 0
     const totals = useMemo(() => calculateCartTotals(cart, taxRate), [cart, taxRate])
@@ -215,7 +240,7 @@ export default function POSClient({
                 const parsed = JSON.parse(saved)
                 if (parsed.items?.length > 0) {
                     const validVariantIds = new Set(
-                        products.flatMap((p: any) => (p.variants ?? []).map((v: any) => v.id)) // eslint-disable-line @typescript-eslint/no-explicit-any
+                        products.flatMap(product => product.variants.map(variant => variant.id))
                     )
                     const validItems = parsed.items
                         .filter((i: POSCartItem) => validVariantIds.has(i.id))
@@ -232,7 +257,7 @@ export default function POSClient({
                 }
             } catch { /* ignore corrupt data */ }
         }
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [products])
 
     // Cart persistence — save
     useEffect(() => {
@@ -257,24 +282,7 @@ export default function POSClient({
         }
         window.addEventListener('keydown', handleKey)
         return () => window.removeEventListener('keydown', handleKey)
-    }, [canShortcuts, canAccessHistory, canAccessDashboard, canKiosk]) // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Universal Escape
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-            e.preventDefault()
-            if (completedSale) { setCompletedSale(null); return }
-            if (refundReceipt) { setRefundReceipt(null); return }
-            if (paymentState.status !== 'idle') { handleCancelPayment(); return }
-            if (refundOrderId) { setRefundOrderId(null); return }
-            if (panelView) { setPanelView(null); return }
-            if (mobileCartOpen) { setMobileCartOpen(false); return }
-        }
-        window.addEventListener('keydown', handleEscape)
-        return () => window.removeEventListener('keydown', handleEscape)
-    }, [completedSale, refundReceipt, paymentState.status, refundOrderId, panelView, mobileCartOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [canShortcuts, canAccessHistory, canAccessDashboard, canKiosk, toggleKiosk])
 
     // Shift history
     useEffect(() => {
@@ -315,12 +323,12 @@ export default function POSClient({
 
     // ── Barcode scanner ──
     const handleBarcodeScan = useCallback(async (barcode: string) => {
-        const localMatch = adjustedProducts.find((p: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
-            p.variants?.some((v: any) => v.sku === barcode || v.barcode === barcode), // eslint-disable-line @typescript-eslint/no-explicit-any
+        const localMatch = adjustedProducts.find(product =>
+            product.variants.some(variant => variant.sku === barcode),
         )
 
         if (localMatch) {
-            const variant = localMatch.variants.find((v: any) => v.sku === barcode || v.barcode === barcode) // eslint-disable-line @typescript-eslint/no-explicit-any
+            const variant = localMatch.variants.find(candidate => candidate.sku === barcode)
             if (variant) {
                 const priceInfo = safeVariantPrice(variant, defaultCurrency)
                 if (!priceInfo.has_price) { playError(); return }
@@ -406,7 +414,6 @@ export default function POSClient({
     const handleCouponApply = useCallback((discount: POSDiscount, code: string) => { dispatch({ type: 'SET_DISCOUNT', discount }); setCouponCode(code) }, [])
     const handleCouponRemove = useCallback(() => { dispatch({ type: 'SET_DISCOUNT', discount: null }); setCouponCode(undefined) }, [])
     const handleNewSale = useCallback(() => { setCompletedSale(null); dispatch({ type: 'CLEAR' }) }, [])
-    const handleParkFromCart = useCallback(() => setParkedSalesCount(prev => prev + 1), [])
     const handleResumeParked = useCallback((items: POSCartItem[]) => {
         dispatch({ type: 'RESTORE_CART', cart: { items, discount: null, customer_id: null, customer_name: null, payment_method: 'cash' } })
         setPanelView(null)
@@ -421,18 +428,6 @@ export default function POSClient({
         const lang = document.documentElement.lang || 'es'
         router.push(`/${lang}/panel`)
     }, [cart.items.length, router, labels])
-
-    const toggleKiosk = useCallback(() => {
-        if (!canKiosk) return
-        if (!document.fullscreenElement) { document.documentElement.requestFullscreen?.(); setIsKiosk(true) }
-        else { document.exitFullscreen?.(); setIsKiosk(false) }
-    }, [canKiosk])
-
-    const handleSplitPaymentConfirm = useCallback((entries: { method: PaymentMethod; amount: number }[]) => {
-        if (entries.length > 0) dispatch({ type: 'SET_PAYMENT', method: entries[0].method })
-        setPanelView(null)
-        handleCharge()
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     // ═══════════════════════════════════════════════════════════════════════
     // PAYMENT
@@ -490,6 +485,30 @@ export default function POSClient({
             }
         }
     }, [cart, totals, defaultCurrency, playCashRegister, playError, labels, shouldAutoPrint, thermalPrintReceipt, businessInfo, posConfig, syncBroadcast])
+
+    const startTerminalPolling = useCallback((piId?: string) => {
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(async () => {
+            try {
+                const { pollTwintPaymentAction } = await import('./actions')
+                const status = await pollTwintPaymentAction(piId || '')
+                if (status.status === 'succeeded') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'processing' }); await completeSale(piId) }
+                else if (status.status === 'failed') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'failed', error: status.error || 'Payment failed on reader' }); setProcessing(false) }
+            } catch { /* keep polling */ }
+        }, 2000)
+    }, [completeSale])
+
+    const startTwintPolling = useCallback((piId: string) => {
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(async () => {
+            try {
+                const { pollTwintPaymentAction } = await import('./actions')
+                const status = await pollTwintPaymentAction(piId)
+                if (status.status === 'succeeded') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'processing' }); await completeSale(piId) }
+                else if (status.status === 'canceled' || status.status === 'failed') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'failed', error: status.error || posLabel('panel.pos.paymentCancelled', labels) }); setProcessing(false) }
+            } catch { /* keep polling */ }
+        }, 2000)
+    }, [completeSale, labels])
 
     const handleCharge = useCallback(async () => {
         if (cart.items.length === 0 || processing) return
@@ -553,31 +572,13 @@ export default function POSClient({
             setPaymentState({ status: 'failed', error: result.error || posLabel('panel.pos.paymentFailed', labels) })
             setProcessing(false)
         }
-    }, [cart, processing, totals, defaultCurrency, completeSale, canOffline, isOnline, labels, playCashRegister, playError, queueOfflineSale])
+    }, [cart, processing, totals, defaultCurrency, completeSale, canOffline, isOnline, labels, playCashRegister, playError, queueOfflineSale, startTerminalPolling, startTwintPolling])
 
-    const startTerminalPolling = useCallback((piId?: string) => {
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(async () => {
-            try {
-                const { pollTwintPaymentAction } = await import('./actions')
-                const status = await pollTwintPaymentAction(piId || '')
-                if (status.status === 'succeeded') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'processing' }); await completeSale(piId) }
-                else if (status.status === 'failed') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'failed', error: status.error || 'Payment failed on reader' }); setProcessing(false) }
-            } catch { /* keep polling */ }
-        }, 2000)
-    }, [completeSale])
-
-    const startTwintPolling = useCallback((piId: string) => {
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(async () => {
-            try {
-                const { pollTwintPaymentAction } = await import('./actions')
-                const status = await pollTwintPaymentAction(piId)
-                if (status.status === 'succeeded') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'processing' }); await completeSale(piId) }
-                else if (status.status === 'canceled' || status.status === 'failed') { if (pollRef.current) clearInterval(pollRef.current); setPaymentState({ status: 'failed', error: status.error || posLabel('panel.pos.paymentCancelled', labels) }); setProcessing(false) }
-            } catch { /* keep polling */ }
-        }, 2000)
-    }, [completeSale, labels])
+    const handleSplitPaymentConfirm = useCallback((entries: { method: PaymentMethod; amount: number }[]) => {
+        if (entries.length > 0) dispatch({ type: 'SET_PAYMENT', method: entries[0].method })
+        setPanelView(null)
+        handleCharge()
+    }, [handleCharge])
 
     const handleCancelPayment = useCallback(async () => {
         if (pollRef.current) clearInterval(pollRef.current)
@@ -589,6 +590,22 @@ export default function POSClient({
         setProcessing(false)
         setTimeout(() => setPaymentState({ status: 'idle' }), 2000)
     }, [paymentState])
+
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return
+            if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
+            event.preventDefault()
+            if (completedSale) { setCompletedSale(null); return }
+            if (refundReceipt) { setRefundReceipt(null); return }
+            if (paymentState.status !== 'idle') { handleCancelPayment(); return }
+            if (refundOrderId) { setRefundOrderId(null); return }
+            if (panelView) { setPanelView(null); return }
+            if (mobileCartOpen) setMobileCartOpen(false)
+        }
+        window.addEventListener('keydown', handleEscape)
+        return () => window.removeEventListener('keydown', handleEscape)
+    }, [completedSale, refundReceipt, paymentState.status, refundOrderId, panelView, mobileCartOpen, handleCancelPayment])
 
     // ═══════════════════════════════════════════════════════════════════════
     // RENDER
@@ -630,7 +647,7 @@ export default function POSClient({
                     {/* Product Grid */}
                     <div className="pos-products-panel border-r border-sf-2">
                         <POSProductGrid
-                            products={isOnline ? adjustedProducts : cachedProducts}
+                            products={isOnline ? adjustedProducts : offlineProducts}
                             stockMode={stockMode}
                             categories={categories}
                             defaultCurrency={defaultCurrency}
@@ -654,7 +671,7 @@ export default function POSClient({
                             onClear={() => dispatch({ type: 'CLEAR' })} labels={labels}
                             couponCode={couponCode} onCouponApply={handleCouponApply} onCouponRemove={handleCouponRemove}
                             showRecommendations={featureFlags.enable_pos_shifts === true}
-                            products={isOnline ? adjustedProducts : cachedProducts}
+                            products={isOnline ? adjustedProducts : offlineProducts}
                             onAddToCart={handleAddToCart} defaultCurrency={defaultCurrency}
                         />
                     </div>

@@ -12,7 +12,7 @@
  * Run: npx vitest run src/lib/__tests__/admin-owner-crud-contract.test.ts
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import * as fs from 'fs'
 import * as path from 'path'
 

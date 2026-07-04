@@ -32,7 +32,7 @@ import {
   StoreConfigSchema,
 } from "../governance/schemas";
 import { FALLBACK_CONFIG } from "../governance/defaults";
-import { FEATURE_GATE_MAP, PANEL_GATED_FLAGS } from "../feature-gate-config";
+import { FEATURE_GATE_MAP } from "../feature-gate-config";
 import { ROUTE_REDIRECT_MAP } from "../panel-policy";
 
 // ── Shared package consumers ──

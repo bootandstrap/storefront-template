@@ -26,9 +26,7 @@ export default function ModernLayout({
 }: LayoutProps) {
     const lighter = adjustBrightness(brandColor, 30)
     const lightest = adjustBrightness(brandColor, 60)
-    const darker = adjustBrightness(brandColor, -15)
     const glow = hexToRgba(brandColor, 0.15)
-    const glowStrong = hexToRgba(brandColor, 0.25)
     const borderGlow = hexToRgba(brandColor, 0.2)
     const textAccent = adjustBrightness(brandColor, 50)
 

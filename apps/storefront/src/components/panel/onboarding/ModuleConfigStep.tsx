@@ -21,7 +21,7 @@
  * New field types: 'limit_bar' (visual limit display), 'feature_list' (tier features)
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronLeft, ChevronRight, ArrowRight, Settings2 } from 'lucide-react'
 import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
@@ -649,8 +649,6 @@ function getModuleConfigFields(
 export default function ModuleConfigStep({
     modules,
     config,
-    currency,
-    featureFlags,
     planLimits,
     onContinue,
     onBack,
@@ -672,9 +670,12 @@ export default function ModuleConfigStep({
     const [savedModules, setSavedModules] = useState<Set<string>>(new Set())
 
     const mod = modules[currentIdx]
-    const fields = mod
-        ? getModuleConfigFields(mod.key, t, planLimits as Record<string, number | string | null>, mod.tierFeatures)
-        : []
+    const fields = useMemo(
+        () => mod
+            ? getModuleConfigFields(mod.key, t, planLimits as Record<string, number | string | null>, mod.tierFeatures)
+            : [],
+        [mod, planLimits, t],
+    )
     const hasEditableFields = fields.some(f => f.type !== 'info' && f.type !== 'limit_bar' && f.type !== 'feature_list')
 
     const handleFieldChange = useCallback((key: string, value: string) => {
@@ -712,7 +713,7 @@ export default function ModuleConfigStep({
             logger.warn('[ModuleConfigStep] Save failed:', err)
         }
         setSaving(false)
-    }, [fields, values, hasEditableFields, mod?.key])
+    }, [fields, values, hasEditableFields, mod])
 
     const goNextModule = useCallback(async () => {
         // Auto-save if there are editable fields
@@ -726,7 +727,7 @@ export default function ModuleConfigStep({
         } else {
             onContinue()
         }
-    }, [currentIdx, modules.length, hasEditableFields, savedModules, mod?.key, handleSaveModule, onContinue])
+    }, [currentIdx, modules.length, hasEditableFields, savedModules, mod, handleSaveModule, onContinue])
 
     const goPrevModule = useCallback(() => {
         if (currentIdx > 0) {

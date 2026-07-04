@@ -41,13 +41,6 @@ const POSRecommendations = lazy(() => import('./POSRecommendations'))
  */
 type CheckoutStep = 'cart' | 'payment' | 'cash_numpad' | 'change_confirm'
 
-const TRANSITION_MAP: Record<CheckoutStep, CheckoutStep | null> = {
-    cart: 'payment',
-    payment: null,          // branches: cash → cash_numpad, others → charge
-    cash_numpad: 'change_confirm',
-    change_confirm: null,   // terminal → charge
-}
-
 const BACK_MAP: Record<CheckoutStep, CheckoutStep | null> = {
     cart: null,
     payment: 'cart',
@@ -132,7 +125,6 @@ export default function POSCart({
     enabledPaymentMethods,
     canLineDiscounts,
     canCustomerSearch,
-    canThermalPrint,
     onUpdateQty,
     onRemoveItem,
     onSetDiscount,

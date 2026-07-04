@@ -29,11 +29,9 @@ export async function POST(request: NextRequest) {
 
         // 2. Parse optional params from body
         let maxBackups = 6
-        let backupFrequencyHours = 168
         try {
             const body = await request.json()
             maxBackups = body?.max_backups ?? maxBackups
-            backupFrequencyHours = body?.backup_frequency_hours ?? backupFrequencyHours
         } catch {
             // no body is fine
         }

@@ -34,8 +34,6 @@ const ARC_STROKE = 7
 const ARC_CENTER = 50
 // Semi-circle arc from 180° to 0° (bottom-left to bottom-right)
 const ARC_START_ANGLE = Math.PI      // 180°
-const ARC_END_ANGLE = 0             // 0°
-const ARC_LENGTH = Math.PI * ARC_RADIUS // half-circumference
 
 function describeArc(percentage: number): string {
     const clampedPct = Math.min(Math.max(percentage, 0), 100)

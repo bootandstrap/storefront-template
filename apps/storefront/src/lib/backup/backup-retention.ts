@@ -173,8 +173,6 @@ export async function executeRetention(
 
     // Execute deletions
     for (const name of plan.deleted) {
-        // Extract filename from full path (tenant-backups/{slug}/{filename})
-        const fileName = name.replace(`${tenantSlug}/`, '')
         try {
             const { error } = await supabase
                 .storage

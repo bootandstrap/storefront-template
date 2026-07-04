@@ -15,7 +15,7 @@ import { saveOnboardingConfigAction } from '@/app/[lang]/(panel)/panel/actions'
 import { posLabel } from '@/lib/pos/pos-i18n'
 
 // ── Config field definitions — loaded from centralized SSOT registry ──
-import { POS_SETTINGS_SCHEMA, type ConfigFieldDefWithGroup } from '@/lib/registries/module-config-schemas'
+import { POS_SETTINGS_SCHEMA } from '@/lib/registries/module-config-schemas'
 
 const ICON_MAP: Record<string, typeof Receipt> = { Receipt, Volume2 }
 

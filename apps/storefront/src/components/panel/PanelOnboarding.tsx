@@ -12,7 +12,7 @@
  *   - Server actions for E2E persistence
  */
 
-import { useState, useEffect } from 'react'
+import { useLocalStorageFlag } from '@/lib/client-runtime'
 import OnboardingWizard, { type ModuleInfo } from './onboarding/OnboardingWizard'
 
 // ---------------------------------------------------------------------------
@@ -62,23 +62,9 @@ export default function PanelOnboarding({
     activeLanguages,
     translations,
 }: PanelOnboardingProps) {
-    // ── localStorage fail-safe: don't show if already completed ──
-    const [shouldShow, setShouldShow] = useState(false)
+    const onboardingCompleted = useLocalStorageFlag('bns-onboarding-done')
 
-    useEffect(() => {
-        try {
-            if (localStorage.getItem('bns-onboarding-done') === '1') {
-                // Already completed — don't render wizard
-                setShouldShow(false)
-                return
-            }
-        } catch { /* noop */ }
-
-        // DB says not completed AND localStorage doesn't have completion → show
-        setShouldShow(true)
-    }, [])
-
-    if (!shouldShow) return null
+    if (onboardingCompleted) return null
 
     return (
         <OnboardingWizard

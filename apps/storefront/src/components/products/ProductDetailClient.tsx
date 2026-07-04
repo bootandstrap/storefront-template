@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { Package, Check, Share2, Link as LinkIcon } from 'lucide-react'
-import type { MedusaProduct, MedusaVariant } from '@/lib/medusa/client'
+import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
 import { useSwipe } from '@/hooks/useSwipe'
@@ -33,7 +33,7 @@ export default function ProductDetailClient({
 }: ProductDetailClientProps) {
     const { t, locale } = useI18n()
     const { share, copied } = useShare()
-    const variants = product.variants || []
+    const variants = useMemo(() => product.variants || [], [product.variants])
     const images = product.images || []
     const allImages = product.thumbnail
         ? [{ id: 'thumb', url: product.thumbnail }, ...images.filter(img => img.url !== product.thumbnail)]

@@ -5,7 +5,6 @@
  * multi-currency sub-badges, and POS vs Online revenue split.
  */
 
-import Link from 'next/link'
 import {
     DollarSign,
     ShoppingCart,

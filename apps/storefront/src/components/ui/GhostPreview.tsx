@@ -49,6 +49,8 @@ interface GhostPreviewProps {
     children?: React.ReactNode
 }
 
+const SKELETON_ROW_WIDTHS = [58, 72, 64, 77, 55, 69] as const
+
 /** Benefits per module — reused from FeatureGate for consistency */
 const MODULE_BENEFITS: Record<string, { icon: React.ReactNode; key: string }[]> = {
     ecommerce: [
@@ -148,7 +150,10 @@ function GhostSkeleton() {
                 <div key={i} className="flex items-center gap-4 h-14 px-2" style={{ animationDelay: `${i * 100}ms` }}>
                     <div className="w-10 h-10 rounded-lg bg-sf-2/40 animate-pulse" />
                     <div className="flex-1 space-y-2">
-                        <div className="h-3 rounded bg-sf-2/40 animate-pulse" style={{ width: `${50 + Math.random() * 30}%` }} />
+                        <div
+                            className="h-3 rounded bg-sf-2/40 animate-pulse"
+                            style={{ width: `${SKELETON_ROW_WIDTHS[i % SKELETON_ROW_WIDTHS.length]}%` }}
+                        />
                         <div className="h-2 w-24 rounded bg-sf-2/30 animate-pulse" />
                     </div>
                     <div className="h-6 w-16 rounded-full bg-sf-2/30 animate-pulse" />

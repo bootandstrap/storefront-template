@@ -87,7 +87,6 @@ export default function ModuleSetupCard({
     moduleIcon,
     moduleName,
     isNew = false,
-    lang = 'es',
     onQuickAction,
 }: ModuleSetupCardProps) {
     const [expanded, setExpanded] = useState(true)

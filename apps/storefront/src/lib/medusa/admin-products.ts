@@ -35,6 +35,7 @@ export interface AdminProductFull {
         id: string
         title: string
         sku: string | null
+        barcode?: string | null
         prices: { amount: number; currency_code: string }[]
         options: { id: string; value: string; option_id: string }[]
         manage_inventory: boolean

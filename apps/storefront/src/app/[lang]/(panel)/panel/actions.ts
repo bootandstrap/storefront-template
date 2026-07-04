@@ -364,7 +364,7 @@ export async function saveOnboardingConfigAction(
     try {
       const adminClient = createAdminClient()
       // audit_log is an operational table not in the generated schema
-      await (adminClient as any).from('audit_log').insert({
+      await adminClient.from('audit_log').insert({
         tenant_id: tenantId,
         action: 'settings.config_update',
         metadata: {

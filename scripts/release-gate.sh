@@ -58,6 +58,7 @@ echo "   Root: $ROOT_DIR"
 # ── P0: Security ──
 gate "RLS Policy Check" bash scripts/check-rls.sh
 gate "Audit Policy" bash scripts/check-audit-waiver.sh
+gate "Schema Ownership" bash scripts/check-schema-ownership.sh data-plane
 
 # ── P1: Quality ──
 gate "Storefront Lint" pnpm turbo lint --filter=storefront

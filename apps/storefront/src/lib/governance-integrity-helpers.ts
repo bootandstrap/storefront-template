@@ -14,7 +14,7 @@
 import contract from './governance-contract.json'
 import { FeatureFlagsSchema, PlanLimitsSchema, StoreConfigSchema } from './governance/schemas'
 import { FALLBACK_CONFIG } from './governance/defaults'
-import { FEATURE_GATE_MAP, PANEL_GATED_FLAGS } from './feature-gate-config'
+import { FEATURE_GATE_MAP } from './feature-gate-config'
 
 // ── Types ──
 

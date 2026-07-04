@@ -89,7 +89,7 @@ export async function getStarterOwnerProject(
     client?: StarterSupabaseClient
 ): Promise<StarterOwnerProject | null> {
     const supabase = client ?? await createClient()
-    const db = supabase as any
+    const db = supabase
 
     const { data: project } = await db
         .from('starter_projects')

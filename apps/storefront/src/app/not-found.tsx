@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { Home, ArrowLeft, Search } from 'lucide-react'
+import { Home, Search } from 'lucide-react'
 
 /**
  * Global 404 page — Premium design with helpful CTAs.

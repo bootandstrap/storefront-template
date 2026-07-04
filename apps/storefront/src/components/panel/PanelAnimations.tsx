@@ -13,7 +13,7 @@
  * - SkeletonPulse:       Shimmer-gradient skeleton loader
  */
 
-import { AnimatePresence, motion, useSpring, useTransform, type Variants } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform, type Variants } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
@@ -37,7 +37,7 @@ export function PageEntrance({ children, className = '', delay = 0 }: PageEntran
             transition={{ duration: 0.4, ease: EASE_EXPO_OUT, delay }}
             className={className}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -74,7 +74,7 @@ export function ListStagger({ children, className = '' }: ListStaggerProps) {
             animate="show"
             className={className}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -83,7 +83,7 @@ export function ListStagger({ children, className = '' }: ListStaggerProps) {
 export function StaggerItem({ children, className = '' }: { children: ReactNode; className?: string }) {
     return (
         <motion.div variants={staggerItem} className={className}>
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -107,7 +107,7 @@ export function ExpandableSection({ isOpen, children, className = '' }: Expandab
                     transition={{ duration: 0.25, ease: EASE_EXPO_OUT }}
                     className={`overflow-hidden ${className}`}
                 >
-                    {children as any}
+                    {children}
                 </motion.div>
             )}
         </AnimatePresence>
@@ -224,7 +224,7 @@ export function SlideOver({ isOpen, onClose, title, subtitle, children, width = 
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto px-6 py-5">
-                            {children as any}
+                            {children}
                         </div>
                     </motion.div>
                 </>
@@ -268,23 +268,12 @@ export function CountUp({
     })
 
     const [displayValue, setDisplayValue] = useState('0')
-    const prefersReducedMotion = useRef(false)
+    const prefersReducedMotion = useReducedMotion()
 
     useEffect(() => {
-        prefersReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    }, [])
-
-    useEffect(() => {
-        if (prefersReducedMotion.current) {
-            // Skip animation for reduced motion
-            const formatted = formatOptions
-                ? new Intl.NumberFormat(locale, formatOptions).format(value)
-                : value.toLocaleString(locale)
-            setDisplayValue(formatted)
-            return
-        }
+        if (prefersReducedMotion) return
         spring.set(value)
-    }, [value, spring, formatOptions, locale])
+    }, [value, spring, prefersReducedMotion])
 
     const display = useTransform(spring, (latest) => {
         if (formatOptions) {
@@ -298,9 +287,13 @@ export function CountUp({
         return unsubscribe
     }, [display])
 
+    const renderedValue = prefersReducedMotion
+        ? (formatOptions ? new Intl.NumberFormat(locale, formatOptions).format(value) : value.toLocaleString(locale))
+        : displayValue
+
     return (
         <span className={`tabular-nums ${className}`} aria-label={`${prefix}${value}${suffix}`}>
-            {prefix}{displayValue}{suffix}
+            {prefix}{renderedValue}{suffix}
         </span>
     )
 }
@@ -377,16 +370,13 @@ export function ScrollReveal({
 }: ScrollRevealProps) {
     const ref = useRef<HTMLDivElement>(null)
     const [isVisible, setIsVisible] = useState(false)
+    const prefersReducedMotion = useReducedMotion()
 
     useEffect(() => {
         const el = ref.current
         if (!el) return
 
-        // Check if user prefers reduced motion
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            setIsVisible(true)
-            return
-        }
+        if (prefersReducedMotion) return
 
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -400,17 +390,17 @@ export function ScrollReveal({
 
         observer.observe(el)
         return () => observer.disconnect()
-    }, [threshold])
+    }, [threshold, prefersReducedMotion])
 
     const animClass = direction === 'scale' ? 'reveal-on-scroll-scale' : 'reveal-on-scroll'
 
     return (
         <div
             ref={ref}
-            className={`${isVisible ? animClass : 'opacity-0'} ${className}`}
+            className={`${isVisible || prefersReducedMotion ? animClass : 'opacity-0'} ${className}`}
             style={{ animationDelay: `${delay}ms` }}
         >
-            {children as any}
+            {children}
         </div>
     )
 }
@@ -432,7 +422,7 @@ export function HoverScale({ children, className = '', scale = 1.02 }: HoverScal
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -457,7 +447,7 @@ export function GlowPulse({
 }: GlowPulseProps) {
     return (
         <span className={`relative inline-flex ${className}`}>
-            {children as any}
+            {children}
             <motion.span
                 className="absolute rounded-full"
                 style={{
@@ -510,7 +500,7 @@ export function FloatAnimation({
                 ease: 'easeInOut',
             }}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -542,7 +532,7 @@ export function FadeInStagger({
                 },
             }}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -563,7 +553,7 @@ export function FadeInStaggerItem({
                 },
             }}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -583,7 +573,7 @@ export function PageTransition({ children, className = '' }: PageTransitionProps
             transition={{ duration: 0.5, ease: EASE_EXPO_OUT }}
             className={className}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }
@@ -598,7 +588,7 @@ interface ShineEffectProps {
 export function ShineEffect({ children, className = '' }: ShineEffectProps) {
     return (
         <div className={`card-shine ${className}`}>
-            {children as any}
+                {children}
         </div>
     )
 }
@@ -619,7 +609,7 @@ export function PressScale({ children, className = '', pressScale = 0.97 }: Pres
             whileTap={{ scale: pressScale }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         >
-            {children as any}
+            {children}
         </motion.div>
     )
 }

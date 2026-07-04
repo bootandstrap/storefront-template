@@ -10,6 +10,7 @@ import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { createPromotion } from '@/lib/medusa/admin-promotions'
 import type { CreatePromotionInput } from '@/lib/medusa/admin-promotions'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function POST(request: NextRequest) {
     try {
@@ -27,9 +28,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ promotion })
     } catch (err) {
         logger.error('[api/panel/promotions] POST error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }

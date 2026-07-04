@@ -13,7 +13,7 @@
  * Uses native <select> for maximum a11y (no custom dropdown needed).
  */
 
-import { forwardRef, type SelectHTMLAttributes } from 'react'
+import { forwardRef, type SelectHTMLAttributes, useId } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 type SelectSize = 'sm' | 'md' | 'lg'
@@ -52,7 +52,8 @@ const PanelSelect = forwardRef<HTMLSelectElement, PanelSelectProps>(
         },
         ref
     ) {
-        const selectId = id || `panel-select-${Math.random().toString(36).slice(2, 8)}`
+        const fallbackId = useId()
+        const selectId = id ?? fallbackId
 
         return (
             <div className={`${fullWidth ? 'w-full' : 'inline-flex flex-col'}`}>

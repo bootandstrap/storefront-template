@@ -21,15 +21,15 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
-    Rocket, CheckCircle2, Sparkles, X,
+    CheckCircle2, X,
     ChevronRight, Zap, PartyPopper,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import ModuleSetupCard from './ModuleSetupCard'
-import { getActiveModuleSetups, type ModuleSetupDef } from '@/lib/registries/module-setup-registry'
+import { getActiveModuleSetups } from '@/lib/registries/module-setup-registry'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { completeOnboardingAction } from '@/app/[lang]/(panel)/panel/actions'
 import { logger } from '@/lib/logger'
@@ -220,7 +220,7 @@ export default function ModuleSetupOrchestrator({
 }: OrchestratorProps) {
     const router = useRouter()
     const [usageData, setUsageData] = useState<Record<string, Record<string, { current: number; limit: number; percentage: number }>>>({})
-    const [completedActions, setCompletedActions] = useState(new Set<string>())
+    const [completedActions] = useState(new Set<string>())
     const [dismissed, setDismissed] = useState(false)
     const [completing, setCompleting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -244,7 +244,7 @@ export default function ModuleSetupOrchestrator({
         for (const setup of setupDefs) {
             // A feature belongs to this module if it matches the module key pattern
             const moduleFlags = Object.entries(featureFlags)
-                .filter(([key, val]) => val === true)
+                .filter(([, val]) => val === true)
                 .map(([key]) => key)
             result[setup.moduleKey] = moduleFlags
         }

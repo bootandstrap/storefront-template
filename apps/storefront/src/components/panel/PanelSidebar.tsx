@@ -190,10 +190,10 @@ export default function PanelSidebar({
     const pathname = usePathname()
     const [internalMobileOpen, setInternalMobileOpen] = useState(false)
     const mobileOpen = controlledMobileOpen ?? internalMobileOpen
-    const setMobileOpen = (open: boolean) => {
+    const setMobileOpen = useCallback((open: boolean) => {
         setInternalMobileOpen(open)
         onMobileOpenChange?.(open)
-    }
+    }, [onMobileOpenChange])
 
     // ── Sidebar collapse state (persisted) ──
     const [internalCollapsed, setInternalCollapsed] = useState(false)
@@ -239,7 +239,7 @@ export default function PanelSidebar({
         }
         window.addEventListener('keydown', handleEscape)
         return () => window.removeEventListener('keydown', handleEscape)
-    }, [mobileOpen])
+    }, [mobileOpen, setMobileOpen])
 
     const sections = getPanelSections({ lang, labels, featureFlags, ownerExperienceMode, badges })
 

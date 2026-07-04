@@ -11,7 +11,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAdminProductsFull, getAdminCategories, getAdminProducts } from '@/lib/medusa/admin'
 import { getInventoryItems, getLowStockItems, getStockLocations } from '@/lib/medusa/admin-inventory'
 import { getProductsWithBadges } from '../insignias/actions'
-import { checkLimit, type LimitCheckResult } from '@/lib/limits'
+import { checkLimit } from '@/lib/limits'
 import { parsePanelListQuery } from '@/lib/panel-list-query'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { createClient } from '@/lib/supabase/server'
@@ -178,7 +178,7 @@ export async function fetchBadgesData() {
 
 export async function fetchCarouselData(tenantId: string) {
     const supabase = await createClient()
-    const { config, planLimits } = await getConfigForTenant(tenantId)
+    const { planLimits } = await getConfigForTenant(tenantId)
 
     const { data: slides } = await supabase
         .from('carousel_slides')

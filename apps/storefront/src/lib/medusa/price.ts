@@ -82,5 +82,5 @@ export function getFormattedPrice(
 ): string | null {
     const resolved = getPrice(variant)
     if (!resolved) return null
-    return formatPrice(resolved.amount, resolved.currency)
+    return formatPrice(resolved.amount, resolved.currency, locale as import('@/lib/i18n').Locale)
 }

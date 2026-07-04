@@ -16,7 +16,6 @@ import { logger } from '@/lib/logger'
 // ── Constants ──
 
 const PRODUCT_REFRESH_INTERVAL = 5 * 60 * 1000  // 5 minutes
-const SYNC_RETRY_DELAYS = [2000, 5000, 15000]   // Retry backoff
 const MAX_SYNC_ATTEMPTS = 3
 const STALE_SALE_MAX_AGE = 24 * 60 * 60 * 1000  // 24 hours
 
@@ -289,4 +288,3 @@ export function useOfflineSync(): UseOfflineSyncReturn {
         queueOfflineSale,
     }
 }
-

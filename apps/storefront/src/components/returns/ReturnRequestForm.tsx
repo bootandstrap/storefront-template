@@ -32,7 +32,7 @@ interface ReturnRequestFormProps {
 
 type ReturnReason = 'defective' | 'wrong_item' | 'changed_mind' | 'other'
 
-export default function ReturnRequestForm({ orderId, items, lang, dict }: ReturnRequestFormProps) {
+export default function ReturnRequestForm({ orderId, items, dict }: ReturnRequestFormProps) {
     const [reason, setReason] = useState<ReturnReason | ''>('')
     const [description, setDescription] = useState('')
     const [selectedItems, setSelectedItems] = useState<string[]>([])

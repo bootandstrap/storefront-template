@@ -128,10 +128,6 @@ function SlashMenu({
     )
 
     useEffect(() => {
-        setSelectedIndex(0)
-    }, [filter])
-
-    useEffect(() => {
         const handler = (e: globalThis.KeyboardEvent) => {
             if (e.key === 'ArrowDown') {
                 e.preventDefault()
@@ -547,6 +543,7 @@ export default function PanelBlockEditor({
             {/* Slash command menu */}
             {slashMenu && (
                 <SlashMenu
+                    key={slashMenu.filter}
                     position={slashMenu.position}
                     filter={slashMenu.filter}
                     onSelect={handleSlashSelect}

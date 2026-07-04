@@ -17,6 +17,7 @@ import { FeatureFlagsSchema } from '@/lib/governance/schemas'
 import { FALLBACK_CONFIG } from '@/lib/governance/defaults'
 import { FEATURE_GATE_MAP } from '@/lib/feature-gate-config'
 import { isFeatureEnabled } from '@/lib/features'
+import type { FeatureFlags } from '@/lib/config'
 
 describe('Schema Drift — Feature Flags', () => {
     const schemaKeys = Object.keys(FeatureFlagsSchema.shape).sort()
@@ -63,7 +64,7 @@ describe('Schema Drift — Feature Flags', () => {
         )
         for (const flag of CORE_INVARIANTS_IN_SCHEMA) {
             expect(
-                isFeatureEnabled(allFalseFlags as any, flag as any),
+                isFeatureEnabled(allFalseFlags as FeatureFlags, flag as keyof FeatureFlags),
                 `Core invariant "${flag}" should always be enabled`
             ).toBe(true)
         }

@@ -1,3 +1,17 @@
+# Codex Adapter — ecommerce-template
+
+Workspace harness: `../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md`.
+
+## Template-first propagation
+
+Role: this repo is the **canonical tenant runtime template**. Template-first
+propagation is mandatory: reusable storefront, panel, Medusa, lint, type, test
+and security fixes originate and pass here before they are propagated to a
+tenant runtime proof.
+
+If the workspace harness is unavailable, this adapter is the fail-safe: keep
+reusable runtime ownership here and do not infer control-plane ownership.
+
 # Ponytail Mode For ecommerce-template
 
 You are a lazy senior developer. Lazy means efficient, not careless. The best code is the code never written.
@@ -41,8 +55,8 @@ Ponytail mode does NOT relax any of these:
 
 Repo-specific constraints:
 
-- `ecommerce-template` is tenant runtime and storefront truth, not the SaaS control plane.
-- Respect `GEMINI.md` as the primary agent guide, including the zone map and locked paths.
+- `ecommerce-template` is the canonical tenant runtime template, not the SaaS control plane.
+- Respect the canonical harness first, then `GEMINI.md`, including the zone map and locked paths.
 - Respect `.agent/workflows/customize.md` and `.agent/workflows/dev.md` before changing branding, runtime flows, or local setup.
 - Do not modify locked or platform-owned surfaces unless the task explicitly requires it and the evidence is strong.
 - Do not weaken release gates, audits, tests, or build checks just to make a change pass.

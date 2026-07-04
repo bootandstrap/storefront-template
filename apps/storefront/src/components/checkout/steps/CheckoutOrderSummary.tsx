@@ -1,7 +1,6 @@
 'use client'
 
 import { ShoppingBag } from 'lucide-react'
-import FreeShippingBanner from '@/components/cart/FreeShippingBanner'
 import type { CartTotals } from '@/app/[lang]/(shop)/checkout/actions'
 
 interface CheckoutOrderSummaryProps {
@@ -25,8 +24,6 @@ export default function CheckoutOrderSummary({
     formatPrice,
     t,
     freeShippingThreshold = 0,
-    currency = 'EUR',
-    locale = 'en',
 }: CheckoutOrderSummaryProps) {
     return (
         <div className="mt-6 pt-4 border-t border-sf-3">

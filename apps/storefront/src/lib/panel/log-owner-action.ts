@@ -76,7 +76,7 @@ export async function logOwnerAction(
     try {
         const admin = createAdminClient()
 
-        await (admin as any).from('audit_log').insert({
+        await admin.from('audit_log').insert({
             tenant_id: tenantId,
             action,
             user_id: options?.userId || null,

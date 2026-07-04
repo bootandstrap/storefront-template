@@ -24,7 +24,6 @@ interface ProductGridProps {
 export default function ProductGrid({
     products,
     categories,
-    totalCount,
     badgesEnabled = true,
     compareEnabled = false,
     quickAddEnabled = false,

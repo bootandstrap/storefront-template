@@ -59,7 +59,7 @@ export async function getOwnerModuleStatus(
   locale: string,
 ): Promise<OwnerModuleStatus> {
   const supabase = await createClient();
-  const { config, featureFlags } = await getConfig();
+  const { config } = await getConfig();
   const tenantId = config.tenant_id || "";
 
   // ── Fetch catalog (locale-aware) ──
@@ -364,9 +364,9 @@ function calculateMonthlySpend(
 ): number {
   let total = 0;
   for (const [key, { tierKey }] of Object.entries(activeModules)) {
-    const module = catalog.find((m) => m.key === key);
-    if (!module) continue;
-    const tier = module.tiers.find((t) => t.key === tierKey);
+    const catalogModule = catalog.find((m) => m.key === key);
+    if (!catalogModule) continue;
+    const tier = catalogModule.tiers.find((t) => t.key === tierKey);
     if (tier) total += tier.price;
   }
   return total;

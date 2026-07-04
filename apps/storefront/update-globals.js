@@ -1,4 +1,5 @@
-const fs = require('fs');
+async function updateGlobals() {
+const fs = await import('node:fs');
 const file = 'src/app/globals.css';
 let content = fs.readFileSync(file, 'utf8');
 
@@ -21,4 +22,10 @@ content = content.replace(/@media \(prefers-color-scheme: dark\) \{\n  \[data-th
 });
 
 fs.writeFileSync(file, content);
-console.log('updated');
+process.stdout.write('updated\n');
+}
+
+updateGlobals().catch((error) => {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 1;
+});

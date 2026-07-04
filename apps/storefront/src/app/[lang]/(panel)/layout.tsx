@@ -69,7 +69,7 @@ export default async function PanelLayout({
     const { config, featureFlags, planLimits } = await getConfigForTenant(tenantId)
     const ownerExperienceMode = await resolveOwnerExperienceModeForTenant({
         tenantId,
-        supabase: supabase as any,
+        supabase: supabase as unknown as NonNullable<Parameters<typeof resolveOwnerExperienceModeForTenant>[0]['supabase']>,
         config: config as Record<string, unknown>,
     })
     const isStarterCollaborative = ownerExperienceMode === 'starter_collaborative'

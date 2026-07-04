@@ -13,7 +13,7 @@
  * - Hover-lift cards
  */
 
-import { useState, useTransition, useRef, useCallback } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'

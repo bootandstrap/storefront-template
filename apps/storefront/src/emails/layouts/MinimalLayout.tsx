@@ -8,7 +8,7 @@
 
 import {
     Html, Head, Body, Container, Section, Text, Hr,
-    Preview, Font, Row, Column, Img,
+    Preview, Font,
 } from '@react-email/components'
 import * as React from 'react'
 import type { LayoutProps } from './types'

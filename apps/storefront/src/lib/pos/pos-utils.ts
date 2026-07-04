@@ -26,7 +26,7 @@ import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/pos/pos-config'
  * Enterprise (limit=0 = unlimited) gets all 4.
  */
 export function getEnabledPOSPaymentMethods(
-    limits?: PlanLimits | null,
+    limits?: Partial<Pick<PlanLimits, 'max_pos_payment_methods'>> | null,
 ): PaymentMethod[] {
     const max = limits?.max_pos_payment_methods ?? 0
 

@@ -29,7 +29,7 @@ import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoG
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 import { CURRENCY_MAP } from '@/lib/i18n/currencies'
-import { LOCALE_LABELS, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
+import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n'
 import { saveActiveLanguagesAction, savePanelLanguageAction, saveActiveCurrenciesAction } from '../actions'
 
 // ---------------------------------------------------------------------------

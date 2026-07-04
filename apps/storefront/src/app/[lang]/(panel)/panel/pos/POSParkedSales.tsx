@@ -82,7 +82,7 @@ export default function POSParkedSales({
     multiDevice = false,
 }: POSParkedSalesProps) {
     const [sales, setSales] = useState<ParkedSale[]>([])
-    const [syncing, setSyncing] = useState(false)
+    const [, setSyncing] = useState(false)
 
     useEffect(() => {
         const local = getParkedSales()

@@ -161,8 +161,8 @@ export async function getModuleConfigContext(
   config: Record<string, unknown>,
   featureFlags: Record<string, boolean>,
 ): Promise<ModuleConfigContext | null> {
-  const module = catalog.find(m => m.key === moduleKey)
-  if (!module) return null
+  const catalogModule = catalog.find(m => m.key === moduleKey)
+  if (!catalogModule) return null
 
   const activeTierKey = activeModules[moduleKey]?.tierKey ?? null
 
@@ -181,7 +181,7 @@ export async function getModuleConfigContext(
   }
 
   return {
-    module,
+    module: catalogModule,
     activeTierKey,
     config: moduleConfig,
     featureFlags: moduleFlags,

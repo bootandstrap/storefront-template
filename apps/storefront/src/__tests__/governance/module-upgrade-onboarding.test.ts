@@ -9,7 +9,6 @@ import { describe, it, expect } from 'vitest'
 import {
     FEATURE_GATE_MAP,
     getFeatureGateEntry,
-    getFlagsByModule,
     getGatedModuleKeys,
     getModuleInfoUrl,
     BSWEB_BASE_URL,
@@ -105,16 +104,6 @@ describe('Suite 3: Upgrade & Mini-Onboarding Data', () => {
         })
 
         it('ecommerce basic→pro: reviews, wishlist, promotions become available', () => {
-            const basicFlags = {
-                enable_ecommerce: true, enable_carousel: true,
-                enable_product_badges: true,
-            }
-            const proFlags = {
-                ...basicFlags,
-                enable_reviews: true, enable_wishlist: true,
-                enable_cms_pages: true, enable_promotions: true,
-            }
-
             // After upgrade, new feature gate entries exist
             for (const newFlag of ['enable_reviews', 'enable_wishlist', 'enable_cms_pages']) {
                 const entry = getFeatureGateEntry(newFlag)
@@ -126,7 +115,7 @@ describe('Suite 3: Upgrade & Mini-Onboarding Data', () => {
 
     describe('Feature Gate Entries Resolution', () => {
         it('every flag in FEATURE_GATE_MAP resolves to valid module info', () => {
-            for (const [flag, entry] of Object.entries(FEATURE_GATE_MAP)) {
+            for (const [, entry] of Object.entries(FEATURE_GATE_MAP)) {
                 expect(entry.moduleKey.length).toBeGreaterThan(0)
                 expect(entry.moduleNameKey).toContain('featureGate.modules.')
                 expect(entry.icon.length).toBeGreaterThan(0)

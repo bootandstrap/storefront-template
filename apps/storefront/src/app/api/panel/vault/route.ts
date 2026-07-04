@@ -11,6 +11,7 @@ import { executeRetention } from '@/lib/backup/backup-retention'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { getTenantSlug } from '@/lib/backup/tenant-slug'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function GET(req: NextRequest) {
     try {
@@ -31,10 +32,7 @@ export async function GET(req: NextRequest) {
         })
     } catch (err) {
         logger.error('[vault/storage] GET error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }
 
@@ -83,9 +81,6 @@ export async function POST(req: NextRequest) {
         })
     } catch (err) {
         logger.error('[vault/backup] POST error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }

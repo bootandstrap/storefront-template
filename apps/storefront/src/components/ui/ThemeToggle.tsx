@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useHydrated } from '@/lib/client-runtime'
 
 /**
  * ThemeToggle — cycles between light → dark → system.
@@ -11,9 +11,7 @@ import { useEffect, useState } from 'react'
  */
 export default function ThemeToggle() {
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => setMounted(true), [])
+    const mounted = useHydrated()
 
     // Prevent hydration mismatch — placeholder until mounted
     if (!mounted) return <div className="w-8 h-8" />

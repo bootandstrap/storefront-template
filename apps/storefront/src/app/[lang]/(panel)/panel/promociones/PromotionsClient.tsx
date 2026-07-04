@@ -111,6 +111,16 @@ export default function PromotionsClient({ promotions: initialPromotions, promot
         setTimeout(() => setCopiedId(null), 2000)
     }, [])
 
+    const resetForm = () => {
+        setNewCode('')
+        setNewType('percentage')
+        setNewValue('')
+        setNewUsageLimit('')
+        setNewStartsAt('')
+        setNewEndsAt('')
+        setCreateError(null)
+    }
+
     // ── Create promotion ─────────────────────────────────────────────────────
     const handleCreate = useCallback(async () => {
         if (!newCode.trim()) return
@@ -180,16 +190,6 @@ export default function PromotionsClient({ promotions: initialPromotions, promot
             } catch { /* silently fail */ }
         })
     }, [labels.confirmDelete])
-
-    const resetForm = () => {
-        setNewCode('')
-        setNewType('percentage')
-        setNewValue('')
-        setNewUsageLimit('')
-        setNewStartsAt('')
-        setNewEndsAt('')
-        setCreateError(null)
-    }
 
     return (
         <div className="space-y-4">

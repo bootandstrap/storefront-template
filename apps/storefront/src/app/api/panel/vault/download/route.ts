@@ -9,6 +9,7 @@ import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTenantSlug } from '@/lib/backup/tenant-slug'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function GET(request: NextRequest) {
     try {
@@ -47,9 +48,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(data.signedUrl)
     } catch (err) {
         logger.error('[vault/download] GET error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }

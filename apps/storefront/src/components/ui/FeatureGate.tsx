@@ -16,7 +16,7 @@
 import Link from 'next/link'
 import { FEATURE_GATE_MAP, getModuleActivationUrl, getModuleInfoUrl } from '@/lib/feature-gate-config'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
-import { Check, ArrowRight, Info, Sparkles, Zap, Shield } from 'lucide-react'
+import { ArrowRight, Info, Sparkles, Zap, Shield } from 'lucide-react'
 
 interface FeatureGateProps {
     /** The feature flag key that is blocking access */

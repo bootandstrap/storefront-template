@@ -13,9 +13,9 @@
  * @version 2.0 — SOTA Design System (2026-04-15)
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ArrowRight, Sparkles, Trophy, Star, Zap, Crown } from 'lucide-react'
+import { X, ArrowRight, Trophy, Star, Zap, Crown } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -73,22 +73,37 @@ function getTierDesign(tier?: string) {
     return TIER_GRADIENTS[tier || 'basic'] || TIER_GRADIENTS.basic
 }
 
+function getDeterministicFraction(seed: number) {
+    const raw = Math.sin(seed * 12.9898) * 43758.5453
+    return raw - Math.floor(raw)
+}
+
+function buildConfettiParticles(colors: string[]) {
+    return Array.from({ length: 18 }, (_, i) => {
+        const angle = (i / 18) * 360
+        const distance = 35 + getDeterministicFraction(i + 1) * 60
+        const x = Math.cos((angle * Math.PI) / 180) * distance
+        const y = Math.sin((angle * Math.PI) / 180) * distance * -1
+        const rotation = getDeterministicFraction(i + 19) * 720 - 360
+        const size = 4 + getDeterministicFraction(i + 37) * 4
+        const isCircle = getDeterministicFraction(i + 55) > 0.5
+
+        return {
+            x,
+            y,
+            rotation,
+            color: colors[i % colors.length],
+            delay: i * 25,
+            size,
+            isCircle,
+        }
+    })
+}
+
 // ── Confetti Burst (elevated) ──────────────────────────────────────────────
 
 function ConfettiBurst({ colors }: { colors: string[] }) {
-    const particles = useMemo(() =>
-        Array.from({ length: 18 }).map((_, i) => {
-            const angle = (i / 18) * 360
-            const distance = 35 + Math.random() * 60
-            const x = Math.cos((angle * Math.PI) / 180) * distance
-            const y = Math.sin((angle * Math.PI) / 180) * distance * -1
-            const rotation = Math.random() * 720 - 360
-            const size = 4 + Math.random() * 4
-            const isCircle = Math.random() > 0.5
-
-            return { x, y, rotation, color: colors[i % colors.length], delay: i * 25, size, isCircle }
-        }),
-    [colors])
+    const particles = buildConfettiParticles(colors)
 
     return (
         <div className="absolute inset-0 pointer-events-none overflow-visible">

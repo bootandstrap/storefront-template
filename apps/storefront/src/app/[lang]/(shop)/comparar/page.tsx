@@ -4,7 +4,6 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Comparar productos', description: 'Compara características y precios de productos' }
 
 import { getConfig } from '@/lib/config'
-import type { Locale } from '@/lib/i18n'
 import CompararClient from './CompararClient'
 
 export const dynamic = 'force-dynamic'

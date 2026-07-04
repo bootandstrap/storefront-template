@@ -104,7 +104,7 @@ export default function POSCustomerModal({ onClose, onSelect, labels }: POSCusto
             setCreateError(err instanceof Error ? err.message : 'Error')
         }
         setCreating(false)
-    }, [firstName, lastName, email, phone, onSelect])
+    }, [firstName, lastName, email, phone, labels, onSelect])
 
     // ── Escape key to dismiss ──
     useEffect(() => {

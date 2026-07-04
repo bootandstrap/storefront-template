@@ -29,7 +29,7 @@ import {
 import Link from 'next/link'
 
 import { CURRENCY_MAP } from '@/lib/i18n/currencies'
-import { LOCALE_LABELS, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
+import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n'
 import { STATIC_EXCHANGE_RATES } from '@/lib/currency-engine'
 import { saveActiveLanguagesAction, savePanelLanguageAction, saveActiveCurrenciesAction } from '../actions'
 

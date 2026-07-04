@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit } from 'next/font/google'
 import { headers } from 'next/headers'
 import { getConfig } from '@/lib/config'
@@ -10,7 +10,6 @@ import { CartProvider } from '@/contexts/CartContext'
 import { WishlistProvider } from '@/contexts/WishlistContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { ToastProvider } from '@/components/ui/Toaster'
-import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import AnalyticsTracker from '@/components/ui/AnalyticsTracker'
 import ServiceWorkerRegister from '@/components/ui/ServiceWorkerRegister'
 import NextTopLoader from 'nextjs-toploader'
@@ -77,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export async function generateViewport(): Promise<any> {
+export async function generateViewport(): Promise<Viewport> {
     const { config } = await getConfig()
     const colors = resolveThemeColors(config)
     return {
@@ -118,8 +117,6 @@ export default async function RootLayout({
   const secondaryLight = lightenHex(colors.secondary, 15)
   const accentLight = lightenHex(colors.accent, 15)
 
-  // Resolve theme mode — default from config, client can override via next-themes
-  const themeMode = config.theme_mode || 'light'
   const htmlClasses = [
     inter.variable,
     outfit.variable,
@@ -152,9 +149,6 @@ export default async function RootLayout({
         {process.env.MEDUSA_BACKEND_URL && (
           <link rel="preconnect" href={process.env.MEDUSA_BACKEND_URL} />
         )}
-        {/* eslint-disable-next-line @next/next/google-font-preconnect -- preconnect already above */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         {/* PWA */}
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

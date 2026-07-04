@@ -53,7 +53,7 @@ export default function HeroCarousel({ slides, labels }: HeroCarouselProps) {
     )
 
     const [selectedIndex, setSelectedIndex] = useState(0)
-    const [scrollProgress, setScrollProgress] = useState(0)
+    const [, setScrollProgress] = useState(0)
 
     const onSelect = useCallback(() => {
         if (!emblaApi) return

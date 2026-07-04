@@ -29,7 +29,7 @@
 
 import { toast } from 'sonner'
 import { checkLimit, getLimitSeverity, type LimitCheckResult } from '@/lib/limits'
-import { parseLimitError, RESOURCE_LABEL_KEYS, type LimitExceededInfo } from '@/lib/limit-errors'
+import { parseLimitError, RESOURCE_LABEL_KEYS } from '@/lib/limit-errors'
 import type { LimitableResource } from '@bootandstrap/shared'
 import type { PlanLimits } from '@/lib/config'
 

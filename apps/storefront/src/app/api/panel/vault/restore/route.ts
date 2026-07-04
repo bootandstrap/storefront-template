@@ -11,6 +11,7 @@ import { getTenantSlug } from '@/lib/backup/tenant-slug'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { executeRestore } from '@/lib/backup/backup-restore'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function POST(request: NextRequest) {
     try {
@@ -56,9 +57,6 @@ export async function POST(request: NextRequest) {
         }, { status: result.success ? 200 : 207 }) // 207 = Multi-Status (partial success)
     } catch (err) {
         logger.error('[vault/restore] POST error:', err)
-        return NextResponse.json(
-            { error: err instanceof Error ? err.message : 'Internal error' },
-            { status: 500 }
-        )
+        return toPanelErrorResponse(err)
     }
 }

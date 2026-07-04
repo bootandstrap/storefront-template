@@ -1,7 +1,9 @@
 # 🚀 HANDOFF — Checklist Operativa de Nuevo Tenant
 
 > Lista maestra para el equipo humano. Cubre TODO lo que hay que hacer cuando se vende una nueva web a un cliente.
-> Última actualización: 2026-06-25.
+> Esta es la checklist canónica del runtime template. El tenant desplegado conserva un handoff de runtime proof, no otra copia de esta guía.
+> Harness cross-repo: `../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md`.
+> Última actualización: 2026-07-01.
 
 ---
 

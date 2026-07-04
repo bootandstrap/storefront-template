@@ -69,7 +69,6 @@ test.describe('Cart Flow — Add to Cart + Drawer', () => {
 
         // Cart count badge should appear or update
         await page.waitForTimeout(2000)
-        const cartCount = page.locator('[data-testid="cart-count"]')
         // Cart count may or may not be visible depending on implementation
         // At least verify page didn't crash
         await expect(page.locator('body')).toBeAttached()

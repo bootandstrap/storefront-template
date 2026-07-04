@@ -11,7 +11,7 @@
  *   store-readiness.ts → dashboard page.tsx (server) → PanelChecklist (client)
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CheckCircle, Circle } from 'lucide-react'
 import { skipChecklistAction } from '@/app/[lang]/(panel)/panel/actions'
@@ -62,20 +62,11 @@ export default function PanelChecklist({
         if (typeof window === 'undefined') return false
         return isChecklistSkipped(window.localStorage)
     })
-    const [celebrating, setCelebrating] = useState(false)
 
     const completedCount = checks.filter(c => c.done).length
     const allDone = completedCount === checks.length && checks.length > 0
     const progress = checks.length > 0 ? (completedCount / checks.length) * 100 : 0
-
-    // Celebration on 100%
-    useEffect(() => {
-        if (allDone && !hidden) {
-            setCelebrating(true)
-            const timer = setTimeout(() => setCelebrating(false), 3000)
-            return () => clearTimeout(timer)
-        }
-    }, [allDone, hidden])
+    const celebrating = allDone && !hidden
 
     if (hidden || checks.length === 0) return null
 

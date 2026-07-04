@@ -1,6 +1,8 @@
-# Documentation Index — Storefront Template
+# Documentation Index — Canonical Storefront Template
 
-> Hierarchy: root `GEMINI.md` > per-repo `GEMINI.md` > these docs.
+> Workspace hierarchy: `../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md` >
+> repo `AGENTS.md` / `GEMINI.md` > domain docs. Outside the shared workspace,
+> the repo adapters are the fail-safe.
 
 | Doc                                                                              | Contents                                               |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------ |

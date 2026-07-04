@@ -20,13 +20,6 @@ interface ModuleMatrixStepProps {
     t: (key: string, fallback?: string) => string
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-    sell: '#22c55e',
-    engage: '#3b82f6',
-    grow: '#06b6d4',
-    automate: '#f59e0b',
-}
-
 const CATEGORY_ICONS: Record<string, string> = {
     sell: '🛍️',
     engage: '💬',
@@ -76,7 +69,6 @@ export default function ModuleMatrixStep({
             {/* Module grid by category */}
             <div className="space-y-4 max-h-[45vh] overflow-y-auto pr-1">
                 {Object.entries(grouped).map(([category, mods]) => {
-                    const catColor = CATEGORY_COLORS[category] || '#666'
                     const catIcon = CATEGORY_ICONS[category] || '📦'
                     const catLabel = t(`onboarding.category.${category}`, category)
                     return (

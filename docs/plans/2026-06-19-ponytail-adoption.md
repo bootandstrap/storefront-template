@@ -68,16 +68,18 @@ Pero nunca:
 - menos pruebas en flujos sensibles
 - menos claridad sobre que partes siguen siendo manuales fuera del runtime
 
-## Relacion con `GEMINI.md`
+## Relacion con el harness de agentes
 
-`AGENTS.md` no sustituye `GEMINI.md`. La jerarquia efectiva queda asi:
+En el workspace compartido, la jerarquia efectiva queda asi:
 
-1. `GEMINI.md`
-2. `.agent/workflows/*.md`
-3. `AGENTS.md`
-4. docs de soporte
+1. `../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md`
+2. `AGENTS.md` y `GEMINI.md` son adapters locales
+3. `.agent/workflows/*.md`
+4. docs de dominio
 
-Si hay conflicto, prevalecen el zone map, los invariantes y los workflows ya definidos para el repo.
+Fuera del workspace compartido, los adapters locales son el fail-safe y nunca
+amplían ownership. Ponytail sigue sin poder vender runtime sano como plataforma
+self-service completa.
 
 ## Impacto esperado
 
@@ -89,7 +91,7 @@ Si hay conflicto, prevalecen el zone map, los invariantes y los workflows ya def
 ## Vias siguientes
 
 1. mantener la adopcion repo-local con `AGENTS.md` + doc viva + test contractual
-2. dejar que el test documental falle si alguien rompe la jerarquia `GEMINI.md` → workflows → `AGENTS.md`
+2. dejar que el test documental falle si alguien rompe la jerarquia harness → adapters → workflows
 3. si el plugin oficial de Ponytail pasa a estar disponible en Codex, evaluarlo como ayuda operativa adicional, no como sustituto del zone map ni de los gates del runtime
 4. usar [`2026-06-19-holistic-alignment-status.md`](./2026-06-19-holistic-alignment-status.md) como congelacion de estado para no volver a mezclar alineacion local del runtime con claims de plataforma
 

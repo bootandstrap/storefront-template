@@ -12,6 +12,7 @@ import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { clearCachedConfig } from '@/lib/config'
 import { logger } from '@/lib/logger'
+import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 
 export async function POST(req: NextRequest) {
     try {
@@ -39,6 +40,6 @@ export async function POST(req: NextRequest) {
         // withPanelGuard throws redirect on auth failure — if we get here
         // it's an unexpected error
         logger.error('[onboarding-complete] Unexpected:', err)
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        return toPanelErrorResponse(err)
     }
 }

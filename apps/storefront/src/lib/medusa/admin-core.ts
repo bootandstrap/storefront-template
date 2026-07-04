@@ -18,10 +18,6 @@ const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || 'http://localhost:9
 const MEDUSA_ADMIN_EMAIL = process.env.MEDUSA_ADMIN_EMAIL || 'admin@medusajs.com'
 const MEDUSA_ADMIN_PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD
 
-if (!MEDUSA_ADMIN_PASSWORD) {
-    logger.error('[medusa-admin] CRITICAL: MEDUSA_ADMIN_PASSWORD env var is not set. Owner Panel will not work.')
-}
-
 // ---------------------------------------------------------------------------
 // JWT token cache (globalThis — survives Turbopack module re-evaluation)
 // ---------------------------------------------------------------------------
@@ -34,6 +30,11 @@ const gMedusa = globalThis as unknown as {
 }
 
 async function getAdminToken(): Promise<string> {
+    if (!MEDUSA_ADMIN_PASSWORD) {
+        logger.error('[medusa-admin] CRITICAL: MEDUSA_ADMIN_PASSWORD env var is not set. Owner Panel will not work.')
+        throw new Error('MEDUSA_ADMIN_PASSWORD is required for the Medusa Admin API')
+    }
+
     const now = Date.now()
     if (gMedusa.__medusaAdminToken && now < (gMedusa.__medusaTokenExpiry ?? 0)) {
         return gMedusa.__medusaAdminToken

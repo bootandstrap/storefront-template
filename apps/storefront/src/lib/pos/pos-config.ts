@@ -355,7 +355,7 @@ export function safeVariantPrice(variant: {
     }
 
     // 1. Check calculated_price (Store API — already resolved for context)
-    const calc = (variant as any).calculated_price
+    const calc = variant.calculated_price
     if (calc?.currency_code?.toLowerCase() === target && typeof calc.calculated_amount === 'number') {
         return {
             unit_price: calc.calculated_amount,

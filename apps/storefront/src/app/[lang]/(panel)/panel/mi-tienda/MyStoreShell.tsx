@@ -16,7 +16,7 @@ interface MyStoreShellProps {
     children: React.ReactNode
 }
 
-export default function MyStoreShell({ tabs, activeTab, lang, children }: MyStoreShellProps) {
+export default function MyStoreShell({ tabs, activeTab, children }: MyStoreShellProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()

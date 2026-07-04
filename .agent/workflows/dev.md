@@ -4,6 +4,11 @@ description: Run the ecommerce template locally for development (full stack)
 
 # Local Development Workflow
 
+Role gate: this is the canonical tenant runtime template. Read
+`../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md` when working in the shared
+workspace. Reusable fixes are implemented and verified here before propagation
+to tenant repos.
+
 ## Prerequisites
 
 - Node.js 22+

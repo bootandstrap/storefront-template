@@ -10,6 +10,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
 
 export default function PanelError({
@@ -56,13 +57,13 @@ export default function PanelError({
                         <RotateCcw className="w-4 h-4" />
                         Try again
                     </button>
-                    <a
+                    <Link
                         href="/panel"
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-sf-3 text-sm font-medium text-tx-sec hover:bg-sf-1 transition-colors"
                     >
                         <Home className="w-4 h-4" />
                         Dashboard
-                    </a>
+                    </Link>
                 </div>
 
                 {/* Debug info (dev only) */}

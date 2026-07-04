@@ -21,11 +21,11 @@ import { SotaBentoGrid, SotaBentoItem } from '@/components/panel/sota/SotaBentoG
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'
 import { SotaMetric } from '@/components/panel/sota/SotaMetric'
 
-import { PageEntrance, ListStagger, StaggerItem } from '@/components/panel/PanelAnimations'
+import { PageEntrance } from '@/components/panel/PanelAnimations'
 import ModuleConfigSection from '@/components/panel/ModuleConfigSection'
 import { getModuleConfigSchema } from '@/lib/registries/module-config-schemas'
 import { exportCrmCsv } from './actions'
-import { createCrmContact, updateCrmContact } from './guarded-actions'
+import { createCrmContact } from './guarded-actions'
 
 // ---------------------------------------------------------------------------
 // Constants

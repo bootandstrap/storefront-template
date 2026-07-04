@@ -110,7 +110,7 @@ function fuzzyMatch(query: string, text: string, keywords?: string[]): boolean {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function CommandPalette({ items, labels, lang }: CommandPaletteProps) {
+export default function CommandPalette({ items, labels }: CommandPaletteProps) {
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState('')
     const [activeIndex, setActiveIndex] = useState(0)

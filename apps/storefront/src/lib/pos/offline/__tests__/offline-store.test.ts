@@ -5,7 +5,7 @@
  * Uses fake-indexeddb for Node.js environment.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 // ── Mock IndexedDB for Node.js ──
 // We test the public API contract without a real IDB

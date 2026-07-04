@@ -7,7 +7,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
     X, Award, Star, Gift, Stamp, ChevronRight,
     Sparkles, History, User, Crown,
@@ -21,11 +21,8 @@ import {
     getStampProgress,
     getRedemptionHistory,
     type LoyaltyConfig,
-    type LoyaltyCustomer,
-    type LoyaltyRedemption,
 } from '@/lib/pos/loyalty-engine'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
-import { posLabel } from '@/lib/pos/pos-i18n'
 
 interface POSLoyaltyCardProps {
     customerId: string | null
@@ -47,18 +44,15 @@ export default function POSLoyaltyCard({
     defaultCurrency,
 }: POSLoyaltyCardProps) {
     const [config] = useState<LoyaltyConfig>(() => getLoyaltyConfig())
-    const [customer, setCustomer] = useState<LoyaltyCustomer | null>(null)
-    const [history, setHistory] = useState<LoyaltyRedemption[]>([])
+    const [, setRefreshKey] = useState(0)
     const [activeTab, setActiveTab] = useState<LoyaltyTab>('card')
     const [justStamped, setJustStamped] = useState(false)
     const [justRedeemed, setJustRedeemed] = useState(false)
 
-    useEffect(() => {
-        if (customerId) {
-            setCustomer(getCustomerLoyalty(customerId))
-            setHistory(getRedemptionHistory().filter(r => r.customerId === customerId))
-        }
-    }, [customerId])
+    const customer = customerId ? getCustomerLoyalty(customerId) : null
+    const history = customerId
+        ? getRedemptionHistory().filter(redemption => redemption.customerId === customerId)
+        : []
 
     const progress = useMemo(() => {
         if (!customer) return null
@@ -67,8 +61,8 @@ export default function POSLoyaltyCard({
 
     const handleAddStamp = useCallback(() => {
         if (!customerId || !customerName) return
-        const updated = addStamp(customerId, customerName)
-        setCustomer(updated)
+        addStamp(customerId, customerName)
+        setRefreshKey(prev => prev + 1)
         setJustStamped(true)
         setTimeout(() => setJustStamped(false), 1500)
     }, [customerId, customerName])
@@ -77,8 +71,7 @@ export default function POSLoyaltyCard({
         if (!customerId) return
         const redemption = redeemReward(customerId)
         if (redemption) {
-            setCustomer(getCustomerLoyalty(customerId))
-            setHistory(prev => [redemption, ...prev])
+            setRefreshKey(prev => prev + 1)
             setJustRedeemed(true)
             onRewardApplied?.(redemption.rewardDescription)
             setTimeout(() => setJustRedeemed(false), 3000)

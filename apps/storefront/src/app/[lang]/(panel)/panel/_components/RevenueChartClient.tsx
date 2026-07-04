@@ -48,7 +48,7 @@ export default function RevenueChartClient({
 }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
-    const [tooltip, setTooltip] = useState<{ x: number; date: string; revenue: string; orders: number } | null>(null)
+    const [tooltip, setTooltip] = useState<{ left: number; date: string; revenue: string; orders: number } | null>(null)
     const [showSplit, setShowSplit] = useState(false)
 
     const hasData = ordersByDay.some(d => d.orders > 0) || revenueByDay.some(d => d.primaryAmount > 0)
@@ -147,7 +147,7 @@ export default function RevenueChartClient({
             const label = `${d.getDate()}/${d.getMonth() + 1}`
             ctx.fillText(label, padding.left + i * stepX, h - 4)
         }
-    }, [ordersByDay, revenueByDay, primaryCurrency])
+    }, [ordersByDay, revenueByDay])
 
     useEffect(() => {
         drawChart()
@@ -167,8 +167,9 @@ export default function RevenueChartClient({
         const idx = Math.round((x - padding) / (chartW / (days - 1 || 1)))
         if (idx >= 0 && idx < days) {
             const revDay = revenueByDay[idx]
+            const tooltipX = padding + idx * (chartW / (days - 1 || 1))
             setTooltip({
-                x: padding + idx * (chartW / (days - 1 || 1)),
+                left: Math.max(76, Math.min(tooltipX, rect.width - 76)),
                 date: new Date(ordersByDay[idx].date).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short' }),
                 revenue: formatAmount(revDay?.primaryAmount ?? 0, primaryCurrency, lang),
                 orders: ordersByDay[idx].orders,
@@ -230,7 +231,7 @@ export default function RevenueChartClient({
                     {tooltip && (
                         <div
                             className="absolute top-0 bg-sf-0/95 backdrop-blur-md border border-sf-2 rounded-lg px-3 py-2 shadow-xl pointer-events-none z-10 transition-all duration-100"
-                            style={{ left: Math.min(tooltip.x, (containerRef.current?.offsetWidth ?? 200) - 140), transform: 'translateX(-50%)' }}
+                            style={{ left: tooltip.left, transform: 'translateX(-50%)' }}
                         >
                             <p className="text-[10px] font-medium text-tx-muted capitalize">{tooltip.date}</p>
                             <p className="text-sm font-bold text-tx">{tooltip.revenue}</p>

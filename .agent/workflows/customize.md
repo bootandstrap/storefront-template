@@ -6,6 +6,10 @@ description: Customize a tenant storefront (branding, layout, content, pages)
 
 This workflow guides you through customizing a tenant's storefront safely.
 
+Role gate: reusable components and runtime behavior belong to the canonical
+template. A tenant repo receives the verified change and keeps only its branding,
+content, catalog and configuration overlay.
+
 ## Pre-flight
 
 1. Read `GEMINI.md` — specifically the **Zone Map** (Section 2)

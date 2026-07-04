@@ -9,13 +9,12 @@
  */
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Plus, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { POSCartItem, POSSaleRecord } from '@/lib/pos/pos-config'
 import { safeVariantPrice } from '@/lib/pos/pos-config'
 import { formatPOSCurrency } from '@/lib/pos/pos-utils'
-import { posLabel } from '@/lib/pos/pos-i18n'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 
 // ── Co-occurrence storage ──
@@ -99,7 +98,7 @@ export default function POSRecommendations({
     defaultCurrency,
     maxSuggestions = 4,
 }: POSRecommendationsProps) {
-    const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+    const [dismissed] = useState<Set<string>>(new Set())
 
     const formatCurrency = useCallback((amount: number) =>
         formatPOSCurrency(amount, defaultCurrency),

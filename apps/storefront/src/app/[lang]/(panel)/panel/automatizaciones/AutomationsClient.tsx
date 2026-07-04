@@ -12,11 +12,10 @@
  */
 
 import { useState, useTransition, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
     Zap, XCircle, RotateCcw, Truck,
     Webhook, MessageCircle, Send, Mail,
-    Settings, Save, Loader2, Check, ChevronDown, ChevronUp,
+    Settings, Loader2, ChevronDown, ChevronUp,
     Bell, Activity, CheckCircle2, Lock,
 } from 'lucide-react'
 import { NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS, type ChannelKey } from '@/lib/registries/notification-events'
@@ -79,7 +78,7 @@ type TabId = 'channels' | 'events' | 'log'
 // Component
 // ---------------------------------------------------------------------------
 
-export default function AutomationsClient({ channels: initialChannels, events: initialEvents, enableCustomWebhooks, labels, lang }: AutomationsClientProps) {
+export default function AutomationsClient({ channels: initialChannels, events: initialEvents, enableCustomWebhooks, labels }: AutomationsClientProps) {
     const [tab, setTab] = useState<TabId>('channels')
     const [channels, setChannels] = useState<ChannelConfigs>(initialChannels)
     const [events, setEvents] = useState<Record<string, string[]>>(initialEvents)
@@ -113,7 +112,7 @@ export default function AutomationsClient({ channels: initialChannels, events: i
     }
 
     // ── Save channel config (on blur) ──
-    function saveChannel(ch: keyof ChannelConfigs) {
+    function saveChannel() {
         startTransition(async () => {
             const r = await saveNotificationChannelsAction(channels)
             if (!r.success) showToast('error', r.error ?? labels.saveError)
@@ -266,21 +265,21 @@ export default function AutomationsClient({ channels: initialChannels, events: i
                                     <div className="border-t border-sf-3 px-5 py-4 space-y-4 animate-slide-up">
                                         {ch === 'webhook' && (
                                             <>
-                                                <Field label="URL" value={channels.webhook.url} placeholder="https://hooks.example.com/notify" onChange={v => updateField('webhook', 'url', v)} onBlur={() => saveChannel('webhook')} />
-                                                <Field label="Secret (HMAC)" value={channels.webhook.secret} placeholder="whsec_..." onChange={v => updateField('webhook', 'secret', v)} onBlur={() => saveChannel('webhook')} type="password" />
+                                                <Field label="URL" value={channels.webhook.url} placeholder="https://hooks.example.com/notify" onChange={v => updateField('webhook', 'url', v)} onBlur={saveChannel} />
+                                                <Field label="Secret (HMAC)" value={channels.webhook.secret} placeholder="whsec_..." onChange={v => updateField('webhook', 'secret', v)} onBlur={saveChannel} type="password" />
                                             </>
                                         )}
                                         {ch === 'whatsapp' && (
                                             <>
-                                                <Field label="Phone Number ID" value={channels.whatsapp.phone_number_id} placeholder="15551234567" onChange={v => updateField('whatsapp', 'phone_number_id', v)} onBlur={() => saveChannel('whatsapp')} />
-                                                <Field label="Access Token" value={channels.whatsapp.token} placeholder="EAAx..." onChange={v => updateField('whatsapp', 'token', v)} onBlur={() => saveChannel('whatsapp')} type="password" />
-                                                <Field label="Número destinatario" value={channels.whatsapp.recipient} placeholder="+41791234567" onChange={v => updateField('whatsapp', 'recipient', v)} onBlur={() => saveChannel('whatsapp')} />
+                                                <Field label="Phone Number ID" value={channels.whatsapp.phone_number_id} placeholder="15551234567" onChange={v => updateField('whatsapp', 'phone_number_id', v)} onBlur={saveChannel} />
+                                                <Field label="Access Token" value={channels.whatsapp.token} placeholder="EAAx..." onChange={v => updateField('whatsapp', 'token', v)} onBlur={saveChannel} type="password" />
+                                                <Field label="Número destinatario" value={channels.whatsapp.recipient} placeholder="+41791234567" onChange={v => updateField('whatsapp', 'recipient', v)} onBlur={saveChannel} />
                                             </>
                                         )}
                                         {ch === 'telegram' && (
                                             <>
-                                                <Field label="Bot Token" value={channels.telegram.bot_token} placeholder="123456:ABC-DEF..." onChange={v => updateField('telegram', 'bot_token', v)} onBlur={() => saveChannel('telegram')} type="password" />
-                                                <Field label="Chat ID" value={channels.telegram.chat_id} placeholder="-100123456789" onChange={v => updateField('telegram', 'chat_id', v)} onBlur={() => saveChannel('telegram')} />
+                                                <Field label="Bot Token" value={channels.telegram.bot_token} placeholder="123456:ABC-DEF..." onChange={v => updateField('telegram', 'bot_token', v)} onBlur={saveChannel} type="password" />
+                                                <Field label="Chat ID" value={channels.telegram.chat_id} placeholder="-100123456789" onChange={v => updateField('telegram', 'chat_id', v)} onBlur={saveChannel} />
                                             </>
                                         )}
 

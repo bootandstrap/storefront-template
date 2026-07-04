@@ -89,17 +89,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Static asset caching ──
-      // Next.js hashes filenames → safe to cache forever (immutable)
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
       // ── Image caching ──
       // 1 day fresh + 7 days stale-while-revalidate (serves stale while
       // fetching fresh in background → fast UX with eventual consistency)

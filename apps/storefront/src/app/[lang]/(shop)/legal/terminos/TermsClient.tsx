@@ -16,7 +16,6 @@ interface TermsClientProps {
 
 export default function TermsClient({
     lang,
-    t,
     businessName,
     domain,
     contactEmail,

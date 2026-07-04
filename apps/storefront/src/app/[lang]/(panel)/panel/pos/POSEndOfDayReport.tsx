@@ -14,8 +14,8 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
 import {
     X, FileText, Download, TrendingUp, ShoppingCart,
-    Receipt, CreditCard, Package, Clock, AlertTriangle,
-    CheckCircle, Banknote, Printer,
+    Receipt, Clock, AlertTriangle,
+    CheckCircle, Banknote,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { DailyStats, POSShift, PaymentMethod } from '@/lib/pos/pos-config'

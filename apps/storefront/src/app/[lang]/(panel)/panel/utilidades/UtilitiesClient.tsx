@@ -11,15 +11,14 @@
  * Locked tabs show inline up-sell with "why upgrade" + purchase CTA.
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
-    Wifi, Heart, Tag, Lock, Sparkles, ArrowRight,
-    Plus, Search, Award, Settings, Users, Check,
-    Star, Gift, ChevronRight, Printer, Package,
-    Crown, Stamp,
+    Wifi, Heart, Tag, Lock,
+    Plus, Search, Settings, Users, Check,
+    Gift, Printer, Package, Stamp,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Link from 'next/link'
+import Image from 'next/image'
 import WiFiQRCard from '@/components/panel/WiFiQRCard'
 import LoyaltyCardPreview from '@/components/panel/LoyaltyCardPreview'
 import PriceLabelSheet from '@/components/panel/PriceLabelSheet'
@@ -31,7 +30,6 @@ import {
     getStampProgress,
     getLoyaltyConfig,
     saveLoyaltyConfig,
-    DEFAULT_LOYALTY_CONFIG,
     type LoyaltyConfig,
     type LoyaltyCustomer,
 } from '@/lib/pos/loyalty-engine'
@@ -112,19 +110,13 @@ interface UtilityInfo {
 // ── SOTA Loyalty Management ─────────────────────────────────────────────────
 
 function LoyaltyManager({ labels, lang }: { labels: LoyaltyLabels; lang: string }) {
-    const [config, setConfig] = useState<LoyaltyConfig>(DEFAULT_LOYALTY_CONFIG)
-    const [customers, setCustomers] = useState<LoyaltyCustomer[]>([])
+    const [config, setConfig] = useState<LoyaltyConfig>(() => getLoyaltyConfig())
+    const [customers, setCustomers] = useState<LoyaltyCustomer[]>(() => getAllLoyaltyCustomers())
     const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null)
     const [newCustomerName, setNewCustomerName] = useState('')
     const [showConfig, setShowConfig] = useState(false)
     const [configSaved, setConfigSaved] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
-
-    // Load data from localStorage
-    useEffect(() => {
-        setConfig(getLoyaltyConfig())
-        setCustomers(getAllLoyaltyCustomers())
-    }, [])
 
     const filteredCustomers = useMemo(() => {
         if (!searchQuery) return customers
@@ -511,7 +503,7 @@ function ProductLabelSelector({
             })
         })
         return items
-    }, [products, selectedIds])
+    }, [products, selectedIds, defaultCurrency])
 
     if (products.length === 0) {
         return (
@@ -624,12 +616,15 @@ function ProductLabelSelector({
                             </div>
 
                             {/* Thumbnail */}
-                            <div className="w-full aspect-square rounded-xl bg-sf-1 mb-3 overflow-hidden">
+                            <div className="relative w-full aspect-square rounded-xl bg-sf-1 mb-3 overflow-hidden">
                                 {product.thumbnail ? (
-                                    <img
+                                    <Image
                                         src={product.thumbnail}
                                         alt={product.title}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        sizes="(max-width: 640px) 50vw, 240px"
+                                        unoptimized
+                                        className="object-cover"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
@@ -689,12 +684,6 @@ export default function UtilitiesClient({
     const [activeTab, setActiveTab] = useState<TabKey>('wifi')
     const isLoyaltyLocked = !featureFlags.enable_self_service_returns
     const isLabelsLocked = !featureFlags.enable_product_badges
-
-    const tabs: { key: TabKey; label: string; icon: React.ReactNode; locked: boolean; tier: string }[] = [
-        { key: 'wifi', label: labels.tabWifi, icon: <Wifi className="w-4 h-4" />, locked: false, tier: '' },
-        { key: 'loyalty', label: labels.tabLoyalty, icon: <Heart className="w-4 h-4" />, locked: isLoyaltyLocked, tier: 'Enterprise' },
-        { key: 'labels', label: labels.tabLabels, icon: <Tag className="w-4 h-4" />, locked: isLabelsLocked, tier: 'Pro' },
-    ]
 
     const utilInfos: UtilityInfo[] = [
         {

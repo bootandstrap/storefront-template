@@ -24,22 +24,50 @@ describe("Agent doc contract", () => {
     expect(docsReadme).toContain("../AGENTS.md");
   });
 
-  it("Ponytail guardrails preserve runtime semantics and GEMINI precedence", () => {
+  it("routes reusable runtime work through the canonical template", () => {
     const agents = readFileSync(join(MONOREPO_ROOT, "AGENTS.md"), "utf-8");
+    const gemini = readFileSync(join(MONOREPO_ROOT, "GEMINI.md"), "utf-8");
     const plan = readFileSync(
       join(MONOREPO_ROOT, "docs/plans/2026-06-19-ponytail-adoption.md"),
       "utf-8",
     );
 
-    expect(agents).toContain("tenant runtime and storefront truth");
-    expect(agents).toContain("Respect `GEMINI.md` as the primary agent guide");
-    expect(agents).toContain(
-      "Do not call a healthy tenant runtime proof a complete self-service platform.",
+    for (const adapter of [agents, gemini]) {
+      expect(adapter).toContain("canonical tenant runtime template");
+      expect(adapter).toContain(
+        "../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md",
+      );
+      expect(adapter).toContain("Template-first propagation");
+    }
+
+    expect(plan).toContain(
+      "../BOOTANDSTRAP_WEB/docs/ai/ENGINEERING_HARNESS.md",
+    );
+    expect(plan).toContain("AGENTS.md` y `GEMINI.md` son adapters locales");
+    expect(plan).toContain("runtime sano como plataforma self-service completa");
+  });
+
+  it("keeps schema ownership enforceable in a standalone checkout", () => {
+    expect(existsSync(join(MONOREPO_ROOT, "schema-ownership.json"))).toBe(true);
+    expect(
+      existsSync(join(MONOREPO_ROOT, "scripts/check-schema-ownership.sh")),
+    ).toBe(true);
+
+    const releaseGate = readFileSync(
+      join(MONOREPO_ROOT, "scripts/release-gate.sh"),
+      "utf-8",
+    );
+    const workflow = readFileSync(
+      join(MONOREPO_ROOT, ".github/workflows/ci.yml"),
+      "utf-8",
     );
 
-    expect(plan).toContain("`AGENTS.md` no sustituye `GEMINI.md`");
-    expect(plan).toContain(
-      "no usar Ponytail para vender runtime sano como plataforma self-service completa",
+    expect(releaseGate).toContain(
+      'gate "Schema Ownership" bash scripts/check-schema-ownership.sh data-plane',
     );
+    expect(workflow).toContain(
+      "bash scripts/check-schema-ownership.sh data-plane",
+    );
+    expect(workflow).not.toContain("Schema ownership script not in workspace");
   });
 });

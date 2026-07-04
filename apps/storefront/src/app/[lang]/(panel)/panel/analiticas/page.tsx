@@ -43,7 +43,7 @@ export default async function AnaliticasPage({
     const t = createTranslator(dictionary)
 
     const { tenantId, appConfig } = await withPanelGuard()
-    const { featureFlags, planLimits, config } = appConfig
+    const { featureFlags, config } = appConfig
 
     const isLocked = !featureFlags.enable_analytics
     const period = (['7d', '30d', '90d'].includes(sp.period || '') ? sp.period : '30d') as AnalyticsPeriod

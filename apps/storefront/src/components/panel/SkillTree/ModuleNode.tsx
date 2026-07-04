@@ -16,7 +16,7 @@
  *  Maxed     — gold accent, star badge
  */
 
-import { memo } from 'react'
+import { createElement, memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { Lock, Star, ChevronRight } from 'lucide-react'
 import { getCategoryColor, type SkillTreeNodeData } from './skill-tree-layout'
@@ -91,7 +91,6 @@ function ModuleNodeInner({ data }: NodeProps) {
     } = nodeData
     const labels = nodeData.labels ?? FALLBACK_LABELS
     const catColor = getCategoryColor(module.category)
-    const IconComponent = getModuleIcon(module.icon_name || 'Package')
 
     // ── State styles ─────────────────────────────────────────────────────────
     const styles = {
@@ -194,14 +193,14 @@ function ModuleNodeInner({ data }: NodeProps) {
                         borderRadius: '50%',
                         background: s.iconBg,
                     }}>
-                        <IconComponent
-                            size={20}
-                            color={s.iconColor}
-                            style={{
+                        {createElement(getModuleIcon(module.icon_name || 'Package'), {
+                            size: 20,
+                            color: s.iconColor,
+                            style: {
                                 filter: state === 'locked' ? 'grayscale(100%)' : 'none',
                                 transition: 'filter 0.3s ease',
-                            }}
-                        />
+                            },
+                        })}
                     </div>
 
                     {/* Locked badge */}

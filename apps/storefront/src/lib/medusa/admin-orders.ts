@@ -2,7 +2,7 @@
  * Medusa Admin API — Orders Domain
  */
 import { adminFetch, normalizeAdminListParams, assertScope } from './admin-core'
-import type { TenantMedusaScope, AdminListParams } from './admin-core'
+import type { TenantMedusaScope } from './admin-core'
 import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------

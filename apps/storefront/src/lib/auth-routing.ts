@@ -44,7 +44,6 @@ export function resolvePostLoginDestination({
             profileRole: resolvedProfileRole,
             profileTenantId: '__legacy-panel-fallback__',
         })
-    const panelDefault = `/${lang}/panel`
     const accountDefault = `/${lang}/cuenta`
     const safeRedirect = getSafeRedirect(requestedRedirect, lang)
 

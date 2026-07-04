@@ -10,19 +10,18 @@
  * or demo-constants entries.
  */
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import contract from "../governance-contract.json";
 
 // ─── Contract key accessors ─────────────────────────────────
 // contract.flags = { count, keys: string[], groups }
 // contract.limits = { count, keys: string[], numeric_keys: string[], metadata_keys }
-const contractFlagKeys: string[] = (contract.flags as any).keys;
-const contractLimitKeys: string[] = (contract.limits as any).numeric_keys;
+const contractFlagKeys: string[] = contract.flags.keys;
+const contractLimitKeys: string[] = contract.limits.numeric_keys;
 
 describe("Provisioning Schema Completeness", () => {
   describe("demo-constants covers all contract flags", () => {
-    const fs = require("fs");
-    const path = require("path");
-
     const bswebRoot = path.resolve(
       __dirname,
       "../../../../../../BOOTANDSTRAP_WEB",
@@ -109,9 +108,6 @@ describe("Provisioning Schema Completeness", () => {
   });
 
   describe("DB migration covers all contract flags", () => {
-    const fs = require("fs");
-    const path = require("path");
-
     const migrationsDir = path.resolve(
       __dirname,
       "../../../../../../BOOTANDSTRAP_WEB/supabase/migrations",

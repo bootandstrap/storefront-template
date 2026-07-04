@@ -76,10 +76,6 @@ describe('flag enforcement coverage', () => {
     for (const flag of COMMERCIAL_FLAGS) {
         it(`"${flag}" has server-side enforcement`, () => {
             // Search for usage of flag name in .ts/.tsx files
-            const excludeArgs = EXCLUDED_PATTERNS
-                .map(p => `--glob '!*${p}*'`)
-                .join(' ')
-
             let output = ''
             try {
                 output = execSync(

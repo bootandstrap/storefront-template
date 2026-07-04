@@ -14,7 +14,6 @@ import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { createClient } from '@/lib/supabase/server'
 import {
     createReturnRequest,
-    receiveReturn
 } from '@/lib/medusa/admin'
 
 interface ReturnRequest {
@@ -59,7 +58,7 @@ export async function fetchReturns(): Promise<{ returns: ReturnRequest[]; error?
  */
 export async function approveReturnAction(
     returnId: string,
-    items: { id: string; quantity: number; reason?: string }[]
+    _items: { id: string; quantity: number; reason?: string }[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { tenantId } = await withPanelGuard()

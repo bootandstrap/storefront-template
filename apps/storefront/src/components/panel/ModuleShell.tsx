@@ -78,7 +78,7 @@ interface ModuleShellProps {
 
 // ── Usage Progress Bar ──────────────────────────────────────────────────
 
-function UsageMeter({ meter, labels }: { meter: ModuleShellUsageMeter; labels?: ModuleShellProps['labels'] }) {
+function UsageMeter({ meter }: { meter: ModuleShellUsageMeter; labels?: ModuleShellProps['labels'] }) {
     const percentage = meter.max > 0 ? Math.min(100, (meter.current / meter.max) * 100) : 0
     const isNearLimit = percentage >= 80
     const isAtLimit = percentage >= 95
@@ -137,7 +137,6 @@ function TierBadge({ tierInfo, lang }: { tierInfo: ModuleShellTierInfo; lang: st
 // ── Locked State ────────────────────────────────────────────────────────
 
 function LockedOverlay({
-    icon,
     title,
     subtitle,
     tierInfo,
@@ -201,7 +200,6 @@ export default function ModuleShell({
     title,
     subtitle,
     isLocked,
-    gateFlag,
     tierInfo,
     usageMeter,
     lang,

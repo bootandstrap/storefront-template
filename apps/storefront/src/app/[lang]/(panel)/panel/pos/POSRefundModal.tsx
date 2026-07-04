@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import Image from 'next/image'
 import { X, RotateCcw, Check, Minus, Plus, Loader2, AlertCircle, HeartCrack, RefreshCw, Frown, FileText } from 'lucide-react'
 import type { POSRefund, RefundReason } from '@/lib/pos/pos-config'
 import type { RefundableItem } from '@/lib/pos/refunds/refund-actions'
@@ -221,7 +222,7 @@ export default function POSRefundModal({
 
                                         {/* Thumbnail */}
                                         {item.thumbnail ? (
-                                            <img src={item.thumbnail} alt="" className="w-8 h-8 rounded object-cover" />
+                                            <Image src={item.thumbnail} alt="" width={32} height={32} unoptimized className="w-8 h-8 rounded object-cover" />
                                         ) : (
                                             <div className="w-8 h-8 rounded bg-sf-2" />
                                         )}

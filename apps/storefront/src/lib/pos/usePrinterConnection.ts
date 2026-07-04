@@ -12,7 +12,7 @@
  *   const { status, device, connect, disconnect, printReceipt } = usePrinterConnection()
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
     createPrintEngine,
     type PrintEngine,
@@ -36,6 +36,8 @@ function getEngine(): PrintEngine {
     }
     return engineSingleton
 }
+
+const printerEngine = getEngine()
 
 export interface UsePrinterConnectionReturn {
     /** Current connection status */
@@ -62,15 +64,14 @@ export interface UsePrinterConnectionReturn {
 }
 
 export function usePrinterConnection(): UsePrinterConnectionReturn {
-    const engine = useRef(getEngine())
-    const [status, setStatus] = useState<PrinterStatus>(() => engine.current.getState().status)
-    const [device, setDevice] = useState<PrinterDevice | null>(() => engine.current.getState().device)
-    const [lastError, setLastError] = useState<string | null>(() => engine.current.getState().lastError)
+    const [status, setStatus] = useState<PrinterStatus>(() => printerEngine.getState().status)
+    const [device, setDevice] = useState<PrinterDevice | null>(() => printerEngine.getState().device)
+    const [lastError, setLastError] = useState<string | null>(() => printerEngine.getState().lastError)
     const [isPrinting, setIsPrinting] = useState(false)
 
     // Subscribe to engine events
     useEffect(() => {
-        const unsubscribe = engine.current.on((event: PrintEngineEvent) => {
+        const unsubscribe = printerEngine.on((event: PrintEngineEvent) => {
             switch (event.type) {
                 case 'status-change':
                     setStatus(event.status)
@@ -98,30 +99,30 @@ export function usePrinterConnection(): UsePrinterConnectionReturn {
     }, [])
 
     const connect = useCallback(async () => {
-        return engine.current.connect()
+        return printerEngine.connect()
     }, [])
 
     const disconnect = useCallback(async () => {
-        return engine.current.disconnect()
+        return printerEngine.disconnect()
     }, [])
 
     const printReceipt = useCallback(async (sale: POSSale, business: BusinessInfo, options?: Partial<PrintOptions>) => {
-        return engine.current.printReceipt(sale, business, options)
+        return printerEngine.printReceipt(sale, business, options)
     }, [])
 
     const printRefund = useCallback(async (refund: POSRefund, business: BusinessInfo, options?: Partial<PrintOptions>) => {
-        return engine.current.printRefund(refund, business, options)
+        return printerEngine.printRefund(refund, business, options)
     }, [])
 
     const openCashDrawer = useCallback(async () => {
-        return engine.current.openCashDrawer()
+        return printerEngine.openCashDrawer()
     }, [])
 
     return {
         status,
         device,
         lastError,
-        isSerialAvailable: engine.current.isSerialAvailable(),
+        isSerialAvailable: printerEngine.isSerialAvailable(),
         isPrinting,
         connect,
         disconnect,

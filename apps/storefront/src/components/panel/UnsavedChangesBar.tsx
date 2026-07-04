@@ -15,7 +15,6 @@
  * @locked 🟡 YELLOW — UX infrastructure
  */
 
-import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Save, Undo2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
@@ -154,20 +153,10 @@ export default function UnsavedChangesBar({
         errorPrefix: labels.errorPrefix || 'Error:',
     }
 
-    // Compute visibility: show when dirty OR during save success flash
-    const [showSuccessFlash, setShowSuccessFlash] = useState(false)
-    useEffect(() => {
-        if (saveSuccess) {
-            setShowSuccessFlash(true)
-            const timer = setTimeout(() => setShowSuccessFlash(false), 2000)
-            return () => clearTimeout(timer)
-        }
-    }, [saveSuccess])
-
-    const isVisible = isDirty || isSaving || showSuccessFlash
+    const isVisible = isDirty || isSaving || saveSuccess
 
     // Determine state for styling
-    const barState = saveError ? 'error' : showSuccessFlash ? 'success' : 'dirty'
+    const barState = saveError ? 'error' : saveSuccess ? 'success' : 'dirty'
 
     return (
         <AnimatePresence>

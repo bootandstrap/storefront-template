@@ -40,6 +40,7 @@ const DEFAULT_LABELS: PanelSidebarLabels = {
     pos: 'POS',
     ownerPanel: 'Panel',
     backToStore: 'Volver a la tienda',
+    health: 'Salud',
 }
 
 const ALL_FLAGS_ON: PanelFeatureFlags = {
@@ -242,7 +243,7 @@ describe('Suite 2: Graceful Degradation UX', () => {
         })
 
         it('every flag in the gate map has a valid module, icon, and slug', () => {
-            for (const [flag, entry] of Object.entries(FEATURE_GATE_MAP)) {
+            for (const [, entry] of Object.entries(FEATURE_GATE_MAP)) {
                 expect(entry.moduleKey).toBeTruthy()
                 expect(entry.icon).toBeTruthy()
                 expect(entry.bswSlug).toBeDefined()

@@ -20,6 +20,7 @@
  */
 
 import { cookies } from 'next/headers'
+import { isBuildPhase } from '@/lib/governance/tenant'
 import { logger } from '@/lib/logger'
 
 const MEDUSA_BACKEND_URL =
@@ -49,6 +50,8 @@ let cacheExpiry = 0
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 async function fetchRegions(): Promise<MedusaRegion[]> {
+    if (isBuildPhase()) return cachedRegions ?? []
+
     const now = Date.now()
     if (cachedRegions && now < cacheExpiry) return cachedRegions
 

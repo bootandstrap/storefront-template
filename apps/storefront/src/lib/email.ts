@@ -42,7 +42,6 @@ export interface EmailPayload {
     /** Optional locale for template rendering */
     locale?: string
 }
-
 export interface EmailResult {
     success: boolean
     messageId?: string
@@ -833,4 +832,3 @@ export function getEmailProviderName(): string {
 export function invalidateTenantEmailProvider(tenantId: string): void {
     _tenantProviders.delete(tenantId)
 }
-

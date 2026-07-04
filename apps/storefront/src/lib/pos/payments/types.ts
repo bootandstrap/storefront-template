@@ -7,7 +7,7 @@
  * @module pos/payments/types
  */
 
-import type { PaymentMethod, PaymentProcessingState } from '@/lib/pos/pos-config'
+import type { PaymentMethod } from '@/lib/pos/pos-config'
 
 // ---------------------------------------------------------------------------
 // Charge Request / Result

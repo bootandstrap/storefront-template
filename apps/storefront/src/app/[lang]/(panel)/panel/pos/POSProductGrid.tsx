@@ -12,7 +12,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { Package, Search, CheckCircle2, X, Settings2, Grid3X3, LayoutGrid, Columns3, Volume2, VolumeX, Eye, EyeOff, AlertTriangle, DollarSign } from 'lucide-react'
+import { Package, Search, CheckCircle2, X, Settings2, Grid3X3, LayoutGrid, Columns3, Volume2, VolumeX, Eye, EyeOff, DollarSign } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { AdminProductFull } from '@/lib/medusa/admin'
 import type { POSCartItem } from '@/lib/pos/pos-config'
@@ -383,7 +383,7 @@ export default function POSProductGrid({
         setTappedId(product.id)
         setTimeout(() => setTappedId(null), 500)
         onAddToCart(item)
-    }, [defaultCurrency, onAddToCart, showStock, getProductPriceInfo, stockMode])
+    }, [onAddToCart, showStock, getProductPriceInfo, stockMode])
 
     const handleVariantSelect = useCallback((item: POSCartItem) => {
         setVariantPickerProduct(null)

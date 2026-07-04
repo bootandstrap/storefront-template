@@ -12,7 +12,7 @@
  * Data: ReadinessCheck[] from store-readiness.ts (server → props)
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
     ChevronDown,
@@ -76,7 +76,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
 export default function SetupProgress({
     checks,
     labels,
-    lang,
     checkLabels,
     moduleUpsells,
 }: SetupProgressProps) {
@@ -84,26 +83,13 @@ export default function SetupProgress({
         if (typeof window === 'undefined') return false
         try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
     })
-    const [celebrating, setCelebrating] = useState(false)
 
     const completedCount = checks.filter(c => c.done).length
     const totalCount = checks.length
     const allDone = completedCount === totalCount && totalCount > 0
     const remaining = totalCount - completedCount
     const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
-
-    // Celebrate on 100%, then auto-collapse after animation
-    useEffect(() => {
-        if (allDone && !collapsed) {
-            setCelebrating(true)
-            const timer = setTimeout(() => {
-                setCelebrating(false)
-                setCollapsed(true)
-                try { localStorage.setItem(COLLAPSE_KEY, '1') } catch { /* noop */ }
-            }, 3000)
-            return () => clearTimeout(timer)
-        }
-    }, [allDone, collapsed])
+    const celebrating = allDone && !collapsed
 
     const toggleCollapse = useCallback(() => {
         setCollapsed(prev => {
@@ -190,6 +176,14 @@ export default function SetupProgress({
                         />
                     ))}
                 </div>
+                <button
+                    type="button"
+                    onClick={toggleCollapse}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-green-500/30 text-sm font-medium text-tx hover:bg-sf-1 transition-colors"
+                >
+                    <ChevronUp className="w-4 h-4" />
+                    {labels.collapse}
+                </button>
             </div>
         )
     }

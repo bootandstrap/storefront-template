@@ -21,7 +21,7 @@ import { motion } from 'framer-motion'
 import {
     TrendingUp, ShoppingCart, Users, HardDrive, Package,
     BarChart3, DollarSign, ArrowUpRight, ArrowDownRight,
-    Calendar, Loader2,
+    Loader2,
 } from 'lucide-react'
 import { PageEntrance } from '@/components/panel/PanelAnimations'
 import { SotaGlassCard } from '@/components/panel/sota/SotaGlassCard'

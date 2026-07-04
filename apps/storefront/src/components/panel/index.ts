@@ -9,6 +9,7 @@
 
 // ─── Layout ─────────────────────────────────────────────────────────────────
 export { default as PanelPageHeader } from './PanelPageHeader'
+export { PageEntrance, SlideOver } from './PanelAnimations'
 export {
     PanelCard,
     PanelFilterBar,
@@ -35,6 +36,9 @@ export { default as PanelChart, makeLineDataset, makeBarDataset, makeDoughnutDat
 // ─── Overlays ───────────────────────────────────────────────────────────────
 export { default as PanelDetailDrawer, DrawerSection, DrawerField } from './PanelDetailDrawer'
 export { default as PanelConfirmDialog, useConfirmDialog } from './PanelConfirmDialog'
+export { default as PriceLabelSheet } from './PriceLabelSheet'
+export type { PriceLabelItem } from './PriceLabelSheet'
+export { medusaPricesToForm } from './MultiPriceEditor'
 export { default as PanelActionMenu } from './PanelActionMenu'
 
 // ─── Filters & Controls ─────────────────────────────────────────────────────
@@ -93,4 +97,3 @@ export { default as UnsavedChangesBar } from './UnsavedChangesBar'
 export { default as LimitAwareCTA } from './LimitAwareCTA'
 export { default as ModuleShell } from './ModuleShell'
 export type { ModuleShellTierInfo, ModuleShellUsageMeter } from './ModuleShell'
-

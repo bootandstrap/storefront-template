@@ -144,7 +144,6 @@ export default async function EmailTabContent({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cfgAny = storeConfig as unknown as Record<string, unknown>
     const hasProvider = !!cfgAny.email_provider && !!cfgAny.email_api_key
 

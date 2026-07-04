@@ -38,7 +38,6 @@ import { requirePanelAuth } from './panel-auth'
 import { getConfigForTenant, type AppConfig } from './config'
 import { checkLimit, type LimitableResource } from './limits'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { OwnerActionCategory } from './panel/log-owner-action'
 import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
@@ -95,7 +94,7 @@ export const panelAction = actionClient.use(async ({ next, metadata }) => {
   const duration = Math.round(performance.now() - startTime)
   try {
     const admin = createAdminClient()
-    await (admin as ReturnType<typeof createAdminClient>).from('audit_log' as any).insert({
+    await admin.from('audit_log').insert({
       tenant_id: auth.tenantId,
       action: `${metadata.category}.${metadata.actionName}`,
       user_id: auth.user.id,
@@ -107,7 +106,7 @@ export const panelAction = actionClient.use(async ({ next, metadata }) => {
         user_email: auth.user.email,
         role: auth.role,
       },
-    } as any)
+    })
   } catch (err) {
     // Non-blocking — audit logging should never break the action
     logger.warn(`[audit] Failed to log: ${metadata.category}.${metadata.actionName}`, err)
