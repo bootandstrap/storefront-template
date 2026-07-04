@@ -21,7 +21,7 @@ import * as path from 'path'
 const STOREFRONT_ROOT = process.cwd()
 const ECOMMERCE_ROOT = path.resolve(STOREFRONT_ROOT, '..', '..')
 const WORKSPACE_ROOT = path.resolve(ECOMMERCE_ROOT, '..')
-const BSWEB_ROOT = path.resolve(WORKSPACE_ROOT, 'BOOTANDSTRAP_WEB')
+const BSWEB_ROOT = process.env.BSWEB_ROOT ?? path.resolve(WORKSPACE_ROOT, 'BOOTANDSTRAP_WEB')
 
 function readFile(relativePath: string): string {
     const fullPath = path.resolve(process.cwd(), relativePath)

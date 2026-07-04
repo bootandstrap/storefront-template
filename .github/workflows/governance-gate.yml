@@ -57,6 +57,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout canonical BOOTANDSTRAP_WEB
+        uses: actions/checkout@v4
+        with:
+          repository: bootandstrap/bootandstrap-web
+          token: ${{ secrets.BSWEB_READ_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BSWEB_READ_KEY }}
+          path: BOOTANDSTRAP_WEB
+
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
@@ -85,6 +93,7 @@ jobs:
           cd apps/storefront
           npx vitest run src/lib/__tests__/admin-owner-crud-contract.test.ts
         env:
+          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           NODE_OPTIONS: --max-old-space-size=4096
 
   architecture-gate:

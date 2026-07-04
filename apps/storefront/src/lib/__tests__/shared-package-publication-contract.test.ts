@@ -13,7 +13,7 @@ function readPackageJson(packageName: 'platform-contract' | 'tenant-context') {
 
 function npmPackDryRun(packageName: 'platform-contract' | 'tenant-context') {
     const packageDir = join(REPO_ROOT, 'packages', packageName)
-    const output = execFileSync('npm', ['pack', '--json', '--dry-run'], {
+    const output = execFileSync('npm', ['pack', '--json', '--dry-run', '--ignore-scripts'], {
         cwd: packageDir,
         encoding: 'utf8',
     })
@@ -27,6 +27,10 @@ function readPublishWorkflow() {
         join(REPO_ROOT, '.github', 'workflows', 'publish-platform-kernel.yml'),
         'utf8'
     )
+}
+
+function readWorkflow(name: string) {
+    return readFileSync(join(REPO_ROOT, '.github', 'workflows', name), 'utf8')
 }
 
 describe('shared package publication contract', () => {
@@ -49,6 +53,7 @@ describe('shared package publication contract', () => {
                 directory: `packages/${packageName}`,
             })
             expect(manifest.license).toBe('UNLICENSED')
+            expect((manifest.scripts as Record<string, string>).prepack).toContain('npm run build')
         }
     )
 
@@ -74,4 +79,27 @@ describe('shared package publication contract', () => {
         expect(workflow).toContain("github.event_name == 'push'")
         expect(workflow).toContain("github.event_name == 'workflow_dispatch'")
     })
+
+    it('builds platform-contract before type-checking its tenant-context consumer', () => {
+        const workflow = readPublishWorkflow()
+        const buildDependency = workflow.indexOf(
+            'pnpm --filter @bootandstrap/platform-contract build'
+        )
+        const checkConsumer = workflow.indexOf(
+            'pnpm --filter @bootandstrap/tenant-context type-check'
+        )
+
+        expect(buildDependency).toBeGreaterThan(-1)
+        expect(checkConsumer).toBeGreaterThan(buildDependency)
+    })
+
+    it.each(['build-medusa.yml', 'docker-publish.yml'])(
+        '%s authenticates to GHCR with the scoped Actions token',
+        (workflowName) => {
+            const workflow = readWorkflow(workflowName)
+
+            expect(workflow).toContain('password: ${{ secrets.GITHUB_TOKEN }}')
+            expect(workflow).not.toContain('secrets.GHCR_TOKEN')
+        }
+    )
 })

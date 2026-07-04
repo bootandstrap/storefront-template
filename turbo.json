@@ -48,9 +48,18 @@
             ]
         },
         "@bootandstrap/tenant-context#build": {
+            "dependsOn": [
+                "@bootandstrap/platform-contract#build"
+            ],
             "outputs": [
                 "dist/**"
             ]
+        },
+        "@bootandstrap/tenant-context#type-check": {
+            "dependsOn": [
+                "@bootandstrap/platform-contract#build"
+            ],
+            "outputs": []
         },
         "build": {
             "dependsOn": [

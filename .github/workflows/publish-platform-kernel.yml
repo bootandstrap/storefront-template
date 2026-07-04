@@ -41,6 +41,9 @@ jobs:
       - name: Type check platform-contract
         run: pnpm --filter @bootandstrap/platform-contract type-check
 
+      - name: Build platform-contract dependency
+        run: pnpm --filter @bootandstrap/platform-contract build
+
       - name: Type check tenant-context
         run: pnpm --filter @bootandstrap/tenant-context type-check
 

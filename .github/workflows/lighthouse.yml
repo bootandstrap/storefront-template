@@ -32,6 +32,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build kernel packages
+        run: |
+          pnpm --filter @bootandstrap/platform-contract build
+          pnpm --filter @bootandstrap/tenant-context build
+
       - name: Build storefront
         working-directory: apps/storefront
         env:

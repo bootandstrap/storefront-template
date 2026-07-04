@@ -100,6 +100,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout canonical BOOTANDSTRAP_WEB
+        uses: actions/checkout@v4
+        with:
+          repository: bootandstrap/bootandstrap-web
+          token: ${{ secrets.BSWEB_READ_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BSWEB_READ_KEY }}
+          path: BOOTANDSTRAP_WEB
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
@@ -112,15 +120,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build kernel packages
+        run: |
+          pnpm --filter @bootandstrap/platform-contract build
+          pnpm --filter @bootandstrap/tenant-context build
+
       - name: Run unit tests
         run: pnpm --filter=storefront test:run
         env:
+          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
 
       - name: Run tests with coverage
         run: cd apps/storefront && pnpm test:run -- --coverage
         env:
+          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
 

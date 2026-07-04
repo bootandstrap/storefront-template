@@ -32,7 +32,9 @@ jobs:
       - name: Checkout canonical BOOTANDSTRAP_WEB
         uses: actions/checkout@v4
         with:
-          repository: webnorka/bootandstrap-web
+          repository: bootandstrap/bootandstrap-web
+          token: ${{ secrets.BSWEB_READ_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BSWEB_READ_KEY }}
           path: BOOTANDSTRAP_WEB
 
       - name: Setup pnpm

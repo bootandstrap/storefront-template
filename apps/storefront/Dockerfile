@@ -40,6 +40,8 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_STORE_URL=$NEXT_PUBLIC_STORE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN pnpm --filter @bootandstrap/platform-contract build \
+    && pnpm --filter @bootandstrap/tenant-context build
 RUN cd apps/storefront && pnpm build
 
 FROM node:20-bookworm-slim AS runner
