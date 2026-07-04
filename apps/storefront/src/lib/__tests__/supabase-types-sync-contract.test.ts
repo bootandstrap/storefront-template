@@ -28,6 +28,9 @@ describe('supabase types sync contract', () => {
     it('ships the sync script and CI workflow for Supabase generated types', () => {
         const script = read('../../scripts/sync-supabase-types.mjs')
         const workflow = read('../../.github/workflows/sync-supabase-types.yml')
+        const rootPackage = JSON.parse(read('../../package.json')) as {
+            scripts: Record<string, string>
+        }
         const schemaVersion = read('src/lib/supabase/schema-version.ts')
 
         expect(script).toContain('apps/storefront/src/lib/supabase/database.types.ts')
@@ -37,6 +40,12 @@ describe('supabase types sync contract', () => {
         expect(workflow).toContain('scripts/sync-supabase-types.mjs')
         expect(workflow).toContain('database.types.ts')
         expect(workflow).toContain('schema-version.ts')
+        expect(rootPackage.scripts['sync:supabase-types']).toBe(
+            'node scripts/sync-supabase-types.mjs'
+        )
+        expect(rootPackage.scripts['check:supabase-types']).toBe(
+            'node scripts/sync-supabase-types.mjs --check'
+        )
         expect(schemaVersion).toContain('SCHEMA_VERSION')
     })
 })

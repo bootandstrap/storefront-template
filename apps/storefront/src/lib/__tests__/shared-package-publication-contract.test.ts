@@ -88,9 +88,15 @@ describe('shared package publication contract', () => {
         const checkConsumer = workflow.indexOf(
             'pnpm --filter @bootandstrap/tenant-context type-check'
         )
+        const buildConsumer = workflow.indexOf(
+            'pnpm --filter @bootandstrap/tenant-context build'
+        )
+        const validatePackage = workflow.indexOf('Validate publication contract')
 
         expect(buildDependency).toBeGreaterThan(-1)
         expect(checkConsumer).toBeGreaterThan(buildDependency)
+        expect(buildConsumer).toBeGreaterThan(checkConsumer)
+        expect(validatePackage).toBeGreaterThan(buildConsumer)
     })
 
     it.each(['build-medusa.yml', 'docker-publish.yml'])(

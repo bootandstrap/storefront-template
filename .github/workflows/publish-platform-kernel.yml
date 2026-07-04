@@ -47,6 +47,9 @@ jobs:
       - name: Type check tenant-context
         run: pnpm --filter @bootandstrap/tenant-context type-check
 
+      - name: Build tenant-context package
+        run: pnpm --filter @bootandstrap/tenant-context build
+
       - name: Validate publication contract
         working-directory: apps/storefront
         run: pnpm exec vitest run src/lib/__tests__/shared-package-publication-contract.test.ts
