@@ -61,6 +61,12 @@
             ],
             "outputs": []
         },
+        "storefront#type-check": {
+            "dependsOn": [
+                "@bootandstrap/tenant-context#build"
+            ],
+            "outputs": []
+        },
         "build": {
             "dependsOn": [
                 "^build",
