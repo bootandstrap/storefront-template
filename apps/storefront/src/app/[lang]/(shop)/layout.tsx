@@ -30,6 +30,7 @@ import Script from 'next/script'
 import { cookies } from 'next/headers'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import WebVitalsReporter from '@/components/WebVitalsReporter'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 
 /**
  * Shop layout metadata — provides title.template so every child page
@@ -44,7 +45,7 @@ export async function generateMetadata({
     const { lang } = await params
     const { config } = await getConfig()
     const businessName = config.business_name || 'Store'
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const siteUrl = await getPublicBaseUrl()
 
     return {
         title: {
@@ -54,7 +55,7 @@ export async function generateMetadata({
         openGraph: {
             siteName: businessName,
             locale: lang === 'es' ? 'es_ES' : 'en_US',
-            url: siteUrl,
+            url: joinPublicUrl(siteUrl, `/${lang}`),
         },
         twitter: {
             card: 'summary_large_image',

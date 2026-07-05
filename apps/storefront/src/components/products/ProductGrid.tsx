@@ -9,6 +9,7 @@ import type { MedusaProduct, MedusaCategory } from '@/lib/medusa/client'
 import { useI18n } from '@/lib/i18n/provider'
 import { getPrice, formatPrice } from '@/lib/medusa/price'
 import ProductCard from './ProductCard'
+import { shouldPrioritizeProductCardImage } from './product-card-image-priority'
 
 interface ProductGridProps {
     products: MedusaProduct[]
@@ -283,9 +284,10 @@ export default function ProductGrid({
                 currentView === 'list' ? (
                     /* List View */
                     <div className="space-y-3">
-                        {filteredProducts.map((product) => {
+                        {filteredProducts.map((product, index) => {
                             const variant = product.variants?.[0]
                             const resolved = getPrice(variant)
+                            const imagePriority = shouldPrioritizeProductCardImage(index)
                             return (
                                 <Link
                                     key={product.id}
@@ -299,6 +301,8 @@ export default function ProductGrid({
                                                 alt={product.title}
                                                 fill
                                                 sizes="128px"
+                                                priority={imagePriority}
+                                                loading={imagePriority ? undefined : 'lazy'}
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
                                         ) : (
@@ -334,8 +338,15 @@ export default function ProductGrid({
                 ) : (
                     /* Grid View (default) */
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {filteredProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} badgesEnabled={badgesEnabled} compareEnabled={compareEnabled} quickAddEnabled={quickAddEnabled} />
+                        {filteredProducts.map((product, index) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                badgesEnabled={badgesEnabled}
+                                compareEnabled={compareEnabled}
+                                quickAddEnabled={quickAddEnabled}
+                                imagePriority={shouldPrioritizeProductCardImage(index)}
+                            />
                         ))}
                     </div>
                 )

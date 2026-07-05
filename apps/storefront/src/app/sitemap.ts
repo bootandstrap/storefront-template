@@ -8,10 +8,11 @@ import {
   buildProductSitemapEntries,
   buildStaticSitemapEntries,
 } from "@/lib/seo/sitemap-entries";
+import { getPublicBaseUrl } from "@/lib/seo/public-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const baseUrl = await getPublicBaseUrl();
   const { config } = await getConfig();
   const activeLocales = getActiveLocales(config);
   const sitemapContext = {

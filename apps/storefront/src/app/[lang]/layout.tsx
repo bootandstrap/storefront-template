@@ -17,6 +17,7 @@ import { getPreferredLocale } from '@/lib/i18n/locale'
 import { I18nProvider } from '@/lib/i18n/provider'
 import { getConfig } from '@/lib/config'
 import SkipNav from '@/components/ui/SkipNav'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 
 export async function generateStaticParams() {
     return SUPPORTED_LOCALES.map((locale) => ({ lang: locale }))
@@ -81,7 +82,7 @@ export default async function LangLayout({
     const locale = lang as Locale
     const dictionary = await getDictionary(locale)
     const activeLocales = getActiveLocales(config)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const siteUrl = await getPublicBaseUrl()
 
     return (
         <I18nProvider locale={locale} dictionary={dictionary}>
@@ -93,13 +94,13 @@ export default async function LangLayout({
                             key={alt}
                             rel="alternate"
                             hrefLang={alt}
-                            href={`${siteUrl}/${alt}`}
+                            href={joinPublicUrl(siteUrl, `/${alt}`)}
                         />
                     ))}
                     <link
                         rel="alternate"
                         hrefLang="x-default"
-                        href={`${siteUrl}/${config.language || 'en'}`}
+                        href={joinPublicUrl(siteUrl, `/${config.language || 'en'}`)}
                     />
                 </>
             )}

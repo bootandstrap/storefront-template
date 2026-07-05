@@ -23,6 +23,7 @@ interface ProductCardProps {
     compareEnabled?: boolean
     quickAddEnabled?: boolean
     quickViewEnabled?: boolean
+    imagePriority?: boolean
 }
 
 // Badge type → CSS class mapping
@@ -35,7 +36,14 @@ const BADGE_CLASSES: Record<string, string> = {
     'sold out': 'product-badge product-badge-soldout',
 }
 
-export default function ProductCard({ product, badgesEnabled = true, compareEnabled = false, quickAddEnabled = false, quickViewEnabled = true }: ProductCardProps) {
+export default function ProductCard({
+    product,
+    badgesEnabled = true,
+    compareEnabled = false,
+    quickAddEnabled = false,
+    quickViewEnabled = true,
+    imagePriority = false,
+}: ProductCardProps) {
     const variant = product.variants?.[0]
     const resolved = getPrice(variant)
     const originalPrice = getOriginalPrice(variant)
@@ -100,6 +108,8 @@ export default function ProductCard({ product, badgesEnabled = true, compareEnab
                             alt={product.title}
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            priority={imagePriority}
+                            loading={imagePriority ? undefined : 'lazy'}
                             className="object-cover"
                         />
                     ) : (

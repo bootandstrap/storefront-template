@@ -13,6 +13,7 @@ import ProductViewTracker from '@/components/products/ProductViewTracker'
 import RecentlyViewed from '@/components/products/RecentlyViewed'
 import ShareButtons from '@/components/products/ShareButtons'
 import { Truck, ShieldCheck, RotateCcw, ChevronRight } from 'lucide-react'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,17 +30,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!product) return { title: t('product.notFound') }
 
     const { config } = await getConfig()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const siteUrl = await getPublicBaseUrl()
+    const pageUrl = joinPublicUrl(siteUrl, `/${lang}/productos/${handle}`)
 
     return {
         title: product.title,
         description: product.description || `${product.title} — ${config.business_name}`,
         alternates: {
-            canonical: `${siteUrl}/${lang}/productos/${handle}`,
+            canonical: pageUrl,
         },
         openGraph: {
             title: product.title,
             description: product.description || undefined,
+            url: pageUrl,
             images: product.thumbnail ? [{ url: product.thumbnail }] : undefined,
         },
     }
@@ -55,11 +58,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
     const tenantId = getRequiredTenantId()
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
-    const jsonLd = productJsonLD(product, config)
+    const siteUrl = await getPublicBaseUrl()
+    const jsonLd = productJsonLD(product, config, undefined, siteUrl)
     const breadcrumbJsonLd = breadcrumbListJsonLD(
         product,
         product.categories?.[0]?.name || null,
         lang,
+        siteUrl,
     )
 
     // Fetch related products — graceful if Medusa is down
@@ -134,7 +139,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     {/* Social sharing — gated by enable_social_sharing (RRSS module) */}
                     {featureFlags.enable_social_sharing && (
                         <ShareButtons
-                            url={`${process.env.NEXT_PUBLIC_SITE_URL || ''}/${lang}/productos/${product.handle}`}
+                            url={joinPublicUrl(siteUrl, `/${lang}/productos/${product.handle}`)}
                             title={product.title}
                             thumbnail={product.thumbnail}
                         />

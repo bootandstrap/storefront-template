@@ -6,6 +6,7 @@ import { isValidLocale } from '@/lib/i18n'
 import { resolveThemeColors, lightenHex } from '@/lib/theme/presets'
 import { createClient } from '@/lib/supabase/server'
 import { RuntimeEnvScript } from '@/lib/runtime-env'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 import { CartProvider } from '@/contexts/CartContext'
 import { WishlistProvider } from '@/contexts/WishlistContext'
 import { CompareProvider } from '@/contexts/CompareContext'
@@ -42,7 +43,7 @@ const outfit = Outfit({
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getConfig()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  const siteUrl = await getPublicBaseUrl()
 
   return {
     metadataBase: siteUrl ? new URL(siteUrl) : undefined,
@@ -68,9 +69,9 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: siteUrl ? {
       canonical: siteUrl,
       languages: {
-        'es': `${siteUrl}/es`,
-        'en': `${siteUrl}/en`,
-        'x-default': `${siteUrl}/es`,
+        'es': joinPublicUrl(siteUrl, '/es'),
+        'en': joinPublicUrl(siteUrl, '/en'),
+        'x-default': joinPublicUrl(siteUrl, '/es'),
       },
     } : undefined,
   }

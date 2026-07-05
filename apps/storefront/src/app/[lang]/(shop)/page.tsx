@@ -11,6 +11,7 @@ import FeaturedProducts from '@/components/home/FeaturedProducts'
 import TrustSection from '@/components/home/TrustSection'
 import ScrollReveal from '@/components/ui/ScrollReveal'
 import { organizationJsonLD, websiteJsonLD, safeJsonLd } from '@/lib/seo/jsonld'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 import {
   CategoryGridSkeleton,
   ProductGridSkeleton,
@@ -19,23 +20,29 @@ import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
   const { config } = await getConfig()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  const siteUrl = await getPublicBaseUrl()
+  const pageUrl = joinPublicUrl(siteUrl, `/${lang}`)
   return {
     title: config.meta_title || config.business_name || 'Online Store',
     description:
       config.meta_description ||
       `Discover our products at ${config.business_name || 'our store'}. Fresh quality, fast delivery.`,
     alternates: {
-      canonical: siteUrl,
+      canonical: pageUrl,
     },
     openGraph: {
       title: config.meta_title || config.business_name || 'Online Store',
       description:
         config.meta_description ||
         `Shop online at ${config.business_name || 'our store'}`,
-      url: siteUrl,
+      url: pageUrl,
       type: 'website',
     },
   }
@@ -49,6 +56,7 @@ export default async function HomePage({
   const { lang } = await params
   const { config, featureFlags } = await getConfig()
   const dictionary = await getDictionary(lang as Locale)
+  const siteUrl = await getPublicBaseUrl()
 
   // Fetch carousel slides if feature is enabled
   let carouselSlides: import('@/components/home/HeroCarousel').CarouselSlide[] = []
@@ -75,11 +83,11 @@ export default async function HomePage({
       {/* Structured Data — Organization + WebSite with SearchAction */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLD(config)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLD(config, siteUrl)) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLD(config)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLD(config, siteUrl)) }}
       />
 
       <div id="main-content" className="container-page py-6 space-y-4 md:space-y-8">

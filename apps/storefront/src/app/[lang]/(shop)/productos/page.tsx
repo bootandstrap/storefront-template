@@ -1,5 +1,3 @@
-import { Suspense } from 'react'
-
 import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Productos', description: 'Explora nuestro catálogo completo de productos' }
 
@@ -7,7 +5,6 @@ import { getProducts, getCategories } from '@/lib/medusa/client'
 import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
 import ProductGrid from '@/components/products/ProductGrid'
-import { ProductGridSkeleton } from '@/components/ui/Skeleton'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,18 +55,15 @@ export default async function ProductosPage({
                 {t('product.allProducts')}
             </h1>
 
-            <Suspense fallback={<ProductGridSkeleton />}>
-                <ProductGrid
-                    products={products}
-                    categories={categories}
-                    totalCount={count}
-                    badgesEnabled={featureFlags.enable_product_badges}
-                    compareEnabled={featureFlags.enable_product_comparisons}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                />
-            </Suspense>
+            <ProductGrid
+                products={products}
+                categories={categories}
+                totalCount={count}
+                badgesEnabled={featureFlags.enable_product_badges}
+                compareEnabled={featureFlags.enable_product_comparisons}
+                currentPage={currentPage}
+                totalPages={totalPages}
+            />
         </div>
     )
 }
-

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
+import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 
-export default function robots(): MetadataRoute.Robots {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+export default async function robots(): Promise<MetadataRoute.Robots> {
+    const baseUrl = await getPublicBaseUrl()
 
     return {
         rules: [
@@ -18,6 +19,6 @@ export default function robots(): MetadataRoute.Robots {
                 ],
             },
         ],
-        sitemap: `${baseUrl}/sitemap.xml`,
+        sitemap: joinPublicUrl(baseUrl, '/sitemap.xml'),
     }
 }
