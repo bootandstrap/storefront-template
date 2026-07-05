@@ -26,10 +26,11 @@ import { DeferredChatWidget } from '@/components/chat/DeferredChatWidget'
 import CookieConsentBanner from '@/components/consent/CookieConsentBanner'
 import CompareBarWrapper from '@/components/products/CompareBar'
 import { createClient } from '@/lib/supabase/server'
-import type { ChatTier } from '@/lib/chat/client-config'
 import { cookies } from 'next/headers'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
+
+type ShopChatTier = 'visitor' | 'customer' | 'premium'
 
 /**
  * Shop layout metadata — provides title.template so every child page
@@ -83,7 +84,7 @@ export default async function ShopLayout({
     const rootCategories = allCategories.filter(c => !c.parent_category)
 
     // ── Resolve auth + chat tier (visitor / customer / premium) ──
-    let chatTier: ChatTier = 'visitor'
+    let chatTier: ShopChatTier = 'visitor'
     let isAuthenticated = false
     try {
         const supabase = await createClient()
