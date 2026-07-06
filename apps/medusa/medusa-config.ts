@@ -21,6 +21,7 @@ module.exports = defineConfig({
     databaseLogging: process.env.NODE_ENV !== "production",
     databaseDriverOptions: {
       connection: { ssl: { rejectUnauthorized: false } },
+      pool: { min: 1, max: 1 },
     },
     redisUrl: process.env.REDIS_URL,
     workerMode: (process.env.MEDUSA_WORKER_MODE as "shared" | "server" | "worker") || "shared",
@@ -152,4 +153,3 @@ module.exports = defineConfig({
     },
   ],
 })
-
