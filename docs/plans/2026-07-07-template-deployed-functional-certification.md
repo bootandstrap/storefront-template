@@ -1,0 +1,159 @@
+# Template Deployed Functional Certification
+
+Fecha semantica: `2026-07-07`
+
+Owner: `ecommerce-template`
+
+Status: `in_progress`
+
+## Goal
+
+Prove the reusable tenant runtime works as a deployed, client-agnostic product, not only as a local test/build artifact. The certification must exercise the deployed storefront, panel, Medusa backend, Supabase governance state, BSWEB commercial/grants flow and module gates as one system.
+
+## Product Objective
+
+Bootandstrap sells an operated commerce platform: BSWEB creates and governs tenants, while this template is the reusable runtime that every tenant receives. The runtime must prove that:
+
+- a new tenant can run without customer-specific assumptions;
+- BSWEB remains the central authority for grants, flags, limits and lifecycle;
+- module activation changes runtime behavior through the grants/PDP/materialization pipeline;
+- each module works independently and in a full-catalog combination;
+- tenant data CRUD remains scoped, recoverable and observable.
+
+## Current Evidence
+
+- Existing reusable runtime matrix:
+  - `apps/storefront/e2e/bns-360-runtime.spec.ts`
+  - `apps/storefront/e2e/bns-360.matrix.ts`
+  - `apps/storefront/e2e/support/bns-360-tenant-profiles.ts`
+- Existing source contract tests:
+  - `apps/storefront/src/lib/__tests__/bns-360-e2e-matrix.test.ts`
+  - `apps/storefront/src/lib/__tests__/module-setup-registry-contract.test.ts`
+- Current limitation: the matrix is route/render smoke. It verifies that critical surfaces load, but it does not yet prove CRUD, bidirectional grants, webhook-driven unlocks, or primary journeys per module.
+
+## Certification Lanes
+
+### Lane 1: Deployed Runtime Health
+
+Status: `todo`
+
+Evidence target:
+
+- `/api/health`
+- `/api/health/ready`
+- `/api/health/live`
+- `/api/v1/governance/health` with operator token
+- Medusa `/health`
+
+Required proof:
+
+- deployed URL is not localhost;
+- Supabase and Medusa checks are `ok`;
+- schema version matches the control-plane ground truth;
+- runtime reports the configured tenant id.
+
+### Lane 2: Central Governance Connectivity
+
+Status: `todo`
+
+Evidence target:
+
+- `get_tenant_governance` through storefront runtime;
+- `feature_flags` and `plan_limits` reflected in panel policy;
+- realtime or cache revalidation path after BSWEB materialization.
+
+Required proof:
+
+- a flag disabled in BSWEB locks the corresponding module route;
+- a grant/materialization enables it again without redeploying the storefront;
+- limits are visible and enforced server-side.
+
+### Lane 3: Bidirectional Commercial Grants
+
+Status: `todo`
+
+Evidence target:
+
+- Storefront `/api/module-purchase`;
+- BSWEB `/api/commercial-checkout`;
+- Stripe sandbox signed webhook or equivalent internal replay;
+- `tenant_product_grants`;
+- `reconcile_modules`;
+- `materializeCapabilities`.
+
+Required proof:
+
+- storefront initiates checkout using semantic module/tier keys;
+- BSWEB resolves the commercial catalog and creates checkout;
+- webhook/reconciliation writes product grants;
+- materializer updates `feature_flags`/`plan_limits`;
+- deployed storefront reflects the unlocked module.
+
+### Lane 4: Module Primary Journeys
+
+Status: `todo`
+
+Evidence target:
+
+- all modules in `BNS_360_REQUIRED_MODULE_KEYS`;
+- each module has at least one deployed primary journey beyond route visibility.
+
+Required proof examples:
+
+- `ecommerce`: create/update/delete product or category against Medusa;
+- `sales_channels`: update a payment/channel config and observe checkout method availability;
+- `chatbot`: update config and call chat API with limit enforcement;
+- `crm`: create/update/delete tenant-scoped contact;
+- `email_marketing`: update email config or template without leaking secrets;
+- `i18n`: change language/currency config and observe route/runtime effect;
+- `seo`: update metadata and observe rendered SEO output;
+- `rrss`: update social links and observe storefront output;
+- `automation`: save notification config and validate guarded secret handling;
+- `auth_advanced`: prove advanced auth flags gate the panel surface;
+- `capacidad`: prove limits/backup vault visibility and non-destructive backup access;
+- `pos` and `pos_kiosk`: prove POS core journey without requiring physical hardware.
+
+### Lane 5: Full Catalog Combination
+
+Status: `todo`
+
+Evidence target:
+
+- full-catalog tenant profile at highest published tier per module.
+
+Required proof:
+
+- all module routes load under one tenant;
+- no route or config collision;
+- dependency constraints are satisfied;
+- POS and kiosk coexist;
+- limits merge by max where multiple modules affect the same limit.
+
+### Lane 6: Propagation Runtime Proof
+
+Status: `todo`
+
+Evidence target:
+
+- `store-campifruit` after template source proof is green.
+
+Required proof:
+
+- no reusable fix originates in Campifruit;
+- propagation preserves tenant overlay;
+- Campifruit runtime health remains green after source propagation.
+
+## Non Goals
+
+- Do not close Stripe Tax, EUR amounts, annual pricing or live catalog publication in this slice.
+- Do not claim physical POS lab certification.
+- Do not use Campifruit as the source of reusable fixes.
+- Do not weaken tests, exclude modules or downgrade gates to obtain green.
+
+## First Implementation Batch
+
+1. Turn the BNS 360 matrix into a richer contract that distinguishes `route_smoke`, `api_health`, `crud_journey`, `grant_unlock`, `limit_enforcement` and `module_primary_journey`.
+2. Add a source test requiring every reusable module to declare at least one non-route functional evidence target.
+3. Add Playwright fixture helpers that can run in read-only mode first, then support mutating canary journeys behind an explicit environment flag.
+4. Keep existing route smoke as the fast first gate; do not replace it.
+

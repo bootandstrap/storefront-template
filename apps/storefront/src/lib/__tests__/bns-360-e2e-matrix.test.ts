@@ -6,6 +6,7 @@ import {
     BNS_360_REQUIRED_MODULE_KEYS,
     BNS_360_RUNTIME_MATRIX,
 } from '../../../e2e/bns-360.matrix'
+import { buildBns360ScenarioEvidence } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
 
 describe('BNS 360 reusable runtime matrix', () => {
@@ -66,6 +67,36 @@ describe('BNS 360 reusable runtime matrix', () => {
         }
     })
 
+    it('requires every module to declare non-route functional evidence targets', () => {
+        for (const scenario of BNS_360_MODULE_CERTIFICATION_MATRIX) {
+            expect(
+                scenario.functionalEvidence,
+                `${scenario.moduleKey} needs deployed functional evidence beyond route smoke`
+            ).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    kind: expect.not.stringMatching(/^route_smoke$/),
+                }),
+            ]))
+        }
+    })
+
+    it('covers the functional certification categories required for a deployed template', () => {
+        const evidenceKinds = new Set(
+            BNS_360_MODULE_CERTIFICATION_MATRIX.flatMap(scenario =>
+                scenario.functionalEvidence.map(item => item.kind)
+            )
+        )
+
+        expect([...evidenceKinds].sort()).toEqual(expect.arrayContaining([
+            'api_health',
+            'crud_journey',
+            'grant_unlock',
+            'limit_enforcement',
+            'module_primary_journey',
+            'runtime_config',
+        ]))
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'
@@ -76,6 +107,35 @@ describe('BNS 360 reusable runtime matrix', () => {
         )
         expect(fullCatalog?.modules.map(module => module.tier)).toEqual(
             contract.modules.catalog.map(module => module.tiers[module.tiers.length - 1].key)
+        )
+    })
+
+    it('builds structured evidence envelopes without embedding credentials', () => {
+        const scenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            item => item.moduleKey === 'ecommerce'
+        )
+
+        expect(scenario).toBeDefined()
+        const evidence = buildBns360ScenarioEvidence({
+            scenarioKey: 'module.ecommerce',
+            baseUrl: 'https://template-canary.bootandstrap.com',
+            routes: scenario?.runtimeRoutes ?? [],
+            functionalEvidence: scenario?.functionalEvidence ?? [],
+            ownerEmail: 'owner+canary@example.com',
+            ownerPassword: 'do-not-store',
+            status: 'verified',
+        })
+
+        expect(evidence).toMatchObject({
+            schema: 'bootandstrap.template.bns-360.scenario-evidence/v1',
+            scenarioKey: 'module.ecommerce',
+            baseUrl: 'https://template-canary.bootandstrap.com',
+            status: 'verified',
+            credentialState: 'provided_redacted',
+        })
+        expect(JSON.stringify(evidence)).not.toContain('do-not-store')
+        expect(evidence.functionalEvidence.map(item => item.kind)).toEqual(
+            expect.arrayContaining(['crud_journey', 'module_primary_journey'])
         )
     })
 })

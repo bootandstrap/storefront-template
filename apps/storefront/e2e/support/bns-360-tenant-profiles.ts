@@ -19,6 +19,7 @@ export interface Bns360ModuleCertificationScenario {
     configurationRoute: string
     runtimeRoutes: string[]
     requiredEvidence: string[]
+    functionalEvidence: Bns360FunctionalEvidenceTarget[]
 }
 
 const CERTIFICATION_EVIDENCE = [
@@ -28,6 +29,20 @@ const CERTIFICATION_EVIDENCE = [
     'telemetry_health',
     'primary_journey',
 ] as const
+
+export type Bns360FunctionalEvidenceKind =
+    | 'crud_journey'
+    | 'grant_unlock'
+    | 'limit_enforcement'
+    | 'module_primary_journey'
+    | 'runtime_config'
+    | 'api_health'
+
+export interface Bns360FunctionalEvidenceTarget {
+    kind: Bns360FunctionalEvidenceKind
+    target: string
+    reversible: boolean
+}
 
 const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
     auth_advanced: ['/es/panel/auth'],
@@ -43,6 +58,58 @@ const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
     rrss: ['/es/panel/redes-sociales'],
     sales_channels: ['/es/panel/mensajes', '/es/panel/canales', '/es/panel/ajustes?tab=tienda'],
     seo: ['/es/panel/seo', '/es/panel/analiticas'],
+}
+
+const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTarget[]> = {
+    auth_advanced: [
+        { kind: 'grant_unlock', target: 'enable_auth_advanced gates /panel/auth', reversible: true },
+        { kind: 'runtime_config', target: 'OAuth/provider flags reflected in auth panel config', reversible: true },
+    ],
+    automation: [
+        { kind: 'runtime_config', target: 'notification channel config persists tenant-scoped values', reversible: true },
+        { kind: 'module_primary_journey', target: 'event-to-channel mapping can be edited and rendered', reversible: true },
+    ],
+    capacidad: [
+        { kind: 'api_health', target: '/api/panel/vault and capacity limits are reachable when granted', reversible: true },
+        { kind: 'limit_enforcement', target: 'traffic/storage/backup limits reflected from plan_limits', reversible: true },
+    ],
+    chatbot: [
+        { kind: 'runtime_config', target: 'chatbot config persists and changes panel/runtime behavior', reversible: true },
+        { kind: 'limit_enforcement', target: 'max_chatbot_messages_month enforced by chat API', reversible: true },
+    ],
+    crm: [
+        { kind: 'crud_journey', target: 'tenant-scoped CRM contact create/update/delete', reversible: true },
+    ],
+    ecommerce: [
+        { kind: 'crud_journey', target: 'Medusa product/category create/update/delete through panel/API', reversible: true },
+        { kind: 'module_primary_journey', target: 'storefront catalog reflects Medusa changes', reversible: true },
+    ],
+    email_marketing: [
+        { kind: 'runtime_config', target: 'email sender/domain/template config persists without leaking secrets', reversible: true },
+        { kind: 'limit_enforcement', target: 'max_email_sends_month reflected in module usage', reversible: true },
+    ],
+    i18n: [
+        { kind: 'runtime_config', target: 'language/currency config changes rendered locale behavior', reversible: true },
+    ],
+    pos: [
+        { kind: 'module_primary_journey', target: 'POS cart and checkout flow completes without physical hardware', reversible: true },
+        { kind: 'grant_unlock', target: 'enable_pos gates /panel/pos', reversible: true },
+    ],
+    pos_kiosk: [
+        { kind: 'module_primary_journey', target: 'kiosk mode path is available through POS surface', reversible: true },
+        { kind: 'grant_unlock', target: 'pos_kiosk depends on POS grant and does not expose standalone /pos route', reversible: true },
+    ],
+    rrss: [
+        { kind: 'runtime_config', target: 'social links persist and render on storefront surfaces', reversible: true },
+    ],
+    sales_channels: [
+        { kind: 'runtime_config', target: 'payment/channel config persists and affects checkout options', reversible: true },
+        { kind: 'grant_unlock', target: 'sales channel routes unlock from grants', reversible: true },
+    ],
+    seo: [
+        { kind: 'runtime_config', target: 'SEO metadata config persists and renders in public page metadata', reversible: true },
+        { kind: 'module_primary_journey', target: 'analytics/SEO panels load tenant-scoped Medusa counts', reversible: true },
+    ],
 }
 
 const MODULE_SETUP_ROUTE_HINTS: Record<string, string[]> = {
@@ -156,4 +223,5 @@ export const BNS_360_MODULE_CERTIFICATION_MATRIX: Bns360ModuleCertificationScena
         configurationRoute: `/es/panel/modulos/${module.key}`,
         runtimeRoutes: buildModuleRuntimeRoutes(module.key),
         requiredEvidence: [...CERTIFICATION_EVIDENCE],
+        functionalEvidence: MODULE_FUNCTIONAL_EVIDENCE_MAP[module.key] ?? [],
     }))

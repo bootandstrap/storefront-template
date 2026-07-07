@@ -2,19 +2,42 @@ import { test } from '@playwright/test'
 
 import { BNS_360_RUNTIME_MATRIX } from './bns-360.matrix'
 import {
+    BNS_360_OWNER_EMAIL,
+    BNS_360_OWNER_PASSWORD,
+    buildBns360ScenarioEvidence,
     expectApiHealthy,
     expectPanelRouteHealthy,
     hasOwnerCredentials,
     loginAsOwner,
 } from './support/bns-360-fixtures'
+import { BNS_360_MODULE_CERTIFICATION_MATRIX } from './support/bns-360-tenant-profiles'
+
+const moduleScenarioByKey = new Map(
+    BNS_360_MODULE_CERTIFICATION_MATRIX.map(scenario => [`module.${scenario.moduleKey}`, scenario])
+)
 
 for (const scenario of BNS_360_RUNTIME_MATRIX) {
     test.describe(`BNS 360 runtime: ${scenario.key}`, () => {
-        test(`${scenario.key} smoke`, async ({ page, request }) => {
+        test(`${scenario.key} smoke`, async ({ page, request }, testInfo) => {
             test.skip(
                 scenario.requiresAuth && !hasOwnerCredentials(),
                 'Owner credentials are required for authenticated 360 runtime smoke routes'
             )
+
+            const moduleScenario = moduleScenarioByKey.get(scenario.key)
+            const evidence = buildBns360ScenarioEvidence({
+                scenarioKey: scenario.key,
+                baseUrl: testInfo.project.use.baseURL ?? '',
+                routes: scenario.routes,
+                functionalEvidence: moduleScenario?.functionalEvidence,
+                ownerEmail: scenario.requiresAuth ? BNS_360_OWNER_EMAIL : null,
+                ownerPassword: scenario.requiresAuth ? BNS_360_OWNER_PASSWORD : null,
+                status: 'verified',
+            })
+            await testInfo.attach('bns-360-scenario-evidence', {
+                body: JSON.stringify(evidence, null, 2),
+                contentType: 'application/json',
+            })
 
             if (scenario.requiresAuth) {
                 await loginAsOwner(page)
