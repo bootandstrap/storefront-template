@@ -132,7 +132,7 @@ export const MODULE_SETUP_REGISTRY: Record<string, ModuleSetupDef> = {
         configFields: MODULE_CONFIG_SCHEMAS.pos_kiosk || [],
         usageMetrics: [],
         quickActions: [
-            { label: 'Probar modo kiosco', href: '/pos', icon: 'Monitor' },
+            { label: 'Probar modo kiosco', href: '/panel/pos', icon: 'Monitor' },
         ],
         hasSetup: true,
     },

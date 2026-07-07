@@ -1,4 +1,17 @@
+import { loadEnvConfig } from '@next/env'
 import { defineConfig, devices } from '@playwright/test'
+
+loadEnvConfig(process.cwd())
+
+const resolvedBaseUrl =
+    process.env.BNS_360_BASE_URL ||
+    process.env.NEXT_PUBLIC_STORE_URL ||
+    process.env.BASE_URL ||
+    'http://localhost:3000'
+
+const shouldStartLocalServer =
+    !process.env.CI &&
+    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(resolvedBaseUrl)
 
 /**
  * Playwright E2E Test Configuration — BootandStrap Storefront
@@ -42,7 +55,7 @@ export default defineConfig({
     timeout: process.env.CI ? 30_000 : 60_000,
 
     use: {
-        baseURL: process.env.BASE_URL || 'http://localhost:3000',
+        baseURL: resolvedBaseUrl,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         navigationTimeout: process.env.CI ? 15_000 : 30_000,
@@ -70,12 +83,12 @@ export default defineConfig({
     ],
 
     // Start storefront dev server before running tests
-    webServer: process.env.CI
-        ? undefined  // In CI, services are started via Docker Compose
-        : {
+    webServer: shouldStartLocalServer
+        ? {
             command: 'pnpm dev',
             url: 'http://localhost:3000',
             reuseExistingServer: true,
             timeout: 60_000,
-        },
+        }
+        : undefined, // In CI or remote-runtime mode, services are already available
 })
