@@ -1,8 +1,12 @@
 #!/bin/sh
 # Medusa boot script — baked into Docker image at /app/docker-entrypoint.sh
 # Handles: db:migrate → admin user creation → medusa start
+RUNTIME_DATABASE_URL="${MEDUSA_DATABASE_URL:-${DATABASE_URL:-${SUPABASE_DB_URL:-}}}"
+MIGRATIONS_DATABASE_URL="${MEDUSA_MIGRATIONS_DATABASE_URL:-${RUNTIME_DATABASE_URL}}"
+
 echo "[medusa-entrypoint] Running migrations..."
-if npx medusa db:migrate; then
+DATABASE_URL="$MIGRATIONS_DATABASE_URL" npx medusa db:migrate
+if [ $? -eq 0 ]; then
     echo "[medusa-entrypoint] ✅ Migrations complete"
 else
     echo "[medusa-entrypoint] ⚠️ Migration failed (exit $?) — starting anyway for debugging"
@@ -14,7 +18,7 @@ fi
 # NOTE: stderr is NOT suppressed — container logs must show why creation failed.
 if [ -n "$MEDUSA_ADMIN_EMAIL" ] && [ -n "$MEDUSA_ADMIN_PASSWORD" ]; then
     echo "[medusa-entrypoint] Creating admin user: $MEDUSA_ADMIN_EMAIL"
-    if npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"; then
+    if DATABASE_URL="$RUNTIME_DATABASE_URL" npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"; then
         echo "[medusa-entrypoint] ✅ Admin user created (or already exists)"
     else
         EXIT_CODE=$?
@@ -26,4 +30,4 @@ else
 fi
 
 echo "[medusa-entrypoint] Starting Medusa..."
-exec npx medusa start
+exec env DATABASE_URL="$RUNTIME_DATABASE_URL" npx medusa start

@@ -17,7 +17,7 @@ function requireSecret(envVar: string, name: string): string {
 
 module.exports = defineConfig({
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
+    databaseUrl: process.env.MEDUSA_DATABASE_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
     databaseLogging: process.env.NODE_ENV !== "production",
     databaseDriverOptions: {
       connection: { ssl: { rejectUnauthorized: false } },

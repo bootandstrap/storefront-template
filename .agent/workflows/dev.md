@@ -130,7 +130,9 @@ The storefront defaults to maintenance mode when it can't fetch tenant config. C
 
 ### Medusa won't start
 
-Check `DATABASE_URL` points to a valid Supabase pooler. Port must be `5432`.
+Check `MEDUSA_DATABASE_URL` points to a valid PostgreSQL target. Use
+`MEDUSA_MIGRATIONS_DATABASE_URL` too when migrations need a dedicated path.
+`DATABASE_URL` remains a local/dev fallback only.
 
 ## Deploying to Production
 

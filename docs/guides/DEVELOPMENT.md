@@ -34,7 +34,9 @@ Requirements: `GOVERNANCE_SUPABASE_URL` + `GOVERNANCE_SUPABASE_SERVICE_ROLE_KEY`
 |----------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | Tenant Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Tenant service role |
-| `DATABASE_URL` | Supabase session pooler (port `5432`); Medusa runtime caps the DB pool to `1` connection per tenant |
+| `MEDUSA_DATABASE_URL` | Preferred Medusa runtime PostgreSQL URL in production |
+| `MEDUSA_MIGRATIONS_DATABASE_URL` | Optional dedicated PostgreSQL URL for `db:migrate`; falls back to `MEDUSA_DATABASE_URL` |
+| `DATABASE_URL` | Legacy fallback for local/dev compatibility when dedicated Medusa URLs are not set |
 | `TENANT_ID` | UUID from governance `tenants` table |
 | `GOVERNANCE_SUPABASE_URL` / `_ANON_KEY` / `_SERVICE_KEY` | Governance Supabase |
 | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Auto-generated on first Medusa boot |
@@ -50,7 +52,7 @@ Requirements: `GOVERNANCE_SUPABASE_URL` + `GOVERNANCE_SUPABASE_SERVICE_ROLE_KEY`
 | "En mantenimiento" | Check `GOVERNANCE_SUPABASE_ANON_KEY`, `TENANT_ID` exists, `enable_maintenance_mode` is false |
 | 0 products | Run `npx tsx scripts/seed-demo.ts` |
 | 400 errors | Missing `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` |
-| `KnexTimeoutError` | `DATABASE_URL` port must be `5432`, no `databaseSchema: "medusa"` |
+| `KnexTimeoutError` | Prefer dedicated `MEDUSA_DATABASE_URL` / `MEDUSA_MIGRATIONS_DATABASE_URL`; keep `databaseSchema: "medusa"` unset |
 | Zod crash | `zod@3.25.76` pinned in `apps/medusa/package.json` — don't remove |
 
 ## Feature Flag Architecture
