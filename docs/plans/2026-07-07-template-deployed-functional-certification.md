@@ -96,6 +96,11 @@ Required proof:
 - materializer updates `feature_flags`/`plan_limits`;
 - deployed storefront reflects the unlocked module.
 
+Source harness state:
+
+- `commerce.modules_marketplace_and_limits` now carries functional evidence for `/api/module-purchase -> BSWEB /api/commercial-checkout -> grants materialization`.
+- The target remains `manual_required` in functional mode until the deployed canary can execute a reversible checkout/grants replay and observe materialized limits.
+
 ### Lane 4: Module Primary Journeys
 
 Status: `todo`

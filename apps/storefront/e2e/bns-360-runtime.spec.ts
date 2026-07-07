@@ -30,7 +30,7 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
 
             const moduleScenario = moduleScenarioByKey.get(scenario.key)
             const executionMode = getBns360ExecutionMode()
-            const functionalEvidence = moduleScenario?.functionalEvidence ?? []
+            const functionalEvidence = scenario.functionalEvidence ?? moduleScenario?.functionalEvidence ?? []
 
             if (scenario.requiresAuth) {
                 await loginAsOwner(page)

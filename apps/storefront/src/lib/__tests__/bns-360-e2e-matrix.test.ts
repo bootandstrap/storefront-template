@@ -87,6 +87,19 @@ describe('BNS 360 reusable runtime matrix', () => {
         ]))
     })
 
+    it('tracks bidirectional grants as runtime functional evidence', () => {
+        const commerceScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'commerce.modules_marketplace_and_limits'
+        )
+
+        expect(commerceScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'grant_unlock',
+                target: expect.stringContaining('/api/module-purchase'),
+            }),
+        ]))
+    })
+
     it('declares module certification journeys for all 13 reusable modules', () => {
         expect(BNS_360_MODULE_CERTIFICATION_MATRIX.map(scenario => scenario.moduleKey)).toEqual(
             contract.modules.catalog.map(module => module.key)

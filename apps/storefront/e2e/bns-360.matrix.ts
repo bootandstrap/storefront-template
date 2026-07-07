@@ -1,4 +1,7 @@
-import { BNS_360_MODULE_CERTIFICATION_MATRIX } from './support/bns-360-tenant-profiles'
+import {
+    BNS_360_MODULE_CERTIFICATION_MATRIX,
+    type Bns360FunctionalEvidenceTarget,
+} from './support/bns-360-tenant-profiles'
 
 export interface Bns360RuntimeScenario {
     key: string
@@ -8,6 +11,7 @@ export interface Bns360RuntimeScenario {
     transport?: 'page' | 'api'
     profileKey?: string
     apiHeadersEnv?: Record<string, string>
+    functionalEvidence?: Bns360FunctionalEvidenceTarget[]
 }
 
 export const BNS_360_REQUIRED_MODULE_KEYS = [
@@ -87,6 +91,19 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         domain: 'commerce',
         routes: ['/es/panel/modulos', '/es/panel/suscripcion'],
         requiresAuth: true,
+        functionalEvidence: [
+            {
+                kind: 'grant_unlock',
+                target: '/api/module-purchase -> BSWEB /api/commercial-checkout -> grants materialization',
+                reversible: true,
+            },
+            {
+                kind: 'limit_enforcement',
+                target: '/api/panel/limits reflects BSWEB materialized plan_limits after grant change',
+                reversible: true,
+                routes: ['/api/panel/limits'],
+            },
+        ],
     },
     {
         key: 'pos.core_checkout',
