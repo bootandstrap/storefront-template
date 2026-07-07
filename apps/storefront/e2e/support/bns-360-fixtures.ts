@@ -13,9 +13,25 @@ type Bns360ExecutionEnv = {
     [key: string]: string | undefined
     BNS_360_FUNCTIONAL_JOURNEYS?: string
 }
+type Bns360ApiHeaderScenario = {
+    apiHeadersEnv?: Record<string, string>
+}
 
 export function getBns360ExecutionMode(env: Bns360ExecutionEnv = process.env): Bns360ExecutionMode {
     return env.BNS_360_FUNCTIONAL_JOURNEYS === '1' ? 'functional' : 'smoke'
+}
+
+export function resolveBns360ApiHeaders(
+    scenario: Bns360ApiHeaderScenario | undefined,
+    env: Record<string, string | undefined> = process.env
+): Record<string, string> | undefined {
+    const entries = Object.entries(scenario?.apiHeadersEnv ?? {})
+        .flatMap(([header, envKey]) => {
+            const value = env[envKey]
+            return value ? [[header, value] as const] : []
+        })
+
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
 export function hasOwnerCredentials() {
@@ -144,7 +160,11 @@ export async function expectPanelRouteHealthy(page: Page, route: string) {
     await expect(page.locator('text=Algo salió mal')).not.toBeVisible()
 }
 
-export async function expectApiHealthy(request: APIRequestContext, route: string) {
-    const response = await request.get(route)
+export async function expectApiHealthy(
+    request: APIRequestContext,
+    route: string,
+    headers?: Record<string, string>
+) {
+    const response = await request.get(route, headers ? { headers } : undefined)
     expect(response.ok()).toBe(true)
 }

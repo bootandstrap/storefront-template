@@ -48,7 +48,7 @@ Evidence target:
 - `/api/health`
 - `/api/health/ready`
 - `/api/health/live`
-- `/api/v1/governance/health` with operator token
+- `/api/v1/governance/health` with `BNS_360_HEALTH_CHECK_TOKEN` sent as `x-health-token`
 - Medusa `/health`
 
 Required proof:
@@ -57,6 +57,7 @@ Required proof:
 - Supabase and Medusa checks are `ok`;
 - schema version matches the control-plane ground truth;
 - runtime reports the configured tenant id.
+- health tokens are read from env at execution time and are not persisted in evidence artifacts.
 
 ### Lane 2: Central Governance Connectivity
 

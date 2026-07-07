@@ -11,6 +11,7 @@ import {
     getBns360ExecutionMode,
     hasOwnerCredentials,
     loginAsOwner,
+    resolveBns360ApiHeaders,
     runBns360AutomatedFunctionalEvidence,
 } from './support/bns-360-fixtures'
 import { BNS_360_MODULE_CERTIFICATION_MATRIX } from './support/bns-360-tenant-profiles'
@@ -36,8 +37,9 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             }
 
             if (scenario.transport === 'api') {
+                const headers = resolveBns360ApiHeaders(scenario)
                 for (const route of scenario.routes) {
-                    await expectApiHealthy(request, route)
+                    await expectApiHealthy(request, route, headers)
                 }
             } else {
                 for (const route of scenario.routes) {

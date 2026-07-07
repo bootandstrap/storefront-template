@@ -7,6 +7,7 @@ export interface Bns360RuntimeScenario {
     requiresAuth?: boolean
     transport?: 'page' | 'api'
     profileKey?: string
+    apiHeadersEnv?: Record<string, string>
 }
 
 export const BNS_360_REQUIRED_MODULE_KEYS = [
@@ -75,8 +76,11 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
     {
         key: 'ops.health_readiness_liveness',
         domain: 'ops',
-        routes: ['/api/health', '/api/health/ready', '/api/health/live'],
+        routes: ['/api/health', '/api/health/ready', '/api/health/live', '/api/v1/governance/health'],
         transport: 'api',
+        apiHeadersEnv: {
+            'x-health-token': 'BNS_360_HEALTH_CHECK_TOKEN',
+        },
     },
     {
         key: 'commerce.modules_marketplace_and_limits',

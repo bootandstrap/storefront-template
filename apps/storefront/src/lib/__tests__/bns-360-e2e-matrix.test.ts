@@ -11,6 +11,7 @@ import {
     buildBns360ScenarioEvidence,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
+    resolveBns360ApiHeaders,
 } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
 
@@ -39,6 +40,27 @@ describe('BNS 360 reusable runtime matrix', () => {
             'pos.offline_sync',
             'pos.refunds_and_history',
         ]))
+    })
+
+    it('includes authenticated governance health in deployed runtime health', () => {
+        const healthScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'ops.health_readiness_liveness'
+        )
+
+        expect(healthScenario?.routes).toEqual(expect.arrayContaining([
+            '/api/health',
+            '/api/health/ready',
+            '/api/health/live',
+            '/api/v1/governance/health',
+        ]))
+        expect(healthScenario?.apiHeadersEnv).toEqual({
+            'x-health-token': 'BNS_360_HEALTH_CHECK_TOKEN',
+        })
+        expect(resolveBns360ApiHeaders(healthScenario, {
+            BNS_360_HEALTH_CHECK_TOKEN: 'do-not-store',
+        })).toEqual({
+            'x-health-token': 'do-not-store',
+        })
     })
 
     it('keeps panel route coverage explicit instead of relying on broad smoke labels', () => {
