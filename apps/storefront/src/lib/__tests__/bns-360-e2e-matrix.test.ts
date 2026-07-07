@@ -6,7 +6,10 @@ import {
     BNS_360_REQUIRED_MODULE_KEYS,
     BNS_360_RUNTIME_MATRIX,
 } from '../../../e2e/bns-360.matrix'
-import { buildBns360ScenarioEvidence } from '../../../e2e/support/bns-360-fixtures'
+import {
+    buildBns360ScenarioEvidence,
+    getBns360ExecutionMode,
+} from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
 
 describe('BNS 360 reusable runtime matrix', () => {
@@ -137,5 +140,11 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(evidence.functionalEvidence.map(item => item.kind)).toEqual(
             expect.arrayContaining(['crud_journey', 'module_primary_journey'])
         )
+    })
+
+    it('keeps mutating functional journeys opt-in', () => {
+        expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: undefined })).toBe('smoke')
+        expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: '0' })).toBe('smoke')
+        expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: '1' })).toBe('functional')
     })
 })

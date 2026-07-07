@@ -7,6 +7,7 @@ import {
     buildBns360ScenarioEvidence,
     expectApiHealthy,
     expectPanelRouteHealthy,
+    getBns360ExecutionMode,
     hasOwnerCredentials,
     loginAsOwner,
 } from './support/bns-360-fixtures'
@@ -33,6 +34,7 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 ownerEmail: scenario.requiresAuth ? BNS_360_OWNER_EMAIL : null,
                 ownerPassword: scenario.requiresAuth ? BNS_360_OWNER_PASSWORD : null,
                 status: 'verified',
+                executionMode: getBns360ExecutionMode(),
             })
             await testInfo.attach('bns-360-scenario-evidence', {
                 body: JSON.stringify(evidence, null, 2),
