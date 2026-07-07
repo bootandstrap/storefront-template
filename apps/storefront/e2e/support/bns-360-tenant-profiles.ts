@@ -42,6 +42,7 @@ export interface Bns360FunctionalEvidenceTarget {
     kind: Bns360FunctionalEvidenceKind
     target: string
     reversible: boolean
+    routes?: string[]
 }
 
 const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
@@ -70,7 +71,12 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'module_primary_journey', target: 'event-to-channel mapping can be edited and rendered', reversible: true },
     ],
     capacidad: [
-        { kind: 'api_health', target: '/api/panel/vault and capacity limits are reachable when granted', reversible: true },
+        {
+            kind: 'api_health',
+            target: '/api/panel/vault and capacity limits are reachable when granted',
+            reversible: true,
+            routes: ['/api/panel/vault'],
+        },
         { kind: 'limit_enforcement', target: 'traffic/storage/backup limits reflected from plan_limits', reversible: true },
     ],
     chatbot: [

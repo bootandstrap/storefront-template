@@ -11,6 +11,7 @@ import {
     getBns360ExecutionMode,
     hasOwnerCredentials,
     loginAsOwner,
+    runBns360AutomatedFunctionalEvidence,
 } from './support/bns-360-fixtures'
 import { BNS_360_MODULE_CERTIFICATION_MATRIX } from './support/bns-360-tenant-profiles'
 
@@ -27,20 +28,8 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             )
 
             const moduleScenario = moduleScenarioByKey.get(scenario.key)
-            const evidence = buildBns360ScenarioEvidence({
-                scenarioKey: scenario.key,
-                baseUrl: testInfo.project.use.baseURL ?? '',
-                routes: scenario.routes,
-                functionalEvidence: moduleScenario?.functionalEvidence,
-                ownerEmail: scenario.requiresAuth ? BNS_360_OWNER_EMAIL : null,
-                ownerPassword: scenario.requiresAuth ? BNS_360_OWNER_PASSWORD : null,
-                status: 'verified',
-                executionMode: getBns360ExecutionMode(),
-            })
-            await testInfo.attach('bns-360-scenario-evidence', {
-                body: JSON.stringify(evidence, null, 2),
-                contentType: 'application/json',
-            })
+            const executionMode = getBns360ExecutionMode()
+            const functionalEvidence = moduleScenario?.functionalEvidence ?? []
 
             if (scenario.requiresAuth) {
                 await loginAsOwner(page)
@@ -55,6 +44,26 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                     await expectPanelRouteHealthy(page, route)
                 }
             }
+
+            const functionalStatus = executionMode === 'functional'
+                ? await runBns360AutomatedFunctionalEvidence(request, functionalEvidence)
+                : undefined
+
+            const evidence = buildBns360ScenarioEvidence({
+                scenarioKey: scenario.key,
+                baseUrl: testInfo.project.use.baseURL ?? '',
+                routes: scenario.routes,
+                functionalEvidence,
+                ownerEmail: scenario.requiresAuth ? BNS_360_OWNER_EMAIL : null,
+                ownerPassword: scenario.requiresAuth ? BNS_360_OWNER_PASSWORD : null,
+                status: 'verified',
+                executionMode,
+                functionalStatus,
+            })
+            await testInfo.attach('bns-360-scenario-evidence', {
+                body: JSON.stringify(evidence, null, 2),
+                contentType: 'application/json',
+            })
 
             assertBns360FunctionalEvidenceVerified(evidence)
         })

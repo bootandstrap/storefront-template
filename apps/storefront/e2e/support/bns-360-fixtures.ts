@@ -97,6 +97,38 @@ export function assertBns360FunctionalEvidenceVerified(evidence: Bns360ScenarioE
     )
 }
 
+function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
+    return target.kind === 'api_health' && Boolean(target.routes?.length)
+}
+
+export function getBns360AutomatedFunctionalEvidenceStatus(
+    targets: Bns360FunctionalEvidenceTarget[]
+): Bns360FunctionalStatus {
+    if (targets.length === 0) {
+        return 'not_required'
+    }
+
+    return targets.every(canAutomateFunctionalEvidence) ? 'verified' : 'manual_required'
+}
+
+export async function runBns360AutomatedFunctionalEvidence(
+    request: APIRequestContext,
+    targets: Bns360FunctionalEvidenceTarget[]
+): Promise<Bns360FunctionalStatus> {
+    const status = getBns360AutomatedFunctionalEvidenceStatus(targets)
+    if (status !== 'verified') {
+        return status
+    }
+
+    for (const target of targets) {
+        for (const route of target.routes ?? []) {
+            await expectApiHealthy(request, route)
+        }
+    }
+
+    return status
+}
+
 export async function loginAsOwner(page: Page) {
     await page.goto(`/${BNS_360_LANG}/login`)
     await page.waitForLoadState('domcontentloaded')

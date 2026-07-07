@@ -9,6 +9,7 @@ import {
 import {
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
+    getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
 } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
@@ -99,6 +100,19 @@ describe('BNS 360 reusable runtime matrix', () => {
             'module_primary_journey',
             'runtime_config',
         ]))
+    })
+
+    it('requires api_health functional evidence to name concrete API routes', () => {
+        const apiHealthTargets = BNS_360_MODULE_CERTIFICATION_MATRIX.flatMap(scenario =>
+            scenario.functionalEvidence.filter(item => item.kind === 'api_health')
+        )
+
+        expect(apiHealthTargets.length).toBeGreaterThan(0)
+        for (const target of apiHealthTargets) {
+            expect(target.routes).toEqual(expect.arrayContaining([
+                expect.stringMatching(/^\/api\//),
+            ]))
+        }
     })
 
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
@@ -196,6 +210,17 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(() => assertBns360FunctionalEvidenceVerified(evidence)).toThrow(
             'Functional evidence for module.crm is manual_required'
         )
+    })
+
+    it('only reports automated functional status when every target has a runner', () => {
+        expect(getBns360AutomatedFunctionalEvidenceStatus([])).toBe('not_required')
+        expect(getBns360AutomatedFunctionalEvidenceStatus([
+            { kind: 'api_health', target: 'health', reversible: true, routes: ['/api/health'] },
+        ])).toBe('verified')
+        expect(getBns360AutomatedFunctionalEvidenceStatus([
+            { kind: 'api_health', target: 'health', reversible: true, routes: ['/api/health'] },
+            { kind: 'crud_journey', target: 'crm contact CRUD', reversible: true },
+        ])).toBe('manual_required')
     })
 
     it('keeps mutating functional journeys opt-in', () => {
