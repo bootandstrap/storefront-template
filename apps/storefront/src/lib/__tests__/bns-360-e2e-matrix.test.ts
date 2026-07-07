@@ -7,6 +7,7 @@ import {
     BNS_360_RUNTIME_MATRIX,
 } from '../../../e2e/bns-360.matrix'
 import {
+    assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     getBns360ExecutionMode,
 } from '../../../e2e/support/bns-360-fixtures'
@@ -134,11 +135,66 @@ describe('BNS 360 reusable runtime matrix', () => {
             scenarioKey: 'module.ecommerce',
             baseUrl: 'https://template-canary.bootandstrap.com',
             status: 'verified',
+            routeStatus: 'verified',
+            functionalStatus: 'not_run',
+            executionMode: 'smoke',
             credentialState: 'provided_redacted',
         })
         expect(JSON.stringify(evidence)).not.toContain('do-not-store')
         expect(evidence.functionalEvidence.map(item => item.kind)).toEqual(
             expect.arrayContaining(['crud_journey', 'module_primary_journey'])
+        )
+    })
+
+    it('does not mark functional evidence verified unless the functional runner says so', () => {
+        const scenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            item => item.moduleKey === 'crm'
+        )
+
+        const defaultFunctionalEvidence = buildBns360ScenarioEvidence({
+            scenarioKey: 'module.crm',
+            baseUrl: 'https://template-canary.bootandstrap.com',
+            routes: scenario?.runtimeRoutes ?? [],
+            functionalEvidence: scenario?.functionalEvidence ?? [],
+            status: 'verified',
+            executionMode: 'functional',
+        })
+
+        const verifiedFunctionalEvidence = buildBns360ScenarioEvidence({
+            scenarioKey: 'module.crm',
+            baseUrl: 'https://template-canary.bootandstrap.com',
+            routes: scenario?.runtimeRoutes ?? [],
+            functionalEvidence: scenario?.functionalEvidence ?? [],
+            status: 'verified',
+            executionMode: 'functional',
+            functionalStatus: 'verified',
+        })
+
+        expect(defaultFunctionalEvidence).toMatchObject({
+            routeStatus: 'verified',
+            functionalStatus: 'manual_required',
+        })
+        expect(verifiedFunctionalEvidence).toMatchObject({
+            routeStatus: 'verified',
+            functionalStatus: 'verified',
+        })
+    })
+
+    it('refuses declared-only functional evidence in functional execution mode', () => {
+        const scenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            item => item.moduleKey === 'crm'
+        )
+        const evidence = buildBns360ScenarioEvidence({
+            scenarioKey: 'module.crm',
+            baseUrl: 'https://template-canary.bootandstrap.com',
+            routes: scenario?.runtimeRoutes ?? [],
+            functionalEvidence: scenario?.functionalEvidence ?? [],
+            status: 'verified',
+            executionMode: 'functional',
+        })
+
+        expect(() => assertBns360FunctionalEvidenceVerified(evidence)).toThrow(
+            'Functional evidence for module.crm is manual_required'
         )
     })
 

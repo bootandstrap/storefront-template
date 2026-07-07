@@ -4,6 +4,7 @@ import { BNS_360_RUNTIME_MATRIX } from './bns-360.matrix'
 import {
     BNS_360_OWNER_EMAIL,
     BNS_360_OWNER_PASSWORD,
+    assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     expectApiHealthy,
     expectPanelRouteHealthy,
@@ -49,12 +50,13 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 for (const route of scenario.routes) {
                     await expectApiHealthy(request, route)
                 }
-                return
+            } else {
+                for (const route of scenario.routes) {
+                    await expectPanelRouteHealthy(page, route)
+                }
             }
 
-            for (const route of scenario.routes) {
-                await expectPanelRouteHealthy(page, route)
-            }
+            assertBns360FunctionalEvidenceVerified(evidence)
         })
     })
 }

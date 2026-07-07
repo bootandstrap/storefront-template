@@ -14,6 +14,7 @@
     "test:e2e:headed": "playwright test --headed",
     "cert:360:list": "playwright test e2e/bns-360-runtime.spec.ts --list",
     "cert:360:smoke": "playwright test e2e/bns-360-runtime.spec.ts",
+    "cert:360:functional": "BNS_360_FUNCTIONAL_JOURNEYS=1 playwright test e2e/bns-360-runtime.spec.ts",
     "cert:360:smoke:headed": "playwright test e2e/bns-360-runtime.spec.ts --headed"
   },
   "dependencies": {

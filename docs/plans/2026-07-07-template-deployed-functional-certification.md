@@ -30,6 +30,11 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - `apps/storefront/src/lib/__tests__/bns-360-e2e-matrix.test.ts`
   - `apps/storefront/src/lib/__tests__/module-setup-registry-contract.test.ts`
 - Current limitation: the matrix is route/render smoke. It verifies that critical surfaces load, but it does not yet prove CRUD, bidirectional grants, webhook-driven unlocks, or primary journeys per module.
+- The runtime evidence envelope now separates:
+  - `routeStatus`: smoke/API route certification status;
+  - `functionalStatus`: deployed functional journey status;
+  - `executionMode`: `smoke` by default, `functional` only with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
+- In `functional` mode, declared-only functional evidence is rejected unless a runner marks it `verified`. This prevents route smoke from being reported as CRUD/grants certification.
 
 ## Certification Lanes
 
@@ -157,3 +162,12 @@ Required proof:
 3. Add Playwright fixture helpers that can run in read-only mode first, then support mutating canary journeys behind an explicit environment flag.
 4. Keep existing route smoke as the fast first gate; do not replace it.
 
+## Execution Commands
+
+- Smoke/list only:
+  - `pnpm --dir apps/storefront cert:360:list`
+  - `pnpm --dir apps/storefront cert:360:smoke`
+- Functional certification:
+  - `pnpm --dir apps/storefront cert:360:functional`
+  - Requires deployed runtime credentials and `BNS_360_FUNCTIONAL_JOURNEYS=1`.
+  - Expected state until functional runners are implemented: fail with `functionalStatus=manual_required` for module targets rather than reporting false green.

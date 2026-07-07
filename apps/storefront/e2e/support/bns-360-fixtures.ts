@@ -6,6 +6,9 @@ export const BNS_360_OWNER_EMAIL = process.env.BNS_360_OWNER_EMAIL || process.en
 export const BNS_360_OWNER_PASSWORD = process.env.BNS_360_OWNER_PASSWORD || process.env.PANEL_TEST_PASSWORD || process.env.E2E_OWNER_PASSWORD
 
 export type Bns360ExecutionMode = 'smoke' | 'functional'
+export type Bns360RouteStatus = 'verified' | 'manual_required' | 'blocked'
+export type Bns360FunctionalStatus = 'not_required' | 'not_run' | 'manual_required' | 'verified' | 'blocked'
+
 type Bns360ExecutionEnv = {
     [key: string]: string | undefined
     BNS_360_FUNCTIONAL_JOURNEYS?: string
@@ -28,6 +31,8 @@ export interface Bns360ScenarioEvidenceInput {
     ownerPassword?: string | null
     status: 'verified' | 'manual_required' | 'blocked'
     executionMode?: Bns360ExecutionMode
+    routeStatus?: Bns360RouteStatus
+    functionalStatus?: Bns360FunctionalStatus
 }
 
 export interface Bns360ScenarioEvidence {
@@ -36,6 +41,8 @@ export interface Bns360ScenarioEvidence {
     baseUrl: string
     generatedAt: string
     status: Bns360ScenarioEvidenceInput['status']
+    routeStatus: Bns360RouteStatus
+    functionalStatus: Bns360FunctionalStatus
     executionMode: Bns360ExecutionMode
     routes: string[]
     functionalEvidence: Bns360FunctionalEvidenceTarget[]
@@ -47,6 +54,13 @@ export function buildBns360ScenarioEvidence(input: Bns360ScenarioEvidenceInput):
     const credentialState = requiresCredentials
         ? input.ownerEmail && input.ownerPassword ? 'provided_redacted' : 'missing'
         : 'not_required'
+    const executionMode = input.executionMode ?? getBns360ExecutionMode()
+    const hasFunctionalTargets = Boolean(input.functionalEvidence?.length)
+    const functionalStatus = input.functionalStatus ?? (
+        hasFunctionalTargets
+            ? executionMode === 'functional' ? 'manual_required' : 'not_run'
+            : 'not_required'
+    )
 
     return {
         schema: 'bootandstrap.template.bns-360.scenario-evidence/v1',
@@ -54,11 +68,33 @@ export function buildBns360ScenarioEvidence(input: Bns360ScenarioEvidenceInput):
         baseUrl: input.baseUrl,
         generatedAt: new Date().toISOString(),
         status: input.status,
-        executionMode: input.executionMode ?? getBns360ExecutionMode(),
+        routeStatus: input.routeStatus ?? input.status,
+        functionalStatus,
+        executionMode,
         routes: input.routes,
         functionalEvidence: input.functionalEvidence ?? [],
         credentialState,
     }
+}
+
+export function assertBns360FunctionalEvidenceVerified(evidence: Bns360ScenarioEvidence): void {
+    if (evidence.executionMode !== 'functional') {
+        return
+    }
+    if (evidence.functionalEvidence.length === 0 || evidence.functionalStatus === 'not_required') {
+        return
+    }
+    if (evidence.functionalStatus === 'verified') {
+        return
+    }
+
+    const targets = evidence.functionalEvidence
+        .map(item => `${item.kind}:${item.target}`)
+        .join(', ')
+    throw new Error(
+        `Functional evidence for ${evidence.scenarioKey} is ${evidence.functionalStatus}; ` +
+        `implement and run functional journeys before certifying: ${targets}`
+    )
 }
 
 export async function loginAsOwner(page: Page) {
