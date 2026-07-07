@@ -147,8 +147,8 @@ export async function executeRetention(
     tenantSlug: string,
     maxBackups: number,
 ): Promise<RetentionResult> {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const supabase = createAdminClient()
+    const { createStorageAdminClient } = await import('@/lib/supabase/storage-admin')
+    const supabase = createStorageAdminClient()
 
     // List all backups
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

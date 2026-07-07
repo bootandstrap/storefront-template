@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { withRateLimit, PANEL_GUARD } from '@/lib/security/api-rate-guard'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createStorageAdminClient } from '@/lib/supabase/storage-admin'
 import { getTenantSlug } from '@/lib/backup/tenant-slug'
 import { logger } from '@/lib/logger'
 import { toPanelErrorResponse } from '@/lib/panel-api-errors'
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
 
-        const supabase = createAdminClient()
+        const supabase = createStorageAdminClient()
         const { data, error } = await supabase
             .storage
             .from('tenant-backups')

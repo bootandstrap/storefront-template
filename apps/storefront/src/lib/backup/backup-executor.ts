@@ -265,8 +265,8 @@ export async function executeFullBackup(
         const timestamp = formatTimestamp()
         const backupKey = `${tenantSlug}/${timestamp}_full.json.gz`
 
-        const { createAdminClient } = await import('@/lib/supabase/admin')
-        const supabase = createAdminClient()
+        const { createStorageAdminClient } = await import('@/lib/supabase/storage-admin')
+        const supabase = createStorageAdminClient()
 
         const { error: uploadError } = await supabase
             .storage

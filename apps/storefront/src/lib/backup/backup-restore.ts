@@ -55,8 +55,8 @@ export interface EntityRestoreResult {
  */
 export async function downloadBackup(backupKey: string): Promise<TenantBackup | null> {
     try {
-        const { createAdminClient } = await import('@/lib/supabase/admin')
-        const supabase = createAdminClient()
+        const { createStorageAdminClient } = await import('@/lib/supabase/storage-admin')
+        const supabase = createStorageAdminClient()
 
         const { data: blob, error } = await supabase
             .storage
