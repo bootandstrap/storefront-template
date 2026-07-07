@@ -38,8 +38,9 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
 
             if (scenario.transport === 'api') {
                 const headers = resolveBns360ApiHeaders(scenario)
+                const apiRequest = scenario.requiresAuth ? page.request : request
                 for (const route of scenario.routes) {
-                    await expectApiHealthy(request, route, headers)
+                    await expectApiHealthy(apiRequest, route, headers)
                 }
             } else {
                 for (const route of scenario.routes) {
@@ -48,7 +49,10 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             }
 
             const functionalStatus = executionMode === 'functional'
-                ? await runBns360AutomatedFunctionalEvidence(request, functionalEvidence)
+                ? await runBns360AutomatedFunctionalEvidence(
+                    scenario.requiresAuth ? page.request : request,
+                    functionalEvidence
+                )
                 : undefined
 
             const evidence = buildBns360ScenarioEvidence({

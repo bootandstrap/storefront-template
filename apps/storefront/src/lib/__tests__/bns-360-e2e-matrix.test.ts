@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import contract from '../governance-contract'
 import {
@@ -61,6 +63,16 @@ describe('BNS 360 reusable runtime matrix', () => {
         })).toEqual({
             'x-health-token': 'do-not-store',
         })
+    })
+
+    it('uses browser request context for authenticated API runtime checks', () => {
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(runtimeSpec).toContain('scenario.requiresAuth ? page.request : request')
+        expect(runtimeSpec).toContain('expectApiHealthy(apiRequest, route, headers)')
     })
 
     it('keeps panel route coverage explicit instead of relying on broad smoke labels', () => {
