@@ -8,10 +8,19 @@ export const BNS_360_OWNER_PASSWORD = process.env.BNS_360_OWNER_PASSWORD || proc
 export type Bns360ExecutionMode = 'smoke' | 'functional'
 export type Bns360RouteStatus = 'verified' | 'manual_required' | 'blocked'
 export type Bns360FunctionalStatus = 'not_required' | 'not_run' | 'manual_required' | 'verified' | 'blocked'
+export type Bns360MissingCredentialAction =
+    | { action: 'run' }
+    | { action: 'skip'; reason: string }
+    | { action: 'fail'; reason: string }
 
 type Bns360ExecutionEnv = {
     [key: string]: string | undefined
     BNS_360_FUNCTIONAL_JOURNEYS?: string
+}
+type Bns360CredentialRequirement = {
+    requiresAuth?: boolean
+    hasCredentials: boolean
+    executionMode: Bns360ExecutionMode
 }
 type Bns360ApiHeaderScenario = {
     apiHeadersEnv?: Record<string, string>
@@ -36,6 +45,26 @@ export function resolveBns360ApiHeaders(
 
 export function hasOwnerCredentials() {
     return Boolean(BNS_360_OWNER_EMAIL && BNS_360_OWNER_PASSWORD)
+}
+
+export function getBns360MissingCredentialAction(
+    requirement: Bns360CredentialRequirement
+): Bns360MissingCredentialAction {
+    if (!requirement.requiresAuth || requirement.hasCredentials) {
+        return { action: 'run' }
+    }
+
+    if (requirement.executionMode === 'functional') {
+        return {
+            action: 'fail',
+            reason: 'Owner credentials are required for authenticated 360 functional certification',
+        }
+    }
+
+    return {
+        action: 'skip',
+        reason: 'Owner credentials are required for authenticated 360 runtime smoke routes',
+    }
 }
 
 export interface Bns360ScenarioEvidenceInput {

@@ -35,6 +35,7 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - `functionalStatus`: deployed functional journey status;
   - `executionMode`: `smoke` by default, `functional` only with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
 - In `functional` mode, declared-only functional evidence is rejected unless a runner marks it `verified`. This prevents route smoke from being reported as CRUD/grants certification.
+- In `functional` mode, authenticated scenarios now require owner credentials and fail explicitly when they are missing. The regular smoke path can still skip authenticated routes for public/runtime health diagnostics, but `cert:360:functional` can no longer finish green by skipping panel, CRUD, grants or module journeys.
 - Automated functional runner coverage currently exists only for structured `api_health` targets with concrete `/api/...` routes. CRUD, grants, limits and primary journeys remain `manual_required` until implemented as reversible canary journeys.
 
 ## Certification Lanes

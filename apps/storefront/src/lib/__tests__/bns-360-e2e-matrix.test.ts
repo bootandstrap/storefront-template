@@ -13,6 +13,7 @@ import {
     buildBns360ScenarioEvidence,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
+    getBns360MissingCredentialAction,
     resolveBns360ApiHeaders,
 } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
@@ -274,5 +275,31 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: undefined })).toBe('smoke')
         expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: '0' })).toBe('smoke')
         expect(getBns360ExecutionMode({ BNS_360_FUNCTIONAL_JOURNEYS: '1' })).toBe('functional')
+    })
+
+    it('requires owner credentials in functional mode instead of skipping authenticated scenarios', () => {
+        expect(getBns360MissingCredentialAction({
+            requiresAuth: true,
+            hasCredentials: false,
+            executionMode: 'smoke',
+        })).toEqual({
+            action: 'skip',
+            reason: 'Owner credentials are required for authenticated 360 runtime smoke routes',
+        })
+
+        expect(getBns360MissingCredentialAction({
+            requiresAuth: true,
+            hasCredentials: false,
+            executionMode: 'functional',
+        })).toEqual({
+            action: 'fail',
+            reason: 'Owner credentials are required for authenticated 360 functional certification',
+        })
+
+        expect(getBns360MissingCredentialAction({
+            requiresAuth: true,
+            hasCredentials: true,
+            executionMode: 'functional',
+        })).toEqual({ action: 'run' })
     })
 })

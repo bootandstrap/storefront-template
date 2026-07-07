@@ -9,6 +9,7 @@ import {
     expectApiHealthy,
     expectPanelRouteHealthy,
     getBns360ExecutionMode,
+    getBns360MissingCredentialAction,
     hasOwnerCredentials,
     loginAsOwner,
     resolveBns360ApiHeaders,
@@ -23,13 +24,20 @@ const moduleScenarioByKey = new Map(
 for (const scenario of BNS_360_RUNTIME_MATRIX) {
     test.describe(`BNS 360 runtime: ${scenario.key}`, () => {
         test(`${scenario.key} smoke`, async ({ page, request }, testInfo) => {
-            test.skip(
-                scenario.requiresAuth && !hasOwnerCredentials(),
-                'Owner credentials are required for authenticated 360 runtime smoke routes'
-            )
-
             const moduleScenario = moduleScenarioByKey.get(scenario.key)
             const executionMode = getBns360ExecutionMode()
+            const credentialAction = getBns360MissingCredentialAction({
+                requiresAuth: scenario.requiresAuth,
+                hasCredentials: hasOwnerCredentials(),
+                executionMode,
+            })
+            if (credentialAction.action === 'skip') {
+                test.skip(true, credentialAction.reason)
+            }
+            if (credentialAction.action === 'fail') {
+                throw new Error(credentialAction.reason)
+            }
+
             const functionalEvidence = scenario.functionalEvidence ?? moduleScenario?.functionalEvidence ?? []
 
             if (scenario.requiresAuth) {
