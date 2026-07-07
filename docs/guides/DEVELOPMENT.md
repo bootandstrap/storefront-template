@@ -34,7 +34,7 @@ Requirements: `GOVERNANCE_SUPABASE_URL` + `GOVERNANCE_SUPABASE_SERVICE_ROLE_KEY`
 |----------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | Tenant Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Tenant service role |
-| `DATABASE_URL` | Supabase pooler (port `5432`) |
+| `DATABASE_URL` | Supabase session pooler (port `5432`); Medusa runtime caps the DB pool to `1` connection per tenant |
 | `TENANT_ID` | UUID from governance `tenants` table |
 | `GOVERNANCE_SUPABASE_URL` / `_ANON_KEY` / `_SERVICE_KEY` | Governance Supabase |
 | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Auto-generated on first Medusa boot |
