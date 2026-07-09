@@ -102,7 +102,7 @@ describe('shared package publication contract', () => {
         expect(validatePackage).toBeGreaterThan(buildConsumer)
     })
 
-    it.each(['build-medusa.yml', 'docker-publish.yml'])(
+    it.each(['build-medusa.yml', 'deploy.yml', 'docker-publish.yml'])(
         '%s prefers the source package credential with an Actions-token fallback',
         (workflowName) => {
             const workflow = readWorkflow(workflowName)
