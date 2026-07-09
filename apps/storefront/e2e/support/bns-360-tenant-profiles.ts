@@ -216,7 +216,14 @@ export const BNS_360_TENANT_PROFILES: Bns360TenantProfile[] = [
         key: 'full_catalog_highest_tier',
         description: 'Disposable certification tenant covering the full reusable module catalog at the highest published tier per module.',
         modules: getHighestTierModules(),
-        scenarioKeys: contract.modules.catalog.map(module => `module.${module.key}`),
+        scenarioKeys: [
+            'governance.central_policy_read',
+            'commerce.modules_marketplace_and_limits',
+            'pos.core_checkout',
+            'pos.offline_sync',
+            'pos.refunds_and_history',
+            ...contract.modules.catalog.map(module => `module.${module.key}`),
+        ],
     },
 ]
 

@@ -206,6 +206,25 @@ describe('BNS 360 reusable runtime matrix', () => {
         )
     })
 
+    it('runs full-catalog certification as a combined tenant profile, not only isolated module pages', () => {
+        const fullCatalog = BNS_360_TENANT_PROFILES.find(
+            profile => profile.key === 'full_catalog_highest_tier'
+        )
+
+        expect(fullCatalog?.scenarioKeys).toEqual(expect.arrayContaining([
+            'governance.central_policy_read',
+            'commerce.modules_marketplace_and_limits',
+            'pos.core_checkout',
+            'pos.offline_sync',
+            'pos.refunds_and_history',
+            'module.pos',
+            'module.pos_kiosk',
+        ]))
+        expect(fullCatalog?.scenarioKeys.filter(key => key.startsWith('module.')).sort()).toEqual(
+            contract.modules.catalog.map(module => `module.${module.key}`).sort()
+        )
+    })
+
     it('builds structured evidence envelopes without embedding credentials', () => {
         const scenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             item => item.moduleKey === 'ecommerce'

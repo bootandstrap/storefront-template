@@ -161,7 +161,7 @@ Source harness state:
 
 ### Lane 5: Full Catalog Combination
 
-Status: `todo`
+Status: `in_progress`
 
 Evidence target:
 
@@ -174,6 +174,18 @@ Required proof:
 - dependency constraints are satisfied;
 - POS and kiosk coexist;
 - limits merge by max where multiple modules affect the same limit.
+
+Source harness state:
+
+- `full_catalog_highest_tier` still pins every reusable module to its highest published tier.
+- The profile now runs as a combined tenant profile instead of isolated module pages only:
+  - `governance.central_policy_read`
+  - `commerce.modules_marketplace_and_limits`
+  - `pos.core_checkout`
+  - `pos.offline_sync`
+  - `pos.refunds_and_history`
+  - all `module.*` scenarios, including `module.pos` and `module.pos_kiosk`.
+- This proves the intended certification envelope at source level. It does not yet prove deployed no-collision behavior under a fresh full-catalog tenant.
 
 ### Lane 6: Propagation Runtime Proof
 
@@ -206,6 +218,7 @@ Required proof:
 6. Add read-only `runtime_config` functional evidence for central governance policy reads through `/api/panel/limits`, including JSON-path assertions for materialized plan limit keys.
 7. Harden `/api/module-purchase` source contracts for semantic BSWEB checkout initiation, dependency gates, missing internal token behavior and BSWEB error propagation.
 8. Contract-check BNS 360 module runtime routes against `MODULE_SETUP_REGISTRY` quick actions and remove stale i18n/SEO route hints.
+9. Expand `full_catalog_highest_tier` from isolated module route coverage to a combined profile that includes central governance, commerce and POS/kiosk coexistence scenarios.
 
 ## Execution Commands
 
