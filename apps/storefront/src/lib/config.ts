@@ -114,7 +114,10 @@ function _buildAppConfig(
     tenantStatusRaw: string | null,
     options?: { skipMaintenanceCalc?: boolean },
 ): AppConfig {
-    const limits = (limitsData as PlanLimits) ?? FALLBACK_CONFIG.planLimits
+    const limits = {
+        ...FALLBACK_CONFIG.planLimits,
+        ...(limitsData ?? {}),
+    } as PlanLimits
     const planExpired = limits.plan_expires_at
         ? new Date(limits.plan_expires_at) < new Date()
         : false

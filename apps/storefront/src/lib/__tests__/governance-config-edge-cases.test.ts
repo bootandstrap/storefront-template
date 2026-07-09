@@ -272,6 +272,24 @@ describe('Config Business Logic — Enterprise Edge Cases', () => {
         })
     })
 
+    // ── Fallback limit merging ────────────────────────────────────────
+
+    describe('plan limit merging', () => {
+        it('merges partial plan_limits from the governance RPC with FALLBACK_CONFIG defaults', async () => {
+            mockRpc.mockResolvedValueOnce(makeRpcResponse({
+                plan_limits: { max_products: 125, plan_name: 'fullcat-smoke' },
+            }))
+
+            const { getConfigForTenant, FALLBACK_CONFIG } = await import('../config')
+            const result = await getConfigForTenant('tenant-explicit-1')
+
+            expect(result.planLimits.max_products).toBe(125)
+            expect(result.planLimits.plan_name).toBe('fullcat-smoke')
+            expect(result.planLimits.max_categories).toBe(FALLBACK_CONFIG.planLimits.max_categories)
+            expect(result.planLimits.max_badges).toBe(FALLBACK_CONFIG.planLimits.max_badges)
+        })
+    })
+
     // ── Non-degraded config marker ────────────────────────────────────
 
     describe('_degraded marker', () => {

@@ -133,6 +133,14 @@ const RESOURCE_DEFS: Record<string, ResourceDef> = {
 export type ResourceKey = keyof typeof RESOURCE_DEFS
 export type PlanLimitSnapshot = Record<string, unknown> | null | undefined
 
+const RESOURCE_KEY_BY_LIMIT_KEY = Object.fromEntries(
+    Object.entries(RESOURCE_DEFS).map(([resource, def]) => [def.limitKey, resource])
+) as Record<string, string | undefined>
+
+function getResourceDef(resource: string): ResourceDef | null {
+    return RESOURCE_DEFS[resource] ?? RESOURCE_DEFS[RESOURCE_KEY_BY_LIMIT_KEY[resource] ?? ''] ?? null
+}
+
 // ── Types ─────────────────────────────────────────────────────────────
 
 export interface LimitCheckResult {
@@ -164,10 +172,10 @@ export interface LimitCheckResult {
  */
 export async function checkResourceLimit(
     tenantId: string,
-    resource: ResourceKey,
+    resource: string,
     planLimitsSnapshot?: PlanLimitSnapshot,
 ): Promise<LimitCheckResult> {
-    const def = RESOURCE_DEFS[resource]
+    const def = getResourceDef(resource)
     if (!def) {
         return { allowed: true, current: 0, limit: Infinity, percentage: 0, label: resource, limitKey: '', warning: false }
     }
@@ -220,7 +228,7 @@ export async function checkResourceLimit(
  */
 export async function checkMultipleResourceLimits(
     tenantId: string,
-    resources: ResourceKey[],
+    resources: string[],
     planLimitsSnapshot?: PlanLimitSnapshot,
 ): Promise<Record<string, LimitCheckResult>> {
     const results = await Promise.all(

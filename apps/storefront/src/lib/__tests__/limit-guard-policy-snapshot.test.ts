@@ -8,7 +8,7 @@ vi.mock('@/lib/supabase/admin', () => ({
     }),
 }))
 
-const { checkResourceLimit } = await import('../enforcement/limit-guard')
+const { checkMultipleResourceLimits, checkResourceLimit } = await import('../enforcement/limit-guard')
 
 describe('limit guard policy snapshot', () => {
     beforeEach(() => {
@@ -25,6 +25,21 @@ describe('limit guard policy snapshot', () => {
         })
 
         expect(result).toMatchObject({
+            allowed: true,
+            current: 7,
+            limit: 200,
+            limitKey: 'max_products',
+            percentage: 4,
+        })
+        expect(mockFrom).not.toHaveBeenCalled()
+    })
+
+    it('accepts plan limit keys as resource probes for module setup usage metrics', async () => {
+        const result = await checkMultipleResourceLimits('tenant-123', ['max_products'] as never, {
+            max_products: 200,
+        })
+
+        expect(result.max_products).toMatchObject({
             allowed: true,
             current: 7,
             limit: 200,
