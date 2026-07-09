@@ -1,4 +1,4 @@
-import { expect, type Page, type APIRequestContext } from '@playwright/test'
+import { expect, type APIRequestContext, type Page, type Response } from '@playwright/test'
 import type { Bns360FunctionalEvidenceTarget } from './bns-360-tenant-profiles'
 
 export const BNS_360_LANG = process.env.BNS_360_LANG || 'es'
@@ -26,6 +26,17 @@ type Bns360ApiHeaderScenario = {
     apiHeadersEnv?: Record<string, string>
 }
 type Bns360OwnerStorageState = Awaited<ReturnType<ReturnType<Page['context']>['storageState']>>
+type Bns360RouteRetryEnv = {
+    [key: string]: string | undefined
+    BNS_360_ROUTE_RETRY_MAX_ATTEMPTS?: string
+    BNS_360_ROUTE_RETRY_FALLBACK_MS?: string
+    BNS_360_ROUTE_RETRY_MAX_DELAY_MS?: string
+}
+export type Bns360RouteRetryConfig = {
+    maxAttempts: number
+    fallbackDelayMs: number
+    maxDelayMs: number
+}
 
 let bns360OwnerStorageState: Bns360OwnerStorageState | null = null
 
@@ -259,8 +270,64 @@ export function getBns360PanelLandingUrlPattern(lang: string = BNS_360_LANG): Re
     return new RegExp(`/${lang}/panel(?:$|[/?#])`)
 }
 
+function parsePositiveInteger(value: string | undefined, fallback: number): number {
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+export function getBns360RouteRetryConfig(
+    env: Bns360RouteRetryEnv = process.env
+): Bns360RouteRetryConfig {
+    return {
+        maxAttempts: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_ATTEMPTS, 2),
+        fallbackDelayMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_FALLBACK_MS, 5_000),
+        maxDelayMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_DELAY_MS, 65_000),
+    }
+}
+
+export function resolveBns360RetryAfterMs(
+    retryAfter: string | null | undefined,
+    config: Bns360RouteRetryConfig = getBns360RouteRetryConfig()
+): number {
+    if (!retryAfter) {
+        return config.fallbackDelayMs
+    }
+
+    const seconds = Number(retryAfter)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+        return Math.min(Math.round(seconds * 1000), config.maxDelayMs)
+    }
+
+    const retryAt = Date.parse(retryAfter)
+    if (Number.isFinite(retryAt)) {
+        return Math.min(Math.max(retryAt - Date.now(), 0), config.maxDelayMs)
+    }
+
+    return config.fallbackDelayMs
+}
+
+async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: string): Promise<Response | null> {
+    const config = getBns360RouteRetryConfig()
+    let response: Response | null = null
+
+    for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+        response = await page.goto(route)
+        if (response?.status() !== 429 || attempt === config.maxAttempts) {
+            return response
+        }
+
+        await page.waitForTimeout(resolveBns360RetryAfterMs(response.headers()['retry-after'], config))
+    }
+
+    return response
+}
+
 export async function expectPanelRouteHealthy(page: Page, route: string) {
-    await page.goto(route)
+    const response = await gotoBns360PanelRouteWithRateLimitBackoff(page, route)
+    if (response && !response.ok()) {
+        const body = await response.text().catch(() => '')
+        expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
+    }
     await expect(page.locator('main')).toBeVisible()
     await expect(page.locator('text=Algo salió mal')).not.toBeVisible()
 }

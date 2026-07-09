@@ -17,7 +17,9 @@ import {
     getBns360ExecutionMode,
     getBns360MissingCredentialAction,
     getBns360PanelLandingUrlPattern,
+    getBns360RouteRetryConfig,
     resolveBns360ApiHeaders,
+    resolveBns360RetryAfterMs,
 } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
 
@@ -134,6 +136,29 @@ describe('BNS 360 reusable runtime matrix', () => {
     it('includes route and status in API health failure diagnostics', () => {
         expect(formatBns360ApiHealthFailure('/api/health/ready', 503, 'redis unavailable'))
             .toContain('/api/health/ready returned HTTP 503: redis unavailable')
+    })
+
+    it('respects Retry-After when live panel smoke hits proxy rate limiting', () => {
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+        const retryConfig = getBns360RouteRetryConfig({
+            BNS_360_ROUTE_RETRY_MAX_ATTEMPTS: '4',
+            BNS_360_ROUTE_RETRY_FALLBACK_MS: '750',
+            BNS_360_ROUTE_RETRY_MAX_DELAY_MS: '2000',
+        })
+
+        expect(retryConfig).toEqual({
+            maxAttempts: 4,
+            fallbackDelayMs: 750,
+            maxDelayMs: 2000,
+        })
+        expect(resolveBns360RetryAfterMs('1', retryConfig)).toBe(1000)
+        expect(resolveBns360RetryAfterMs('60', retryConfig)).toBe(2000)
+        expect(resolveBns360RetryAfterMs(null, retryConfig)).toBe(750)
+        expect(fixtures).toContain('page.waitForTimeout(resolveBns360RetryAfterMs')
+        expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
     })
 
     it('only declares public storefront smoke page routes that exist in the app router', () => {
