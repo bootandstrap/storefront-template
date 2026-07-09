@@ -11,6 +11,7 @@ import {
 import {
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
+    bns360JsonHasPath,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
     getBns360MissingCredentialAction,
@@ -38,6 +39,7 @@ describe('BNS 360 reusable runtime matrix', () => {
             'panel.settings_and_auth',
             'recovery.backup_download_restore',
             'ops.health_readiness_liveness',
+            'governance.central_policy_read',
             'commerce.modules_marketplace_and_limits',
             'pos.core_checkout',
             'pos.offline_sync',
@@ -99,6 +101,34 @@ describe('BNS 360 reusable runtime matrix', () => {
                 target: expect.stringContaining('/api/module-purchase'),
             }),
         ]))
+    })
+
+    it('automates a read-only governance policy proof through the deployed storefront', () => {
+        const governanceScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'governance.central_policy_read'
+        )
+
+        expect(governanceScenario).toMatchObject({
+            domain: 'governance',
+            transport: 'api',
+            requiresAuth: true,
+            routes: ['/api/panel/limits?resources=products,categories,badges'],
+        })
+        expect(governanceScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'runtime_config',
+                target: expect.stringContaining('get_tenant_governance'),
+                routes: ['/api/panel/limits?resources=products,categories,badges'],
+                expectedJsonPaths: [
+                    'products.limitKey',
+                    'products.limit',
+                    'categories.limitKey',
+                    'badges.limitKey',
+                ],
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(governanceScenario?.functionalEvidence ?? []))
+            .toBe('verified')
     })
 
     it('declares module certification journeys for all 13 reusable modules', () => {
@@ -266,9 +296,29 @@ describe('BNS 360 reusable runtime matrix', () => {
             { kind: 'api_health', target: 'health', reversible: true, routes: ['/api/health'] },
         ])).toBe('verified')
         expect(getBns360AutomatedFunctionalEvidenceStatus([
+            {
+                kind: 'runtime_config',
+                target: 'governance limits JSON',
+                reversible: false,
+                routes: ['/api/panel/limits?resources=products'],
+                expectedJsonPaths: ['products.limitKey', 'products.limit'],
+            },
+        ])).toBe('verified')
+        expect(getBns360AutomatedFunctionalEvidenceStatus([
             { kind: 'api_health', target: 'health', reversible: true, routes: ['/api/health'] },
             { kind: 'crud_journey', target: 'crm contact CRUD', reversible: true },
         ])).toBe('manual_required')
+    })
+
+    it('checks nested JSON paths for automated read-only governance evidence', () => {
+        const limitsPayload = {
+            products: { limitKey: 'max_products', limit: 100 },
+            categories: { limitKey: 'max_categories', limit: 20 },
+        }
+
+        expect(bns360JsonHasPath(limitsPayload, 'products.limitKey')).toBe(true)
+        expect(bns360JsonHasPath(limitsPayload, 'categories.limit')).toBe(true)
+        expect(bns360JsonHasPath(limitsPayload, 'badges.limit')).toBe(false)
     })
 
     it('keeps mutating functional journeys opt-in', () => {

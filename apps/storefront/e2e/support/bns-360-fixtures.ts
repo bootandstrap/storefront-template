@@ -142,8 +142,30 @@ export function assertBns360FunctionalEvidenceVerified(evidence: Bns360ScenarioE
     )
 }
 
+export function bns360JsonHasPath(payload: unknown, path: string): boolean {
+    let current: unknown = payload
+
+    for (const segment of path.split('.')) {
+        if (!current || typeof current !== 'object' || !(segment in current)) {
+            return false
+        }
+
+        current = (current as Record<string, unknown>)[segment]
+    }
+
+    return current !== undefined && current !== null
+}
+
 function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
-    return target.kind === 'api_health' && Boolean(target.routes?.length)
+    if (target.kind === 'api_health') {
+        return Boolean(target.routes?.length)
+    }
+
+    if (target.kind === 'runtime_config') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
+    return false
 }
 
 export function getBns360AutomatedFunctionalEvidenceStatus(
@@ -167,7 +189,17 @@ export async function runBns360AutomatedFunctionalEvidence(
 
     for (const target of targets) {
         for (const route of target.routes ?? []) {
-            await expectApiHealthy(request, route)
+            const response = await expectApiHealthy(request, route)
+
+            if (target.expectedJsonPaths?.length) {
+                const payload = await response.json()
+                for (const path of target.expectedJsonPaths) {
+                    expect(
+                        bns360JsonHasPath(payload, path),
+                        `Expected ${route} JSON payload to include ${path}`
+                    ).toBe(true)
+                }
+            }
         }
     }
 
@@ -196,4 +228,5 @@ export async function expectApiHealthy(
 ) {
     const response = await request.get(route, headers ? { headers } : undefined)
     expect(response.ok()).toBe(true)
+    return response
 }

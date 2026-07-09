@@ -36,13 +36,17 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - `executionMode`: `smoke` by default, `functional` only with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
 - In `functional` mode, declared-only functional evidence is rejected unless a runner marks it `verified`. This prevents route smoke from being reported as CRUD/grants certification.
 - In `functional` mode, authenticated scenarios now require owner credentials and fail explicitly when they are missing. The regular smoke path can still skip authenticated routes for public/runtime health diagnostics, but `cert:360:functional` can no longer finish green by skipping panel, CRUD, grants or module journeys.
-- Automated functional runner coverage currently exists only for structured `api_health` targets with concrete `/api/...` routes. CRUD, grants, limits and primary journeys remain `manual_required` until implemented as reversible canary journeys.
+- Automated functional runner coverage currently exists for structured `api_health` targets with concrete `/api/...` routes and read-only `runtime_config` targets with JSON-path assertions. CRUD, grants, mutable limit changes and primary journeys remain `manual_required` until implemented as reversible canary journeys.
+- Lane 1 deployed runtime health was proven from the BSWEB control plane on `2026-07-08` using canary `ops-live-202607081954` / tenant `934ac146-4498-47f0-89c8-b78383acf95f`.
+  - Runtime proof artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-runtime-health-20260708T2022Z.json` (`pass=true`).
+  - Cleanup proof artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-cleanup-closure-20260708T2040Z.json` (`pass=true`).
+  - Canonical residue proof after cleanup: tenants/config/profiles/async_jobs/module_orders all `0`.
 
 ## Certification Lanes
 
 ### Lane 1: Deployed Runtime Health
 
-Status: `todo`
+Status: `verified`
 
 Evidence target:
 
@@ -60,9 +64,14 @@ Required proof:
 - runtime reports the configured tenant id.
 - health tokens are read from env at execution time and are not persisted in evidence artifacts.
 
+Evidence:
+
+- `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-runtime-health-20260708T2022Z.json`
+- `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-cleanup-closure-20260708T2040Z.json`
+
 ### Lane 2: Central Governance Connectivity
 
-Status: `todo`
+Status: `in_progress`
 
 Evidence target:
 
@@ -75,6 +84,16 @@ Required proof:
 - a flag disabled in BSWEB locks the corresponding module route;
 - a grant/materialization enables it again without redeploying the storefront;
 - limits are visible and enforced server-side.
+
+Source harness state:
+
+- `governance.central_policy_read` exercises `/api/panel/limits?resources=products,categories,badges` as an authenticated API scenario.
+- The associated functional evidence is `runtime_config` and asserts deployed JSON includes:
+  - `products.limitKey`
+  - `products.limit`
+  - `categories.limitKey`
+  - `badges.limitKey`
+- This proves read-only central policy visibility through the storefront runtime. It does not yet prove mutable flag lock/unlock, BSWEB materialization, or cache/realtime revalidation after grants.
 
 ### Lane 3: Bidirectional Commercial Grants
 
@@ -170,6 +189,7 @@ Required proof:
 3. Add Playwright fixture helpers that can run in read-only mode first, then support mutating canary journeys behind an explicit environment flag.
 4. Keep existing route smoke as the fast first gate; do not replace it.
 5. Add the first automated functional runner for non-mutating `api_health` evidence while preserving `manual_required` for all categories that do not yet have a real runner.
+6. Add read-only `runtime_config` functional evidence for central governance policy reads through `/api/panel/limits`, including JSON-path assertions for materialized plan limit keys.
 
 ## Execution Commands
 
@@ -179,4 +199,4 @@ Required proof:
 - Functional certification:
   - `pnpm --dir apps/storefront cert:360:functional`
   - Requires deployed runtime credentials and `BNS_360_FUNCTIONAL_JOURNEYS=1`.
-  - Expected state until functional runners are implemented: fail with `functionalStatus=manual_required` for module targets rather than reporting false green.
+  - Expected state until mutating functional runners are implemented: fail with `functionalStatus=manual_required` for CRUD, grants, limit mutation and module primary journeys rather than reporting false green.

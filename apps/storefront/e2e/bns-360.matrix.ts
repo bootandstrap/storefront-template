@@ -5,7 +5,7 @@ import {
 
 export interface Bns360RuntimeScenario {
     key: string
-    domain: 'storefront' | 'panel' | 'recovery' | 'ops' | 'commerce' | 'pos' | 'modules'
+    domain: 'storefront' | 'panel' | 'recovery' | 'ops' | 'governance' | 'commerce' | 'pos' | 'modules'
     routes: string[]
     requiresAuth?: boolean
     transport?: 'page' | 'api'
@@ -85,6 +85,27 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         apiHeadersEnv: {
             'x-health-token': 'BNS_360_HEALTH_CHECK_TOKEN',
         },
+    },
+    {
+        key: 'governance.central_policy_read',
+        domain: 'governance',
+        routes: ['/api/panel/limits?resources=products,categories,badges'],
+        requiresAuth: true,
+        transport: 'api',
+        functionalEvidence: [
+            {
+                kind: 'runtime_config',
+                target: 'get_tenant_governance materializes plan_limits into panel policy limits',
+                reversible: false,
+                routes: ['/api/panel/limits?resources=products,categories,badges'],
+                expectedJsonPaths: [
+                    'products.limitKey',
+                    'products.limit',
+                    'categories.limitKey',
+                    'badges.limitKey',
+                ],
+            },
+        ],
     },
     {
         key: 'commerce.modules_marketplace_and_limits',
