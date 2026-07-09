@@ -131,6 +131,7 @@ const RESOURCE_DEFS: Record<string, ResourceDef> = {
 }
 
 export type ResourceKey = keyof typeof RESOURCE_DEFS
+export type PlanLimitSnapshot = Record<string, unknown> | null | undefined
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -164,27 +165,35 @@ export interface LimitCheckResult {
 export async function checkResourceLimit(
     tenantId: string,
     resource: ResourceKey,
+    planLimitsSnapshot?: PlanLimitSnapshot,
 ): Promise<LimitCheckResult> {
     const def = RESOURCE_DEFS[resource]
     if (!def) {
         return { allowed: true, current: 0, limit: Infinity, percentage: 0, label: resource, limitKey: '', warning: false }
     }
 
-    // Fetch plan limit
-    const admin = createAdminClient()
     let limitValue = Infinity
-    try {
-        const { data } = await admin
-            .from('plan_limits')
-            .select(def.limitKey)
-            .eq('tenant_id', tenantId)
-            .single()
-        const row = data as Record<string, unknown> | null
-        if (row && row[def.limitKey] != null) {
-            limitValue = Number(row[def.limitKey])
+
+    if (planLimitsSnapshot !== undefined) {
+        const snapshotValue = planLimitsSnapshot?.[def.limitKey]
+        if (snapshotValue !== undefined && snapshotValue !== null) {
+            limitValue = Number(snapshotValue)
         }
-    } catch {
-        // Fail-open: no limit found → allow
+    } else {
+        const admin = createAdminClient()
+        try {
+            const { data } = await admin
+                .from('plan_limits')
+                .select(def.limitKey)
+                .eq('tenant_id', tenantId)
+                .single()
+            const row = data as Record<string, unknown> | null
+            if (row && row[def.limitKey] != null) {
+                limitValue = Number(row[def.limitKey])
+            }
+        } catch {
+            // Fail-open: no limit found → allow
+        }
     }
 
     // Count current
@@ -212,9 +221,10 @@ export async function checkResourceLimit(
 export async function checkMultipleResourceLimits(
     tenantId: string,
     resources: ResourceKey[],
+    planLimitsSnapshot?: PlanLimitSnapshot,
 ): Promise<Record<string, LimitCheckResult>> {
     const results = await Promise.all(
-        resources.map(async (r) => [r, await checkResourceLimit(tenantId, r)] as const)
+        resources.map(async (r) => [r, await checkResourceLimit(tenantId, r, planLimitsSnapshot)] as const)
     )
     return Object.fromEntries(results)
 }

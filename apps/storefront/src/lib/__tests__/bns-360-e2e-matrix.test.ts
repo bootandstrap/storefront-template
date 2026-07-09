@@ -215,12 +215,25 @@ describe('BNS 360 reusable runtime matrix', () => {
                     'products.limitKey',
                     'products.limit',
                     'categories.limitKey',
+                    'categories.limit',
                     'badges.limitKey',
+                    'badges.limit',
                 ],
             }),
         ])
         expect(getBns360AutomatedFunctionalEvidenceStatus(governanceScenario?.functionalEvidence ?? []))
             .toBe('verified')
+    })
+
+    it('serves panel limit probes from the already-authorized governance snapshot', () => {
+        const route = readFileSync(
+            join(process.cwd(), 'src/app/api/panel/limits/route.ts'),
+            'utf8'
+        )
+
+        expect(route).toContain('const { tenantId, appConfig } = await withPanelGuard()')
+        expect(route).toContain('checkResourceLimit(tenantId, singleResource, appConfig.planLimits)')
+        expect(route).toContain('checkMultipleResourceLimits(tenantId, keys, appConfig.planLimits)')
     })
 
     it('keeps parameterized recovery APIs out of raw smoke routes', () => {
@@ -439,11 +452,12 @@ describe('BNS 360 reusable runtime matrix', () => {
         const limitsPayload = {
             products: { limitKey: 'max_products', limit: 100 },
             categories: { limitKey: 'max_categories', limit: 20 },
+            badges: { limitKey: 'max_badges', limit: 10 },
         }
 
         expect(bns360JsonHasPath(limitsPayload, 'products.limitKey')).toBe(true)
         expect(bns360JsonHasPath(limitsPayload, 'categories.limit')).toBe(true)
-        expect(bns360JsonHasPath(limitsPayload, 'badges.limit')).toBe(false)
+        expect(bns360JsonHasPath(limitsPayload, 'badges.warning')).toBe(false)
     })
 
     it('keeps mutating functional journeys opt-in', () => {

@@ -18,26 +18,26 @@ export async function GET(req: NextRequest) {
         const rateLimitResult = await withRateLimit(req, PANEL_GUARD)
         if (rateLimitResult.limited) return rateLimitResult.response!
 
-        const { tenantId } = await withPanelGuard()
+        const { tenantId, appConfig } = await withPanelGuard()
         const { searchParams } = new URL(req.url)
 
         const singleResource = searchParams.get('resource') as ResourceKey | null
         const multiResources = searchParams.get('resources')
 
         if (singleResource) {
-            const result = await checkResourceLimit(tenantId, singleResource)
+            const result = await checkResourceLimit(tenantId, singleResource, appConfig.planLimits)
             return NextResponse.json(result)
         }
 
         if (multiResources) {
             const keys = multiResources.split(',').filter(Boolean) as ResourceKey[]
-            const results = await checkMultipleResourceLimits(tenantId, keys)
+            const results = await checkMultipleResourceLimits(tenantId, keys, appConfig.planLimits)
             return NextResponse.json(results)
         }
 
         // No resource specified → return all
         const allKeys = getResourceKeys()
-        const results = await checkMultipleResourceLimits(tenantId, allKeys)
+        const results = await checkMultipleResourceLimits(tenantId, allKeys, appConfig.planLimits)
         return NextResponse.json(results)
     } catch (error) {
         logger.error('[limits] Error:', error)
