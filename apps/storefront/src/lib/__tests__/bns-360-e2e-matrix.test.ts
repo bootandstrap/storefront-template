@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import contract from '../governance-contract'
@@ -12,9 +12,11 @@ import {
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     bns360JsonHasPath,
+    formatBns360ApiHealthFailure,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
     getBns360MissingCredentialAction,
+    getBns360PanelLandingUrlPattern,
     resolveBns360ApiHeaders,
 } from '../../../e2e/support/bns-360-fixtures'
 import { BNS_360_TENANT_PROFILES } from '../../../e2e/support/bns-360-tenant-profiles'
@@ -88,6 +90,36 @@ describe('BNS 360 reusable runtime matrix', () => {
             '/es/panel/clientes',
             '/es/panel/inventario',
         ]))
+    })
+
+    it('accepts the panel index as a successful owner login landing page', () => {
+        const panelLanding = getBns360PanelLandingUrlPattern('es')
+
+        expect(panelLanding.test('https://ops-fullcat.example.com/es/panel')).toBe(true)
+        expect(panelLanding.test('https://ops-fullcat.example.com/es/panel/catalogo')).toBe(true)
+        expect(panelLanding.test('https://ops-fullcat.example.com/es/login')).toBe(false)
+    })
+
+    it('includes route and status in API health failure diagnostics', () => {
+        expect(formatBns360ApiHealthFailure('/api/health/ready', 503, 'redis unavailable'))
+            .toContain('/api/health/ready returned HTTP 503: redis unavailable')
+    })
+
+    it('only declares public storefront smoke page routes that exist in the app router', () => {
+        const shopRoot = join(process.cwd(), 'src/app/[lang]/(shop)')
+        const publicPageRoutes = BNS_360_RUNTIME_MATRIX
+            .filter(scenario => scenario.domain === 'storefront' && scenario.transport !== 'api')
+            .flatMap(scenario => scenario.routes)
+
+        for (const route of publicPageRoutes) {
+            const segments = route.replace(/^\/es\/?/, '').split('/').filter(Boolean)
+            const pagePath = join(shopRoot, ...segments, 'page.tsx')
+
+            expect(
+                existsSync(pagePath),
+                `${route} is declared in BNS_360_RUNTIME_MATRIX but ${pagePath} does not exist`
+            ).toBe(true)
+        }
     })
 
     it('tracks bidirectional grants as runtime functional evidence', () => {

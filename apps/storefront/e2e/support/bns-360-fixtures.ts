@@ -212,7 +212,11 @@ export async function loginAsOwner(page: Page) {
     await page.fill('input[type="email"]', BNS_360_OWNER_EMAIL ?? '')
     await page.fill('input[type="password"]', BNS_360_OWNER_PASSWORD ?? '')
     await page.click('button[type="submit"]')
-    await page.waitForURL(`**/${BNS_360_LANG}/panel/**`, { timeout: 20_000 })
+    await page.waitForURL(getBns360PanelLandingUrlPattern(BNS_360_LANG), { timeout: 20_000 })
+}
+
+export function getBns360PanelLandingUrlPattern(lang: string = BNS_360_LANG): RegExp {
+    return new RegExp(`/${lang}/panel(?:$|[/?#])`)
 }
 
 export async function expectPanelRouteHealthy(page: Page, route: string) {
@@ -227,6 +231,16 @@ export async function expectApiHealthy(
     headers?: Record<string, string>
 ) {
     const response = await request.get(route, headers ? { headers } : undefined)
-    expect(response.ok()).toBe(true)
+    if (!response.ok()) {
+        const body = await response.text().catch(() => '')
+        expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
+    }
     return response
+}
+
+export function formatBns360ApiHealthFailure(route: string, status: number, body: string): string {
+    const normalizedBody = body.trim()
+    return normalizedBody
+        ? `${route} returned HTTP ${status}: ${normalizedBody.slice(0, 500)}`
+        : `${route} returned HTTP ${status}`
 }
