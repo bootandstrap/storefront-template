@@ -129,7 +129,7 @@ Source harness state:
 
 ### Lane 4: Module Primary Journeys
 
-Status: `todo`
+Status: `in_progress`
 
 Evidence target:
 
@@ -150,6 +150,14 @@ Required proof examples:
 - `auth_advanced`: prove advanced auth flags gate the panel surface;
 - `capacidad`: prove limits/backup vault visibility and non-destructive backup access;
 - `pos` and `pos_kiosk`: prove POS core journey without requiring physical hardware.
+
+Source harness state:
+
+- The BNS 360 module route matrix is now contract-checked against `MODULE_SETUP_REGISTRY` quick actions so module certification routes cannot drift from the actual owner setup surface.
+- This caught and fixed real drift:
+  - `i18n` now follows `/es/panel/ajustes?tab=idiomas` instead of stale `tab=tienda`.
+  - `seo` now follows `/es/panel/ajustes?tab=analiticas` instead of the stale standalone analytics route.
+- This remains source-route alignment, not deployed CRUD/primary-journey proof.
 
 ### Lane 5: Full Catalog Combination
 
@@ -197,6 +205,7 @@ Required proof:
 5. Add the first automated functional runner for non-mutating `api_health` evidence while preserving `manual_required` for all categories that do not yet have a real runner.
 6. Add read-only `runtime_config` functional evidence for central governance policy reads through `/api/panel/limits`, including JSON-path assertions for materialized plan limit keys.
 7. Harden `/api/module-purchase` source contracts for semantic BSWEB checkout initiation, dependency gates, missing internal token behavior and BSWEB error propagation.
+8. Contract-check BNS 360 module runtime routes against `MODULE_SETUP_REGISTRY` quick actions and remove stale i18n/SEO route hints.
 
 ## Execution Commands
 
