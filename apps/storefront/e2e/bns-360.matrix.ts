@@ -73,9 +73,16 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
     {
         key: 'recovery.backup_download_restore',
         domain: 'recovery',
-        routes: ['/api/panel/vault', '/api/panel/vault/download', '/api/panel/vault/restore'],
+        routes: ['/api/panel/vault'],
         requiresAuth: true,
         transport: 'api',
+        functionalEvidence: [
+            {
+                kind: 'backup_restore_journey',
+                target: '/api/panel/vault/download and /api/panel/vault/restore require backup ids/payloads and must be certified through a reversible backup/restore journey',
+                reversible: true,
+            },
+        ],
     },
     {
         key: 'ops.health_readiness_liveness',

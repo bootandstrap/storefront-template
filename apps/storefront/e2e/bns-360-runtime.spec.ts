@@ -21,6 +21,8 @@ const moduleScenarioByKey = new Map(
     BNS_360_MODULE_CERTIFICATION_MATRIX.map(scenario => [`module.${scenario.moduleKey}`, scenario])
 )
 
+test.describe.configure({ mode: 'serial' })
+
 for (const scenario of BNS_360_RUNTIME_MATRIX) {
     test.describe(`BNS 360 runtime: ${scenario.key}`, () => {
         test(`${scenario.key} smoke`, async ({ page, request }, testInfo) => {

@@ -132,13 +132,13 @@ export default function PanelShell({
                     />
                 )}
                 {isPOS ? (
-                    <div className="flex-1 min-h-0 overflow-hidden h-full">
+                    <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-hidden h-full">
                         {children}
-                    </div>
+                    </main>
                 ) : (
-                    <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8 pb-24 md:pb-8">
+                    <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8 pb-24 md:pb-8">
                         {children}
-                    </div>
+                    </main>
                 )}
             </div>
 

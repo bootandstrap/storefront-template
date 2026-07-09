@@ -31,6 +31,7 @@ const CERTIFICATION_EVIDENCE = [
 ] as const
 
 export type Bns360FunctionalEvidenceKind =
+    | 'backup_restore_journey'
     | 'crud_journey'
     | 'grant_unlock'
     | 'limit_enforcement'

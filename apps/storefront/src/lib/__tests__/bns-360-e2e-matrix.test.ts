@@ -80,6 +80,26 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(runtimeSpec).toContain('expectApiHealthy(apiRequest, route, headers)')
     })
 
+    it('serializes live runtime smoke to avoid self-inflicted owner auth throttling', () => {
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(runtimeSpec).toContain("test.describe.configure({ mode: 'serial' })")
+    })
+
+    it('exposes a real panel main-content landmark for smoke and skip-link checks', () => {
+        const panelShell = readFileSync(
+            join(process.cwd(), 'src/components/panel/PanelShell.tsx'),
+            'utf8'
+        )
+
+        expect(panelShell).toContain('<main')
+        expect(panelShell).toContain('id="main-content"')
+        expect(panelShell).toContain('tabIndex={-1}')
+    })
+
     it('keeps panel route coverage explicit instead of relying on broad smoke labels', () => {
         const panelScenario = BNS_360_RUNTIME_MATRIX.find(
             scenario => scenario.key === 'panel.orders_customers_inventory'
@@ -161,6 +181,20 @@ describe('BNS 360 reusable runtime matrix', () => {
         ])
         expect(getBns360AutomatedFunctionalEvidenceStatus(governanceScenario?.functionalEvidence ?? []))
             .toBe('verified')
+    })
+
+    it('keeps parameterized recovery APIs out of raw smoke routes', () => {
+        const recoveryScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'recovery.backup_download_restore'
+        )
+
+        expect(recoveryScenario?.routes).toEqual(['/api/panel/vault'])
+        expect(recoveryScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'backup_restore_journey',
+                target: expect.stringContaining('/api/panel/vault/download'),
+            }),
+        ]))
     })
 
     it('declares module certification journeys for all 13 reusable modules', () => {
