@@ -38,17 +38,17 @@ describe('module setup registry contract', () => {
     it('keeps BNS 360 module runtime routes aligned with registry quick actions', () => {
         const source = readFileSync(REGISTRY_PATH, 'utf8')
 
-        for (const module of contract.modules.catalog) {
+        for (const moduleEntry of contract.modules.catalog) {
             const certification = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
-                scenario => scenario.moduleKey === module.key
+                scenario => scenario.moduleKey === moduleEntry.key
             )
-            const quickActionRoutes = extractRegistryQuickActionHrefs(source, module.key)
+            const quickActionRoutes = extractRegistryQuickActionHrefs(source, moduleEntry.key)
                 .map(prefixRuntimeRoute)
 
-            expect(certification, `${module.key} needs a BNS 360 certification scenario`).toBeDefined()
+            expect(certification, `${moduleEntry.key} needs a BNS 360 certification scenario`).toBeDefined()
             expect(
                 certification?.runtimeRoutes,
-                `${module.key} BNS 360 runtime routes must cover module setup quick actions`
+                `${moduleEntry.key} BNS 360 runtime routes must cover module setup quick actions`
             ).toEqual(expect.arrayContaining(quickActionRoutes))
         }
     })
