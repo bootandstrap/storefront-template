@@ -119,6 +119,12 @@ Required proof:
 Source harness state:
 
 - `commerce.modules_marketplace_and_limits` now carries functional evidence for `/api/module-purchase -> BSWEB /api/commercial-checkout -> grants materialization`.
+- `/api/module-purchase` source contracts now prove the storefront proxy:
+  - maps semantic module/tier selection to a BSWEB `product_key`;
+  - sends the resolved `tenant_id`, currency, billing interval, idempotency key and tenant-origin return URLs;
+  - fails closed when `BSWEB_INTERNAL_API_TOKEN` is absent;
+  - blocks dependent modules unless central active grants satisfy reusable module requirements;
+  - propagates BSWEB commercial checkout conflicts without writing local grant state.
 - The target remains `manual_required` in functional mode until the deployed canary can execute a reversible checkout/grants replay and observe materialized limits.
 
 ### Lane 4: Module Primary Journeys
@@ -190,6 +196,7 @@ Required proof:
 4. Keep existing route smoke as the fast first gate; do not replace it.
 5. Add the first automated functional runner for non-mutating `api_health` evidence while preserving `manual_required` for all categories that do not yet have a real runner.
 6. Add read-only `runtime_config` functional evidence for central governance policy reads through `/api/panel/limits`, including JSON-path assertions for materialized plan limit keys.
+7. Harden `/api/module-purchase` source contracts for semantic BSWEB checkout initiation, dependency gates, missing internal token behavior and BSWEB error propagation.
 
 ## Execution Commands
 
