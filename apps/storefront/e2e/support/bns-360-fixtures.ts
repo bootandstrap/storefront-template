@@ -25,6 +25,9 @@ type Bns360CredentialRequirement = {
 type Bns360ApiHeaderScenario = {
     apiHeadersEnv?: Record<string, string>
 }
+type Bns360OwnerStorageState = Awaited<ReturnType<ReturnType<Page['context']>['storageState']>>
+
+let bns360OwnerStorageState: Bns360OwnerStorageState | null = null
 
 export function getBns360ExecutionMode(env: Bns360ExecutionEnv = process.env): Bns360ExecutionMode {
     return env.BNS_360_FUNCTIONAL_JOURNEYS === '1' ? 'functional' : 'smoke'
@@ -207,12 +210,49 @@ export async function runBns360AutomatedFunctionalEvidence(
 }
 
 export async function loginAsOwner(page: Page) {
+    if (await applyBns360OwnerStorageState(page)) {
+        return
+    }
+
     await page.goto(`/${BNS_360_LANG}/login`)
     await page.waitForLoadState('domcontentloaded')
     await page.fill('input[type="email"]', BNS_360_OWNER_EMAIL ?? '')
     await page.fill('input[type="password"]', BNS_360_OWNER_PASSWORD ?? '')
     await page.click('button[type="submit"]')
     await page.waitForURL(getBns360PanelLandingUrlPattern(BNS_360_LANG), { timeout: 20_000 })
+    bns360OwnerStorageState = await page.context().storageState()
+}
+
+async function applyBns360OwnerStorageState(page: Page): Promise<boolean> {
+    if (!bns360OwnerStorageState) {
+        return false
+    }
+
+    await page.context().addCookies(bns360OwnerStorageState.cookies)
+    for (const originState of bns360OwnerStorageState.origins) {
+        await page.addInitScript(({ origin, items }) => {
+            if (window.location.origin !== origin) {
+                return
+            }
+
+            for (const item of items) {
+                window.localStorage.setItem(item.name, item.value)
+            }
+        }, {
+            origin: originState.origin,
+            items: originState.localStorage,
+        })
+    }
+
+    await page.goto(`/${BNS_360_LANG}/panel`)
+    await page.waitForLoadState('domcontentloaded')
+
+    const landedOnPanel = getBns360PanelLandingUrlPattern(BNS_360_LANG).test(page.url())
+    if (!landedOnPanel) {
+        bns360OwnerStorageState = null
+    }
+
+    return landedOnPanel
 }
 
 export function getBns360PanelLandingUrlPattern(lang: string = BNS_360_LANG): RegExp {

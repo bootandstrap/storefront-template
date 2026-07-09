@@ -89,6 +89,17 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(runtimeSpec).toContain("test.describe.configure({ mode: 'serial' })")
     })
 
+    it('reuses the owner auth state during serial live smoke instead of logging in for every scenario', () => {
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+
+        expect(fixtures).toContain('let bns360OwnerStorageState')
+        expect(fixtures).toContain('applyBns360OwnerStorageState')
+        expect(fixtures).toContain('bns360OwnerStorageState = await page.context().storageState()')
+    })
+
     it('exposes a real panel main-content landmark for smoke and skip-link checks', () => {
         const panelShell = readFileSync(
             join(process.cwd(), 'src/components/panel/PanelShell.tsx'),
@@ -147,6 +158,10 @@ describe('BNS 360 reusable runtime matrix', () => {
             scenario => scenario.key === 'commerce.modules_marketplace_and_limits'
         )
 
+        expect(commerceScenario?.routes).toEqual([
+            '/es/panel/modulos',
+            '/es/panel/ajustes?tab=suscripcion',
+        ])
         expect(commerceScenario?.functionalEvidence).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'grant_unlock',

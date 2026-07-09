@@ -117,7 +117,7 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
     {
         key: 'commerce.modules_marketplace_and_limits',
         domain: 'commerce',
-        routes: ['/es/panel/modulos', '/es/panel/suscripcion'],
+        routes: ['/es/panel/modulos', '/es/panel/ajustes?tab=suscripcion'],
         requiresAuth: true,
         functionalEvidence: [
             {
