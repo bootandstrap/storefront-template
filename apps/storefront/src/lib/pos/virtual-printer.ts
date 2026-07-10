@@ -1,10 +1,23 @@
 import type { POSRefund, POSSale } from '@/lib/pos/pos-config'
 import { posLabel } from '@/lib/pos/pos-i18n'
-import type { BusinessInfo, ReceiptConfig } from '@/lib/pos/print-engine'
 
 export type VirtualPrinterId = 'thermal-80mm' | 'thermal-58mm' | 'browser-a4' | 'label-sheet'
 export type VirtualPaperWidth = '80mm' | '58mm'
 export type VirtualPrintJobType = 'sale_receipt' | 'refund_receipt' | 'cash_drawer'
+
+export interface VirtualBusinessInfo {
+    name: string
+    address?: string
+    nif?: string
+    phone?: string
+    email?: string
+    logoUrl?: string | null
+}
+
+export interface VirtualReceiptConfig {
+    receiptHeader?: string
+    receiptFooter?: string
+}
 
 export interface VirtualPrinterProfile {
     id: VirtualPrinterId
@@ -30,7 +43,7 @@ export interface VirtualReceiptOptions {
     printerId?: VirtualPrinterId | string
     paperWidth?: VirtualPaperWidth
     labels?: Record<string, string>
-    receiptConfig?: ReceiptConfig
+    receiptConfig?: VirtualReceiptConfig
 }
 
 export interface VirtualPrinterLab {
@@ -39,12 +52,12 @@ export interface VirtualPrinterLab {
     clearJobs(): void
     printSaleReceipt(
         sale: POSSale,
-        business: BusinessInfo,
+        business: VirtualBusinessInfo,
         options?: VirtualReceiptOptions,
     ): Promise<VirtualPrintJob>
     printRefundReceipt(
         refund: POSRefund,
-        business: BusinessInfo,
+        business: VirtualBusinessInfo,
         options?: VirtualReceiptOptions,
     ): Promise<VirtualPrintJob>
     openCashDrawer(printerId?: VirtualPrinterId | string): Promise<VirtualPrintJob>
@@ -175,7 +188,7 @@ export function createVirtualPrinterLab(options: VirtualPrinterLabOptions = {}):
 
 function renderSaleReceipt(
     sale: POSSale,
-    business: BusinessInfo,
+    business: VirtualBusinessInfo,
     printer: VirtualPrinterProfile,
     options: VirtualReceiptOptions,
 ): string {
@@ -226,7 +239,7 @@ function renderSaleReceipt(
 
 function renderRefundReceipt(
     refund: POSRefund,
-    business: BusinessInfo,
+    business: VirtualBusinessInfo,
     printer: VirtualPrinterProfile,
     options: VirtualReceiptOptions,
 ): string {
@@ -271,7 +284,7 @@ function resolvePrinter(options: VirtualReceiptOptions): VirtualPrinterProfile {
     return printer ? { ...printer } : { ...VIRTUAL_PRINTERS[0] }
 }
 
-function businessLines(business: BusinessInfo, label: (key: string) => string): string[] {
+function businessLines(business: VirtualBusinessInfo, label: (key: string) => string): string[] {
     const lines: string[] = []
     if (business.address) lines.push(business.address)
     if (business.nif) lines.push(`${label('panel.pos.nif')}: ${business.nif}`)
