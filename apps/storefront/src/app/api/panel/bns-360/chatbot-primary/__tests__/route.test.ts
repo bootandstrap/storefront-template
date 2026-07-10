@@ -99,4 +99,16 @@ describe('POST /api/panel/bns-360/chatbot-primary', () => {
         expect(source).not.toContain("from '@/lib/supabase/admin'")
         expect(source).not.toContain('createAdminClient()')
     })
+
+    it('reads durable chatbot config and limits through the owner panel boundary', () => {
+        const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
+
+        expect(source).toContain(".from('config')")
+        expect(source).toContain(
+            ".select('chatbot_name,chatbot_welcome_message,chatbot_auto_open_delay,chatbot_tone,chatbot_knowledge_scope')"
+        )
+        expect(source).toContain(".from('plan_limits')")
+        expect(source).toContain(".select('max_chatbot_messages_month')")
+        expect(source).not.toContain('getConfigForTenant')
+    })
 })

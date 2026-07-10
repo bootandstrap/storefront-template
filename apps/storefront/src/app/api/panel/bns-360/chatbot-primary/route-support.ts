@@ -1,10 +1,6 @@
 import 'server-only'
 
-import {
-    clearCachedConfig,
-    getConfigForTenant,
-    type StoreConfig,
-} from '@/lib/config'
+import { clearCachedConfig } from '@/lib/config'
 import { createClient } from '@/lib/supabase/server'
 import type {
     Bns360ChatbotConfig,
@@ -12,11 +8,22 @@ import type {
     Bns360ChatbotPrimaryClient,
 } from '@/lib/bns-360/chatbot-primary-journey'
 
+interface ChatbotConfigRow {
+    chatbot_name: string | null
+    chatbot_welcome_message: string | null
+    chatbot_auto_open_delay: number | null
+    chatbot_tone: string | null
+    chatbot_knowledge_scope: string | null
+}
+
+interface ChatbotPlanLimitsRow {
+    max_chatbot_messages_month: number | null
+}
+
 export function createBns360ChatbotPrimaryClient(tenantId: string): Bns360ChatbotPrimaryClient {
     return {
         async readConfig() {
-            const appConfig = await getConfigForTenant(tenantId)
-            return normalizeChatbotConfig(appConfig.config, appConfig.planLimits.max_chatbot_messages_month ?? null)
+            return readChatbotConfig(tenantId)
         },
 
         async updateConfig(updates) {
@@ -25,7 +32,38 @@ export function createBns360ChatbotPrimaryClient(tenantId: string): Bns360Chatbo
     }
 }
 
-function normalizeChatbotConfig(config: StoreConfig, limit: number | null): Bns360ChatbotConfig {
+async function readChatbotConfig(tenantId: string): Promise<Bns360ChatbotConfig> {
+    const supabase = await createClient()
+
+    const [configResult, limitsResult] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+            .from('config')
+            .select('chatbot_name,chatbot_welcome_message,chatbot_auto_open_delay,chatbot_tone,chatbot_knowledge_scope')
+            .eq('tenant_id', tenantId)
+            .single(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+            .from('plan_limits')
+            .select('max_chatbot_messages_month')
+            .eq('tenant_id', tenantId)
+            .single(),
+    ])
+
+    if (configResult.error) {
+        throw new Error(`Chatbot config read failed: ${configResult.error.message}`)
+    }
+    if (limitsResult.error) {
+        throw new Error(`Chatbot plan limits read failed: ${limitsResult.error.message}`)
+    }
+
+    return normalizeChatbotConfig(
+        configResult.data as ChatbotConfigRow,
+        (limitsResult.data as ChatbotPlanLimitsRow).max_chatbot_messages_month ?? null
+    )
+}
+
+function normalizeChatbotConfig(config: ChatbotConfigRow, limit: number | null): Bns360ChatbotConfig {
     return {
         chatbotName: config.chatbot_name ?? null,
         chatbotWelcomeMessage: config.chatbot_welcome_message ?? null,
