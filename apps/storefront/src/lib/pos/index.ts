@@ -30,3 +30,20 @@ export {
     formatPOSCurrency,
 } from './pos-utils'
 export { posLabel } from './pos-i18n'
+export {
+    createVirtualPrinterLab,
+} from './virtual-printer'
+export type {
+    VirtualPrinterId,
+    VirtualPrinterLab,
+    VirtualPrinterProfile,
+    VirtualPrintJob,
+    VirtualPrintJobType,
+} from './virtual-printer'
+export {
+    runPOSVirtualPrinterSelfTest,
+} from './virtual-printer-tools'
+export type {
+    POSVirtualPrinterSelfTestOptions,
+    POSVirtualPrinterSelfTestResult,
+} from './virtual-printer-tools'

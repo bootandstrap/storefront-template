@@ -38,6 +38,7 @@ export type Bns360FunctionalEvidenceKind =
     | 'module_primary_journey'
     | 'runtime_config'
     | 'api_health'
+    | 'virtual_printer_lab'
 
 export interface Bns360FunctionalEvidenceTarget {
     kind: Bns360FunctionalEvidenceKind
@@ -101,6 +102,19 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
     ],
     pos: [
         { kind: 'module_primary_journey', target: 'POS cart and checkout flow completes without physical hardware', reversible: true },
+        {
+            kind: 'virtual_printer_lab',
+            target: 'POS receipt and cash-drawer tooling verifies through virtual printer lab',
+            reversible: true,
+            routes: ['/api/panel/pos/virtual-printer/self-test?printerId=thermal-80mm&openCashDrawer=1'],
+            expectedJsonPaths: [
+                'status',
+                'printer.id',
+                'jobs.0.type',
+                'jobs.0.text',
+                'jobs.1.type',
+            ],
+        },
         { kind: 'grant_unlock', target: 'enable_pos gates /panel/pos', reversible: true },
     ],
     pos_kiosk: [

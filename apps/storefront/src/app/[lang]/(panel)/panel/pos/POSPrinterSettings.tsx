@@ -22,9 +22,12 @@ import {
     Zap,
     Receipt,
     Settings2,
+    Printer,
+    Trash2,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePrinterConnection } from '@/lib/pos/usePrinterConnection'
+import type { VirtualPrinterId } from '@/lib/pos/virtual-printer'
 
 type PaperWidth = '80mm' | '58mm'
 
@@ -44,6 +47,11 @@ function getAutoPrint(): boolean {
     return localStorage.getItem('pos-auto-print') === 'true'
 }
 
+function getVirtualPrinterId(): VirtualPrinterId {
+    if (typeof window === 'undefined') return 'thermal-80mm'
+    return (localStorage.getItem('pos-virtual-printer-id') as VirtualPrinterId) || 'thermal-80mm'
+}
+
 export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrinterSettingsProps) {
     const {
         status,
@@ -54,11 +62,18 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
         connect,
         disconnect,
         openCashDrawer,
+        virtualPrinters,
+        virtualPrintJobs,
+        openVirtualCashDrawer,
+        runVirtualPrinterSelfTest,
+        clearVirtualPrintJobs,
     } = usePrinterConnection()
 
     const [paperWidth, setPaperWidth] = useState<PaperWidth>(getPaperWidth)
     const [autoPrint, setAutoPrint] = useState(getAutoPrint)
+    const [virtualPrinterId, setVirtualPrinterId] = useState<VirtualPrinterId>(getVirtualPrinterId)
     const [testPrinting, setTestPrinting] = useState(false)
+    const [virtualTesting, setVirtualTesting] = useState(false)
 
     const handlePaperWidth = useCallback((w: PaperWidth) => {
         setPaperWidth(w)
@@ -68,6 +83,11 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
     const handleAutoPrint = useCallback((v: boolean) => {
         setAutoPrint(v)
         localStorage.setItem('pos-auto-print', String(v))
+    }, [])
+
+    const handleVirtualPrinter = useCallback((id: VirtualPrinterId) => {
+        setVirtualPrinterId(id)
+        localStorage.setItem('pos-virtual-printer-id', id)
     }, [])
 
     const handleTestPrint = useCallback(async () => {
@@ -108,6 +128,29 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
         }
     }, [paperWidth])
 
+    const handleVirtualSelfTest = useCallback(async (openDrawer: boolean) => {
+        setVirtualTesting(true)
+        try {
+            await runVirtualPrinterSelfTest({
+                printerId: virtualPrinterId,
+                paperWidth,
+                openCashDrawer: openDrawer,
+                businessName: labels['tenant.name'] || 'BootandStrap Virtual POS',
+            })
+        } finally {
+            setVirtualTesting(false)
+        }
+    }, [labels, paperWidth, runVirtualPrinterSelfTest, virtualPrinterId])
+
+    const handleVirtualCashDrawer = useCallback(async () => {
+        setVirtualTesting(true)
+        try {
+            await openVirtualCashDrawer(virtualPrinterId)
+        } finally {
+            setVirtualTesting(false)
+        }
+    }, [openVirtualCashDrawer, virtualPrinterId])
+
     const statusIcon = {
         disconnected: <WifiOff className="w-4 h-4 text-tx-muted" />,
         connecting: <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />,
@@ -121,6 +164,7 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
         connected: labels['panel.pos.printerConnected'] || 'Conectada',
         error: labels['panel.pos.printerError'] || 'Error',
     }
+    const lastVirtualJob = virtualPrintJobs[virtualPrintJobs.length - 1]
 
     return (
         <AnimatePresence>
@@ -308,6 +352,91 @@ export default function POSPrinterSettings({ isOpen, onClose, labels }: POSPrint
                                     </div>
                                 </section>
                             )}
+
+                            {/* ── Virtual printer lab ── */}
+                            <section>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-xs font-semibold text-tx-muted uppercase tracking-wider">
+                                        {labels['panel.pos.virtualPrinterLab'] || 'Laboratorio virtual'}
+                                    </h3>
+                                    <span className="text-xs text-tx-muted">
+                                        {virtualPrintJobs.length} {labels['panel.pos.virtualJobs'] || 'jobs'}
+                                    </span>
+                                </div>
+
+                                <div className="bg-sf-1 rounded-xl p-4 space-y-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {virtualPrinters.map((printer) => (
+                                            <button
+                                                key={printer.id}
+                                                onClick={() => handleVirtualPrinter(printer.id)}
+                                                className={`min-h-[44px] rounded-xl border px-3 py-2 text-left transition-colors ${
+                                                    virtualPrinterId === printer.id
+                                                        ? 'bg-brand-subtle text-brand border-brand'
+                                                        : 'bg-sf-0 text-tx hover:bg-sf-2 border-sf-3'
+                                                }`}
+                                            >
+                                                <span className="block text-sm font-medium">{printer.name}</span>
+                                                <span className="block text-xs text-tx-muted">
+                                                    {printer.paperWidth || printer.kind}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() => handleVirtualSelfTest(false)}
+                                            disabled={virtualTesting || isPrinting}
+                                            className="w-full flex items-center gap-3 bg-sf-0 hover:bg-sf-2 rounded-xl px-4 py-3 min-h-[44px]
+                                                       text-sm text-tx transition-colors disabled:opacity-40"
+                                        >
+                                            {virtualTesting ? (
+                                                <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                                            ) : (
+                                                <Printer className="w-4 h-4 text-tx-muted" />
+                                            )}
+                                            {labels['panel.pos.virtualTestPrint'] || 'Generar ticket virtual'}
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={handleVirtualCashDrawer}
+                                                disabled={virtualTesting || isPrinting}
+                                                className="flex items-center justify-center gap-2 bg-sf-0 hover:bg-sf-2 rounded-xl px-3 py-2.5 min-h-[44px]
+                                                           text-sm text-tx transition-colors disabled:opacity-40"
+                                            >
+                                                <Zap className="w-4 h-4 text-tx-muted" />
+                                                {labels['panel.pos.virtualDrawer'] || 'Cajón virtual'}
+                                            </button>
+                                            <button
+                                                onClick={clearVirtualPrintJobs}
+                                                disabled={virtualPrintJobs.length === 0}
+                                                className="flex items-center justify-center gap-2 bg-sf-0 hover:bg-sf-2 rounded-xl px-3 py-2.5 min-h-[44px]
+                                                           text-sm text-tx transition-colors disabled:opacity-40"
+                                            >
+                                                <Trash2 className="w-4 h-4 text-tx-muted" />
+                                                {labels['panel.pos.clearVirtualJobs'] || 'Limpiar'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {lastVirtualJob && (
+                                        <div className="bg-sf-0 rounded-xl p-3 space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-semibold text-tx">
+                                                    {lastVirtualJob.printerName}
+                                                </span>
+                                                <span className="text-[11px] text-tx-muted font-mono">
+                                                    {lastVirtualJob.type}
+                                                </span>
+                                            </div>
+                                            <pre className="max-h-36 overflow-auto whitespace-pre-wrap text-[11px] leading-4 text-tx-muted font-mono">
+                                                {lastVirtualJob.text}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
 
                             {/* ── Help ── */}
                             <section className="border-t border-sf-2 pt-4">

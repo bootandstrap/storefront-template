@@ -65,4 +65,13 @@ describe('panel API route contract', () => {
         expect(source).not.toContain('product_viewed')
         expect(source).not.toContain(".select('metadata')")
     })
+
+    it('exposes POS virtual printer self-test as a guarded panel tool', () => {
+        const source = read(join(PANEL_API_DIR, 'pos', 'virtual-printer', 'self-test', 'route.ts'))
+
+        expect(source).toContain("withPanelGuard({ requiredFlag: 'enable_pos' })")
+        expect(source).toContain('runPOSVirtualPrinterSelfTest')
+        expect(source).toContain('createVirtualPrinterLab')
+        expect(source).toContain('toPanelErrorResponse(')
+    })
 })

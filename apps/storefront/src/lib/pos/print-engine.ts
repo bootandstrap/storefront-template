@@ -13,6 +13,12 @@
 
 import type { POSSale, POSRefund } from '@/lib/pos/pos-config'
 import { posLabel } from '@/lib/pos/pos-i18n'
+import {
+    createVirtualPrinterLab,
+    type VirtualPrinterLab,
+    type VirtualPrinterProfile,
+    type VirtualPrintJob,
+} from '@/lib/pos/virtual-printer'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -34,8 +40,9 @@ export interface ReceiptConfig {
 }
 
 export interface PrintOptions {
-    mode: 'browser' | 'thermal'
+    mode: 'browser' | 'thermal' | 'virtual'
     paperWidth?: '80mm' | '58mm'
+    virtualPrinterId?: string
     openCashDrawer?: boolean
     /** Number of copies (thermal only) */
     copies?: number
@@ -96,6 +103,18 @@ export interface PrintEngine {
     /** Open the cash drawer */
     openCashDrawer(): Promise<void>
 
+    /** Record a virtual cash drawer pulse for tests and operator tooling */
+    openVirtualCashDrawer(printerId?: string): Promise<VirtualPrintJob>
+
+    /** List virtual printer profiles available to tests and tooling */
+    getVirtualPrinters(): VirtualPrinterProfile[]
+
+    /** Inspect virtual print jobs captured by this engine */
+    getVirtualPrintJobs(): VirtualPrintJob[]
+
+    /** Clear captured virtual print jobs */
+    clearVirtualPrintJobs(): void
+
     /** Subscribe to events */
     on(listener: PrintEngineListener): () => void
 
@@ -105,13 +124,18 @@ export interface PrintEngine {
 
 // ── Implementation ─────────────────────────────────────────────
 
-export function createPrintEngine(): PrintEngine {
+export interface PrintEngineOptions {
+    virtualLab?: VirtualPrinterLab
+}
+
+export function createPrintEngine(options: PrintEngineOptions = {}): PrintEngine {
     let state: PrintEngineState = {
         status: 'disconnected',
         device: null,
         lastError: null,
     }
     const listeners = new Set<PrintEngineListener>()
+    const virtualLab = options.virtualLab ?? createVirtualPrinterLab()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let printer: any = null // WebSerialReceiptPrinter instance
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -379,6 +403,28 @@ export function createPrintEngine(): PrintEngine {
                 ...options,
             }
 
+            if (opts.mode === 'virtual') {
+                try {
+                    emit({ type: 'print-start' })
+                    await virtualLab.printSaleReceipt(sale, business, {
+                        printerId: opts.virtualPrinterId,
+                        paperWidth: opts.paperWidth,
+                        labels: opts.labels,
+                        receiptConfig: opts.receiptConfig,
+                    })
+                    if (opts.openCashDrawer) {
+                        await virtualLab.openCashDrawer(opts.virtualPrinterId)
+                    }
+                    emit({ type: 'print-complete' })
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Print failed'
+                    state = { ...state, lastError: msg }
+                    emit({ type: 'print-error', error: msg })
+                    throw err
+                }
+                return
+            }
+
             if (opts.mode !== 'thermal' || state.status !== 'connected') {
                 // Fallback: browser print is handled by react-to-print in the component
                 return
@@ -413,6 +459,25 @@ export function createPrintEngine(): PrintEngine {
                 ...options,
             }
 
+            if (opts.mode === 'virtual') {
+                try {
+                    emit({ type: 'print-start' })
+                    await virtualLab.printRefundReceipt(refund, business, {
+                        printerId: opts.virtualPrinterId,
+                        paperWidth: opts.paperWidth,
+                        labels: opts.labels,
+                        receiptConfig: opts.receiptConfig,
+                    })
+                    emit({ type: 'print-complete' })
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Print failed'
+                    state = { ...state, lastError: msg }
+                    emit({ type: 'print-error', error: msg })
+                    throw err
+                }
+                return
+            }
+
             if (opts.mode !== 'thermal' || state.status !== 'connected') {
                 return
             }
@@ -444,9 +509,28 @@ export function createPrintEngine(): PrintEngine {
             }
         },
 
+        async openVirtualCashDrawer(printerId?: string): Promise<VirtualPrintJob> {
+            emit({ type: 'print-start' })
+            const job = await virtualLab.openCashDrawer(printerId)
+            emit({ type: 'print-complete' })
+            return job
+        },
+
         on(listener) {
             listeners.add(listener)
             return () => listeners.delete(listener)
+        },
+
+        getVirtualPrinters() {
+            return virtualLab.getPrinters()
+        },
+
+        getVirtualPrintJobs() {
+            return virtualLab.getJobs()
+        },
+
+        clearVirtualPrintJobs() {
+            virtualLab.clearJobs()
         },
     }
 }

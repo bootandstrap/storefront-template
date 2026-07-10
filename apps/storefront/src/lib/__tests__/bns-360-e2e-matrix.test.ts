@@ -435,6 +435,15 @@ describe('BNS 360 reusable runtime matrix', () => {
         ])).toBe('verified')
         expect(getBns360AutomatedFunctionalEvidenceStatus([
             {
+                kind: 'virtual_printer_lab',
+                target: 'POS virtual printer self-test',
+                reversible: true,
+                routes: ['/api/panel/pos/virtual-printer/self-test'],
+                expectedJsonPaths: ['status', 'jobs.0.type', 'printer.id'],
+            },
+        ])).toBe('verified')
+        expect(getBns360AutomatedFunctionalEvidenceStatus([
+            {
                 kind: 'runtime_config',
                 target: 'governance limits JSON',
                 reversible: false,

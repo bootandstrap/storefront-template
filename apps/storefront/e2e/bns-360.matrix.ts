@@ -140,6 +140,21 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         domain: 'pos',
         routes: ['/es/panel/pos'],
         requiresAuth: true,
+        functionalEvidence: [
+            {
+                kind: 'virtual_printer_lab',
+                target: 'POS receipt and cash-drawer tooling verifies through virtual printer lab',
+                reversible: true,
+                routes: ['/api/panel/pos/virtual-printer/self-test?printerId=thermal-80mm&openCashDrawer=1'],
+                expectedJsonPaths: [
+                    'status',
+                    'printer.id',
+                    'jobs.0.type',
+                    'jobs.0.text',
+                    'jobs.1.type',
+                ],
+            },
+        ],
     },
     {
         key: 'pos.offline_sync',
