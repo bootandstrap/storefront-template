@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withRateLimit, API_GUARD } from '@/lib/security/api-rate-guard'
 import { chatUsageTable } from '@/lib/chat/db'
+import { getConfig } from '@/lib/config'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
@@ -34,10 +35,12 @@ export async function GET(req: NextRequest) {
             .eq('user_id', user.id)
             .eq('month', currentMonth)
             .single()
+        const { planLimits } = await getConfig()
 
         return NextResponse.json({
             messageCount: data?.message_count || 0,
             month: currentMonth,
+            limit: planLimits.max_chatbot_messages_month ?? null,
             authenticated: true
         })
 

@@ -95,7 +95,20 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
     ],
     chatbot: [
         { kind: 'runtime_config', target: 'chatbot config persists and changes panel/runtime behavior', reversible: true },
-        { kind: 'limit_enforcement', target: 'max_chatbot_messages_month enforced by chat API', reversible: true },
+        {
+            kind: 'limit_enforcement',
+            target: 'max_chatbot_messages_month exposed by authenticated chat usage API',
+            reversible: true,
+            routes: ['/api/chat/usage'],
+            expectedJsonPaths: [
+                'messageCount',
+                'limit',
+                'authenticated',
+            ],
+            expectedJsonValues: {
+                authenticated: true,
+            },
+        },
     ],
     crm: [
         { kind: 'crud_journey', target: 'tenant-scoped CRM contact create/update/delete', reversible: true },

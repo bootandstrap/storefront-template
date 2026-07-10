@@ -366,6 +366,28 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('probes chatbot message limits through the authenticated usage API', () => {
+        const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'chatbot'
+        )
+
+        expect(chatbotScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'limit_enforcement',
+                target: expect.stringContaining('max_chatbot_messages_month'),
+                routes: ['/api/chat/usage'],
+                expectedJsonPaths: [
+                    'messageCount',
+                    'limit',
+                    'authenticated',
+                ],
+                expectedJsonValues: {
+                    authenticated: true,
+                },
+            }),
+        ]))
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'
