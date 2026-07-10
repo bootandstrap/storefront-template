@@ -27,7 +27,26 @@ describe('GET /api/panel/modules/grants/self-test', () => {
         vi.clearAllMocks()
         vi.resetModules()
         mockWithRateLimit.mockResolvedValue({ limited: false, response: null, headers: { 'x-rate-limit': 'ok' } })
-        mockWithPanelGuard.mockResolvedValue({ tenantId: 'tenant-1' })
+        mockWithPanelGuard.mockResolvedValue({
+            tenantId: 'tenant-1',
+            appConfig: {
+                featureFlags: {
+                    enable_auth_advanced: true,
+                    enable_automations: true,
+                    enable_traffic_expansion: true,
+                    enable_chatbot: true,
+                    enable_crm: true,
+                    enable_ecommerce: true,
+                    enable_email_notifications: true,
+                    enable_multi_language: true,
+                    enable_pos: true,
+                    enable_pos_kiosk: true,
+                    enable_social_links: true,
+                    enable_sales_channels: true,
+                    enable_seo: true,
+                },
+            },
+        })
         mockGetActiveModulesForTenant.mockResolvedValue([
             { moduleKey: 'auth_advanced', tierKey: 'enterprise', source: 'flags', stripeSubscriptionId: 'sub_secret' },
             { moduleKey: 'automation', tierKey: 'pro', source: 'orders', stripeSubscriptionId: null },
@@ -53,7 +72,7 @@ describe('GET /api/panel/modules/grants/self-test', () => {
 
         expect(response.status).toBe(200)
         expect(mockWithPanelGuard).toHaveBeenCalledWith()
-        expect(mockGetActiveModulesForTenant).toHaveBeenCalledWith('tenant-1')
+        expect(mockGetActiveModulesForTenant).not.toHaveBeenCalled()
         expect(json).toMatchObject({
             schema: 'bootandstrap.modules.grants.self-test/v1',
             status: 'verified',
@@ -65,16 +84,22 @@ describe('GET /api/panel/modules/grants/self-test', () => {
         })
         expect(json.modules[0]).toEqual({
             key: 'auth_advanced',
-            tierKey: 'enterprise',
+            tierKey: null,
             source: 'flags',
         })
         expect(JSON.stringify(json)).not.toContain('sub_secret')
     })
 
     it('reports blocked when a required grant is missing', async () => {
-        mockGetActiveModulesForTenant.mockResolvedValue([
-            { moduleKey: 'crm', tierKey: 'pro', source: 'flags', stripeSubscriptionId: null },
-        ])
+        mockWithPanelGuard.mockResolvedValue({
+            tenantId: 'tenant-1',
+            appConfig: {
+                featureFlags: {
+                    enable_auth_advanced: false,
+                    enable_ecommerce: true,
+                },
+            },
+        })
 
         const { GET } = await import('../route')
 
@@ -84,6 +109,39 @@ describe('GET /api/panel/modules/grants/self-test', () => {
         expect(response.status).toBe(409)
         expect(json.status).toBe('blocked')
         expect(json.summary.missingCount).toBe(12)
-        expect(json.missing).toContain('ecommerce')
+        expect(json.missing).toContain('auth_advanced')
+    })
+
+    it('uses the authorized panel config instead of direct module reads for grant checks', async () => {
+        mockGetActiveModulesForTenant.mockResolvedValue([])
+        mockWithPanelGuard.mockResolvedValue({
+            tenantId: 'tenant-1',
+            appConfig: {
+                featureFlags: {
+                    enable_auth_advanced: true,
+                },
+            },
+        })
+
+        const { GET } = await import('../route')
+
+        const response = await GET(makeRequest('https://tenant.example.com/api/panel/modules/grants/self-test?required=auth_advanced'))
+        const json = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(json).toMatchObject({
+            status: 'verified',
+            summary: {
+                requiredCount: 1,
+                activeCount: 1,
+                missingCount: 0,
+            },
+            modules: [{
+                key: 'auth_advanced',
+                tierKey: null,
+                source: 'flags',
+            }],
+        })
+        expect(mockGetActiveModulesForTenant).not.toHaveBeenCalled()
     })
 })

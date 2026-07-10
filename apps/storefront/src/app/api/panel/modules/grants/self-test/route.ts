@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActiveModulesForTenant } from '@/lib/active-modules'
 import contract from '@/lib/governance-contract.json'
+import { deriveActiveModulesFromFlags } from '@/lib/governance/derive-modules'
 import { logger } from '@/lib/logger'
 import { toPanelErrorResponse } from '@/lib/panel-api-errors'
 import { withPanelGuard } from '@/lib/panel-guard'
@@ -40,16 +40,16 @@ export async function GET(req: NextRequest) {
         const rateLimitResult = await withRateLimit(req, PANEL_GUARD)
         if (rateLimitResult.limited) return rateLimitResult.response!
 
-        const { tenantId } = await withPanelGuard()
+        const { appConfig } = await withPanelGuard()
         const { searchParams } = new URL(req.url)
         const required = resolveRequiredModules(searchParams.get('required'))
-        const activeModules = await getActiveModulesForTenant(tenantId)
-        const activeByKey = new Map(activeModules.map(module => [module.moduleKey, module]))
+        const activeModuleKeys = deriveActiveModulesFromFlags(appConfig.featureFlags)
+        const activeByKey = new Set(activeModuleKeys)
         const missing = required.filter(key => !activeByKey.has(key))
-        const modules = sortModules(activeModules.map(module => ({
-            key: module.moduleKey,
-            tierKey: module.tierKey,
-            source: module.source,
+        const modules = sortModules([...activeModuleKeys].map(key => ({
+            key,
+            tierKey: null,
+            source: 'flags' as const,
         })))
         const status = missing.length === 0 ? 'verified' : 'blocked'
 
