@@ -344,6 +344,10 @@ function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): 
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }
 
+    if (target.kind === 'module_primary_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
     if (target.kind === 'grant_unlock') {
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }

@@ -707,6 +707,37 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('declares module.chatbot as an automated reversible primary journey', () => {
+        const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'chatbot'
+        )
+        const primaryJourney = chatbotScenario?.functionalEvidence.find(
+            target => target.kind === 'module_primary_journey'
+        )
+
+        expect(primaryJourney).toEqual(expect.objectContaining({
+            kind: 'module_primary_journey',
+            target: 'chatbot owner config changes render in runtime and roll back',
+            reversible: true,
+            routes: ['/api/panel/bns-360/chatbot-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.chatbotName',
+                'runtime.welcomeMessage',
+                'usage.limit',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+            },
+        }))
+        expect(getBns360AutomatedFunctionalEvidenceStatus([primaryJourney!]))
+            .toBe('verified')
+    })
+
     it('declares module.auth_advanced as an automated reversible grant unlock journey', () => {
         const authScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             scenario => scenario.moduleKey === 'auth_advanced'

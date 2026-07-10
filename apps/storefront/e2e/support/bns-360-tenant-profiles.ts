@@ -113,6 +113,25 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         },
     ],
     chatbot: [
+        {
+            kind: 'module_primary_journey',
+            target: 'chatbot owner config changes render in runtime and roll back',
+            reversible: true,
+            routes: ['/api/panel/bns-360/chatbot-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.chatbotName',
+                'runtime.welcomeMessage',
+                'usage.limit',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+            },
+        },
         { kind: 'runtime_config', target: 'chatbot config persists and changes panel/runtime behavior', reversible: true },
         {
             kind: 'limit_enforcement',
