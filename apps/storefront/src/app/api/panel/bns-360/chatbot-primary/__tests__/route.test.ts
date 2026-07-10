@@ -100,6 +100,17 @@ describe('POST /api/panel/bns-360/chatbot-primary', () => {
         expect(source).not.toContain('createAdminClient()')
     })
 
+    it('updates chatbot module config through the same RLS boundary as panel module config', () => {
+        const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
+
+        expect(source).toContain(".from('config')")
+        expect(source).toContain(".select('id')")
+        expect(source).toContain('.update(payload)')
+        expect(source).toContain(".eq('id', existing.id)")
+        expect(source).toContain(".eq('tenant_id', tenantId)")
+        expect(source).not.toContain('update_owner_config')
+    })
+
     it('reads durable chatbot config and limits through the owner panel boundary', () => {
         const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
 

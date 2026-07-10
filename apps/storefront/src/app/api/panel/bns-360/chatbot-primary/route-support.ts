@@ -82,20 +82,25 @@ async function updateChatbotConfig(
     const supabase = await createClient()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
-        'update_owner_config',
-        { p_tenant_id: tenantId, p_updates: payload }
-    )
+    const { data: existing, error: existingError } = await (supabase as any)
+        .from('config')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .limit(1)
+        .single()
 
-    if (!rpcError && (rpcResult === true || rpcResult === 1 || rpcResult === 'OK')) {
-        clearCachedConfig()
-        return
+    if (existingError) {
+        throw new Error(`Chatbot config lookup failed: ${existingError.message}`)
+    }
+    if (!existing?.id) {
+        throw new Error('Chatbot config lookup returned no row')
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
         .from('config')
         .update(payload)
+        .eq('id', existing.id)
         .eq('tenant_id', tenantId)
         .select('tenant_id')
 
