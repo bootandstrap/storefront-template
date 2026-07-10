@@ -48,6 +48,14 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - Verified scenarios: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad`, `module.chatbot`.
   - Playwright result: `4/4` passed with `functionalStatus=verified`, real owner authentication, non-localhost base URL, `/api/panel/limits`, `/api/panel/vault` and `/api/chat/usage` JSON-path checks.
   - Canonical cleanup proof: terminal cleanup reached `finalState=verified`, deletion run `bfe4e97b-cf6c-42fc-924e-6fe9c255c020` reached `deleted`, and residue was `0` across tenants/config/profiles/async_jobs/module_orders.
+- Deployed chatbot primary journey was proven from the BSWEB control plane on `2026-07-10` using disposable canary `ops-fullcat-202607091146` / tenant `ad00eda8-12a6-450c-8870-57a4b00150d7`, deployed from template commit `c4ac70b0`.
+  - Runtime aggregate artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-runtime-ops-fullcat-202607091146-202607102211.json`.
+  - Full sanitized drill artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-functional-chatbot-primary-stable-a-20260710T221142Z.jsonl`.
+  - Remote template publication: Template Sync `29126906368`, Docker Build & Deploy `29126906407`.
+  - Verified scenario: `module.chatbot` with `module_primary_journey`.
+  - Playwright result: `1/1` passed with `functionalStatus=verified`, real owner authentication and non-localhost base URL.
+  - Journey proof: the owner-authenticated module config boundary updated chatbot name, welcome message and auto-open delay; the runtime projection observed the update; rollback restored the initial config; `/api/chat/usage` preserved a real monthly limit.
+  - Canonical cleanup proof: terminal cleanup reached `finalState=verified`, deletion run `1b40ea60-1901-401a-9fe5-283947d2896b` reached `deleted`, and residue was `0` across tenants/config/profiles/async_jobs/module_orders.
 
 ## Certification Lanes
 
@@ -173,6 +181,8 @@ Source harness state:
   - `module.capacidad`: `/api/panel/vault` health plus `usage.total.mb`, `limit_mb`, `usage_percent`.
   - `module.chatbot`: authenticated `/api/chat/usage` with `messageCount`, `limit`, `authenticated`.
   These are deployed functional limit probes, not mutable module primary journeys.
+- Source runner state on `2026-07-10`: `module.chatbot` now declares an automated reversible `module_primary_journey` through owner-authenticated `POST /api/panel/bns-360/chatbot-primary`. The runner uses the same tenant-scoped RLS boundary as panel module configuration, performs a durable read of only chatbot config fields plus `max_chatbot_messages_month`, updates chatbot name/welcome/auto-open delay, verifies runtime projection, rolls back in `finally`, and emits redacted evidence.
+- Deployed chatbot primary drill on `2026-07-10` against disposable canary `ops-fullcat-202607091146` verified update/read/runtime projection/rollback for `module.chatbot` with zero tenant residue after cleanup. Earlier same-day attempts remain non-closure evidence only: the first route version used the wrong config write boundary, and the intermediate durable-read fix still exposed that the RPC returned success without materializing module fields.
 - Source runner state on `2026-07-10`: `module.crm` now declares an automated reversible `crud_journey` through owner-authenticated `POST /api/panel/bns-360/crm-crud`. The runner creates a unique Medusa customer contact, reads it by email, updates metadata, verifies the durable update, deletes it, and proves zero residue in `finally`. Local verification is green for the BNS 360 matrix, the CRM CRUD runner and the endpoint contract (`44/44` focused Vitest), plus `npm run type-check`, `npm run lint`, `npm run cert:360:list`, `git diff --check` and `sentrux gate .`.
 - Deployed CRM drill on `2026-07-10` against disposable canary `ops-live-202607101737` verified create/read/update/delete through Medusa Admin, zero contact residue, and terminal tenant cleanup after `7f70c5fe` fixed durable customer detail fields. This closes the first deployed reversible CRUD proof for `module.crm`; it does not certify other module CRUD journeys.
 
@@ -238,9 +248,10 @@ Required proof:
 9. Expand `full_catalog_highest_tier` from isolated module route coverage to a combined profile that includes central governance, commerce and POS/kiosk coexistence scenarios.
 10. Emit aggregate deployed runtime evidence through `BNS_360_EVIDENCE_PATH` for focused functional runs, and support filtering automated evidence kinds so a limit-only batch does not claim grants certification.
 11. Verify the published limit probes against a deployed stable-slot canary: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad` and `module.chatbot` all reached `functionalStatus=verified` on `2026-07-10`.
-12. Add the first reversible module CRUD runner for CRM contacts, using owner-authenticated panel boundaries and tenant-scoped Medusa customer APIs with cleanup verification.
-13. Declare the first route-observable `grant_unlock` contract for `module.auth_advanced`, scoped to a control-plane runner that applies a manual BNS 360 product grant, materializes capabilities, verifies `/api/panel/modules/grants/self-test?required=auth_advanced`, replays idempotently, and rolls back before tenant cleanup.
-14. Close the first deployed `grant_unlock` proof for `module.auth_advanced` on `2026-07-10`: template source fix `218b3063`, Template Sync `29115569397`, Docker Build & Deploy `29115569391`, stable-slot artifact `bns-360-template-functional-grants-stable-a-20260710T184737Z.jsonl`, aggregate runtime evidence `bns-360-template-runtime-ops-fullcat-202607091146-202607101847.json`, logical rollback verified, terminal cleanup deletion run `1931a2c8-3c31-4e56-87fb-b79cd1bb3e70` `deleted`, residue `0`.
+12. Add the first mutable chatbot primary journey and verify it deployed: `module.chatbot` reached `functionalStatus=verified` for `module_primary_journey` on `2026-07-10` with rollback and terminal cleanup proven.
+13. Add the first reversible module CRUD runner for CRM contacts, using owner-authenticated panel boundaries and tenant-scoped Medusa customer APIs with cleanup verification.
+14. Declare the first route-observable `grant_unlock` contract for `module.auth_advanced`, scoped to a control-plane runner that applies a manual BNS 360 product grant, materializes capabilities, verifies `/api/panel/modules/grants/self-test?required=auth_advanced`, replays idempotently, and rolls back before tenant cleanup.
+15. Close the first deployed `grant_unlock` proof for `module.auth_advanced` on `2026-07-10`: template source fix `218b3063`, Template Sync `29115569397`, Docker Build & Deploy `29115569391`, stable-slot artifact `bns-360-template-functional-grants-stable-a-20260710T184737Z.jsonl`, aggregate runtime evidence `bns-360-template-runtime-ops-fullcat-202607091146-202607101847.json`, logical rollback verified, terminal cleanup deletion run `1931a2c8-3c31-4e56-87fb-b79cd1bb3e70` `deleted`, residue `0`.
 
 ## Execution Commands
 
