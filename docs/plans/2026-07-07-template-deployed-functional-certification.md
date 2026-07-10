@@ -136,6 +136,7 @@ Source harness state:
 - The broad commerce checkout/grants replay remains `manual_required` until a deployed canary can execute a reversible central grant flow and observe materialized limits end to end.
 - The `2026-07-10` focused functional-limits deployment intentionally excluded the `central grants materialized` target. The published limit probe for `commerce.modules_marketplace_and_limits` is verified through `/api/panel/limits?resources=products,categories,badges`; reversible grant lock/unlock must not be inferred from that artifact.
 - Source state for the first low-risk grant unlock path now declares `module.auth_advanced` as an automated `grant_unlock` target through `/api/panel/modules/grants/self-test?required=auth_advanced`. It expects `status=verified`, `summary.requiredCount=1` and `summary.missingCount=0` after the control-plane runner applies and materializes `module.auth_advanced.enterprise`.
+- Deployed grant unlock proof on `2026-07-10` verified template commit `218b3063` (`Fix grants self-test authorization source`) against stable validation slot `ops-fullcat-202607091146`. BSWEB applied a manual BNS 360 grant for `module.auth_advanced.enterprise`, materialized capabilities without redeploy, verified `/api/panel/modules/grants/self-test?required=auth_advanced` through Playwright `module.auth_advanced` `1/1`, replayed the same grant idempotently, rolled it back, and proved residue zero before terminal tenant cleanup. Earlier same-day attempts remain non-closure evidence only: the disposable hostname run blocked at `medusa_tls`, and the first stable-slot run exposed that this self-test must read authorized panel config rather than direct anon table reads.
 
 ### Lane 4: Module Primary Journeys
 
@@ -239,6 +240,7 @@ Required proof:
 11. Verify the published limit probes against a deployed stable-slot canary: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad` and `module.chatbot` all reached `functionalStatus=verified` on `2026-07-10`.
 12. Add the first reversible module CRUD runner for CRM contacts, using owner-authenticated panel boundaries and tenant-scoped Medusa customer APIs with cleanup verification.
 13. Declare the first route-observable `grant_unlock` contract for `module.auth_advanced`, scoped to a control-plane runner that applies a manual BNS 360 product grant, materializes capabilities, verifies `/api/panel/modules/grants/self-test?required=auth_advanced`, replays idempotently, and rolls back before tenant cleanup.
+14. Close the first deployed `grant_unlock` proof for `module.auth_advanced` on `2026-07-10`: template source fix `218b3063`, Template Sync `29115569397`, Docker Build & Deploy `29115569391`, stable-slot artifact `bns-360-template-functional-grants-stable-a-20260710T184737Z.jsonl`, aggregate runtime evidence `bns-360-template-runtime-ops-fullcat-202607091146-202607101847.json`, logical rollback verified, terminal cleanup deletion run `1931a2c8-3c31-4e56-87fb-b79cd1bb3e70` `deleted`, residue `0`.
 
 ## Execution Commands
 
