@@ -119,6 +119,11 @@ export async function runBns360I18nPrimaryJourney(
             maxLanguages: updatedConfig.maxLanguages,
             maxCurrencies: updatedConfig.maxCurrencies,
         }
+        runtime = projectRuntime(updatedConfig, {
+            path: '/de',
+            status: 0,
+            htmlLang: null,
+        })
         steps.push({ key: 'read_after_update', status: 'verified' })
 
         const publicRoute = await input.client.readPublicRoute('/de')

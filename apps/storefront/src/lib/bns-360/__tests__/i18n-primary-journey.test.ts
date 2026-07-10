@@ -108,6 +108,15 @@ describe('runBns360I18nPrimaryJourney', () => {
         })
 
         expect(result.status).toBe('blocked')
+        expect(result.runtime).toMatchObject({
+            language: 'de',
+            storefrontLanguage: 'de',
+            defaultCurrency: 'chf',
+            publicPath: '/de',
+            publicStatus: 0,
+            publicHtmlLang: null,
+        })
+        expect(result.error).toContain('localized render failed')
         expect(result.cleanup.status).toBe('verified')
         expect(result.cleanup.restored).toBe(true)
         expect(client.updateConfig).toHaveBeenLastCalledWith(expect.objectContaining({

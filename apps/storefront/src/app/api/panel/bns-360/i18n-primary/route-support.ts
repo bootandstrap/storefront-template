@@ -127,15 +127,14 @@ async function updateI18nConfig(
 }
 
 async function readPublicRoute(baseUrl: string, path: string): Promise<Bns360I18nPublicRoute> {
-    const url = new URL(path, baseUrl)
-    const response = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-            'x-bns-360-probe': 'i18n-primary',
-            'x-invoke-path': path,
-            'x-matched-path': path,
-        },
-    })
+    const publicUrl = new URL(path, baseUrl)
+    let response: Response
+    try {
+        response = await fetchI18nRender(publicUrl, path, publicUrl)
+    } catch {
+        const loopbackUrl = new URL(path, `http://127.0.0.1:${process.env.PORT || '3000'}`)
+        response = await fetchI18nRender(loopbackUrl, path, publicUrl)
+    }
     const html = await response.text().catch(() => '')
 
     return {
@@ -143,6 +142,20 @@ async function readPublicRoute(baseUrl: string, path: string): Promise<Bns360I18
         status: response.status,
         htmlLang: extractHtmlLang(html),
     }
+}
+
+async function fetchI18nRender(url: URL, path: string, publicUrl: URL): Promise<Response> {
+    return fetch(url, {
+        cache: 'no-store',
+        headers: {
+            'x-bns-360-probe': 'i18n-primary',
+            'x-invoke-path': path,
+            'x-matched-path': path,
+            host: publicUrl.host,
+            'x-forwarded-host': publicUrl.host,
+            'x-forwarded-proto': publicUrl.protocol.replace(':', ''),
+        },
+    })
 }
 
 function toConfigPayload(updates: Bns360I18nConfigUpdate): Record<string, unknown> {

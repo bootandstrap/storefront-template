@@ -126,5 +126,8 @@ describe('POST /api/panel/bns-360/i18n-primary', () => {
         expect(source).toContain("'x-bns-360-probe': 'i18n-primary'")
         expect(source).toContain("'x-invoke-path': path")
         expect(source).toContain("'x-matched-path': path")
+        expect(source).toContain("process.env.PORT || '3000'")
+        expect(source).toContain("'x-forwarded-host': publicUrl.host")
+        expect(source).toContain("'x-forwarded-proto': publicUrl.protocol.replace(':', '')")
     })
 })
