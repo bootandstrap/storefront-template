@@ -177,7 +177,32 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'limit_enforcement', target: 'max_email_sends_month reflected in module usage', reversible: true },
     ],
     i18n: [
-        { kind: 'runtime_config', target: 'language/currency config changes rendered locale behavior', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'language/currency config changes rendered locale behavior',
+            reversible: true,
+            routes: ['/api/panel/bns-360/i18n-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.language',
+                'runtime.storefrontLanguage',
+                'runtime.defaultCurrency',
+                'runtime.publicHtmlLang',
+                'limits.maxLanguages',
+                'limits.maxCurrencies',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.language': 'de',
+                'runtime.storefrontLanguage': 'de',
+                'runtime.defaultCurrency': 'chf',
+                'runtime.publicHtmlLang': 'de',
+                'cleanup.status': 'verified',
+            },
+        },
     ],
     pos: [
         { kind: 'module_primary_journey', target: 'POS cart and checkout flow completes without physical hardware', reversible: true },

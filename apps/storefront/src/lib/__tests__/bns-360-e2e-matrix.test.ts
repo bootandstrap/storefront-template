@@ -414,6 +414,41 @@ describe('BNS 360 reusable runtime matrix', () => {
         ]))
     })
 
+    it('automates i18n primary language and currency runtime evidence', () => {
+        const i18nScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'i18n'
+        )
+
+        expect(i18nScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                routes: ['/api/panel/bns-360/i18n-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.language',
+                    'runtime.storefrontLanguage',
+                    'runtime.defaultCurrency',
+                    'runtime.publicHtmlLang',
+                    'limits.maxLanguages',
+                    'limits.maxCurrencies',
+                    'cleanup.status',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.language': 'de',
+                    'runtime.storefrontLanguage': 'de',
+                    'runtime.defaultCurrency': 'chf',
+                    'runtime.publicHtmlLang': 'de',
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(i18nScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'
