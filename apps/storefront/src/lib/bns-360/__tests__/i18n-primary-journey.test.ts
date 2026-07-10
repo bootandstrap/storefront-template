@@ -116,6 +116,33 @@ describe('runBns360I18nPrimaryJourney', () => {
         }))
     })
 
+    it('reports public render status when the locale response does not match', async () => {
+        const client = createClient()
+        vi.mocked(client.readPublicRoute).mockResolvedValueOnce({
+            path: '/de',
+            status: 200,
+            htmlLang: 'es',
+        })
+
+        const result = await runBns360I18nPrimaryJourney({
+            tenantId: 'tenant-1',
+            client,
+            runId: 'run-1',
+        })
+
+        expect(result.status).toBe('blocked')
+        expect(result.runtime).toMatchObject({
+            language: 'de',
+            storefrontLanguage: 'de',
+            defaultCurrency: 'chf',
+            publicPath: '/de',
+            publicStatus: 200,
+            publicHtmlLang: 'es',
+        })
+        expect(result.error).toContain('i18n public render')
+        expect(result.cleanup.status).toBe('verified')
+    })
+
     it('blocks certification when rollback cannot be proven', async () => {
         const client = createClient()
         vi.mocked(client.readConfig)

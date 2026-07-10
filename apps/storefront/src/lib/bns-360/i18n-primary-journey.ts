@@ -122,12 +122,12 @@ export async function runBns360I18nPrimaryJourney(
         steps.push({ key: 'read_after_update', status: 'verified' })
 
         const publicRoute = await input.client.readPublicRoute('/de')
+        runtime = projectRuntime(updatedConfig, publicRoute)
         if (publicRoute.status >= 400 || publicRoute.htmlLang !== 'de') {
             throw new Error('i18n public render did not reflect the target locale')
         }
         steps.push({ key: 'public_render', status: 'verified' })
 
-        runtime = projectRuntime(updatedConfig, publicRoute)
         if (
             runtime.language !== 'de' ||
             runtime.storefrontLanguage !== 'de' ||

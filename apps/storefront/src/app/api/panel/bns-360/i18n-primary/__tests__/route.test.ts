@@ -119,4 +119,12 @@ describe('POST /api/panel/bns-360/i18n-primary', () => {
         expect(source).toContain(".select('max_languages,max_currencies')")
         expect(source).not.toContain('getConfigForTenant')
     })
+
+    it('passes the localized public path through internal render headers', () => {
+        const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
+
+        expect(source).toContain("'x-bns-360-probe': 'i18n-primary'")
+        expect(source).toContain("'x-invoke-path': path")
+        expect(source).toContain("'x-matched-path': path")
+    })
 })

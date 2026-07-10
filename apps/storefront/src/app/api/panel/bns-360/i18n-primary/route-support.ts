@@ -132,6 +132,8 @@ async function readPublicRoute(baseUrl: string, path: string): Promise<Bns360I18
         cache: 'no-store',
         headers: {
             'x-bns-360-probe': 'i18n-primary',
+            'x-invoke-path': path,
+            'x-matched-path': path,
         },
     })
     const html = await response.text().catch(() => '')
