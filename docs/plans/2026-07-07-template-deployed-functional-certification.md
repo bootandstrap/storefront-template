@@ -171,6 +171,7 @@ Source harness state:
   - `module.capacidad`: `/api/panel/vault` health plus `usage.total.mb`, `limit_mb`, `usage_percent`.
   - `module.chatbot`: authenticated `/api/chat/usage` with `messageCount`, `limit`, `authenticated`.
   These are deployed functional limit probes, not mutable module primary journeys.
+- Source runner state on `2026-07-10`: `module.crm` now declares an automated reversible `crud_journey` through owner-authenticated `POST /api/panel/bns-360/crm-crud`. The runner creates a unique Medusa customer contact, reads it by email, updates metadata, verifies the durable update, deletes it, and proves zero residue in `finally`. Local verification is green for the BNS 360 matrix, the CRM CRUD runner and the endpoint contract (`44/44` focused Vitest), plus `npm run type-check`, `npm run lint`, `npm run cert:360:list`, `git diff --check` and `sentrux gate .`. Deployed runtime proof for CRM is still pending until a fresh canary runs `module.crm` with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
 
 ### Lane 5: Full Catalog Combination
 
@@ -234,6 +235,7 @@ Required proof:
 9. Expand `full_catalog_highest_tier` from isolated module route coverage to a combined profile that includes central governance, commerce and POS/kiosk coexistence scenarios.
 10. Emit aggregate deployed runtime evidence through `BNS_360_EVIDENCE_PATH` for focused functional runs, and support filtering automated evidence kinds so a limit-only batch does not claim grants certification.
 11. Verify the published limit probes against a deployed stable-slot canary: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad` and `module.chatbot` all reached `functionalStatus=verified` on `2026-07-10`.
+12. Add the first reversible module CRUD runner for CRM contacts, using owner-authenticated panel boundaries and tenant-scoped Medusa customer APIs with cleanup verification.
 
 ## Execution Commands
 

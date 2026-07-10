@@ -678,6 +678,35 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(getBns360AutomatedFunctionalEvidenceStatus(focusedChatbotEvidence)).toBe('verified')
     })
 
+    it('declares module.crm as an automated reversible CRUD journey', () => {
+        const crmScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'crm'
+        )
+
+        expect(crmScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'crud_journey',
+                target: 'tenant-scoped CRM contact create/update/delete',
+                reversible: true,
+                routes: ['/api/panel/bns-360/crm-crud'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'cleanup.status',
+                    'residue.zero',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                },
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(crmScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('checks nested JSON paths for automated read-only governance evidence', () => {
         const limitsPayload = {
             products: { limitKey: 'max_products', limit: 100 },

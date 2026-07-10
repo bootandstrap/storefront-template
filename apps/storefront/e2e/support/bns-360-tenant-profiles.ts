@@ -45,6 +45,7 @@ export interface Bns360FunctionalEvidenceTarget {
     target: string
     reversible: boolean
     routes?: string[]
+    method?: 'GET' | 'POST'
     expectedJsonPaths?: string[]
     expectedJsonValues?: Record<string, string | number | boolean | null>
 }
@@ -111,7 +112,24 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         },
     ],
     crm: [
-        { kind: 'crud_journey', target: 'tenant-scoped CRM contact create/update/delete', reversible: true },
+        {
+            kind: 'crud_journey',
+            target: 'tenant-scoped CRM contact create/update/delete',
+            reversible: true,
+            routes: ['/api/panel/bns-360/crm-crud'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
     ],
     ecommerce: [
         { kind: 'crud_journey', target: 'Medusa product/category create/update/delete through panel/API', reversible: true },

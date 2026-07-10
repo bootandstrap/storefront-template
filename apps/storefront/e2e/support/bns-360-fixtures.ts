@@ -141,6 +141,7 @@ type Bns360RuntimeEvidenceScenario = {
     functionalTargets: Array<{
         kind: Bns360FunctionalEvidenceTarget['kind']
         target: string
+        method: Bns360FunctionalEvidenceTarget['method']
         routes: string[]
         expectedJsonPaths: string[]
     }>
@@ -244,6 +245,7 @@ function buildBns360RuntimeEvidenceScenario(
         functionalTargets: input.evidence.functionalEvidence.map(target => ({
             kind: target.kind,
             target: target.target,
+            method: target.method ?? 'GET',
             routes: target.routes ?? [],
             expectedJsonPaths: target.expectedJsonPaths ?? [],
         })),
@@ -346,6 +348,10 @@ function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): 
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }
 
+    if (target.kind === 'crud_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
     return false
 }
 
@@ -412,7 +418,7 @@ export async function runBns360AutomatedFunctionalEvidence(
 
     for (const target of targets) {
         for (const route of target.routes ?? []) {
-            const response = await expectApiHealthy(request, route)
+            const response = await expectApiHealthy(request, route, undefined, target.method)
 
             if (target.expectedJsonPaths?.length) {
                 const payload = await response.json()
@@ -551,9 +557,13 @@ export async function expectPanelRouteHealthy(page: Page, route: string) {
 export async function expectApiHealthy(
     request: APIRequestContext,
     route: string,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    method: 'GET' | 'POST' = 'GET'
 ) {
-    const response = await request.get(route, headers ? { headers } : undefined)
+    const options = headers ? { headers } : undefined
+    const response = method === 'POST'
+        ? await request.post(route, options)
+        : await request.get(route, options)
     if (!response.ok()) {
         const body = await response.text().catch(() => '')
         expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
