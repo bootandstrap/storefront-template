@@ -36,7 +36,7 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - `executionMode`: `smoke` by default, `functional` only with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
 - In `functional` mode, declared-only functional evidence is rejected unless a runner marks it `verified`. This prevents route smoke from being reported as CRUD/grants certification.
 - In `functional` mode, authenticated scenarios now require owner credentials and fail explicitly when they are missing. The regular smoke path can still skip authenticated routes for public/runtime health diagnostics, but `cert:360:functional` can no longer finish green by skipping panel, CRUD, grants or module journeys.
-- Automated functional runner coverage currently exists for structured `api_health` targets with concrete `/api/...` routes, read-only `runtime_config` targets with JSON-path assertions, and `limit_enforcement` targets with JSON-path assertions. CRUD, grants, mutable limit changes and primary journeys remain `manual_required` until implemented as reversible canary journeys.
+- Automated functional runner coverage currently exists for structured `api_health` targets with concrete `/api/...` routes, read-only `runtime_config` targets with JSON-path assertions, `limit_enforcement` targets with JSON-path assertions, `crud_journey` for CRM contacts, and route-observable `grant_unlock` targets with JSON-path assertions. Mutable limit changes and module primary journeys remain `manual_required` until implemented as reversible canary journeys.
 - The runtime runner can emit a reusable aggregate evidence artifact when `BNS_360_EVIDENCE_PATH` is set. The artifact schema is `bootandstrap.template.bns-360.runtime-evidence/v1` and records the template commit, non-secret tenant reference, base URL, per-scenario execution mode, route status, functional status, checked paths, redacted credential state, pass/fail and cleanup status without full response bodies.
 - Lane 1 deployed runtime health was proven from the BSWEB control plane on `2026-07-08` using canary `ops-live-202607081954` / tenant `934ac146-4498-47f0-89c8-b78383acf95f`.
   - Runtime proof artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-runtime-health-20260708T2022Z.json` (`pass=true`).
@@ -133,8 +133,9 @@ Source harness state:
   - fails closed when `BSWEB_INTERNAL_API_TOKEN` is absent;
   - blocks dependent modules unless central active grants satisfy reusable module requirements;
   - propagates BSWEB commercial checkout conflicts without writing local grant state.
-- The target remains `manual_required` in functional mode until the deployed canary can execute a reversible checkout/grants replay and observe materialized limits.
-- The `2026-07-10` focused functional-limits deployment intentionally excluded the `central grants materialized` target. The published limit probe for `commerce.modules_marketplace_and_limits` is verified through `/api/panel/limits?resources=products,categories,badges`; reversible grant lock/unlock remains Lane 3 work and must not be inferred from that artifact.
+- The broad commerce checkout/grants replay remains `manual_required` until a deployed canary can execute a reversible central grant flow and observe materialized limits end to end.
+- The `2026-07-10` focused functional-limits deployment intentionally excluded the `central grants materialized` target. The published limit probe for `commerce.modules_marketplace_and_limits` is verified through `/api/panel/limits?resources=products,categories,badges`; reversible grant lock/unlock must not be inferred from that artifact.
+- Source state for the first low-risk grant unlock path now declares `module.auth_advanced` as an automated `grant_unlock` target through `/api/panel/modules/grants/self-test?required=auth_advanced`. It expects `status=verified`, `summary.requiredCount=1` and `summary.missingCount=0` after the control-plane runner applies and materializes `module.auth_advanced.enterprise`.
 
 ### Lane 4: Module Primary Journeys
 
@@ -172,7 +173,7 @@ Source harness state:
   - `module.chatbot`: authenticated `/api/chat/usage` with `messageCount`, `limit`, `authenticated`.
   These are deployed functional limit probes, not mutable module primary journeys.
 - Source runner state on `2026-07-10`: `module.crm` now declares an automated reversible `crud_journey` through owner-authenticated `POST /api/panel/bns-360/crm-crud`. The runner creates a unique Medusa customer contact, reads it by email, updates metadata, verifies the durable update, deletes it, and proves zero residue in `finally`. Local verification is green for the BNS 360 matrix, the CRM CRUD runner and the endpoint contract (`44/44` focused Vitest), plus `npm run type-check`, `npm run lint`, `npm run cert:360:list`, `git diff --check` and `sentrux gate .`.
-- Deployed CRM drill on `2026-07-10` against a disposable canary reached the Medusa Admin boundary and verified create/read/update/delete plus terminal tenant cleanup, but the scenario correctly stayed `blocked` because the durable update read did not include base customer fields. The source contract now requires `getAdminCustomerDetail` to request `id,email,first_name,last_name,phone,has_account,created_at,metadata,*orders`; deployed CRM proof remains pending until this patch is published and rerun.
+- Deployed CRM drill on `2026-07-10` against disposable canary `ops-live-202607101737` verified create/read/update/delete through Medusa Admin, zero contact residue, and terminal tenant cleanup after `7f70c5fe` fixed durable customer detail fields. This closes the first deployed reversible CRUD proof for `module.crm`; it does not certify other module CRUD journeys.
 
 ### Lane 5: Full Catalog Combination
 
@@ -237,6 +238,7 @@ Required proof:
 10. Emit aggregate deployed runtime evidence through `BNS_360_EVIDENCE_PATH` for focused functional runs, and support filtering automated evidence kinds so a limit-only batch does not claim grants certification.
 11. Verify the published limit probes against a deployed stable-slot canary: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad` and `module.chatbot` all reached `functionalStatus=verified` on `2026-07-10`.
 12. Add the first reversible module CRUD runner for CRM contacts, using owner-authenticated panel boundaries and tenant-scoped Medusa customer APIs with cleanup verification.
+13. Declare the first route-observable `grant_unlock` contract for `module.auth_advanced`, scoped to a control-plane runner that applies a manual BNS 360 product grant, materializes capabilities, verifies `/api/panel/modules/grants/self-test?required=auth_advanced`, replays idempotently, and rolls back before tenant cleanup.
 
 ## Execution Commands
 

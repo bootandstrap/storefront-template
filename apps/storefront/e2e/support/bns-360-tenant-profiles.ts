@@ -68,7 +68,25 @@ const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
 
 const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTarget[]> = {
     auth_advanced: [
-        { kind: 'grant_unlock', target: 'enable_auth_advanced gates /panel/auth', reversible: true },
+        {
+            kind: 'grant_unlock',
+            target: 'enable_auth_advanced gates /panel/auth through materialized product grants',
+            reversible: true,
+            routes: ['/api/panel/modules/grants/self-test?required=auth_advanced'],
+            method: 'GET',
+            expectedJsonPaths: [
+                'status',
+                'summary.requiredCount',
+                'summary.activeCount',
+                'summary.missingCount',
+                'modules.0.key',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'summary.requiredCount': 1,
+                'summary.missingCount': 0,
+            },
+        },
         { kind: 'runtime_config', target: 'OAuth/provider flags reflected in auth panel config', reversible: true },
     ],
     automation: [

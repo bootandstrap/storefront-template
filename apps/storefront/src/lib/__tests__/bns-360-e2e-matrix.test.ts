@@ -707,6 +707,37 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('declares module.auth_advanced as an automated reversible grant unlock journey', () => {
+        const authScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'auth_advanced'
+        )
+        const grantUnlock = authScenario?.functionalEvidence.find(
+            target => target.kind === 'grant_unlock'
+        )
+
+        expect(grantUnlock).toEqual(expect.objectContaining({
+            kind: 'grant_unlock',
+            target: 'enable_auth_advanced gates /panel/auth through materialized product grants',
+            reversible: true,
+            routes: ['/api/panel/modules/grants/self-test?required=auth_advanced'],
+            method: 'GET',
+            expectedJsonPaths: [
+                'status',
+                'summary.requiredCount',
+                'summary.activeCount',
+                'summary.missingCount',
+                'modules.0.key',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'summary.requiredCount': 1,
+                'summary.missingCount': 0,
+            },
+        }))
+        expect(getBns360AutomatedFunctionalEvidenceStatus([grantUnlock!]))
+            .toBe('verified')
+    })
+
     it('checks nested JSON paths for automated read-only governance evidence', () => {
         const limitsPayload = {
             products: { limitKey: 'max_products', limit: 100 },
