@@ -5,7 +5,7 @@ import {
     getConfigForTenant,
     type StoreConfig,
 } from '@/lib/config'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import type {
     Bns360ChatbotConfig,
     Bns360ChatbotConfigUpdate,
@@ -41,10 +41,10 @@ async function updateChatbotConfig(
     updates: Bns360ChatbotConfigUpdate
 ): Promise<void> {
     const payload = toConfigPayload(updates)
-    const admin = createAdminClient()
+    const supabase = await createClient()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rpcResult, error: rpcError } = await (admin as any).rpc(
+    const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'update_owner_config',
         { p_tenant_id: tenantId, p_updates: payload }
     )
@@ -55,7 +55,7 @@ async function updateChatbotConfig(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (admin as any)
+    const { data, error } = await (supabase as any)
         .from('config')
         .update(payload)
         .eq('tenant_id', tenantId)

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NextRequest } from 'next/server'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const mockWithPanelGuard = vi.fn()
 const mockWithRateLimit = vi.fn()
@@ -87,5 +89,14 @@ describe('POST /api/panel/bns-360/chatbot-primary', () => {
         expect(response.status).toBe(409)
         expect(json.status).toBe('blocked')
         expect(json.cleanup.status).toBe('failed')
+    })
+
+    it('uses the authenticated server Supabase client for owner config writes', () => {
+        const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
+
+        expect(source).toContain("from '@/lib/supabase/server'")
+        expect(source).toContain('const supabase = await createClient()')
+        expect(source).not.toContain("from '@/lib/supabase/admin'")
+        expect(source).not.toContain('createAdminClient()')
     })
 })
