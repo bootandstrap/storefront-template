@@ -1,3 +1,5 @@
+import { dirname } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { expect, type APIRequestContext, type Page, type Response } from '@playwright/test'
 import type { Bns360FunctionalEvidenceTarget } from './bns-360-tenant-profiles'
 
@@ -16,6 +18,12 @@ export type Bns360MissingCredentialAction =
 type Bns360ExecutionEnv = {
     [key: string]: string | undefined
     BNS_360_FUNCTIONAL_JOURNEYS?: string
+}
+type Bns360FunctionalEvidenceRunEnv = {
+    [key: string]: string | undefined
+    BNS_360_FUNCTIONAL_EVIDENCE_KINDS?: string
+    BNS_360_FUNCTIONAL_AUTOMATED_ONLY?: string
+    BNS_360_FUNCTIONAL_EXCLUDE_TARGET_PATTERN?: string
 }
 type Bns360CredentialRequirement = {
     requiresAuth?: boolean
@@ -108,6 +116,50 @@ export interface Bns360ScenarioEvidence {
     credentialState: 'not_required' | 'missing' | 'provided_redacted'
 }
 
+export type Bns360EvidenceRouteCheck = {
+    path: string
+    status: number | Bns360RouteStatus
+}
+
+export type Bns360ScenarioArtifactInput = {
+    artifactPath?: string
+    evidence: Bns360ScenarioEvidence
+    templateCommit?: string
+    tenantRef?: string
+    cleanupStatus?: string
+    routeChecks?: Bns360EvidenceRouteCheck[]
+}
+
+type Bns360RuntimeEvidenceScenario = {
+    scenario: string
+    generatedAt: string
+    executionMode: Bns360ExecutionMode
+    routeStatus: Bns360RouteStatus
+    functionalStatus: Bns360FunctionalStatus
+    status: Bns360ScenarioEvidence['status']
+    paths: Bns360EvidenceRouteCheck[]
+    functionalTargets: Array<{
+        kind: Bns360FunctionalEvidenceTarget['kind']
+        target: string
+        routes: string[]
+        expectedJsonPaths: string[]
+    }>
+    credentialState: Bns360ScenarioEvidence['credentialState']
+    pass: boolean
+    cleanupStatus: string
+}
+
+type Bns360RuntimeEvidenceArtifact = {
+    schema: 'bootandstrap.template.bns-360.runtime-evidence/v1'
+    version: 1
+    templateCommit: string
+    tenantRef: string
+    baseUrl: string
+    generatedAt: string
+    updatedAt: string
+    scenarios: Bns360RuntimeEvidenceScenario[]
+}
+
 export function buildBns360ScenarioEvidence(input: Bns360ScenarioEvidenceInput): Bns360ScenarioEvidence {
     const requiresCredentials = Boolean(input.ownerEmail || input.ownerPassword)
     const credentialState = requiresCredentials
@@ -134,6 +186,83 @@ export function buildBns360ScenarioEvidence(input: Bns360ScenarioEvidenceInput):
         functionalEvidence: input.functionalEvidence ?? [],
         credentialState,
     }
+}
+
+export function recordBns360ScenarioEvidenceArtifact(input: Bns360ScenarioArtifactInput): void {
+    if (!input.artifactPath) {
+        return
+    }
+
+    const scenario = buildBns360RuntimeEvidenceScenario(input)
+    const existing = readBns360RuntimeEvidenceArtifact(input.artifactPath)
+    const generatedAt = existing?.generatedAt ?? new Date().toISOString()
+    const scenarios = existing?.scenarios.filter(item => item.scenario !== scenario.scenario) ?? []
+    scenarios.push(scenario)
+    scenarios.sort((left, right) => left.scenario.localeCompare(right.scenario))
+
+    const artifact: Bns360RuntimeEvidenceArtifact = {
+        schema: 'bootandstrap.template.bns-360.runtime-evidence/v1',
+        version: 1,
+        templateCommit: input.templateCommit ?? existing?.templateCommit ?? 'unknown',
+        tenantRef: input.tenantRef ?? existing?.tenantRef ?? 'unknown',
+        baseUrl: input.evidence.baseUrl,
+        generatedAt,
+        updatedAt: new Date().toISOString(),
+        scenarios,
+    }
+
+    mkdirSync(dirname(input.artifactPath), { recursive: true })
+    writeFileSync(input.artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8')
+}
+
+function readBns360RuntimeEvidenceArtifact(artifactPath: string): Bns360RuntimeEvidenceArtifact | null {
+    if (!existsSync(artifactPath)) {
+        return null
+    }
+
+    try {
+        return JSON.parse(readFileSync(artifactPath, 'utf8')) as Bns360RuntimeEvidenceArtifact
+    } catch {
+        return null
+    }
+}
+
+function buildBns360RuntimeEvidenceScenario(
+    input: Bns360ScenarioArtifactInput
+): Bns360RuntimeEvidenceScenario {
+    return {
+        scenario: input.evidence.scenarioKey,
+        generatedAt: input.evidence.generatedAt,
+        executionMode: input.evidence.executionMode,
+        routeStatus: input.evidence.routeStatus,
+        functionalStatus: input.evidence.functionalStatus,
+        status: input.evidence.status,
+        paths: input.routeChecks ?? input.evidence.routes.map(path => ({
+            path,
+            status: input.evidence.routeStatus,
+        })),
+        functionalTargets: input.evidence.functionalEvidence.map(target => ({
+            kind: target.kind,
+            target: target.target,
+            routes: target.routes ?? [],
+            expectedJsonPaths: target.expectedJsonPaths ?? [],
+        })),
+        credentialState: input.evidence.credentialState,
+        pass: isBns360ScenarioEvidencePassing(input.evidence),
+        cleanupStatus: input.cleanupStatus ?? 'not_applicable',
+    }
+}
+
+function isBns360ScenarioEvidencePassing(evidence: Bns360ScenarioEvidence): boolean {
+    if (evidence.status !== 'verified' || evidence.routeStatus !== 'verified') {
+        return false
+    }
+
+    if (evidence.executionMode !== 'functional') {
+        return evidence.functionalStatus !== 'manual_required' && evidence.functionalStatus !== 'blocked'
+    }
+
+    return evidence.functionalStatus === 'verified' || evidence.functionalStatus === 'not_required'
 }
 
 export function assertBns360FunctionalEvidenceVerified(evidence: Bns360ScenarioEvidence): void {
@@ -183,6 +312,23 @@ export function bns360JsonValueMatches(
     return result.found && Object.is(result.value, expected)
 }
 
+export function summarizeBns360JsonShape(payload: unknown): Record<string, string | string[]> {
+    if (!payload || typeof payload !== 'object') {
+        return { payload: typeof payload }
+    }
+
+    return Object.fromEntries(
+        Object.entries(payload as Record<string, unknown>)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, value]) => [
+                key,
+                value && typeof value === 'object' && !Array.isArray(value)
+                    ? Object.keys(value).sort()
+                    : Array.isArray(value) ? 'array' : typeof value,
+            ])
+    )
+}
+
 function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
     if (target.kind === 'api_health') {
         return Boolean(target.routes?.length)
@@ -201,6 +347,48 @@ function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): 
     }
 
     return false
+}
+
+export function getBns360FunctionalEvidenceForRun(
+    targets: Bns360FunctionalEvidenceTarget[],
+    env: Bns360FunctionalEvidenceRunEnv = process.env
+): Bns360FunctionalEvidenceTarget[] {
+    const allowedKinds = new Set(
+        (env.BNS_360_FUNCTIONAL_EVIDENCE_KINDS ?? '')
+            .split(',')
+            .map(kind => kind.trim())
+            .filter(Boolean)
+    )
+    const filteredByKind = allowedKinds.size > 0
+        ? targets.filter(target => allowedKinds.has(target.kind))
+        : targets
+    const filteredByTarget = filterBns360ExcludedFunctionalTargets(
+        filteredByKind,
+        env.BNS_360_FUNCTIONAL_EXCLUDE_TARGET_PATTERN
+    )
+
+    if (env.BNS_360_FUNCTIONAL_AUTOMATED_ONLY !== '1') {
+        return filteredByTarget
+    }
+
+    return filteredByTarget.filter(canAutomateFunctionalEvidence)
+}
+
+function filterBns360ExcludedFunctionalTargets(
+    targets: Bns360FunctionalEvidenceTarget[],
+    pattern: string | undefined
+): Bns360FunctionalEvidenceTarget[] {
+    const trimmed = pattern?.trim()
+    if (!trimmed) {
+        return targets
+    }
+
+    try {
+        const matcher = new RegExp(trimmed)
+        return targets.filter(target => !matcher.test(target.target))
+    } catch {
+        return targets.filter(target => !target.target.includes(trimmed))
+    }
 }
 
 export function getBns360AutomatedFunctionalEvidenceStatus(
@@ -231,7 +419,8 @@ export async function runBns360AutomatedFunctionalEvidence(
                 for (const path of target.expectedJsonPaths) {
                     expect(
                         bns360JsonHasPath(payload, path),
-                        `Expected ${route} JSON payload to include ${path}`
+                        `Expected ${route} JSON payload to include ${path}; ` +
+                        `shape=${JSON.stringify(summarizeBns360JsonShape(payload))}`
                     ).toBe(true)
                 }
                 for (const [path, expected] of Object.entries(target.expectedJsonValues ?? {})) {

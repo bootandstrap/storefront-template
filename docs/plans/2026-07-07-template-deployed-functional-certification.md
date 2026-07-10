@@ -36,11 +36,18 @@ Bootandstrap sells an operated commerce platform: BSWEB creates and governs tena
   - `executionMode`: `smoke` by default, `functional` only with `BNS_360_FUNCTIONAL_JOURNEYS=1`.
 - In `functional` mode, declared-only functional evidence is rejected unless a runner marks it `verified`. This prevents route smoke from being reported as CRUD/grants certification.
 - In `functional` mode, authenticated scenarios now require owner credentials and fail explicitly when they are missing. The regular smoke path can still skip authenticated routes for public/runtime health diagnostics, but `cert:360:functional` can no longer finish green by skipping panel, CRUD, grants or module journeys.
-- Automated functional runner coverage currently exists for structured `api_health` targets with concrete `/api/...` routes and read-only `runtime_config` targets with JSON-path assertions. CRUD, grants, mutable limit changes and primary journeys remain `manual_required` until implemented as reversible canary journeys.
+- Automated functional runner coverage currently exists for structured `api_health` targets with concrete `/api/...` routes, read-only `runtime_config` targets with JSON-path assertions, and `limit_enforcement` targets with JSON-path assertions. CRUD, grants, mutable limit changes and primary journeys remain `manual_required` until implemented as reversible canary journeys.
+- The runtime runner can emit a reusable aggregate evidence artifact when `BNS_360_EVIDENCE_PATH` is set. The artifact schema is `bootandstrap.template.bns-360.runtime-evidence/v1` and records the template commit, non-secret tenant reference, base URL, per-scenario execution mode, route status, functional status, checked paths, redacted credential state, pass/fail and cleanup status without full response bodies.
 - Lane 1 deployed runtime health was proven from the BSWEB control plane on `2026-07-08` using canary `ops-live-202607081954` / tenant `934ac146-4498-47f0-89c8-b78383acf95f`.
   - Runtime proof artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-runtime-health-20260708T2022Z.json` (`pass=true`).
   - Cleanup proof artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-lane1-cleanup-closure-20260708T2040Z.json` (`pass=true`).
   - Canonical residue proof after cleanup: tenants/config/profiles/async_jobs/module_orders all `0`.
+- Deployed functional limits were proven from the BSWEB control plane on `2026-07-10` using stable canary slot `ops-fullcat-202607091146` / tenant `c2955b8f-d0e3-4969-ade1-37b29e9cbbb7`, deployed from template commit `d78a0a23`.
+  - Runtime aggregate artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-runtime-ops-fullcat-202607091146-202607101607.json`.
+  - Full sanitized drill artifact: `BOOTANDSTRAP_WEB/artifacts/production-mvp/bns-360-template-functional-limits-drill-20260710T160748Z.jsonl`.
+  - Verified scenarios: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad`, `module.chatbot`.
+  - Playwright result: `4/4` passed with `functionalStatus=verified`, real owner authentication, non-localhost base URL, `/api/panel/limits`, `/api/panel/vault` and `/api/chat/usage` JSON-path checks.
+  - Canonical cleanup proof: terminal cleanup reached `finalState=verified`, deletion run `bfe4e97b-cf6c-42fc-924e-6fe9c255c020` reached `deleted`, and residue was `0` across tenants/config/profiles/async_jobs/module_orders.
 
 ## Certification Lanes
 
@@ -94,6 +101,7 @@ Source harness state:
   - `categories.limitKey`
   - `badges.limitKey`
 - This proves read-only central policy visibility through the storefront runtime. It does not yet prove mutable flag lock/unlock, BSWEB materialization, or cache/realtime revalidation after grants.
+- Deployed proof on `2026-07-10` verified the read-only policy and limits lane against `https://ops-fullcat-202607091146.bootandstrap.com` with real owner authentication. This keeps Lane 2 `in_progress` because the mutable lock/unlock/materialization half is still assigned to Lane 3.
 
 ### Lane 3: Bidirectional Commercial Grants
 
@@ -126,6 +134,7 @@ Source harness state:
   - blocks dependent modules unless central active grants satisfy reusable module requirements;
   - propagates BSWEB commercial checkout conflicts without writing local grant state.
 - The target remains `manual_required` in functional mode until the deployed canary can execute a reversible checkout/grants replay and observe materialized limits.
+- The `2026-07-10` focused functional-limits deployment intentionally excluded the `central grants materialized` target. The published limit probe for `commerce.modules_marketplace_and_limits` is verified through `/api/panel/limits?resources=products,categories,badges`; reversible grant lock/unlock remains Lane 3 work and must not be inferred from that artifact.
 
 ### Lane 4: Module Primary Journeys
 
@@ -158,6 +167,10 @@ Source harness state:
   - `i18n` now follows `/es/panel/ajustes?tab=idiomas` instead of stale `tab=tienda`.
   - `seo` now follows `/es/panel/ajustes?tab=analiticas` instead of the stale standalone analytics route.
 - This remains source-route alignment, not deployed CRUD/primary-journey proof.
+- Deployed proof on `2026-07-10` verified the current non-mutating primary-adjacent limit probes for:
+  - `module.capacidad`: `/api/panel/vault` health plus `usage.total.mb`, `limit_mb`, `usage_percent`.
+  - `module.chatbot`: authenticated `/api/chat/usage` with `messageCount`, `limit`, `authenticated`.
+  These are deployed functional limit probes, not mutable module primary journeys.
 
 ### Lane 5: Full Catalog Combination
 
@@ -219,6 +232,8 @@ Required proof:
 7. Harden `/api/module-purchase` source contracts for semantic BSWEB checkout initiation, dependency gates, missing internal token behavior and BSWEB error propagation.
 8. Contract-check BNS 360 module runtime routes against `MODULE_SETUP_REGISTRY` quick actions and remove stale i18n/SEO route hints.
 9. Expand `full_catalog_highest_tier` from isolated module route coverage to a combined profile that includes central governance, commerce and POS/kiosk coexistence scenarios.
+10. Emit aggregate deployed runtime evidence through `BNS_360_EVIDENCE_PATH` for focused functional runs, and support filtering automated evidence kinds so a limit-only batch does not claim grants certification.
+11. Verify the published limit probes against a deployed stable-slot canary: `governance.central_policy_read`, `commerce.modules_marketplace_and_limits`, `module.capacidad` and `module.chatbot` all reached `functionalStatus=verified` on `2026-07-10`.
 
 ## Execution Commands
 

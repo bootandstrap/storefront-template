@@ -9,9 +9,11 @@ import {
     expectApiHealthy,
     expectPanelRouteHealthy,
     getBns360ExecutionMode,
+    getBns360FunctionalEvidenceForRun,
     getBns360MissingCredentialAction,
     hasOwnerCredentials,
     loginAsOwner,
+    recordBns360ScenarioEvidenceArtifact,
     resolveBns360ApiHeaders,
     runBns360AutomatedFunctionalEvidence,
 } from './support/bns-360-fixtures'
@@ -40,7 +42,9 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 throw new Error(credentialAction.reason)
             }
 
-            const functionalEvidence = scenario.functionalEvidence ?? moduleScenario?.functionalEvidence ?? []
+            const functionalEvidence = getBns360FunctionalEvidenceForRun(
+                scenario.functionalEvidence ?? moduleScenario?.functionalEvidence ?? []
+            )
 
             if (scenario.requiresAuth) {
                 await loginAsOwner(page)
@@ -79,6 +83,17 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             await testInfo.attach('bns-360-scenario-evidence', {
                 body: JSON.stringify(evidence, null, 2),
                 contentType: 'application/json',
+            })
+            recordBns360ScenarioEvidenceArtifact({
+                artifactPath: process.env.BNS_360_EVIDENCE_PATH,
+                evidence,
+                templateCommit: process.env.BNS_360_TEMPLATE_COMMIT,
+                tenantRef: process.env.BNS_360_TENANT_REF,
+                cleanupStatus: process.env.BNS_360_CLEANUP_STATUS,
+                routeChecks: scenario.routes.map(path => ({
+                    path,
+                    status: 'verified',
+                })),
             })
 
             assertBns360FunctionalEvidenceVerified(evidence)

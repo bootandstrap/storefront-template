@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import contract from '../governance-contract'
@@ -12,13 +13,16 @@ import {
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     bns360JsonHasPath,
+    summarizeBns360JsonShape,
     bns360JsonValueMatches,
     formatBns360ApiHealthFailure,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
+    getBns360FunctionalEvidenceForRun,
     getBns360MissingCredentialAction,
     getBns360PanelLandingUrlPattern,
     getBns360RouteRetryConfig,
+    recordBns360ScenarioEvidenceArtifact,
     resolveBns360ApiHeaders,
     resolveBns360RetryAfterMs,
 } from '../../../e2e/support/bns-360-fixtures'
@@ -81,6 +85,28 @@ describe('BNS 360 reusable runtime matrix', () => {
 
         expect(runtimeSpec).toContain('scenario.requiresAuth ? page.request : request')
         expect(runtimeSpec).toContain('expectApiHealthy(apiRequest, route, headers)')
+    })
+
+    it('records scenario evidence into an optional aggregate artifact during Playwright runs', () => {
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(runtimeSpec).toContain('recordBns360ScenarioEvidenceArtifact({')
+        expect(runtimeSpec).toContain('artifactPath: process.env.BNS_360_EVIDENCE_PATH')
+        expect(runtimeSpec).toContain('templateCommit: process.env.BNS_360_TEMPLATE_COMMIT')
+        expect(runtimeSpec).toContain('tenantRef: process.env.BNS_360_TENANT_REF')
+    })
+
+    it('applies the functional evidence focus filter before executing automated Playwright targets', () => {
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(runtimeSpec).toContain('getBns360FunctionalEvidenceForRun')
+        expect(runtimeSpec).toContain('const functionalEvidence = getBns360FunctionalEvidenceForRun(')
     })
 
     it('serializes live runtime smoke to avoid self-inflicted owner auth throttling', () => {
@@ -452,6 +478,79 @@ describe('BNS 360 reusable runtime matrix', () => {
         )
     })
 
+    it('writes a reusable aggregated runtime evidence artifact without secrets', () => {
+        const tmp = mkdtempSync(join(tmpdir(), 'bns-360-evidence-'))
+        const artifactPath = join(tmp, 'runtime-evidence.json')
+
+        try {
+            const evidence = buildBns360ScenarioEvidence({
+                scenarioKey: 'governance.central_policy_read',
+                baseUrl: 'https://template-canary.bootandstrap.com',
+                routes: ['/api/panel/limits?resources=products,categories,badges'],
+                functionalEvidence: [
+                    {
+                        kind: 'runtime_config',
+                        target: 'get_tenant_governance materializes plan limits',
+                        reversible: false,
+                        routes: ['/api/panel/limits?resources=products,categories,badges'],
+                        expectedJsonPaths: ['products.limitKey', 'products.limit'],
+                    },
+                ],
+                ownerEmail: 'owner+canary@example.com',
+                ownerPassword: 'do-not-store',
+                status: 'verified',
+                executionMode: 'functional',
+                functionalStatus: 'verified',
+            })
+
+            recordBns360ScenarioEvidenceArtifact({
+                artifactPath,
+                evidence,
+                templateCommit: 'd78a0a23',
+                tenantRef: 'ops-fullcat-202607091146',
+                cleanupStatus: 'not_applicable',
+                routeChecks: [
+                    {
+                        path: '/api/panel/limits?resources=products,categories,badges',
+                        status: 200,
+                    },
+                ],
+            })
+
+            const artifactText = readFileSync(artifactPath, 'utf8')
+            const artifact = JSON.parse(artifactText)
+
+            expect(artifact).toMatchObject({
+                schema: 'bootandstrap.template.bns-360.runtime-evidence/v1',
+                version: 1,
+                templateCommit: 'd78a0a23',
+                tenantRef: 'ops-fullcat-202607091146',
+                baseUrl: 'https://template-canary.bootandstrap.com',
+                scenarios: [
+                    expect.objectContaining({
+                        scenario: 'governance.central_policy_read',
+                        executionMode: 'functional',
+                        routeStatus: 'verified',
+                        functionalStatus: 'verified',
+                        credentialState: 'provided_redacted',
+                        pass: true,
+                        cleanupStatus: 'not_applicable',
+                        paths: [
+                            expect.objectContaining({
+                                path: '/api/panel/limits?resources=products,categories,badges',
+                                status: 200,
+                            }),
+                        ],
+                    }),
+                ],
+            })
+            expect(artifactText).not.toContain('owner+canary@example.com')
+            expect(artifactText).not.toContain('do-not-store')
+        } finally {
+            rmSync(tmp, { force: true, recursive: true })
+        }
+    })
+
     it('does not mark functional evidence verified unless the functional runner says so', () => {
         const scenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             item => item.moduleKey === 'crm'
@@ -542,6 +641,43 @@ describe('BNS 360 reusable runtime matrix', () => {
         ])).toBe('manual_required')
     })
 
+    it('can focus functional runtime runs on currently automated evidence without changing the default matrix', () => {
+        const commerceScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'commerce.modules_marketplace_and_limits'
+        )
+        const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'chatbot'
+        )
+
+        expect(getBns360FunctionalEvidenceForRun(commerceScenario?.functionalEvidence ?? [], {}))
+            .toEqual(commerceScenario?.functionalEvidence)
+        expect(getBns360AutomatedFunctionalEvidenceStatus(commerceScenario?.functionalEvidence ?? []))
+            .toBe('manual_required')
+
+        const focusedCommerceEvidence = getBns360FunctionalEvidenceForRun(
+            commerceScenario?.functionalEvidence ?? [],
+            {
+                BNS_360_FUNCTIONAL_EVIDENCE_KINDS: 'limit_enforcement,runtime_config',
+                BNS_360_FUNCTIONAL_AUTOMATED_ONLY: '1',
+                BNS_360_FUNCTIONAL_EXCLUDE_TARGET_PATTERN: 'central grants materialized',
+            }
+        )
+        const focusedChatbotEvidence = getBns360FunctionalEvidenceForRun(
+            chatbotScenario?.functionalEvidence ?? [],
+            {
+                BNS_360_FUNCTIONAL_EVIDENCE_KINDS: 'limit_enforcement,runtime_config',
+                BNS_360_FUNCTIONAL_AUTOMATED_ONLY: '1',
+            }
+        )
+
+        expect(focusedCommerceEvidence.map(target => target.kind)).toEqual([
+            'limit_enforcement',
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(focusedCommerceEvidence)).toBe('verified')
+        expect(focusedChatbotEvidence.map(target => target.kind)).toEqual(['limit_enforcement'])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(focusedChatbotEvidence)).toBe('verified')
+    })
+
     it('checks nested JSON paths for automated read-only governance evidence', () => {
         const limitsPayload = {
             products: { limitKey: 'max_products', limit: 100 },
@@ -552,6 +688,16 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(bns360JsonHasPath(limitsPayload, 'products.limitKey')).toBe(true)
         expect(bns360JsonHasPath(limitsPayload, 'categories.limit')).toBe(true)
         expect(bns360JsonHasPath(limitsPayload, 'badges.warning')).toBe(false)
+    })
+
+    it('summarizes JSON shape for functional path diagnostics without dumping values', () => {
+        expect(summarizeBns360JsonShape({
+            products: { limitKey: 'max_products', limit: 100 },
+            error: 'do-not-dump',
+        })).toEqual({
+            error: 'string',
+            products: ['limit', 'limitKey'],
+        })
     })
 
     it('checks expected JSON values for automated functional evidence', () => {
