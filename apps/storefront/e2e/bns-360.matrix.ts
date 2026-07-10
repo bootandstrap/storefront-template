@@ -128,6 +128,23 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
                 reversible: true,
             },
             {
+                kind: 'runtime_config',
+                target: 'central grants materialized into active tenant modules',
+                reversible: false,
+                routes: ['/api/panel/modules/grants/self-test?required=contract'],
+                expectedJsonPaths: [
+                    'status',
+                    'summary.requiredCount',
+                    'summary.activeCount',
+                    'summary.missingCount',
+                    'modules.0.key',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'summary.missingCount': 0,
+                },
+            },
+            {
                 kind: 'limit_enforcement',
                 target: '/api/panel/limits reflects BSWEB materialized plan_limits after grant change',
                 reversible: true,

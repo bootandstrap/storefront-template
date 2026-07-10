@@ -12,6 +12,7 @@ import {
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     bns360JsonHasPath,
+    bns360JsonValueMatches,
     formatBns360ApiHealthFailure,
     getBns360AutomatedFunctionalEvidenceStatus,
     getBns360ExecutionMode,
@@ -191,6 +192,22 @@ describe('BNS 360 reusable runtime matrix', () => {
             expect.objectContaining({
                 kind: 'grant_unlock',
                 target: expect.stringContaining('/api/module-purchase'),
+            }),
+            expect.objectContaining({
+                kind: 'runtime_config',
+                target: expect.stringContaining('central grants materialized'),
+                routes: ['/api/panel/modules/grants/self-test?required=contract'],
+                expectedJsonPaths: [
+                    'status',
+                    'summary.requiredCount',
+                    'summary.activeCount',
+                    'summary.missingCount',
+                    'modules.0.key',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'summary.missingCount': 0,
+                },
             }),
         ]))
     })
@@ -467,6 +484,18 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(bns360JsonHasPath(limitsPayload, 'products.limitKey')).toBe(true)
         expect(bns360JsonHasPath(limitsPayload, 'categories.limit')).toBe(true)
         expect(bns360JsonHasPath(limitsPayload, 'badges.warning')).toBe(false)
+    })
+
+    it('checks expected JSON values for automated functional evidence', () => {
+        const grantsPayload = {
+            status: 'verified',
+            summary: { missingCount: 0 },
+        }
+
+        expect(bns360JsonValueMatches(grantsPayload, 'status', 'verified')).toBe(true)
+        expect(bns360JsonValueMatches(grantsPayload, 'summary.missingCount', 0)).toBe(true)
+        expect(bns360JsonValueMatches(grantsPayload, 'summary.missingCount', 1)).toBe(false)
+        expect(bns360JsonValueMatches(grantsPayload, 'summary.extra', null)).toBe(false)
     })
 
     it('keeps mutating functional journeys opt-in', () => {

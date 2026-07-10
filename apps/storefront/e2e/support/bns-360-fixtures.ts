@@ -157,17 +157,30 @@ export function assertBns360FunctionalEvidenceVerified(evidence: Bns360ScenarioE
 }
 
 export function bns360JsonHasPath(payload: unknown, path: string): boolean {
+    return getBns360JsonPath(payload, path).found
+}
+
+function getBns360JsonPath(payload: unknown, path: string): { found: boolean; value: unknown } {
     let current: unknown = payload
 
     for (const segment of path.split('.')) {
         if (!current || typeof current !== 'object' || !(segment in current)) {
-            return false
+            return { found: false, value: undefined }
         }
 
         current = (current as Record<string, unknown>)[segment]
     }
 
-    return current !== undefined && current !== null
+    return { found: current !== undefined && current !== null, value: current }
+}
+
+export function bns360JsonValueMatches(
+    payload: unknown,
+    path: string,
+    expected: string | number | boolean | null
+): boolean {
+    const result = getBns360JsonPath(payload, path)
+    return result.found && Object.is(result.value, expected)
 }
 
 function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
@@ -215,6 +228,12 @@ export async function runBns360AutomatedFunctionalEvidence(
                     expect(
                         bns360JsonHasPath(payload, path),
                         `Expected ${route} JSON payload to include ${path}`
+                    ).toBe(true)
+                }
+                for (const [path, expected] of Object.entries(target.expectedJsonValues ?? {})) {
+                    expect(
+                        bns360JsonValueMatches(payload, path, expected),
+                        `Expected ${route} JSON payload ${path} to equal ${String(expected)}`
                     ).toBe(true)
                 }
             }

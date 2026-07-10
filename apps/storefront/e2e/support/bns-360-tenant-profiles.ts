@@ -46,6 +46,7 @@ export interface Bns360FunctionalEvidenceTarget {
     reversible: boolean
     routes?: string[]
     expectedJsonPaths?: string[]
+    expectedJsonValues?: Record<string, string | number | boolean | null>
 }
 
 const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
