@@ -525,7 +525,7 @@ export async function getAdminCustomerDetail(
     scope?: TenantMedusaScope | null
 ): Promise<AdminCustomer | null> {
     const res = await adminFetch<{ customer: AdminCustomer }>(
-        `/admin/customers/${id}?fields=*orders,metadata`,
+        `/admin/customers/${id}?fields=id,email,first_name,last_name,phone,has_account,created_at,metadata,*orders`,
         {},
         scope
     )

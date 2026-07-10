@@ -129,6 +129,18 @@ describe('Medusa v2 API Contract', () => {
         expect(content).toContain('/admin/orders/')
     })
 
+    it('customer detail reads base identity fields with metadata for durable CRM update checks', () => {
+        const adminOrders = medusaFiles.find(f => f.includes('admin-orders'))
+        expect(adminOrders).toBeDefined()
+        const content = readFileSync(adminOrders!, 'utf-8')
+        const detailSection = content.slice(
+            content.indexOf('export async function getAdminCustomerDetail'),
+            content.indexOf('/**\n * Updates a customer')
+        )
+
+        expect(detailSection).toContain('fields=id,email,first_name,last_name,phone,has_account,created_at,metadata,*orders')
+    })
+
     // ── v2 positive validation: payment_collections ──
 
     it('client.ts uses *payment_collections for order queries', () => {
