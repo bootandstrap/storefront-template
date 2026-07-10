@@ -81,7 +81,17 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
             reversible: true,
             routes: ['/api/panel/vault'],
         },
-        { kind: 'limit_enforcement', target: 'traffic/storage/backup limits reflected from plan_limits', reversible: true },
+        {
+            kind: 'limit_enforcement',
+            target: '/api/panel/vault reflects storage capacity from materialized plan_limits',
+            reversible: true,
+            routes: ['/api/panel/vault'],
+            expectedJsonPaths: [
+                'usage.total.mb',
+                'limit_mb',
+                'usage_percent',
+            ],
+        },
     ],
     chatbot: [
         { kind: 'runtime_config', target: 'chatbot config persists and changes panel/runtime behavior', reversible: true },

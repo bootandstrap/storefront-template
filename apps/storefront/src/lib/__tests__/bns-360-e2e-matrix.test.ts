@@ -209,6 +209,19 @@ describe('BNS 360 reusable runtime matrix', () => {
                     'summary.missingCount': 0,
                 },
             }),
+            expect.objectContaining({
+                kind: 'limit_enforcement',
+                target: expect.stringContaining('/api/panel/limits'),
+                routes: ['/api/panel/limits?resources=products,categories,badges'],
+                expectedJsonPaths: [
+                    'products.limitKey',
+                    'products.limit',
+                    'categories.limitKey',
+                    'categories.limit',
+                    'badges.limitKey',
+                    'badges.limit',
+                ],
+            }),
         ]))
     })
 
@@ -327,6 +340,30 @@ describe('BNS 360 reusable runtime matrix', () => {
                 expect.stringMatching(/^\/api\//),
             ]))
         }
+    })
+
+    it('automates capacidad functional evidence through vault health and storage limit probes', () => {
+        const capacidadScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'capacidad'
+        )
+
+        expect(capacidadScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'api_health',
+                routes: ['/api/panel/vault'],
+            }),
+            expect.objectContaining({
+                kind: 'limit_enforcement',
+                routes: ['/api/panel/vault'],
+                expectedJsonPaths: [
+                    'usage.total.mb',
+                    'limit_mb',
+                    'usage_percent',
+                ],
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(capacidadScenario?.functionalEvidence ?? []))
+            .toBe('verified')
     })
 
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
@@ -463,6 +500,15 @@ describe('BNS 360 reusable runtime matrix', () => {
             {
                 kind: 'runtime_config',
                 target: 'governance limits JSON',
+                reversible: false,
+                routes: ['/api/panel/limits?resources=products'],
+                expectedJsonPaths: ['products.limitKey', 'products.limit'],
+            },
+        ])).toBe('verified')
+        expect(getBns360AutomatedFunctionalEvidenceStatus([
+            {
+                kind: 'limit_enforcement',
+                target: 'panel limits JSON',
                 reversible: false,
                 routes: ['/api/panel/limits?resources=products'],
                 expectedJsonPaths: ['products.limitKey', 'products.limit'],
