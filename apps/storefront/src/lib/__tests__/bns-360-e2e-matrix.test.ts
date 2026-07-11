@@ -512,6 +512,38 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('automates automation primary notification mapping runtime evidence', () => {
+        const automationScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'automation'
+        )
+
+        expect(automationScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                target: 'event-to-channel mapping can be edited and rendered',
+                reversible: true,
+                routes: ['/api/panel/bns-360/automation-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.webhook.enabled',
+                    'runtime.webhook.urlHost',
+                    'runtime.webhook.secretRedacted',
+                    'runtime.eventMapping.orderPlaced',
+                    'cleanup.status',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.webhook.secretRedacted': true,
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ]))
+        expect(getBns360AutomatedFunctionalEvidenceStatus(automationScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'

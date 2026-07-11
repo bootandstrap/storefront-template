@@ -90,8 +90,27 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'runtime_config', target: 'OAuth/provider flags reflected in auth panel config', reversible: true },
     ],
     automation: [
-        { kind: 'runtime_config', target: 'notification channel config persists tenant-scoped values', reversible: true },
-        { kind: 'module_primary_journey', target: 'event-to-channel mapping can be edited and rendered', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'event-to-channel mapping can be edited and rendered',
+            reversible: true,
+            routes: ['/api/panel/bns-360/automation-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.webhook.enabled',
+                'runtime.webhook.urlHost',
+                'runtime.webhook.secretRedacted',
+                'runtime.eventMapping.orderPlaced',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.webhook.secretRedacted': true,
+                'cleanup.status': 'verified',
+            },
+        },
     ],
     capacidad: [
         {
