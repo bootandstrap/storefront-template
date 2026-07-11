@@ -237,7 +237,6 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
                 'runId',
                 'runtime.socialFacebook',
                 'runtime.socialInstagram',
-                'runtime.socialTiktok',
                 'runtime.sameAs',
                 'cleanup.status',
             ],

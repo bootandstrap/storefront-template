@@ -499,7 +499,6 @@ describe('BNS 360 reusable runtime matrix', () => {
                     'runId',
                     'runtime.socialFacebook',
                     'runtime.socialInstagram',
-                    'runtime.socialTiktok',
                     'runtime.sameAs',
                     'cleanup.status',
                 ],
