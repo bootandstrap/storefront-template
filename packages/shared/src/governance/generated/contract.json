@@ -1061,6 +1061,7 @@
             "recommended": false,
             "flag_effects": {
               "enable_social_links": true,
+              "enable_social_media": true,
               "enable_social_sharing": true
             },
             "stripe_price_ids": {
@@ -1079,6 +1080,7 @@
             "recommended": true,
             "flag_effects": {
               "enable_social_links": true,
+              "enable_social_media": true,
               "enable_social_sharing": true
             },
             "stripe_price_ids": {

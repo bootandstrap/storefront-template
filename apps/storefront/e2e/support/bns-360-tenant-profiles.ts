@@ -226,7 +226,26 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'grant_unlock', target: 'pos_kiosk depends on POS grant and does not expose standalone /pos route', reversible: true },
     ],
     rrss: [
-        { kind: 'runtime_config', target: 'social links persist and render on storefront surfaces', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'social links persist and render in public JSON-LD sameAs',
+            reversible: true,
+            routes: ['/api/panel/bns-360/rrss-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.socialFacebook',
+                'runtime.socialInstagram',
+                'runtime.socialTiktok',
+                'runtime.sameAs',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+            },
+        },
     ],
     sales_channels: [
         { kind: 'runtime_config', target: 'payment/channel config persists and affects checkout options', reversible: true },

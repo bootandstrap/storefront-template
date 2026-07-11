@@ -95,6 +95,16 @@ describe('Governance Contract — Module Catalog', () => {
 
         expect(mismatchedTiers).toEqual([])
     })
+
+    it('RRSS tiers with social links also materialize the social media panel capability', () => {
+        const mod = getModule('rrss')
+        const mismatchedTiers = mod.tiers
+            .filter(tier => tier.flag_effects?.enable_social_links === true)
+            .filter(tier => tier.flag_effects?.enable_social_media !== true)
+            .map(tier => `rrss.${tier.key}`)
+
+        expect(mismatchedTiers).toEqual([])
+    })
 })
 
 describe('Governance Contract — Flag Groups', () => {

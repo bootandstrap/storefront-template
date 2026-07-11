@@ -482,6 +482,37 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('automates RRSS primary social link runtime evidence', () => {
+        const rrssScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'rrss'
+        )
+
+        expect(rrssScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                target: 'social links persist and render in public JSON-LD sameAs',
+                reversible: true,
+                routes: ['/api/panel/bns-360/rrss-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.socialFacebook',
+                    'runtime.socialInstagram',
+                    'runtime.socialTiktok',
+                    'runtime.sameAs',
+                    'cleanup.status',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(rrssScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'
