@@ -72,102 +72,175 @@ export async function runBns360RrssPrimaryJourney(
     input: Bns360RrssPrimaryJourneyInput
 ): Promise<Bns360RrssPrimaryJourneyResult> {
     const runId = input.runId ?? `bns360-rrss-${Date.now()}-${randomUUID()}`
-    const targetConfig = {
-        socialFacebook: `https://facebook.com/bns360-${runId}`,
-        socialInstagram: `https://instagram.com/bns360-${runId}`,
-        socialTiktok: `https://tiktok.com/@bns360-${runId}`,
-    }
+    const targetConfig = buildTargetConfig(runId)
     const steps: Bns360RrssPrimaryJourneyResult['steps'] = []
-    let initialConfig: Bns360RrssConfig | null = null
-    let runtime = { ...DEFAULT_RUNTIME }
+    const executionState = createExecutionState()
     let journeyError: string | undefined
-    let cleanupStatus: Bns360RrssPrimaryJourneyResult['cleanup']['status'] = 'failed'
-    let restored = false
+    let cleanup = buildCleanup(false)
 
     try {
-        initialConfig = await input.client.readConfig()
-        steps.push({ key: 'read_initial', status: 'verified' })
-
-        await input.client.updateConfig(targetConfig)
-        steps.push({ key: 'update_config', status: 'verified' })
-
-        const updatedConfig = await input.client.readConfig()
-        runtime = projectRuntime(updatedConfig, {
-            path: '/es',
-            status: 0,
-            sameAs: [],
-        })
-        steps.push({ key: 'read_after_update', status: 'verified' })
-
-        const publicRoute = await input.client.readPublicRoute('/es')
-        runtime = projectRuntime(updatedConfig, publicRoute)
-        if (
-            publicRoute.status >= 400 ||
-            !targetConfig.socialFacebook ||
-            !targetConfig.socialInstagram ||
-            !targetConfig.socialTiktok ||
-            !publicRoute.sameAs.includes(targetConfig.socialFacebook) ||
-            !publicRoute.sameAs.includes(targetConfig.socialInstagram) ||
-            !publicRoute.sameAs.includes(targetConfig.socialTiktok)
-        ) {
-            throw new Error('RRSS public sameAs did not reflect the target config')
-        }
-        steps.push({ key: 'public_same_as', status: 'verified' })
-
-        if (
-            runtime.socialFacebook !== targetConfig.socialFacebook ||
-            runtime.socialInstagram !== targetConfig.socialInstagram ||
-            runtime.socialTiktok !== targetConfig.socialTiktok
-        ) {
-            throw new Error('RRSS runtime projection did not reflect owner config update')
-        }
-        steps.push({ key: 'runtime_projection', status: 'verified' })
+        await executePrimaryJourney(input.client, targetConfig, steps, executionState)
     } catch (error) {
         journeyError = error instanceof Error ? error.message : 'RRSS primary journey failed'
     } finally {
-        if (initialConfig) {
-            try {
-                await input.client.updateConfig({
-                    socialFacebook: initialConfig.socialFacebook,
-                    socialInstagram: initialConfig.socialInstagram,
-                    socialTiktok: initialConfig.socialTiktok,
-                    socialTwitter: initialConfig.socialTwitter,
-                })
-                steps.push({ key: 'rollback', status: 'verified' })
-            } catch (error) {
-                journeyError = journeyError ?? (error instanceof Error ? error.message : 'RRSS rollback failed')
-                steps.push({ key: 'rollback', status: 'blocked' })
-            }
-
-            try {
-                const rollbackConfig = await input.client.readConfig()
-                restored = isConfigRestored(initialConfig, rollbackConfig)
-                cleanupStatus = restored ? 'verified' : 'failed'
-                steps.push({
-                    key: 'read_after_rollback',
-                    status: restored ? 'verified' : 'blocked',
-                })
-            } catch (error) {
-                journeyError = journeyError ?? (
-                    error instanceof Error ? error.message : 'RRSS rollback verification failed'
-                )
-            }
+        if (executionState.initialConfig) {
+            const rollback = await rollbackPrimaryJourney(input.client, executionState.initialConfig, steps)
+            cleanup = rollback.cleanup
+            journeyError = journeyError ?? rollback.error
         }
     }
 
     return {
         schema: 'bootandstrap.template.bns-360.rrss-primary/v1',
-        status: !journeyError && cleanupStatus === 'verified' && restored ? 'verified' : 'blocked',
+        status: !journeyError && cleanup.status === 'verified' && cleanup.restored ? 'verified' : 'blocked',
         runId,
         tenantRef: input.tenantId,
         generatedAt: new Date().toISOString(),
         steps,
-        runtime,
-        cleanup: {
-            status: cleanupStatus,
-            restored,
-        },
+        runtime: executionState.runtime,
+        cleanup,
         ...(journeyError ? { error: journeyError } : {}),
+    }
+}
+
+interface ExecutionState {
+    initialConfig: Bns360RrssConfig | null
+    runtime: Bns360RrssPrimaryJourneyResult['runtime']
+}
+
+interface RrssTargetConfig {
+    socialFacebook: string
+    socialInstagram: string
+    socialTiktok: string
+}
+
+function createExecutionState(): ExecutionState {
+    return {
+        initialConfig: null,
+        runtime: { ...DEFAULT_RUNTIME },
+    }
+}
+
+function buildTargetConfig(runId: string): RrssTargetConfig {
+    return {
+        socialFacebook: `https://facebook.com/bns360-${runId}`,
+        socialInstagram: `https://instagram.com/bns360-${runId}`,
+        socialTiktok: `https://tiktok.com/@bns360-${runId}`,
+    }
+}
+
+async function executePrimaryJourney(
+    client: Bns360RrssPrimaryClient,
+    targetConfig: ReturnType<typeof buildTargetConfig>,
+    steps: Bns360RrssPrimaryJourneyResult['steps'],
+    state: ExecutionState
+): Promise<void> {
+    const initialConfig = await client.readConfig()
+    state.initialConfig = initialConfig
+    steps.push({ key: 'read_initial', status: 'verified' })
+
+    await client.updateConfig(targetConfig)
+    steps.push({ key: 'update_config', status: 'verified' })
+
+    const updatedConfig = await client.readConfig()
+    steps.push({ key: 'read_after_update', status: 'verified' })
+
+    const publicRoute = await client.readPublicRoute('/es')
+    state.runtime = projectRuntime(updatedConfig, publicRoute)
+    assertPublicSameAs(publicRoute, targetConfig)
+    steps.push({ key: 'public_same_as', status: 'verified' })
+
+    assertRuntimeProjection(state.runtime, targetConfig)
+    steps.push({ key: 'runtime_projection', status: 'verified' })
+}
+
+async function rollbackPrimaryJourney(
+    client: Bns360RrssPrimaryClient,
+    initialConfig: Bns360RrssConfig,
+    steps: Bns360RrssPrimaryJourneyResult['steps']
+): Promise<{
+    cleanup: Bns360RrssPrimaryJourneyResult['cleanup']
+    error?: string
+}> {
+    const rollbackError = await restoreInitialConfig(client, initialConfig, steps)
+    const verification = await verifyRollback(client, initialConfig, steps)
+
+    return {
+        cleanup: verification.cleanup,
+        error: rollbackError ?? verification.error,
+    }
+}
+
+async function restoreInitialConfig(
+    client: Bns360RrssPrimaryClient,
+    initialConfig: Bns360RrssConfig,
+    steps: Bns360RrssPrimaryJourneyResult['steps']
+): Promise<string | undefined> {
+    try {
+        await client.updateConfig(initialConfig)
+        steps.push({ key: 'rollback', status: 'verified' })
+    } catch (error) {
+        steps.push({ key: 'rollback', status: 'blocked' })
+        return error instanceof Error ? error.message : 'RRSS rollback failed'
+    }
+}
+
+async function verifyRollback(
+    client: Bns360RrssPrimaryClient,
+    initialConfig: Bns360RrssConfig,
+    steps: Bns360RrssPrimaryJourneyResult['steps']
+): Promise<{
+    cleanup: Bns360RrssPrimaryJourneyResult['cleanup']
+    error?: string
+}> {
+    try {
+        const rollbackConfig = await client.readConfig()
+        const restored = isConfigRestored(initialConfig, rollbackConfig)
+        steps.push({
+            key: 'read_after_rollback',
+            status: restored ? 'verified' : 'blocked',
+        })
+        return { cleanup: buildCleanup(restored) }
+    } catch (error) {
+        return {
+            cleanup: buildCleanup(false),
+            error: error instanceof Error ? error.message : 'RRSS rollback verification failed',
+        }
+    }
+}
+
+function assertPublicSameAs(
+    publicRoute: Bns360RrssPublicRoute,
+    targetConfig: ReturnType<typeof buildTargetConfig>
+): void {
+    const expectedLinks = [
+        targetConfig.socialFacebook,
+        targetConfig.socialInstagram,
+        targetConfig.socialTiktok,
+    ]
+    const matches = expectedLinks.every(link => publicRoute.sameAs.includes(link))
+    if (publicRoute.status >= 400 || !matches) {
+        throw new Error('RRSS public sameAs did not reflect the target config')
+    }
+}
+
+function assertRuntimeProjection(
+    runtime: Bns360RrssPrimaryJourneyResult['runtime'],
+    targetConfig: ReturnType<typeof buildTargetConfig>
+): void {
+    if (
+        runtime.socialFacebook !== targetConfig.socialFacebook ||
+        runtime.socialInstagram !== targetConfig.socialInstagram ||
+        runtime.socialTiktok !== targetConfig.socialTiktok
+    ) {
+        throw new Error('RRSS runtime projection did not reflect owner config update')
+    }
+}
+
+function buildCleanup(restored: boolean): Bns360RrssPrimaryJourneyResult['cleanup'] {
+    return {
+        status: restored ? 'verified' : 'failed',
+        restored,
     }
 }
 
