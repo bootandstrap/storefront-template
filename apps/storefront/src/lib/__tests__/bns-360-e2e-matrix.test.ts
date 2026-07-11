@@ -544,6 +544,38 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('automates email marketing primary preference and automation runtime evidence', () => {
+        const emailMarketingScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'email_marketing'
+        )
+
+        expect(emailMarketingScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                target: 'email preferences and automations persist without leaking provider secrets',
+                reversible: true,
+                routes: ['/api/panel/bns-360/email-marketing-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.preferences.templateDesign',
+                    'runtime.automation.reviewRequestEnabled',
+                    'runtime.limits.maxEmailSendsMonth',
+                    'runtime.secretRedacted',
+                    'cleanup.status',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.secretRedacted': true,
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ]))
+        expect(getBns360AutomatedFunctionalEvidenceStatus(emailMarketingScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'

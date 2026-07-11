@@ -192,8 +192,57 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'module_primary_journey', target: 'storefront catalog reflects Medusa changes', reversible: true },
     ],
     email_marketing: [
-        { kind: 'runtime_config', target: 'email sender/domain/template config persists without leaking secrets', reversible: true },
-        { kind: 'limit_enforcement', target: 'max_email_sends_month reflected in module usage', reversible: true },
+        {
+            kind: 'runtime_config',
+            target: 'email sender/domain/template config persists without leaking secrets',
+            reversible: true,
+            routes: ['/api/panel/bns-360/email-marketing-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'runtime.preferences.templateDesign',
+                'runtime.secretRedacted',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                'runtime.secretRedacted': true,
+                'cleanup.status': 'verified',
+            },
+        },
+        {
+            kind: 'limit_enforcement',
+            target: 'max_email_sends_month reflected in module usage',
+            reversible: true,
+            routes: ['/api/panel/bns-360/email-marketing-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'runtime.limits.maxEmailSendsMonth',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                'cleanup.status': 'verified',
+            },
+        },
+        {
+            kind: 'module_primary_journey',
+            target: 'email preferences and automations persist without leaking provider secrets',
+            reversible: true,
+            routes: ['/api/panel/bns-360/email-marketing-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.preferences.templateDesign',
+                'runtime.automation.reviewRequestEnabled',
+                'runtime.limits.maxEmailSendsMonth',
+                'runtime.secretRedacted',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.secretRedacted': true,
+                'cleanup.status': 'verified',
+            },
+        },
     ],
     i18n: [
         {
