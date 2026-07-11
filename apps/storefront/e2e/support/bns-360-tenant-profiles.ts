@@ -233,8 +233,28 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'grant_unlock', target: 'sales channel routes unlock from grants', reversible: true },
     ],
     seo: [
-        { kind: 'runtime_config', target: 'SEO metadata config persists and renders in public page metadata', reversible: true },
-        { kind: 'module_primary_journey', target: 'analytics/SEO panels load tenant-scoped Medusa counts', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'SEO metadata config changes render in public page metadata',
+            reversible: true,
+            routes: ['/api/panel/bns-360/seo-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.metaTitle',
+                'runtime.metaDescription',
+                'runtime.publicTitle',
+                'runtime.publicDescription',
+                'runtime.publicOgTitle',
+                'runtime.publicOgDescription',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+            },
+        },
     ],
 }
 

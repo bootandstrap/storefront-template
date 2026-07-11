@@ -449,6 +449,39 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('automates SEO primary metadata runtime evidence', () => {
+        const seoScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'seo'
+        )
+
+        expect(seoScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                target: 'SEO metadata config changes render in public page metadata',
+                reversible: true,
+                routes: ['/api/panel/bns-360/seo-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.metaTitle',
+                    'runtime.metaDescription',
+                    'runtime.publicTitle',
+                    'runtime.publicDescription',
+                    'runtime.publicOgTitle',
+                    'runtime.publicOgDescription',
+                    'cleanup.status',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(seoScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('pins a full-catalog certification tenant to the highest available tier of every module', () => {
         const fullCatalog = BNS_360_TENANT_PROFILES.find(
             profile => profile.key === 'full_catalog_highest_tier'
