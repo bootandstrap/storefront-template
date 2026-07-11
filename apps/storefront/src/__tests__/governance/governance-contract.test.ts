@@ -85,6 +85,16 @@ describe('Governance Contract — Module Catalog', () => {
         const unique = new Set(tierKeys)
         expect(unique.size).toBe(tierKeys.length)
     })
+
+    it('SEO tiers with tools also materialize the base SEO capability', () => {
+        const mod = getModule('seo')
+        const mismatchedTiers = mod.tiers
+            .filter(tier => tier.flag_effects?.enable_seo_tools === true)
+            .filter(tier => tier.flag_effects?.enable_seo !== true)
+            .map(tier => `seo.${tier.key}`)
+
+        expect(mismatchedTiers).toEqual([])
+    })
 })
 
 describe('Governance Contract — Flag Groups', () => {

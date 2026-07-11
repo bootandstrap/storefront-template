@@ -1249,6 +1249,7 @@
             "recommended": false,
             "flag_effects": {
               "enable_analytics": true,
+              "enable_seo": true,
               "enable_seo_tools": true
             },
             "stripe_price_ids": {
@@ -1278,6 +1279,7 @@
             "recommended": true,
             "flag_effects": {
               "enable_analytics": true,
+              "enable_seo": true,
               "enable_seo_tools": true
             },
             "stripe_price_ids": {
