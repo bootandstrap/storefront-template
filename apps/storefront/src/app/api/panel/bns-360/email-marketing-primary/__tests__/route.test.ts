@@ -95,17 +95,19 @@ describe('POST /api/panel/bns-360/email-marketing-primary', () => {
         expect(json.cleanup.status).toBe('failed')
     })
 
-    it('uses the authenticated server Supabase client and tenant-scoped email tables', () => {
+    it('uses the existing owner-guarded server admin boundary and tenant-scoped email tables', () => {
+        const routeSource = readFileSync(join(__dirname, '../route.ts'), 'utf8')
         const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
 
-        expect(source).toContain("from '@/lib/supabase/server'")
-        expect(source).toContain('const supabase = await createClient()')
+        expect(routeSource).toContain("withPanelGuard({ requiredFlag: 'enable_email_notifications' })")
+        expect(source).toContain("from '@/lib/supabase/admin'")
+        expect(source).toContain('createAdminClient()')
         expect(source).toContain(".from('email_preferences')")
         expect(source).toContain(".from('email_automation_config')")
         expect(source).toContain(".from('plan_limits')")
         expect(source).toContain(".eq('tenant_id', tenantId)")
-        expect(source).not.toContain("from '@/lib/supabase/admin'")
-        expect(source).not.toContain('createAdminClient()')
+        expect(source).not.toContain("from '@/lib/supabase/server'")
+        expect(source).not.toContain('await createClient()')
     })
 
     it('does not send external emails or read provider secrets', () => {

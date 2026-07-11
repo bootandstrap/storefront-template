@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type {
     Bns360EmailAutomationConfig,
     Bns360EmailMarketingPrimaryClient,
@@ -63,18 +63,16 @@ export function createBns360EmailMarketingPrimaryClient(
 }
 
 async function readEmailMarketingState(tenantId: string): Promise<Bns360EmailMarketingState> {
-    const supabase = await createClient()
-    const [preferences, automation, limits] = await Promise.all([
-        readEmailPreferences(supabase, tenantId),
-        readEmailAutomation(supabase, tenantId),
-        readEmailLimits(supabase, tenantId),
-    ])
+    const supabase = createAdminClient()
+    const preferences = await readEmailPreferences(supabase, tenantId)
+    const automation = await readEmailAutomation(supabase, tenantId)
+    const limits = await readEmailLimits(supabase, tenantId)
 
     return { preferences, automation, limits }
 }
 
 async function readEmailPreferences(
-    supabase: Awaited<ReturnType<typeof createClient>>,
+    supabase: ReturnType<typeof createAdminClient>,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['preferences']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,7 +93,7 @@ async function readEmailPreferences(
 }
 
 async function readEmailAutomation(
-    supabase: Awaited<ReturnType<typeof createClient>>,
+    supabase: ReturnType<typeof createAdminClient>,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['automation']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,7 +114,7 @@ async function readEmailAutomation(
 }
 
 async function readEmailLimits(
-    supabase: Awaited<ReturnType<typeof createClient>>,
+    supabase: ReturnType<typeof createAdminClient>,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['limits']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -158,7 +156,7 @@ function normalizeEmailLimits(row: EmailLimitsRow | null): number {
 }
 
 async function upsertEmailPreferences(tenantId: string, values: Bns360EmailPreferences): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from('email_preferences')
@@ -177,7 +175,7 @@ async function upsertEmailPreferences(tenantId: string, values: Bns360EmailPrefe
 }
 
 async function upsertEmailAutomation(tenantId: string, values: Bns360EmailAutomationConfig): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from('email_automation_config')
@@ -199,10 +197,8 @@ async function restoreEmailMarketingState(
     tenantId: string,
     snapshot: Bns360EmailMarketingState
 ): Promise<void> {
-    await Promise.all([
-        restoreEmailPreferences(tenantId, snapshot.preferences),
-        restoreEmailAutomation(tenantId, snapshot.automation),
-    ])
+    await restoreEmailPreferences(tenantId, snapshot.preferences)
+    await restoreEmailAutomation(tenantId, snapshot.automation)
 }
 
 async function restoreEmailPreferences(
@@ -230,7 +226,7 @@ async function restoreEmailAutomation(
 }
 
 async function deleteTenantRow(table: 'email_preferences' | 'email_automation_config', tenantId: string, label: string) {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from(table)
