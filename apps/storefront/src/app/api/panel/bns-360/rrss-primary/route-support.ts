@@ -12,8 +12,6 @@ import type {
 interface RrssConfigRow {
     social_facebook: string | null
     social_instagram: string | null
-    social_tiktok: string | null
-    social_twitter: string | null
 }
 
 export function createBns360RrssPrimaryClient(
@@ -41,7 +39,7 @@ async function readRrssConfig(tenantId: string): Promise<Bns360RrssConfig> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
         .from('config')
-        .select('social_facebook,social_instagram,social_tiktok,social_twitter')
+        .select('social_facebook,social_instagram')
         .eq('tenant_id', tenantId)
         .single()
 
@@ -56,8 +54,6 @@ function normalizeRrssConfig(config: RrssConfigRow): Bns360RrssConfig {
     return {
         socialFacebook: config.social_facebook ?? null,
         socialInstagram: config.social_instagram ?? null,
-        socialTiktok: config.social_tiktok ?? null,
-        socialTwitter: config.social_twitter ?? null,
     }
 }
 
@@ -137,8 +133,6 @@ function toConfigPayload(updates: Bns360RrssConfigUpdate): Record<string, unknow
     const payload: Record<string, unknown> = {}
     if ('socialFacebook' in updates) payload.social_facebook = updates.socialFacebook ?? null
     if ('socialInstagram' in updates) payload.social_instagram = updates.socialInstagram ?? null
-    if ('socialTiktok' in updates) payload.social_tiktok = updates.socialTiktok ?? null
-    if ('socialTwitter' in updates) payload.social_twitter = updates.socialTwitter ?? null
     return payload
 }
 

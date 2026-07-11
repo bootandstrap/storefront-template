@@ -10,8 +10,6 @@ function createConfig(overrides: Partial<Bns360RrssConfig> = {}): Bns360RrssConf
     return {
         socialFacebook: 'https://facebook.com/initial',
         socialInstagram: 'https://instagram.com/initial',
-        socialTiktok: null,
-        socialTwitter: null,
         ...overrides,
     }
 }
@@ -30,7 +28,6 @@ function createClient(): Bns360RrssPrimaryClient {
             sameAs: [
                 state.current.socialInstagram,
                 state.current.socialFacebook,
-                state.current.socialTiktok,
             ].filter((value): value is string => Boolean(value)),
         })),
     }
@@ -54,13 +51,11 @@ describe('runBns360RrssPrimaryJourney', () => {
             runtime: {
                 socialFacebook: 'https://facebook.com/bns360-run-1',
                 socialInstagram: 'https://instagram.com/bns360-run-1',
-                socialTiktok: 'https://tiktok.com/@bns360-run-1',
                 publicPath: '/es',
                 publicStatus: 200,
                 sameAs: [
                     'https://instagram.com/bns360-run-1',
                     'https://facebook.com/bns360-run-1',
-                    'https://tiktok.com/@bns360-run-1',
                 ],
             },
             cleanup: { status: 'verified', restored: true },
@@ -68,13 +63,10 @@ describe('runBns360RrssPrimaryJourney', () => {
         expect(client.updateConfig).toHaveBeenCalledWith({
             socialFacebook: 'https://facebook.com/bns360-run-1',
             socialInstagram: 'https://instagram.com/bns360-run-1',
-            socialTiktok: 'https://tiktok.com/@bns360-run-1',
         })
         expect(client.updateConfig).toHaveBeenLastCalledWith({
             socialFacebook: 'https://facebook.com/initial',
             socialInstagram: 'https://instagram.com/initial',
-            socialTiktok: null,
-            socialTwitter: null,
         })
         expect(client.readPublicRoute).toHaveBeenCalledWith('/es')
         expect(JSON.stringify(result)).not.toContain('password')
@@ -113,8 +105,6 @@ describe('runBns360RrssPrimaryJourney', () => {
         expect(client.updateConfig).toHaveBeenLastCalledWith({
             socialFacebook: 'https://facebook.com/initial',
             socialInstagram: 'https://instagram.com/initial',
-            socialTiktok: null,
-            socialTwitter: null,
         })
     })
 
@@ -136,7 +126,6 @@ describe('runBns360RrssPrimaryJourney', () => {
         expect(result.runtime).toMatchObject({
             socialFacebook: 'https://facebook.com/bns360-run-1',
             socialInstagram: 'https://instagram.com/bns360-run-1',
-            socialTiktok: 'https://tiktok.com/@bns360-run-1',
             publicStatus: 200,
             sameAs: ['https://instagram.com/initial'],
         })
@@ -151,7 +140,6 @@ describe('runBns360RrssPrimaryJourney', () => {
             .mockResolvedValueOnce(createConfig({
                 socialFacebook: 'https://facebook.com/bns360-run-1',
                 socialInstagram: 'https://instagram.com/bns360-run-1',
-                socialTiktok: 'https://tiktok.com/@bns360-run-1',
             }))
             .mockResolvedValueOnce(createConfig({ socialFacebook: 'https://facebook.com/bns360-run-1' }))
 

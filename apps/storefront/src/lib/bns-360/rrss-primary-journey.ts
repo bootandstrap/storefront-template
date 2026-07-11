@@ -3,8 +3,6 @@ import { randomUUID } from 'node:crypto'
 export interface Bns360RrssConfig {
     socialFacebook: string | null
     socialInstagram: string | null
-    socialTiktok: string | null
-    socialTwitter: string | null
 }
 
 export type Bns360RrssConfigUpdate = Partial<Bns360RrssConfig>
@@ -47,7 +45,6 @@ export interface Bns360RrssPrimaryJourneyResult {
     runtime: {
         socialFacebook: string
         socialInstagram: string
-        socialTiktok: string
         publicPath: string
         publicStatus: number
         sameAs: string[]
@@ -62,7 +59,6 @@ export interface Bns360RrssPrimaryJourneyResult {
 const DEFAULT_RUNTIME = {
     socialFacebook: '',
     socialInstagram: '',
-    socialTiktok: '',
     publicPath: '/es',
     publicStatus: 0,
     sameAs: [] as string[],
@@ -111,7 +107,6 @@ interface ExecutionState {
 interface RrssTargetConfig {
     socialFacebook: string
     socialInstagram: string
-    socialTiktok: string
 }
 
 function createExecutionState(): ExecutionState {
@@ -125,7 +120,6 @@ function buildTargetConfig(runId: string): RrssTargetConfig {
     return {
         socialFacebook: `https://facebook.com/bns360-${runId}`,
         socialInstagram: `https://instagram.com/bns360-${runId}`,
-        socialTiktok: `https://tiktok.com/@bns360-${runId}`,
     }
 }
 
@@ -216,7 +210,6 @@ function assertPublicSameAs(
     const expectedLinks = [
         targetConfig.socialFacebook,
         targetConfig.socialInstagram,
-        targetConfig.socialTiktok,
     ]
     const matches = expectedLinks.every(link => publicRoute.sameAs.includes(link))
     if (publicRoute.status >= 400 || !matches) {
@@ -230,8 +223,7 @@ function assertRuntimeProjection(
 ): void {
     if (
         runtime.socialFacebook !== targetConfig.socialFacebook ||
-        runtime.socialInstagram !== targetConfig.socialInstagram ||
-        runtime.socialTiktok !== targetConfig.socialTiktok
+        runtime.socialInstagram !== targetConfig.socialInstagram
     ) {
         throw new Error('RRSS runtime projection did not reflect owner config update')
     }
@@ -251,7 +243,6 @@ function projectRuntime(
     return {
         socialFacebook: config.socialFacebook ?? '',
         socialInstagram: config.socialInstagram ?? '',
-        socialTiktok: config.socialTiktok ?? '',
         publicPath: publicRoute.path,
         publicStatus: publicRoute.status,
         sameAs: publicRoute.sameAs,
@@ -261,8 +252,6 @@ function projectRuntime(
 function isConfigRestored(initial: Bns360RrssConfig, current: Bns360RrssConfig): boolean {
     return (
         initial.socialFacebook === current.socialFacebook &&
-        initial.socialInstagram === current.socialInstagram &&
-        initial.socialTiktok === current.socialTiktok &&
-        initial.socialTwitter === current.socialTwitter
+        initial.socialInstagram === current.socialInstagram
     )
 }

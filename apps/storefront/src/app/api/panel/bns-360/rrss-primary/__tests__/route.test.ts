@@ -110,10 +110,12 @@ describe('POST /api/panel/bns-360/rrss-primary', () => {
         expect(source).not.toContain('update_owner_config')
     })
 
-    it('reads only social link fields durably', () => {
+    it('reads only social link fields that exist in the deployed config table', () => {
         const source = readFileSync(join(__dirname, '../route-support.ts'), 'utf8')
 
-        expect(source).toContain(".select('social_facebook,social_instagram,social_tiktok,social_twitter')")
+        expect(source).toContain(".select('social_facebook,social_instagram')")
+        expect(source).not.toContain('social_tiktok')
+        expect(source).not.toContain('social_twitter')
         expect(source).not.toContain('google_analytics_id')
         expect(source).not.toContain('facebook_pixel_id')
         expect(source).not.toContain('sentry_dsn')
