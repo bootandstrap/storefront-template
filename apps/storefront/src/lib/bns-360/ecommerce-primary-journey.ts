@@ -14,10 +14,12 @@ export interface Bns360EcommerceProductInput {
     description: string
     status: 'draft'
     metadata: Record<string, unknown>
+    options: Array<{ title: string; values: string[] }>
     variants: Array<{
         title: string
         prices: Array<{ amount: number; currency_code: string }>
         manage_inventory: boolean
+        options: Record<string, string>
     }>
 }
 
@@ -97,11 +99,13 @@ export async function runBns360EcommercePrimaryJourney(
                 bns360_run_id: runId,
                 bns360_status: 'created',
             },
+            options: [{ title: 'Formato', values: ['Default'] }],
             variants: [
                 {
                     title: 'Default',
                     prices: [{ amount: 100, currency_code: 'eur' }],
                     manage_inventory: false,
+                    options: { Formato: 'Default' },
                 },
             ],
         })

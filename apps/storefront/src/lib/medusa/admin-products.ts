@@ -53,6 +53,7 @@ export interface CreateProductInput {
     description?: string
     status?: 'draft' | 'published'
     categories?: { id: string }[]
+    sales_channels?: { id: string }[]
     metadata?: Record<string, unknown>
     options?: { title: string; values: string[] }[]
     variants?: {

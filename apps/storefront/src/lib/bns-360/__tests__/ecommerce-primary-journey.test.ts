@@ -80,6 +80,13 @@ describe('runBns360EcommercePrimaryJourney', () => {
             handle: 'bns360-ecommerce-run-1',
             status: 'draft',
             metadata: expect.objectContaining({ bns360_run_id: 'run-1' }),
+            options: [{ title: 'Formato', values: ['Default'] }],
+            variants: [
+                expect.objectContaining({
+                    title: 'Default',
+                    options: { Formato: 'Default' },
+                }),
+            ],
         }))
         expect(client.findProductByHandle).toHaveBeenCalledTimes(2)
         expect(client.updateProduct).toHaveBeenCalledWith('prod_bns360', expect.objectContaining({

@@ -43,7 +43,10 @@ export async function createBns360EcommerceMedusaClient(
 
     return {
         async createProduct(input: Bns360EcommerceProductInput) {
-            const { product, error } = await createAdminProduct(input, scope)
+            const { product, error } = await createAdminProduct({
+                ...input,
+                sales_channels: [{ id: scope.medusaSalesChannelId }],
+            }, scope)
             if (error || !product) {
                 throw new Error(error ?? 'Ecommerce product create returned no product')
             }
