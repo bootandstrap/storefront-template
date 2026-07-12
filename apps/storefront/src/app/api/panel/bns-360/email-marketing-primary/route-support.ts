@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import type {
     Bns360EmailAutomationConfig,
     Bns360EmailMarketingPrimaryClient,
@@ -40,6 +40,10 @@ const DEFAULT_AUTOMATION: Bns360EmailAutomationConfig = {
     review_request_delay_days: 7,
 }
 
+const globalForBns360EmailMarketing = globalThis as unknown as {
+    __bns360EmailMarketingClient?: SupabaseClient
+}
+
 export function createBns360EmailMarketingPrimaryClient(
     tenantId: string
 ): Bns360EmailMarketingPrimaryClient {
@@ -63,7 +67,7 @@ export function createBns360EmailMarketingPrimaryClient(
 }
 
 async function readEmailMarketingState(tenantId: string): Promise<Bns360EmailMarketingState> {
-    const supabase = createAdminClient()
+    const supabase = createEmailMarketingServiceClient()
     const preferences = await readEmailPreferences(supabase, tenantId)
     const automation = await readEmailAutomation(supabase, tenantId)
     const limits = await readEmailLimits(supabase, tenantId)
@@ -72,7 +76,7 @@ async function readEmailMarketingState(tenantId: string): Promise<Bns360EmailMar
 }
 
 async function readEmailPreferences(
-    supabase: ReturnType<typeof createAdminClient>,
+    supabase: SupabaseClient,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['preferences']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +97,7 @@ async function readEmailPreferences(
 }
 
 async function readEmailAutomation(
-    supabase: ReturnType<typeof createAdminClient>,
+    supabase: SupabaseClient,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['automation']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,7 +118,7 @@ async function readEmailAutomation(
 }
 
 async function readEmailLimits(
-    supabase: ReturnType<typeof createAdminClient>,
+    supabase: SupabaseClient,
     tenantId: string
 ): Promise<Bns360EmailMarketingState['limits']> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,7 +160,7 @@ function normalizeEmailLimits(row: EmailLimitsRow | null): number {
 }
 
 async function upsertEmailPreferences(tenantId: string, values: Bns360EmailPreferences): Promise<void> {
-    const supabase = createAdminClient()
+    const supabase = createEmailMarketingServiceClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from('email_preferences')
@@ -175,7 +179,7 @@ async function upsertEmailPreferences(tenantId: string, values: Bns360EmailPrefe
 }
 
 async function upsertEmailAutomation(tenantId: string, values: Bns360EmailAutomationConfig): Promise<void> {
-    const supabase = createAdminClient()
+    const supabase = createEmailMarketingServiceClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from('email_automation_config')
@@ -226,7 +230,7 @@ async function restoreEmailAutomation(
 }
 
 async function deleteTenantRow(table: 'email_preferences' | 'email_automation_config', tenantId: string, label: string) {
-    const supabase = createAdminClient()
+    const supabase = createEmailMarketingServiceClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
         .from(table)
@@ -236,4 +240,29 @@ async function deleteTenantRow(table: 'email_preferences' | 'email_automation_co
     if (error) {
         throw new Error(`${label} failed: ${error.message}`)
     }
+}
+
+function createEmailMarketingServiceClient(): SupabaseClient {
+    if (globalForBns360EmailMarketing.__bns360EmailMarketingClient) {
+        return globalForBns360EmailMarketing.__bns360EmailMarketingClient
+    }
+
+    const url = process.env.GOVERNANCE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.GOVERNANCE_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!url || !serviceKey) {
+        throw new Error(
+            '[bns-360-email-marketing] GOVERNANCE_SUPABASE_SERVICE_KEY ' +
+            '(or SUPABASE_SERVICE_ROLE_KEY) is required for service-only email tables'
+        )
+    }
+
+    globalForBns360EmailMarketing.__bns360EmailMarketingClient = createSupabaseClient(url, serviceKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    })
+
+    return globalForBns360EmailMarketing.__bns360EmailMarketingClient
 }
