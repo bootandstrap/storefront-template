@@ -356,7 +356,25 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         },
     ],
     sales_channels: [
-        { kind: 'runtime_config', target: 'payment/channel config persists and affects checkout options', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'payment/channel config persists and affects checkout options',
+            reversible: true,
+            routes: ['/api/panel/bns-360/sales-channels-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.paymentMethods.enabledIds',
+                'runtime.channelConfig.preferredContact',
+                'runtime.channelConfig.whatsappGreetingRedacted',
+                'cleanup.status',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'cleanup.status': 'verified',
+            },
+        },
         { kind: 'grant_unlock', target: 'sales channel routes unlock from grants', reversible: true },
     ],
     seo: [
