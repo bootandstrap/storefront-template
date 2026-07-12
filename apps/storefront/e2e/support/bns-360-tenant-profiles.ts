@@ -188,8 +188,49 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         },
     ],
     ecommerce: [
-        { kind: 'crud_journey', target: 'Medusa product/category create/update/delete through panel/API', reversible: true },
-        { kind: 'module_primary_journey', target: 'storefront catalog reflects Medusa changes', reversible: true },
+        {
+            kind: 'crud_journey',
+            target: 'tenant-scoped Medusa product create/update/delete through panel API',
+            reversible: true,
+            routes: ['/api/panel/bns-360/ecommerce-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.product.id',
+                'runtime.product.handle',
+                'runtime.product.status',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.product.status': 'draft',
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
+        {
+            kind: 'module_primary_journey',
+            target: 'storefront catalog reflects a Medusa product mutation before rollback',
+            reversible: true,
+            routes: ['/api/panel/bns-360/ecommerce-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.catalog.readableAfterCreate',
+                'runtime.catalog.updatedTitle',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.catalog.readableAfterCreate': true,
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
     ],
     email_marketing: [
         {

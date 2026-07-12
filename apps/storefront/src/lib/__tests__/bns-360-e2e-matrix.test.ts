@@ -869,6 +869,60 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('declares module.ecommerce as an automated reversible product CRUD primary journey', () => {
+        const ecommerceScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'ecommerce'
+        )
+
+        expect(ecommerceScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'crud_journey',
+                target: 'tenant-scoped Medusa product create/update/delete through panel API',
+                reversible: true,
+                routes: ['/api/panel/bns-360/ecommerce-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.product.id',
+                    'runtime.product.handle',
+                    'runtime.product.status',
+                    'cleanup.status',
+                    'residue.zero',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.product.status': 'draft',
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                },
+            }),
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                target: 'storefront catalog reflects a Medusa product mutation before rollback',
+                reversible: true,
+                routes: ['/api/panel/bns-360/ecommerce-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runId',
+                    'runtime.catalog.readableAfterCreate',
+                    'runtime.catalog.updatedTitle',
+                    'cleanup.status',
+                    'residue.zero',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.catalog.readableAfterCreate': true,
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                },
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(ecommerceScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+    })
+
     it('declares module.chatbot as an automated reversible primary journey', () => {
         const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             scenario => scenario.moduleKey === 'chatbot'

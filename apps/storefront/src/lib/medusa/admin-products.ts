@@ -49,9 +49,11 @@ export interface AdminProductFull {
 
 export interface CreateProductInput {
     title: string
+    handle?: string
     description?: string
     status?: 'draft' | 'published'
     categories?: { id: string }[]
+    metadata?: Record<string, unknown>
     options?: { title: string; values: string[] }[]
     variants?: {
         title: string
