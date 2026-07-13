@@ -277,7 +277,7 @@ Source harness state:
 
 ### Lane 5: Full Catalog Combination
 
-Status: `in_progress`
+Status: `verified_scope`
 
 Evidence target:
 
@@ -301,7 +301,32 @@ Source harness state:
   - `pos.offline_sync`
   - `pos.refunds_and_history`
   - all `module.*` scenarios, including `module.pos` and `module.pos_kiosk`.
-- This proves the intended certification envelope at source level. It does not yet prove deployed no-collision behavior under a fresh full-catalog tenant.
+- Template commit `7f1e42fa` (`Harden BNS 360 route loading probe`) fixes the
+  deployed route-loading harness so rendered commerce pages do not fail
+  certification solely because `load` waits on slow external resources.
+  Verification before publish: focused BNS 360 matrix Vitest `48/48`,
+  `npm run type-check`, `npm run lint`, `npm run cert:360:list` (`27`
+  scenarios), `npm run test:run` (`1622` tests), `npm run build`,
+  `git diff --check`, and `sentrux gate .` (`Quality 6289 -> 6329`, cycles
+  `0`). Remote Template Sync `29238550794` and Docker Build & Deploy
+  `29238550814` passed.
+- Deployed full-catalog functional composition was proven from BSWEB on
+  `2026-07-13` against disposable canary `ops-live-202607130944` using
+  non-localhost runtime `https://ops-live-202607130944.bootandstrap.com`, real
+  owner authentication, and template commit `7f1e42fa`. Runtime aggregate
+  evidence:
+  `artifacts/production-mvp/bns-360-template-runtime-ops-live-202607130944-202607130944.json`.
+  Playwright `15/15` passed for governance policy, marketplace/limits,
+  `auth_advanced`, `automation`, `capacidad`, `chatbot`, `crm`, `ecommerce`,
+  `email_marketing`, `i18n`, `pos`, `pos_kiosk`, `rrss`, `sales_channels` and
+  `seo`, each with `executionMode=functional` and
+  `functionalStatus=verified`. Terminal cleanup deletion run
+  `8a025f8c-4fd6-4c6a-bbd3-fee49771a611` reached `deleted` with residue `0`
+  across tenants/config/profiles/async_jobs/module_orders.
+- This closes the deployed full-catalog functional composition scope for the
+  automated BNS 360 scenarios in the current matrix. It does not claim
+  `full 360 green`: `external_alert_delivery`, `eur_annual_catalog` and
+  `live_catalog_publication` remain outside this proof.
 
 ### Lane 6: Propagation Runtime Proof
 
@@ -347,6 +372,15 @@ Required proof:
 19. Add and deploy the reversible automation primary journey: `module.automation` reached `functionalStatus=verified` on `2026-07-11` from template commit `9672534a`, Template Sync `29168578974`, Docker Build & Deploy `29168578975`, stable-slot artifact `bns-360-template-functional-automation-primary-stable-a-20260711T212143Z.jsonl`, aggregate runtime evidence `bns-360-template-runtime-ops-fullcat-202607091146-202607112121.json`, rollback verified, cleanup deletion run `49cc7425-47e5-45cf-bfa1-c308f50b9b28` `deleted`, residue `0`. External alert delivery remains `manual_required`; this journey proves config persistence/redaction only.
 20. Add and deploy the reversible email marketing primary journey: `module.email_marketing` reached `functionalStatus=verified` on `2026-07-12` from template commit `4e49abc3`, Template Sync `29173156867`, Docker Build & Deploy `29173156875`, stable-slot artifact `bns-360-template-functional-email-marketing-primary-stable-a-20260712T000728Z.jsonl`, aggregate runtime evidence `bns-360-template-runtime-ops-fullcat-202607091146-202607120007.json`, rollback verified, cleanup deletion run `0d9f60fa-a379-4994-bdf5-c2041002de90` `deleted`, residue `0`. External email delivery remains `manual_required`; this journey proves config persistence/redaction only.
 21. Add and deploy the reversible sales channels primary journey: `module.sales_channels` reached `functionalStatus=verified` on `2026-07-13` from template commit `c1181192`, Template Sync `29218243287`, Docker Build & Deploy `29218243292`, Governance Quality Gate `29218243279`, aggregate runtime evidence `bns-360-template-runtime-ops-live-202607130154-202607130154.json`, rollback verified, cleanup deletion run `ea81976c-38ab-4c7e-b4d6-1867d01c8ed0` `deleted`, residue `0`. Payments, Stripe live flows and external messages were not executed.
+22. Harden deployed route loading and certify the first full-catalog functional
+    composition: template commit `7f1e42fa`, Template Sync `29238550794`,
+    Docker Build & Deploy `29238550814`, BSWEB runtime evidence
+    `bns-360-template-runtime-ops-live-202607130944-202607130944.json`,
+    Playwright `15/15`, terminal cleanup deletion run
+    `8a025f8c-4fd6-4c6a-bbd3-fee49771a611` `deleted`, residue `0`.
+    This is automated full-catalog functional composition evidence only; it
+    does not execute external alert delivery, EUR annual catalog decisions,
+    Stripe live publication, real payments, refunds or physical POS hardware.
 
 ## Execution Commands
 
