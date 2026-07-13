@@ -314,7 +314,31 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         },
     ],
     pos: [
-        { kind: 'module_primary_journey', target: 'POS cart and checkout flow completes without physical hardware', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'POS cart, payment selection and receipt tooling complete without physical hardware',
+            reversible: true,
+            routes: ['/api/panel/bns-360/pos-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.cart.itemCount',
+                'runtime.cart.total',
+                'runtime.paymentMethods.enabledIds',
+                'runtime.virtualPrinter.jobs.0.type',
+                'runtime.virtualPrinter.jobs.1.type',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.virtualPrinter.jobs.0.type': 'sale_receipt',
+                'runtime.virtualPrinter.jobs.1.type': 'cash_drawer',
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
         {
             kind: 'virtual_printer_lab',
             target: 'POS receipt and cash-drawer tooling verifies through virtual printer lab',
@@ -331,7 +355,26 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
         { kind: 'grant_unlock', target: 'enable_pos gates /panel/pos', reversible: true },
     ],
     pos_kiosk: [
-        { kind: 'module_primary_journey', target: 'kiosk mode path is available through POS surface', reversible: true },
+        {
+            kind: 'module_primary_journey',
+            target: 'kiosk mode is materialized through the POS runtime surface',
+            reversible: true,
+            routes: ['/api/panel/bns-360/pos-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.kiosk.available',
+                'runtime.kiosk.idleTimer',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.kiosk.available': true,
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
         { kind: 'grant_unlock', target: 'pos_kiosk depends on POS grant and does not expose standalone /pos route', reversible: true },
     ],
     rrss: [

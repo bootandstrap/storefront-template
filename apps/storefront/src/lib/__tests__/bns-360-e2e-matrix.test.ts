@@ -923,6 +923,70 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('declares POS and kiosk as automated reversible primary journeys without hardware', () => {
+        const posScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'pos'
+        )
+        const kioskScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'pos_kiosk'
+        )
+
+        const posPrimary = posScenario?.functionalEvidence.find(
+            target => target.kind === 'module_primary_journey'
+        )
+        const kioskPrimary = kioskScenario?.functionalEvidence.find(
+            target => target.kind === 'module_primary_journey'
+        )
+
+        expect(posPrimary).toEqual(expect.objectContaining({
+            kind: 'module_primary_journey',
+            target: 'POS cart, payment selection and receipt tooling complete without physical hardware',
+            reversible: true,
+            routes: ['/api/panel/bns-360/pos-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runId',
+                'runtime.cart.itemCount',
+                'runtime.cart.total',
+                'runtime.paymentMethods.enabledIds',
+                'runtime.virtualPrinter.jobs.0.type',
+                'runtime.virtualPrinter.jobs.1.type',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.virtualPrinter.jobs.0.type': 'sale_receipt',
+                'runtime.virtualPrinter.jobs.1.type': 'cash_drawer',
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        }))
+        expect(kioskPrimary).toEqual(expect.objectContaining({
+            kind: 'module_primary_journey',
+            target: 'kiosk mode is materialized through the POS runtime surface',
+            reversible: true,
+            routes: ['/api/panel/bns-360/pos-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.kiosk.available',
+                'runtime.kiosk.idleTimer',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.kiosk.available': true,
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        }))
+        expect(getBns360AutomatedFunctionalEvidenceStatus([posPrimary!, kioskPrimary!]))
+            .toBe('verified')
+    })
+
     it('declares module.chatbot as an automated reversible primary journey', () => {
         const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             scenario => scenario.moduleKey === 'chatbot'
