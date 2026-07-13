@@ -42,6 +42,20 @@ describe('runBns360POSPrimaryJourney', () => {
                     enabledIds: ['cash', 'card_terminal'],
                     maxPaymentMethods: 2,
                 },
+                terminalSimulator: {
+                    provider: 'stripe_terminal',
+                    mode: 'simulator',
+                    paymentIntentUsage: 'card_present',
+                    steps: [
+                        'request_connection_grant',
+                        'discover_reader',
+                        'collect_payment_method',
+                        'process_payment',
+                        'refund_boundary',
+                    ],
+                    liveMutation: false,
+                    hardwareRequired: false,
+                },
                 virtualPrinter: {
                     printerId: 'thermal-80mm',
                     jobs: [
@@ -62,6 +76,7 @@ describe('runBns360POSPrimaryJourney', () => {
         expect(JSON.stringify(result)).not.toContain('password')
         expect(JSON.stringify(result)).not.toContain('token')
         expect(JSON.stringify(result)).not.toContain('secret')
+        expect(JSON.stringify(result)).not.toContain('client_secret')
     })
 
     it('generates distinct run ids when one is not supplied', async () => {

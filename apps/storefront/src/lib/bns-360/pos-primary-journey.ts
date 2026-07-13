@@ -38,6 +38,14 @@ export interface Bns360POSPrimaryJourneyResult {
             enabledIds: string[]
             maxPaymentMethods: number
         }
+        terminalSimulator: {
+            provider: 'stripe_terminal'
+            mode: 'simulator'
+            paymentIntentUsage: 'card_present'
+            steps: string[]
+            liveMutation: boolean
+            hardwareRequired: boolean
+        }
         virtualPrinter: {
             printerId: string
             jobs: Array<{
@@ -73,6 +81,14 @@ const DEFAULT_RUNTIME: Bns360POSPrimaryJourneyResult['runtime'] = {
     paymentMethods: {
         enabledIds: [],
         maxPaymentMethods: 0,
+    },
+    terminalSimulator: {
+        provider: 'stripe_terminal',
+        mode: 'simulator',
+        paymentIntentUsage: 'card_present',
+        steps: [],
+        liveMutation: false,
+        hardwareRequired: false,
     },
     virtualPrinter: {
         printerId: 'thermal-80mm',
@@ -134,6 +150,7 @@ export async function runBns360POSPrimaryJourney(
                 enabledIds: paymentMethods,
                 maxPaymentMethods: input.planLimits.max_pos_payment_methods ?? 0,
             },
+            terminalSimulator: buildTerminalSimulatorEvidence(paymentMethods),
             virtualPrinter: {
                 printerId: 'thermal-80mm',
                 jobs: virtualLab.getJobs().map(job => ({
@@ -169,6 +186,29 @@ export async function runBns360POSPrimaryJourney(
             zero: true,
         },
         ...(error ? { error } : {}),
+    }
+}
+
+function buildTerminalSimulatorEvidence(
+    paymentMethods: CartState['payment_method'][]
+): Bns360POSPrimaryJourneyResult['runtime']['terminalSimulator'] {
+    const hasTerminalPayment = paymentMethods.includes('card_terminal')
+
+    return {
+        provider: 'stripe_terminal',
+        mode: 'simulator',
+        paymentIntentUsage: 'card_present',
+        steps: hasTerminalPayment
+            ? [
+                'request_connection_grant',
+                'discover_reader',
+                'collect_payment_method',
+                'process_payment',
+                'refund_boundary',
+            ]
+            : [],
+        liveMutation: false,
+        hardwareRequired: false,
     }
 }
 

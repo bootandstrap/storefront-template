@@ -353,6 +353,26 @@ function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): 
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }
 
+    if (target.kind === 'checkout_payment_collection_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
+    if (target.kind === 'customer_account_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
+    if (target.kind === 'order_lifecycle_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
+    if (target.kind === 'backup_restore_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
+    if (target.kind === 'terminal_simulator_journey') {
+        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
+    }
+
     if (target.kind === 'virtual_printer_lab') {
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }

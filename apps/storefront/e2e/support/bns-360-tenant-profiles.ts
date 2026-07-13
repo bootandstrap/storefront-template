@@ -32,18 +32,25 @@ const CERTIFICATION_EVIDENCE = [
 
 export type Bns360FunctionalEvidenceKind =
     | 'backup_restore_journey'
+    | 'checkout_payment_collection_journey'
     | 'crud_journey'
+    | 'customer_account_journey'
     | 'grant_unlock'
+    | 'hardware_terminal_certification'
     | 'limit_enforcement'
     | 'module_primary_journey'
+    | 'order_lifecycle_journey'
     | 'runtime_config'
     | 'api_health'
+    | 'terminal_simulator_journey'
     | 'virtual_printer_lab'
 
 export interface Bns360FunctionalEvidenceTarget {
     kind: Bns360FunctionalEvidenceKind
     target: string
     reversible: boolean
+    scope?: 'sandbox' | 'simulator' | 'read_only' | 'live_mutation' | 'hardware'
+    gate?: 'none' | 'owner_auth' | 'test_mode_keys' | 'human_authorization' | 'physical_reader'
     routes?: string[]
     method?: 'GET' | 'POST'
     expectedJsonPaths?: string[]
@@ -192,6 +199,8 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
             kind: 'crud_journey',
             target: 'tenant-scoped Medusa product create/update/delete through panel API',
             reversible: true,
+            scope: 'sandbox',
+            gate: 'owner_auth',
             routes: ['/api/panel/bns-360/ecommerce-primary'],
             method: 'POST',
             expectedJsonPaths: [
@@ -200,12 +209,20 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
                 'runtime.product.id',
                 'runtime.product.handle',
                 'runtime.product.status',
+                'runtime.certificationCoverage.productCrud',
+                'runtime.certificationCoverage.checkoutPaymentCollection',
+                'runtime.certificationCoverage.customerAccount',
+                'runtime.certificationCoverage.orderLifecycle',
                 'cleanup.status',
                 'residue.zero',
             ],
             expectedJsonValues: {
                 status: 'verified',
                 'runtime.product.status': 'draft',
+                'runtime.certificationCoverage.productCrud': 'verified',
+                'runtime.certificationCoverage.checkoutPaymentCollection': 'manual_required',
+                'runtime.certificationCoverage.customerAccount': 'manual_required',
+                'runtime.certificationCoverage.orderLifecycle': 'manual_required',
                 'cleanup.status': 'verified',
                 'residue.zero': true,
             },
@@ -214,6 +231,8 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
             kind: 'module_primary_journey',
             target: 'storefront catalog reflects a Medusa product mutation before rollback',
             reversible: true,
+            scope: 'sandbox',
+            gate: 'owner_auth',
             routes: ['/api/panel/bns-360/ecommerce-primary'],
             method: 'POST',
             expectedJsonPaths: [
@@ -221,12 +240,97 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
                 'runId',
                 'runtime.catalog.readableAfterCreate',
                 'runtime.catalog.updatedTitle',
+                'runtime.certificationCoverage.storefrontCatalog',
                 'cleanup.status',
                 'residue.zero',
             ],
             expectedJsonValues: {
                 status: 'verified',
                 'runtime.catalog.readableAfterCreate': true,
+                'runtime.certificationCoverage.storefrontCatalog': 'verified',
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
+        {
+            kind: 'checkout_payment_collection_journey',
+            target: 'Medusa cart completion links payment collection/session to an order through storefront checkout',
+            reversible: true,
+            scope: 'simulator',
+            gate: 'test_mode_keys',
+            routes: ['/api/panel/bns-360/checkout-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.cart.created',
+                'runtime.cart.itemAttached',
+                'runtime.paymentCollection.status',
+                'runtime.paymentCollection.providerMode',
+                'runtime.paymentCollection.paymentSessionInitialized',
+                'runtime.paymentCollection.liveMutation',
+                'runtime.order.completed',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.paymentCollection.status': 'verified',
+                'runtime.paymentCollection.providerMode': 'simulator',
+                'runtime.paymentCollection.liveMutation': false,
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
+        {
+            kind: 'customer_account_journey',
+            target: 'Store customer can authenticate, manage address data and read orders without cross-tenant leakage',
+            reversible: true,
+            scope: 'sandbox',
+            gate: 'owner_auth',
+            routes: ['/api/panel/bns-360/customer-account-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.customer.canaryCreated',
+                'runtime.customer.authenticated',
+                'runtime.address.created',
+                'runtime.address.updated',
+                'runtime.address.deleted',
+                'runtime.orderRead.tenantScoped',
+                'runtime.crossTenantLeakage',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.crossTenantLeakage': false,
+                'cleanup.status': 'verified',
+                'residue.zero': true,
+            },
+        },
+        {
+            kind: 'order_lifecycle_journey',
+            target: 'Medusa order lifecycle covers placement, fulfillment/cancel boundary, refund/return boundary and analytics subscribers',
+            reversible: true,
+            scope: 'simulator',
+            gate: 'test_mode_keys',
+            routes: ['/api/panel/bns-360/order-lifecycle-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.orderPlaced',
+                'runtime.paymentCollectionLinked',
+                'runtime.fulfillmentBoundary',
+                'runtime.cancelBoundary',
+                'runtime.refundReturnBoundary',
+                'runtime.subscriberEvents.orderPlaced',
+                'runtime.subscriberEvents.analyticsRecorded',
+                'cleanup.status',
+                'residue.zero',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.paymentCollectionLinked': true,
                 'cleanup.status': 'verified',
                 'residue.zero': true,
             },
@@ -318,6 +422,8 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
             kind: 'module_primary_journey',
             target: 'POS cart, payment selection and receipt tooling complete without physical hardware',
             reversible: true,
+            scope: 'simulator',
+            gate: 'owner_auth',
             routes: ['/api/panel/bns-360/pos-primary'],
             method: 'POST',
             expectedJsonPaths: [
@@ -326,6 +432,8 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
                 'runtime.cart.itemCount',
                 'runtime.cart.total',
                 'runtime.paymentMethods.enabledIds',
+                'runtime.terminalSimulator.mode',
+                'runtime.terminalSimulator.paymentIntentUsage',
                 'runtime.virtualPrinter.jobs.0.type',
                 'runtime.virtualPrinter.jobs.1.type',
                 'cleanup.status',
@@ -333,11 +441,46 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
             ],
             expectedJsonValues: {
                 status: 'verified',
+                'runtime.terminalSimulator.mode': 'simulator',
+                'runtime.terminalSimulator.paymentIntentUsage': 'card_present',
                 'runtime.virtualPrinter.jobs.0.type': 'sale_receipt',
                 'runtime.virtualPrinter.jobs.1.type': 'cash_drawer',
                 'cleanup.status': 'verified',
                 'residue.zero': true,
             },
+        },
+        {
+            kind: 'terminal_simulator_journey',
+            target: 'Stripe Terminal simulator validates reader discovery, card_present payment lifecycle and refund boundary',
+            reversible: true,
+            scope: 'simulator',
+            gate: 'test_mode_keys',
+            routes: ['/api/panel/bns-360/pos-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.terminalSimulator.provider',
+                'runtime.terminalSimulator.mode',
+                'runtime.terminalSimulator.paymentIntentUsage',
+                'runtime.terminalSimulator.steps',
+                'runtime.terminalSimulator.liveMutation',
+                'runtime.terminalSimulator.hardwareRequired',
+            ],
+            expectedJsonValues: {
+                status: 'verified',
+                'runtime.terminalSimulator.provider': 'stripe_terminal',
+                'runtime.terminalSimulator.mode': 'simulator',
+                'runtime.terminalSimulator.paymentIntentUsage': 'card_present',
+                'runtime.terminalSimulator.liveMutation': false,
+                'runtime.terminalSimulator.hardwareRequired': false,
+            },
+        },
+        {
+            kind: 'hardware_terminal_certification',
+            target: 'Physical POS reader certification requires provider, location, reader id and explicit payment/refund authorization',
+            reversible: true,
+            scope: 'hardware',
+            gate: 'human_authorization',
         },
         {
             kind: 'virtual_printer_lab',

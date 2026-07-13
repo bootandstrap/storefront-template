@@ -100,6 +100,17 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(runtimeSpec).toContain('tenantRef: process.env.BNS_360_TENANT_REF')
     })
 
+    it('exposes an automated-only functional certification command for gated full-system runs', () => {
+        const packageJson = JSON.parse(readFileSync(
+            join(process.cwd(), 'package.json'),
+            'utf8'
+        )) as { scripts: Record<string, string> }
+
+        expect(packageJson.scripts['cert:360:functional:auto']).toBe(
+            'BNS_360_FUNCTIONAL_JOURNEYS=1 BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1 playwright test e2e/bns-360-runtime.spec.ts'
+        )
+    })
+
     it('applies the functional evidence focus filter before executing automated Playwright targets', () => {
         const runtimeSpec = readFileSync(
             join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
@@ -260,6 +271,80 @@ describe('BNS 360 reusable runtime matrix', () => {
                 ],
             }),
         ]))
+    })
+
+    it('declares full-system functional probes for checkout, customer, order and backup journeys', () => {
+        const ecommerceScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'module.ecommerce'
+        )
+        const recoveryScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'recovery.backup_download_restore'
+        )
+
+        expect(ecommerceScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'checkout_payment_collection_journey',
+                routes: ['/api/panel/bns-360/checkout-primary'],
+                method: 'POST',
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.paymentCollection.status': 'verified',
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                }),
+            }),
+            expect.objectContaining({
+                kind: 'customer_account_journey',
+                routes: ['/api/panel/bns-360/customer-account-primary'],
+                method: 'POST',
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.crossTenantLeakage': false,
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                }),
+            }),
+            expect.objectContaining({
+                kind: 'order_lifecycle_journey',
+                routes: ['/api/panel/bns-360/order-lifecycle-primary'],
+                method: 'POST',
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.paymentCollectionLinked': true,
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                }),
+            }),
+        ]))
+        expect(recoveryScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'backup_restore_journey',
+                routes: ['/api/panel/bns-360/backup-restore-primary'],
+                method: 'POST',
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.restoreDryRun.safe': true,
+                    'cleanup.status': 'verified',
+                    'residue.zero': true,
+                }),
+            }),
+        ]))
+    })
+
+    it('keeps all full-system functional targets automatable', () => {
+        const fullSystemKinds = [
+            'checkout_payment_collection_journey',
+            'customer_account_journey',
+            'order_lifecycle_journey',
+            'backup_restore_journey',
+            'terminal_simulator_journey',
+        ]
+        const fullSystemTargets = BNS_360_RUNTIME_MATRIX
+            .flatMap(scenario => scenario.functionalEvidence ?? [])
+            .filter(target => fullSystemKinds.includes(target.kind))
+
+        expect(fullSystemTargets.length).toBeGreaterThanOrEqual(5)
+        expect(getBns360AutomatedFunctionalEvidenceStatus(fullSystemTargets)).toBe('verified')
     })
 
     it('automates a read-only governance policy proof through the deployed storefront', () => {
@@ -885,11 +970,13 @@ describe('BNS 360 reusable runtime matrix', () => {
             scenario => scenario.moduleKey === 'ecommerce'
         )
 
-        expect(ecommerceScenario?.functionalEvidence).toEqual([
+        expect(ecommerceScenario?.functionalEvidence).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'crud_journey',
                 target: 'tenant-scoped Medusa product create/update/delete through panel API',
                 reversible: true,
+                scope: 'sandbox',
+                gate: 'owner_auth',
                 routes: ['/api/panel/bns-360/ecommerce-primary'],
                 method: 'POST',
                 expectedJsonPaths: [
@@ -898,12 +985,20 @@ describe('BNS 360 reusable runtime matrix', () => {
                     'runtime.product.id',
                     'runtime.product.handle',
                     'runtime.product.status',
+                    'runtime.certificationCoverage.productCrud',
+                    'runtime.certificationCoverage.checkoutPaymentCollection',
+                    'runtime.certificationCoverage.customerAccount',
+                    'runtime.certificationCoverage.orderLifecycle',
                     'cleanup.status',
                     'residue.zero',
                 ],
                 expectedJsonValues: {
                     status: 'verified',
                     'runtime.product.status': 'draft',
+                    'runtime.certificationCoverage.productCrud': 'verified',
+                    'runtime.certificationCoverage.checkoutPaymentCollection': 'manual_required',
+                    'runtime.certificationCoverage.customerAccount': 'manual_required',
+                    'runtime.certificationCoverage.orderLifecycle': 'manual_required',
                     'cleanup.status': 'verified',
                     'residue.zero': true,
                 },
@@ -912,6 +1007,8 @@ describe('BNS 360 reusable runtime matrix', () => {
                 kind: 'module_primary_journey',
                 target: 'storefront catalog reflects a Medusa product mutation before rollback',
                 reversible: true,
+                scope: 'sandbox',
+                gate: 'owner_auth',
                 routes: ['/api/panel/bns-360/ecommerce-primary'],
                 method: 'POST',
                 expectedJsonPaths: [
@@ -919,19 +1016,64 @@ describe('BNS 360 reusable runtime matrix', () => {
                     'runId',
                     'runtime.catalog.readableAfterCreate',
                     'runtime.catalog.updatedTitle',
+                    'runtime.certificationCoverage.storefrontCatalog',
                     'cleanup.status',
                     'residue.zero',
                 ],
                 expectedJsonValues: {
                     status: 'verified',
                     'runtime.catalog.readableAfterCreate': true,
+                    'runtime.certificationCoverage.storefrontCatalog': 'verified',
                     'cleanup.status': 'verified',
                     'residue.zero': true,
                 },
             }),
-        ])
+        ]))
         expect(getBns360AutomatedFunctionalEvidenceStatus(ecommerceScenario?.functionalEvidence ?? []))
             .toBe('verified')
+    })
+
+    it('declares Medusa/storefront payment, customer and order coverage as automated reversible probes', () => {
+        const ecommerceScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'ecommerce'
+        )
+
+        expect(ecommerceScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'checkout_payment_collection_journey',
+                target: 'Medusa cart completion links payment collection/session to an order through storefront checkout',
+                reversible: true,
+                scope: 'simulator',
+                gate: 'test_mode_keys',
+                routes: ['/api/panel/bns-360/checkout-primary'],
+                method: 'POST',
+            }),
+            expect.objectContaining({
+                kind: 'customer_account_journey',
+                target: 'Store customer can authenticate, manage address data and read orders without cross-tenant leakage',
+                reversible: true,
+                scope: 'sandbox',
+                gate: 'owner_auth',
+                routes: ['/api/panel/bns-360/customer-account-primary'],
+                method: 'POST',
+            }),
+            expect.objectContaining({
+                kind: 'order_lifecycle_journey',
+                target: 'Medusa order lifecycle covers placement, fulfillment/cancel boundary, refund/return boundary and analytics subscribers',
+                reversible: true,
+                scope: 'simulator',
+                gate: 'test_mode_keys',
+                routes: ['/api/panel/bns-360/order-lifecycle-primary'],
+                method: 'POST',
+            }),
+        ]))
+        expect(getBns360AutomatedFunctionalEvidenceStatus(
+            ecommerceScenario?.functionalEvidence.filter(target =>
+                target.kind === 'checkout_payment_collection_journey' ||
+                target.kind === 'customer_account_journey' ||
+                target.kind === 'order_lifecycle_journey'
+            ) ?? []
+        )).toBe('verified')
     })
 
     it('declares POS and kiosk as automated reversible primary journeys without hardware', () => {
@@ -953,6 +1095,8 @@ describe('BNS 360 reusable runtime matrix', () => {
             kind: 'module_primary_journey',
             target: 'POS cart, payment selection and receipt tooling complete without physical hardware',
             reversible: true,
+            scope: 'simulator',
+            gate: 'owner_auth',
             routes: ['/api/panel/bns-360/pos-primary'],
             method: 'POST',
             expectedJsonPaths: [
@@ -961,6 +1105,8 @@ describe('BNS 360 reusable runtime matrix', () => {
                 'runtime.cart.itemCount',
                 'runtime.cart.total',
                 'runtime.paymentMethods.enabledIds',
+                'runtime.terminalSimulator.mode',
+                'runtime.terminalSimulator.paymentIntentUsage',
                 'runtime.virtualPrinter.jobs.0.type',
                 'runtime.virtualPrinter.jobs.1.type',
                 'cleanup.status',
@@ -968,6 +1114,8 @@ describe('BNS 360 reusable runtime matrix', () => {
             ],
             expectedJsonValues: {
                 status: 'verified',
+                'runtime.terminalSimulator.mode': 'simulator',
+                'runtime.terminalSimulator.paymentIntentUsage': 'card_present',
                 'runtime.virtualPrinter.jobs.0.type': 'sale_receipt',
                 'runtime.virtualPrinter.jobs.1.type': 'cash_drawer',
                 'cleanup.status': 'verified',
@@ -996,6 +1144,53 @@ describe('BNS 360 reusable runtime matrix', () => {
         }))
         expect(getBns360AutomatedFunctionalEvidenceStatus([posPrimary!, kioskPrimary!]))
             .toBe('verified')
+    })
+
+    it('separates POS Terminal simulator certification from physical reader certification', () => {
+        const posScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'pos'
+        )
+
+        expect(posScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'terminal_simulator_journey',
+                target: 'Stripe Terminal simulator validates reader discovery, card_present payment lifecycle and refund boundary',
+                reversible: true,
+                scope: 'simulator',
+                gate: 'test_mode_keys',
+                routes: ['/api/panel/bns-360/pos-primary'],
+                method: 'POST',
+                expectedJsonPaths: [
+                    'status',
+                    'runtime.terminalSimulator.provider',
+                    'runtime.terminalSimulator.mode',
+                    'runtime.terminalSimulator.paymentIntentUsage',
+                    'runtime.terminalSimulator.steps',
+                    'runtime.terminalSimulator.liveMutation',
+                    'runtime.terminalSimulator.hardwareRequired',
+                ],
+                expectedJsonValues: {
+                    status: 'verified',
+                    'runtime.terminalSimulator.provider': 'stripe_terminal',
+                    'runtime.terminalSimulator.mode': 'simulator',
+                    'runtime.terminalSimulator.paymentIntentUsage': 'card_present',
+                    'runtime.terminalSimulator.liveMutation': false,
+                    'runtime.terminalSimulator.hardwareRequired': false,
+                },
+            }),
+            expect.objectContaining({
+                kind: 'hardware_terminal_certification',
+                target: 'Physical POS reader certification requires provider, location, reader id and explicit payment/refund authorization',
+                reversible: true,
+                scope: 'hardware',
+                gate: 'human_authorization',
+            }),
+        ]))
+        expect(getBns360AutomatedFunctionalEvidenceStatus(
+            posScenario?.functionalEvidence.filter(target =>
+                target.kind === 'hardware_terminal_certification'
+            ) ?? []
+        )).toBe('manual_required')
     })
 
     it('declares module.chatbot as an automated reversible primary journey', () => {

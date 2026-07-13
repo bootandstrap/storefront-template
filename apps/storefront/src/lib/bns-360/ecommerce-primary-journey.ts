@@ -64,6 +64,14 @@ export interface Bns360EcommercePrimaryJourneyResult {
             readableAfterCreate: boolean
             updatedTitle: string | null
         }
+        certificationCoverage: {
+            productCrud: 'verified' | 'blocked'
+            storefrontCatalog: 'verified' | 'blocked'
+            checkoutPaymentCollection: 'manual_required'
+            customerAccount: 'manual_required'
+            orderLifecycle: 'manual_required'
+            blockedReason: string
+        }
     }
     cleanup: {
         status: 'verified' | 'failed'
@@ -182,6 +190,14 @@ export async function runBns360EcommercePrimaryJourney(
             catalog: {
                 readableAfterCreate,
                 updatedTitle,
+            },
+            certificationCoverage: {
+                productCrud: productId && cleanupStatus === 'verified' && residueZero ? 'verified' : 'blocked',
+                storefrontCatalog: readableAfterCreate && updatedTitle ? 'verified' : 'blocked',
+                checkoutPaymentCollection: 'manual_required',
+                customerAccount: 'manual_required',
+                orderLifecycle: 'manual_required',
+                blockedReason: 'reversible Medusa checkout/customer/order probes are not implemented',
             },
         },
         cleanup: {
