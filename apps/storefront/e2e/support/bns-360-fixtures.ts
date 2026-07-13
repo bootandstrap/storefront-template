@@ -45,6 +45,7 @@ export type Bns360RouteRetryConfig = {
     fallbackDelayMs: number
     maxDelayMs: number
 }
+export const BNS_360_ROUTE_GOTO_OPTIONS = { waitUntil: 'domcontentloaded' } as const
 
 let bns360OwnerStorageState: Bns360OwnerStorageState | null = null
 
@@ -541,7 +542,7 @@ async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: strin
     let response: Response | null = null
 
     for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
-        response = await page.goto(route)
+        response = await page.goto(route, BNS_360_ROUTE_GOTO_OPTIONS)
         if (response?.status() !== 429 || attempt === config.maxAttempts) {
             return response
         }

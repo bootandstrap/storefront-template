@@ -11,6 +11,7 @@ import {
 } from '../../../e2e/bns-360.matrix'
 import {
     assertBns360FunctionalEvidenceVerified,
+    BNS_360_ROUTE_GOTO_OPTIONS,
     buildBns360ScenarioEvidence,
     bns360JsonHasPath,
     summarizeBns360JsonShape,
@@ -186,6 +187,16 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(resolveBns360RetryAfterMs(null, retryConfig)).toBe(750)
         expect(fixtures).toContain('page.waitForTimeout(resolveBns360RetryAfterMs')
         expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
+    })
+
+    it('does not wait for every subresource before accepting a BNS 360 route as loaded', () => {
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+
+        expect(BNS_360_ROUTE_GOTO_OPTIONS).toEqual({ waitUntil: 'domcontentloaded' })
+        expect(fixtures).toContain('page.goto(route, BNS_360_ROUTE_GOTO_OPTIONS)')
     })
 
     it('only declares public storefront smoke page routes that exist in the app router', () => {
