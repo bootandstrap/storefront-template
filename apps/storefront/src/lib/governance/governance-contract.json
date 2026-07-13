@@ -1170,6 +1170,7 @@
             "features": "[\"WhatsApp Checkout + Contacto\",\"5 templates WhatsApp\",\"1 método de pago\"]",
             "recommended": false,
             "flag_effects": {
+              "enable_sales_channels": true,
               "enable_whatsapp_contact": true,
               "enable_whatsapp_checkout": true
             },
@@ -1191,6 +1192,7 @@
               "enable_newsletter": true,
               "enable_online_payments": true,
               "enable_cash_on_delivery": true,
+              "enable_sales_channels": true,
               "enable_whatsapp_contact": true,
               "enable_whatsapp_checkout": true
             },
@@ -1214,6 +1216,7 @@
               "enable_bank_transfer": true,
               "enable_online_payments": true,
               "enable_cash_on_delivery": true,
+              "enable_sales_channels": true,
               "enable_whatsapp_contact": true,
               "enable_whatsapp_checkout": true,
               "enable_reservation_checkout": true

@@ -59,6 +59,22 @@ describe('Governance Contract Alignment', () => {
         }
     })
 
+    it('sales channel tiers materialize the panel capability flag required by runtime routes', () => {
+        const salesChannels = contract.modules.catalog.find(module => module.key === 'sales_channels')
+        expect(salesChannels).toBeDefined()
+
+        const mismatchedTiers = (salesChannels?.tiers ?? [])
+            .map(tier => ({
+                key: tier.key,
+                flagEffects: tier.flag_effects as Record<string, boolean | undefined> | undefined,
+            }))
+            .filter(tier => tier.flagEffects?.enable_whatsapp_checkout === true)
+            .filter(tier => tier.flagEffects?.enable_sales_channels !== true)
+            .map(tier => `sales_channels.${tier.key}`)
+
+        expect(mismatchedTiers).toEqual([])
+    })
+
     // ── Cross-Repo File Alignment ─────────────────────────────────────
     // In monorepo context, verify inline files hash-match the shared package
 
