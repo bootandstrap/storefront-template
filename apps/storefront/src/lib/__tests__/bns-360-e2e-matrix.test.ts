@@ -1033,6 +1033,38 @@ describe('BNS 360 reusable runtime matrix', () => {
             .toBe('verified')
     })
 
+    it('keeps sales channel smoke on canonical channel routes and certifies messages through the primary API journey', () => {
+        const salesChannelsScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
+            scenario => scenario.moduleKey === 'sales_channels'
+        )
+
+        expect(salesChannelsScenario?.runtimeRoutes).toContain('/es/panel/canales')
+        expect(salesChannelsScenario?.runtimeRoutes).toContain('/es/panel/ajustes?tab=tienda')
+        expect(salesChannelsScenario?.runtimeRoutes).not.toContain('/es/panel/mensajes')
+        expect(salesChannelsScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'module_primary_journey',
+                routes: ['/api/panel/bns-360/sales-channels-primary'],
+                method: 'POST',
+                expectedJsonValues: {
+                    status: 'verified',
+                    'cleanup.status': 'verified',
+                },
+            }),
+        ]))
+        const automatedEvidence = getBns360FunctionalEvidenceForRun(
+            salesChannelsScenario?.functionalEvidence ?? [],
+            {
+                BNS_360_FUNCTIONAL_EVIDENCE_KINDS: 'module_primary_journey',
+                BNS_360_FUNCTIONAL_AUTOMATED_ONLY: '1',
+            }
+        )
+
+        expect(automatedEvidence).toHaveLength(1)
+        expect(getBns360AutomatedFunctionalEvidenceStatus(automatedEvidence))
+            .toBe('verified')
+    })
+
     it('declares Medusa/storefront payment, customer and order coverage as automated reversible probes', () => {
         const ecommerceScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             scenario => scenario.moduleKey === 'ecommerce'

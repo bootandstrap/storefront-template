@@ -69,7 +69,7 @@ const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {
     pos: ['/es/panel/pos'],
     pos_kiosk: ['/es/panel/pos'],
     rrss: ['/es/panel/redes-sociales'],
-    sales_channels: ['/es/panel/mensajes', '/es/panel/canales', '/es/panel/ajustes?tab=tienda'],
+    sales_channels: ['/es/panel/canales', '/es/panel/ajustes?tab=tienda'],
     seo: ['/es/panel/seo', '/es/panel/analiticas'],
 }
 
@@ -591,7 +591,7 @@ const MODULE_FUNCTIONAL_EVIDENCE_MAP: Record<string, Bns360FunctionalEvidenceTar
 
 const MODULE_SETUP_ROUTE_HINTS: Record<string, string[]> = {
     ecommerce: ['/panel/mi-tienda?tab=productos', '/panel/mi-tienda?tab=categorias', '/panel/ajustes?tab=envios'],
-    sales_channels: ['/panel/mensajes', '/panel/ajustes?tab=tienda'],
+    sales_channels: ['/panel/canales', '/panel/ajustes?tab=tienda'],
     chatbot: ['/panel/chatbot', '/'],
     pos: ['/panel/pos'],
     pos_kiosk: ['/panel/pos'],
