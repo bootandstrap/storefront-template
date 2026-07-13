@@ -23,6 +23,7 @@ import {
     getBns360MissingCredentialAction,
     getBns360PanelLandingUrlPattern,
     getBns360RouteRetryConfig,
+    isBns360RetriablePanelStatus,
     recordBns360ScenarioEvidenceArtifact,
     resolveBns360ApiHeaders,
     resolveBns360RetryAfterMs,
@@ -196,7 +197,13 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(resolveBns360RetryAfterMs('1', retryConfig)).toBe(1000)
         expect(resolveBns360RetryAfterMs('60', retryConfig)).toBe(2000)
         expect(resolveBns360RetryAfterMs(null, retryConfig)).toBe(750)
+        expect(isBns360RetriablePanelStatus(429)).toBe(true)
+        expect(isBns360RetriablePanelStatus(502)).toBe(true)
+        expect(isBns360RetriablePanelStatus(503)).toBe(true)
+        expect(isBns360RetriablePanelStatus(504)).toBe(true)
+        expect(isBns360RetriablePanelStatus(404)).toBe(false)
         expect(fixtures).toContain('page.waitForTimeout(resolveBns360RetryAfterMs')
+        expect(fixtures).toContain('isBns360RetriablePanelStatus(response?.status())')
         expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
     })
 

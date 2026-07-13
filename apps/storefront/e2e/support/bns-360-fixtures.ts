@@ -557,17 +557,21 @@ export function resolveBns360RetryAfterMs(
     return config.fallbackDelayMs
 }
 
+export function isBns360RetriablePanelStatus(status: number | undefined): boolean {
+    return status === 429 || status === 502 || status === 503 || status === 504
+}
+
 async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: string): Promise<Response | null> {
     const config = getBns360RouteRetryConfig()
     let response: Response | null = null
 
     for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
         response = await page.goto(route, BNS_360_ROUTE_GOTO_OPTIONS)
-        if (response?.status() !== 429 || attempt === config.maxAttempts) {
+        if (!isBns360RetriablePanelStatus(response?.status()) || attempt === config.maxAttempts) {
             return response
         }
 
-        await page.waitForTimeout(resolveBns360RetryAfterMs(response.headers()['retry-after'], config))
+        await page.waitForTimeout(resolveBns360RetryAfterMs(response?.headers()['retry-after'], config))
     }
 
     return response
