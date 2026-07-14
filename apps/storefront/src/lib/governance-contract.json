@@ -1320,6 +1320,29 @@
             }
           },
           {
+            "key": "pro",
+            "name": "Avanzado",
+            "commercial_product_key": "module.pos_kiosk.pro",
+            "prices": [
+              {
+                "currency": "CHF",
+                "interval": "month",
+                "amount_minor": 2900,
+                "tax_behavior": "inclusive"
+              }
+            ],
+            "price_chf": 29,
+            "features": [
+              "Todo lo básico",
+              "Temporizador de inactividad para flujo rápido"
+            ],
+            "recommended": false,
+            "flag_effects": {
+              "enable_pos_kiosk": true,
+              "enable_kiosk_idle_timer": true
+            }
+          },
+          {
             "key": "enterprise",
             "name": "Premium",
             "commercial_product_key": "module.pos_kiosk.enterprise",
@@ -1343,29 +1366,6 @@
               "enable_kiosk_analytics": true,
               "enable_kiosk_idle_timer": true,
               "enable_kiosk_remote_management": true
-            }
-          },
-          {
-            "key": "pro",
-            "name": "Avanzado",
-            "commercial_product_key": "module.pos_kiosk.pro",
-            "prices": [
-              {
-                "currency": "CHF",
-                "interval": "month",
-                "amount_minor": 2900,
-                "tax_behavior": "inclusive"
-              }
-            ],
-            "price_chf": 29,
-            "features": [
-              "Todo lo básico",
-              "Temporizador de inactividad para flujo rápido"
-            ],
-            "recommended": false,
-            "flag_effects": {
-              "enable_pos_kiosk": true,
-              "enable_kiosk_idle_timer": true
             }
           }
         ]
