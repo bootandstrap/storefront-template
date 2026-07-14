@@ -332,52 +332,30 @@ export function summarizeBns360JsonShape(payload: unknown): Record<string, strin
     )
 }
 
+const BNS_360_ROUTE_ONLY_AUTOMATED_KINDS = new Set<Bns360FunctionalEvidenceTarget['kind']>([
+    'api_health',
+])
+
+const BNS_360_JSON_PATH_AUTOMATED_KINDS = new Set<Bns360FunctionalEvidenceTarget['kind']>([
+    'runtime_config',
+    'limit_enforcement',
+    'module_primary_journey',
+    'grant_unlock',
+    'checkout_payment_collection_journey',
+    'customer_account_journey',
+    'order_lifecycle_journey',
+    'backup_restore_journey',
+    'terminal_simulator_journey',
+    'virtual_printer_lab',
+    'crud_journey',
+])
+
 function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
-    if (target.kind === 'api_health') {
+    if (BNS_360_ROUTE_ONLY_AUTOMATED_KINDS.has(target.kind)) {
         return Boolean(target.routes?.length)
     }
 
-    if (target.kind === 'runtime_config') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'limit_enforcement') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'module_primary_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'grant_unlock') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'checkout_payment_collection_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'customer_account_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'order_lifecycle_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'backup_restore_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'terminal_simulator_journey') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'virtual_printer_lab') {
-        return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
-    }
-
-    if (target.kind === 'crud_journey') {
+    if (BNS_360_JSON_PATH_AUTOMATED_KINDS.has(target.kind)) {
         return Boolean(target.routes?.length && target.expectedJsonPaths?.length)
     }
 
