@@ -21,6 +21,9 @@ on:
     branches: [main]
     paths:
       - 'packages/shared/**'
+      - 'apps/storefront/e2e/**'
+      - 'apps/storefront/src/lib/bns-360/**'
+      - 'apps/storefront/src/lib/__tests__/bns-360-e2e-matrix.test.ts'
       - 'apps/storefront/src/lib/governance-contract.json'
       - 'apps/medusa/src/**'
       - '.github/workflows/governance-gate.yml'
