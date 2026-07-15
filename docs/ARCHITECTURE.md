@@ -63,7 +63,7 @@ Browser → proxy.ts (locale + auth + role check) → /[lang]/ route → Server 
 |-----------|---------|
 | Next.js | 16.x (App Router, proxy.ts) |
 | React | 19.x (Server Components, `useOptimistic`) |
-| Medusa.js | 2.13.1 |
+| Medusa.js | 2.17.2 |
 | Tailwind CSS | v4 (`@theme inline`) |
 | Redis | 7 Alpine |
 | TypeScript | 5.x (strict) |

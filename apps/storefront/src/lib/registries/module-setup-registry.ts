@@ -89,7 +89,7 @@ export const MODULE_SETUP_REGISTRY: Record<string, ModuleSetupDef> = {
             { limitKey: 'max_payment_methods', label: 'Métodos de pago', icon: 'CreditCard' },
         ],
         quickActions: [
-            { label: 'Configurar WhatsApp', href: '/panel/mensajes', icon: 'MessageCircle' },
+            { label: 'Configurar WhatsApp', href: '/panel/canales', icon: 'MessageCircle' },
             { label: 'Activar métodos de pago', href: '/panel/ajustes?tab=tienda', icon: 'CreditCard' },
         ],
         hasSetup: true,

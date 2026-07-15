@@ -27,6 +27,10 @@ Both repos (`ecommerce-template` + `BOOTANDSTRAP_WEB`) share one Supabase Postgr
 ### Governance Tables (owned by BOOTANDSTRAP_WEB)
 
 Created via `BOOTANDSTRAP_WEB/supabase/migrations/`. Schema changes originate there.
+The archived data-plane migration
+`supabase/migrations/_DEPRECATED/20260711_automation_notification_config.sql`
+is superseded by the canonical BSWEB migration
+`supabase/migrations/20260715_automation_notification_config.sql`.
 
 | Table | Writer | Reader | Key Columns |
 |-------|--------|--------|-------------|

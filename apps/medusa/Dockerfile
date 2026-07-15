@@ -1,7 +1,7 @@
 # ============================================
 # Medusa Backend — Multi-stage Dockerfile
 # ============================================
-# Optimized: single npm install, prune devDeps in builder, copy to runner.
+# Optimized: single lockfile install, prune devDeps in builder, copy to runner.
 # Cold-cache build time: ~25 min (was ~40 min with double npm install).
 
 # ── Stage 1: Install + Build ─────────────────
@@ -9,7 +9,7 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npx medusa build

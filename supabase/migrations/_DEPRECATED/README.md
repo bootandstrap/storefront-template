@@ -26,6 +26,7 @@ fully enforced.
 
 - `20260412_custom_email_domain.sql`
 - `20260413_email_governance_v1.sql`
+- `20260711_automation_notification_config.sql`
 
 ## Canonical source
 
