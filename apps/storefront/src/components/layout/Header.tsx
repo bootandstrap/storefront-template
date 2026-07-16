@@ -75,8 +75,13 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         {featureFlags.enable_product_search && (
                             <div className="hidden md:flex items-center gap-6 flex-1 max-w-md mx-8">
                                 <div className="relative w-full">
+                                    <label htmlFor="desktop-product-search" className="sr-only">
+                                        {t('product.searchPlaceholder')}
+                                    </label>
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                                     <input
+                                        id="desktop-product-search"
+                                        name="desktop-product-search"
                                         type="search"
                                         placeholder={t('product.searchPlaceholder')}
                                         className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-sf-1 border border-sf-3 text-tx placeholder:text-tx-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-soft transition-all"
@@ -193,8 +198,13 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                 {searchOpen && (
                     <div className="md:hidden px-4 pb-3 animate-slide-up">
                         <div className="relative">
+                            <label htmlFor="mobile-product-search" className="sr-only">
+                                {t('product.searchPlaceholder')}
+                            </label>
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                             <input
+                                id="mobile-product-search"
+                                name="mobile-product-search"
                                 type="search"
                                 placeholder={t('product.searchPlaceholder')}
                                 autoFocus
