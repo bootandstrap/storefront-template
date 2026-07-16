@@ -23,6 +23,7 @@ const CLIENT_EVENT_TYPES = [
     'search',
     'category_view',
     'whatsapp_click',
+    'web_vital',
 ] as const
 
 const WEBHOOK_EVENT_TYPES = ['checkout_complete'] as const

@@ -18,6 +18,7 @@ export const ANALYTICS_EVENTS = [
     'search',
     'category_view',
     'whatsapp_click',
+    'web_vital',
 ] as const
 
 export type AnalyticsEventType = typeof ANALYTICS_EVENTS[number]

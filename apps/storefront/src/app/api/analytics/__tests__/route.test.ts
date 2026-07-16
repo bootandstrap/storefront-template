@@ -72,4 +72,14 @@ describe('POST /api/analytics', () => {
         expect(body.ok).toBe(true)
         expect(mockFrom).toHaveBeenCalledWith('analytics_events')
     })
+
+    it('accepts web vital events emitted by the storefront reporter', async () => {
+        const { POST } = await import('../route')
+        const res = await POST(makeRequest({
+            event_type: 'web_vital',
+            properties: { name: 'LCP', value: 1200, rating: 'good' },
+        }))
+
+        expect(res.status).toBe(200)
+    })
 })
