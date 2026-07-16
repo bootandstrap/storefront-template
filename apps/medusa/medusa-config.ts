@@ -118,18 +118,14 @@ module.exports = defineConfig({
     },
     // Payment providers.
     //
-    // The system provider is the functional simulator/manual boundary used by
-    // COD, WhatsApp, and bank-transfer checkout. Stripe remains optional and
-    // is only registered when real non-placeholder keys are configured.
+    // The Medusa payment module registers the built-in system provider as
+    // pp_system_default. It is the functional simulator/manual boundary used
+    // by COD, WhatsApp, and bank-transfer checkout. Stripe remains optional
+    // and is only registered when real non-placeholder keys are configured.
     {
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
-          {
-            // Region seed expects this as pp_system_default.
-            resolve: "@medusajs/payment/dist/providers/system",
-            id: "default",
-          },
           ...(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('PLACEHOLDER')
             ? [
               {
