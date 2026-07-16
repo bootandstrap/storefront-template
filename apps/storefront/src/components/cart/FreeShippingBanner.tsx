@@ -1,11 +1,12 @@
 'use client'
 
 import { Truck, Gift } from 'lucide-react'
+import { formatPrice as formatCurrencyPrice } from '@/lib/medusa/price'
 
 interface FreeShippingBannerProps {
-    /** Cart subtotal in cents */
+    /** Cart subtotal in Medusa minor units. Zero-decimal currencies are display units. */
     subtotal: number
-    /** Free shipping threshold in cents (0 = disabled) */
+    /** Free shipping threshold in Medusa minor units (0 = disabled) */
     threshold: number
     /** Currency code for formatting */
     currency: string
@@ -40,12 +41,7 @@ export default function FreeShippingBanner({
     const unlocked = subtotal >= threshold
 
     const formatAmount = (amount: number) =>
-        new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        }).format(amount / 100)
+        formatCurrencyPrice(amount, currency.toLowerCase(), locale as import('@/lib/i18n').Locale)
 
     if (compact) {
         // Compact mode for order summary — single line

@@ -14,8 +14,12 @@ describe('checkout currency formatting contract', () => {
             join(ROOT, 'components/checkout/CheckoutModal.tsx'),
             'utf8',
         )
+        const freeShippingBanner = readFileSync(
+            join(ROOT, 'components/cart/FreeShippingBanner.tsx'),
+            'utf8',
+        )
 
-        for (const source of [checkoutPage, checkoutModal]) {
+        for (const source of [checkoutPage, checkoutModal, freeShippingBanner]) {
             expect(source).toContain("formatPrice as formatCurrencyPrice")
             expect(source).not.toContain('.format(amount / 100)')
         }
