@@ -72,10 +72,12 @@ export default function CheckoutAddressStep({
                 <h3 className="font-bold">{t('checkout.steps.address')}</h3>
             </div>
             <div>
-                <label className="text-sm text-tx-sec block mb-1">
+                <label htmlFor="checkout-street" className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.street') || 'Address'} *
                 </label>
                 <input
+                    id="checkout-street"
+                    name="checkout-street"
                     type="text"
                     value={street}
                     onChange={(e) => onStreetChange(e.target.value)}
@@ -85,10 +87,12 @@ export default function CheckoutAddressStep({
                 />
             </div>
             <div>
-                <label className="text-sm text-tx-sec block mb-1">
+                <label htmlFor="checkout-street2" className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.street2') || 'Apt / Suite (optional)'}
                 </label>
                 <input
+                    id="checkout-street2"
+                    name="checkout-street2"
                     type="text"
                     value={street2}
                     onChange={(e) => onStreet2Change(e.target.value)}
@@ -98,10 +102,12 @@ export default function CheckoutAddressStep({
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-sm text-tx-sec block mb-1">
+                    <label htmlFor="checkout-city" className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.city') || 'City'} *
                     </label>
                     <input
+                        id="checkout-city"
+                        name="checkout-city"
                         type="text"
                         value={city}
                         onChange={(e) => onCityChange(e.target.value)}
@@ -111,10 +117,12 @@ export default function CheckoutAddressStep({
                     />
                 </div>
                 <div>
-                    <label className="text-sm text-tx-sec block mb-1">
+                    <label htmlFor="checkout-postal-code" className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.postalCode') || 'Postal code'} *
                     </label>
                     <input
+                        id="checkout-postal-code"
+                        name="checkout-postal-code"
                         type="text"
                         value={postalCode}
                         onChange={(e) => onPostalCodeChange(e.target.value)}
@@ -125,10 +133,12 @@ export default function CheckoutAddressStep({
                 </div>
             </div>
             <div>
-                <label className="text-sm text-tx-sec block mb-1">
+                <label htmlFor="checkout-country" className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.country') || 'Country'} *
                 </label>
                 <select
+                    id="checkout-country"
+                    name="checkout-country"
                     value={countryCode}
                     onChange={(e) => onCountryCodeChange(e.target.value)}
                     className="input w-full"
@@ -148,10 +158,12 @@ export default function CheckoutAddressStep({
             </div>
             {featureFlags.enable_order_notes && (
                 <div>
-                    <label className="text-sm text-tx-sec block mb-1">
+                    <label htmlFor="checkout-notes" className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.notes')}
                     </label>
                     <textarea
+                        id="checkout-notes"
+                        name="checkout-notes"
                         value={notes}
                         onChange={(e) => onNotesChange(e.target.value)}
                         placeholder={t('checkout.form.notesPlaceholder')}

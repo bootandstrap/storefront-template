@@ -33,10 +33,12 @@ export default function CheckoutInfoStep({
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-sm text-tx-sec block mb-1">
+                    <label htmlFor="checkout-first-name" className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.firstName') || 'Nombre'} *
                     </label>
                     <input
+                        id="checkout-first-name"
+                        name="checkout-first-name"
                         type="text"
                         value={firstName}
                         onChange={(e) => onFirstNameChange(e.target.value)}
@@ -46,10 +48,12 @@ export default function CheckoutInfoStep({
                     />
                 </div>
                 <div>
-                    <label className="text-sm text-tx-sec block mb-1">
+                    <label htmlFor="checkout-last-name" className="text-sm text-tx-sec block mb-1">
                         {t('checkout.form.lastName') || 'Apellido'} *
                     </label>
                     <input
+                        id="checkout-last-name"
+                        name="checkout-last-name"
                         type="text"
                         value={lastName}
                         onChange={(e) => onLastNameChange(e.target.value)}
@@ -60,10 +64,12 @@ export default function CheckoutInfoStep({
                 </div>
             </div>
             <div>
-                <label className="text-sm text-tx-sec block mb-1">
+                <label htmlFor="checkout-email" className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.email')}
                 </label>
                 <input
+                    id="checkout-email"
+                    name="checkout-email"
                     type="email"
                     value={email}
                     onChange={(e) => onEmailChange(e.target.value)}
@@ -72,10 +78,12 @@ export default function CheckoutInfoStep({
                 />
             </div>
             <div>
-                <label className="text-sm text-tx-sec block mb-1">
+                <label htmlFor="checkout-phone" className="text-sm text-tx-sec block mb-1">
                     {t('checkout.form.phone')}
                 </label>
                 <input
+                    id="checkout-phone"
+                    name="checkout-phone"
                     type="tel"
                     value={phone}
                     onChange={(e) => onPhoneChange(e.target.value)}
