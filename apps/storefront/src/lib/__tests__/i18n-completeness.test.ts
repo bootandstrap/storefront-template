@@ -12,10 +12,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 
 const DICT_DIR = join(__dirname, '..', 'i18n', 'dictionaries')
+const SRC_DIR = join(__dirname, '..', '..')
 const LOCALES = ['en', 'es', 'de', 'fr', 'it']
 
 function loadDict(locale: string): Record<string, unknown> {
@@ -39,6 +40,33 @@ function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
 
 const dicts = Object.fromEntries(LOCALES.map(l => [l, loadDict(l)]))
 const enKeys = flattenKeys(dicts['en'])
+
+function collectSourceFiles(dir: string): string[] {
+    const files: string[] = []
+    for (const entry of readdirSync(dir)) {
+        const fullPath = join(dir, entry)
+        const stat = statSync(fullPath)
+        if (stat.isDirectory()) {
+            if (['node_modules', '.next', 'coverage', '__tests__'].includes(entry)) continue
+            files.push(...collectSourceFiles(fullPath))
+        } else if (/\.(ts|tsx)$/.test(entry) && !/\.(test|spec)\.(ts|tsx)$/.test(entry)) {
+            files.push(fullPath)
+        }
+    }
+    return files
+}
+
+function collectLiteralTranslationKeys(): string[] {
+    const keys = new Set<string>()
+    const translationCall = /\bt\(\s*['"]([^'"]+)['"]/g
+    for (const filePath of collectSourceFiles(SRC_DIR)) {
+        const source = readFileSync(filePath, 'utf-8')
+        for (const match of source.matchAll(translationCall)) {
+            keys.add(match[1])
+        }
+    }
+    return [...keys].sort()
+}
 
 describe('i18n Dictionary Completeness', () => {
     it('baseline (en) dictionary exists and has keys', () => {
@@ -71,6 +99,24 @@ describe('i18n Dictionary Completeness', () => {
         expect(
             missing,
             `es.json is missing ${missing.length} keys vs en.json: ${missing.slice(0, 10).join(', ')}`
+        ).toHaveLength(0)
+    })
+
+    it('en/es dictionaries include every literal translation key used by storefront source', () => {
+        const usedKeys = collectLiteralTranslationKeys()
+        const missingByLocale = ['en', 'es']
+            .map(locale => {
+                const localeKeys = flattenKeys(dicts[locale])
+                const missing = usedKeys.filter(k => !localeKeys.includes(k))
+                return { locale, missing }
+            })
+            .filter(({ missing }) => missing.length > 0)
+
+        expect(
+            missingByLocale,
+            missingByLocale
+                .map(({ locale, missing }) => `${locale}: ${missing.slice(0, 20).join(', ')}`)
+                .join('\n')
         ).toHaveLength(0)
     })
 

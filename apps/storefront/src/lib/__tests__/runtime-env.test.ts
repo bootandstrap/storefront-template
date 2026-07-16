@@ -37,4 +37,10 @@ describe('runtime env injection', () => {
         expect(nonceIndex).toBeGreaterThan(-1)
         expect(nextResponseIndex).toBeGreaterThan(nonceIndex)
     })
+
+    it('proxy allows Stripe browser worker creation without loosening script-src', () => {
+        const proxy = readFileSync(join(__dirname, '../../proxy.ts'), 'utf-8')
+
+        expect(proxy).toContain("worker-src 'self' blob:")
+    })
 })

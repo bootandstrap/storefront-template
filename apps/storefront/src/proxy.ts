@@ -209,6 +209,7 @@ export async function proxy(request: NextRequest) {
         `img-src 'self' data: blob: https://*.supabase.co http://localhost:9000 https://images.unsplash.com https://www.facebook.com`,
         `connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co http://localhost:9000 ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.facebook.com`,
         `frame-src https://js.stripe.com https://hooks.stripe.com`,
+        `worker-src 'self' blob:`,
         `object-src 'none'`,
         `base-uri 'self'`,
         `form-action 'self'`,
