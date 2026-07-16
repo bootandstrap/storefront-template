@@ -18,6 +18,8 @@ interface OrderResult {
     email?: string
 }
 
+const OFFLINE_PAYMENT_PROVIDER_ID = 'pp_system_default'
+
 // ---------------------------------------------------------------------------
 // Complete cart → creates a Medusa Order
 // ---------------------------------------------------------------------------
@@ -40,6 +42,13 @@ export async function completeCart(
         logger.error('[checkout] completeCart failed:', err)
         return { order: null, error: err instanceof Error ? err.message : 'Unknown error' }
     }
+}
+
+async function initializeOfflinePaymentSession(cartId: string): Promise<void> {
+    await medusaStore(`/store/carts/${cartId}/payment-sessions`, {
+        method: 'POST',
+        body: JSON.stringify({ provider_id: OFFLINE_PAYMENT_PROVIDER_ID }),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +98,8 @@ export async function submitBankTransferOrder(
                 },
             }),
         })
+
+        await initializeOfflinePaymentSession(cartId)
 
         // Complete the cart to create the order
         const result = await completeCart(cartId)
@@ -152,6 +163,8 @@ export async function submitCODOrder(
             }),
         })
 
+        await initializeOfflinePaymentSession(cartId)
+
         const result = await completeCart(cartId)
 
         if (result.order) {
@@ -211,6 +224,8 @@ export async function submitWhatsAppOrder(
                 },
             }),
         })
+
+        await initializeOfflinePaymentSession(cartId)
 
         const result = await completeCart(cartId)
 

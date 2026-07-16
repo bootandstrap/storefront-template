@@ -38,4 +38,28 @@ describe('cart currency render contract', () => {
         expect(cartItem).toContain('formatCurrency(amount, currency, locale)')
         expect(cartItem).not.toContain('item.unit_price / 100')
     })
+
+    it('CartDrawer uses the shared formatter for zero-decimal subtotal display', () => {
+        const drawer = readFileSync(
+            join(srcRoot, 'components/cart/CartDrawer.tsx'),
+            'utf-8',
+        )
+
+        expect(drawer).toContain("import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'")
+        expect(drawer).toContain('const formattedSubtotal = formatCurrency(subtotal, currency, locale)')
+        expect(drawer).not.toContain('subtotal / 100')
+    })
+
+    it('CartDrawer navigates checkout CTAs imperatively before unmounting itself', () => {
+        const drawer = readFileSync(
+            join(srcRoot, 'components/cart/CartDrawer.tsx'),
+            'utf-8',
+        )
+
+        expect(drawer).toContain("import { useRouter } from 'next/navigation'")
+        expect(drawer).toContain('function navigateFromDrawer')
+        expect(drawer).toContain('router.push(href)')
+        expect(drawer).toContain("onClick={() => navigateFromDrawer(localizedHref('checkout'))}")
+        expect(drawer).not.toContain("href={localizedHref('checkout')}\n                                onClick={closeDrawer}")
+    })
 })

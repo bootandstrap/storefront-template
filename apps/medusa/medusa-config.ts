@@ -116,15 +116,22 @@ module.exports = defineConfig({
         ],
       },
     },
-    // Stripe Payment Provider (template-first: uses PLACEHOLDER keys by default)
-    // When STRIPE_SECRET_KEY contains "PLACEHOLDER", payment sessions won't be created
-    // Replace with real keys from your Stripe dashboard to activate card payments
-    ...(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('PLACEHOLDER')
-      ? [
-        {
-          resolve: "@medusajs/medusa/payment",
-          options: {
-            providers: [
+    // Payment providers.
+    //
+    // The system provider is the functional simulator/manual boundary used by
+    // COD, WhatsApp, and bank-transfer checkout. Stripe remains optional and
+    // is only registered when real non-placeholder keys are configured.
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            // Region seed expects this as pp_system_default.
+            resolve: "@medusajs/payment/dist/providers/system",
+            id: "default",
+          },
+          ...(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('PLACEHOLDER')
+            ? [
               {
                 resolve: "@medusajs/payment-stripe",
                 id: "stripe",
@@ -133,11 +140,11 @@ module.exports = defineConfig({
                   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
                 },
               },
-            ],
-          },
-        },
-      ]
-      : []),
+            ]
+            : []),
+        ],
+      },
+    },
     // Manual Fulfillment Provider (admin marks orders as shipped)
     // Required for shipping options, regions, and the checkout shipping step
     {

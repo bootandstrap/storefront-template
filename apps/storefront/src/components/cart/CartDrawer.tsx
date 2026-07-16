@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useTransition } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { X, ShoppingBag, MessageCircle, CreditCard, Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useI18n } from '@/lib/i18n/provider'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { getEnabledMethods } from '@/lib/payment-methods'
+import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'
 import CartItem from './CartItem'
 import FreeShippingBanner from './FreeShippingBanner'
 import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
@@ -20,6 +21,7 @@ interface CartDrawerProps {
 export default function CartDrawer({ config, featureFlags, planLimits }: CartDrawerProps) {
     const { cart, cartId, drawerOpen, closeDrawer, setCart, itemCount } = useCart()
     const { t, locale, localizedHref } = useI18n()
+    const router = useRouter()
     const [isLoading, startTransition] = useTransition()
 
     // Compute which payment methods are available based on feature flags
@@ -59,11 +61,12 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
     // Use tenant config currency first — variant.prices is often empty in Medusa v2 cart responses
     const currency = config.default_currency || items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
 
-    const formattedSubtotal = new Intl.NumberFormat(locale === 'es' ? 'es-ES' : locale, {
-        style: 'currency',
-        currency: currency.toUpperCase(),
-        minimumFractionDigits: 0,
-    }).format(subtotal / 100)
+    const formattedSubtotal = formatCurrency(subtotal, currency, locale)
+
+    function navigateFromDrawer(href: string) {
+        closeDrawer()
+        router.push(href)
+    }
 
     return (
         <div data-testid="cart-drawer" className="fixed inset-0 z-50 animate-fade-in" role="dialog" aria-modal="true" aria-label={t('cart.title')}>
@@ -138,37 +141,37 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
 
                         {/* Checkout button — only if at least one payment method is enabled */}
                         {hasAnyCheckoutMethod && (
-                            <Link
-                                href={localizedHref('checkout')}
-                                onClick={closeDrawer}
+                            <button
+                                onClick={() => navigateFromDrawer(localizedHref('checkout'))}
                                 className="btn btn-primary w-full text-center"
+                                type="button"
                             >
                                 <CreditCard className="w-4 h-4" />
                                 {t('cart.drawer.viewFullCart')}
-                            </Link>
+                            </button>
                         )}
 
                         {/* WhatsApp order button — only when enable_whatsapp_checkout flag is ON */}
                         {hasWhatsAppCheckout && config.whatsapp_number && (
-                            <Link
-                                href={localizedHref('checkout')}
-                                onClick={closeDrawer}
+                            <button
+                                onClick={() => navigateFromDrawer(localizedHref('checkout'))}
                                 className="btn btn-whatsapp w-full text-center"
+                                type="button"
                             >
                                 <MessageCircle className="w-4 h-4" />
                                 {t('cart.drawer.orderWhatsApp')}
-                            </Link>
+                            </button>
                         )}
 
                         {/* If no methods at all, show View Cart only */}
                         {!hasAnyCheckoutMethod && (
-                            <Link
-                                href={localizedHref('cart')}
-                                onClick={closeDrawer}
+                            <button
+                                onClick={() => navigateFromDrawer(localizedHref('cart'))}
                                 className="btn btn-primary w-full text-center"
+                                type="button"
                             >
                                 {t('cart.drawer.viewFullCart')}
-                            </Link>
+                            </button>
                         )}
                     </div>
                 )}
