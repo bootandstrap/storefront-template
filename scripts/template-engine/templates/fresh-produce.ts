@@ -48,6 +48,7 @@ export const freshProduceTemplate: IndustryTemplate = {
         limitOverrides: {
             max_products: 200,
             max_orders_month: 1000,
+            max_payment_methods: 2,
         },
         storeConfig: {
             business_name: 'Campifruit',

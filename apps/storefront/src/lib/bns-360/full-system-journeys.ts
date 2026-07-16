@@ -104,26 +104,35 @@ function baseResult(input: Bns360JourneyInput, prefix: string): Omit<Bns360Journ
     }
 }
 
+function blockedBaseResult(input: Bns360JourneyInput, prefix: string, journeyName: string): Bns360JourneyBase {
+    return {
+        status: 'blocked',
+        ...baseResult(input, prefix),
+        cleanup: { status: 'failed' },
+        residue: { zero: true },
+        error: `${journeyName} is not wired to a runtime runner yet`,
+    }
+}
+
 export async function runBns360CheckoutPrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360CheckoutPrimaryJourneyResult> {
     return {
         schema: 'bootandstrap.template.bns-360.checkout-primary/v1',
-        status: 'verified',
-        ...baseResult(input, 'bns360-checkout'),
+        ...blockedBaseResult(input, 'bns360-checkout', 'BNS 360 checkout primary journey'),
         runtime: {
             cart: {
-                created: true,
-                itemAttached: true,
+                created: false,
+                itemAttached: false,
             },
             paymentCollection: {
-                status: 'verified',
+                status: 'blocked',
                 providerMode: 'simulator',
-                paymentSessionInitialized: true,
+                paymentSessionInitialized: false,
                 liveMutation: false,
             },
             order: {
-                completed: true,
+                completed: false,
                 resultType: 'order',
             },
         },
@@ -135,21 +144,20 @@ export async function runBns360CustomerAccountPrimaryJourney(
 ): Promise<Bns360CustomerAccountPrimaryJourneyResult> {
     return {
         schema: 'bootandstrap.template.bns-360.customer-account-primary/v1',
-        status: 'verified',
-        ...baseResult(input, 'bns360-customer-account'),
+        ...blockedBaseResult(input, 'bns360-customer-account', 'BNS 360 customer account primary journey'),
         runtime: {
             customer: {
-                canaryCreated: true,
-                authenticated: true,
+                canaryCreated: false,
+                authenticated: false,
             },
             address: {
-                created: true,
-                updated: true,
-                deleted: true,
+                created: false,
+                updated: false,
+                deleted: false,
             },
             orderRead: {
-                tenantScoped: true,
-                orderCountReadable: true,
+                tenantScoped: false,
+                orderCountReadable: false,
             },
             crossTenantLeakage: false,
         },
@@ -161,17 +169,16 @@ export async function runBns360OrderLifecyclePrimaryJourney(
 ): Promise<Bns360OrderLifecyclePrimaryJourneyResult> {
     return {
         schema: 'bootandstrap.template.bns-360.order-lifecycle-primary/v1',
-        status: 'verified',
-        ...baseResult(input, 'bns360-order-lifecycle'),
+        ...blockedBaseResult(input, 'bns360-order-lifecycle', 'BNS 360 order lifecycle primary journey'),
         runtime: {
-            orderPlaced: true,
-            paymentCollectionLinked: true,
-            fulfillmentBoundary: 'verified',
-            cancelBoundary: 'verified',
-            refundReturnBoundary: 'verified',
+            orderPlaced: false,
+            paymentCollectionLinked: false,
+            fulfillmentBoundary: 'blocked',
+            cancelBoundary: 'blocked',
+            refundReturnBoundary: 'blocked',
             subscriberEvents: {
-                orderPlaced: true,
-                analyticsRecorded: true,
+                orderPlaced: false,
+                analyticsRecorded: false,
             },
         },
     }
@@ -182,15 +189,14 @@ export async function runBns360BackupRestorePrimaryJourney(
 ): Promise<Bns360BackupRestorePrimaryJourneyResult> {
     return {
         schema: 'bootandstrap.template.bns-360.backup-restore-primary/v1',
-        status: 'verified',
-        ...baseResult(input, 'bns360-backup-restore'),
+        ...blockedBaseResult(input, 'bns360-backup-restore', 'BNS 360 backup restore primary journey'),
         runtime: {
             backup: {
-                metadataReadable: true,
+                metadataReadable: false,
                 payloadRedacted: true,
             },
             restoreDryRun: {
-                safe: true,
+                safe: false,
                 mutation: false,
             },
         },

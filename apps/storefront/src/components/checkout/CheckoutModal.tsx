@@ -32,6 +32,7 @@ import CheckoutMethodStep from './steps/CheckoutMethodStep'
 import CheckoutPaymentStep from './steps/CheckoutPaymentStep'
 import CheckoutConfirmationStep from './steps/CheckoutConfirmationStep'
 import CheckoutOrderSummary from './steps/CheckoutOrderSummary'
+import { resolveInitialCheckoutCountryCode } from './checkout-country'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -95,7 +96,9 @@ export default function CheckoutModal({
     const [street2, setStreet2] = useState('')
     const [city, setCity] = useState('')
     const [postalCode, setPostalCode] = useState('')
-    const [countryCode, setCountryCode] = useState(countries[0]?.iso_2 ?? 'us')
+    const [countryCode, setCountryCode] = useState(
+        resolveInitialCheckoutCountryCode(countries, config.default_country_prefix)
+    )
     const [notes, setNotes] = useState('')
     const [addressLoading, setAddressLoading] = useState(false)
 

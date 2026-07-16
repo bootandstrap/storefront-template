@@ -106,9 +106,16 @@ describe('BNS 360 reusable runtime matrix', () => {
             join(process.cwd(), 'package.json'),
             'utf8'
         )) as { scripts: Record<string, string> }
+        const rootPackageJson = JSON.parse(readFileSync(
+            join(process.cwd(), '..', '..', 'package.json'),
+            'utf8'
+        )) as { scripts: Record<string, string> }
 
         expect(packageJson.scripts['cert:360:functional:auto']).toBe(
             'BNS_360_FUNCTIONAL_JOURNEYS=1 BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1 playwright test e2e/bns-360-runtime.spec.ts'
+        )
+        expect(rootPackageJson.scripts['bns:360:functional:canary']).toBe(
+            'pnpm --dir apps/storefront cert:360:functional:auto'
         )
     })
 

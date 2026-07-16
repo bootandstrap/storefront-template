@@ -16,4 +16,12 @@ describe('fresh produce template currency', () => {
             }
         }
     })
+
+    it('keeps a programmable checkout method visible next to WhatsApp', () => {
+        expect(freshProduceTemplate.governance.flagOverrides).toMatchObject({
+            enable_whatsapp_checkout: true,
+            enable_cash_on_delivery: true,
+        })
+        expect(freshProduceTemplate.governance.limitOverrides?.max_payment_methods).toBeGreaterThanOrEqual(2)
+    })
 })

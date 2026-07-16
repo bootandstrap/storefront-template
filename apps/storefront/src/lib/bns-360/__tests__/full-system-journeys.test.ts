@@ -8,80 +8,85 @@ import {
 } from '../full-system-journeys'
 
 describe('BNS 360 full-system journeys', () => {
-    it('verifies checkout PaymentCollection semantics without live money movement', async () => {
+    it('blocks checkout PaymentCollection certification when no runtime runner is wired', async () => {
         const result = await runBns360CheckoutPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.checkout-primary/v1',
-            status: 'verified',
+            status: 'blocked',
             runtime: {
-                cart: { created: true, itemAttached: true },
+                cart: { created: false, itemAttached: false },
                 paymentCollection: {
-                    status: 'verified',
+                    status: 'blocked',
                     providerMode: 'simulator',
+                    paymentSessionInitialized: false,
                     liveMutation: false,
                 },
-                order: { completed: true },
+                order: { completed: false },
             },
-            cleanup: { status: 'verified' },
+            cleanup: { status: 'failed' },
             residue: { zero: true },
         })
+        expect(result.error).toContain('not wired')
         expect(JSON.stringify(result)).not.toContain('client_secret')
         expect(JSON.stringify(result)).not.toContain('password')
         expect(JSON.stringify(result)).not.toContain('token')
     })
 
-    it('verifies customer auth/address/order scope without cross-tenant leakage', async () => {
+    it('blocks customer auth/address/order certification when no runtime runner is wired', async () => {
         const result = await runBns360CustomerAccountPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.customer-account-primary/v1',
-            status: 'verified',
+            status: 'blocked',
             runtime: {
-                customer: { canaryCreated: true, authenticated: true },
-                address: { created: true, updated: true, deleted: true },
-                orderRead: { tenantScoped: true },
+                customer: { canaryCreated: false, authenticated: false },
+                address: { created: false, updated: false, deleted: false },
+                orderRead: { tenantScoped: false },
                 crossTenantLeakage: false,
             },
-            cleanup: { status: 'verified' },
+            cleanup: { status: 'failed' },
             residue: { zero: true },
         })
+        expect(result.error).toContain('not wired')
     })
 
-    it('verifies order lifecycle boundaries with simulator payment evidence', async () => {
+    it('blocks order lifecycle certification when no runtime runner is wired', async () => {
         const result = await runBns360OrderLifecyclePrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.order-lifecycle-primary/v1',
-            status: 'verified',
+            status: 'blocked',
             runtime: {
-                orderPlaced: true,
-                paymentCollectionLinked: true,
-                fulfillmentBoundary: 'verified',
-                cancelBoundary: 'verified',
-                refundReturnBoundary: 'verified',
+                orderPlaced: false,
+                paymentCollectionLinked: false,
+                fulfillmentBoundary: 'blocked',
+                cancelBoundary: 'blocked',
+                refundReturnBoundary: 'blocked',
                 subscriberEvents: {
-                    orderPlaced: true,
-                    analyticsRecorded: true,
+                    orderPlaced: false,
+                    analyticsRecorded: false,
                 },
             },
-            cleanup: { status: 'verified' },
+            cleanup: { status: 'failed' },
             residue: { zero: true },
         })
+        expect(result.error).toContain('not wired')
     })
 
-    it('verifies backup metadata and restore dry-run safety without mutating tenant data', async () => {
+    it('blocks backup metadata and restore certification when no runtime runner is wired', async () => {
         const result = await runBns360BackupRestorePrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.backup-restore-primary/v1',
-            status: 'verified',
+            status: 'blocked',
             runtime: {
-                backup: { metadataReadable: true, payloadRedacted: true },
-                restoreDryRun: { safe: true, mutation: false },
+                backup: { metadataReadable: false, payloadRedacted: true },
+                restoreDryRun: { safe: false, mutation: false },
             },
-            cleanup: { status: 'verified' },
+            cleanup: { status: 'failed' },
             residue: { zero: true },
         })
+        expect(result.error).toContain('not wired')
     })
 })
