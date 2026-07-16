@@ -18,6 +18,15 @@ interface OrderResult {
     email?: string
 }
 
+interface PaymentCollectionResult {
+    id: string
+    payment_sessions?: Array<{
+        id: string
+        provider_id: string
+        status?: string
+    }>
+}
+
 const OFFLINE_PAYMENT_PROVIDER_ID = 'pp_system_default'
 
 // ---------------------------------------------------------------------------
@@ -44,8 +53,31 @@ export async function completeCart(
     }
 }
 
+async function getOrCreateCartPaymentCollection(cartId: string): Promise<PaymentCollectionResult> {
+    const res = await medusaStore<{ payment_collection?: PaymentCollectionResult }>(
+        '/store/payment-collections',
+        {
+            method: 'POST',
+            body: JSON.stringify({ cart_id: cartId }),
+        }
+    )
+
+    if (!res.payment_collection?.id) {
+        throw new Error('Medusa did not return a payment collection for the cart')
+    }
+
+    return res.payment_collection
+}
+
 async function initializeOfflinePaymentSession(cartId: string): Promise<void> {
-    await medusaStore(`/store/carts/${cartId}/payment-sessions`, {
+    const paymentCollection = await getOrCreateCartPaymentCollection(cartId)
+    const existingSession = paymentCollection.payment_sessions?.some(
+        (session) => session.provider_id === OFFLINE_PAYMENT_PROVIDER_ID
+    )
+
+    if (existingSession) return
+
+    await medusaStore(`/store/payment-collections/${paymentCollection.id}/payment-sessions`, {
         method: 'POST',
         body: JSON.stringify({ provider_id: OFFLINE_PAYMENT_PROVIDER_ID }),
     })

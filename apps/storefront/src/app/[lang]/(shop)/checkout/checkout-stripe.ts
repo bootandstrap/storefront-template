@@ -19,6 +19,34 @@ export async function isStripeConfigured(): Promise<boolean> {
     return isStripeConfiguredSync()
 }
 
+interface PaymentSession {
+    id: string
+    provider_id: string
+    data: Record<string, unknown>
+    status: string
+}
+
+interface PaymentCollectionResult {
+    id: string
+    payment_sessions?: PaymentSession[]
+}
+
+async function getOrCreateCartPaymentCollection(cartId: string): Promise<PaymentCollectionResult> {
+    const res = await medusaStore<{ payment_collection?: PaymentCollectionResult }>(
+        '/store/payment-collections',
+        {
+            method: 'POST',
+            body: JSON.stringify({ cart_id: cartId }),
+        }
+    )
+
+    if (!res.payment_collection?.id) {
+        throw new Error('Medusa did not return a payment collection for the cart')
+    }
+
+    return res.payment_collection
+}
+
 // ---------------------------------------------------------------------------
 // Initialize a payment session
 // ---------------------------------------------------------------------------
@@ -51,7 +79,16 @@ export async function initializePaymentSession(
             return { success: false, error: 'Stripe is not configured. Replace PLACEHOLDER keys with real Stripe keys.' }
         }
 
-        await medusaStore(`/store/carts/${cartId}/payment-sessions`, {
+        const paymentCollection = await getOrCreateCartPaymentCollection(cartId)
+        const existingSession = paymentCollection.payment_sessions?.some(
+            (session) => session.provider_id === providerId
+        )
+
+        if (existingSession) {
+            return { success: true }
+        }
+
+        await medusaStore(`/store/payment-collections/${paymentCollection.id}/payment-sessions`, {
             method: 'POST',
             body: JSON.stringify({ provider_id: providerId }),
         })
@@ -69,8 +106,11 @@ export async function initializePaymentSession(
 
 interface CartWithPayment {
     id: string
-    payment_session?: { id: string; provider_id: string; data: Record<string, unknown>; status: string }
-    payment_sessions?: { id: string; provider_id: string; data: Record<string, unknown>; status: string }[]
+    payment_collection?: {
+        payment_sessions?: PaymentSession[]
+    }
+    payment_session?: PaymentSession
+    payment_sessions?: PaymentSession[]
     total: number
     subtotal: number
     items: unknown[]
@@ -85,10 +125,11 @@ export async function getStripeClientSecret(
         }
 
         const res = await medusaStore<{ cart: CartWithPayment }>(
-            `/store/carts/${cartId}?fields=+payment_sessions`
+            `/store/carts/${cartId}`
         )
 
-        const stripeSession = res.cart.payment_sessions?.find(
+        const paymentSessions = res.cart.payment_collection?.payment_sessions ?? res.cart.payment_sessions ?? []
+        const stripeSession = paymentSessions.find(
             (s) => s.provider_id.includes('stripe')
         )
 
@@ -118,10 +159,11 @@ export async function getPaymentStatus(
 ): Promise<{ status: string | null; error?: string }> {
     try {
         const res = await medusaStore<{ cart: CartWithPayment }>(
-            `/store/carts/${cartId}?fields=+payment_sessions`
+            `/store/carts/${cartId}`
         )
 
-        const session = res.cart.payment_sessions?.[0]
+        const paymentSessions = res.cart.payment_collection?.payment_sessions ?? res.cart.payment_sessions ?? []
+        const session = paymentSessions[0]
         return { status: session?.status ?? null }
     } catch (err) {
         logger.error('[checkout] getPaymentStatus failed:', err)

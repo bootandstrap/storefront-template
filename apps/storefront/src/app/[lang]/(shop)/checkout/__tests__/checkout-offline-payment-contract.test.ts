@@ -35,4 +35,16 @@ describe('checkout offline payment contract', () => {
         expect(orders).toContain("const OFFLINE_PAYMENT_PROVIDER_ID = 'pp_system_default'")
         expect(orders).toContain('provider_id: OFFLINE_PAYMENT_PROVIDER_ID')
     })
+
+    it('uses the Medusa v2 payment collection API instead of the removed cart payment-sessions endpoint', () => {
+        const orders = readFileSync(join(checkoutDir, 'checkout-orders.ts'), 'utf-8')
+        const stripe = readFileSync(join(checkoutDir, 'checkout-stripe.ts'), 'utf-8')
+
+        expect(orders).toContain('/store/payment-collections')
+        expect(orders).toContain('/store/payment-collections/${paymentCollection.id}/payment-sessions')
+        expect(orders).not.toContain('/store/carts/${cartId}/payment-sessions')
+        expect(stripe).toContain('/store/payment-collections')
+        expect(stripe).toContain('/store/payment-collections/${paymentCollection.id}/payment-sessions')
+        expect(stripe).not.toContain('/store/carts/${cartId}/payment-sessions')
+    })
 })
