@@ -108,6 +108,7 @@ export default async function RootLayout({
 
   // Dynamically resolve locale from URL path (/{lang}/...)
   const headersList = await headers()
+  const cspNonce = headersList.get('x-csp-nonce') ?? undefined
   const pathname = headersList.get('x-invoke-path') || headersList.get('x-matched-path') || ''
   const firstSegment = pathname.split('/').filter(Boolean)[0] || ''
   const htmlLang = isValidLocale(firstSegment) ? firstSegment : (config.language || 'en')
@@ -164,7 +165,7 @@ export default async function RootLayout({
           showSpinner={false}
           shadow={false}
         />
-        <RuntimeEnvScript />
+        <RuntimeEnvScript nonce={cspNonce} />
         <CartProvider>
             <WishlistProvider isAuthenticated={isAuthenticated}>
                 <CompareProvider>

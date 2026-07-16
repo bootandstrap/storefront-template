@@ -71,7 +71,7 @@ export default function CarritoPage() {
                     {/* Items */}
                     <div className="lg:col-span-2 space-y-2">
                         {items.map((item) => (
-                            <CartItem key={item.id} item={item} />
+                            <CartItem key={item.id} item={item} currencyCode={currency} />
                         ))}
                     </div>
 

@@ -41,7 +41,7 @@ export type RuntimeEnvKey = typeof RUNTIME_ENV_KEYS[number]
 export function getServerRuntimeEnv(): Record<RuntimeEnvKey, string> {
     const env: Record<string, string> = {}
     for (const key of RUNTIME_ENV_KEYS) {
-        env[key] = process.env[`NEXT_PUBLIC_${key}`] || ''
+        env[key] = process.env[`NEXT_PUBLIC_${key}`] || process.env[key] || ''
     }
     return env as Record<RuntimeEnvKey, string>
 }
@@ -65,11 +65,12 @@ export function getServerRuntimeEnv(): Record<RuntimeEnvKey, string> {
  *   )
  * }
  */
-export function RuntimeEnvScript() {
+export function RuntimeEnvScript({ nonce }: { nonce?: string } = {}) {
     const env = getServerRuntimeEnv()
     const script = `window.__RUNTIME_ENV__=${JSON.stringify(env)};`
     return (
         <script
+            nonce={nonce}
             dangerouslySetInnerHTML={{ __html: script }}
             // Execute before any client JS hydrates
             // suppressHydrationWarning avoids mismatch warnings
@@ -90,7 +91,7 @@ export function RuntimeEnvScript() {
 export function getRuntimeEnv(key: RuntimeEnvKey): string {
     // Server-side: always use process.env
     if (typeof window === 'undefined') {
-        return process.env[`NEXT_PUBLIC_${key}`] || ''
+        return process.env[`NEXT_PUBLIC_${key}`] || process.env[key] || ''
     }
 
     // Client-side: prefer runtime injection, fall back to build-time

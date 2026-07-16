@@ -180,13 +180,11 @@ function classifyRoute(pathAfterLang: string): 'public' | 'protected' | 'owner' 
 // ---------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
-    const response = NextResponse.next({ request })
     const path = request.nextUrl.pathname
 
     // ── Request tracing ───────────────────────
     // Generate or forward a unique request ID for cross-service correlation
     const requestId = request.headers.get('x-request-id') || crypto.randomUUID()
-    response.headers.set('x-request-id', requestId)
     // Make available to downstream server components / API routes via request header
     request.headers.set('x-request-id', requestId)
 
@@ -194,6 +192,8 @@ export async function proxy(request: NextRequest) {
     // Generate a random nonce per request for script-src
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
     request.headers.set('x-csp-nonce', nonce)
+    const response = NextResponse.next({ request })
+    response.headers.set('x-request-id', requestId)
     const isDev = process.env.NODE_ENV === 'development'
     // In dev: drop the nonce from CSP so 'unsafe-inline' takes effect
     // (CSP Level 2+ ignores 'unsafe-inline' when a nonce is present)

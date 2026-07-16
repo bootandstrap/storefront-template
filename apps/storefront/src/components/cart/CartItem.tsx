@@ -25,7 +25,7 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
     const unitPrice = item.unit_price / 100
     const total = (item.unit_price * item.quantity) / 100
     // Use parent-provided currency first, then try variant prices
-    const currency = currencyCode || item.variant?.prices?.[0]?.currency_code
+    const currency = currencyCode || item.variant?.prices?.[0]?.currency_code || 'EUR'
 
     function formatPrice(amount: number) {
         return new Intl.NumberFormat(locale, {
