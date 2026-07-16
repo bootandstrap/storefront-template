@@ -175,6 +175,13 @@ export default function CheckoutModal({
         }
     }, [isOpen, cartItemCount])
 
+    const handleModalClose = useCallback(() => {
+        if (step === 'confirmation') {
+            resetCart()
+        }
+        onClose()
+    }, [onClose, resetCart, step])
+
     // ---------------------------------------------------------------------------
     // Navigation
     // ---------------------------------------------------------------------------
@@ -294,8 +301,7 @@ export default function CheckoutModal({
         // Show confirmation with a generic success message
         setOrderResult({ id: 'stripe-pending', display_id: 0 })
         setStep('confirmation')
-        resetCart()
-    }, [resetCart])
+    }, [])
 
     const handleBankTransferConfirm = useCallback(async () => {
         if (!cart?.id) return
@@ -309,8 +315,7 @@ export default function CheckoutModal({
         if (res.error) throw new Error(res.error)
         if (res.order) setOrderResult({ id: res.order.id, display_id: res.order.display_id })
         setStep('confirmation')
-        resetCart()
-    }, [cart?.id, firstName, lastName, email, phone, street, notes, resetCart])
+    }, [cart?.id, firstName, lastName, email, phone, street, notes])
 
     const handleCODConfirm = useCallback(async () => {
         if (!cart?.id) return
@@ -324,14 +329,12 @@ export default function CheckoutModal({
         if (res.error) throw new Error(res.error)
         if (res.order) setOrderResult({ id: res.order.id, display_id: res.order.display_id })
         setStep('confirmation')
-        resetCart()
-    }, [cart?.id, firstName, lastName, email, phone, street, notes, resetCart])
+    }, [cart?.id, firstName, lastName, email, phone, street, notes])
 
     const handleWhatsAppComplete = useCallback((order?: { id: string; display_id: number }) => {
         if (order) setOrderResult(order)
         setStep('confirmation')
-        resetCart()
-    }, [resetCart])
+    }, [])
 
     // ---------------------------------------------------------------------------
     // Validation
@@ -365,7 +368,7 @@ export default function CheckoutModal({
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-                onClick={onClose}
+                onClick={handleModalClose}
             />
 
             {/* Modal */}
@@ -388,7 +391,7 @@ export default function CheckoutModal({
                             </h2>
                         </div>
                         <button
-                            onClick={onClose}
+                            onClick={handleModalClose}
                             className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                             type="button"
                         >
@@ -516,7 +519,7 @@ export default function CheckoutModal({
                         <CheckoutConfirmationStep
                             orderResult={orderResult}
                             selectedMethod={selectedMethod}
-                            onClose={onClose}
+                            onClose={handleModalClose}
                             t={t}
                         />
                     )}

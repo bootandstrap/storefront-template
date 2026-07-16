@@ -55,11 +55,17 @@ describe('cart currency render contract', () => {
             join(srcRoot, 'components/cart/CartDrawer.tsx'),
             'utf-8',
         )
+        const checkoutCtaStart = drawer.indexOf('{hasAnyCheckoutMethod && (')
+        const whatsappCtaStart = drawer.indexOf('{hasWhatsAppCheckout &&')
+        const checkoutCtaBlock = drawer.slice(checkoutCtaStart, whatsappCtaStart)
 
         expect(drawer).toContain("import { useRouter } from 'next/navigation'")
         expect(drawer).toContain('function navigateFromDrawer')
         expect(drawer).toContain('router.push(href)')
-        expect(drawer).toContain("onClick={() => navigateFromDrawer(localizedHref('checkout'))}")
+        expect(checkoutCtaBlock).toContain("onClick={() => navigateFromDrawer(localizedHref('cart'))}")
+        expect(checkoutCtaBlock).toContain("{t('cart.drawer.viewFullCart')}")
+        expect(checkoutCtaBlock).toContain("onClick={() => navigateFromDrawer(localizedHref('checkout'))}")
+        expect(checkoutCtaBlock).toContain("{t('cart.checkout')}")
         expect(drawer).not.toContain("href={localizedHref('checkout')}\n                                onClick={closeDrawer}")
     })
 })

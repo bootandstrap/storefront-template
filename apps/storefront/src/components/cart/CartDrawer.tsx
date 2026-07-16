@@ -141,14 +141,24 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
 
                         {/* Checkout button — only if at least one payment method is enabled */}
                         {hasAnyCheckoutMethod && (
-                            <button
-                                onClick={() => navigateFromDrawer(localizedHref('checkout'))}
-                                className="btn btn-primary w-full text-center"
-                                type="button"
-                            >
-                                <CreditCard className="w-4 h-4" />
-                                {t('cart.drawer.viewFullCart')}
-                            </button>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => navigateFromDrawer(localizedHref('cart'))}
+                                    className="btn btn-secondary w-full text-center"
+                                    type="button"
+                                >
+                                    <ShoppingBag className="w-4 h-4" />
+                                    {t('cart.drawer.viewFullCart')}
+                                </button>
+                                <button
+                                    onClick={() => navigateFromDrawer(localizedHref('checkout'))}
+                                    className="btn btn-primary w-full text-center"
+                                    type="button"
+                                >
+                                    <CreditCard className="w-4 h-4" />
+                                    {t('cart.checkout')}
+                                </button>
+                            </div>
                         )}
 
                         {/* WhatsApp order button — only when enable_whatsapp_checkout flag is ON */}
