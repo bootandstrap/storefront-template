@@ -62,6 +62,12 @@ describe('cart currency render contract', () => {
         expect(drawer).toContain("import { useRouter } from 'next/navigation'")
         expect(drawer).toContain('function navigateFromDrawer')
         expect(drawer).toContain('router.push(href)')
+        const navigateStart = drawer.indexOf('function navigateFromDrawer')
+        const navigateEnd = drawer.indexOf('return (', navigateStart)
+        const navigateBlock = drawer.slice(navigateStart, navigateEnd)
+        expect(navigateBlock.indexOf('router.push(href)')).toBeLessThan(
+            navigateBlock.indexOf('closeDrawer()')
+        )
         expect(checkoutCtaBlock).toContain("onClick={() => navigateFromDrawer(localizedHref('cart'))}")
         expect(checkoutCtaBlock).toContain("{t('cart.drawer.viewFullCart')}")
         expect(checkoutCtaBlock).toContain("onClick={() => navigateFromDrawer(localizedHref('checkout'))}")

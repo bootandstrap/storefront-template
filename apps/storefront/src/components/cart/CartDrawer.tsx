@@ -64,8 +64,8 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
     const formattedSubtotal = formatCurrency(subtotal, currency, locale)
 
     function navigateFromDrawer(href: string) {
-        closeDrawer()
         router.push(href)
+        closeDrawer()
     }
 
     return (
