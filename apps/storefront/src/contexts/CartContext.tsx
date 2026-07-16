@@ -10,8 +10,7 @@ import {
     type ReactNode,
 } from 'react'
 import type { MedusaCart, MedusaLineItem } from '@/lib/medusa/client'
-import { getPublicMedusaUrl } from '@/lib/medusa/url'
-import { getRuntimeEnv } from '@/lib/runtime-env'
+import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
@@ -86,17 +85,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }
             setCartIdState(stored)
             try {
-                const medusaUrl = getPublicMedusaUrl()
-                const publishableKey = getRuntimeEnv('MEDUSA_PUBLISHABLE_KEY')
-                const res = await fetch(`${medusaUrl}/store/carts/${stored}`, {
-                    headers: {
-                        ...(publishableKey && { 'x-publishable-api-key': publishableKey }),
-                    },
-                })
-                if (res.ok) {
-                    const data = await res.json()
-                    if (data?.cart) setCart(data.cart)
-                }
+                const loaded = await getCartAction(stored)
+                if (loaded) setCart(loaded)
             } catch (err) {
                 // Cart may have expired or Medusa unreachable — clear stale ID
                 logger.warn('[CartContext] Cart hydration failed:', err)
