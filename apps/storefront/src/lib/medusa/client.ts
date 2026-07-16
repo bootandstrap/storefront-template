@@ -108,6 +108,7 @@ export interface MedusaCart {
     tax_total: number
     shipping_total: number
     discount_total: number
+    currency_code?: string
     region?: { currency_code: string }
 }
 

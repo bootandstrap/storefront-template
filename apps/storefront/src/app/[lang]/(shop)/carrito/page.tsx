@@ -8,6 +8,7 @@ import { ShoppingBag, ArrowLeft, Loader2, ArrowRight } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { useI18n } from '@/lib/i18n/provider'
+import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'
 import CartItem from '@/components/cart/CartItem'
 
 export default function CarritoPage() {
@@ -26,14 +27,9 @@ export default function CarritoPage() {
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
-    const currency = items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
+    const currency = cart?.currency_code || cart?.region?.currency_code || items[0]?.variant?.prices?.[0]?.currency_code || 'EUR'
 
-    const formatPrice = (amount: number) =>
-        new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-            minimumFractionDigits: 0,
-        }).format(amount / 100)
+    const formatPrice = (amount: number) => formatCurrency(amount, currency, locale)
 
     return (
         <div className="container-page py-8">

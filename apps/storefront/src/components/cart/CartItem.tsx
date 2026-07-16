@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/Toaster'
 import { useI18n } from '@/lib/i18n/provider'
 import { updateCartItemAction, removeFromCartAction } from '@/app/[lang]/(shop)/cart/actions'
+import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'
 import type { MedusaLineItem } from '@/lib/medusa/client'
 
 interface CartItemProps {
@@ -22,18 +23,12 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
     const [isPending, startTransition] = useTransition()
     const [pendingAction, setPendingAction] = useState<'inc' | 'dec' | 'remove' | null>(null)
 
-    const unitPrice = item.unit_price / 100
-    const total = (item.unit_price * item.quantity) / 100
+    const unitPrice = item.unit_price
+    const total = item.unit_price * item.quantity
     // Use parent-provided currency first, then try variant prices
     const currency = currencyCode || item.variant?.prices?.[0]?.currency_code || 'EUR'
 
-    function formatPrice(amount: number) {
-        return new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-            minimumFractionDigits: 0,
-        }).format(amount)
-    }
+    const formatPrice = (amount: number) => formatCurrency(amount, currency, locale)
 
     async function handleUpdate(newQuantity: number, action: 'inc' | 'dec') {
         if (!cartId) return
