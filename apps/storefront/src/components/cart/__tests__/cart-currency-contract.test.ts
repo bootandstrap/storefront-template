@@ -74,4 +74,18 @@ describe('cart currency render contract', () => {
         expect(checkoutCtaBlock).toContain("{t('cart.checkout')}")
         expect(drawer).not.toContain("href={localizedHref('checkout')}\n                                onClick={closeDrawer}")
     })
+
+    it('CartDrawer renders above cookie consent so first-visit CTAs remain clickable', () => {
+        const drawer = readFileSync(
+            join(srcRoot, 'components/cart/CartDrawer.tsx'),
+            'utf-8',
+        )
+        const cookieConsent = readFileSync(
+            join(srcRoot, 'components/consent/CookieConsentBanner.tsx'),
+            'utf-8',
+        )
+
+        expect(cookieConsent).toContain('z-50')
+        expect(drawer).toContain('fixed inset-0 z-[80] animate-fade-in')
+    })
 })

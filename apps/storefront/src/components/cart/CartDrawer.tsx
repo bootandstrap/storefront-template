@@ -69,7 +69,7 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
     }
 
     return (
-        <div data-testid="cart-drawer" className="fixed inset-0 z-50 animate-fade-in" role="dialog" aria-modal="true" aria-label={t('cart.title')}>
+        <div data-testid="cart-drawer" className="fixed inset-0 z-[80] animate-fade-in" role="dialog" aria-modal="true" aria-label={t('cart.title')}>
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
