@@ -27,7 +27,7 @@ interface ProductQuickViewProps {
  */
 export default function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewProps) {
     const { t, locale, localizedHref } = useI18n()
-    const { cartId, setCart, openDrawer } = useCart()
+    const { cartId, setCart, setCartId, openDrawer } = useCart()
     const [isAdding, setIsAdding] = useState(false)
     const [added, setAdded] = useState(false)
     const [selectedImageIdx, setSelectedImageIdx] = useState(0)
@@ -55,12 +55,13 @@ export default function ProductQuickView({ product, isOpen, onClose }: ProductQu
         }).format(amount / 100)
 
     const handleAddToCart = async () => {
-        if (!activeVariant?.id || isAdding || !cartId) return
+        if (!activeVariant?.id || isAdding) return
         setIsAdding(true)
         try {
             const result = await addToCartAction(cartId, activeVariant.id)
             if (result?.cart) {
                 setCart(result.cart)
+                if (result.cartId) setCartId(result.cartId)
                 setAdded(true)
                 setTimeout(() => {
                     setAdded(false)
