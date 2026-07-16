@@ -17,6 +17,7 @@ import {
   ProductGridSkeleton,
 } from '@/components/ui/Skeleton'
 import { logger } from '@/lib/logger'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,8 @@ export default async function HomePage({
   const { config, featureFlags } = await getConfig()
   const dictionary = await getDictionary(lang as Locale)
   const siteUrl = await getPublicBaseUrl()
+  const headersList = await headers()
+  const cspNonce = headersList.get('x-csp-nonce') ?? undefined
 
   // Fetch carousel slides if feature is enabled
   let carouselSlides: import('@/components/home/HeroCarousel').CarouselSlide[] = []
@@ -82,10 +85,12 @@ export default async function HomePage({
     <>
       {/* Structured Data — Organization + WebSite with SearchAction */}
       <script
+        nonce={cspNonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLD(config, siteUrl)) }}
       />
       <script
+        nonce={cspNonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLD(config, siteUrl)) }}
       />

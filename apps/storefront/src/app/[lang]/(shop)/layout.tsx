@@ -26,7 +26,7 @@ import { DeferredChatWidget } from '@/components/chat/DeferredChatWidget'
 import CookieConsentBanner from '@/components/consent/CookieConsentBanner'
 import CompareBarWrapper from '@/components/products/CompareBar'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
 
@@ -77,6 +77,8 @@ export default async function ShopLayout({
     const t = createTranslator(dictionary)
 
     const cookieStore = await cookies()
+    const headersList = await headers()
+    const cspNonce = headersList.get('x-csp-nonce') ?? undefined
     const isSimulating = cookieStore.get('simulating_client')?.value === 'true'
 
     // Fetch categories for MegaMenu (top-level only)
@@ -136,7 +138,7 @@ export default async function ShopLayout({
     }
 
     return (
-        <ThemeProvider defaultTheme={config.theme_mode || 'light'}>
+        <ThemeProvider defaultTheme={config.theme_mode || 'light'} nonce={cspNonce}>
             {isSimulating && (
                 <a
                     href={`/api/admin/stop_simulation?lang=${lang}`}

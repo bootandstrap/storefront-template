@@ -2,6 +2,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getConfig } from '@/lib/config'
 import { faqPageJsonLD, safeJsonLd } from '@/lib/seo/jsonld'
 import { ChevronDown, HelpCircle } from 'lucide-react'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,8 @@ export default async function FaqPage({
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
     const { config } = await getConfig()
+    const headersList = await headers()
+    const cspNonce = headersList.get('x-csp-nonce') ?? undefined
 
     // FAQ items from dictionary — easy for tenants to customize via i18n
     const faqItems = [
@@ -41,6 +44,7 @@ export default async function FaqPage({
         <div className="container-page py-12">
             {/* FAQPage JSON-LD for Google rich results */}
             <script
+                nonce={cspNonce}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />

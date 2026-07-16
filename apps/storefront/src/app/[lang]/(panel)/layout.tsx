@@ -105,6 +105,7 @@ export default async function PanelLayout({
     const { headers } = await import('next/headers')
     const { shouldAllowPanelRoute } = await import('@/lib/panel-policy')
     const headersList = await headers()
+    const cspNonce = headersList.get('x-csp-nonce') ?? undefined
     const pathname = headersList.get('x-invoke-path') || headersList.get('x-middleware-invoke') || ''
     const pathSegments = pathname.split('/').filter(Boolean)
     const panelIndex = pathSegments.indexOf('panel')
@@ -302,7 +303,7 @@ export default async function PanelLayout({
     }
 
     return (
-        <PanelThemeProvider>
+        <PanelThemeProvider nonce={cspNonce}>
         <PanelShell
             tenantId={config.tenant_id ?? undefined}
             lang={lang}

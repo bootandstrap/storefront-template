@@ -14,6 +14,7 @@ import RecentlyViewed from '@/components/products/RecentlyViewed'
 import ShareButtons from '@/components/products/ShareButtons'
 import { Truck, ShieldCheck, RotateCcw, ChevronRight } from 'lucide-react'
 import { getPublicBaseUrl, joinPublicUrl } from '@/lib/seo/public-url'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +60,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
     const dictionary = await getDictionary(lang as Locale)
     const t = createTranslator(dictionary)
     const siteUrl = await getPublicBaseUrl()
+    const headersList = await headers()
+    const cspNonce = headersList.get('x-csp-nonce') ?? undefined
     const jsonLd = productJsonLD(product, config, undefined, siteUrl)
     const breadcrumbJsonLd = breadcrumbListJsonLD(
         product,
@@ -83,10 +86,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <>
             {/* JSON-LD Structured Data */}
             <script
+                nonce={cspNonce}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />
             <script
+                nonce={cspNonce}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
             />
