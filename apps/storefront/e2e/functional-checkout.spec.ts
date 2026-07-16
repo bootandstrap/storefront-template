@@ -27,7 +27,7 @@ test.describe('Public storefront functional checkout', () => {
 
         const firstProduct = page.locator('[data-testid="product-card"]').first()
         await expect(firstProduct).toBeVisible({ timeout: 20_000 })
-        await firstProduct.click()
+        await firstProduct.getByRole('heading').first().click()
         await expect(page).toHaveURL(/\/es\/productos\/[^/?#]+/)
 
         const addToCart = page.getByTestId('add-to-cart')

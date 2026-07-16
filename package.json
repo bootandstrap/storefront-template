@@ -9,6 +9,7 @@
     "type-check": "turbo type-check",
     "test": "turbo test",
     "test:run": "turbo test:run",
+    "cert:storefront:functional-checkout": "pnpm --dir apps/storefront cert:storefront:functional-checkout",
     "bns:360:functional:canary": "pnpm --dir apps/storefront cert:360:functional:auto",
     "changeset": "changeset",
     "version:packages": "changeset version",

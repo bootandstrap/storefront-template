@@ -12,6 +12,7 @@
     "test:run": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "cert:storefront:functional-checkout": "node scripts/functional-checkout-cert.mjs",
     "cert:360:list": "playwright test e2e/bns-360-runtime.spec.ts --list",
     "cert:360:smoke": "playwright test e2e/bns-360-runtime.spec.ts",
     "cert:360:functional": "BNS_360_FUNCTIONAL_JOURNEYS=1 playwright test e2e/bns-360-runtime.spec.ts",

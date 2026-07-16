@@ -78,7 +78,14 @@ Run: `pnpm --filter=storefront vitest run src/lib/__tests__/feature-gate-config.
 | `./dev.sh` | Start all services |
 | `npx tsx scripts/seed-demo.ts` | Seed demo data |
 | `pnpm test:run` | Run tests |
+| `BNS_360_BASE_URL=https://tenant.example.com pnpm cert:storefront:functional-checkout` | Certify product -> cart -> checkout -> COD order against a deployed storefront |
 | `pnpm build` | Build all apps |
+
+## Functional Checkout Certification
+
+Use `pnpm cert:storefront:functional-checkout` for the public shopping path. It requires a deployed storefront URL through `BNS_360_BASE_URL`, `NEXT_PUBLIC_STORE_URL`, or `BASE_URL`, and it fails closed on localhost unless `BNS_ALLOW_LOCAL_FUNCTIONAL_CHECKOUT=1` is set for a local drill.
+
+The command runs `apps/storefront/e2e/functional-checkout.spec.ts` with `BNS_FUNCTIONAL_CHECKOUT_E2E=1` and `BNS_CHECKOUT_PAYMENT_MODE=cod_simulator`. It creates a test-mode cash-on-delivery order only; it does not run Stripe live payments, live refunds, Stripe Tax registration, or physical POS actions.
 
 ## Key Conventions
 
