@@ -108,6 +108,11 @@ export class MedusaClient {
         return res.products ?? []
     }
 
+    async getInventoryItems(limit = 500): Promise<Array<{ id: string; sku: string | null; title: string | null }>> {
+        const res = await this.request<{ inventory_items: any[] }>(`/admin/inventory-items?limit=${limit}&fields=id,sku,title`)
+        return res.inventory_items ?? []
+    }
+
     async getCategories(limit = 100): Promise<Array<{ id: string; name: string; handle: string }>> {
         const res = await this.request<{ product_categories: any[] }>(`/admin/product-categories?limit=${limit}&fields=id,name,handle`)
         return res.product_categories ?? []

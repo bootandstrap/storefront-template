@@ -22,6 +22,7 @@ import { trackEvent } from '@/lib/analytics'
 import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
 import { useI18n } from '@/lib/i18n/provider'
 import { X, ArrowLeft, ArrowRight, Loader2, User, MapPin, Truck, Wallet, CreditCard, Check } from 'lucide-react'
+import { formatPrice as formatCurrencyPrice } from '@/lib/medusa/price'
 
 // Step components
 import CheckoutInfoStep from './steps/CheckoutInfoStep'
@@ -131,11 +132,7 @@ export default function CheckoutModal({
     const displayTotal = cartTotals?.total ?? items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
 
     const formatPrice = (amount: number) =>
-        new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: displayCurrency.toUpperCase(),
-            minimumFractionDigits: 0,
-        }).format(amount / 100)
+        formatCurrencyPrice(amount, displayCurrency.toLowerCase(), locale)
 
     // Load available methods
     useEffect(() => {

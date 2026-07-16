@@ -12,6 +12,7 @@ import PromotionInput from '@/components/checkout/PromotionInput'
 import { getEnabledMethods } from '@/lib/payment-methods'
 import type { StoreConfig, FeatureFlags, PlanLimits } from '@/lib/config'
 import type { CheckoutCountry } from '@/components/checkout/steps/CheckoutAddressStep'
+import { formatPrice as formatCurrencyPrice } from '@/lib/medusa/price'
 
 interface CheckoutPageClientProps {
     config: StoreConfig
@@ -68,11 +69,7 @@ export default function CheckoutPageClient({
     const displayTotal = (isCalculating && !useFallback) ? null : (!isCalculating && cart?.total != null ? cart.total : localTotal)
 
     const formatPrice = (amount: number) =>
-        new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-            minimumFractionDigits: 0,
-        }).format(amount / 100)
+        formatCurrencyPrice(amount, currency.toLowerCase(), locale)
 
     if (items.length === 0) {
         return (

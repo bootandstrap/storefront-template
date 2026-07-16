@@ -7,6 +7,11 @@
 
 import type { IndustryTemplate } from '../types'
 
+const producePrices = (eurAmount: number, copAmount: number) => [
+    { amount: eurAmount, currency_code: 'eur' },
+    { amount: copAmount, currency_code: 'cop' },
+]
+
 export const freshProduceTemplate: IndustryTemplate = {
     id: 'fresh-produce',
     name: 'Campifruit — Organic Market',
@@ -14,12 +19,12 @@ export const freshProduceTemplate: IndustryTemplate = {
     description: 'Tienda de frutas y verduras orgánicas con POS presencial y chatbot de atención.',
     emoji: '🍊',
 
-    currency: 'eur',
-    country: 'es',
-    regionName: 'Europe',
-    timezone: 'Europe/Madrid',
-    countryPrefix: '+34',
-    additionalCurrencies: [],
+    currency: 'cop',
+    country: 'co',
+    regionName: 'Colombia',
+    timezone: 'America/Bogota',
+    countryPrefix: '+57',
+    additionalCurrencies: ['eur'],
 
     governance: {
         modules: [
@@ -47,13 +52,13 @@ export const freshProduceTemplate: IndustryTemplate = {
         storeConfig: {
             business_name: 'Campifruit',
             description: 'Frutas y verduras orgánicas directas del campo a tu mesa.',
-            contact_phone: '+34 612 345 678',
+            contact_phone: '+57 300 123 4567',
             primary_color: '#2D5016',
             accent_color: '#8BC34A',
             language: 'es',
             store_email: 'hola@campifruit.demo',
-            default_currency: 'eur',
-            active_currencies: ['eur'],
+            default_currency: 'cop',
+            active_currencies: ['cop', 'eur'],
             active_languages: ['es', 'en'],
         },
     },
@@ -80,8 +85,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'frutas',
             thumbnail: 'https://images.unsplash.com/photo-1547514701-42782101795e?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Caja 5kg', sku: 'NAR-5KG', prices: [{ amount: 1290, currency_code: 'eur' }] },
-                { title: 'Caja 10kg', sku: 'NAR-10KG', prices: [{ amount: 2190, currency_code: 'eur' }] },
+                { title: 'Caja 5kg', sku: 'NAR-5KG', prices: producePrices(1290, 12900) },
+                { title: 'Caja 10kg', sku: 'NAR-10KG', prices: producePrices(2190, 21900) },
             ],
             tags: ['orgánico', 'temporada'],
         },
@@ -92,8 +97,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'frutas',
             thumbnail: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=400&fit=crop',
             variants: [
-                { title: '500g', sku: 'FRE-500', prices: [{ amount: 450, currency_code: 'eur' }] },
-                { title: '1kg', sku: 'FRE-1KG', prices: [{ amount: 790, currency_code: 'eur' }] },
+                { title: '500g', sku: 'FRE-500', prices: producePrices(450, 4500) },
+                { title: '1kg', sku: 'FRE-1KG', prices: producePrices(790, 7900) },
             ],
         },
         {
@@ -103,8 +108,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'frutas',
             thumbnail: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Bolsa 1kg', sku: 'MAN-1KG', prices: [{ amount: 390, currency_code: 'eur' }] },
-                { title: 'Caja 3kg', sku: 'MAN-3KG', prices: [{ amount: 990, currency_code: 'eur' }] },
+                { title: 'Bolsa 1kg', sku: 'MAN-1KG', prices: producePrices(390, 3900) },
+                { title: 'Caja 3kg', sku: 'MAN-3KG', prices: producePrices(990, 9900) },
             ],
         },
         {
@@ -114,8 +119,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'verduras',
             thumbnail: 'https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=400&h=400&fit=crop',
             variants: [
-                { title: '1kg', sku: 'TOM-1KG', prices: [{ amount: 350, currency_code: 'eur' }] },
-                { title: '2kg', sku: 'TOM-2KG', prices: [{ amount: 590, currency_code: 'eur' }] },
+                { title: '1kg', sku: 'TOM-1KG', prices: producePrices(350, 3500) },
+                { title: '2kg', sku: 'TOM-2KG', prices: producePrices(590, 5900) },
             ],
         },
         {
@@ -125,8 +130,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'verduras',
             thumbnail: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400&h=400&fit=crop',
             variants: [
-                { title: '250g', sku: 'PAD-250', prices: [{ amount: 290, currency_code: 'eur' }] },
-                { title: '500g', sku: 'PAD-500', prices: [{ amount: 490, currency_code: 'eur' }] },
+                { title: '250g', sku: 'PAD-250', prices: producePrices(290, 2900) },
+                { title: '500g', sku: 'PAD-500', prices: producePrices(490, 4900) },
             ],
         },
         {
@@ -136,8 +141,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'verduras',
             thumbnail: 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Unidad', sku: 'LEC-UND', prices: [{ amount: 120, currency_code: 'eur' }] },
-                { title: 'Pack 3', sku: 'LEC-3PK', prices: [{ amount: 290, currency_code: 'eur' }] },
+                { title: 'Unidad', sku: 'LEC-UND', prices: producePrices(120, 1200) },
+                { title: 'Pack 3', sku: 'LEC-3PK', prices: producePrices(290, 2900) },
             ],
         },
         {
@@ -147,8 +152,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'frutas',
             thumbnail: 'https://images.unsplash.com/photo-1519162808019-7de1683fa2ad?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Pack 3', sku: 'AGU-3PK', prices: [{ amount: 590, currency_code: 'eur' }] },
-                { title: 'Pack 6', sku: 'AGU-6PK', prices: [{ amount: 990, currency_code: 'eur' }] },
+                { title: 'Pack 3', sku: 'AGU-3PK', prices: producePrices(590, 5900) },
+                { title: 'Pack 6', sku: 'AGU-6PK', prices: producePrices(990, 9900) },
             ],
         },
         {
@@ -158,8 +163,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'cestas',
             thumbnail: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Estándar', sku: 'CES-STD', prices: [{ amount: 2490, currency_code: 'eur' }] },
-                { title: 'Premium', sku: 'CES-PRE', prices: [{ amount: 3490, currency_code: 'eur' }] },
+                { title: 'Estándar', sku: 'CES-STD', prices: producePrices(2490, 24900) },
+                { title: 'Premium', sku: 'CES-PRE', prices: producePrices(3490, 34900) },
             ],
             tags: ['bestseller'],
         },
@@ -170,8 +175,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'cestas',
             thumbnail: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Mediana', sku: 'CFR-MED', prices: [{ amount: 1890, currency_code: 'eur' }] },
-                { title: 'Grande', sku: 'CFR-GRN', prices: [{ amount: 2890, currency_code: 'eur' }] },
+                { title: 'Mediana', sku: 'CFR-MED', prices: producePrices(1890, 18900) },
+                { title: 'Grande', sku: 'CFR-GRN', prices: producePrices(2890, 28900) },
             ],
         },
         {
@@ -181,8 +186,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'zumos',
             thumbnail: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&h=400&fit=crop',
             variants: [
-                { title: '500ml', sku: 'ZUM-500', prices: [{ amount: 390, currency_code: 'eur' }] },
-                { title: '1L', sku: 'ZUM-1L', prices: [{ amount: 650, currency_code: 'eur' }] },
+                { title: '500ml', sku: 'ZUM-500', prices: producePrices(390, 3900) },
+                { title: '1L', sku: 'ZUM-1L', prices: producePrices(650, 6500) },
             ],
         },
         {
@@ -192,8 +197,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'frutas',
             thumbnail: 'https://images.unsplash.com/photo-1590502593747-42a996133562?w=400&h=400&fit=crop',
             variants: [
-                { title: 'Malla 1kg', sku: 'LIM-1KG', prices: [{ amount: 290, currency_code: 'eur' }] },
-                { title: 'Caja 3kg', sku: 'LIM-3KG', prices: [{ amount: 690, currency_code: 'eur' }] },
+                { title: 'Malla 1kg', sku: 'LIM-1KG', prices: producePrices(290, 2900) },
+                { title: 'Caja 3kg', sku: 'LIM-3KG', prices: producePrices(690, 6900) },
             ],
         },
         {
@@ -203,8 +208,8 @@ export const freshProduceTemplate: IndustryTemplate = {
             category: 'verduras',
             thumbnail: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400&h=400&fit=crop',
             variants: [
-                { title: '400g', sku: 'ZAN-400', prices: [{ amount: 250, currency_code: 'eur' }] },
-                { title: '800g', sku: 'ZAN-800', prices: [{ amount: 420, currency_code: 'eur' }] },
+                { title: '400g', sku: 'ZAN-400', prices: producePrices(250, 2500) },
+                { title: '800g', sku: 'ZAN-800', prices: producePrices(420, 4200) },
             ],
         },
     ],

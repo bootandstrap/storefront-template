@@ -118,6 +118,22 @@ export async function cleanProducts(client: MedusaClient, log: LogFn): Promise<n
     return deleted
 }
 
+export async function cleanInventoryItems(client: MedusaClient, log: LogFn): Promise<number> {
+    const items = await client.getInventoryItems(500)
+    if (!items.length) {
+        log('✅', 'No inventory items to clean')
+        return 0
+    }
+
+    const { deleted, failed } = await client.bulkDelete('inventory-items', items.map(i => i.id), { retries: 0 })
+    if (failed > 0) {
+        log('🧹', `Inventory items: ${deleted} deleted, ${failed} failed`)
+    } else {
+        log('🧹', `Inventory items: ${deleted} deleted`)
+    }
+    return deleted
+}
+
 export async function cleanCategories(client: MedusaClient, log: LogFn): Promise<number> {
     const categories = await client.getCategories(200)
     if (!categories.length) {
@@ -161,6 +177,7 @@ export async function deepClean(
     await cleanCarts(client, log)
     await cleanCustomers(client, log)
     await cleanProducts(client, log)
+    await cleanInventoryItems(client, log)
     await cleanCategories(client, log)
 
     if (options.hardReset) {

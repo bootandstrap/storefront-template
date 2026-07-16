@@ -95,6 +95,7 @@ export async function seedCatalog(
     let productsCreated = 0
     const productIds: string[] = []
     const variantIds: string[] = []
+    const productFailures: string[] = []
 
     for (const prodDef of template.products) {
         if (existingHandles.has(prodDef.handle)) {
@@ -121,7 +122,7 @@ export async function seedCatalog(
                 variants: prodDef.variants.map(v => ({
                     title: v.title,
                     sku: v.sku,
-                    manage_inventory: v.manage_inventory ?? true,
+                    manage_inventory: v.manage_inventory ?? false,
                     prices: v.prices,
                     options: { Variant: v.title },
                 })),
@@ -160,8 +161,14 @@ export async function seedCatalog(
             productsCreated++
             log('✅', `Product created: ${prodDef.title} (${prodDef.variants.length} variants)`)
         } catch (err) {
-            log('⚠️', `Product failed: ${prodDef.title} — ${err instanceof Error ? err.message : err}`)
+            const message = err instanceof Error ? err.message : String(err)
+            productFailures.push(`${prodDef.title}: ${message}`)
+            log('⚠️', `Product failed: ${prodDef.title} — ${message}`)
         }
+    }
+
+    if (productFailures.length) {
+        throw new Error(`Product seed failed for ${productFailures.length} product(s): ${productFailures.join('; ')}`)
     }
 
     log('📦', `═══ CATALOG SEED COMPLETE: ${categoriesCreated} cats, ${productsCreated} products ═══`)
