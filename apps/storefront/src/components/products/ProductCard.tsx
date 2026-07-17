@@ -1,10 +1,10 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
 import { Package, ShoppingCart, Loader2, Check, Eye } from 'lucide-react'
-import { useState, useTransition, useCallback, lazy, Suspense } from 'react'
+import { useState, useTransition, lazy, Suspense } from 'react'
 import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, getOriginalPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
@@ -56,15 +56,7 @@ export default function ProductCard({
     const [isPending, startTransition] = useTransition()
     const [justAdded, setJustAdded] = useState(false)
     const [quickViewOpen, setQuickViewOpen] = useState(false)
-    const router = useRouter()
     const productHref = `${localizedHref('products')}/${product.handle}`
-
-    const handleCardClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        // Don't navigate if the click was on an interactive child (button, link, input)
-        const target = e.target as HTMLElement
-        if (target.closest('button, a, input, [role="button"]')) return
-        router.push(productHref)
-    }, [router, productHref])
 
     const canQuickAdd = quickAddEnabled && variant && (variant.inventory_quantity ?? 1) > 0
 
@@ -99,49 +91,81 @@ export default function ProductCard({
 
     return (
         <>
-            <div onClick={handleCardClick} data-testid="product-card" className="product-card group block cursor-pointer" role="link" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') router.push(productHref) }}>
-                {/* Image */}
-                <div className="product-card-image relative aspect-square">
-                    {product.thumbnail ? (
-                        <Image
-                            src={product.thumbnail}
-                            alt={product.title}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            priority={imagePriority}
-                            loading={imagePriority ? undefined : 'lazy'}
-                            className="object-cover"
-                        />
-                    ) : (
-                        <div className="image-fallback">
-                            <Package strokeWidth={1.5} />
-                        </div>
-                    )}
+            <article className="product-card group relative">
+                <Link href={productHref} data-testid="product-card" className="block">
+                    {/* Image */}
+                    <div className="product-card-image relative aspect-square">
+                        {product.thumbnail ? (
+                            <Image
+                                src={product.thumbnail}
+                                alt={product.title}
+                                fill
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                priority={imagePriority}
+                                loading={imagePriority ? undefined : 'lazy'}
+                                className="object-cover"
+                            />
+                        ) : (
+                            <div className="image-fallback">
+                                <Package strokeWidth={1.5} />
+                            </div>
+                        )}
 
-                    {/* Product badges from metadata (Owner Panel managed) — gated by enable_product_badges */}
-                    {badges.length > 0 && (
-                        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                            {badges.map((badge) => (
-                                <span
-                                    key={badge}
-                                    className={BADGE_CLASSES[badge.toLowerCase()] || 'product-badge product-badge-new'}
-                                >
-                                    {badge}
+                        {/* Product badges from metadata (Owner Panel managed) — gated by enable_product_badges */}
+                        {badges.length > 0 && (
+                            <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                                {badges.map((badge) => (
+                                    <span
+                                        key={badge}
+                                        className={BADGE_CLASSES[badge.toLowerCase()] || 'product-badge product-badge-new'}
+                                    >
+                                        {badge}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Category label */}
+                        {category && (
+                            <span className="absolute bottom-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-sm text-tx-sec">
+                                {category.name}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4 space-y-1.5">
+                        <h3 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors duration-200">
+                            {product.title}
+                        </h3>
+
+                        {/* Price — shows discount if calculated price differs */}
+                        {resolved && (
+                            <div className="flex items-baseline gap-2">
+                                <span className={`text-lg font-bold ${hasDiscount ? 'text-error' : 'text-brand'}`}>
+                                    {formatPrice(resolved.amount, resolved.currency)}
                                 </span>
-                            ))}
-                        </div>
-                    )}
+                                {hasDiscount && originalPrice && (
+                                    <span className="text-sm text-tx-muted line-through">
+                                        {formatPrice(originalPrice.amount, originalPrice.currency)}
+                                    </span>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Category label */}
-                    {category && (
-                        <span className="absolute bottom-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-sm text-tx-sec">
-                            {category.name}
-                        </span>
-                    )}
+                        {/* Variant count */}
+                        {product.variants && product.variants.length > 1 && (
+                            <p className="text-xs text-tx-muted">
+                                {t('product.options', { count: String(product.variants.length) })}
+                            </p>
+                        )}
+                    </div>
+                </Link>
 
-                    {/* Compare button */}
+                {/* Interactive overlays stay outside the product link to avoid nested controls. */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 aspect-square">
                     {compareEnabled && (
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="pointer-events-auto absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                             <CompareButton productId={product.id} />
                         </div>
                     )}
@@ -154,7 +178,7 @@ export default function ProductCard({
                                 e.stopPropagation()
                                 setQuickViewOpen(true)
                             }}
-                            className="absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity
+                            className="pointer-events-auto absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity
                             w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm
                             flex items-center justify-center hover:bg-white hover:scale-110
                             transition-all duration-200"
@@ -170,7 +194,7 @@ export default function ProductCard({
                         <button
                             onClick={handleQuickAdd}
                             disabled={isPending}
-                            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-brand text-white shadow-lg flex items-center justify-center
+                            className="pointer-events-auto absolute bottom-3 right-3 w-10 h-10 rounded-full bg-brand text-white shadow-lg flex items-center justify-center
                             opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100
                             translate-y-2 group-hover:translate-y-0
                             transition-all duration-200 ease-out
@@ -189,35 +213,7 @@ export default function ProductCard({
                         </button>
                     )}
                 </div>
-
-                {/* Info */}
-                <div className="p-4 space-y-1.5">
-                    <h3 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors duration-200">
-                        {product.title}
-                    </h3>
-
-                    {/* Price — shows discount if calculated price differs */}
-                    {resolved && (
-                        <div className="flex items-baseline gap-2">
-                            <span className={`text-lg font-bold ${hasDiscount ? 'text-error' : 'text-brand'}`}>
-                                {formatPrice(resolved.amount, resolved.currency)}
-                            </span>
-                            {hasDiscount && originalPrice && (
-                                <span className="text-sm text-tx-muted line-through">
-                                    {formatPrice(originalPrice.amount, originalPrice.currency)}
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Variant count */}
-                    {product.variants && product.variants.length > 1 && (
-                        <p className="text-xs text-tx-muted">
-                            {t('product.options', { count: String(product.variants.length) })}
-                        </p>
-                    )}
-                </div>
-            </div>
+            </article>
 
             {/* QuickView Modal — portaled to body to escape overflow:hidden */}
             {quickViewOpen && typeof document !== 'undefined' && createPortal(
