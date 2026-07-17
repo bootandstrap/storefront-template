@@ -76,15 +76,6 @@ export default function ProductGrid({
         return result
     }, [products, priceMin, priceMax, inStockOnly])
 
-    // Debounced search
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            updateParams({ q: searchInput })
-        }, 300)
-        return () => clearTimeout(timeout)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchInput])
-
     const updateParams = useCallback(
         (updates: Record<string, string>) => {
             const params = new URLSearchParams(searchParams.toString())
@@ -99,6 +90,15 @@ export default function ProductGrid({
         },
         [searchParams, router, pathname]
     )
+
+    // Debounced search
+    useEffect(() => {
+        if (searchInput === currentQuery) return
+        const timeout = setTimeout(() => {
+            updateParams({ q: searchInput })
+        }, 300)
+        return () => clearTimeout(timeout)
+    }, [searchInput, currentQuery, updateParams])
 
     const SORT_LABELS: Record<string, string> = {
         '-created_at': t('product.sortNewest'),
