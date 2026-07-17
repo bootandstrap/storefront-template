@@ -22,6 +22,7 @@ on:
       - 'apps/storefront/src/app/api/**'
       - 'apps/storefront/src/app/[lang]/(panel)/**'
       - 'apps/storefront/src/app/[lang]/(auth)/**'
+      - 'apps/storefront/src/components/products/**'
       # Shared packages
       - 'packages/shared/**'
       # CI/CD workflows
