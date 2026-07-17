@@ -120,8 +120,13 @@ export default function ProductGrid({
             {/* Search + filter bar */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
+                    <label htmlFor="product-grid-search" className="sr-only">
+                        {t('product.searchPlaceholder')}
+                    </label>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-muted" />
                     <input
+                        id="product-grid-search"
+                        name="product-grid-search"
                         type="text"
                         placeholder={t('product.searchPlaceholder')}
                         value={searchInput}
@@ -132,6 +137,7 @@ export default function ProductGrid({
                         <button
                             onClick={() => setSearchInput('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2"
+                            aria-label={t('product.clearFilters')}
                         >
                             <X className="w-4 h-4 text-tx-muted hover:text-tx" />
                         </button>
@@ -143,6 +149,7 @@ export default function ProductGrid({
                         value={currentSort}
                         onChange={(e) => updateParams({ sort: e.target.value })}
                         className="px-3 py-2.5 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft"
+                        aria-label={t('product.sort')}
                     >
                         <option value="">{t('product.sort')}</option>
                         <option value="-created_at">{t('product.sortNewest')}</option>
@@ -153,6 +160,7 @@ export default function ProductGrid({
                     <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`btn btn-ghost px-3 py-2.5 rounded-xl border border-sf-3 text-sm ${showFilters ? 'bg-brand-subtle border-brand' : ''}`}
+                        aria-label={t('product.filter')}
                     >
                         <SlidersHorizontal className="w-4 h-4" />
                         <span className="hidden sm:inline">{t('product.filter')}</span>
@@ -250,7 +258,9 @@ export default function ProductGrid({
                             className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-brand-subtle text-brand"
                         >
                             {filter.label}
-                            <button onClick={() => {
+                            <button
+                                aria-label={t('product.clearFilters')}
+                                onClick={() => {
                                 if (filter.key === 'priceMin') setPriceMin('')
                                 else if (filter.key === 'priceMax') setPriceMax('')
                                 else if (filter.key === 'inStock') setInStockOnly(false)
@@ -275,7 +285,7 @@ export default function ProductGrid({
             )}
 
             {/* Results count */}
-            <p className="text-sm text-tx-muted mb-4">
+            <p className="text-sm text-tx-sec mb-4">
                 {t('product.resultCount', { count: String(filteredProducts.length) })}
             </p>
 
@@ -312,11 +322,11 @@ export default function ProductGrid({
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0 py-1">
-                                        <h3 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors">
+                                        <h2 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors">
                                             {product.title}
-                                        </h3>
+                                        </h2>
                                         {product.description && (
-                                            <p className="text-xs text-tx-muted line-clamp-2 mt-1">
+                                            <p className="text-xs text-tx-sec line-clamp-2 mt-1">
                                                 {product.description}
                                             </p>
                                         )}
@@ -326,7 +336,7 @@ export default function ProductGrid({
                                             </p>
                                         )}
                                         {product.variants && product.variants.length > 1 && (
-                                            <p className="text-xs text-tx-muted mt-1">
+                                            <p className="text-xs text-tx-sec mt-1">
                                                 {t('product.options', { count: String(product.variants.length) })}
                                             </p>
                                         )}
@@ -392,6 +402,7 @@ export default function ProductGrid({
                                         ? 'bg-brand text-white border-brand'
                                         : 'border-sf-3 hover:border-brand text-tx-sec'
                                         }`}
+                                    aria-label={`Page ${item}`}
                                 >
                                     {item}
                                 </button>

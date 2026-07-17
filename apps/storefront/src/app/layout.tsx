@@ -144,6 +144,7 @@ export default async function RootLayout({
         {/* Preconnects — reduce DNS+TLS for critical third-party origins */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {config.logo_url && (
           <link rel="preconnect" href={new URL(config.logo_url).origin} crossOrigin="anonymous" />
         )}

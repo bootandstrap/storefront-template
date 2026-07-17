@@ -195,7 +195,7 @@
     /* Text hierarchy */
     --color-tx: #1a2e0a;
     --color-tx-sec: #4a5e3a;
-    --color-tx-muted: #6b7d5c;
+    --color-tx-muted: #5f704f;
     --color-tx-faint: #8b9c7d;
     --color-tx-inv: #ffffff;
 
@@ -491,7 +491,7 @@
     --theme-glass-heavy: rgba(255, 255, 255, 0.85);
     --theme-tx: #1a2e0a;
     --theme-tx-sec: #4a5e3a;
-    --theme-tx-muted: #6b7d5c;
+    --theme-tx-muted: #5f704f;
     --theme-tx-faint: #8b9c7d;
     --theme-tx-inv: #ffffff;
     --theme-ring-soft: rgba(45, 80, 22, 0.1);
@@ -516,7 +516,7 @@
     --color-sf-3: #e8ede3;
     --color-tx: #1a2e0a;
     --color-tx-sec: #4a5e3a;
-    --color-tx-muted: #6b7d5c;
+    --color-tx-muted: #5f704f;
     --color-tx-faint: #8b9c7d;
     --color-tx-inv: #ffffff;
 

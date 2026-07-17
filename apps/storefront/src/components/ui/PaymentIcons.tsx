@@ -35,16 +35,16 @@ export default function PaymentIcons({
                 {/* Card brands — only when online payments enabled */}
                 {enableOnlinePayments && (
                     <>
-                        <div className="payment-icon" aria-label="Visa">
+                        <div className="payment-icon" role="img" aria-label="Visa">
                             <VisaIcon width={36} height={24} />
                         </div>
-                        <div className="payment-icon" aria-label="Mastercard">
+                        <div className="payment-icon" role="img" aria-label="Mastercard">
                             <MastercardIcon width={36} height={24} />
                         </div>
-                        <div className="payment-icon" aria-label="Amex">
+                        <div className="payment-icon" role="img" aria-label="Amex">
                             <AmexIcon width={36} height={24} />
                         </div>
-                        <div className="payment-icon" aria-label="PayPal">
+                        <div className="payment-icon" role="img" aria-label="PayPal">
                             <PayPalIcon width={36} height={24} />
                         </div>
                     </>
@@ -52,14 +52,14 @@ export default function PaymentIcons({
 
                 {/* Cash on delivery */}
                 {enableCashOnDelivery && (
-                    <div className="payment-icon payment-icon-alt" aria-label="Contra reembolso">
+                    <div className="payment-icon payment-icon-alt" role="img" aria-label="Contra reembolso">
                         <Banknote className="w-5 h-5 text-tx-sec" />
                     </div>
                 )}
 
                 {/* WhatsApp checkout */}
                 {enableWhatsappCheckout && (
-                    <div className="payment-icon payment-icon-alt" aria-label="WhatsApp">
+                    <div className="payment-icon payment-icon-alt" role="img" aria-label="WhatsApp">
                         <MessageCircle className="w-4 h-4 text-[#25D366]" />
                     </div>
                 )}

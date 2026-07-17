@@ -170,6 +170,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                                 <Link
                                     href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
                                     className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
+                                    aria-label={isAuthenticated ? t('nav.account') : t('nav.login')}
                                 >
                                     <User className="w-4 h-4" />
                                     <span className="hidden sm:inline">

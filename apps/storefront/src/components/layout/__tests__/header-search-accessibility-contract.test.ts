@@ -18,4 +18,10 @@ describe('header search accessibility contract', () => {
             expect(source).toContain(`name="${id}"`)
         }
     })
+
+    it('keeps the icon-only mobile account link named for assistive tech', () => {
+        const source = readFileSync(join(layoutDir, 'Header.tsx'), 'utf-8')
+
+        expect(source).toContain('aria-label={isAuthenticated ? t(\'nav.account\') : t(\'nav.login\')}')
+    })
 })

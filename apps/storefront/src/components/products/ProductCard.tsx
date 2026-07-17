@@ -135,9 +135,9 @@ export default function ProductCard({
 
                     {/* Info */}
                     <div className="p-4 space-y-1.5">
-                        <h3 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors duration-200">
+                        <h2 className="text-sm font-semibold text-tx line-clamp-2 group-hover:text-brand transition-colors duration-200">
                             {product.title}
-                        </h3>
+                        </h2>
 
                         {/* Price — shows discount if calculated price differs */}
                         {resolved && (
@@ -155,7 +155,7 @@ export default function ProductCard({
 
                         {/* Variant count */}
                         {product.variants && product.variants.length > 1 && (
-                            <p className="text-xs text-tx-muted">
+                            <p className="text-xs text-tx-sec">
                                 {t('product.options', { count: String(product.variants.length) })}
                             </p>
                         )}
