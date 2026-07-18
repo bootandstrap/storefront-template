@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     adminFetch: vi.fn(),
     authenticatedMedusaFetch: vi.fn(),
     confirmBns360CanaryCustomerAuthUser: vi.fn(),
+    createBns360CanaryCustomerAuthUser: vi.fn(),
     createAuthAddress: vi.fn(),
     createCart: vi.fn(),
     deleteAuthAddress: vi.fn(),
@@ -66,6 +67,7 @@ vi.mock('@/lib/medusa/auth-medusa', () => ({
 
 vi.mock('@/lib/bns-360/customer-auth-admin', () => ({
     confirmBns360CanaryCustomerAuthUser: mocks.confirmBns360CanaryCustomerAuthUser,
+    createBns360CanaryCustomerAuthUser: mocks.createBns360CanaryCustomerAuthUser,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -126,6 +128,7 @@ function mockCheckoutDefaults() {
 
 function mockCustomerAccountDefaults() {
     mocks.signUp.mockResolvedValue({ data: { user: { id: 'auth_customer_1' } }, error: null })
+    mocks.createBns360CanaryCustomerAuthUser.mockResolvedValue('auth_customer_1')
     mocks.signInWithPassword.mockResolvedValue({
         data: { session: { access_token: 'redacted-test-token' } },
         error: null,
@@ -303,15 +306,12 @@ describe('BNS 360 full-system journeys', () => {
             residue: { zero: true },
         })
         expect(result.error).toBeUndefined()
-        expect(mocks.signUp).toHaveBeenCalledWith(expect.objectContaining({
+        expect(mocks.createBns360CanaryCustomerAuthUser).toHaveBeenCalledWith(expect.objectContaining({
             email: 'bns360-customer+run-1@bootandstrap.com',
-            options: expect.objectContaining({
-                data: expect.objectContaining({
-                    tenant_id: 'tenant-1',
-                    role: 'customer',
-                }),
-            }),
+            tenantId: 'tenant-1',
+            fullName: 'BNS 360 Customer',
         }))
+        expect(mocks.signUp).not.toHaveBeenCalled()
         expect(mocks.signInWithPassword).toHaveBeenCalledWith(expect.objectContaining({
             email: 'bns360-customer+run-1@bootandstrap.com',
         }))
@@ -341,6 +341,19 @@ describe('BNS 360 full-system journeys', () => {
         expect(JSON.stringify(result)).not.toContain('redacted-test-token')
         expect(JSON.stringify(result)).not.toContain('password')
         expect(JSON.stringify(result)).not.toContain('token')
+    })
+
+    it('creates the canary customer through Auth Admin without sending signup email', async () => {
+        const result = await runBns360CustomerAccountPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
+
+        expect(result.status).toBe('verified')
+        expect(mocks.createBns360CanaryCustomerAuthUser).toHaveBeenCalledWith(expect.objectContaining({
+            email: 'bns360-customer+run-1@bootandstrap.com',
+            tenantId: 'tenant-1',
+            fullName: 'BNS 360 Customer',
+            password: expect.any(String),
+        }))
+        expect(mocks.signUp).not.toHaveBeenCalled()
     })
 
     it('confirms the canary customer when production Supabase requires email confirmation', async () => {

@@ -36,6 +36,36 @@ function assertCanaryCustomerEmail(email: string): void {
     }
 }
 
+export async function createBns360CanaryCustomerAuthUser(input: {
+    email: string
+    password: string
+    tenantId: string
+    fullName: string
+}): Promise<string> {
+    assertCanaryCustomerEmail(input.email)
+
+    const supabase = createBns360AuthAdminClient()
+    const { data, error } = await supabase.auth.admin.createUser({
+        email: input.email,
+        password: input.password,
+        email_confirm: true,
+        user_metadata: {
+            full_name: input.fullName,
+            tenant_id: input.tenantId,
+            role: 'customer',
+        },
+    })
+
+    const userId = data.user?.id
+    if (error || !userId) {
+        throw new Error(error
+            ? `Customer auth create failed: ${error.message}`
+            : 'Customer auth create returned no user')
+    }
+
+    return userId
+}
+
 export async function confirmBns360CanaryCustomerAuthUser(userId: string, email: string): Promise<void> {
     if (!userId) throw new Error('Cannot confirm canary customer auth user without user id')
     assertCanaryCustomerEmail(email)

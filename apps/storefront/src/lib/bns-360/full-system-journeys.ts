@@ -244,7 +244,7 @@ type CustomerAccountSupabaseClient = {
 
 async function loadCustomerAccountJourneyDeps() {
     const [
-        { confirmBns360CanaryCustomerAuthUser },
+        { confirmBns360CanaryCustomerAuthUser, createBns360CanaryCustomerAuthUser },
         { createClient },
         { authenticatedMedusaFetch, createAuthAddress, deleteAuthAddress, getAuthCustomerOrders, updateAuthAddress },
         { adminFetch, getAdminCustomers, getAdminOrders, orderBelongsToScope },
@@ -261,6 +261,7 @@ async function loadCustomerAccountJourneyDeps() {
         adminFetch,
         authenticatedMedusaFetch,
         confirmBns360CanaryCustomerAuthUser,
+        createBns360CanaryCustomerAuthUser,
         createAuthAddress,
         createClient,
         deleteAuthAddress,
@@ -310,24 +311,12 @@ async function createCustomerAuthSession(
     progress: CustomerAccountProgress,
 ): Promise<CustomerAccountSupabaseClient> {
     const supabase = await deps.createClient()
-    const signUpResult = await supabase.auth.signUp({
+    const userId = await deps.createBns360CanaryCustomerAuthUser({
         email,
         password,
-        options: {
-            data: {
-                full_name: 'BNS 360 Customer',
-                tenant_id: input.tenantId,
-                role: 'customer',
-            },
-        },
+        tenantId: input.tenantId,
+        fullName: 'BNS 360 Customer',
     })
-
-    const userId = signUpResult.data?.user?.id
-    if (signUpResult.error || !userId) {
-        throw new Error(signUpResult.error
-            ? `Customer auth create failed: ${signUpResult.error.message}`
-            : 'Customer auth create returned no user')
-    }
 
     let signInResult = await supabase.auth.signInWithPassword({ email, password })
     if (isEmailNotConfirmedError(signInResult.error)) {
