@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { TenantBackup } from '@/lib/backup/backup-types'
 
 type JourneyStatus = 'verified' | 'blocked'
 
@@ -114,6 +115,60 @@ function blockedBaseResult(input: Bns360JourneyInput, prefix: string, journeyNam
     }
 }
 
+function buildBlockedBackupRestoreResult(
+    input: Bns360JourneyInput,
+    error: string,
+    cleanupStatus: Bns360JourneyBase['cleanup']['status'] = 'failed',
+    residueZero = true,
+): Bns360BackupRestorePrimaryJourneyResult {
+    return {
+        schema: 'bootandstrap.template.bns-360.backup-restore-primary/v1',
+        status: 'blocked',
+        ...baseResult(input, 'bns360-backup-restore'),
+        cleanup: { status: cleanupStatus },
+        residue: { zero: residueZero },
+        error,
+        runtime: {
+            backup: {
+                metadataReadable: false,
+                payloadRedacted: true,
+            },
+            restoreDryRun: {
+                safe: false,
+                mutation: false,
+            },
+        },
+    }
+}
+
+function hasReadableBackupMetadata(backup: TenantBackup | null, input: Bns360JourneyInput, tenantSlug: string): boolean {
+    return Boolean(
+        backup &&
+        backup.version === '1.0' &&
+        backup.tenant_id === input.tenantId &&
+        backup.tenant_slug === tenantSlug &&
+        backup.type === 'full' &&
+        backup.stats &&
+        backup.data &&
+        Array.isArray(backup.data.products) &&
+        Array.isArray(backup.data.orders) &&
+        Array.isArray(backup.data.customers) &&
+        Array.isArray(backup.data.categories) &&
+        Array.isArray(backup.data.promotions) &&
+        Array.isArray(backup.data.inventory)
+    )
+}
+
+function redactError(error: unknown): string {
+    const message = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+    if (message) {
+        return message
+            .replace(/(client_secret|password|token|secret|service[_-]?role[_-]?key)=?[^,\s]*/gi, '$1=[redacted]')
+            .replace(/\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9_]+/g, '[redacted_key]')
+    }
+    return 'Unknown backup restore certification error'
+}
+
 export async function runBns360CheckoutPrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360CheckoutPrimaryJourneyResult> {
@@ -187,18 +242,83 @@ export async function runBns360OrderLifecyclePrimaryJourney(
 export async function runBns360BackupRestorePrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360BackupRestorePrimaryJourneyResult> {
-    return {
-        schema: 'bootandstrap.template.bns-360.backup-restore-primary/v1',
-        ...blockedBaseResult(input, 'bns360-backup-restore', 'BNS 360 backup restore primary journey'),
-        runtime: {
-            backup: {
-                metadataReadable: false,
-                payloadRedacted: true,
+    let backupKey: string | undefined
+
+    try {
+        const [{ getTenantSlug }, { getTenantMedusaScope }, { executeFullBackup }, { downloadBackup }, { createStorageAdminClient }] =
+            await Promise.all([
+                import('@/lib/backup/tenant-slug'),
+                import('@/lib/medusa/tenant-scope'),
+                import('@/lib/backup/backup-executor'),
+                import('@/lib/backup/backup-restore'),
+                import('@/lib/supabase/storage-admin'),
+            ])
+
+        const [tenantSlug, scope] = await Promise.all([
+            getTenantSlug(input.tenantId),
+            getTenantMedusaScope(input.tenantId),
+        ])
+
+        if (!scope) {
+            return buildBlockedBackupRestoreResult(
+                input,
+                'Missing Medusa tenant scope mapping for backup restore certification'
+            )
+        }
+
+        const backupResult = await executeFullBackup(input.tenantId, tenantSlug, scope)
+        backupKey = backupResult.backup_key
+
+        if (!backupResult.success || !backupKey) {
+            return buildBlockedBackupRestoreResult(
+                input,
+                backupResult.error ? `Backup failed: ${backupResult.error}` : 'Backup failed without a storage key'
+            )
+        }
+
+        const backup = await downloadBackup(backupKey)
+        const metadataReadable = hasReadableBackupMetadata(backup, input, tenantSlug)
+
+        if (!metadataReadable) {
+            const supabase = createStorageAdminClient()
+            const { error: cleanupError } = await supabase.storage.from('tenant-backups').remove([backupKey])
+
+            return buildBlockedBackupRestoreResult(
+                input,
+                'Backup metadata failed restore dry-run validation',
+                cleanupError ? 'failed' : 'verified',
+                !cleanupError
+            )
+        }
+
+        const supabase = createStorageAdminClient()
+        const { error: cleanupError } = await supabase.storage.from('tenant-backups').remove([backupKey])
+
+        if (cleanupError) {
+            return buildBlockedBackupRestoreResult(
+                input,
+                `Backup cleanup failed: ${cleanupError.message}`,
+                'failed',
+                false,
+            )
+        }
+
+        return {
+            schema: 'bootandstrap.template.bns-360.backup-restore-primary/v1',
+            status: 'verified',
+            ...baseResult(input, 'bns360-backup-restore'),
+            runtime: {
+                backup: {
+                    metadataReadable: true,
+                    payloadRedacted: true,
+                },
+                restoreDryRun: {
+                    safe: true,
+                    mutation: false,
+                },
             },
-            restoreDryRun: {
-                safe: false,
-                mutation: false,
-            },
-        },
+        }
+    } catch (error) {
+        return buildBlockedBackupRestoreResult(input, redactError(error), backupKey ? 'failed' : 'verified', !backupKey)
     }
 }
