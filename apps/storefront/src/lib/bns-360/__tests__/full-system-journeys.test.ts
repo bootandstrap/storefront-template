@@ -381,27 +381,60 @@ describe('BNS 360 full-system journeys', () => {
         expect(JSON.stringify(result)).not.toContain('token')
     })
 
-    it('blocks order lifecycle certification when no runtime runner is wired', async () => {
+    it('verifies order lifecycle through COD simulator order placement and read-only boundaries', async () => {
+        mocks.getAdminOrders.mockResolvedValue({
+            orders: [{
+                ...mockTenantOrder(),
+                email: 'bns360-checkout+run-1@bootandstrap.test',
+                payments: [{
+                    id: 'pay_1',
+                    provider_id: 'pp_system_default',
+                    amount: 1000,
+                    currency_code: 'eur',
+                }],
+            }],
+            count: 1,
+        })
+
         const result = await runBns360OrderLifecyclePrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.order-lifecycle-primary/v1',
-            status: 'blocked',
+            status: 'verified',
             runtime: {
-                orderPlaced: false,
-                paymentCollectionLinked: false,
-                fulfillmentBoundary: 'blocked',
-                cancelBoundary: 'blocked',
-                refundReturnBoundary: 'blocked',
+                orderPlaced: true,
+                paymentCollectionLinked: true,
+                fulfillmentBoundary: 'verified',
+                cancelBoundary: 'verified',
+                refundReturnBoundary: 'verified',
                 subscriberEvents: {
-                    orderPlaced: false,
-                    analyticsRecorded: false,
+                    orderPlaced: true,
+                    analyticsRecorded: true,
                 },
             },
-            cleanup: { status: 'failed' },
+            cleanup: { status: 'verified' },
             residue: { zero: true },
         })
-        expect(result.error).toContain('not wired')
+        expect(result.error).toBeUndefined()
+        expect(mocks.submitCODOrder).toHaveBeenCalledWith('cart_1', expect.objectContaining({
+            email: 'bns360-checkout+run-1@bootandstrap.test',
+            notes: 'BNS 360 functional checkout simulator. No real payment.',
+        }))
+        expect(mocks.getAdminOrders).toHaveBeenCalledWith({
+            limit: 25,
+            q: 'bns360-checkout+run-1@bootandstrap.test',
+        }, expect.objectContaining({
+            medusaSalesChannelId: 'sc_1',
+        }))
+        expect(mocks.orderBelongsToScope).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'order_1',
+        }), expect.objectContaining({
+            medusaSalesChannelId: 'sc_1',
+        }))
+        expect(mocks.adminFetch).not.toHaveBeenCalled()
+        expect(JSON.stringify(result)).not.toContain('client_secret')
+        expect(JSON.stringify(result)).not.toContain('password')
+        expect(JSON.stringify(result)).not.toContain('token')
     })
 
     it('verifies backup metadata and restore dry-run without mutating tenant data', async () => {

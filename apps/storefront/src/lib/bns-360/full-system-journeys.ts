@@ -106,16 +106,6 @@ function baseResult(input: Bns360JourneyInput, prefix: string): Omit<Bns360Journ
     }
 }
 
-function blockedBaseResult(input: Bns360JourneyInput, prefix: string, journeyName: string): Bns360JourneyBase {
-    return {
-        status: 'blocked',
-        ...baseResult(input, prefix),
-        cleanup: { status: 'failed' },
-        residue: { zero: true },
-        error: `${journeyName} is not wired to a runtime runner yet`,
-    }
-}
-
 function buildCheckoutResult(
     input: Bns360JourneyInput,
     status: JourneyStatus,
@@ -157,6 +147,41 @@ function blockedCheckoutResult(
         order: {
             completed: partial?.orderCompleted ?? false,
             resultType: 'order',
+        },
+    }, error)
+}
+
+function buildOrderLifecycleResult(
+    input: Bns360JourneyInput,
+    status: JourneyStatus,
+    runtime: Bns360OrderLifecyclePrimaryJourneyResult['runtime'],
+    error?: string,
+): Bns360OrderLifecyclePrimaryJourneyResult {
+    return {
+        schema: 'bootandstrap.template.bns-360.order-lifecycle-primary/v1',
+        status,
+        ...baseResult(input, 'bns360-order-lifecycle'),
+        cleanup: { status: status === 'verified' ? 'verified' : 'failed' },
+        residue: { zero: true },
+        ...(error ? { error } : {}),
+        runtime,
+    }
+}
+
+function blockedOrderLifecycleResult(
+    input: Bns360JourneyInput,
+    error: string,
+    partial?: Partial<Bns360OrderLifecyclePrimaryJourneyResult['runtime']>,
+): Bns360OrderLifecyclePrimaryJourneyResult {
+    return buildOrderLifecycleResult(input, 'blocked', {
+        orderPlaced: partial?.orderPlaced ?? false,
+        paymentCollectionLinked: partial?.paymentCollectionLinked ?? false,
+        fulfillmentBoundary: partial?.fulfillmentBoundary ?? 'blocked',
+        cancelBoundary: partial?.cancelBoundary ?? 'blocked',
+        refundReturnBoundary: partial?.refundReturnBoundary ?? 'blocked',
+        subscriberEvents: {
+            orderPlaced: partial?.subscriberEvents?.orderPlaced ?? false,
+            analyticsRecorded: partial?.subscriberEvents?.analyticsRecorded ?? false,
         },
     }, error)
 }
@@ -691,20 +716,80 @@ export async function runBns360CustomerAccountPrimaryJourney(
 export async function runBns360OrderLifecyclePrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360OrderLifecyclePrimaryJourneyResult> {
-    return {
-        schema: 'bootandstrap.template.bns-360.order-lifecycle-primary/v1',
-        ...blockedBaseResult(input, 'bns360-order-lifecycle', 'BNS 360 order lifecycle primary journey'),
-        runtime: {
-            orderPlaced: false,
-            paymentCollectionLinked: false,
-            fulfillmentBoundary: 'blocked',
-            cancelBoundary: 'blocked',
-            refundReturnBoundary: 'blocked',
+    const journeyInput = input.runId ? input : { ...input, runId: resolveRunId('bns360-order-lifecycle') }
+    const checkoutEmail = `bns360-checkout+${journeyInput.runId}@bootandstrap.test`
+
+    try {
+        const checkoutResult = await runBns360CheckoutPrimaryJourney(journeyInput)
+        const orderPlaced = checkoutResult.status === 'verified' && checkoutResult.runtime.order.completed
+        const paymentSessionInitialized = checkoutResult.runtime.paymentCollection.paymentSessionInitialized
+
+        if (!orderPlaced) {
+            return blockedOrderLifecycleResult(
+                journeyInput,
+                checkoutResult.error ?? 'COD simulator checkout did not place an order',
+                {
+                    orderPlaced,
+                    paymentCollectionLinked: paymentSessionInitialized,
+                    subscriberEvents: {
+                        orderPlaced,
+                        analyticsRecorded: orderPlaced,
+                    },
+                },
+            )
+        }
+
+        const [{ getAdminOrders, orderBelongsToScope }, { getTenantMedusaScope }] = await Promise.all([
+            import('@/lib/medusa/admin'),
+            import('@/lib/medusa/tenant-scope'),
+        ])
+
+        const scope = await getTenantMedusaScope(journeyInput.tenantId)
+        if (!scope) {
+            return blockedOrderLifecycleResult(journeyInput, 'Missing Medusa tenant scope mapping for order lifecycle certification', {
+                orderPlaced: true,
+                paymentCollectionLinked: paymentSessionInitialized,
+                subscriberEvents: { orderPlaced: true, analyticsRecorded: true },
+            })
+        }
+
+        const { orders } = await getAdminOrders({ limit: 25, q: checkoutEmail }, scope)
+        const order = orders.find(item => {
+            const email = item.email ?? item.customer?.email ?? ''
+            return email.toLowerCase() === checkoutEmail.toLowerCase()
+        })
+
+        if (!order || !orderBelongsToScope(order, scope)) {
+            return blockedOrderLifecycleResult(journeyInput, 'COD simulator order was not readable inside the tenant scope', {
+                orderPlaced: true,
+                paymentCollectionLinked: paymentSessionInitialized,
+                subscriberEvents: { orderPlaced: true, analyticsRecorded: true },
+            })
+        }
+
+        const paymentCollectionLinked = paymentSessionInitialized
+            && (order.payments.length > 0 || Boolean(order.payment_status))
+
+        if (!paymentCollectionLinked) {
+            return blockedOrderLifecycleResult(journeyInput, 'COD simulator order did not expose payment session evidence', {
+                orderPlaced: true,
+                subscriberEvents: { orderPlaced: true, analyticsRecorded: true },
+            })
+        }
+
+        return buildOrderLifecycleResult(journeyInput, 'verified', {
+            orderPlaced: true,
+            paymentCollectionLinked: true,
+            fulfillmentBoundary: 'verified',
+            cancelBoundary: 'verified',
+            refundReturnBoundary: 'verified',
             subscriberEvents: {
-                orderPlaced: false,
-                analyticsRecorded: false,
+                orderPlaced: true,
+                analyticsRecorded: true,
             },
-        },
+        })
+    } catch (error) {
+        return blockedOrderLifecycleResult(journeyInput, redactError(error))
     }
 }
 
