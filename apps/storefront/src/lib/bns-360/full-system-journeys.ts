@@ -244,11 +244,13 @@ type CustomerAccountSupabaseClient = {
 
 async function loadCustomerAccountJourneyDeps() {
     const [
+        { confirmBns360CanaryCustomerAuthUser },
         { createClient },
         { authenticatedMedusaFetch, createAuthAddress, deleteAuthAddress, getAuthCustomerOrders, updateAuthAddress },
         { adminFetch, getAdminCustomers, getAdminOrders, orderBelongsToScope },
         { getTenantMedusaScope },
     ] = await Promise.all([
+        import('@/lib/bns-360/customer-auth-admin'),
         import('@/lib/supabase/server'),
         import('@/lib/medusa/auth-medusa'),
         import('@/lib/medusa/admin'),
@@ -258,6 +260,7 @@ async function loadCustomerAccountJourneyDeps() {
     return {
         adminFetch,
         authenticatedMedusaFetch,
+        confirmBns360CanaryCustomerAuthUser,
         createAuthAddress,
         createClient,
         deleteAuthAddress,
@@ -295,6 +298,10 @@ function createCustomerAccountProgress(): CustomerAccountProgress {
     }
 }
 
+function isEmailNotConfirmedError(error?: { message: string } | null): boolean {
+    return error?.message.toLowerCase().includes('email not confirmed') ?? false
+}
+
 async function createCustomerAuthSession(
     deps: CustomerAccountJourneyDeps,
     input: Bns360JourneyInput,
@@ -315,13 +322,19 @@ async function createCustomerAuthSession(
         },
     })
 
-    if (signUpResult.error || !signUpResult.data?.user?.id) {
+    const userId = signUpResult.data?.user?.id
+    if (signUpResult.error || !userId) {
         throw new Error(signUpResult.error
             ? `Customer auth create failed: ${signUpResult.error.message}`
             : 'Customer auth create returned no user')
     }
 
-    const signInResult = await supabase.auth.signInWithPassword({ email, password })
+    let signInResult = await supabase.auth.signInWithPassword({ email, password })
+    if (isEmailNotConfirmedError(signInResult.error)) {
+        await deps.confirmBns360CanaryCustomerAuthUser(userId, email)
+        signInResult = await supabase.auth.signInWithPassword({ email, password })
+    }
+
     if (signInResult.error || !signInResult.data?.session) {
         throw new Error(signInResult.error
             ? `Customer auth login failed: ${signInResult.error.message}`

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
     addToCart: vi.fn(),
     adminFetch: vi.fn(),
     authenticatedMedusaFetch: vi.fn(),
+    confirmBns360CanaryCustomerAuthUser: vi.fn(),
     createAuthAddress: vi.fn(),
     createCart: vi.fn(),
     deleteAuthAddress: vi.fn(),
@@ -61,6 +62,10 @@ vi.mock('@/lib/medusa/auth-medusa', () => ({
     deleteAuthAddress: mocks.deleteAuthAddress,
     getAuthCustomerOrders: mocks.getAuthCustomerOrders,
     updateAuthAddress: mocks.updateAuthAddress,
+}))
+
+vi.mock('@/lib/bns-360/customer-auth-admin', () => ({
+    confirmBns360CanaryCustomerAuthUser: mocks.confirmBns360CanaryCustomerAuthUser,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -125,13 +130,14 @@ function mockCustomerAccountDefaults() {
         data: { session: { access_token: 'redacted-test-token' } },
         error: null,
     })
+    mocks.confirmBns360CanaryCustomerAuthUser.mockResolvedValue(undefined)
     mocks.signOut.mockResolvedValue({ error: null })
-        mocks.authenticatedMedusaFetch.mockResolvedValue({
-            customer: {
-                id: 'cus_1',
-                email: 'bns360-customer+run-1@bootandstrap.com',
-            },
-        })
+    mocks.authenticatedMedusaFetch.mockResolvedValue({
+        customer: {
+            id: 'cus_1',
+            email: 'bns360-customer+run-1@bootandstrap.com',
+        },
+    })
     mocks.createAuthAddress.mockResolvedValue({
         id: 'addr_1',
         first_name: 'BNS',
@@ -148,10 +154,10 @@ function mockCustomerAccountDefaults() {
     })
     mocks.deleteAuthAddress.mockResolvedValue(undefined)
     mocks.getAuthCustomerOrders.mockResolvedValue({ orders: [], count: 0, offset: 0, limit: 10 })
-        mocks.getAdminCustomers.mockResolvedValue({
-            customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.com' }],
-            count: 1,
-        })
+    mocks.getAdminCustomers.mockResolvedValue({
+        customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.com' }],
+        count: 1,
+    })
     mocks.adminFetch.mockResolvedValue({ data: { id: 'cus_1', deleted: true }, error: null })
     mocks.getAdminOrders.mockResolvedValue({
         orders: [mockTenantOrder()],
@@ -332,6 +338,31 @@ describe('BNS 360 full-system journeys', () => {
         }))
         expect(mocks.orderBelongsToScope).toHaveBeenCalled()
         expect(mocks.signOut).toHaveBeenCalled()
+        expect(JSON.stringify(result)).not.toContain('redacted-test-token')
+        expect(JSON.stringify(result)).not.toContain('password')
+        expect(JSON.stringify(result)).not.toContain('token')
+    })
+
+    it('confirms the canary customer when production Supabase requires email confirmation', async () => {
+        mocks.signInWithPassword
+            .mockResolvedValueOnce({ data: null, error: { message: 'Email not confirmed' } })
+            .mockResolvedValueOnce({
+                data: { session: { access_token: 'redacted-test-token' } },
+                error: null,
+            })
+
+        const result = await runBns360CustomerAccountPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
+
+        expect(result.status).toBe('verified')
+        expect(result.runtime.customer.authenticated).toBe(true)
+        expect(mocks.signInWithPassword).toHaveBeenCalledTimes(2)
+        expect(mocks.confirmBns360CanaryCustomerAuthUser).toHaveBeenCalledWith(
+            'auth_customer_1',
+            'bns360-customer+run-1@bootandstrap.com',
+        )
+        expect(mocks.signInWithPassword).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            email: 'bns360-customer+run-1@bootandstrap.com',
+        }))
         expect(JSON.stringify(result)).not.toContain('redacted-test-token')
         expect(JSON.stringify(result)).not.toContain('password')
         expect(JSON.stringify(result)).not.toContain('token')
