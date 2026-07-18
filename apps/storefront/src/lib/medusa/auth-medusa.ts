@@ -34,6 +34,39 @@ async function getSupabaseAccessToken(): Promise<string | null> {
     }
 }
 
+async function getMedusaCustomerAuthToken(supabaseToken: string, timeout: number): Promise<string> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeout)
+
+    try {
+        const res = await fetch(`${MEDUSA_BACKEND_URL}/auth/customer/supabase`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(PUBLISHABLE_KEY && { 'x-publishable-api-key': PUBLISHABLE_KEY }),
+            },
+            body: JSON.stringify({ token: supabaseToken }),
+            signal: controller.signal,
+            cache: 'no-store',
+        })
+
+        if (!res.ok) {
+            const err = new Error(`Medusa ${res.status}: /auth/customer/supabase`)
+                ; (err as Error & { status: number }).status = res.status
+            throw err
+        }
+
+        const payload = await res.json() as { token?: string }
+        if (!payload.token) {
+            throw new Error('Medusa customer auth returned no token')
+        }
+
+        return payload.token
+    } finally {
+        clearTimeout(timer)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Authenticated fetch with retry
 // ---------------------------------------------------------------------------
@@ -45,13 +78,13 @@ export async function authenticatedMedusaFetch<T>(
     const { timeout = 5000, ...fetchOptions } = options ?? {}
     const url = `${MEDUSA_BACKEND_URL}${path}`
 
-    // Get Supabase JWT for auth
-    const token = await getSupabaseAccessToken()
+    const supabaseToken = await getSupabaseAccessToken()
+    const medusaToken = supabaseToken ? await getMedusaCustomerAuthToken(supabaseToken, timeout) : null
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...(PUBLISHABLE_KEY && { 'x-publishable-api-key': PUBLISHABLE_KEY }),
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(medusaToken && { Authorization: `Bearer ${medusaToken}` }),
         ...fetchOptions.headers,
     }
 
