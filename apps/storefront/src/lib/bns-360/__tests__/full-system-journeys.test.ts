@@ -97,137 +97,153 @@ vi.mock('@/app/[lang]/(shop)/checkout/checkout-orders', () => ({
     submitCODOrder: mocks.submitCODOrder,
 }))
 
+function mockCheckoutDefaults() {
+    mocks.getProducts.mockResolvedValue({
+        products: [{
+            id: 'prod_1',
+            title: 'QA Product',
+            status: 'published',
+            variants: [{ id: 'variant_1' }],
+        }],
+    })
+    mocks.createCart.mockResolvedValue({ id: 'cart_1', items: [] })
+    mocks.addToCart.mockResolvedValue({ id: 'cart_1', items: [{ id: 'line_1' }] })
+    mocks.setCartAddress.mockResolvedValue({ success: true })
+    mocks.submitCODOrder.mockResolvedValue({
+        order: {
+            id: 'order_1',
+            display_id: 1001,
+            status: 'pending',
+            email: 'bns360-checkout+run-1@bootandstrap.test',
+        },
+    })
+}
+
+function mockCustomerAccountDefaults() {
+    mocks.signUp.mockResolvedValue({ data: { user: { id: 'auth_customer_1' } }, error: null })
+    mocks.signInWithPassword.mockResolvedValue({
+        data: { session: { access_token: 'redacted-test-token' } },
+        error: null,
+    })
+    mocks.signOut.mockResolvedValue({ error: null })
+    mocks.authenticatedMedusaFetch.mockResolvedValue({
+        customer: {
+            id: 'cus_1',
+            email: 'bns360-customer+run-1@bootandstrap.test',
+        },
+    })
+    mocks.createAuthAddress.mockResolvedValue({
+        id: 'addr_1',
+        first_name: 'BNS',
+        last_name: '360',
+        city: 'Valencia',
+        country_code: 'es',
+    })
+    mocks.updateAuthAddress.mockResolvedValue({
+        id: 'addr_1',
+        first_name: 'BNS',
+        last_name: '360',
+        city: 'Madrid',
+        country_code: 'es',
+    })
+    mocks.deleteAuthAddress.mockResolvedValue(undefined)
+    mocks.getAuthCustomerOrders.mockResolvedValue({ orders: [], count: 0, offset: 0, limit: 10 })
+    mocks.getAdminCustomers.mockResolvedValue({
+        customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.test' }],
+        count: 1,
+    })
+    mocks.adminFetch.mockResolvedValue({ data: { id: 'cus_1', deleted: true }, error: null })
+    mocks.getAdminOrders.mockResolvedValue({
+        orders: [mockTenantOrder()],
+        count: 1,
+    })
+    mocks.orderBelongsToScope.mockReturnValue(true)
+}
+
+function mockTenantOrder() {
+    return {
+        id: 'order_1',
+        display_id: 1001,
+        status: 'pending',
+        email: 'bns360-checkout+run-1@bootandstrap.test',
+        total: 1000,
+        currency_code: 'eur',
+        created_at: '2026-07-18T11:40:00.000Z',
+        sales_channel_id: 'sc_1',
+        metadata: { tenant_id: 'tenant-1' },
+        items: [],
+        fulfillments: [],
+        payments: [],
+        fulfillment_status: 'not_fulfilled',
+        payment_status: 'captured',
+        subtotal: 1000,
+        tax_total: 0,
+        shipping_total: 0,
+        discount_total: 0,
+        shipping_address: null,
+        updated_at: '2026-07-18T11:40:00.000Z',
+    }
+}
+
+function mockBackupDefaults() {
+    mocks.executeFullBackup.mockResolvedValue({
+        success: true,
+        backup_key: 'tenant-slug/2026-07-18T11-34-00_full.json.gz',
+        size_bytes: 512,
+        duration_ms: 25,
+        stats: {
+            products_count: 1,
+            orders_count: 0,
+            customers_count: 0,
+            categories_count: 1,
+            promotions_count: 0,
+            inventory_count: 0,
+            total_size_bytes: 512,
+            duration_ms: 25,
+        },
+    })
+    mocks.downloadBackup.mockResolvedValue({
+        version: '1.0',
+        tenant_id: 'tenant-1',
+        tenant_slug: 'tenant-slug',
+        created_at: '2026-07-18T11:34:00.000Z',
+        type: 'full',
+        data: {
+            products: [{ id: 'prod_1' }],
+            orders: [],
+            customers: [],
+            categories: [{ id: 'cat_1' }],
+            promotions: [],
+            inventory: [],
+            governance: {},
+        },
+        stats: {
+            products_count: 1,
+            orders_count: 0,
+            customers_count: 0,
+            categories_count: 1,
+            promotions_count: 0,
+            inventory_count: 0,
+            total_size_bytes: 512,
+            duration_ms: 25,
+        },
+        checksums: { products: 'hash', categories: 'hash' },
+    })
+    mocks.remove.mockResolvedValue({ data: [{ name: 'tenant-slug/2026-07-18T11-34-00_full.json.gz' }], error: null })
+}
+
 describe('BNS 360 full-system journeys', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.getProducts.mockResolvedValue({
-            products: [{
-                id: 'prod_1',
-                title: 'QA Product',
-                status: 'published',
-                variants: [{ id: 'variant_1' }],
-            }],
-        })
-        mocks.createCart.mockResolvedValue({ id: 'cart_1', items: [] })
-        mocks.addToCart.mockResolvedValue({ id: 'cart_1', items: [{ id: 'line_1' }] })
-        mocks.setCartAddress.mockResolvedValue({ success: true })
-        mocks.submitCODOrder.mockResolvedValue({
-            order: {
-                id: 'order_1',
-                display_id: 1001,
-                status: 'pending',
-                email: 'bns360-checkout+run-1@bootandstrap.test',
-            },
-        })
         mocks.getTenantSlug.mockResolvedValue('tenant-slug')
         mocks.getTenantMedusaScope.mockResolvedValue({
             tenantId: 'tenant-1',
             medusaUrl: 'https://medusa.example.com',
             medusaSalesChannelId: 'sc_1',
         })
-        mocks.signUp.mockResolvedValue({ data: { user: { id: 'auth_customer_1' } }, error: null })
-        mocks.signInWithPassword.mockResolvedValue({
-            data: { session: { access_token: 'redacted-test-token' } },
-            error: null,
-        })
-        mocks.signOut.mockResolvedValue({ error: null })
-        mocks.authenticatedMedusaFetch.mockResolvedValue({
-            customer: {
-                id: 'cus_1',
-                email: 'bns360-customer+run-1@bootandstrap.test',
-            },
-        })
-        mocks.createAuthAddress.mockResolvedValue({
-            id: 'addr_1',
-            first_name: 'BNS',
-            last_name: '360',
-            city: 'Valencia',
-            country_code: 'es',
-        })
-        mocks.updateAuthAddress.mockResolvedValue({
-            id: 'addr_1',
-            first_name: 'BNS',
-            last_name: '360',
-            city: 'Madrid',
-            country_code: 'es',
-        })
-        mocks.deleteAuthAddress.mockResolvedValue(undefined)
-        mocks.getAuthCustomerOrders.mockResolvedValue({ orders: [], count: 0, offset: 0, limit: 10 })
-        mocks.getAdminCustomers.mockResolvedValue({
-            customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.test' }],
-            count: 1,
-        })
-        mocks.adminFetch.mockResolvedValue({ data: { id: 'cus_1', deleted: true }, error: null })
-        mocks.getAdminOrders.mockResolvedValue({
-            orders: [{
-                id: 'order_1',
-                display_id: 1001,
-                status: 'pending',
-                email: 'bns360-checkout+run-1@bootandstrap.test',
-                total: 1000,
-                currency_code: 'eur',
-                created_at: '2026-07-18T11:40:00.000Z',
-                sales_channel_id: 'sc_1',
-                metadata: { tenant_id: 'tenant-1' },
-                items: [],
-                fulfillments: [],
-                payments: [],
-                fulfillment_status: 'not_fulfilled',
-                payment_status: 'captured',
-                subtotal: 1000,
-                tax_total: 0,
-                shipping_total: 0,
-                discount_total: 0,
-                shipping_address: null,
-                updated_at: '2026-07-18T11:40:00.000Z',
-            }],
-            count: 1,
-        })
-        mocks.orderBelongsToScope.mockReturnValue(true)
-        mocks.executeFullBackup.mockResolvedValue({
-            success: true,
-            backup_key: 'tenant-slug/2026-07-18T11-34-00_full.json.gz',
-            size_bytes: 512,
-            duration_ms: 25,
-            stats: {
-                products_count: 1,
-                orders_count: 0,
-                customers_count: 0,
-                categories_count: 1,
-                promotions_count: 0,
-                inventory_count: 0,
-                total_size_bytes: 512,
-                duration_ms: 25,
-            },
-        })
-        mocks.downloadBackup.mockResolvedValue({
-            version: '1.0',
-            tenant_id: 'tenant-1',
-            tenant_slug: 'tenant-slug',
-            created_at: '2026-07-18T11:34:00.000Z',
-            type: 'full',
-            data: {
-                products: [{ id: 'prod_1' }],
-                orders: [],
-                customers: [],
-                categories: [{ id: 'cat_1' }],
-                promotions: [],
-                inventory: [],
-                governance: {},
-            },
-            stats: {
-                products_count: 1,
-                orders_count: 0,
-                customers_count: 0,
-                categories_count: 1,
-                promotions_count: 0,
-                inventory_count: 0,
-                total_size_bytes: 512,
-                duration_ms: 25,
-            },
-            checksums: { products: 'hash', categories: 'hash' },
-        })
-        mocks.remove.mockResolvedValue({ data: [{ name: 'tenant-slug/2026-07-18T11-34-00_full.json.gz' }], error: null })
+        mockCheckoutDefaults()
+        mockCustomerAccountDefaults()
+        mockBackupDefaults()
     })
 
     it('verifies checkout, simulator PaymentCollection and order completion without live mutation', async () => {
