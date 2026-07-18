@@ -647,7 +647,7 @@ export async function runBns360CustomerAccountPrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360CustomerAccountPrimaryJourneyResult> {
     const journeyInput = input.runId ? input : { ...input, runId: resolveRunId('bns360-customer-account') }
-    const email = `bns360-customer+${journeyInput.runId}@bootandstrap.test`
+    const email = `bns360-customer+${journeyInput.runId}@bootandstrap.com`
     const password = `${randomUUID()}${randomUUID()}`
 
     const progress = createCustomerAccountProgress()

@@ -126,12 +126,12 @@ function mockCustomerAccountDefaults() {
         error: null,
     })
     mocks.signOut.mockResolvedValue({ error: null })
-    mocks.authenticatedMedusaFetch.mockResolvedValue({
-        customer: {
-            id: 'cus_1',
-            email: 'bns360-customer+run-1@bootandstrap.test',
-        },
-    })
+        mocks.authenticatedMedusaFetch.mockResolvedValue({
+            customer: {
+                id: 'cus_1',
+                email: 'bns360-customer+run-1@bootandstrap.com',
+            },
+        })
     mocks.createAuthAddress.mockResolvedValue({
         id: 'addr_1',
         first_name: 'BNS',
@@ -148,10 +148,10 @@ function mockCustomerAccountDefaults() {
     })
     mocks.deleteAuthAddress.mockResolvedValue(undefined)
     mocks.getAuthCustomerOrders.mockResolvedValue({ orders: [], count: 0, offset: 0, limit: 10 })
-    mocks.getAdminCustomers.mockResolvedValue({
-        customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.test' }],
-        count: 1,
-    })
+        mocks.getAdminCustomers.mockResolvedValue({
+            customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.com' }],
+            count: 1,
+        })
     mocks.adminFetch.mockResolvedValue({ data: { id: 'cus_1', deleted: true }, error: null })
     mocks.getAdminOrders.mockResolvedValue({
         orders: [mockTenantOrder()],
@@ -298,7 +298,7 @@ describe('BNS 360 full-system journeys', () => {
         })
         expect(result.error).toBeUndefined()
         expect(mocks.signUp).toHaveBeenCalledWith(expect.objectContaining({
-            email: 'bns360-customer+run-1@bootandstrap.test',
+            email: 'bns360-customer+run-1@bootandstrap.com',
             options: expect.objectContaining({
                 data: expect.objectContaining({
                     tenant_id: 'tenant-1',
@@ -307,7 +307,7 @@ describe('BNS 360 full-system journeys', () => {
             }),
         }))
         expect(mocks.signInWithPassword).toHaveBeenCalledWith(expect.objectContaining({
-            email: 'bns360-customer+run-1@bootandstrap.test',
+            email: 'bns360-customer+run-1@bootandstrap.com',
         }))
         expect(mocks.authenticatedMedusaFetch).toHaveBeenCalledWith('/store/customers', expect.objectContaining({
             method: 'POST',
@@ -324,7 +324,7 @@ describe('BNS 360 full-system journeys', () => {
         expect(mocks.getAdminOrders).toHaveBeenCalledWith({ limit: 10 }, expect.objectContaining({
             medusaSalesChannelId: 'sc_1',
         }))
-        expect(mocks.getAdminCustomers).toHaveBeenCalledWith({ limit: 10, q: 'bns360-customer+run-1@bootandstrap.test' }, expect.objectContaining({
+        expect(mocks.getAdminCustomers).toHaveBeenCalledWith({ limit: 10, q: 'bns360-customer+run-1@bootandstrap.com' }, expect.objectContaining({
             medusaSalesChannelId: 'sc_1',
         }))
         expect(mocks.adminFetch).toHaveBeenCalledWith('/admin/customers/cus_1', { method: 'DELETE' }, expect.objectContaining({
