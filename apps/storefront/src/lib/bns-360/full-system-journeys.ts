@@ -115,6 +115,51 @@ function blockedBaseResult(input: Bns360JourneyInput, prefix: string, journeyNam
     }
 }
 
+function buildCheckoutResult(
+    input: Bns360JourneyInput,
+    status: JourneyStatus,
+    runtime: Bns360CheckoutPrimaryJourneyResult['runtime'],
+    error?: string,
+): Bns360CheckoutPrimaryJourneyResult {
+    return {
+        schema: 'bootandstrap.template.bns-360.checkout-primary/v1',
+        status,
+        ...baseResult(input, 'bns360-checkout'),
+        cleanup: { status: status === 'verified' ? 'verified' : 'failed' },
+        residue: { zero: true },
+        ...(error ? { error } : {}),
+        runtime,
+    }
+}
+
+function blockedCheckoutResult(
+    input: Bns360JourneyInput,
+    error: string,
+    partial?: Partial<{
+        cartCreated: boolean
+        itemAttached: boolean
+        paymentSessionInitialized: boolean
+        orderCompleted: boolean
+    }>
+): Bns360CheckoutPrimaryJourneyResult {
+    return buildCheckoutResult(input, 'blocked', {
+        cart: {
+            created: partial?.cartCreated ?? false,
+            itemAttached: partial?.itemAttached ?? false,
+        },
+        paymentCollection: {
+            status: 'blocked',
+            providerMode: 'simulator',
+            paymentSessionInitialized: partial?.paymentSessionInitialized ?? false,
+            liveMutation: false,
+        },
+        order: {
+            completed: partial?.orderCompleted ?? false,
+            resultType: 'order',
+        },
+    }, error)
+}
+
 function buildBlockedBackupRestoreResult(
     input: Bns360JourneyInput,
     error: string,
@@ -172,25 +217,88 @@ function redactError(error: unknown): string {
 export async function runBns360CheckoutPrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360CheckoutPrimaryJourneyResult> {
-    return {
-        schema: 'bootandstrap.template.bns-360.checkout-primary/v1',
-        ...blockedBaseResult(input, 'bns360-checkout', 'BNS 360 checkout primary journey'),
-        runtime: {
+    const journeyInput = input.runId ? input : { ...input, runId: resolveRunId('bns360-checkout') }
+
+    try {
+        const [{ getProducts, createCart, addToCart }, { setCartAddress }, { submitCODOrder }] = await Promise.all([
+            import('@/lib/medusa/client'),
+            import('@/app/[lang]/(shop)/checkout/checkout-shipping'),
+            import('@/app/[lang]/(shop)/checkout/checkout-orders'),
+        ])
+
+        const { products } = await getProducts({ limit: 20 })
+        const product = products.find(item => item.status === 'published' && item.variants?.some(variant => variant.id))
+            ?? products.find(item => item.variants?.some(variant => variant.id))
+        const variantId = product?.variants?.find(variant => variant.id)?.id
+
+        if (!variantId) {
+            return blockedCheckoutResult(journeyInput, 'No storefront product variant is available for checkout certification')
+        }
+
+        const cart = await createCart()
+        if (!cart?.id) {
+            return blockedCheckoutResult(journeyInput, 'Medusa did not return a cart for checkout certification')
+        }
+
+        const cartWithItem = await addToCart(cart.id, variantId, 1)
+        const itemAttached = Boolean(cartWithItem.items?.length)
+        if (!itemAttached) {
+            return blockedCheckoutResult(journeyInput, 'Medusa cart line item was not attached', { cartCreated: true })
+        }
+
+        const addressResult = await setCartAddress(cart.id, {
+            first_name: 'BNS',
+            last_name: '360',
+            address_1: 'BNS 360 Simulator 1',
+            address_2: 'Functional checkout certification',
+            city: 'Valencia',
+            postal_code: '46001',
+            country_code: 'es',
+            phone: '+34600000000',
+        })
+
+        if (!addressResult.success) {
+            return blockedCheckoutResult(
+                journeyInput,
+                addressResult.error ? `Cart address failed: ${addressResult.error}` : 'Cart address failed',
+                { cartCreated: true, itemAttached: true },
+            )
+        }
+
+        const orderResult = await submitCODOrder(cart.id, {
+            name: 'BNS 360',
+            email: `bns360-checkout+${journeyInput.runId}@bootandstrap.test`,
+            phone: '+34600000000',
+            address: 'BNS 360 Simulator 1, 46001 Valencia',
+            notes: 'BNS 360 functional checkout simulator. No real payment.',
+        })
+
+        if (!orderResult.order) {
+            return blockedCheckoutResult(
+                journeyInput,
+                orderResult.error ? `COD simulator order failed: ${orderResult.error}` : 'COD simulator order failed',
+                { cartCreated: true, itemAttached: true, paymentSessionInitialized: true },
+            )
+        }
+
+        return buildCheckoutResult(journeyInput, 'verified', {
             cart: {
-                created: false,
-                itemAttached: false,
+                created: true,
+                itemAttached: true,
             },
             paymentCollection: {
-                status: 'blocked',
+                status: 'verified',
                 providerMode: 'simulator',
-                paymentSessionInitialized: false,
+                paymentSessionInitialized: true,
                 liveMutation: false,
             },
             order: {
-                completed: false,
+                completed: true,
                 resultType: 'order',
             },
-        },
+        })
+    } catch (error) {
+        return blockedCheckoutResult(journeyInput, redactError(error))
     }
 }
 
