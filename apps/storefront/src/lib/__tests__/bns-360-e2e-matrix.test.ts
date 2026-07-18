@@ -25,6 +25,7 @@ import {
     getBns360RouteRetryConfig,
     isBns360RetriablePanelStatus,
     recordBns360ScenarioEvidenceArtifact,
+    serializeBns360CookieHeader,
     resolveBns360ApiHeaders,
     resolveBns360RetryAfterMs,
 } from '../../../e2e/support/bns-360-fixtures'
@@ -87,6 +88,21 @@ describe('BNS 360 reusable runtime matrix', () => {
 
         expect(runtimeSpec).toContain('scenario.requiresAuth ? page.request : request')
         expect(runtimeSpec).toContain('expectApiHealthy(apiRequest, route, headers)')
+    })
+
+    it('passes owner session cookies into authenticated functional API evidence', () => {
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(serializeBns360CookieHeader([
+            { name: 'sb-project-auth-token', value: 'base64-session' },
+            { name: 'plain', value: 'needs space' },
+        ])).toBe('sb-project-auth-token=base64-session; plain=needs%20space')
+        expect(runtimeSpec).toContain('resolveBns360OwnerApiHeaders(page)')
+        expect(runtimeSpec).toContain('functionalEvidenceHeaders')
+        expect(runtimeSpec).toContain('runBns360AutomatedFunctionalEvidence(')
     })
 
     it('records scenario evidence into an optional aggregate artifact during Playwright runs', () => {

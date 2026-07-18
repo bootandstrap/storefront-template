@@ -14,6 +14,7 @@ import {
     hasOwnerCredentials,
     loginAsOwner,
     recordBns360ScenarioEvidenceArtifact,
+    resolveBns360OwnerApiHeaders,
     resolveBns360ApiHeaders,
     runBns360AutomatedFunctionalEvidence,
 } from './support/bns-360-fixtures'
@@ -50,8 +51,14 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 await loginAsOwner(page)
             }
 
+            const functionalEvidenceHeaders = scenario.requiresAuth
+                ? await resolveBns360OwnerApiHeaders(page)
+                : undefined
+
             if (scenario.transport === 'api') {
-                const headers = resolveBns360ApiHeaders(scenario)
+                const headers = scenario.requiresAuth
+                    ? await resolveBns360OwnerApiHeaders(page, resolveBns360ApiHeaders(scenario))
+                    : resolveBns360ApiHeaders(scenario)
                 const apiRequest = scenario.requiresAuth ? page.request : request
                 for (const route of scenario.routes) {
                     await expectApiHealthy(apiRequest, route, headers)
@@ -65,7 +72,8 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             const functionalStatus = executionMode === 'functional'
                 ? await runBns360AutomatedFunctionalEvidence(
                     scenario.requiresAuth ? page.request : request,
-                    functionalEvidence
+                    functionalEvidence,
+                    functionalEvidenceHeaders
                 )
                 : undefined
 

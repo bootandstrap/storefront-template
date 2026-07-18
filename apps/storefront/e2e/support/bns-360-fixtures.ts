@@ -33,6 +33,10 @@ type Bns360CredentialRequirement = {
 type Bns360ApiHeaderScenario = {
     apiHeadersEnv?: Record<string, string>
 }
+type Bns360StorageCookie = {
+    name: string
+    value: string
+}
 type Bns360OwnerStorageState = Awaited<ReturnType<ReturnType<Page['context']>['storageState']>>
 type Bns360RouteRetryEnv = {
     [key: string]: string | undefined
@@ -64,6 +68,32 @@ export function resolveBns360ApiHeaders(
         })
 
     return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+export function serializeBns360CookieHeader(
+    cookies: readonly Bns360StorageCookie[]
+): string | undefined {
+    const serialized = cookies
+        .filter(cookie => cookie.name && cookie.value)
+        .map(cookie => `${encodeURIComponent(cookie.name)}=${encodeURIComponent(cookie.value)}`)
+        .join('; ')
+
+    return serialized || undefined
+}
+
+export async function resolveBns360OwnerApiHeaders(
+    page: Page,
+    baseHeaders?: Record<string, string>
+): Promise<Record<string, string> | undefined> {
+    const cookieHeader = serializeBns360CookieHeader(await page.context().cookies())
+    if (!cookieHeader) {
+        return baseHeaders
+    }
+
+    return {
+        ...baseHeaders,
+        cookie: cookieHeader,
+    }
 }
 
 export function hasOwnerCredentials() {
@@ -416,7 +446,8 @@ export function getBns360AutomatedFunctionalEvidenceStatus(
 
 export async function runBns360AutomatedFunctionalEvidence(
     request: APIRequestContext,
-    targets: Bns360FunctionalEvidenceTarget[]
+    targets: Bns360FunctionalEvidenceTarget[],
+    headers?: Record<string, string>
 ): Promise<Bns360FunctionalStatus> {
     const status = getBns360AutomatedFunctionalEvidenceStatus(targets)
     if (status !== 'verified') {
@@ -425,7 +456,7 @@ export async function runBns360AutomatedFunctionalEvidence(
 
     for (const target of targets) {
         for (const route of target.routes ?? []) {
-            const response = await expectApiHealthy(request, route, undefined, target.method)
+            const response = await expectApiHealthy(request, route, headers, target.method)
 
             if (target.expectedJsonPaths?.length) {
                 const payload = await response.json()
