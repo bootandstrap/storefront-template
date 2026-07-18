@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { TenantBackup } from '@/lib/backup/backup-types'
+import type { TenantMedusaScope } from '@/lib/medusa/admin'
 
 type JourneyStatus = 'verified' | 'blocked'
 
@@ -160,6 +161,59 @@ function blockedCheckoutResult(
     }, error)
 }
 
+function buildCustomerAccountResult(
+    input: Bns360JourneyInput,
+    status: JourneyStatus,
+    runtime: Bns360CustomerAccountPrimaryJourneyResult['runtime'],
+    error?: string,
+    cleanupStatus: Bns360JourneyBase['cleanup']['status'] = status === 'verified' ? 'verified' : 'failed',
+    residueZero = true,
+): Bns360CustomerAccountPrimaryJourneyResult {
+    return {
+        schema: 'bootandstrap.template.bns-360.customer-account-primary/v1',
+        status,
+        ...baseResult(input, 'bns360-customer-account'),
+        cleanup: { status: cleanupStatus },
+        residue: { zero: residueZero },
+        ...(error ? { error } : {}),
+        runtime,
+    }
+}
+
+function blockedCustomerAccountResult(
+    input: Bns360JourneyInput,
+    error: string,
+    partial?: Partial<{
+        canaryCreated: boolean
+        authenticated: boolean
+        addressCreated: boolean
+        addressUpdated: boolean
+        addressDeleted: boolean
+        tenantScoped: boolean
+        orderCountReadable: boolean
+        crossTenantLeakage: boolean
+    }>,
+    cleanupStatus: Bns360JourneyBase['cleanup']['status'] = 'failed',
+    residueZero = true,
+): Bns360CustomerAccountPrimaryJourneyResult {
+    return buildCustomerAccountResult(input, 'blocked', {
+        customer: {
+            canaryCreated: partial?.canaryCreated ?? false,
+            authenticated: partial?.authenticated ?? false,
+        },
+        address: {
+            created: partial?.addressCreated ?? false,
+            updated: partial?.addressUpdated ?? false,
+            deleted: partial?.addressDeleted ?? false,
+        },
+        orderRead: {
+            tenantScoped: partial?.tenantScoped ?? false,
+            orderCountReadable: partial?.orderCountReadable ?? false,
+        },
+        crossTenantLeakage: partial?.crossTenantLeakage ?? false,
+    }, error, cleanupStatus, residueZero)
+}
+
 function buildBlockedBackupRestoreResult(
     input: Bns360JourneyInput,
     error: string,
@@ -305,25 +359,225 @@ export async function runBns360CheckoutPrimaryJourney(
 export async function runBns360CustomerAccountPrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360CustomerAccountPrimaryJourneyResult> {
-    return {
-        schema: 'bootandstrap.template.bns-360.customer-account-primary/v1',
-        ...blockedBaseResult(input, 'bns360-customer-account', 'BNS 360 customer account primary journey'),
-        runtime: {
+    const journeyInput = input.runId ? input : { ...input, runId: resolveRunId('bns360-customer-account') }
+    const email = `bns360-customer+${journeyInput.runId}@bootandstrap.test`
+    const password = `${randomUUID()}${randomUUID()}`
+
+    const partial = {
+        canaryCreated: false,
+        authenticated: false,
+        addressCreated: false,
+        addressUpdated: false,
+        addressDeleted: false,
+        tenantScoped: false,
+        orderCountReadable: false,
+        crossTenantLeakage: false,
+    }
+    let customerId: string | undefined
+    let addressId: string | undefined
+    let medusaScope: TenantMedusaScope | null = null
+    let shouldSignOut = false
+    let signOutFailed = false
+
+    try {
+        const [
+            { createClient },
+            { authenticatedMedusaFetch, createAuthAddress, deleteAuthAddress, getAuthCustomerOrders, updateAuthAddress },
+            { adminFetch, getAdminCustomers, getAdminOrders, orderBelongsToScope },
+            { getTenantMedusaScope },
+        ] = await Promise.all([
+            import('@/lib/supabase/server'),
+            import('@/lib/medusa/auth-medusa'),
+            import('@/lib/medusa/admin'),
+            import('@/lib/medusa/tenant-scope'),
+        ])
+
+        const supabase = await createClient()
+        const signUpResult = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: 'BNS 360 Customer',
+                    tenant_id: journeyInput.tenantId,
+                    role: 'customer',
+                },
+            },
+        })
+
+        if (signUpResult.error || !signUpResult.data?.user?.id) {
+            return blockedCustomerAccountResult(
+                journeyInput,
+                signUpResult.error ? `Customer auth create failed: ${signUpResult.error.message}` : 'Customer auth create returned no user',
+                partial,
+            )
+        }
+
+        const signInResult = await supabase.auth.signInWithPassword({ email, password })
+        if (signInResult.error || !signInResult.data?.session) {
+            return blockedCustomerAccountResult(
+                journeyInput,
+                signInResult.error ? `Customer auth login failed: ${signInResult.error.message}` : 'Customer auth login returned no session',
+                partial,
+            )
+        }
+        partial.authenticated = true
+        shouldSignOut = true
+
+        medusaScope = await getTenantMedusaScope(journeyInput.tenantId)
+        if (!medusaScope) {
+            return blockedCustomerAccountResult(journeyInput, 'Missing Medusa tenant scope mapping for customer account certification', partial)
+        }
+
+        const customerProfile = await authenticatedMedusaFetch<{ customer?: { id?: string } }>('/store/customers', {
+            method: 'POST',
+            body: JSON.stringify({
+                email,
+                first_name: 'BNS',
+                last_name: '360',
+            }),
+        })
+        customerId = customerProfile.customer?.id
+        partial.canaryCreated = Boolean(customerId)
+        if (!customerId) {
+            return blockedCustomerAccountResult(journeyInput, 'Medusa customer profile create returned no customer id', partial)
+        }
+
+        const address = await createAuthAddress({
+            first_name: 'BNS',
+            last_name: '360',
+            company: null,
+            address_1: 'BNS 360 Customer 1',
+            address_2: 'Functional customer certification',
+            city: 'Valencia',
+            province: 'Valencia',
+            postal_code: '46001',
+            country_code: 'es',
+            phone: '+34600000000',
+        })
+        addressId = address?.id
+        partial.addressCreated = Boolean(addressId)
+        if (!addressId) {
+            return blockedCustomerAccountResult(journeyInput, 'Customer address create returned no address id', partial)
+        }
+
+        const updatedAddress = await updateAuthAddress(addressId, {
+            city: 'Madrid',
+            province: 'Madrid',
+            postal_code: '28001',
+        })
+        partial.addressUpdated = updatedAddress?.id === addressId && updatedAddress.city === 'Madrid'
+        if (!partial.addressUpdated) {
+            return blockedCustomerAccountResult(journeyInput, 'Customer address update was not reflected by Medusa', partial)
+        }
+
+        await deleteAuthAddress(addressId)
+        partial.addressDeleted = true
+        addressId = undefined
+
+        const customerOrders = await getAuthCustomerOrders({ limit: 10 })
+        partial.orderCountReadable = Number.isFinite(customerOrders.count)
+
+        const adminOrders = await getAdminOrders({ limit: 10 }, medusaScope)
+        const scopedOrders = adminOrders.orders ?? []
+        partial.crossTenantLeakage = scopedOrders.some(order => !orderBelongsToScope(order, medusaScope))
+        partial.tenantScoped = !partial.crossTenantLeakage
+        partial.orderCountReadable = partial.orderCountReadable && Number.isFinite(adminOrders.count)
+
+        if (!partial.orderCountReadable || !partial.tenantScoped || partial.crossTenantLeakage) {
+            return blockedCustomerAccountResult(journeyInput, 'Tenant-scoped order read failed customer account certification', partial)
+        }
+
+        const cleanupCustomer = await getAdminCustomers({ limit: 10, q: email }, medusaScope)
+        const cleanupTarget = cleanupCustomer.customers.find(customer => customer.email?.toLowerCase() === email.toLowerCase())
+        if (cleanupTarget?.id) {
+            const { error: deleteCustomerError } = await adminFetch(`/admin/customers/${cleanupTarget.id}`, {
+                method: 'DELETE',
+            }, medusaScope)
+            if (deleteCustomerError) {
+                return blockedCustomerAccountResult(
+                    journeyInput,
+                    `Medusa customer cleanup failed: ${deleteCustomerError}`,
+                    partial,
+                    'failed',
+                    false,
+                )
+            }
+            customerId = undefined
+        }
+
+        const signOutResult = await supabase.auth.signOut()
+        signOutFailed = Boolean(signOutResult.error)
+        shouldSignOut = false
+
+        if (signOutFailed) {
+            return blockedCustomerAccountResult(
+                journeyInput,
+                `Customer auth cleanup failed: ${signOutResult.error?.message ?? 'sign out failed'}`,
+                partial,
+                'failed',
+                false,
+            )
+        }
+
+        return buildCustomerAccountResult(journeyInput, 'verified', {
             customer: {
-                canaryCreated: false,
-                authenticated: false,
+                canaryCreated: true,
+                authenticated: true,
             },
             address: {
-                created: false,
-                updated: false,
-                deleted: false,
+                created: true,
+                updated: true,
+                deleted: true,
             },
             orderRead: {
-                tenantScoped: false,
-                orderCountReadable: false,
+                tenantScoped: true,
+                orderCountReadable: true,
             },
             crossTenantLeakage: false,
-        },
+        })
+    } catch (error) {
+        if (addressId) {
+            try {
+                const { deleteAuthAddress } = await import('@/lib/medusa/auth-medusa')
+                await deleteAuthAddress(addressId)
+                partial.addressDeleted = true
+                addressId = undefined
+            } catch {
+                // Preserve the original failure and expose cleanup state via the result.
+            }
+        }
+
+        if (customerId && medusaScope) {
+            try {
+                const { adminFetch } = await import('@/lib/medusa/admin')
+                const { error: deleteCustomerError } = await adminFetch(`/admin/customers/${customerId}`, {
+                    method: 'DELETE',
+                }, medusaScope)
+                if (!deleteCustomerError) customerId = undefined
+            } catch {
+                // Preserve the original failure and expose cleanup state via the result.
+            }
+        }
+
+        if (shouldSignOut) {
+            try {
+                const { createClient } = await import('@/lib/supabase/server')
+                const supabase = await createClient()
+                const { error: signOutError } = await supabase.auth.signOut()
+                signOutFailed = Boolean(signOutError)
+            } catch {
+                signOutFailed = true
+            }
+        }
+
+        return blockedCustomerAccountResult(
+            journeyInput,
+            redactError(error),
+            partial,
+            addressId || customerId || signOutFailed ? 'failed' : 'verified',
+            !addressId && !customerId && !signOutFailed,
+        )
     }
 }
 

@@ -2,15 +2,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     addToCart: vi.fn(),
+    adminFetch: vi.fn(),
+    authenticatedMedusaFetch: vi.fn(),
+    createAuthAddress: vi.fn(),
     createCart: vi.fn(),
+    deleteAuthAddress: vi.fn(),
     executeFullBackup: vi.fn(),
+    getAdminCustomers: vi.fn(),
     downloadBackup: vi.fn(),
+    getAdminOrders: vi.fn(),
+    getAuthCustomerOrders: vi.fn(),
     getProducts: vi.fn(),
     getTenantMedusaScope: vi.fn(),
     getTenantSlug: vi.fn(),
+    orderBelongsToScope: vi.fn(),
     remove: vi.fn(),
     setCartAddress: vi.fn(),
+    signInWithPassword: vi.fn(),
+    signOut: vi.fn(),
+    signUp: vi.fn(),
     submitCODOrder: vi.fn(),
+    updateAuthAddress: vi.fn(),
 }))
 
 import {
@@ -34,6 +46,31 @@ vi.mock('@/lib/backup/tenant-slug', () => ({
 
 vi.mock('@/lib/medusa/tenant-scope', () => ({
     getTenantMedusaScope: mocks.getTenantMedusaScope,
+}))
+
+vi.mock('@/lib/medusa/admin', () => ({
+    adminFetch: mocks.adminFetch,
+    getAdminCustomers: mocks.getAdminCustomers,
+    getAdminOrders: mocks.getAdminOrders,
+    orderBelongsToScope: mocks.orderBelongsToScope,
+}))
+
+vi.mock('@/lib/medusa/auth-medusa', () => ({
+    authenticatedMedusaFetch: mocks.authenticatedMedusaFetch,
+    createAuthAddress: mocks.createAuthAddress,
+    deleteAuthAddress: mocks.deleteAuthAddress,
+    getAuthCustomerOrders: mocks.getAuthCustomerOrders,
+    updateAuthAddress: mocks.updateAuthAddress,
+}))
+
+vi.mock('@/lib/supabase/server', () => ({
+    createClient: () => ({
+        auth: {
+            signUp: mocks.signUp,
+            signInWithPassword: mocks.signInWithPassword,
+            signOut: mocks.signOut,
+        },
+    }),
 }))
 
 vi.mock('@/lib/supabase/storage-admin', () => ({
@@ -83,7 +120,70 @@ describe('BNS 360 full-system journeys', () => {
             },
         })
         mocks.getTenantSlug.mockResolvedValue('tenant-slug')
-        mocks.getTenantMedusaScope.mockResolvedValue({ medusaUrl: 'https://medusa.example.com' })
+        mocks.getTenantMedusaScope.mockResolvedValue({
+            tenantId: 'tenant-1',
+            medusaUrl: 'https://medusa.example.com',
+            medusaSalesChannelId: 'sc_1',
+        })
+        mocks.signUp.mockResolvedValue({ data: { user: { id: 'auth_customer_1' } }, error: null })
+        mocks.signInWithPassword.mockResolvedValue({
+            data: { session: { access_token: 'redacted-test-token' } },
+            error: null,
+        })
+        mocks.signOut.mockResolvedValue({ error: null })
+        mocks.authenticatedMedusaFetch.mockResolvedValue({
+            customer: {
+                id: 'cus_1',
+                email: 'bns360-customer+run-1@bootandstrap.test',
+            },
+        })
+        mocks.createAuthAddress.mockResolvedValue({
+            id: 'addr_1',
+            first_name: 'BNS',
+            last_name: '360',
+            city: 'Valencia',
+            country_code: 'es',
+        })
+        mocks.updateAuthAddress.mockResolvedValue({
+            id: 'addr_1',
+            first_name: 'BNS',
+            last_name: '360',
+            city: 'Madrid',
+            country_code: 'es',
+        })
+        mocks.deleteAuthAddress.mockResolvedValue(undefined)
+        mocks.getAuthCustomerOrders.mockResolvedValue({ orders: [], count: 0, offset: 0, limit: 10 })
+        mocks.getAdminCustomers.mockResolvedValue({
+            customers: [{ id: 'cus_1', email: 'bns360-customer+run-1@bootandstrap.test' }],
+            count: 1,
+        })
+        mocks.adminFetch.mockResolvedValue({ data: { id: 'cus_1', deleted: true }, error: null })
+        mocks.getAdminOrders.mockResolvedValue({
+            orders: [{
+                id: 'order_1',
+                display_id: 1001,
+                status: 'pending',
+                email: 'bns360-checkout+run-1@bootandstrap.test',
+                total: 1000,
+                currency_code: 'eur',
+                created_at: '2026-07-18T11:40:00.000Z',
+                sales_channel_id: 'sc_1',
+                metadata: { tenant_id: 'tenant-1' },
+                items: [],
+                fulfillments: [],
+                payments: [],
+                fulfillment_status: 'not_fulfilled',
+                payment_status: 'captured',
+                subtotal: 1000,
+                tax_total: 0,
+                shipping_total: 0,
+                discount_total: 0,
+                shipping_address: null,
+                updated_at: '2026-07-18T11:40:00.000Z',
+            }],
+            count: 1,
+        })
+        mocks.orderBelongsToScope.mockReturnValue(true)
         mocks.executeFullBackup.mockResolvedValue({
             success: true,
             backup_key: 'tenant-slug/2026-07-18T11-34-00_full.json.gz',
@@ -165,22 +265,60 @@ describe('BNS 360 full-system journeys', () => {
         expect(JSON.stringify(result)).not.toContain('token')
     })
 
-    it('blocks customer auth/address/order certification when no runtime runner is wired', async () => {
+    it('verifies customer auth, address CRUD and tenant-scoped order read without leaking secrets', async () => {
         const result = await runBns360CustomerAccountPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
             schema: 'bootandstrap.template.bns-360.customer-account-primary/v1',
-            status: 'blocked',
+            status: 'verified',
             runtime: {
-                customer: { canaryCreated: false, authenticated: false },
-                address: { created: false, updated: false, deleted: false },
-                orderRead: { tenantScoped: false },
+                customer: { canaryCreated: true, authenticated: true },
+                address: { created: true, updated: true, deleted: true },
+                orderRead: { tenantScoped: true, orderCountReadable: true },
                 crossTenantLeakage: false,
             },
-            cleanup: { status: 'failed' },
+            cleanup: { status: 'verified' },
             residue: { zero: true },
         })
-        expect(result.error).toContain('not wired')
+        expect(result.error).toBeUndefined()
+        expect(mocks.signUp).toHaveBeenCalledWith(expect.objectContaining({
+            email: 'bns360-customer+run-1@bootandstrap.test',
+            options: expect.objectContaining({
+                data: expect.objectContaining({
+                    tenant_id: 'tenant-1',
+                    role: 'customer',
+                }),
+            }),
+        }))
+        expect(mocks.signInWithPassword).toHaveBeenCalledWith(expect.objectContaining({
+            email: 'bns360-customer+run-1@bootandstrap.test',
+        }))
+        expect(mocks.authenticatedMedusaFetch).toHaveBeenCalledWith('/store/customers', expect.objectContaining({
+            method: 'POST',
+        }))
+        expect(mocks.createAuthAddress).toHaveBeenCalledWith(expect.objectContaining({
+            address_1: 'BNS 360 Customer 1',
+            country_code: 'es',
+        }))
+        expect(mocks.updateAuthAddress).toHaveBeenCalledWith('addr_1', expect.objectContaining({
+            city: 'Madrid',
+        }))
+        expect(mocks.deleteAuthAddress).toHaveBeenCalledWith('addr_1')
+        expect(mocks.getAuthCustomerOrders).toHaveBeenCalledWith({ limit: 10 })
+        expect(mocks.getAdminOrders).toHaveBeenCalledWith({ limit: 10 }, expect.objectContaining({
+            medusaSalesChannelId: 'sc_1',
+        }))
+        expect(mocks.getAdminCustomers).toHaveBeenCalledWith({ limit: 10, q: 'bns360-customer+run-1@bootandstrap.test' }, expect.objectContaining({
+            medusaSalesChannelId: 'sc_1',
+        }))
+        expect(mocks.adminFetch).toHaveBeenCalledWith('/admin/customers/cus_1', { method: 'DELETE' }, expect.objectContaining({
+            medusaSalesChannelId: 'sc_1',
+        }))
+        expect(mocks.orderBelongsToScope).toHaveBeenCalled()
+        expect(mocks.signOut).toHaveBeenCalled()
+        expect(JSON.stringify(result)).not.toContain('redacted-test-token')
+        expect(JSON.stringify(result)).not.toContain('password')
+        expect(JSON.stringify(result)).not.toContain('token')
     })
 
     it('blocks order lifecycle certification when no runtime runner is wired', async () => {
@@ -223,7 +361,7 @@ describe('BNS 360 full-system journeys', () => {
         expect(mocks.executeFullBackup).toHaveBeenCalledWith(
             'tenant-1',
             'tenant-slug',
-            { medusaUrl: 'https://medusa.example.com' },
+            expect.objectContaining({ medusaUrl: 'https://medusa.example.com' }),
         )
         expect(mocks.downloadBackup).toHaveBeenCalledWith('tenant-slug/2026-07-18T11-34-00_full.json.gz')
         expect(mocks.remove).toHaveBeenCalledWith(['tenant-slug/2026-07-18T11-34-00_full.json.gz'])
