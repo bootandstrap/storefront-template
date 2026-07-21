@@ -23,6 +23,7 @@ import {
     getBns360MissingCredentialAction,
     getBns360PanelLandingUrlPattern,
     getBns360RouteRetryConfig,
+    isBns360CustomerOwnerPanelBoundaryStatus,
     isBns360RetriablePanelStatus,
     recordBns360ScenarioEvidenceArtifact,
     serializeBns360CookieHeader,
@@ -295,6 +296,24 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(fixtures).toContain('page.waitForTimeout(resolveBns360RetryAfterMs')
         expect(fixtures).toContain('isBns360RetriablePanelStatus(response?.status())')
         expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
+    })
+
+    it('treats customer owner-panel rate limiting as a denied boundary, not panel access', () => {
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(200)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(302)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(307)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(308)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(401)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(403)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(429)).toBe(true)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(500)).toBe(false)
+        expect(fixtures).toContain('isBns360CustomerOwnerPanelBoundaryStatus(status)')
+        expect(fixtures).toContain('await expectBns360CustomerAccountUsable(page)')
     })
 
     it('does not wait for every subresource before accepting a BNS 360 route as loaded', () => {

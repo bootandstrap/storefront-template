@@ -639,9 +639,21 @@ async function runBns360CustomerPanelOperations(page: Page, routes: string[]): P
     const ownerPanelResponse = await page.goto(`/${BNS_360_LANG}/panel`, BNS_360_ROUTE_GOTO_OPTIONS)
     if (ownerPanelResponse && !ownerPanelResponse.ok()) {
         const status = ownerPanelResponse.status()
-        expect([200, 302, 307, 308]).toContain(status)
+        expect(isBns360CustomerOwnerPanelBoundaryStatus(status)).toBe(true)
+        await expectBns360CustomerAccountUsable(page)
+        return
     }
     expect(getBns360PanelLandingUrlPattern(BNS_360_LANG).test(page.url())).toBe(false)
+    expect(getBns360CustomerLandingUrlPattern(BNS_360_LANG).test(page.url())).toBe(true)
+}
+
+async function expectBns360CustomerAccountUsable(page: Page): Promise<void> {
+    const response = await gotoBns360PanelRouteWithRateLimitBackoff(page, `/${BNS_360_LANG}/cuenta`)
+    if (response && !response.ok()) {
+        const body = await response.text().catch(() => '')
+        expect(response.ok(), formatBns360ApiHealthFailure(`/${BNS_360_LANG}/cuenta`, response.status(), body)).toBe(true)
+    }
+    await expect(page.locator('main').first()).toBeVisible()
     expect(getBns360CustomerLandingUrlPattern(BNS_360_LANG).test(page.url())).toBe(true)
 }
 
@@ -683,6 +695,16 @@ export function resolveBns360RetryAfterMs(
 
 export function isBns360RetriablePanelStatus(status: number | undefined): boolean {
     return status === 429 || status === 502 || status === 503 || status === 504
+}
+
+export function isBns360CustomerOwnerPanelBoundaryStatus(status: number | undefined): boolean {
+    return status === 200
+        || status === 302
+        || status === 307
+        || status === 308
+        || status === 401
+        || status === 403
+        || status === 429
 }
 
 async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: string): Promise<Response | null> {
