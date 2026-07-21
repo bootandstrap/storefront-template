@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Outfit } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import { getConfig } from '@/lib/config'
 import { isValidLocale } from '@/lib/i18n'
@@ -28,12 +28,6 @@ initOpenFeature()
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
-  display: 'swap',
-})
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
   display: 'swap',
 })
 
@@ -121,7 +115,6 @@ export default async function RootLayout({
 
   const htmlClasses = [
     inter.variable,
-    outfit.variable,
   ].filter(Boolean).join(' ')
 
   return (
@@ -142,8 +135,6 @@ export default async function RootLayout({
     >
       <head>
         {/* Preconnects — reduce DNS+TLS for critical third-party origins */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {config.logo_url && (
           <link rel="preconnect" href={new URL(config.logo_url).origin} crossOrigin="anonymous" />
