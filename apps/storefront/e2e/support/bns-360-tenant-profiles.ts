@@ -35,10 +35,12 @@ export type Bns360FunctionalEvidenceKind =
     | 'checkout_payment_collection_journey'
     | 'crud_journey'
     | 'customer_account_journey'
+    | 'customer_panel_operations_journey'
     | 'grant_unlock'
     | 'hardware_terminal_certification'
     | 'limit_enforcement'
     | 'module_primary_journey'
+    | 'owner_panel_operations_journey'
     | 'order_lifecycle_journey'
     | 'runtime_config'
     | 'api_health'
@@ -50,7 +52,7 @@ export interface Bns360FunctionalEvidenceTarget {
     target: string
     reversible: boolean
     scope?: 'sandbox' | 'simulator' | 'read_only' | 'live_mutation' | 'hardware'
-    gate?: 'none' | 'owner_auth' | 'test_mode_keys' | 'human_authorization' | 'physical_reader'
+    gate?: 'none' | 'owner_auth' | 'customer_auth' | 'test_mode_keys' | 'human_authorization' | 'physical_reader'
     routes?: string[]
     method?: 'GET' | 'POST'
     expectedJsonPaths?: string[]

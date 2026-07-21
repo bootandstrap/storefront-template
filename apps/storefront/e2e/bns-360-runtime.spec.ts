@@ -2,6 +2,8 @@ import { test } from '@playwright/test'
 
 import { BNS_360_RUNTIME_MATRIX } from './bns-360.matrix'
 import {
+    BNS_360_CUSTOMER_EMAIL,
+    BNS_360_CUSTOMER_PASSWORD,
     BNS_360_OWNER_EMAIL,
     BNS_360_OWNER_PASSWORD,
     assertBns360FunctionalEvidenceVerified,
@@ -11,7 +13,9 @@ import {
     getBns360ExecutionMode,
     getBns360FunctionalEvidenceForRun,
     getBns360MissingCredentialAction,
+    hasCustomerCredentials,
     hasOwnerCredentials,
+    loginAsCustomer,
     loginAsOwner,
     recordBns360ScenarioEvidenceArtifact,
     resolveBns360OwnerApiHeaders,
@@ -31,10 +35,12 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
         test(`${scenario.key} smoke`, async ({ page, request }, testInfo) => {
             const moduleScenario = moduleScenarioByKey.get(scenario.key)
             const executionMode = getBns360ExecutionMode()
+            const authRole = scenario.authRole ?? (scenario.requiresAuth ? 'owner' : undefined)
             const credentialAction = getBns360MissingCredentialAction({
                 requiresAuth: scenario.requiresAuth,
-                hasCredentials: hasOwnerCredentials(),
+                hasCredentials: authRole === 'customer' ? hasCustomerCredentials() : hasOwnerCredentials(),
                 executionMode,
+                authRole,
             })
             if (credentialAction.action === 'skip') {
                 test.skip(true, credentialAction.reason)
@@ -48,7 +54,11 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             )
 
             if (scenario.requiresAuth) {
-                await loginAsOwner(page)
+                if (scenario.authRole === 'customer') {
+                    await loginAsCustomer(page)
+                } else {
+                    await loginAsOwner(page)
+                }
             }
 
             const functionalEvidenceHeaders = scenario.requiresAuth
@@ -73,17 +83,24 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 ? await runBns360AutomatedFunctionalEvidence(
                     scenario.requiresAuth ? page.request : request,
                     functionalEvidence,
-                    functionalEvidenceHeaders
+                    functionalEvidenceHeaders,
+                    page
                 )
                 : undefined
 
+            const credentialEmail = scenario.requiresAuth
+                ? authRole === 'customer' ? BNS_360_CUSTOMER_EMAIL : BNS_360_OWNER_EMAIL
+                : null
+            const credentialPassword = scenario.requiresAuth
+                ? authRole === 'customer' ? BNS_360_CUSTOMER_PASSWORD : BNS_360_OWNER_PASSWORD
+                : null
             const evidence = buildBns360ScenarioEvidence({
                 scenarioKey: scenario.key,
                 baseUrl: testInfo.project.use.baseURL ?? '',
                 routes: scenario.routes,
                 functionalEvidence,
-                ownerEmail: scenario.requiresAuth ? BNS_360_OWNER_EMAIL : null,
-                ownerPassword: scenario.requiresAuth ? BNS_360_OWNER_PASSWORD : null,
+                ownerEmail: credentialEmail,
+                ownerPassword: credentialPassword,
                 status: 'verified',
                 executionMode,
                 functionalStatus,

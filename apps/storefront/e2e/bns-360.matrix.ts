@@ -5,9 +5,10 @@ import {
 
 export interface Bns360RuntimeScenario {
     key: string
-    domain: 'storefront' | 'panel' | 'recovery' | 'ops' | 'governance' | 'commerce' | 'pos' | 'modules'
+    domain: 'storefront' | 'panel' | 'customer' | 'recovery' | 'ops' | 'governance' | 'commerce' | 'pos' | 'modules'
     routes: string[]
     requiresAuth?: boolean
+    authRole?: 'owner' | 'customer'
     transport?: 'page' | 'api'
     profileKey?: string
     apiHeadersEnv?: Record<string, string>
@@ -45,6 +46,38 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         key: 'storefront.checkout_handoff',
         domain: 'storefront',
         routes: ['/es/carrito', '/es/checkout'],
+    },
+    {
+        key: 'panel.owner_operations',
+        domain: 'panel',
+        routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos'],
+        requiresAuth: true,
+        authRole: 'owner',
+        functionalEvidence: [
+            {
+                kind: 'owner_panel_operations_journey',
+                target: 'Owner can authenticate, open core panel surfaces and read tenant-scoped operational limits',
+                reversible: false,
+                gate: 'owner_auth',
+                routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos'],
+            },
+        ],
+    },
+    {
+        key: 'customer.account_operations',
+        domain: 'customer',
+        routes: ['/es/cuenta', '/es/cuenta/direcciones', '/es/cuenta/pedidos'],
+        requiresAuth: true,
+        authRole: 'customer',
+        functionalEvidence: [
+            {
+                kind: 'customer_panel_operations_journey',
+                target: 'QA customer can authenticate, open account/address/order panels and is blocked from owner panel',
+                reversible: false,
+                gate: 'customer_auth',
+                routes: ['/es/cuenta', '/es/cuenta/direcciones', '/es/cuenta/pedidos'],
+            },
+        ],
     },
     {
         key: 'panel.dashboard',

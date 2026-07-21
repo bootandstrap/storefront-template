@@ -45,6 +45,8 @@ describe('BNS 360 reusable runtime matrix', () => {
             'storefront.home',
             'storefront.catalog_navigation',
             'storefront.checkout_handoff',
+            'panel.owner_operations',
+            'customer.account_operations',
             'panel.dashboard',
             'panel.catalog_crud',
             'panel.orders_customers_inventory',
@@ -57,6 +59,50 @@ describe('BNS 360 reusable runtime matrix', () => {
             'pos.offline_sync',
             'pos.refunds_and_history',
         ]))
+    })
+
+    it('declares automated owner and customer panel operation probes with distinct auth roles', () => {
+        const ownerScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'panel.owner_operations'
+        )
+        const customerScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'customer.account_operations'
+        )
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
+
+        expect(ownerScenario).toMatchObject({
+            domain: 'panel',
+            authRole: 'owner',
+            requiresAuth: true,
+            functionalEvidence: [
+                expect.objectContaining({
+                    kind: 'owner_panel_operations_journey',
+                    routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos'],
+                }),
+            ],
+        })
+        expect(customerScenario).toMatchObject({
+            domain: 'customer',
+            authRole: 'customer',
+            requiresAuth: true,
+            routes: ['/es/cuenta', '/es/cuenta/direcciones', '/es/cuenta/pedidos'],
+            functionalEvidence: [
+                expect.objectContaining({
+                    kind: 'customer_panel_operations_journey',
+                    gate: 'customer_auth',
+                }),
+            ],
+        })
+        expect(fixtures).toContain('BNS_360_CUSTOMER_EMAIL')
+        expect(fixtures).toContain('loginAsCustomer')
+        expect(runtimeSpec).toContain("scenario.authRole === 'customer'")
     })
 
     it('includes authenticated governance health in deployed runtime health', () => {
@@ -174,6 +220,27 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(panelShell).toContain('<main')
         expect(panelShell).toContain('id="main-content"')
         expect(panelShell).toContain('tabIndex={-1}')
+    })
+
+    it('accepts nested customer account main landmarks during runtime smoke', () => {
+        const fixtures = readFileSync(
+            join(process.cwd(), 'e2e/support/bns-360-fixtures.ts'),
+            'utf8'
+        )
+
+        expect(fixtures).toContain("page.locator('main').first()")
+    })
+
+    it('Medusa entrypoint repairs admin bootstrap after the HTTP server starts', () => {
+        const medusaEntrypoint = readFileSync(
+            join(process.cwd(), '..', 'medusa/docker-entrypoint.sh'),
+            'utf8'
+        )
+
+        expect(medusaEntrypoint).toContain('ensure_admin_user')
+        expect(medusaEntrypoint).toContain('npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"')
+        expect(medusaEntrypoint).toContain('npx medusa start &')
+        expect(medusaEntrypoint).toContain('wait "$MEDUSA_PID"')
     })
 
     it('keeps panel route coverage explicit instead of relying on broad smoke labels', () => {

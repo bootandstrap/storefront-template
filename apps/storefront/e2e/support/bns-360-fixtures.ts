@@ -6,8 +6,11 @@ import type { Bns360FunctionalEvidenceTarget } from './bns-360-tenant-profiles'
 export const BNS_360_LANG = process.env.BNS_360_LANG || 'es'
 export const BNS_360_OWNER_EMAIL = process.env.BNS_360_OWNER_EMAIL || process.env.PANEL_TEST_EMAIL || process.env.E2E_OWNER_EMAIL
 export const BNS_360_OWNER_PASSWORD = process.env.BNS_360_OWNER_PASSWORD || process.env.PANEL_TEST_PASSWORD || process.env.E2E_OWNER_PASSWORD
+export const BNS_360_CUSTOMER_EMAIL = process.env.BNS_360_CUSTOMER_EMAIL || process.env.E2E_CUSTOMER_EMAIL
+export const BNS_360_CUSTOMER_PASSWORD = process.env.BNS_360_CUSTOMER_PASSWORD || process.env.E2E_CUSTOMER_PASSWORD
 
 export type Bns360ExecutionMode = 'smoke' | 'functional'
+export type Bns360AuthRole = 'owner' | 'customer'
 export type Bns360RouteStatus = 'verified' | 'manual_required' | 'blocked'
 export type Bns360FunctionalStatus = 'not_required' | 'not_run' | 'manual_required' | 'verified' | 'blocked'
 export type Bns360MissingCredentialAction =
@@ -29,6 +32,7 @@ type Bns360CredentialRequirement = {
     requiresAuth?: boolean
     hasCredentials: boolean
     executionMode: Bns360ExecutionMode
+    authRole?: Bns360AuthRole
 }
 type Bns360ApiHeaderScenario = {
     apiHeadersEnv?: Record<string, string>
@@ -52,6 +56,7 @@ export type Bns360RouteRetryConfig = {
 export const BNS_360_ROUTE_GOTO_OPTIONS = { waitUntil: 'domcontentloaded' } as const
 
 let bns360OwnerStorageState: Bns360OwnerStorageState | null = null
+let bns360CustomerStorageState: Bns360OwnerStorageState | null = null
 
 export function getBns360ExecutionMode(env: Bns360ExecutionEnv = process.env): Bns360ExecutionMode {
     return env.BNS_360_FUNCTIONAL_JOURNEYS === '1' ? 'functional' : 'smoke'
@@ -100,6 +105,10 @@ export function hasOwnerCredentials() {
     return Boolean(BNS_360_OWNER_EMAIL && BNS_360_OWNER_PASSWORD)
 }
 
+export function hasCustomerCredentials() {
+    return Boolean(BNS_360_CUSTOMER_EMAIL && BNS_360_CUSTOMER_PASSWORD)
+}
+
 export function getBns360MissingCredentialAction(
     requirement: Bns360CredentialRequirement
 ): Bns360MissingCredentialAction {
@@ -108,9 +117,10 @@ export function getBns360MissingCredentialAction(
     }
 
     if (requirement.executionMode === 'functional') {
+        const role = requirement.authRole ?? 'owner'
         return {
             action: 'fail',
-            reason: 'Owner credentials are required for authenticated 360 functional certification',
+            reason: `${role === 'customer' ? 'Customer' : 'Owner'} credentials are required for authenticated 360 functional certification`,
         }
     }
 
@@ -379,8 +389,16 @@ const BNS_360_JSON_PATH_AUTOMATED_KINDS = new Set<Bns360FunctionalEvidenceTarget
     'virtual_printer_lab',
     'crud_journey',
 ])
+const BNS_360_PAGE_AUTOMATED_KINDS = new Set<Bns360FunctionalEvidenceTarget['kind']>([
+    'customer_panel_operations_journey',
+    'owner_panel_operations_journey',
+])
 
 function canAutomateFunctionalEvidence(target: Bns360FunctionalEvidenceTarget): boolean {
+    if (BNS_360_PAGE_AUTOMATED_KINDS.has(target.kind)) {
+        return Boolean(target.routes?.length)
+    }
+
     if (BNS_360_ROUTE_ONLY_AUTOMATED_KINDS.has(target.kind)) {
         return Boolean(target.routes?.length)
     }
@@ -447,7 +465,8 @@ export function getBns360AutomatedFunctionalEvidenceStatus(
 export async function runBns360AutomatedFunctionalEvidence(
     request: APIRequestContext,
     targets: Bns360FunctionalEvidenceTarget[],
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    page?: Page
 ): Promise<Bns360FunctionalStatus> {
     const status = getBns360AutomatedFunctionalEvidenceStatus(targets)
     if (status !== 'verified') {
@@ -455,6 +474,17 @@ export async function runBns360AutomatedFunctionalEvidence(
     }
 
     for (const target of targets) {
+        if (target.kind === 'owner_panel_operations_journey') {
+            if (!page) return 'blocked'
+            await runBns360OwnerPanelOperations(page, target.routes ?? [])
+            continue
+        }
+        if (target.kind === 'customer_panel_operations_journey') {
+            if (!page) return 'blocked'
+            await runBns360CustomerPanelOperations(page, target.routes ?? [])
+            continue
+        }
+
         for (const route of target.routes ?? []) {
             const response = await expectApiHealthy(request, route, headers, target.method)
 
@@ -494,6 +524,20 @@ export async function loginAsOwner(page: Page) {
     bns360OwnerStorageState = await page.context().storageState()
 }
 
+export async function loginAsCustomer(page: Page) {
+    if (await applyBns360CustomerStorageState(page)) {
+        return
+    }
+
+    await page.goto(`/${BNS_360_LANG}/login`)
+    await page.waitForLoadState('domcontentloaded')
+    await page.fill('input[type="email"]', BNS_360_CUSTOMER_EMAIL ?? '')
+    await page.fill('input[type="password"]', BNS_360_CUSTOMER_PASSWORD ?? '')
+    await page.click('button[type="submit"]')
+    await page.waitForURL(getBns360CustomerLandingUrlPattern(BNS_360_LANG), { timeout: 20_000 })
+    bns360CustomerStorageState = await page.context().storageState()
+}
+
 async function applyBns360OwnerStorageState(page: Page): Promise<boolean> {
     if (!bns360OwnerStorageState) {
         return false
@@ -526,8 +570,79 @@ async function applyBns360OwnerStorageState(page: Page): Promise<boolean> {
     return landedOnPanel
 }
 
+async function applyBns360CustomerStorageState(page: Page): Promise<boolean> {
+    if (!bns360CustomerStorageState) {
+        return false
+    }
+
+    await page.context().addCookies(bns360CustomerStorageState.cookies)
+    for (const originState of bns360CustomerStorageState.origins) {
+        await page.addInitScript(({ origin, items }) => {
+            if (window.location.origin !== origin) {
+                return
+            }
+
+            for (const item of items) {
+                window.localStorage.setItem(item.name, item.value)
+            }
+        }, {
+            origin: originState.origin,
+            items: originState.localStorage,
+        })
+    }
+
+    await page.goto(`/${BNS_360_LANG}/cuenta`)
+    await page.waitForLoadState('domcontentloaded')
+
+    const landedOnCustomerPanel = getBns360CustomerLandingUrlPattern(BNS_360_LANG).test(page.url())
+    if (!landedOnCustomerPanel) {
+        bns360CustomerStorageState = null
+    }
+
+    return landedOnCustomerPanel
+}
+
 export function getBns360PanelLandingUrlPattern(lang: string = BNS_360_LANG): RegExp {
     return new RegExp(`/${lang}/panel(?:$|[/?#])`)
+}
+
+export function getBns360CustomerLandingUrlPattern(lang: string = BNS_360_LANG): RegExp {
+    return new RegExp(`/${lang}/cuenta(?:$|/|[?#])`)
+}
+
+async function runBns360OwnerPanelOperations(page: Page, routes: string[]): Promise<void> {
+    for (const route of routes) {
+        await expectPanelRouteHealthy(page, route)
+    }
+
+    const response = await page.request.get('/api/panel/limits?resources=products,categories,badges')
+    if (!response.ok()) {
+        const body = await response.text().catch(() => '')
+        expect(response.ok(), formatBns360ApiHealthFailure('/api/panel/limits?resources=products,categories,badges', response.status(), body)).toBe(true)
+    }
+    const payload = await response.json()
+    expect(bns360JsonHasPath(payload, 'products.limit')).toBe(true)
+    expect(bns360JsonHasPath(payload, 'categories.limit')).toBe(true)
+}
+
+async function runBns360CustomerPanelOperations(page: Page, routes: string[]): Promise<void> {
+    for (const route of routes) {
+        const response = await gotoBns360PanelRouteWithRateLimitBackoff(page, route)
+        if (response && !response.ok()) {
+            const body = await response.text().catch(() => '')
+            expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
+        }
+        await expect(page.locator('main').first()).toBeVisible()
+        await expect(page.locator('text=Algo salió mal')).not.toBeVisible()
+    }
+
+    const ownerPanelResponse = await page.goto(`/${BNS_360_LANG}/panel`, BNS_360_ROUTE_GOTO_OPTIONS)
+    if (ownerPanelResponse && !ownerPanelResponse.ok()) {
+        const status = ownerPanelResponse.status()
+        expect([200, 302, 307, 308]).toContain(status)
+    }
+    expect(getBns360PanelLandingUrlPattern(BNS_360_LANG).test(page.url())).toBe(false)
+    expect(getBns360CustomerLandingUrlPattern(BNS_360_LANG).test(page.url())).toBe(true)
 }
 
 function parsePositiveInteger(value: string | undefined, fallback: number): number {
@@ -592,7 +707,7 @@ export async function expectPanelRouteHealthy(page: Page, route: string) {
         const body = await response.text().catch(() => '')
         expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
     }
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.locator('main').first()).toBeVisible()
     await expect(page.locator('text=Algo salió mal')).not.toBeVisible()
 }
 
