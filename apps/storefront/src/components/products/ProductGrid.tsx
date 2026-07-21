@@ -313,6 +313,7 @@ export default function ProductGrid({
                                                 sizes="128px"
                                                 priority={imagePriority}
                                                 loading={imagePriority ? undefined : 'lazy'}
+                                                fetchPriority={imagePriority ? 'high' : undefined}
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
                                         ) : (
