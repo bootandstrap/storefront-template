@@ -6,6 +6,28 @@ const MEDUSA_BACKEND_URL =
 const PUBLISHABLE_KEY =
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
+const PUBLIC_PRODUCT_LIST_FIELDS = [
+    'id',
+    'title',
+    'handle',
+    'description',
+    'thumbnail',
+    'metadata',
+    'variants.id',
+    'variants.title',
+    'variants.inventory_quantity',
+    'variants.calculated_price',
+    'categories.id',
+    'categories.name',
+    'categories.handle',
+]
+
+const PUBLIC_CATEGORY_LIST_FIELDS = [
+    'id',
+    'name',
+    'handle',
+]
+
 // ---------------------------------------------------------------------------
 // Core fetcher with retry + timeout
 // ---------------------------------------------------------------------------
@@ -63,14 +85,14 @@ export interface MedusaImage {
 export interface MedusaVariant {
     id: string
     title: string
-    sku: string | null
+    sku?: string | null
     calculated_price?: {
         calculated_amount: number
         original_amount: number
         currency_code: string
     }
-    prices: { amount: number; currency_code: string }[]
-    options: { value: string }[]
+    prices?: { amount: number; currency_code: string }[]
+    options?: { value: string }[]
     inventory_quantity?: number
 }
 
@@ -147,7 +169,7 @@ export async function getProducts(params?: {
     if (params?.order) searchParams.set('order', params.order)
     if (params?.q) searchParams.set('q', params.q)
     params?.category_id?.forEach((id) => searchParams.append('category_id[]', id))
-    searchParams.set('fields', '+categories,+images,+variants.prices,+variants.options,+variants.calculated_price,+variants.inventory_quantity')
+    searchParams.set('fields', PUBLIC_PRODUCT_LIST_FIELDS.join(','))
 
     // Region is REQUIRED for pricing — resolve from cookie/config/fallback
     const regionId = params?.region_id || await resolveRegionId()
@@ -177,8 +199,11 @@ export async function getProduct(handle: string, regionId?: string): Promise<Med
 
 export async function getCategories(): Promise<MedusaCategory[]> {
     try {
+        const categoryParams = new URLSearchParams()
+        categoryParams.set('fields', PUBLIC_CATEGORY_LIST_FIELDS.join(','))
+
         const res = await medusaFetch<{ product_categories: MedusaCategory[] }>(
-            '/store/product-categories?include_descendants_tree=true'
+            `/store/product-categories?${categoryParams.toString()}`
         )
         return res.product_categories
     } catch {
