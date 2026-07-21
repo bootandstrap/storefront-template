@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const REPO_ROOT = resolve(process.cwd(), '..', '..')
@@ -31,6 +33,33 @@ function readPublishWorkflow() {
 
 function readWorkflow(name: string) {
     return readFileSync(join(REPO_ROOT, '.github', 'workflows', name), 'utf8')
+}
+
+function extractRunBlockAfterStep(workflow: string, stepName: string) {
+    const stepIndex = workflow.indexOf(`- name: ${stepName}`)
+    expect(stepIndex).toBeGreaterThan(-1)
+
+    const runIndex = workflow.indexOf('        run: |', stepIndex)
+    expect(runIndex).toBeGreaterThan(stepIndex)
+
+    const blockStart = workflow.indexOf('\n', runIndex) + 1
+    const nextStepIndex = workflow.indexOf('\n      - name:', blockStart)
+    const block = workflow.slice(blockStart, nextStepIndex === -1 ? workflow.length : nextStepIndex)
+
+    return block
+        .split('\n')
+        .filter((line) => line.startsWith('          ') || line.trim() === '')
+        .map((line) => line.slice(10))
+        .join('\n')
+        .replace(/\$\{\{\s*vars\.STORE_DOMAIN\s*\}\}/g, '${STORE_DOMAIN}')
+        .replace(/\$\{\{\s*vars\.MEDUSA_DOMAIN\s*\}\}/g, '${MEDUSA_DOMAIN}')
+}
+
+function expectShellSyntaxValid(script: string) {
+    const dir = mkdtempSync(join(tmpdir(), 'bns-workflow-shell-'))
+    const scriptPath = join(dir, 'script.sh')
+    writeFileSync(scriptPath, script)
+    execFileSync('bash', ['-n', scriptPath])
 }
 
 describe('shared package publication contract', () => {
@@ -112,4 +141,17 @@ describe('shared package publication contract', () => {
             )
         }
     )
+
+    it.each([
+        ['deploy.yml', 'Post-deploy health check'],
+        ['docker-publish.yml', 'Health check — Storefront'],
+        ['build-medusa.yml', 'Health check — Medusa'],
+    ])('%s health-check shell is syntactically complete', (workflowName, stepName) => {
+        const workflow = readWorkflow(workflowName)
+        const script = extractRunBlockAfterStep(workflow, stepName)
+
+        expect(script).toContain('for i in 1 2 3 4; do')
+        expect(script).toContain('\ndone')
+        expectShellSyntaxValid(script)
+    })
 })
