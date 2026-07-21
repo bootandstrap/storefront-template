@@ -11555,6 +11555,7 @@ export type Database = {
       cleanup_old_jobs: { Args: never; Returns: undefined }
       cleanup_revalidation_queue: { Args: never; Returns: undefined }
       delete_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
+      delete_tenant_secrets: { Args: { p_tenant_id: string }; Returns: number }
       get_capability_overrides: {
         Args: { p_tenant_id: string }
         Returns: {
