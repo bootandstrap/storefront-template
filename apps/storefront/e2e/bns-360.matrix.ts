@@ -59,7 +59,7 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
                 target: 'Owner can authenticate, open core panel surfaces and read tenant-scoped operational limits',
                 reversible: false,
                 gate: 'owner_auth',
-                routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos'],
+                routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos', '/es/panel/mi-tienda?tab=productos'],
             },
         ],
     },

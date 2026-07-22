@@ -289,6 +289,7 @@ export default function ProductsTab({
                             <StaggerItem key={product.id}>
                                 <motion.div
                                     whileHover={{ y: -2 }}
+                                    data-testid="panel-product-card"
                                     className="bg-sf-0/50 backdrop-blur-md border border-sf-3/30 shadow-sm rounded-2xl overflow-hidden group transition-shadow hover:shadow-lg"
                                 >
                                     {/* Thumbnail */}
@@ -458,4 +459,3 @@ export default function ProductsTab({
         </motion.div>
     )
 }
-

@@ -90,6 +90,105 @@ export interface PanelNavSection {
     subItems?: PanelSubItem[]
 }
 
+const PANEL_TAB_LABELS: Record<string, Record<string, string>> = {
+    en: {
+        'panel.tabs.products': 'Products',
+        'panel.tabs.categories': 'Categories',
+        'panel.tabs.inventory': 'Inventory',
+        'panel.tabs.badges': 'Badges',
+        'panel.tabs.carousel': 'Carousel',
+        'panel.tabs.pages': 'Pages',
+        'panel.tabs.orders': 'Orders',
+        'panel.tabs.customers': 'Customers',
+        'panel.tabs.promotions': 'Promotions',
+        'panel.tabs.returns': 'Returns',
+        'panel.tabs.reviews': 'Reviews',
+        'panel.tabs.whatsapp': 'WhatsApp',
+        'panel.tabs.automations': 'Automations',
+        'panel.tabs.salesChannels': 'Channels',
+        'panel.tabs.capacity': 'Capacity',
+        'panel.tabs.authAdvanced': 'Auth',
+    },
+    es: {
+        'panel.tabs.products': 'Productos',
+        'panel.tabs.categories': 'Categorías',
+        'panel.tabs.inventory': 'Inventario',
+        'panel.tabs.badges': 'Insignias',
+        'panel.tabs.carousel': 'Carrusel',
+        'panel.tabs.pages': 'Páginas',
+        'panel.tabs.orders': 'Pedidos',
+        'panel.tabs.customers': 'Clientes',
+        'panel.tabs.promotions': 'Promociones',
+        'panel.tabs.returns': 'Devoluciones',
+        'panel.tabs.reviews': 'Reseñas',
+        'panel.tabs.whatsapp': 'WhatsApp',
+        'panel.tabs.automations': 'Automatizaciones',
+        'panel.tabs.salesChannels': 'Canales',
+        'panel.tabs.capacity': 'Capacidad',
+        'panel.tabs.authAdvanced': 'Auth',
+    },
+    de: {
+        'panel.tabs.products': 'Produkte',
+        'panel.tabs.categories': 'Kategorien',
+        'panel.tabs.inventory': 'Inventar',
+        'panel.tabs.badges': 'Abzeichen',
+        'panel.tabs.carousel': 'Karussell',
+        'panel.tabs.pages': 'Seiten',
+        'panel.tabs.orders': 'Bestellungen',
+        'panel.tabs.customers': 'Kunden',
+        'panel.tabs.promotions': 'Aktionen',
+        'panel.tabs.returns': 'Retouren',
+        'panel.tabs.reviews': 'Bewertungen',
+        'panel.tabs.whatsapp': 'WhatsApp',
+        'panel.tabs.automations': 'Automatisierungen',
+        'panel.tabs.salesChannels': 'Kanäle',
+        'panel.tabs.capacity': 'Kapazität',
+        'panel.tabs.authAdvanced': 'Auth',
+    },
+    fr: {
+        'panel.tabs.products': 'Produits',
+        'panel.tabs.categories': 'Catégories',
+        'panel.tabs.inventory': 'Inventaire',
+        'panel.tabs.badges': 'Badges',
+        'panel.tabs.carousel': 'Carrousel',
+        'panel.tabs.pages': 'Pages',
+        'panel.tabs.orders': 'Commandes',
+        'panel.tabs.customers': 'Clients',
+        'panel.tabs.promotions': 'Promotions',
+        'panel.tabs.returns': 'Retours',
+        'panel.tabs.reviews': 'Avis',
+        'panel.tabs.whatsapp': 'WhatsApp',
+        'panel.tabs.automations': 'Automatisations',
+        'panel.tabs.salesChannels': 'Canaux',
+        'panel.tabs.capacity': 'Capacité',
+        'panel.tabs.authAdvanced': 'Auth',
+    },
+    it: {
+        'panel.tabs.products': 'Prodotti',
+        'panel.tabs.categories': 'Categorie',
+        'panel.tabs.inventory': 'Inventario',
+        'panel.tabs.badges': 'Badge',
+        'panel.tabs.carousel': 'Carosello',
+        'panel.tabs.pages': 'Pagine',
+        'panel.tabs.orders': 'Ordini',
+        'panel.tabs.customers': 'Clienti',
+        'panel.tabs.promotions': 'Promozioni',
+        'panel.tabs.returns': 'Resi',
+        'panel.tabs.reviews': 'Recensioni',
+        'panel.tabs.whatsapp': 'WhatsApp',
+        'panel.tabs.automations': 'Automazioni',
+        'panel.tabs.salesChannels': 'Canali',
+        'panel.tabs.capacity': 'Capacità',
+        'panel.tabs.authAdvanced': 'Auth',
+    },
+}
+
+function localizePanelTabLabel(label: string, lang: string): string {
+    return PANEL_TAB_LABELS[lang]?.[label]
+        ?? PANEL_TAB_LABELS.en[label]
+        ?? label
+}
+
 // ── Tab Types (for section sub-navigation) ────────────────────────────────
 
 export interface PanelTab {
@@ -287,7 +386,7 @@ export function getPanelSectionSubItems(
             if (tabs.length <= 1) return undefined
             return tabs.map(tab => ({
                 key: tab.key,
-                label: tab.label,
+                label: localizePanelTabLabel(tab.label, lang),
                 href: `/${lang}/panel/mi-tienda?tab=${tab.key}`,
                 icon: TAB_ICONS[tab.key],
                 featureKey: tab.featureKey,
@@ -298,7 +397,7 @@ export function getPanelSectionSubItems(
             if (tabs.length <= 1) return undefined
             return tabs.map(tab => ({
                 key: tab.key,
-                label: tab.label,
+                label: localizePanelTabLabel(tab.label, lang),
                 href: `/${lang}/panel/ventas?tab=${tab.key}`,
                 icon: TAB_ICONS[tab.key],
                 badge: tab.key === 'pedidos' ? badges?.orders : undefined,

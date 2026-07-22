@@ -188,6 +188,18 @@ describe('Suite 2: Graceful Degradation UX', () => {
             // 9 module sub-items + marketplace = 10
             expect(subItems!.length).toBe(10)
         })
+
+        it('localizes My Store sub-item labels instead of rendering dictionary keys', () => {
+            const subItems = getPanelSectionSubItems('myStore', 'es', ALL_FLAGS_ON)
+
+            expect(subItems).toBeDefined()
+            expect(subItems!.map(item => item.label)).toEqual(expect.arrayContaining([
+                'Productos',
+                'Categorías',
+                'Inventario',
+            ]))
+            expect(subItems!.some(item => item.label.startsWith('panel.tabs.'))).toBe(false)
+        })
     })
 
     describe('Tab Visibility Degradation', () => {

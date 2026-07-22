@@ -85,7 +85,7 @@ describe('BNS 360 reusable runtime matrix', () => {
             functionalEvidence: [
                 expect.objectContaining({
                     kind: 'owner_panel_operations_journey',
-                    routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos'],
+                    routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos', '/es/panel/mi-tienda?tab=productos'],
                 }),
             ],
         })
@@ -103,6 +103,8 @@ describe('BNS 360 reusable runtime matrix', () => {
         })
         expect(fixtures).toContain('BNS_360_CUSTOMER_EMAIL')
         expect(fixtures).toContain('loginAsCustomer')
+        expect(fixtures).toContain('expectBns360OwnerProductCatalogUsable')
+        expect(fixtures).toContain('panel-product-card')
         expect(runtimeSpec).toContain("scenario.authRole === 'customer'")
     })
 
@@ -221,6 +223,16 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(panelShell).toContain('<main')
         expect(panelShell).toContain('id="main-content"')
         expect(panelShell).toContain('tabIndex={-1}')
+    })
+
+    it('keeps the desktop sidebar hidden on mobile instead of overriding Tailwind with inline display', () => {
+        const panelSidebar = readFileSync(
+            join(process.cwd(), 'src/components/panel/PanelSidebar.tsx'),
+            'utf8'
+        )
+
+        expect(panelSidebar).toContain('className="hidden md:flex flex-col"')
+        expect(panelSidebar).not.toMatch(/className="hidden md:flex"[\s\S]{0,800}display:\s*'flex'/)
     })
 
     it('accepts nested customer account main landmarks during runtime smoke', () => {

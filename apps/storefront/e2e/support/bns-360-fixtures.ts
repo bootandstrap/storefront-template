@@ -615,6 +615,8 @@ async function runBns360OwnerPanelOperations(page: Page, routes: string[]): Prom
         await expectPanelRouteHealthy(page, route)
     }
 
+    await expectBns360OwnerProductCatalogUsable(page)
+
     const response = await page.request.get('/api/panel/limits?resources=products,categories,badges')
     if (!response.ok()) {
         const body = await response.text().catch(() => '')
@@ -623,6 +625,15 @@ async function runBns360OwnerPanelOperations(page: Page, routes: string[]): Prom
     const payload = await response.json()
     expect(bns360JsonHasPath(payload, 'products.limit')).toBe(true)
     expect(bns360JsonHasPath(payload, 'categories.limit')).toBe(true)
+}
+
+async function expectBns360OwnerProductCatalogUsable(page: Page): Promise<void> {
+    const route = `/${BNS_360_LANG}/panel/mi-tienda?tab=productos`
+    await expectPanelRouteHealthy(page, route)
+    await expect(
+        page.locator('[data-testid="panel-product-card"]').first(),
+        'Owner product catalog must expose at least one manageable product card'
+    ).toBeVisible()
 }
 
 async function runBns360CustomerPanelOperations(page: Page, routes: string[]): Promise<void> {
