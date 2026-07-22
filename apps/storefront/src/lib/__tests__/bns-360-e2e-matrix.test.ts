@@ -318,6 +318,8 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(fixtures).toContain('resolveBns360RetryAfterMs(response?.headers()[\'retry-after\'], config)')
         expect(fixtures).toContain('config.maxTotalWaitMs - totalWaitMs')
         expect(fixtures).toContain('page.waitForTimeout(boundedWaitMs)')
+        expect(fixtures).toContain('gotoBns360AuthRoute(page, `/${BNS_360_LANG}/login`)')
+        expect(fixtures).toContain('await expect(page.locator(\'input[type="email"]\')).toBeVisible')
         expect(fixtures).toContain('isBns360RetriablePanelStatus(response?.status())')
         expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
     })

@@ -517,8 +517,7 @@ export async function loginAsOwner(page: Page) {
         return
     }
 
-    await page.goto(`/${BNS_360_LANG}/login`)
-    await page.waitForLoadState('domcontentloaded')
+    await gotoBns360AuthRoute(page, `/${BNS_360_LANG}/login`)
     await page.fill('input[type="email"]', BNS_360_OWNER_EMAIL ?? '')
     await page.fill('input[type="password"]', BNS_360_OWNER_PASSWORD ?? '')
     await page.click('button[type="submit"]')
@@ -531,8 +530,7 @@ export async function loginAsCustomer(page: Page) {
         return
     }
 
-    await page.goto(`/${BNS_360_LANG}/login`)
-    await page.waitForLoadState('domcontentloaded')
+    await gotoBns360AuthRoute(page, `/${BNS_360_LANG}/login`)
     await page.fill('input[type="email"]', BNS_360_CUSTOMER_EMAIL ?? '')
     await page.fill('input[type="password"]', BNS_360_CUSTOMER_PASSWORD ?? '')
     await page.click('button[type="submit"]')
@@ -561,7 +559,7 @@ async function applyBns360OwnerStorageState(page: Page): Promise<boolean> {
         })
     }
 
-    await page.goto(`/${BNS_360_LANG}/panel`)
+    await gotoBns360AuthRoute(page, `/${BNS_360_LANG}/panel`, { requireLoginForm: false })
     await page.waitForLoadState('domcontentloaded')
 
     const landedOnPanel = getBns360PanelLandingUrlPattern(BNS_360_LANG).test(page.url())
@@ -593,7 +591,7 @@ async function applyBns360CustomerStorageState(page: Page): Promise<boolean> {
         })
     }
 
-    await page.goto(`/${BNS_360_LANG}/cuenta`)
+    await gotoBns360AuthRoute(page, `/${BNS_360_LANG}/cuenta`, { requireLoginForm: false })
     await page.waitForLoadState('domcontentloaded')
 
     const landedOnCustomerPanel = getBns360CustomerLandingUrlPattern(BNS_360_LANG).test(page.url())
@@ -610,6 +608,23 @@ export function getBns360PanelLandingUrlPattern(lang: string = BNS_360_LANG): Re
 
 export function getBns360CustomerLandingUrlPattern(lang: string = BNS_360_LANG): RegExp {
     return new RegExp(`/${lang}/cuenta(?:$|/|[?#])`)
+}
+
+async function gotoBns360AuthRoute(
+    page: Page,
+    route: string,
+    options: { requireLoginForm?: boolean } = {}
+): Promise<void> {
+    const response = await gotoBns360PanelRouteWithRateLimitBackoff(page, route)
+    if (response && !response.ok()) {
+        const body = await response.text().catch(() => '')
+        expect(response.ok(), formatBns360ApiHealthFailure(route, response.status(), body)).toBe(true)
+    }
+    await page.waitForLoadState('domcontentloaded')
+    if (options.requireLoginForm ?? true) {
+        await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 15_000 })
+        await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 15_000 })
+    }
 }
 
 async function runBns360OwnerPanelOperations(page: Page, routes: string[]): Promise<void> {
