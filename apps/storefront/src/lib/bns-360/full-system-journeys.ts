@@ -36,6 +36,10 @@ export interface Bns360CheckoutPrimaryJourneyResult extends Bns360JourneyBase {
             paymentSessionInitialized: boolean
             liveMutation: boolean
         }
+        shippingMethod: {
+            selected: boolean
+            optionId: string | null
+        }
         order: {
             completed: boolean
             resultType: 'order'
@@ -130,6 +134,7 @@ function blockedCheckoutResult(
         cartCreated: boolean
         itemAttached: boolean
         paymentSessionInitialized: boolean
+        shippingMethodSelected: boolean
         orderCompleted: boolean
     }>
 ): Bns360CheckoutPrimaryJourneyResult {
@@ -143,6 +148,10 @@ function blockedCheckoutResult(
             providerMode: 'simulator',
             paymentSessionInitialized: partial?.paymentSessionInitialized ?? false,
             liveMutation: false,
+        },
+        shippingMethod: {
+            selected: partial?.shippingMethodSelected ?? false,
+            optionId: null,
         },
         order: {
             completed: partial?.orderCompleted ?? false,
@@ -588,7 +597,11 @@ export async function runBns360CheckoutPrimaryJourney(
     const journeyInput = input.runId ? input : { ...input, runId: resolveRunId('bns360-checkout') }
 
     try {
-        const [{ getProducts, createCart, addToCart }, { setCartAddress }, { submitCODOrder }] = await Promise.all([
+        const [
+            { getProducts, createCart, addToCart },
+            { getShippingOptions, setCartAddress, setShippingMethod },
+            { submitCODOrder },
+        ] = await Promise.all([
             import('@/lib/medusa/client'),
             import('@/app/[lang]/(shop)/checkout/checkout-shipping'),
             import('@/app/[lang]/(shop)/checkout/checkout-orders'),
@@ -633,6 +646,27 @@ export async function runBns360CheckoutPrimaryJourney(
             )
         }
 
+        const shippingOptionsResult = await getShippingOptions(cart.id)
+        const shippingOption = shippingOptionsResult.options[0]
+        if (!shippingOption?.id) {
+            return blockedCheckoutResult(
+                journeyInput,
+                shippingOptionsResult.error
+                    ? `Cart shipping options failed: ${shippingOptionsResult.error}`
+                    : 'No shipping option is available for checkout certification',
+                { cartCreated: true, itemAttached: true },
+            )
+        }
+
+        const shippingResult = await setShippingMethod(cart.id, shippingOption.id)
+        if (!shippingResult.success) {
+            return blockedCheckoutResult(
+                journeyInput,
+                shippingResult.error ? `Cart shipping method failed: ${shippingResult.error}` : 'Cart shipping method failed',
+                { cartCreated: true, itemAttached: true },
+            )
+        }
+
         const orderResult = await submitCODOrder(cart.id, {
             name: 'BNS 360',
             email: `bns360-checkout+${journeyInput.runId}@bootandstrap.test`,
@@ -645,7 +679,7 @@ export async function runBns360CheckoutPrimaryJourney(
             return blockedCheckoutResult(
                 journeyInput,
                 orderResult.error ? `COD simulator order failed: ${orderResult.error}` : 'COD simulator order failed',
-                { cartCreated: true, itemAttached: true, paymentSessionInitialized: true },
+                { cartCreated: true, itemAttached: true, paymentSessionInitialized: true, shippingMethodSelected: true },
             )
         }
 
@@ -659,6 +693,10 @@ export async function runBns360CheckoutPrimaryJourney(
                 providerMode: 'simulator',
                 paymentSessionInitialized: true,
                 liveMutation: false,
+            },
+            shippingMethod: {
+                selected: true,
+                optionId: shippingOption.id,
             },
             order: {
                 completed: true,

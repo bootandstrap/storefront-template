@@ -15,11 +15,13 @@ const mocks = vi.hoisted(() => ({
     getAdminOrders: vi.fn(),
     getAuthCustomerOrders: vi.fn(),
     getProducts: vi.fn(),
+    getShippingOptions: vi.fn(),
     getTenantMedusaScope: vi.fn(),
     getTenantSlug: vi.fn(),
     orderBelongsToScope: vi.fn(),
     remove: vi.fn(),
     setCartAddress: vi.fn(),
+    setShippingMethod: vi.fn(),
     signInWithPassword: vi.fn(),
     signOut: vi.fn(),
     signUp: vi.fn(),
@@ -97,7 +99,9 @@ vi.mock('@/lib/medusa/client', () => ({
 }))
 
 vi.mock('@/app/[lang]/(shop)/checkout/checkout-shipping', () => ({
+    getShippingOptions: mocks.getShippingOptions,
     setCartAddress: mocks.setCartAddress,
+    setShippingMethod: mocks.setShippingMethod,
 }))
 
 vi.mock('@/app/[lang]/(shop)/checkout/checkout-orders', () => ({
@@ -116,6 +120,8 @@ function mockCheckoutDefaults() {
     mocks.createCart.mockResolvedValue({ id: 'cart_1', items: [] })
     mocks.addToCart.mockResolvedValue({ id: 'cart_1', items: [{ id: 'line_1' }] })
     mocks.setCartAddress.mockResolvedValue({ success: true })
+    mocks.getShippingOptions.mockResolvedValue({ options: [{ id: 'ship_1', name: 'Standard', amount: 499 }] })
+    mocks.setShippingMethod.mockResolvedValue({ success: true })
     mocks.submitCODOrder.mockResolvedValue({
         order: {
             id: 'order_1',
@@ -269,6 +275,7 @@ describe('BNS 360 full-system journeys', () => {
                     paymentSessionInitialized: true,
                     liveMutation: false,
                 },
+                shippingMethod: { selected: true, optionId: 'ship_1' },
                 order: { completed: true, resultType: 'order' },
             },
             cleanup: { status: 'verified' },
@@ -282,6 +289,8 @@ describe('BNS 360 full-system journeys', () => {
             address_1: 'BNS 360 Simulator 1',
             country_code: 'es',
         }))
+        expect(mocks.getShippingOptions).toHaveBeenCalledWith('cart_1')
+        expect(mocks.setShippingMethod).toHaveBeenCalledWith('cart_1', 'ship_1')
         expect(mocks.submitCODOrder).toHaveBeenCalledWith('cart_1', expect.objectContaining({
             email: 'bns360-checkout+run-1@bootandstrap.test',
         }))
@@ -354,6 +363,24 @@ describe('BNS 360 full-system journeys', () => {
             password: expect.any(String),
         }))
         expect(mocks.signUp).not.toHaveBeenCalled()
+    })
+
+    it('blocks checkout certification before COD completion when no shipping option is available', async () => {
+        mocks.getShippingOptions.mockResolvedValue({ options: [] })
+
+        const result = await runBns360CheckoutPrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
+
+        expect(result).toMatchObject({
+            status: 'blocked',
+            runtime: {
+                cart: { created: true, itemAttached: true },
+                shippingMethod: { selected: false, optionId: null },
+                order: { completed: false },
+            },
+        })
+        expect(result.error).toContain('No shipping option is available')
+        expect(mocks.setShippingMethod).not.toHaveBeenCalled()
+        expect(mocks.submitCODOrder).not.toHaveBeenCalled()
     })
 
     it('confirms the canary customer when production Supabase requires email confirmation', async () => {
