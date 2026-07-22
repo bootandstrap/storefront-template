@@ -616,6 +616,7 @@ async function runBns360OwnerPanelOperations(page: Page, routes: string[]): Prom
     }
 
     await expectBns360OwnerProductCatalogUsable(page)
+    await expectBns360OwnerInventoryUsable(page)
 
     const response = await page.request.get('/api/panel/limits?resources=products,categories,badges')
     if (!response.ok()) {
@@ -633,6 +634,15 @@ async function expectBns360OwnerProductCatalogUsable(page: Page): Promise<void> 
     await expect(
         page.locator('[data-testid="panel-product-card"]').first(),
         'Owner product catalog must expose at least one manageable product card'
+    ).toBeVisible()
+}
+
+async function expectBns360OwnerInventoryUsable(page: Page): Promise<void> {
+    const route = `/${BNS_360_LANG}/panel/mi-tienda?tab=inventario`
+    await expectPanelRouteHealthy(page, route)
+    await expect(
+        page.locator('[data-testid="panel-inventory-row"]').first(),
+        'Owner inventory panel must expose at least one materialized inventory item'
     ).toBeVisible()
 }
 

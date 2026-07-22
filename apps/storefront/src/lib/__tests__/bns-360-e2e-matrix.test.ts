@@ -85,7 +85,13 @@ describe('BNS 360 reusable runtime matrix', () => {
             functionalEvidence: [
                 expect.objectContaining({
                     kind: 'owner_panel_operations_journey',
-                    routes: ['/es/panel', '/es/panel/ajustes', '/es/panel/modulos', '/es/panel/mi-tienda?tab=productos'],
+                    routes: [
+                        '/es/panel',
+                        '/es/panel/ajustes',
+                        '/es/panel/modulos',
+                        '/es/panel/mi-tienda?tab=productos',
+                        '/es/panel/mi-tienda?tab=inventario',
+                    ],
                 }),
             ],
         })
@@ -104,7 +110,9 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(fixtures).toContain('BNS_360_CUSTOMER_EMAIL')
         expect(fixtures).toContain('loginAsCustomer')
         expect(fixtures).toContain('expectBns360OwnerProductCatalogUsable')
+        expect(fixtures).toContain('expectBns360OwnerInventoryUsable')
         expect(fixtures).toContain('panel-product-card')
+        expect(fixtures).toContain('panel-inventory-row')
         expect(runtimeSpec).toContain("scenario.authRole === 'customer'")
     })
 

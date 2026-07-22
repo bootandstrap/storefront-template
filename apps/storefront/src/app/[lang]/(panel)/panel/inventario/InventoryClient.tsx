@@ -189,6 +189,7 @@ export default function InventoryClient({ items, lowStockItems, locations, label
                                     return (
                                         <motion.tr
                                             key={item.id}
+                                            data-testid="panel-inventory-row"
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             className={`transition-colors ${
