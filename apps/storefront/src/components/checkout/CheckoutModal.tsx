@@ -325,11 +325,12 @@ export default function CheckoutModal({
             phone,
             address: street,
             notes,
+            shippingOptionId: selectedShipping ?? undefined,
         })
         if (res.error) throw new Error(res.error)
         if (res.order) setOrderResult({ id: res.order.id, display_id: res.order.display_id })
         setStep('confirmation')
-    }, [cart?.id, firstName, lastName, email, phone, street, notes])
+    }, [cart?.id, firstName, lastName, email, phone, street, notes, selectedShipping])
 
     const handleWhatsAppComplete = useCallback((order?: { id: string; display_id: number }) => {
         if (order) setOrderResult(order)

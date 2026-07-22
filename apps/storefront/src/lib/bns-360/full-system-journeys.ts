@@ -673,6 +673,7 @@ export async function runBns360CheckoutPrimaryJourney(
             phone: '+34600000000',
             address: 'BNS 360 Simulator 1, 46001 Valencia',
             notes: 'BNS 360 functional checkout simulator. No real payment.',
+            shippingOptionId: shippingOption.id,
         })
 
         if (!orderResult.order) {

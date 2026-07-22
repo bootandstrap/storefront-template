@@ -293,6 +293,7 @@ describe('BNS 360 full-system journeys', () => {
         expect(mocks.setShippingMethod).toHaveBeenCalledWith('cart_1', 'ship_1')
         expect(mocks.submitCODOrder).toHaveBeenCalledWith('cart_1', expect.objectContaining({
             email: 'bns360-checkout+run-1@bootandstrap.test',
+            shippingOptionId: 'ship_1',
         }))
         expect(JSON.stringify(result)).not.toContain('client_secret')
         expect(JSON.stringify(result)).not.toContain('password')
@@ -446,6 +447,7 @@ describe('BNS 360 full-system journeys', () => {
         expect(mocks.submitCODOrder).toHaveBeenCalledWith('cart_1', expect.objectContaining({
             email: 'bns360-checkout+run-1@bootandstrap.test',
             notes: 'BNS 360 functional checkout simulator. No real payment.',
+            shippingOptionId: 'ship_1',
         }))
         expect(mocks.getAdminOrders).toHaveBeenCalledWith({
             limit: 25,

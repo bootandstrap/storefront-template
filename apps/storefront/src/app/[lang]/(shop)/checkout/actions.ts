@@ -80,7 +80,7 @@ export async function submitBankTransferOrder(
 
 export async function submitCODOrder(
     cartId: string,
-    customerInfo: { name: string; email: string; phone?: string; address: string; notes?: string }
+    customerInfo: { name: string; email: string; phone?: string; address: string; notes?: string; shippingOptionId?: string }
 ) {
     return orders.submitCODOrder(cartId, customerInfo)
 }

@@ -11,6 +11,11 @@ describe('checkout offline payment contract', () => {
         const whatsappStart = orders.indexOf('export async function submitWhatsAppOrder')
         const codBlock = orders.slice(codStart, whatsappStart)
 
+        expect(codBlock).toContain('customerInfo.shippingOptionId')
+        expect(codBlock).toContain('await setShippingMethod(cartId, customerInfo.shippingOptionId)')
+        expect(codBlock.indexOf('await setShippingMethod(cartId, customerInfo.shippingOptionId)')).toBeLessThan(
+            codBlock.indexOf('await initializeOfflinePaymentSession(cartId)')
+        )
         expect(codBlock).toContain('await initializeOfflinePaymentSession(cartId)')
         expect(codBlock.indexOf('await initializeOfflinePaymentSession(cartId)')).toBeLessThan(
             codBlock.indexOf('const result = await completeCart(cartId)')

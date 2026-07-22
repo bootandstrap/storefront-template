@@ -5,6 +5,7 @@ import { isFeatureEnabled } from '@/lib/features'
 import { emitServerEvent } from '@/lib/analytics-server'
 import { validateMinOrderAmount, validateMaxOrdersMonth, checkCheckoutRateLimit } from './checkout-validation'
 import { medusaStore } from './checkout-medusa'
+import { setShippingMethod } from './checkout-shipping'
 import { logger } from '@/lib/logger'
 
 // ---------------------------------------------------------------------------
@@ -163,6 +164,7 @@ export async function submitCODOrder(
         phone?: string
         address: string
         notes?: string
+        shippingOptionId?: string
     }
 ): Promise<{ order: OrderResult | null; error?: string }> {
     try {
@@ -194,6 +196,13 @@ export async function submitCODOrder(
                 },
             }),
         })
+
+        if (customerInfo.shippingOptionId) {
+            const shippingResult = await setShippingMethod(cartId, customerInfo.shippingOptionId)
+            if (!shippingResult.success) {
+                return { order: null, error: shippingResult.error ?? 'Shipping method could not be applied' }
+            }
+        }
 
         await initializeOfflinePaymentSession(cartId)
 
