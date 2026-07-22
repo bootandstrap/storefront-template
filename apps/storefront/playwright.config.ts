@@ -13,6 +13,20 @@ const shouldStartLocalServer =
     !process.env.CI &&
     /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(resolvedBaseUrl)
 
+function parsePositiveInteger(value: string | undefined, fallback: number): number {
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const resolvedTestTimeout = parsePositiveInteger(
+    process.env.BNS_360_TEST_TIMEOUT_MS,
+    process.env.CI ? 30_000 : 60_000
+)
+const resolvedNavigationTimeout = parsePositiveInteger(
+    process.env.BNS_360_NAVIGATION_TIMEOUT_MS,
+    process.env.CI ? 15_000 : 30_000
+)
+
 /**
  * Playwright E2E Test Configuration — BootandStrap Storefront
  *
@@ -52,13 +66,13 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
     reporter: process.env.CI ? 'html' : 'list',
-    timeout: process.env.CI ? 30_000 : 60_000,
+    timeout: resolvedTestTimeout,
 
     use: {
         baseURL: resolvedBaseUrl,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
-        navigationTimeout: process.env.CI ? 15_000 : 30_000,
+        navigationTimeout: resolvedNavigationTimeout,
     },
 
     projects: [

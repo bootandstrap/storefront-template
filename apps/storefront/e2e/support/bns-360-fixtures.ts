@@ -47,11 +47,13 @@ type Bns360RouteRetryEnv = {
     BNS_360_ROUTE_RETRY_MAX_ATTEMPTS?: string
     BNS_360_ROUTE_RETRY_FALLBACK_MS?: string
     BNS_360_ROUTE_RETRY_MAX_DELAY_MS?: string
+    BNS_360_ROUTE_RETRY_MAX_TOTAL_WAIT_MS?: string
 }
 export type Bns360RouteRetryConfig = {
     maxAttempts: number
     fallbackDelayMs: number
     maxDelayMs: number
+    maxTotalWaitMs: number
 }
 export const BNS_360_ROUTE_GOTO_OPTIONS = { waitUntil: 'domcontentloaded' } as const
 
@@ -689,7 +691,8 @@ export function getBns360RouteRetryConfig(
     return {
         maxAttempts: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_ATTEMPTS, 2),
         fallbackDelayMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_FALLBACK_MS, 5_000),
-        maxDelayMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_DELAY_MS, 65_000),
+        maxDelayMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_DELAY_MS, 10_000),
+        maxTotalWaitMs: parsePositiveInteger(env.BNS_360_ROUTE_RETRY_MAX_TOTAL_WAIT_MS, 20_000),
     }
 }
 
@@ -731,6 +734,7 @@ export function isBns360CustomerOwnerPanelBoundaryStatus(status: number | undefi
 async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: string): Promise<Response | null> {
     const config = getBns360RouteRetryConfig()
     let response: Response | null = null
+    let totalWaitMs = 0
 
     for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
         response = await page.goto(route, BNS_360_ROUTE_GOTO_OPTIONS)
@@ -738,7 +742,14 @@ async function gotoBns360PanelRouteWithRateLimitBackoff(page: Page, route: strin
             return response
         }
 
-        await page.waitForTimeout(resolveBns360RetryAfterMs(response?.headers()['retry-after'], config))
+        const nextWaitMs = resolveBns360RetryAfterMs(response?.headers()['retry-after'], config)
+        const remainingWaitMs = config.maxTotalWaitMs - totalWaitMs
+        if (remainingWaitMs <= 0) {
+            return response
+        }
+        const boundedWaitMs = Math.min(nextWaitMs, remainingWaitMs)
+        totalWaitMs += boundedWaitMs
+        await page.waitForTimeout(boundedWaitMs)
     }
 
     return response

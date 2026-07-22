@@ -298,12 +298,14 @@ describe('BNS 360 reusable runtime matrix', () => {
             BNS_360_ROUTE_RETRY_MAX_ATTEMPTS: '4',
             BNS_360_ROUTE_RETRY_FALLBACK_MS: '750',
             BNS_360_ROUTE_RETRY_MAX_DELAY_MS: '2000',
+            BNS_360_ROUTE_RETRY_MAX_TOTAL_WAIT_MS: '5000',
         })
 
         expect(retryConfig).toEqual({
             maxAttempts: 4,
             fallbackDelayMs: 750,
             maxDelayMs: 2000,
+            maxTotalWaitMs: 5000,
         })
         expect(resolveBns360RetryAfterMs('1', retryConfig)).toBe(1000)
         expect(resolveBns360RetryAfterMs('60', retryConfig)).toBe(2000)
@@ -313,9 +315,23 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(isBns360RetriablePanelStatus(503)).toBe(true)
         expect(isBns360RetriablePanelStatus(504)).toBe(true)
         expect(isBns360RetriablePanelStatus(404)).toBe(false)
-        expect(fixtures).toContain('page.waitForTimeout(resolveBns360RetryAfterMs')
+        expect(fixtures).toContain('resolveBns360RetryAfterMs(response?.headers()[\'retry-after\'], config)')
+        expect(fixtures).toContain('config.maxTotalWaitMs - totalWaitMs')
+        expect(fixtures).toContain('page.waitForTimeout(boundedWaitMs)')
         expect(fixtures).toContain('isBns360RetriablePanelStatus(response?.status())')
         expect(fixtures).toContain('formatBns360ApiHealthFailure(route, response.status(), body)')
+    })
+
+    it('allows live BNS 360 certifications to raise Playwright timeouts without changing code', () => {
+        const config = readFileSync(
+            join(process.cwd(), 'playwright.config.ts'),
+            'utf8'
+        )
+
+        expect(config).toContain('BNS_360_TEST_TIMEOUT_MS')
+        expect(config).toContain('BNS_360_NAVIGATION_TIMEOUT_MS')
+        expect(config).toContain('timeout: resolvedTestTimeout')
+        expect(config).toContain('navigationTimeout: resolvedNavigationTimeout')
     })
 
     it('treats customer owner-panel rate limiting as a denied boundary, not panel access', () => {
