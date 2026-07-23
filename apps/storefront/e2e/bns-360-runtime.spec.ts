@@ -6,6 +6,7 @@ import {
     BNS_360_CUSTOMER_PASSWORD,
     BNS_360_OWNER_EMAIL,
     BNS_360_OWNER_PASSWORD,
+    assertBns360ExpectedRuntimeCommit,
     assertBns360FunctionalEvidenceVerified,
     buildBns360ScenarioEvidence,
     expectApiHealthy,
@@ -18,6 +19,7 @@ import {
     loginAsCustomer,
     loginAsOwner,
     recordBns360ScenarioEvidenceArtifact,
+    resolveBns360DeployedBuild,
     resolveBns360OwnerApiHeaders,
     resolveBns360ApiHeaders,
     runBns360AutomatedFunctionalEvidence,
@@ -88,6 +90,8 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                     page
                 )
                 : undefined
+            const deployedBuild = await resolveBns360DeployedBuild(request, baseApiHeaders)
+            assertBns360ExpectedRuntimeCommit(deployedBuild)
 
             const credentialEmail = scenario.requiresAuth
                 ? authRole === 'customer' ? BNS_360_CUSTOMER_EMAIL : BNS_360_OWNER_EMAIL
@@ -116,6 +120,7 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 templateCommit: process.env.BNS_360_TEMPLATE_COMMIT,
                 tenantRef: process.env.BNS_360_TENANT_REF,
                 cleanupStatus: process.env.BNS_360_CLEANUP_STATUS,
+                deployedBuild,
                 routeChecks: scenario.routes.map(path => ({
                     path,
                     status: 'verified',

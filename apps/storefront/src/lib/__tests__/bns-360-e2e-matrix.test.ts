@@ -944,6 +944,13 @@ describe('BNS 360 reusable runtime matrix', () => {
                 templateCommit: 'd78a0a23',
                 tenantRef: 'ops-fullcat-202607091146',
                 cleanupStatus: 'not_applicable',
+                deployedBuild: {
+                    commitSha: 'f00dbabe1234567890',
+                    commitShortSha: 'f00dbabe',
+                    branch: 'main',
+                    deployedAt: '2026-07-23T17:50:00.000Z',
+                    source: 'health',
+                },
                 routeChecks: [
                     {
                         path: '/api/panel/limits?resources=products,categories,badges',
@@ -961,6 +968,13 @@ describe('BNS 360 reusable runtime matrix', () => {
                 templateCommit: 'd78a0a23',
                 tenantRef: 'ops-fullcat-202607091146',
                 baseUrl: 'https://template-canary.bootandstrap.com',
+                deployedBuild: {
+                    commitSha: 'f00dbabe1234567890',
+                    commitShortSha: 'f00dbabe',
+                    branch: 'main',
+                    deployedAt: '2026-07-23T17:50:00.000Z',
+                    source: 'health',
+                },
                 scenarios: [
                     expect.objectContaining({
                         scenario: 'governance.central_policy_read',

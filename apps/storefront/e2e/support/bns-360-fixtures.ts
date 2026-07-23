@@ -164,6 +164,14 @@ export type Bns360EvidenceRouteCheck = {
     status: number | Bns360RouteStatus
 }
 
+export type Bns360DeployedBuildInfo = {
+    commitSha: string | null
+    commitShortSha: string | null
+    branch: string | null
+    deployedAt: string | null
+    source: string
+}
+
 export type Bns360ScenarioArtifactInput = {
     artifactPath?: string
     evidence: Bns360ScenarioEvidence
@@ -171,6 +179,7 @@ export type Bns360ScenarioArtifactInput = {
     tenantRef?: string
     cleanupStatus?: string
     routeChecks?: Bns360EvidenceRouteCheck[]
+    deployedBuild?: Bns360DeployedBuildInfo
 }
 
 type Bns360RuntimeEvidenceScenario = {
@@ -199,6 +208,7 @@ type Bns360RuntimeEvidenceArtifact = {
     templateCommit: string
     tenantRef: string
     baseUrl: string
+    deployedBuild: Bns360DeployedBuildInfo
     generatedAt: string
     updatedAt: string
     scenarios: Bns360RuntimeEvidenceScenario[]
@@ -250,6 +260,7 @@ export function recordBns360ScenarioEvidenceArtifact(input: Bns360ScenarioArtifa
         templateCommit: input.templateCommit ?? existing?.templateCommit ?? 'unknown',
         tenantRef: input.tenantRef ?? existing?.tenantRef ?? 'unknown',
         baseUrl: input.evidence.baseUrl,
+        deployedBuild: input.deployedBuild ?? existing?.deployedBuild ?? unknownBns360DeployedBuild(),
         generatedAt,
         updatedAt: new Date().toISOString(),
         scenarios,
@@ -269,6 +280,73 @@ function readBns360RuntimeEvidenceArtifact(artifactPath: string): Bns360RuntimeE
     } catch {
         return null
     }
+}
+
+export function unknownBns360DeployedBuild(): Bns360DeployedBuildInfo {
+    return {
+        commitSha: null,
+        commitShortSha: null,
+        branch: null,
+        deployedAt: null,
+        source: 'unknown',
+    }
+}
+
+function valueOrNull(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+export function normalizeBns360DeployedBuild(value: unknown): Bns360DeployedBuildInfo {
+    if (!value || typeof value !== 'object') {
+        return unknownBns360DeployedBuild()
+    }
+
+    const build = value as Record<string, unknown>
+    const commitSha = valueOrNull(build.commitSha)
+    return {
+        commitSha,
+        commitShortSha: valueOrNull(build.commitShortSha) ?? (commitSha ? commitSha.slice(0, 8) : null),
+        branch: valueOrNull(build.branch),
+        deployedAt: valueOrNull(build.deployedAt),
+        source: valueOrNull(build.source) ?? 'health',
+    }
+}
+
+export function bns360RuntimeCommitMatches(expected: string | undefined, actual: string | null): boolean {
+    const normalizedExpected = expected?.trim()
+    if (!normalizedExpected) {
+        return true
+    }
+    if (!actual) {
+        return false
+    }
+    return actual === normalizedExpected
+        || actual.startsWith(normalizedExpected)
+        || normalizedExpected.startsWith(actual)
+}
+
+export function assertBns360ExpectedRuntimeCommit(
+    deployedBuild: Bns360DeployedBuildInfo,
+    expected = process.env.BNS_360_EXPECTED_RUNTIME_COMMIT
+): void {
+    if (!bns360RuntimeCommitMatches(expected, deployedBuild.commitSha)) {
+        throw new Error(
+            `BNS 360 deployed runtime commit mismatch: expected ${expected}, actual ${deployedBuild.commitSha ?? 'missing'}`
+        )
+    }
+}
+
+export async function resolveBns360DeployedBuild(
+    request: APIRequestContext,
+    headers?: Record<string, string>
+): Promise<Bns360DeployedBuildInfo> {
+    const response = await request.get('/api/health', { headers })
+    if (!response.ok()) {
+        return unknownBns360DeployedBuild()
+    }
+
+    const payload = await response.json() as { build?: unknown }
+    return normalizeBns360DeployedBuild(payload.build)
 }
 
 function buildBns360RuntimeEvidenceScenario(
