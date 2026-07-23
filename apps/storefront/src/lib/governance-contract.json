@@ -1,6 +1,6 @@
 {
   "$schema": "governance-contract/v3",
-  "generated_at": "2026-06-29T11:50:44.065Z",
+  "generated_at": "2026-07-23T19:07:31.641Z",
   "generated_by": "BOOTANDSTRAP_WEB/scripts/generate-contract.ts",
   "db_enriched": true,
   "flags": {
@@ -408,8 +408,8 @@
             "recommended": false,
             "flag_effects": {
               "enable_apple_oauth": true,
-              "enable_google_oauth": true,
-              "enable_facebook_oauth": true
+              "enable_facebook_oauth": true,
+              "enable_google_oauth": true
             }
           },
           {
@@ -438,10 +438,10 @@
             "recommended": false,
             "flag_effects": {
               "enable_2fa": true,
-              "enable_magic_link": true,
               "enable_apple_oauth": true,
+              "enable_facebook_oauth": true,
               "enable_google_oauth": true,
-              "enable_facebook_oauth": true
+              "enable_magic_link": true
             }
           }
         ]
@@ -761,11 +761,11 @@
             "recommended": false,
             "flag_effects": {
               "enable_crm": true,
-              "enable_crm_export": true,
               "enable_crm_contacts": true,
-              "enable_crm_segments": true,
+              "enable_crm_export": true,
               "enable_crm_interactions": true,
-              "enable_crm_segmentation": true
+              "enable_crm_segmentation": true,
+              "enable_crm_segments": true
             },
             "limit_effects": {
               "max_crm_contacts": 5000
@@ -811,27 +811,27 @@
             ],
             "recommended": false,
             "flag_effects": {
+              "enable_address_management": true,
               "enable_carousel": true,
+              "enable_customer_accounts": true,
               "enable_ecommerce": true,
               "enable_email_auth": true,
               "enable_order_notes": true,
-              "enable_owner_panel": true,
-              "owner_lite_enabled": true,
               "enable_order_tracking": true,
+              "enable_owner_panel": true,
               "enable_product_badges": true,
               "enable_product_search": true,
               "enable_related_products": true,
-              "enable_customer_accounts": true,
               "enable_user_registration": true,
-              "enable_address_management": true
+              "owner_lite_enabled": true
             },
             "limit_effects": {
-              "max_products": 50,
-              "max_customers": 100,
-              "max_categories": 5,
-              "max_orders_month": 100,
               "max_carousel_slides": 5,
-              "max_images_per_product": 5
+              "max_categories": 5,
+              "max_customers": 100,
+              "max_images_per_product": 5,
+              "max_orders_month": 100,
+              "max_products": 50
             }
           },
           {
@@ -862,36 +862,36 @@
             ],
             "recommended": true,
             "flag_effects": {
-              "enable_reviews": true,
+              "enable_address_management": true,
               "enable_carousel": true,
-              "enable_wishlist": true,
               "enable_cms_pages": true,
+              "enable_customer_accounts": true,
               "enable_ecommerce": true,
               "enable_email_auth": true,
-              "enable_promotions": true,
               "enable_order_notes": true,
-              "enable_owner_panel": true,
-              "owner_lite_enabled": true,
               "enable_order_tracking": true,
+              "enable_owner_panel": true,
               "enable_product_badges": true,
               "enable_product_search": true,
+              "enable_promotions": true,
               "enable_related_products": true,
-              "enable_customer_accounts": true,
+              "enable_reviews": true,
               "enable_user_registration": true,
-              "enable_address_management": true
+              "enable_wishlist": true,
+              "owner_lite_enabled": true
             },
             "limit_effects": {
               "max_badges": 10,
-              "max_products": 200,
+              "max_carousel_slides": 10,
+              "max_categories": 20,
               "max_cms_pages": 10,
               "max_customers": 500,
-              "max_categories": 20,
-              "max_orders_month": 500,
-              "max_wishlist_items": 20,
-              "max_carousel_slides": 10,
-              "max_promotions_active": 5,
               "max_images_per_product": 10,
-              "max_reviews_per_product": 10
+              "max_orders_month": 500,
+              "max_products": 200,
+              "max_promotions_active": 5,
+              "max_reviews_per_product": 10,
+              "max_wishlist_items": 20
             }
           },
           {
@@ -922,39 +922,39 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_reviews": true,
-              "enable_carousel": true,
-              "enable_wishlist": true,
+              "enable_address_management": true,
               "enable_admin_api": true,
+              "enable_carousel": true,
               "enable_cms_pages": true,
+              "enable_customer_accounts": true,
               "enable_ecommerce": true,
               "enable_email_auth": true,
-              "enable_promotions": true,
               "enable_order_notes": true,
-              "enable_owner_panel": true,
-              "owner_lite_enabled": true,
               "enable_order_tracking": true,
+              "enable_owner_panel": true,
               "enable_product_badges": true,
-              "enable_product_search": true,
-              "enable_related_products": true,
-              "enable_customer_accounts": true,
-              "enable_user_registration": true,
-              "enable_address_management": true,
               "enable_product_comparisons": true,
-              "enable_self_service_returns": true
+              "enable_product_search": true,
+              "enable_promotions": true,
+              "enable_related_products": true,
+              "enable_reviews": true,
+              "enable_self_service_returns": true,
+              "enable_user_registration": true,
+              "enable_wishlist": true,
+              "owner_lite_enabled": true
             },
             "limit_effects": {
               "max_badges": 99999,
-              "max_products": 99999,
+              "max_carousel_slides": 20,
+              "max_categories": 99999,
               "max_cms_pages": 50,
               "max_customers": 99999,
-              "max_categories": 99999,
-              "max_orders_month": 5000,
-              "max_wishlist_items": 99999,
-              "max_carousel_slides": 20,
-              "max_promotions_active": 50,
               "max_images_per_product": 20,
-              "max_reviews_per_product": 99999
+              "max_orders_month": 5000,
+              "max_products": 99999,
+              "max_promotions_active": 50,
+              "max_reviews_per_product": 99999,
+              "max_wishlist_items": 99999
             }
           }
         ]
@@ -1029,11 +1029,11 @@
             ],
             "recommended": true,
             "flag_effects": {
-              "enable_email_templates": true,
-              "enable_email_notifications": true,
-              "enable_transactional_emails": true,
               "enable_abandoned_cart_emails": true,
-              "enable_review_request_emails": true
+              "enable_email_notifications": true,
+              "enable_email_templates": true,
+              "enable_review_request_emails": true,
+              "enable_transactional_emails": true
             },
             "limit_effects": {
               "max_email_sends_month": 2000
@@ -1067,14 +1067,14 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_newsletter": true,
-              "enable_email_campaigns": true,
-              "enable_email_templates": true,
-              "enable_email_segmentation": true,
-              "enable_email_notifications": true,
-              "enable_transactional_emails": true,
               "enable_abandoned_cart_emails": true,
-              "enable_review_request_emails": true
+              "enable_email_campaigns": true,
+              "enable_email_notifications": true,
+              "enable_email_segmentation": true,
+              "enable_email_templates": true,
+              "enable_newsletter": true,
+              "enable_review_request_emails": true,
+              "enable_transactional_emails": true
             },
             "limit_effects": {
               "max_email_sends_month": 10000,
@@ -1121,8 +1121,8 @@
               "enable_multi_language": true
             },
             "limit_effects": {
-              "max_languages": 2,
-              "max_currencies": 1
+              "max_currencies": 1,
+              "max_languages": 2
             }
           },
           {
@@ -1154,8 +1154,8 @@
               "enable_multi_language": true
             },
             "limit_effects": {
-              "max_languages": 5,
-              "max_currencies": 5
+              "max_currencies": 5,
+              "max_languages": 5
             }
           }
         ]
@@ -1230,11 +1230,11 @@
             "recommended": true,
             "flag_effects": {
               "enable_pos": true,
-              "enable_pos_kiosk": true,
-              "enable_pos_quick_sale": true,
-              "enable_pos_line_discounts": true,
               "enable_pos_customer_search": true,
-              "enable_pos_keyboard_shortcuts": true
+              "enable_pos_keyboard_shortcuts": true,
+              "enable_pos_kiosk": true,
+              "enable_pos_line_discounts": true,
+              "enable_pos_quick_sale": true
             },
             "limit_effects": {
               "max_pos_payment_methods": 5
@@ -1263,15 +1263,15 @@
             "recommended": false,
             "flag_effects": {
               "enable_pos": true,
+              "enable_pos_customer_search": true,
+              "enable_pos_keyboard_shortcuts": true,
               "enable_pos_kiosk": true,
-              "enable_pos_shifts": true,
-              "enable_pos_quick_sale": true,
+              "enable_pos_line_discounts": true,
               "enable_pos_multi_device": true,
               "enable_pos_offline_cart": true,
-              "enable_pos_line_discounts": true,
-              "enable_pos_customer_search": true,
-              "enable_pos_thermal_printer": true,
-              "enable_pos_keyboard_shortcuts": true
+              "enable_pos_quick_sale": true,
+              "enable_pos_shifts": true,
+              "enable_pos_thermal_printer": true
             },
             "limit_effects": {
               "max_pos_payment_methods": 99
@@ -1338,8 +1338,8 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_pos_kiosk": true,
-              "enable_kiosk_idle_timer": true
+              "enable_kiosk_idle_timer": true,
+              "enable_pos_kiosk": true
             }
           },
           {
@@ -1362,10 +1362,10 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_pos_kiosk": true,
               "enable_kiosk_analytics": true,
               "enable_kiosk_idle_timer": true,
-              "enable_kiosk_remote_management": true
+              "enable_kiosk_remote_management": true,
+              "enable_pos_kiosk": true
             }
           }
         ]
@@ -1565,8 +1565,8 @@
             "recommended": false,
             "flag_effects": {
               "enable_sales_channels": true,
-              "enable_whatsapp_contact": true,
-              "enable_whatsapp_checkout": true
+              "enable_whatsapp_checkout": true,
+              "enable_whatsapp_contact": true
             },
             "limit_effects": {
               "max_payment_methods": 1,
@@ -1601,17 +1601,17 @@
             ],
             "recommended": true,
             "flag_effects": {
+              "enable_cash_on_delivery": true,
               "enable_newsletter": true,
               "enable_online_payments": true,
-              "enable_cash_on_delivery": true,
               "enable_sales_channels": true,
-              "enable_whatsapp_contact": true,
-              "enable_whatsapp_checkout": true
+              "enable_whatsapp_checkout": true,
+              "enable_whatsapp_contact": true
             },
             "limit_effects": {
+              "max_newsletter_subscribers": 1000,
               "max_payment_methods": 3,
-              "max_whatsapp_templates": 15,
-              "max_newsletter_subscribers": 1000
+              "max_whatsapp_templates": 15
             }
           },
           {
@@ -1642,19 +1642,19 @@
             ],
             "recommended": false,
             "flag_effects": {
-              "enable_newsletter": true,
               "enable_bank_transfer": true,
-              "enable_online_payments": true,
               "enable_cash_on_delivery": true,
+              "enable_newsletter": true,
+              "enable_online_payments": true,
+              "enable_reservation_checkout": true,
               "enable_sales_channels": true,
-              "enable_whatsapp_contact": true,
               "enable_whatsapp_checkout": true,
-              "enable_reservation_checkout": true
+              "enable_whatsapp_contact": true
             },
             "limit_effects": {
+              "max_newsletter_subscribers": 5000,
               "max_payment_methods": 99999,
-              "max_whatsapp_templates": 99999,
-              "max_newsletter_subscribers": 5000
+              "max_whatsapp_templates": 99999
             }
           }
         ]
