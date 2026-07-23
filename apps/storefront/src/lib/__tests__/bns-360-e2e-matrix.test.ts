@@ -120,6 +120,10 @@ describe('BNS 360 reusable runtime matrix', () => {
         const healthScenario = BNS_360_RUNTIME_MATRIX.find(
             scenario => scenario.key === 'ops.health_readiness_liveness'
         )
+        const runtimeSpec = readFileSync(
+            join(process.cwd(), 'e2e/bns-360-runtime.spec.ts'),
+            'utf8'
+        )
 
         expect(healthScenario?.routes).toEqual(expect.arrayContaining([
             '/api/health',
@@ -135,6 +139,25 @@ describe('BNS 360 reusable runtime matrix', () => {
         })).toEqual({
             'x-health-token': 'do-not-store',
         })
+        expect(healthScenario?.functionalEvidence).toEqual([
+            expect.objectContaining({
+                kind: 'api_health',
+                gate: 'none',
+                routes: [
+                    '/api/health',
+                    '/api/health/ready',
+                    '/api/health/live',
+                    '/api/v1/governance/health',
+                ],
+                expectedJsonPaths: [
+                    'status',
+                ],
+            }),
+        ])
+        expect(getBns360AutomatedFunctionalEvidenceStatus(healthScenario?.functionalEvidence ?? []))
+            .toBe('verified')
+        expect(runtimeSpec).toContain('const baseApiHeaders = resolveBns360ApiHeaders(scenario)')
+        expect(runtimeSpec).toContain('resolveBns360OwnerApiHeaders(page, baseApiHeaders)')
     })
 
     it('uses browser request context for authenticated API runtime checks', () => {
@@ -157,7 +180,7 @@ describe('BNS 360 reusable runtime matrix', () => {
             { name: 'sb-project-auth-token', value: 'base64-session' },
             { name: 'plain', value: 'needs space' },
         ])).toBe('sb-project-auth-token=base64-session; plain=needs%20space')
-        expect(runtimeSpec).toContain('resolveBns360OwnerApiHeaders(page)')
+        expect(runtimeSpec).toContain('resolveBns360OwnerApiHeaders(page, baseApiHeaders)')
         expect(runtimeSpec).toContain('functionalEvidenceHeaders')
         expect(runtimeSpec).toContain('runBns360AutomatedFunctionalEvidence(')
     })

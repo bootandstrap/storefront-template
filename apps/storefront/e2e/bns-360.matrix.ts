@@ -214,6 +214,17 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         apiHeadersEnv: {
             'x-health-token': 'BNS_360_HEALTH_CHECK_TOKEN',
         },
+        functionalEvidence: [
+            {
+                kind: 'api_health',
+                target: 'Public health, readiness, liveness and authenticated governance health all expose machine-readable status',
+                reversible: false,
+                scope: 'read_only',
+                gate: 'none',
+                routes: ['/api/health', '/api/health/ready', '/api/health/live', '/api/v1/governance/health'],
+                expectedJsonPaths: ['status'],
+            },
+        ],
     },
     {
         key: 'governance.central_policy_read',

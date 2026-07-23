@@ -52,6 +52,7 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             const functionalEvidence = getBns360FunctionalEvidenceForRun(
                 scenario.functionalEvidence ?? moduleScenario?.functionalEvidence ?? []
             )
+            const baseApiHeaders = resolveBns360ApiHeaders(scenario)
 
             if (scenario.requiresAuth) {
                 if (scenario.authRole === 'customer') {
@@ -62,13 +63,13 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
             }
 
             const functionalEvidenceHeaders = scenario.requiresAuth
-                ? await resolveBns360OwnerApiHeaders(page)
-                : undefined
+                ? await resolveBns360OwnerApiHeaders(page, baseApiHeaders)
+                : baseApiHeaders
 
             if (scenario.transport === 'api') {
                 const headers = scenario.requiresAuth
-                    ? await resolveBns360OwnerApiHeaders(page, resolveBns360ApiHeaders(scenario))
-                    : resolveBns360ApiHeaders(scenario)
+                    ? await resolveBns360OwnerApiHeaders(page, baseApiHeaders)
+                    : baseApiHeaders
                 const apiRequest = scenario.requiresAuth ? page.request : request
                 for (const route of scenario.routes) {
                     await expectApiHealthy(apiRequest, route, headers)
