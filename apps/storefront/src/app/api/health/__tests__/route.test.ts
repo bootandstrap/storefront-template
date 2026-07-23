@@ -18,6 +18,10 @@ vi.mock('@/lib/email', () => ({
 describe('/api/health', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.resetModules()
+        vi.stubEnv('APP_GIT_COMMIT_SHA', '04767d1675a01e28b49dd1030e0968e6f6dc88bb')
+        vi.stubEnv('APP_GIT_BRANCH', 'main')
+        vi.stubEnv('APP_DEPLOYED_AT', '2026-07-23T17:38:45Z')
         limit.mockResolvedValue({ error: null })
         vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200 })))
     })
@@ -30,5 +34,12 @@ describe('/api/health', () => {
         expect(response.status).toBe(200)
         expect(payload.status).toBe('ok')
         expect(payload.schemaVersion).toBe(SCHEMA_VERSION)
+        expect(payload.build).toEqual({
+            commitSha: '04767d1675a01e28b49dd1030e0968e6f6dc88bb',
+            commitShortSha: '04767d16',
+            branch: 'main',
+            deployedAt: '2026-07-23T17:38:45Z',
+            source: 'env',
+        })
     })
 })

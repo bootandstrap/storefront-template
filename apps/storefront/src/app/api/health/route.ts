@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getEmailProviderName } from '@/lib/email'
 import { SCHEMA_VERSION } from '@/lib/supabase/schema-version'
+import { getRuntimeBuildInfo } from '@/lib/runtime-build-info'
 
 const startTime = Date.now()
 
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
         timestamp: new Date().toISOString(),
         version: process.env.npm_package_version || '0.1.0',
         schemaVersion: SCHEMA_VERSION,
+        build: getRuntimeBuildInfo(),
         environment: process.env.NODE_ENV || 'development',
     }
 

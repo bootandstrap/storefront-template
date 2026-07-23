@@ -76,6 +76,9 @@ jobs:
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_STORE_URL=${{ secrets.NEXT_PUBLIC_STORE_URL }}
+            APP_GIT_COMMIT_SHA=${{ github.sha }}
+            APP_GIT_BRANCH=${{ github.ref_name }}
+            APP_DEPLOYED_AT=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
