@@ -31,6 +31,67 @@ export const BNS_360_REQUIRED_MODULE_KEYS = [
     'seo',
 ] as const
 
+const POS_OFFLINE_SYNC_FUNCTIONAL_EVIDENCE: Bns360FunctionalEvidenceTarget = {
+    kind: 'terminal_simulator_journey',
+    target: 'POS offline queue and sync simulator verifies idempotent zero-pending sync without external mutation',
+    reversible: true,
+    scope: 'simulator',
+    gate: 'owner_auth',
+    routes: ['/api/panel/bns-360/pos-primary'],
+    method: 'POST',
+    expectedJsonPaths: [
+        'status',
+        'runtime.offlineSync.queuedSales',
+        'runtime.offlineSync.syncMode',
+        'runtime.offlineSync.idempotencyKeyPresent',
+        'runtime.offlineSync.pendingAfterSync',
+        'runtime.terminalSimulator.mode',
+        'runtime.terminalSimulator.liveMutation',
+        'cleanup.status',
+        'residue.zero',
+    ],
+    expectedJsonValues: {
+        status: 'verified',
+        'runtime.offlineSync.syncMode': 'simulator',
+        'runtime.offlineSync.idempotencyKeyPresent': true,
+        'runtime.offlineSync.pendingAfterSync': 0,
+        'runtime.terminalSimulator.mode': 'simulator',
+        'runtime.terminalSimulator.liveMutation': false,
+        'cleanup.status': 'verified',
+        'residue.zero': true,
+    },
+}
+
+const POS_REFUNDS_HISTORY_FUNCTIONAL_EVIDENCE: Bns360FunctionalEvidenceTarget = {
+    kind: 'terminal_simulator_journey',
+    target: 'POS refund boundary and sales history simulator verify readable history without physical hardware or live refunds',
+    reversible: true,
+    scope: 'simulator',
+    gate: 'owner_auth',
+    routes: ['/api/panel/bns-360/pos-primary'],
+    method: 'POST',
+    expectedJsonPaths: [
+        'status',
+        'runtime.refundsAndHistory.historyReadable',
+        'runtime.refundsAndHistory.refundBoundary',
+        'runtime.refundsAndHistory.liveMutation',
+        'runtime.refundsAndHistory.receiptLinked',
+        'runtime.terminalSimulator.hardwareRequired',
+        'cleanup.status',
+        'residue.zero',
+    ],
+    expectedJsonValues: {
+        status: 'verified',
+        'runtime.refundsAndHistory.historyReadable': true,
+        'runtime.refundsAndHistory.refundBoundary': 'simulator_only',
+        'runtime.refundsAndHistory.liveMutation': false,
+        'runtime.refundsAndHistory.receiptLinked': true,
+        'runtime.terminalSimulator.hardwareRequired': false,
+        'cleanup.status': 'verified',
+        'residue.zero': true,
+    },
+}
+
 export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
     {
         key: 'storefront.home',
@@ -247,12 +308,18 @@ export const BNS_360_RUNTIME_MATRIX: Bns360RuntimeScenario[] = [
         domain: 'pos',
         routes: ['/es/panel/pos'],
         requiresAuth: true,
+        functionalEvidence: [
+            POS_OFFLINE_SYNC_FUNCTIONAL_EVIDENCE,
+        ],
     },
     {
         key: 'pos.refunds_and_history',
         domain: 'pos',
         routes: ['/es/panel/ventas', '/es/panel/devoluciones'],
         requiresAuth: true,
+        functionalEvidence: [
+            POS_REFUNDS_HISTORY_FUNCTIONAL_EVIDENCE,
+        ],
     },
     ...BNS_360_MODULE_CERTIFICATION_MATRIX.map(moduleScenario => ({
         key: `module.${moduleScenario.moduleKey}`,

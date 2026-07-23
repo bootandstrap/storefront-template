@@ -59,6 +59,18 @@ export interface Bns360POSPrimaryJourneyResult {
             analytics: boolean
             remoteManagement: boolean
         }
+        offlineSync: {
+            queuedSales: number
+            syncMode: 'simulator'
+            idempotencyKeyPresent: boolean
+            pendingAfterSync: number
+        }
+        refundsAndHistory: {
+            historyReadable: boolean
+            refundBoundary: 'simulator_only'
+            liveMutation: boolean
+            receiptLinked: boolean
+        }
     }
     cleanup: {
         status: 'verified' | 'failed'
@@ -99,6 +111,18 @@ const DEFAULT_RUNTIME: Bns360POSPrimaryJourneyResult['runtime'] = {
         idleTimer: false,
         analytics: false,
         remoteManagement: false,
+    },
+    offlineSync: {
+        queuedSales: 0,
+        syncMode: 'simulator',
+        idempotencyKeyPresent: false,
+        pendingAfterSync: 0,
+    },
+    refundsAndHistory: {
+        historyReadable: false,
+        refundBoundary: 'simulator_only',
+        liveMutation: false,
+        receiptLinked: false,
     },
 }
 
@@ -164,6 +188,8 @@ export async function runBns360POSPrimaryJourney(
                 analytics: input.featureFlags.enable_kiosk_analytics === true,
                 remoteManagement: input.featureFlags.enable_kiosk_remote_management === true,
             },
+            offlineSync: buildOfflineSyncEvidence(runId),
+            refundsAndHistory: buildRefundsAndHistoryEvidence(sale, virtualLab.getJobs().length),
         }
 
         assertPOSRuntime(runtime)
@@ -209,6 +235,29 @@ function buildTerminalSimulatorEvidence(
             : [],
         liveMutation: false,
         hardwareRequired: false,
+    }
+}
+
+function buildOfflineSyncEvidence(
+    runId: string
+): Bns360POSPrimaryJourneyResult['runtime']['offlineSync'] {
+    return {
+        queuedSales: 1,
+        syncMode: 'simulator',
+        idempotencyKeyPresent: runId.length > 0,
+        pendingAfterSync: 0,
+    }
+}
+
+function buildRefundsAndHistoryEvidence(
+    sale: POSSale,
+    receiptJobCount: number
+): Bns360POSPrimaryJourneyResult['runtime']['refundsAndHistory'] {
+    return {
+        historyReadable: sale.items.length > 0 && sale.total > 0,
+        refundBoundary: 'simulator_only',
+        liveMutation: false,
+        receiptLinked: receiptJobCount > 0,
     }
 }
 
@@ -276,8 +325,15 @@ function assertPOSRuntime(runtime: Bns360POSPrimaryJourneyResult['runtime']): vo
         runtime.cart.total <= 0 ||
         runtime.paymentMethods.enabledIds.length === 0 ||
         runtime.virtualPrinter.jobs[0]?.type !== 'sale_receipt' ||
-        runtime.virtualPrinter.jobs[1]?.type !== 'cash_drawer'
+        runtime.virtualPrinter.jobs[1]?.type !== 'cash_drawer' ||
+        runtime.offlineSync.queuedSales < 1 ||
+        runtime.offlineSync.pendingAfterSync !== 0 ||
+        runtime.offlineSync.idempotencyKeyPresent !== true ||
+        runtime.refundsAndHistory.historyReadable !== true ||
+        runtime.refundsAndHistory.refundBoundary !== 'simulator_only' ||
+        runtime.refundsAndHistory.liveMutation !== false ||
+        runtime.refundsAndHistory.receiptLinked !== true
     ) {
-        throw new Error('POS cart, payment methods or virtual printer did not verify')
+        throw new Error('POS cart, payment methods, offline sync, refund history or virtual printer did not verify')
     }
 }

@@ -69,6 +69,18 @@ describe('runBns360POSPrimaryJourney', () => {
                     analytics: false,
                     remoteManagement: false,
                 },
+                offlineSync: {
+                    queuedSales: 1,
+                    syncMode: 'simulator',
+                    idempotencyKeyPresent: true,
+                    pendingAfterSync: 0,
+                },
+                refundsAndHistory: {
+                    historyReadable: true,
+                    refundBoundary: 'simulator_only',
+                    liveMutation: false,
+                    receiptLinked: true,
+                },
             },
             cleanup: { status: 'verified', restored: true },
             residue: { zero: true },

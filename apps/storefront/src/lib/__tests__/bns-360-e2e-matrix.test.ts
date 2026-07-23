@@ -1379,6 +1379,44 @@ describe('BNS 360 reusable runtime matrix', () => {
         )).toBe('manual_required')
     })
 
+    it('keeps POS offline sync, refunds and history as automated functional journeys, not route-only smoke', () => {
+        const offlineScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'pos.offline_sync'
+        )
+        const refundsScenario = BNS_360_RUNTIME_MATRIX.find(
+            scenario => scenario.key === 'pos.refunds_and_history'
+        )
+
+        for (const scenario of [offlineScenario, refundsScenario]) {
+            expect(scenario).toBeDefined()
+            expect(scenario!.functionalEvidence?.length ?? 0).toBeGreaterThan(0)
+            expect(getBns360AutomatedFunctionalEvidenceStatus(scenario?.functionalEvidence ?? []))
+                .toBe('verified')
+        }
+
+        expect(offlineScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'terminal_simulator_journey',
+                routes: ['/api/panel/bns-360/pos-primary'],
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.terminalSimulator.mode': 'simulator',
+                    'runtime.terminalSimulator.liveMutation': false,
+                }),
+            }),
+        ]))
+        expect(refundsScenario?.functionalEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'terminal_simulator_journey',
+                routes: ['/api/panel/bns-360/pos-primary'],
+                expectedJsonValues: expect.objectContaining({
+                    status: 'verified',
+                    'runtime.terminalSimulator.hardwareRequired': false,
+                }),
+            }),
+        ]))
+    })
+
     it('declares module.chatbot as an automated reversible primary journey', () => {
         const chatbotScenario = BNS_360_MODULE_CERTIFICATION_MATRIX.find(
             scenario => scenario.moduleKey === 'chatbot'
