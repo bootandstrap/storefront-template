@@ -19,9 +19,13 @@ export async function seedCatalog(
     client: MedusaClient,
     template: IndustryTemplate,
     salesChannelId: string,
+    shippingProfileId: string,
     log: LogFn
 ): Promise<CatalogResult> {
     log('📦', '═══ CATALOG SEED START ═══')
+    if (template.products.length > 0 && !shippingProfileId) {
+        throw new Error('No shipping profile available for catalog seed')
+    }
 
     // ── 1) Categories ──
     const existingCategories = await client.getCategories()
@@ -126,6 +130,7 @@ export async function seedCatalog(
                     prices: v.prices,
                     options: { Variant: v.title },
                 })),
+                shipping_profile_id: shippingProfileId,
                 sales_channels: [{ id: salesChannelId }],
             }
 

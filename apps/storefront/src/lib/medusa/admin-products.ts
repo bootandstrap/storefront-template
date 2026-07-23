@@ -52,6 +52,7 @@ export interface CreateProductInput {
     handle?: string
     description?: string
     status?: 'draft' | 'published'
+    shipping_profile_id?: string
     categories?: { id: string }[]
     sales_channels?: { id: string }[]
     metadata?: Record<string, unknown>
@@ -172,11 +173,29 @@ export async function createAdminProduct(
     data: CreateProductInput,
     scope?: TenantMedusaScope | null
 ): Promise<{ product: AdminProductFull | null; error: string | null }> {
+    const productData = await withDefaultShippingProfile(data, scope)
     const res = await adminFetch<{ product: AdminProductFull }>('/admin/products', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify(productData),
     }, scope)
     return { product: res.data?.product ?? null, error: res.error }
+}
+
+async function withDefaultShippingProfile(
+    data: CreateProductInput,
+    scope?: TenantMedusaScope | null
+): Promise<CreateProductInput> {
+    if (data.shipping_profile_id) return data
+
+    const profiles = await adminFetch<{ shipping_profiles?: Array<{ id: string; type?: string | null }> }>(
+        '/admin/shipping-profiles?limit=20&fields=id,type',
+        {},
+        scope
+    )
+    const profileList = profiles.data?.shipping_profiles?.filter(profile => profile.id) ?? []
+    const profileId = profileList.find(profile => profile.type === 'default')?.id ?? profileList[0]?.id
+
+    return profileId ? { ...data, shipping_profile_id: profileId } : data
 }
 
 export async function updateAdminProduct(

@@ -39,7 +39,7 @@ describe('seedCatalog', () => {
             },
         }
 
-        await expect(seedCatalog(client as never, template, 'sc_1', () => {}))
+        await expect(seedCatalog(client as never, template, 'sc_1', 'sp_1', () => {}))
             .rejects
             .toThrow(/Product seed failed/)
     })
@@ -58,10 +58,31 @@ describe('seedCatalog', () => {
             },
         }
 
-        await seedCatalog(client as never, template, 'sc_1', () => {})
+        await seedCatalog(client as never, template, 'sc_1', 'sp_1', () => {})
 
         expect(productBodies[0]?.variants).toEqual([
             expect.objectContaining({ manage_inventory: false }),
         ])
+    })
+
+    it('binds created products to the provisioned shipping profile', async () => {
+        const productBodies: Array<Record<string, any>> = []
+        const client = {
+            getCategories: async () => [{ id: 'pcat_1', handle: 'fruit', name: 'Fruit' }],
+            getProducts: async () => [],
+            request: async (endpoint: string, options?: { body?: Record<string, any> }) => {
+                if (endpoint === '/admin/products') {
+                    productBodies.push(options?.body ?? {})
+                    return { product: { id: 'prod_1', variants: [{ id: 'var_1' }] } }
+                }
+                return {}
+            },
+        }
+
+        await seedCatalog(client as never, template, 'sc_1', 'sp_1', () => {})
+
+        expect(productBodies[0]).toMatchObject({
+            shipping_profile_id: 'sp_1',
+        })
     })
 })

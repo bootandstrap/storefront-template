@@ -125,7 +125,7 @@ export async function applyTemplate(
     let variantIds: string[] = []
 
     try {
-        const catalog = await seedCatalog(client, template, salesChannelId, log)
+        const catalog = await seedCatalog(client, template, salesChannelId, infra.shippingProfileId, log)
         categoriesCreated = catalog.categoriesCreated
         productsCreated = catalog.productsCreated
         variantIds = catalog.variantIds
