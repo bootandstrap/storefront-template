@@ -218,8 +218,11 @@ export async function POST(request: Request): Promise<Response> {
                 if (payload.type === 'email.delivered') {
                     await incrementEmailCounter(tenantId)
                 }
-                // Si la DB soporta 'sent', actualizamos
-                await updateEmailLogStatus(tenantId, messageId, 'sent')
+                await updateEmailLogStatus(
+                    tenantId,
+                    messageId,
+                    payload.type === 'email.delivered' ? 'delivered' : 'sent',
+                )
                 break
 
             case 'email.bounced':
