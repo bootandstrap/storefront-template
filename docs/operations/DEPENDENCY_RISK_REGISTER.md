@@ -7,6 +7,66 @@
 
 ## Active Acceptances
 
+### GHSA-337j-9hxr-rhxg — React Router Advisory via Medusa Dashboard
+
+| Field | Value |
+|-------|-------|
+| **Package** | `react-router` ≥6.4.0 <7.18.0 |
+| **Severity** | Moderate |
+| **Source** | Transitive via `@medusajs/dashboard` 2.17.2 → `react-router-dom` 6.30.4 |
+| **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
+| **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
+| **Review By** | 2026-08-26 |
+| **Owner** | Platform team |
+| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. |
+
+---
+
+### GHSA-wrjc-x8rr-h8h6 — React Router Advisory via Medusa Dashboard
+
+| Field | Value |
+|-------|-------|
+| **Package** | `react-router` ≥6.0.0 <7.18.0 |
+| **Severity** | Moderate |
+| **Source** | Transitive via `@medusajs/dashboard` 2.17.2 → `react-router-dom` 6.30.4 |
+| **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
+| **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
+| **Review By** | 2026-08-26 |
+| **Owner** | Platform team |
+| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. |
+
+---
+
+### GHSA-jjmj-jmhj-qwj2 — React Router DOM Advisory via Medusa Dashboard
+
+| Field | Value |
+|-------|-------|
+| **Package** | `react-router-dom` 6.30.2 - 6.30.4 |
+| **Severity** | Moderate |
+| **Source** | Transitive via `@medusajs/dashboard` 2.17.2 |
+| **Impact** | Medusa admin dashboard routing dependency. npm reports no patched 6.x replacement for this advisory. |
+| **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Major override was not accepted because it introduces route-stack peer mismatch risk. |
+| **Review By** | 2026-08-26 |
+| **Owner** | Platform team |
+| **Action** | Track Medusa upstream for a compatible dashboard release; remove this acceptance once patched. |
+
+---
+
+### GHSA-mh99-v99m-4gvg — Brace Expansion DoS via Legacy Minimatch
+
+| Field | Value |
+|-------|-------|
+| **Package** | `brace-expansion` 1.1.16 under legacy `minimatch` 3.x |
+| **Severity** | High |
+| **Source** | Transitive via legacy build/lint tooling paths that still depend on `minimatch` 3.x |
+| **Impact** | Potential process memory exhaustion if attacker-controlled brace patterns reach legacy glob expansion. |
+| **Mitigation** | Public runtime does not accept user-supplied glob patterns. Forcing `brace-expansion` 5.0.8 globally was tested and rejected because it breaks `minimatch` 3.x consumers during lint with `expand is not a function`. Version 5.x remains enforced for compatible 5.x paths. |
+| **Review By** | 2026-08-26 |
+| **Owner** | Platform team |
+| **Action** | Remove legacy `minimatch` 3.x paths or upgrade upstream tooling, then remove this acceptance. |
+
+---
+
 ### GHSA-m7jm-9gc2-mpf2 — fast-xml-parser Entity Encoding Bypass
 
 | Field | Value |

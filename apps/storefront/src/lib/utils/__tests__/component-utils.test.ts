@@ -25,6 +25,7 @@ describe('class and component utilities', () => {
             }
         }
         const ForwardRefComponent = React.forwardRef<HTMLDivElement>(() => null)
+        ForwardRefComponent.displayName = 'ForwardRefComponent'
 
         expect(isFunctionComponent(FunctionComponent)).toBe(true)
         expect(isClassComponent(ClassComponent)).toBe(true)
