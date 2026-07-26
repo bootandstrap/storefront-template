@@ -21,6 +21,15 @@ const criticalScriptPaths = [
     'scripts/upload-product-images.mjs',
     'scripts/e2e-provision-drill.ts',
     'scripts/template-engine/seeders/seed-infra.ts',
+    'scripts/audit-bulk-advisory.mjs',
+    'scripts/audit-governance-ui.ts',
+    'scripts/e2e-governance-drift.ts',
+    'scripts/pack-contract-packages.mjs',
+    'scripts/preview-receipt.ts',
+    'scripts/template-engine/seeders/seed-catalog.ts',
+    'scripts/template-engine/seeders/seed-customers.ts',
+    'scripts/validate-i18n.ts',
+    'scripts/sync-stripe-metadata.ts',
 ] as const
 
 const forbiddenLiveMutationPatterns = [
