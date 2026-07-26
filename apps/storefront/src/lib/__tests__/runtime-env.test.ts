@@ -22,6 +22,12 @@ describe('runtime env injection', () => {
         expect(element.props.nonce).toBe('nonce-for-test')
     })
 
+    it('suppresses nonce-only hydration warnings for the runtime env script', () => {
+        const element = RuntimeEnvScript({ nonce: 'nonce-for-test' })
+
+        expect(element.props.suppressHydrationWarning).toBe(true)
+    })
+
     it('root layout forwards x-csp-nonce into RuntimeEnvScript', () => {
         const layout = readFileSync(join(__dirname, '../../app/layout.tsx'), 'utf-8')
 

@@ -13,6 +13,7 @@ const REQUIRED_DOMAINS = new Set([
   'pos-simulator',
   'module-runtime-primary-journeys',
   'provisioning-cleanup-governance',
+  'visual-runtime-primary-routes',
   'ci-release-artifacts',
 ])
 
@@ -39,8 +40,11 @@ function validateTestFile(relativePath, domainId) {
     return
   }
 
-  if (!/^apps\/storefront\/src\/.+\.test\.(ts|tsx)$/.test(normalized)) {
-    fail(`${domainId}: ${relativePath} is not a storefront Vitest test path`)
+  const isStorefrontVitestTest = /^apps\/storefront\/src\/.+\.test\.(ts|tsx)$/.test(normalized)
+  const isStorefrontPlaywrightSpec = /^apps\/storefront\/e2e\/.+\.spec\.ts$/.test(normalized)
+
+  if (!isStorefrontVitestTest && !isStorefrontPlaywrightSpec) {
+    fail(`${domainId}: ${relativePath} is not a storefront Vitest test or Playwright spec path`)
     return
   }
 
@@ -50,8 +54,12 @@ function validateTestFile(relativePath, domainId) {
   }
 
   const source = readFileSync(absolutePath, 'utf8')
-  if (!/\bdescribe\s*\(/.test(source) || !/\bit\s*\(/.test(source)) {
+  if (isStorefrontVitestTest && (!/\bdescribe\s*\(/.test(source) || !/\bit\s*\(/.test(source))) {
     fail(`${domainId}: ${relativePath} must contain executable describe/it tests`)
+  }
+
+  if (isStorefrontPlaywrightSpec && !/\btest\s*\(/.test(source)) {
+    fail(`${domainId}: ${relativePath} must contain executable Playwright tests`)
   }
 }
 

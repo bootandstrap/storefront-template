@@ -97,6 +97,23 @@ function isAllowedStorefrontVitestCommand(parts) {
   )
 }
 
+function isAllowedStorefrontPlaywrightCommand(parts) {
+  if (parts.length < 6) return false
+  if (parts[0] !== 'pnpm') return false
+  if (parts[1] !== '--filter=storefront') return false
+  if (parts[2] !== 'exec') return false
+  if (parts[3] !== 'playwright') return false
+  if (parts[4] !== 'test') return false
+
+  const storefrontDir = join(ROOT_DIR, 'apps', 'storefront')
+  const specPaths = parts.slice(5)
+  if (specPaths.length < 1) return false
+
+  return specPaths.every((specPath) =>
+    assertSafeRelativePath(specPath, storefrontDir, /^e2e\/.+\.spec\.ts$/)
+  )
+}
+
 function validateCommand(command, domainId) {
   if (typeof command !== 'string' || command.trim().length === 0) {
     fail(`${domainId}: runtimeEvidence command must be a non-empty string`)
@@ -107,7 +124,11 @@ function validateCommand(command, domainId) {
   }
 
   const parts = splitCommand(command)
-  if (isAllowedNodeCommand(parts) || isAllowedStorefrontVitestCommand(parts)) {
+  if (
+    isAllowedNodeCommand(parts) ||
+    isAllowedStorefrontVitestCommand(parts) ||
+    isAllowedStorefrontPlaywrightCommand(parts)
+  ) {
     return parts
   }
 
@@ -134,6 +155,7 @@ function buildSafeEnv() {
     'CI',
     'TERM',
     'FORCE_COLOR',
+    'BNS_360_BASE_URL',
     'BSWEB_ROOT',
     'TENANT_ID',
     'NEXT_PUBLIC_SUPABASE_URL',
@@ -148,7 +170,8 @@ function buildSafeEnv() {
     if (process.env[key]) env[key] = process.env[key]
   }
 
-  env.TENANT_ID = env.TENANT_ID ?? 'risk-evidence-tenant'
+  env.TENANT_ID = env.TENANT_ID ?? '00000000-0000-4000-8000-000000000001'
+  env.BNS_360_BASE_URL = env.BNS_360_BASE_URL ?? 'http://localhost:3000'
   env.NEXT_PUBLIC_SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co'
   env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? 'http://localhost:9000'
   env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ?? 'placeholder'

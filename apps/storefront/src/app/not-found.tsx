@@ -41,7 +41,7 @@ export default async function NotFound() {
     const s = STRINGS[locale] || STRINGS.es
 
     return (
-        <div className="min-h-[70vh] flex items-center justify-center px-4 py-20">
+        <main id="main-content" className="min-h-[70vh] flex items-center justify-center px-4 py-20" tabIndex={-1}>
             <div className="text-center max-w-lg">
                 {/* Large 404 number with brand gradient */}
                 <div className="relative mb-8">
@@ -90,6 +90,6 @@ export default async function NotFound() {
                     ))}
                 </div>
             </div>
-        </div>
+        </main>
     )
 }

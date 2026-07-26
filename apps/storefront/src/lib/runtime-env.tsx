@@ -71,6 +71,7 @@ export function RuntimeEnvScript({ nonce }: { nonce?: string } = {}) {
     return (
         <script
             nonce={nonce}
+            suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: script }}
             // Execute before any client JS hydrates
             // suppressHydrationWarning avoids mismatch warnings

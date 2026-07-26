@@ -53,7 +53,7 @@ export default async function LangLayout({
 
         return (
             <I18nProvider locale={locale} dictionary={dictionary}>
-                <div className="min-h-screen flex items-center justify-center bg-sf-0 px-4">
+                <main id="main-content" className="min-h-screen flex items-center justify-center bg-sf-0 px-4" tabIndex={-1}>
                     <div className="glass-strong rounded-2xl p-12 text-center max-w-lg">
                         <div className="text-6xl mb-6">{isSuspended ? '🚫' : '⏸️'}</div>
                         <h1 className="text-3xl font-bold font-display text-tx mb-3">
@@ -74,7 +74,7 @@ export default async function LangLayout({
                             </a>
                         )}
                     </div>
-                </div>
+                </main>
             </I18nProvider>
         )
     }

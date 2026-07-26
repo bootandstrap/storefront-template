@@ -112,7 +112,7 @@ export default async function ShopLayout({
     // -----------------------------------------------------------------------
     if (featureFlags.enable_maintenance_mode) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-sf-0 px-4">
+            <main id="main-content" className="min-h-screen flex items-center justify-center bg-sf-0 px-4" tabIndex={-1}>
                 <div className="glass-strong rounded-2xl p-12 text-center max-w-lg">
                     <div className="text-6xl mb-6">🔧</div>
                     <h1 className="text-3xl font-bold font-display text-tx mb-3">
@@ -133,7 +133,7 @@ export default async function ShopLayout({
                         </a>
                     )}
                 </div>
-            </div>
+            </main>
         )
     }
 

@@ -101,6 +101,23 @@
       ]
     },
     {
+      "id": "visual-runtime-primary-routes",
+      "severity": "high",
+      "owner": "storefront-runtime",
+      "minTestFiles": 1,
+      "failureModes": [
+        "critical public routes render differently or overflow across desktop/tablet/mobile viewports",
+        "accessibility regressions reach runtime despite static markup contracts",
+        "loading, empty, error, modal or toast states lose visible runtime coverage"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts"
+      ],
+      "requiredTestFiles": [
+        "apps/storefront/e2e/runtime-visual-evidence.spec.ts"
+      ]
+    },
+    {
       "id": "ci-release-artifacts",
       "severity": "high",
       "owner": "release-engineering",

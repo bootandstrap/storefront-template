@@ -126,6 +126,7 @@ describe('CI artifact contract', () => {
             domains: Array<{
                 id: string
                 failureModes: string[]
+                minTestFiles?: number
                 requiredTestFiles: string[]
                 runtimeEvidence: string[]
             }>
@@ -141,12 +142,13 @@ describe('CI artifact contract', () => {
                 'pos-simulator',
                 'module-runtime-primary-journeys',
                 'provisioning-cleanup-governance',
+                'visual-runtime-primary-routes',
                 'ci-release-artifacts',
             ])
         )
 
         for (const domain of matrix.domains) {
-            expect(domain.requiredTestFiles.length, domain.id).toBeGreaterThanOrEqual(2)
+            expect(domain.requiredTestFiles.length, domain.id).toBeGreaterThanOrEqual(domain.minTestFiles ?? 2)
             expect(domain.failureModes.length, domain.id).toBeGreaterThanOrEqual(2)
             expect(domain.runtimeEvidence.length, domain.id).toBeGreaterThanOrEqual(1)
         }
@@ -223,5 +225,46 @@ describe('CI artifact contract', () => {
 
         expect(result.status).toBe(1)
         expect(result.stderr).toContain('unsupported or missing runtimeEvidence command')
+    })
+
+    it('tracks visual runtime evidence through a Playwright command', () => {
+        const matrix = JSON.parse(readScript('risk-test-matrix.json')) as {
+            domains: Array<{
+                id: string
+                failureModes: string[]
+                requiredTestFiles: string[]
+                runtimeEvidence: string[]
+            }>
+        }
+        const visualDomain = matrix.domains.find((domain) => domain.id === 'visual-runtime-primary-routes')
+        const runner = readScript('run-risk-domain-evidence.mjs')
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualDomain).toBeDefined()
+        expect(visualDomain?.requiredTestFiles).toContain('apps/storefront/e2e/runtime-visual-evidence.spec.ts')
+        expect(visualDomain?.runtimeEvidence).toContain(
+            'pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts'
+        )
+        expect(visualDomain?.failureModes).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('desktop/tablet/mobile'),
+                expect.stringContaining('accessibility'),
+                expect.stringContaining('loading, empty, error, modal or toast'),
+            ])
+        )
+        expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
+        expect(visualSpec).toContain('desktop')
+        expect(visualSpec).toContain('tablet')
+        expect(visualSpec).toContain('mobile')
+        expect(visualSpec).toContain('axe-core')
+        expect(visualSpec).toContain('screenshot')
+    })
+
+    it('prepares CI to execute visual runtime evidence locally', () => {
+        const workflow = readWorkflow('ci.yml')
+
+        expect(workflow).toContain('name: Install Playwright Chromium')
+        expect(workflow).toContain('pnpm --filter=storefront exec playwright install --with-deps chromium')
+        expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*CI: ''/)
     })
 })
