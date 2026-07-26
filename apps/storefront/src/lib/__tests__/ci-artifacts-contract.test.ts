@@ -8,6 +8,10 @@ function readWorkflow(name: string) {
     return readFileSync(join(REPO_ROOT, '.github', 'workflows', name), 'utf8')
 }
 
+function readScript(name: string) {
+    return readFileSync(join(REPO_ROOT, 'scripts', name), 'utf8')
+}
+
 function uploadArtifactBlocks(workflow: string) {
     return workflow
         .split('\n      - name:')
@@ -29,4 +33,14 @@ describe('CI artifact contract', () => {
             }
         }
     )
+
+    it('runs coverage without passing a literal separator argument to Vitest', () => {
+        const workflow = readWorkflow('ci.yml')
+        const releaseGate = readScript('release-gate.sh')
+
+        expect(workflow).toContain('pnpm test:run --coverage')
+        expect(releaseGate).toContain('pnpm --filter=storefront test:run --coverage')
+        expect(workflow).not.toContain('pnpm test:run -- --coverage')
+        expect(releaseGate).not.toContain('pnpm --filter=storefront test:run -- --coverage')
+    })
 })

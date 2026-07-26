@@ -133,7 +133,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
 
       - name: Run tests with coverage
-        run: cd apps/storefront && pnpm test:run -- --coverage
+        run: cd apps/storefront && pnpm test:run --coverage
         env:
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ci-test-tenant
