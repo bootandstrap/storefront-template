@@ -6,6 +6,8 @@ import { GET as getPosTransactions, POST as postPosTransaction } from "../pos/tr
 import { AUTOMATION_MODULE } from "../../../modules/automation"
 import { CRM_MODULE } from "../../../modules/crm"
 import { POS_MODULE } from "../../../modules/pos"
+import fs from "node:fs"
+import path from "node:path"
 
 type MockResponse = {
     status: jest.Mock
@@ -35,6 +37,24 @@ function createRequest(service: unknown, query: Record<string, string> = {}, bod
         },
     } as any
 }
+
+const routeSourcePaths = [
+    "apps/medusa/src/api/admin/automation/rules/route.ts",
+    "apps/medusa/src/api/admin/crm/contacts/route.ts",
+    "apps/medusa/src/api/admin/pos/sessions/route.ts",
+    "apps/medusa/src/api/admin/custom/route.ts",
+    "apps/medusa/src/api/store/custom/route.ts",
+] as const
+
+describe("admin/store custom route source contracts", () => {
+    it.each(routeSourcePaths)("%s exports a GET route without live payment mutations", (sourcePath) => {
+        const source = fs.readFileSync(path.resolve(process.cwd(), "../..", sourcePath), "utf8")
+
+        expect(source).toContain("export async function GET")
+        expect(source).not.toMatch(/stripe\.(paymentIntents|refunds|charges|tax\.registrations)\.create/i)
+        expect(source).not.toMatch(/process\.env\.[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE|TOKEN|PASSWORD)/i)
+    })
+})
 
 describe("admin automation runtime routes", () => {
     it("GET /admin/automation/executions applies filters and deterministic ordering", async () => {

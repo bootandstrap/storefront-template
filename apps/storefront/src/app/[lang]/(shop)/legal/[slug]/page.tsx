@@ -269,6 +269,15 @@ function interpolateContent(content: string, vars: Record<string, string>): stri
         .replace(/\{date\}/g, new Date().toISOString().split('T')[0])
 }
 
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
 // ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
@@ -314,9 +323,9 @@ export default async function LegalPage({ params }: LegalPageProps) {
     }
 
     const vars = {
-        business_name: String((config as Record<string, unknown>)?.store_name || (config as Record<string, unknown>)?.business_name || 'Our Store'),
-        domain: String((config as Record<string, unknown>)?.domain || ''),
-        email: String((config as Record<string, unknown>)?.contact_email || ''),
+        business_name: escapeHtml(String((config as Record<string, unknown>)?.store_name || (config as Record<string, unknown>)?.business_name || 'Our Store')),
+        domain: escapeHtml(String((config as Record<string, unknown>)?.domain || '')),
+        email: escapeHtml(String((config as Record<string, unknown>)?.contact_email || '')),
     }
 
     const template = DEFAULT_CONTENT[type][lang] || DEFAULT_CONTENT[type].en
