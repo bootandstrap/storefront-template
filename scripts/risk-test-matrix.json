@@ -112,7 +112,7 @@
       ],
       "runtimeEvidence": [
         "node scripts/check-risk-test-matrix.mjs",
-        "bash scripts/release-gate.sh"
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/ci-artifacts-contract.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/ci-artifacts-contract.test.ts",

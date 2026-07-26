@@ -135,6 +135,17 @@ jobs:
       - name: Risk Test Matrix
         run: node scripts/check-risk-test-matrix.mjs
 
+      - name: Risk Domain Evidence
+        run: node scripts/run-risk-domain-evidence.mjs
+        env:
+          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
+          TENANT_ID: ci-test-tenant
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_STORE_URL: https://placeholder.com
+          MEDUSA_BACKEND_URL: http://localhost:9000
+
       - name: Run tests with coverage
         run: cd apps/storefront && pnpm test:run --coverage
         env:
