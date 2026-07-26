@@ -262,9 +262,13 @@ describe('CI artifact contract', () => {
 
     it('prepares CI to execute visual runtime evidence locally', () => {
         const workflow = readWorkflow('ci.yml')
+        const runner = readScript('run-risk-domain-evidence.mjs')
 
         expect(workflow).toContain('name: Install Playwright Chromium')
         expect(workflow).toContain('pnpm --filter=storefront exec playwright install --with-deps chromium')
         expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*CI: ''/)
+        expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder/)
+        expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
+        expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
     })
 })
