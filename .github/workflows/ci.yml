@@ -132,6 +132,9 @@ jobs:
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
 
+      - name: Risk Test Matrix
+        run: node scripts/check-risk-test-matrix.mjs
+
       - name: Run tests with coverage
         run: cd apps/storefront && pnpm test:run --coverage
         env:

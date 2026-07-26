@@ -115,4 +115,11 @@ describe('CI artifact contract', () => {
             expect(domain.requiredTestFiles.length, domain.id).toBeGreaterThanOrEqual(2)
         }
     })
+
+    it('runs the critical risk-domain test matrix in GitHub CI', () => {
+        const workflow = readWorkflow('ci.yml')
+
+        expect(workflow).toContain('name: Risk Test Matrix')
+        expect(workflow).toContain('node scripts/check-risk-test-matrix.mjs')
+    })
 })
