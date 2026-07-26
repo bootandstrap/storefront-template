@@ -65,6 +65,8 @@ CREDENTIALS.md
 *.pgdump
 *.backup
 backups/
+!apps/storefront/src/app/api/panel/vault/backups/
+!apps/storefront/src/app/api/panel/vault/backups/route.ts
 
 # ── Security: Secret manager exports ─────────
 *.env.vault
