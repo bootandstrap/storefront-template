@@ -345,6 +345,7 @@ jobs:
           name: lighthouse-report
           path: apps/storefront/.lighthouseci/
           retention-days: 14
+          include-hidden-files: true
 
   # ── Failure Notification ────────────────────────
   notify-failure:

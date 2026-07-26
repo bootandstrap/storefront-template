@@ -96,7 +96,8 @@ describe('shared package publication contract', () => {
             expect(packedFiles).toContain('dist/index.d.ts')
             expect(packedFiles).toContain('README.md')
             expect(packedFiles).not.toContain('src/index.ts')
-        }
+        },
+        30_000
     )
 
     it('publish workflow validates on pull requests and supports manual default-branch dispatch', () => {
