@@ -206,19 +206,34 @@ describe('POST /api/orders/lookup', () => {
         expect(json.error).toContain('Too many')
     })
 
-    it('returns 403 when enable_order_tracking is disabled', async () => {
+    it('keeps order tracking available when governance data contains false for the invariant flag', async () => {
         mockGetConfig.mockResolvedValue({
             featureFlags: { enable_order_tracking: false },
             planLimits: {},
             config: {},
+        })
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                orders: [{
+                    display_id: 123,
+                    email: 'test@example.com',
+                    status: 'completed',
+                    created_at: '2026-02-01T12:00:00Z',
+                    total: 2500,
+                    currency_code: 'eur',
+                }],
+            }),
         })
 
         vi.resetModules()
         const { POST } = await import('../route')
         const req = makeRequest({ email: 'test@example.com', display_id: '123' })
         const res = await POST(req)
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
         const json = await res.json()
-        expect(json.error).toContain('tracking')
+        expect(json.order.display_id).toBe(123)
+
+        globalThis.fetch = originalFetch
     })
 })

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, ShoppingBag, UserCircle, MapPin, Heart, Search, LogOut } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import type { FeatureFlags } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 
 interface AccountSidebarProps {
     lang: string
@@ -24,7 +25,7 @@ export default function AccountSidebar({
 
     const navItems = [
         { href: `/${lang}/cuenta`, label: t('account.dashboard'), icon: LayoutDashboard, exact: true, flag: true },
-        ...(featureFlags.enable_order_tracking
+        ...(isFeatureEnabled(featureFlags, 'enable_order_tracking')
             ? [{ href: `/${lang}/cuenta/pedidos`, label: t('nav.orders'), icon: ShoppingBag, exact: false, flag: true }]
             : []),
         { href: `/${lang}/cuenta/perfil`, label: t('nav.profile'), icon: UserCircle, exact: false, flag: true },

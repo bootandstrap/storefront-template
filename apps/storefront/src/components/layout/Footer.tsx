@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 import { createTranslator } from '@/lib/i18n'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 import NewsletterSignup from '@/components/newsletter/NewsletterSignup'
 import PaymentIcons from '@/components/ui/PaymentIcons'
 import ManageCookiesButton from '@/components/consent/ManageCookiesButton'
@@ -78,7 +79,7 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                                 </Link>
                             </li>
                             {/* Account link — only when customer accounts are enabled */}
-                            {featureFlags.enable_customer_accounts && (
+                            {isFeatureEnabled(featureFlags, 'enable_customer_accounts') && (
                                 <li>
                                     <Link href={`/${lang}/cuenta`} className="text-sm text-tx-muted hover:text-brand transition-colors">
                                         {t('nav.account')}
@@ -200,7 +201,7 @@ export default function Footer({ config, featureFlags, dictionary, lang }: Foote
                         />
 
                         {/* Owner access — discrete link when customer login is hidden */}
-                        {!featureFlags.enable_customer_accounts && (
+                        {!isFeatureEnabled(featureFlags, 'enable_customer_accounts') && (
                             <Link
                                 href={`/${lang}/login`}
                                 className="text-xs text-tx-faint hover:text-tx-muted transition-colors"

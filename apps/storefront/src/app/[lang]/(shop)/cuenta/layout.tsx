@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getConfig } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 import AccountSidebar from '@/components/account/AccountSidebar'
 import { resolveTenantContext } from '@bootandstrap/tenant-context'
 
@@ -19,7 +20,7 @@ export default async function CuentaLayout({
     const { featureFlags } = await getConfig()
 
     // Gate: customer accounts must be enabled
-    if (!featureFlags.enable_customer_accounts) {
+    if (!isFeatureEnabled(featureFlags, 'enable_customer_accounts')) {
         redirect(`/${lang}`)
     }
 

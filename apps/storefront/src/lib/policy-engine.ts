@@ -14,6 +14,7 @@
 
 import { getConfig } from '@/lib/config'
 import type { FeatureFlags } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 import { checkLimit, type LimitableResource, type LimitCheckResult } from '@/lib/limits'
 import { NextResponse } from 'next/server'
 
@@ -71,7 +72,7 @@ export async function requireFlag(flag: keyof FeatureFlags): Promise<void> {
         throw new PolicyError(flag, `Feature "${flag}" cannot be verified — config unavailable`)
     }
 
-    if (config.featureFlags[flag] !== true) {
+    if (!isFeatureEnabled(config.featureFlags, flag)) {
         throw new PolicyError(flag)
     }
 }

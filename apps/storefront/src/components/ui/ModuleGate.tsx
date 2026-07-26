@@ -34,6 +34,8 @@ import { motion } from 'framer-motion'
 import { Sparkles, ArrowRight, Lock } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 import { getModuleActivationUrl } from '@/lib/feature-gate-config'
+import { isFeatureEnabled } from '@/lib/features'
+import type { FeatureFlags } from '@/lib/config'
 import Link from 'next/link'
 
 // ── Props ─────────────────────────────────────────────────────────────────
@@ -100,7 +102,7 @@ export default function ModuleGate({
     const effectiveFlag = flag ?? `enable_${module}`
 
     // Check if the module is active
-    const isActive = featureFlags[effectiveFlag] === true
+    const isActive = isFeatureEnabled(featureFlags as FeatureFlags, effectiveFlag as keyof FeatureFlags)
 
     // If active, render children directly
     if (isActive) {
@@ -262,5 +264,5 @@ export function isModuleActive(
     flag?: string
 ): boolean {
     const effectiveFlag = flag ?? `enable_${module}`
-    return featureFlags[effectiveFlag] === true
+    return isFeatureEnabled(featureFlags as FeatureFlags, effectiveFlag as keyof FeatureFlags)
 }

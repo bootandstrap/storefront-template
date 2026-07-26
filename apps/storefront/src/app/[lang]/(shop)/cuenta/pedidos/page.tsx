@@ -8,6 +8,7 @@ import { getDictionary, createTranslator, type Locale } from '@/lib/i18n'
 import { getAuthCustomerOrders } from '@/lib/medusa/auth-medusa'
 import { formatPrice } from '@/lib/i18n/currencies'
 import { getConfig } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 import {
     Clock, CheckCircle2, XCircle, Truck, Loader2,
     Package, Eye, ChevronLeft, ChevronRight, ShieldX
@@ -190,7 +191,7 @@ export default async function PedidosPage({
     const t = createTranslator(dictionary)
     const { featureFlags } = await getConfig()
 
-    if (!featureFlags.enable_order_tracking) {
+    if (!isFeatureEnabled(featureFlags, 'enable_order_tracking')) {
         return (
             <div className="glass rounded-xl p-8 text-center">
                 <ShieldX className="w-12 h-12 text-tx-faint mx-auto mb-3" />

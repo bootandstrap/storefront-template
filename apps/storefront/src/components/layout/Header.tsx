@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Menu, X, User, MessageCircle, Search } from 'lucide-react'
 import type { StoreConfig, FeatureFlags } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 import { useCart } from '@/contexts/CartContext'
 import { useI18n } from '@/lib/i18n/provider'
 import LanguageSelector from './LanguageSelector'
@@ -166,7 +167,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                             </button>
 
                             {/* Auth button — session-aware */}
-                            {featureFlags.enable_customer_accounts && (
+                            {isFeatureEnabled(featureFlags, 'enable_customer_accounts') && (
                                 <Link
                                     href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
                                     className="flex items-center gap-1.5 btn btn-primary text-sm py-2 px-4"
@@ -253,7 +254,7 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                         )}
 
                         {/* Auth link — mobile */}
-                        {featureFlags.enable_customer_accounts && (
+                        {isFeatureEnabled(featureFlags, 'enable_customer_accounts') && (
                             <Link
                                 href={isAuthenticated ? localizedHref('account') : localizedHref('login')}
                                 className="text-base font-medium p-2 rounded-lg hover:bg-sf-1 flex items-center gap-2 text-brand"
