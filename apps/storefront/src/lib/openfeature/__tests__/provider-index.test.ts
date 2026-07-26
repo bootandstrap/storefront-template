@@ -41,6 +41,24 @@ describe('BootandStrapProvider', () => {
             .resolves.toMatchObject({ value: { enable_crm: true }, reason: 'TARGETING_MATCH' })
     })
 
+    it('respects core invariant feature flags during boolean evaluation', async () => {
+        mockGetConfig.mockResolvedValue({
+            featureFlags: {
+                enable_customer_accounts: false,
+                enable_order_tracking: false,
+            },
+            planLimits: {},
+            config: {},
+        })
+        const { BootandStrapProvider } = await import('../provider')
+        const provider = new BootandStrapProvider()
+
+        await expect(provider.resolveBooleanEvaluation('enable_customer_accounts', false, {}))
+            .resolves.toMatchObject({ value: true, reason: 'TARGETING_MATCH', variant: 'enabled' })
+        await expect(provider.resolveBooleanEvaluation('enable_order_tracking', false, {}))
+            .resolves.toMatchObject({ value: true, reason: 'TARGETING_MATCH', variant: 'enabled' })
+    })
+
     it('falls back to defaults with error details when governance config fails', async () => {
         mockGetConfig.mockRejectedValueOnce(new Error('config unavailable'))
         const { BootandStrapProvider } = await import('../provider')

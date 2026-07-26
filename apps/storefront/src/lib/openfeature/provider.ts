@@ -32,6 +32,7 @@ import {
 } from '@openfeature/server-sdk'
 
 import { getConfig } from '@/lib/config'
+import { isFeatureEnabled } from '@/lib/features'
 
 export class BootandStrapProvider implements Provider {
   readonly metadata: ProviderMetadata = {
@@ -52,10 +53,11 @@ export class BootandStrapProvider implements Provider {
       const value = featureFlags[flagKey as keyof typeof featureFlags]
 
       if (typeof value === 'boolean') {
+        const enabled = isFeatureEnabled(featureFlags, flagKey as keyof typeof featureFlags)
         return {
-          value,
+          value: enabled,
           reason: 'TARGETING_MATCH',
-          variant: value ? 'enabled' : 'disabled',
+          variant: enabled ? 'enabled' : 'disabled',
         }
       }
 
