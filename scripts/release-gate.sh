@@ -63,6 +63,7 @@ gate "Schema Ownership" bash scripts/check-schema-ownership.sh data-plane
 # ── P1: Quality ──
 gate "Storefront Lint" pnpm turbo lint --filter=storefront
 gate "Storefront Unit Tests" pnpm --filter=storefront test:run
+gate "Risk Test Matrix" node scripts/check-risk-test-matrix.mjs
 gate "Medusa Unit Tests" pnpm -C apps/medusa test:unit
 gate_warn "Coverage Threshold (70%)" pnpm --filter=storefront test:run --coverage --coverage.thresholds.lines=70
 gate "Storefront Type Check" pnpm turbo type-check

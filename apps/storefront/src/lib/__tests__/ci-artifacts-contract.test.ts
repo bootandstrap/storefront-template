@@ -90,4 +90,29 @@ describe('CI artifact contract', () => {
 
         expect(missingTimeouts).toEqual([])
     })
+
+    it('blocks releases when critical risk-domain tests disappear', () => {
+        const releaseGate = readScript('release-gate.sh')
+        const matrix = JSON.parse(readScript('risk-test-matrix.json')) as {
+            domains: Array<{ id: string; requiredTestFiles: string[] }>
+        }
+
+        const domainIds = new Set(matrix.domains.map((domain) => domain.id))
+
+        expect(releaseGate).toContain('node scripts/check-risk-test-matrix.mjs')
+        expect(domainIds).toEqual(
+            new Set([
+                'security-auth-tenant-isolation',
+                'checkout-payment-simulators',
+                'pos-simulator',
+                'module-runtime-primary-journeys',
+                'provisioning-cleanup-governance',
+                'ci-release-artifacts',
+            ])
+        )
+
+        for (const domain of matrix.domains) {
+            expect(domain.requiredTestFiles.length, domain.id).toBeGreaterThanOrEqual(2)
+        }
+    })
 })

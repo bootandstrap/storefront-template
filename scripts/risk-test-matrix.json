@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "domains": [
+    {
+      "id": "security-auth-tenant-isolation",
+      "severity": "critical",
+      "owner": "storefront-runtime",
+      "minTestFiles": 4,
+      "requiredTestFiles": [
+        "apps/storefront/src/lib/__tests__/config-fetch-authz.test.ts",
+        "apps/storefront/src/lib/__tests__/tenant-context.test.ts",
+        "apps/storefront/src/lib/security/__tests__/rate-limit-tenant.test.ts",
+        "apps/storefront/src/app/api/panel/__tests__/route-auth-behavior.test.ts"
+      ]
+    },
+    {
+      "id": "checkout-payment-simulators",
+      "severity": "critical",
+      "owner": "storefront-runtime",
+      "minTestFiles": 3,
+      "requiredTestFiles": [
+        "apps/storefront/src/lib/__tests__/checkout-payment-contract.test.ts",
+        "apps/storefront/src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts",
+        "apps/storefront/src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts"
+      ]
+    },
+    {
+      "id": "pos-simulator",
+      "severity": "critical",
+      "owner": "storefront-runtime",
+      "minTestFiles": 4,
+      "requiredTestFiles": [
+        "apps/storefront/src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts",
+        "apps/storefront/src/lib/pos/payments/__tests__/payment-adapter.test.ts",
+        "apps/storefront/src/lib/pos/offline/__tests__/offline-store.test.ts",
+        "apps/storefront/src/lib/pos/__tests__/virtual-printer.test.ts"
+      ]
+    },
+    {
+      "id": "module-runtime-primary-journeys",
+      "severity": "high",
+      "owner": "storefront-runtime",
+      "minTestFiles": 5,
+      "requiredTestFiles": [
+        "apps/storefront/src/lib/bns-360/__tests__/crm-crud-journey.test.ts",
+        "apps/storefront/src/lib/bns-360/__tests__/i18n-primary-journey.test.ts",
+        "apps/storefront/src/lib/bns-360/__tests__/pos-primary-journey.test.ts",
+        "apps/storefront/src/lib/bns-360/__tests__/rrss-primary-journey.test.ts",
+        "apps/storefront/src/lib/bns-360/__tests__/seo-primary-journey.test.ts"
+      ]
+    },
+    {
+      "id": "provisioning-cleanup-governance",
+      "severity": "critical",
+      "owner": "storefront-runtime",
+      "minTestFiles": 3,
+      "requiredTestFiles": [
+        "apps/storefront/src/lib/__tests__/provisioning-schema-completeness.test.ts",
+        "apps/storefront/src/lib/__tests__/delete-tenant-rpc-contract.test.ts",
+        "apps/storefront/src/lib/backup/__tests__/backup-storage-auth-contract.test.ts"
+      ]
+    },
+    {
+      "id": "ci-release-artifacts",
+      "severity": "high",
+      "owner": "release-engineering",
+      "minTestFiles": 3,
+      "requiredTestFiles": [
+        "apps/storefront/src/lib/__tests__/ci-artifacts-contract.test.ts",
+        "apps/storefront/src/lib/__tests__/v01-release-gate.test.ts",
+        "apps/storefront/src/lib/__tests__/functional-checkout-cert-command.test.ts"
+      ]
+    }
+  ]
+}
