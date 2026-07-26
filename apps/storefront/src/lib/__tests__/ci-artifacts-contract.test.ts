@@ -94,7 +94,12 @@ describe('CI artifact contract', () => {
     it('blocks releases when critical risk-domain tests disappear', () => {
         const releaseGate = readScript('release-gate.sh')
         const matrix = JSON.parse(readScript('risk-test-matrix.json')) as {
-            domains: Array<{ id: string; requiredTestFiles: string[] }>
+            domains: Array<{
+                id: string
+                failureModes: string[]
+                requiredTestFiles: string[]
+                runtimeEvidence: string[]
+            }>
         }
 
         const domainIds = new Set(matrix.domains.map((domain) => domain.id))
@@ -113,6 +118,8 @@ describe('CI artifact contract', () => {
 
         for (const domain of matrix.domains) {
             expect(domain.requiredTestFiles.length, domain.id).toBeGreaterThanOrEqual(2)
+            expect(domain.failureModes.length, domain.id).toBeGreaterThanOrEqual(2)
+            expect(domain.runtimeEvidence.length, domain.id).toBeGreaterThanOrEqual(1)
         }
     })
 

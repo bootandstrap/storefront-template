@@ -71,6 +71,14 @@ for (const domain of matrix.domains ?? []) {
     fail(`${domain.id}: severity must be critical or high`)
   }
 
+  if (!Array.isArray(domain.failureModes) || domain.failureModes.length < 2) {
+    fail(`${domain.id}: expected at least 2 failureModes`)
+  }
+
+  if (!Array.isArray(domain.runtimeEvidence) || domain.runtimeEvidence.length < 1) {
+    fail(`${domain.id}: expected at least 1 runtimeEvidence command`)
+  }
+
   if (!Array.isArray(domain.requiredTestFiles)) {
     fail(`${domain.id}: requiredTestFiles must be an array`)
     continue

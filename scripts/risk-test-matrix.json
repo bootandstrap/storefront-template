@@ -6,6 +6,14 @@
       "severity": "critical",
       "owner": "storefront-runtime",
       "minTestFiles": 4,
+      "failureModes": [
+        "unauthorized access to panel or API routes",
+        "cross-tenant reads or writes through tenant context drift",
+        "rate-limit bypass across tenant boundaries"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/config-fetch-authz.test.ts src/lib/__tests__/tenant-context.test.ts src/lib/security/__tests__/rate-limit-tenant.test.ts src/app/api/panel/__tests__/route-auth-behavior.test.ts"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/config-fetch-authz.test.ts",
         "apps/storefront/src/lib/__tests__/tenant-context.test.ts",
@@ -18,6 +26,14 @@
       "severity": "critical",
       "owner": "storefront-runtime",
       "minTestFiles": 3,
+      "failureModes": [
+        "checkout exposes unavailable or disabled payment methods",
+        "offline/simulated payment flow diverges from tenant config",
+        "checkout UI accepts invalid country or inaccessible form state"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/checkout-payment-contract.test.ts src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/checkout-payment-contract.test.ts",
         "apps/storefront/src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts",
@@ -29,6 +45,14 @@
       "severity": "critical",
       "owner": "storefront-runtime",
       "minTestFiles": 4,
+      "failureModes": [
+        "POS action mutates data without owner/operator boundary",
+        "simulated payment or offline queue loses cart state",
+        "virtual receipt/printer evidence cannot be generated"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec vitest run src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts src/lib/pos/payments/__tests__/payment-adapter.test.ts src/lib/pos/offline/__tests__/offline-store.test.ts src/lib/pos/__tests__/virtual-printer.test.ts"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts",
         "apps/storefront/src/lib/pos/payments/__tests__/payment-adapter.test.ts",
@@ -41,6 +65,14 @@
       "severity": "high",
       "owner": "storefront-runtime",
       "minTestFiles": 5,
+      "failureModes": [
+        "module materialization exists only as contract with no runtime effect",
+        "enable or disable state fails to affect owner-authenticated journeys",
+        "module limits/capabilities drift from UI or API behavior"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec vitest run src/lib/bns-360/__tests__/crm-crud-journey.test.ts src/lib/bns-360/__tests__/i18n-primary-journey.test.ts src/lib/bns-360/__tests__/pos-primary-journey.test.ts src/lib/bns-360/__tests__/rrss-primary-journey.test.ts src/lib/bns-360/__tests__/seo-primary-journey.test.ts"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/bns-360/__tests__/crm-crud-journey.test.ts",
         "apps/storefront/src/lib/bns-360/__tests__/i18n-primary-journey.test.ts",
@@ -54,6 +86,14 @@
       "severity": "critical",
       "owner": "storefront-runtime",
       "minTestFiles": 3,
+      "failureModes": [
+        "tenant provisioning schema misses required runtime tables or RPC contracts",
+        "tenant cleanup/delete leaves vault, backup or storage residue",
+        "backup storage access bypasses admin/governance boundaries"
+      ],
+      "runtimeEvidence": [
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/provisioning-schema-completeness.test.ts src/lib/__tests__/delete-tenant-rpc-contract.test.ts src/lib/backup/__tests__/backup-storage-auth-contract.test.ts"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/provisioning-schema-completeness.test.ts",
         "apps/storefront/src/lib/__tests__/delete-tenant-rpc-contract.test.ts",
@@ -65,6 +105,15 @@
       "severity": "high",
       "owner": "release-engineering",
       "minTestFiles": 3,
+      "failureModes": [
+        "CI silently drops hidden Lighthouse or coverage artifacts",
+        "release gate stops running critical risk-domain checks",
+        "certification commands drift from runtime proof requirements"
+      ],
+      "runtimeEvidence": [
+        "node scripts/check-risk-test-matrix.mjs",
+        "bash scripts/release-gate.sh"
+      ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/ci-artifacts-contract.test.ts",
         "apps/storefront/src/lib/__tests__/v01-release-gate.test.ts",
