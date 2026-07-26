@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -6,6 +6,12 @@ const REPO_ROOT = resolve(process.cwd(), '..', '..')
 
 function readWorkflow(name: string) {
     return readFileSync(join(REPO_ROOT, '.github', 'workflows', name), 'utf8')
+}
+
+function readWorkflowNames() {
+    return readdirSync(join(REPO_ROOT, '.github', 'workflows'))
+        .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
+        .sort()
 }
 
 function readScript(name: string) {
@@ -16,6 +22,33 @@ function uploadArtifactBlocks(workflow: string) {
     return workflow
         .split('\n      - name:')
         .filter((block) => block.includes('uses: actions/upload-artifact@v4'))
+}
+
+function jobsWithoutTimeout(workflow: string) {
+    const missing: string[] = []
+    let current: { hasRunsOn: boolean; hasTimeout: boolean; name: string } | undefined
+
+    function flush() {
+        if (current?.hasRunsOn && !current.hasTimeout) {
+            missing.push(current.name)
+        }
+    }
+
+    for (const line of workflow.split('\n')) {
+        const job = /^  ([A-Za-z0-9_-]+):\s*$/.exec(line)
+        if (job) {
+            flush()
+            current = { hasRunsOn: false, hasTimeout: false, name: job[1] ?? '' }
+            continue
+        }
+
+        if (!current) continue
+        if (/^    runs-on:\s+/.test(line)) current.hasRunsOn = true
+        if (/^    timeout-minutes:\s+\d+\s*$/.test(line)) current.hasTimeout = true
+    }
+
+    flush()
+    return missing
 }
 
 describe('CI artifact contract', () => {
@@ -48,5 +81,13 @@ describe('CI artifact contract', () => {
         const workflow = readWorkflow('lighthouse-ci.yml')
 
         expect(workflow).toMatch(/\n\s+lighthouse:\n(?:.*\n){1,8}\s+timeout-minutes:\s*15\n/)
+    })
+
+    it('bounds every GitHub Actions job runtime', () => {
+        const missingTimeouts = readWorkflowNames().flatMap((workflowName) =>
+            jobsWithoutTimeout(readWorkflow(workflowName)).map((jobName) => `${workflowName}:${jobName}`)
+        )
+
+        expect(missingTimeouts).toEqual([])
     })
 })

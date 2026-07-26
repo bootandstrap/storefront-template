@@ -122,6 +122,7 @@ jobs:
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     needs: [build-medusa]
     # Only notify on build failure, not deploy failure
     if: failure()

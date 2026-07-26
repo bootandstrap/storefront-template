@@ -25,6 +25,7 @@ jobs:
   test:
     name: Test kernel packages
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +62,7 @@ jobs:
       github.repository == 'bootandstrap/storefront-template' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
       packages: write

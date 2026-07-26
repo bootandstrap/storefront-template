@@ -129,6 +129,7 @@ jobs:
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     needs: [build-storefront, deploy]
     if: failure()
     steps:

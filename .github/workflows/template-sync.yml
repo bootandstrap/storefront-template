@@ -58,6 +58,7 @@ jobs:
   resolve-tenants:
     name: Resolve Tenant Repos
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Only run on the SOURCE template repo, never on tenant repos
     if: github.repository == 'bootandstrap/storefront-template'
     outputs:
@@ -95,6 +96,7 @@ jobs:
     needs: resolve-tenants
     if: needs.resolve-tenants.outputs.count > 0
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       max-parallel: 3
@@ -135,6 +137,7 @@ jobs:
     needs: [resolve-tenants, sync]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Report
         run: |

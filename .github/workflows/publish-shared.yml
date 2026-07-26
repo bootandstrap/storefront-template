@@ -39,6 +39,7 @@ jobs:
   test:
     name: Test shared package
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +67,7 @@ jobs:
     name: Version & Publish
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
