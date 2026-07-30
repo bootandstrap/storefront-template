@@ -234,7 +234,7 @@ export default function ProductDetailClient({
                     {inStock ? (
                         <div className="flex items-center gap-1.5">
                             <span className={`w-2 h-2 rounded-full ${lowStock ? 'bg-amber-500' : 'bg-green-500'}`} />
-                            <span className={`text-sm font-medium ${lowStock ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                            <span className={`text-sm font-medium ${lowStock ? 'text-amber-600 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
                                 {lowStock
                                     ? (t('product.lowStock') || 'Only a few left')
                                     : (t('product.inStock') || 'In stock')}
