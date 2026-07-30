@@ -111,6 +111,33 @@ function shouldRequireInteractiveStates() {
     return process.env.BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES === '1' || targetsRemoteRuntime
 }
 
+async function stabilizeRuntimeEvidencePage(page: Page) {
+    await page.addStyleTag({
+        content: `
+            [data-runtime-evidence-stable-motion],
+            [data-runtime-evidence-stable-motion] *,
+            [data-runtime-evidence-stable-motion] *::before,
+            [data-runtime-evidence-stable-motion] *::after {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+
+            [data-runtime-evidence-stable-motion] .animate-slide-up-stagger,
+            [data-runtime-evidence-stable-motion] .animate-fade-in,
+            [data-runtime-evidence-stable-motion] .animate-slide-in-left,
+            [data-runtime-evidence-stable-motion] .animate-pulse {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        `,
+    })
+
+    await page.evaluate(() => {
+        document.documentElement.setAttribute('data-runtime-evidence-stable-motion', 'true')
+    })
+}
+
 async function assertNoCriticalAxeViolations(page: Page, contextSelector = 'main, [role="main"]') {
     const axeReady = await page.evaluate(() => typeof window.axe?.run === 'function')
     expect(axeReady).toBe(true)
@@ -210,6 +237,7 @@ async function attachRuntimeEvidence(
 ) {
     await assertNoAppErrorShell(page)
     await assertNoHorizontalOverflow(page)
+    await stabilizeRuntimeEvidencePage(page)
 
     const screenshot = await page.screenshot({ fullPage: true })
     await testInfo.attach(names.screenshot, {
@@ -319,6 +347,7 @@ test.describe('runtime visual evidence', () => {
                 await assertVisibleState(page, route)
                 await assertNoAppErrorShell(page)
                 await assertNoHorizontalOverflow(page)
+                await stabilizeRuntimeEvidencePage(page)
                 expect(blockingConsoleMessages).toEqual([])
 
                 const screenshot = await page.screenshot({ fullPage: true })

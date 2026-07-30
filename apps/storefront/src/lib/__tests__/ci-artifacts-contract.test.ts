@@ -287,6 +287,16 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx')
     })
 
+    it('stabilizes motion before runtime visual screenshots and axe scans', () => {
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualSpec).toContain('async function stabilizeRuntimeEvidencePage')
+        expect(visualSpec).toContain('data-runtime-evidence-stable-motion')
+        expect(visualSpec).toContain('animation: none !important')
+        expect(visualSpec).toContain('transition: none !important')
+        expect(visualSpec).toContain('await stabilizeRuntimeEvidencePage(page)')
+    })
+
     it('prepares CI to execute visual runtime evidence locally', () => {
         const workflow = readWorkflow('ci.yml')
         const runner = readScript('run-risk-domain-evidence.mjs')
