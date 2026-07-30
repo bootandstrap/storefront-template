@@ -26,6 +26,18 @@ describe('cart currency render contract', () => {
         expect(page).not.toContain('amount / 100')
     })
 
+    it('gives the icon-only cart back link an accessible name', () => {
+        const page = readFileSync(
+            join(srcRoot, 'app/[lang]/(shop)/carrito/page.tsx'),
+            'utf-8',
+        )
+        const backLinkStart = page.indexOf("href={localizedHref('products')}")
+        const backLinkEnd = page.indexOf('<h1', backLinkStart)
+        const backLinkBlock = page.slice(backLinkStart, backLinkEnd)
+
+        expect(backLinkBlock).toContain("aria-label={t('common.back')}")
+    })
+
     it('CartItem uses the cart currency and shared zero-decimal handling', () => {
         const cartItem = readFileSync(
             join(srcRoot, 'components/cart/CartItem.tsx'),
