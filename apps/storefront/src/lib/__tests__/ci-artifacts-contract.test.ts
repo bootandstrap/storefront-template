@@ -299,6 +299,20 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('await stabilizeRuntimeEvidencePage(page)')
     })
 
+    it('retries transient runtime route throttling before visual assertions', () => {
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualSpec).toContain('async function gotoRuntimeVisualRouteWithBackoff')
+        expect(visualSpec).toContain('isRetriableRuntimeVisualStatus')
+        expect(visualSpec).toContain('status === 429')
+        expect(visualSpec).toContain('BNS_RUNTIME_ROUTE_RETRY_MAX_ATTEMPTS')
+        expect(visualSpec).toContain('BNS_RUNTIME_ROUTE_RETRY_MAX_TOTAL_WAIT_MS')
+        expect(visualSpec).toContain('maxDelayMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_DELAY_MS, 65_000)')
+        expect(visualSpec).toContain('maxTotalWaitMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_TOTAL_WAIT_MS, 75_000)')
+        expect(visualSpec).toContain('test.setTimeout(120_000)')
+        expect(visualSpec).toContain('await gotoRuntimeVisualRouteWithBackoff(page, productPath, [200])')
+    })
+
     it('prepares CI to execute visual runtime evidence locally', () => {
         const workflow = readWorkflow('ci.yml')
         const runner = readScript('run-risk-domain-evidence.mjs')

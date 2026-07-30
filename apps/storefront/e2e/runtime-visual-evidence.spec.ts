@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { expect, test, type Page, type TestInfo } from '@playwright/test'
+import { expect, test, type Page, type Response, type TestInfo } from '@playwright/test'
 import { source as axeSource } from 'axe-core'
 
 type VisualViewport = {
@@ -32,6 +32,13 @@ type InteractiveState = {
 type ProductRouteAvailability = {
     available: boolean
     reason?: string
+}
+
+type RuntimeVisualRouteRetryConfig = {
+    maxAttempts: number
+    fallbackDelayMs: number
+    maxDelayMs: number
+    maxTotalWaitMs: number
 }
 
 type AxeViolation = {
@@ -109,6 +116,72 @@ function shouldRequireInteractiveStates() {
     const targetsRemoteRuntime = /^https?:\/\//i.test(baseUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(baseUrl)
 
     return process.env.BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES === '1' || targetsRemoteRuntime
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function getRuntimeVisualRouteRetryConfig(env = process.env): RuntimeVisualRouteRetryConfig {
+    return {
+        maxAttempts: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_ATTEMPTS, 3),
+        fallbackDelayMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_FALLBACK_MS, 5_000),
+        maxDelayMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_DELAY_MS, 65_000),
+        maxTotalWaitMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_TOTAL_WAIT_MS, 75_000),
+    }
+}
+
+function resolveRuntimeVisualRetryAfterMs(
+    retryAfter: string | null | undefined,
+    config: RuntimeVisualRouteRetryConfig
+) {
+    if (!retryAfter) return config.fallbackDelayMs
+
+    const seconds = Number(retryAfter)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+        return Math.min(Math.round(seconds * 1000), config.maxDelayMs)
+    }
+
+    const retryAt = Date.parse(retryAfter)
+    if (Number.isFinite(retryAt)) {
+        return Math.min(Math.max(retryAt - Date.now(), 0), config.maxDelayMs)
+    }
+
+    return config.fallbackDelayMs
+}
+
+function isRetriableRuntimeVisualStatus(status: number | undefined) {
+    return status === 429 || status === 502 || status === 503 || status === 504
+}
+
+async function gotoRuntimeVisualRouteWithBackoff(
+    page: Page,
+    path: string,
+    expectedStatus: number[]
+): Promise<Response | null> {
+    const config = getRuntimeVisualRouteRetryConfig()
+    let response: Response | null = null
+    let totalWaitMs = 0
+
+    for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+        response = await page.goto(path, { waitUntil: 'domcontentloaded' })
+        const status = response?.status() ?? 200
+
+        if (expectedStatus.includes(status) || !isRetriableRuntimeVisualStatus(status) || attempt === config.maxAttempts) {
+            return response
+        }
+
+        const waitMs = resolveRuntimeVisualRetryAfterMs(response?.headers()['retry-after'], config)
+        const remainingWaitMs = config.maxTotalWaitMs - totalWaitMs
+        if (remainingWaitMs <= 0) return response
+
+        const boundedWaitMs = Math.min(waitMs, remainingWaitMs)
+        totalWaitMs += boundedWaitMs
+        await page.waitForTimeout(boundedWaitMs)
+    }
+
+    return response
 }
 
 async function stabilizeRuntimeEvidencePage(page: Page) {
@@ -258,7 +331,7 @@ async function prepareProductsRoute(
     state: InteractiveState,
     viewport: VisualViewport
 ): Promise<ProductRouteAvailability> {
-    const response = await page.goto('/es/productos', { waitUntil: 'domcontentloaded' })
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, '/es/productos', [200])
     expect(response?.status() ?? 200).toBe(200)
 
     if (await isMaintenanceScreen(page)) {
@@ -282,7 +355,8 @@ async function openFirstProductDetail(page: Page) {
     const href = await firstCard.getAttribute('href')
     expect(href).toBeTruthy()
 
-    const response = await page.goto(`/${href!.replace(/^\//, '')}`, { waitUntil: 'domcontentloaded' })
+    const productPath = `/${href!.replace(/^\//, '')}`
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, productPath, [200])
     expect(response?.status() ?? 200).toBe(200)
 }
 
@@ -313,6 +387,7 @@ async function assertToastState(page: Page) {
 
 test.describe('runtime visual evidence', () => {
     test.describe.configure({ mode: 'serial' })
+    test.setTimeout(120_000)
 
     test('loading route components expose source-backed visual states', async ({}, testInfo) => {
         const evidence = loadingStateSources.map((source) => {
@@ -345,7 +420,7 @@ test.describe('runtime visual evidence', () => {
                 await page.addInitScript({ content: axeSource })
                 await page.setViewportSize({ width: viewport.width, height: viewport.height })
 
-                const response = await page.goto(route.path, { waitUntil: 'domcontentloaded' })
+                const response = await gotoRuntimeVisualRouteWithBackoff(page, route.path, route.expectedStatus)
                 expect(route.expectedStatus).toContain(response?.status() ?? 200)
                 await assertVisibleState(page, route)
                 await assertNoAppErrorShell(page)
