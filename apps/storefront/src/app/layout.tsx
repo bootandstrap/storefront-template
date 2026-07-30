@@ -131,6 +131,21 @@ export default async function RootLayout({
         '--config-accent-light': accentLight,
         '--config-surface': colors.surface,
         '--config-text': colors.text,
+        '--color-brand': colors.primary,
+        '--color-brand-light': primaryLight,
+        '--color-brand-dark': colors.primary,
+        '--color-sec': colors.secondary,
+        '--color-sec-light': secondaryLight,
+        '--color-accent': colors.accent,
+        '--color-accent-light': accentLight,
+        '--color-sf-0': colors.surface,
+        '--color-sf-1': colors.surface,
+        '--color-sf-2': colors.surface,
+        '--color-sf-3': colors.surface,
+        '--color-tx': colors.text,
+        '--color-tx-sec': colors.textSecondary,
+        '--color-tx-muted': colors.textMuted,
+        '--color-tx-inv': colors.textInverse,
       } as React.CSSProperties}
     >
       <head>

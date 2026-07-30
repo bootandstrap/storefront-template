@@ -990,12 +990,12 @@ body {
 }
 
 .btn-whatsapp {
-  background: #0F7A32;
-  color: #ffffff;
+  background: #0F7A32 !important;
+  color: #ffffff !important;
 }
 
 .btn-whatsapp:hover {
-  background: #0B6B2B;
+  background: #0B6B2B !important;
   box-shadow: 0 4px 15px rgba(15, 122, 50, 0.35);
 }
 

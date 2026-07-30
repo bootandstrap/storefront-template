@@ -38,11 +38,18 @@ describe('theme contrast contract', () => {
 
     it('keeps WhatsApp button text contrast above WCAG AA', () => {
         const buttonRule = globals.match(/\.btn-whatsapp\s*\{([^}]+)\}/)?.[1]
-        const background = buttonRule?.match(/background:\s*(#[0-9a-fA-F]{6});/)?.[1]
-        const foreground = buttonRule?.match(/color:\s*(#[0-9a-fA-F]{6});/)?.[1]
+        const background = buttonRule?.match(/background:\s*(#[0-9a-fA-F]{6})(?:\s*!important)?;/)?.[1]
+        const foreground = buttonRule?.match(/color:\s*(#[0-9a-fA-F]{6})(?:\s*!important)?;/)?.[1]
 
         expect(background).toBeDefined()
         expect(foreground).toBeDefined()
         expect(contrastRatio(background!, foreground!)).toBeGreaterThanOrEqual(4.5)
+    })
+
+    it('pins WhatsApp button colors against runtime theme utility overrides', () => {
+        const buttonRule = globals.match(/\.btn-whatsapp\s*\{([^}]+)\}/)?.[1]
+
+        expect(buttonRule).toContain('background: #0F7A32 !important;')
+        expect(buttonRule).toContain('color: #ffffff !important;')
     })
 })
