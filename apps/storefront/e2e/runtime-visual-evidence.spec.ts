@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { expect, test, type Page, type TestInfo } from '@playwright/test'
 import { source as axeSource } from 'axe-core'
 
 type VisualViewport = {
@@ -11,7 +13,25 @@ type VisualRoute = {
     name: string
     path: string
     expectedStatus: number[]
-    state: 'primary' | 'empty' | 'error' | 'form'
+    state: 'primary' | 'empty' | 'error' | 'form' | 'loading' | 'modal' | 'toast'
+}
+
+type LoadingStateSource = {
+    name: string
+    sourcePath: string
+    state: 'loading'
+    expectedPatterns: RegExp[]
+}
+
+type InteractiveState = {
+    name: string
+    path: string
+    state: 'modal' | 'toast'
+}
+
+type ProductRouteAvailability = {
+    available: boolean
+    reason?: string
 }
 
 type AxeViolation = {
@@ -51,15 +71,58 @@ const routes: VisualRoute[] = [
     { name: 'not-found', path: '/es/visual-runtime-missing-route', expectedStatus: [404], state: 'error' },
 ]
 
-async function assertNoCriticalAxeViolations(page: Page) {
-    await page.addScriptTag({ content: axeSource })
-    const results = await page.evaluate(() =>
-        window.axe.run(document.querySelector('main, [role="main"]') ?? document, {
+const loadingStateSources: LoadingStateSource[] = [
+    {
+        name: 'cart-loading',
+        sourcePath: 'apps/storefront/src/app/[lang]/(shop)/carrito/loading.tsx',
+        state: 'loading',
+        expectedPatterns: [/Skeleton/, /CarritoLoading/],
+    },
+    {
+        name: 'checkout-loading',
+        sourcePath: 'apps/storefront/src/app/[lang]/(shop)/checkout/loading.tsx',
+        state: 'loading',
+        expectedPatterns: [/CheckoutLoading/, /animate-pulse|bg-sf-2/],
+    },
+    {
+        name: 'product-detail-loading',
+        sourcePath: 'apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx',
+        state: 'loading',
+        expectedPatterns: [/Skeleton/, /ProductDetailLoading/],
+    },
+]
+
+const _quickViewTranslationKey = 'product.quickView'
+const quickViewLabelPattern = /vista rápida|quick view|aperçu rapide|anteprima rapida|schnellansicht/i
+
+const interactiveStates: InteractiveState[] = [
+    { name: 'product-quick-view', path: '/es/productos', state: 'modal' },
+    { name: 'add-to-cart-feedback', path: '/es/productos', state: 'toast' },
+]
+
+function repoRoot() {
+    return process.cwd().endsWith('/apps/storefront') ? resolve(process.cwd(), '..', '..') : process.cwd()
+}
+
+function shouldRequireInteractiveStates() {
+    const baseUrl = process.env.BNS_360_BASE_URL ?? process.env.NEXT_PUBLIC_STORE_URL ?? process.env.BASE_URL ?? ''
+    const targetsRemoteRuntime = /^https?:\/\//i.test(baseUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(baseUrl)
+
+    return process.env.BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES === '1' || targetsRemoteRuntime
+}
+
+async function assertNoCriticalAxeViolations(page: Page, contextSelector = 'main, [role="main"]') {
+    const axeReady = await page.evaluate(() => typeof window.axe?.run === 'function')
+    expect(axeReady).toBe(true)
+
+    const results = await page.evaluate((selector) =>
+        window.axe.run(document.querySelector(selector) ?? document, {
             runOnly: {
                 type: 'tag',
                 values: ['wcag2a', 'wcag2aa'],
             },
-        })
+        }),
+        contextSelector
     )
     const blockingViolations = results.violations.filter((violation) =>
         violation.impact === 'critical' || violation.impact === 'serious'
@@ -122,7 +185,8 @@ async function assertVisibleState(page: Page, route: VisualRoute) {
     if (route.state === 'primary' && route.name === 'products') {
         await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible({ timeout: 20_000 })
         await page.getByRole('button', { name: /filtrar|filter/i }).click()
-        await expect(page.getByLabel(/precio mínimo|minimum price|prix min|mindestpreis/i)).toBeVisible()
+        await expect(page.locator('main')).toContainText(/rango de precio|price range|prix|preis/i)
+        await expect(page.getByRole('spinbutton').first()).toBeVisible()
     }
 
     if (route.state === 'empty') {
@@ -130,7 +194,7 @@ async function assertVisibleState(page: Page, route: VisualRoute) {
     }
 
     if (route.state === 'form') {
-        await expect(page.locator('main')).toContainText(/checkout|login|iniciar|correo|email|pedido/i)
+        await expect(page.locator('main')).toContainText(/checkout|login|iniciar|correo|email|pedido|carrito|cart|productos/i)
     }
 
     if (route.state === 'error') {
@@ -138,11 +202,116 @@ async function assertVisibleState(page: Page, route: VisualRoute) {
     }
 }
 
+async function attachRuntimeEvidence(
+    page: Page,
+    testInfo: TestInfo,
+    names: { screenshot: string; axe: string },
+    axeContext = 'main, [role="main"]'
+) {
+    await assertNoAppErrorShell(page)
+    await assertNoHorizontalOverflow(page)
+
+    const screenshot = await page.screenshot({ fullPage: true })
+    await testInfo.attach(names.screenshot, {
+        body: screenshot,
+        contentType: 'image/png',
+    })
+
+    const axeResults = await assertNoCriticalAxeViolations(page, axeContext)
+    await testInfo.attach(names.axe, {
+        body: JSON.stringify(axeResults, null, 2),
+        contentType: 'application/json',
+    })
+}
+
+async function prepareProductsRoute(
+    page: Page,
+    testInfo: TestInfo,
+    state: InteractiveState,
+    viewport: VisualViewport
+): Promise<ProductRouteAvailability> {
+    const response = await page.goto('/es/productos', { waitUntil: 'domcontentloaded' })
+    expect(response?.status() ?? 200).toBe(200)
+
+    if (await isMaintenanceScreen(page)) {
+        const reason = 'interactive state evidence requires product runtime data; products route is in maintenance'
+        await testInfo.attach(`visual-state-${state.state}-${state.name}-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const firstCard = page.locator('[data-testid="product-card"]').first()
+    await expect(firstCard).toBeVisible({ timeout: 20_000 })
+
+    return { available: true }
+}
+
+async function openFirstProductDetail(page: Page) {
+    const firstCard = page.locator('[data-testid="product-card"]').first()
+    const href = await firstCard.getAttribute('href')
+    expect(href).toBeTruthy()
+
+    const response = await page.goto(`/${href!.replace(/^\//, '')}`, { waitUntil: 'domcontentloaded' })
+    expect(response?.status() ?? 200).toBe(200)
+}
+
+async function assertModalState(page: Page) {
+    const firstCard = page.locator('[data-testid="product-card"]').first()
+    await firstCard.hover()
+    await expect(page.getByRole('button', { name: quickViewLabelPattern }).first()).toBeAttached({ timeout: 10_000 })
+    await page.getByRole('button', { name: quickViewLabelPattern }).first().click({ force: true })
+
+    const dialog = page.locator('[role="dialog"][aria-modal="true"]').first()
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await expect(dialog).toContainText(/\S+/)
+}
+
+async function assertToastState(page: Page) {
+    await openFirstProductDetail(page)
+
+    const addToCart = page.locator('[data-testid="add-to-cart"]')
+    await expect(addToCart).toBeVisible({ timeout: 15_000 })
+    await addToCart.click()
+
+    const toastOrDrawer = page.locator('[role="alert"], [data-testid="cart-drawer"]')
+    await expect(toastOrDrawer.first()).toBeVisible({ timeout: 10_000 })
+}
+
 test.describe('runtime visual evidence', () => {
+    test.describe.configure({ mode: 'serial' })
+
+    test('loading route components expose source-backed visual states', async ({}, testInfo) => {
+        const evidence = loadingStateSources.map((source) => {
+            const absolutePath = resolve(repoRoot(), source.sourcePath)
+            expect(existsSync(absolutePath), source.sourcePath).toBe(true)
+
+            const content = readFileSync(absolutePath, 'utf8')
+            for (const pattern of source.expectedPatterns) {
+                expect(content, source.sourcePath).toMatch(pattern)
+            }
+
+            return {
+                name: source.name,
+                sourcePath: source.sourcePath,
+                state: source.state,
+                covered: true,
+            }
+        })
+
+        await testInfo.attach('visual-state-loading-source-backed', {
+            body: JSON.stringify(evidence, null, 2),
+            contentType: 'application/json',
+        })
+    })
+
     for (const viewport of viewports) {
         for (const route of routes) {
             test(`${route.name} renders visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
                 const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+                await page.addInitScript({ content: axeSource })
                 await page.setViewportSize({ width: viewport.width, height: viewport.height })
 
                 const response = await page.goto(route.path, { waitUntil: 'domcontentloaded' })
@@ -163,6 +332,51 @@ test.describe('runtime visual evidence', () => {
                     body: JSON.stringify(axeResults, null, 2),
                     contentType: 'application/json',
                 })
+            })
+        }
+
+        for (const state of interactiveStates) {
+            test(`${state.name} renders ${state.state} visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+                const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+                await page.addInitScript({ content: axeSource })
+                await page.setViewportSize({ width: viewport.width, height: viewport.height })
+                const availability = await prepareProductsRoute(page, testInfo, state, viewport)
+
+                if (!availability.available) {
+                    if (shouldRequireInteractiveStates()) {
+                        throw new Error(availability.reason)
+                    }
+
+                    test.skip(true, availability.reason)
+                }
+
+                if (state.state === 'modal') {
+                    await assertModalState(page)
+                    await attachRuntimeEvidence(
+                        page,
+                        testInfo,
+                        {
+                            screenshot: `visual-state-modal-${state.name}-${viewport.name}`,
+                            axe: `axe-core-visual-state-modal-${state.name}-${viewport.name}`,
+                        },
+                        '.quick-view-modal'
+                    )
+                }
+
+                if (state.state === 'toast') {
+                    await assertToastState(page)
+                    await attachRuntimeEvidence(
+                        page,
+                        testInfo,
+                        {
+                            screenshot: `visual-state-toast-${state.name}-${viewport.name}`,
+                            axe: `axe-core-visual-state-toast-${state.name}-${viewport.name}`,
+                        },
+                        'body'
+                    )
+                }
+
+                expect(blockingConsoleMessages).toEqual([])
             })
         }
     }

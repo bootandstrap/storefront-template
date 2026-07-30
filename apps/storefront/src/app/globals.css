@@ -990,13 +990,13 @@ body {
 }
 
 .btn-whatsapp {
-  background: #25D366;
+  background: #0F7A32;
   color: #ffffff;
 }
 
 .btn-whatsapp:hover {
-  background: #20bd5a;
-  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+  background: #0B6B2B;
+  box-shadow: 0 4px 15px rgba(15, 122, 50, 0.35);
 }
 
 .btn-accent {
@@ -1564,18 +1564,18 @@ body {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
-  background: #25D366;
+  background: #0F7A32;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 4px 20px rgba(15, 122, 50, 0.4);
   transition: transform 0.2s var(--ease-spring), box-shadow 0.2s, opacity 0.2s var(--ease-smooth);
 }
 
 .whatsapp-float:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 30px rgba(37, 211, 102, 0.5);
+  box-shadow: 0 6px 30px rgba(15, 122, 50, 0.5);
 }
 
 /* Hide WhatsApp float when a drawer or modal is open */

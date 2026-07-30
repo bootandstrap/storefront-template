@@ -35,4 +35,14 @@ describe('theme contrast contract', () => {
         expect(surface).toBeDefined()
         expect(contrastRatio(muted!, surface!)).toBeGreaterThanOrEqual(4.5)
     })
+
+    it('keeps WhatsApp button text contrast above WCAG AA', () => {
+        const buttonRule = globals.match(/\.btn-whatsapp\s*\{([^}]+)\}/)?.[1]
+        const background = buttonRule?.match(/background:\s*(#[0-9a-fA-F]{6});/)?.[1]
+        const foreground = buttonRule?.match(/color:\s*(#[0-9a-fA-F]{6});/)?.[1]
+
+        expect(background).toBeDefined()
+        expect(foreground).toBeDefined()
+        expect(contrastRatio(background!, foreground!)).toBeGreaterThanOrEqual(4.5)
+    })
 })

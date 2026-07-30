@@ -268,6 +268,25 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('screenshot')
     })
 
+    it('tracks visible loading, modal and toast runtime states with dedicated evidence', () => {
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualSpec).toContain("state: 'loading'")
+        expect(visualSpec).toContain("state: 'modal'")
+        expect(visualSpec).toContain("state: 'toast'")
+        expect(visualSpec).toContain('loadingStateSources')
+        expect(visualSpec).toContain('cart-drawer')
+        expect(visualSpec).toContain('product.quickView')
+        expect(visualSpec).toContain('visual-state-loading')
+        expect(visualSpec).toContain('visual-state-modal')
+        expect(visualSpec).toContain('visual-state-toast')
+        expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES')
+        expect(visualSpec).toContain('interactive state evidence requires product runtime data')
+        expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/carrito/loading.tsx')
+        expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/checkout/loading.tsx')
+        expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx')
+    })
+
     it('prepares CI to execute visual runtime evidence locally', () => {
         const workflow = readWorkflow('ci.yml')
         const runner = readScript('run-risk-domain-evidence.mjs')
