@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import { Package, ShoppingCart, Loader2, Check, Eye } from 'lucide-react'
-import { useState, useTransition, lazy, Suspense } from 'react'
+import { useState, useTransition, lazy, Suspense, useSyncExternalStore } from 'react'
 import type { MedusaProduct } from '@/lib/medusa/client'
 import { getPrice, getOriginalPrice, formatPrice } from '@/lib/medusa/price'
 import { useI18n } from '@/lib/i18n/provider'
@@ -16,6 +16,18 @@ import CompareButton from './CompareButton'
 
 // Lazily load QuickView modal to keep initial bundle lean
 const ProductQuickView = lazy(() => import('./ProductQuickView'))
+
+function subscribeHydrationSnapshot() {
+    return () => {}
+}
+
+function getClientHydrationSnapshot() {
+    return true
+}
+
+function getServerHydrationSnapshot() {
+    return false
+}
 
 interface ProductCardProps {
     product: MedusaProduct
@@ -56,6 +68,11 @@ export default function ProductCard({
     const [isPending, startTransition] = useTransition()
     const [justAdded, setJustAdded] = useState(false)
     const [quickViewOpen, setQuickViewOpen] = useState(false)
+    const hasMounted = useSyncExternalStore(
+        subscribeHydrationSnapshot,
+        getClientHydrationSnapshot,
+        getServerHydrationSnapshot
+    )
     const productHref = `${localizedHref('products')}/${product.handle}`
 
     const canQuickAdd = quickAddEnabled && variant && (variant.inventory_quantity ?? 1) > 0
@@ -179,10 +196,11 @@ export default function ProductCard({
                                 e.stopPropagation()
                                 setQuickViewOpen(true)
                             }}
+                            disabled={!hasMounted}
                             className="pointer-events-auto absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity
                             w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm
                             flex items-center justify-center hover:bg-white hover:scale-110
-                            transition-all duration-200"
+                            transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
                             style={{ right: compareEnabled ? '2.75rem' : '0.75rem' }}
                             aria-label={t('product.quickView')}
                         >

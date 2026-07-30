@@ -20,4 +20,11 @@ describe('ProductCard navigation contract', () => {
         expect(source).not.toContain('role="link"')
         expect(source).not.toContain('router.push(productHref)')
     })
+
+    it('does not accept quick-view clicks before the card is hydrated', () => {
+        expect(source).toContain('useSyncExternalStore')
+        expect(source).toContain('getClientHydrationSnapshot')
+        expect(source).toContain('getServerHydrationSnapshot')
+        expect(source).toContain('disabled={!hasMounted}')
+    })
 })
