@@ -12,6 +12,7 @@ const resolvedBaseUrl =
 const shouldStartLocalServer =
     !process.env.CI &&
     /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(resolvedBaseUrl)
+const shouldWriteHtmlReport = Boolean(process.env.CI || process.env.BNS_RUNTIME_VISUAL_EVIDENCE_REPORT)
 
 function parsePositiveInteger(value: string | undefined, fallback: number): number {
     const parsed = Number(value)
@@ -65,7 +66,7 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
-    reporter: process.env.CI ? 'html' : 'list',
+    reporter: shouldWriteHtmlReport ? 'html' : 'list',
     timeout: resolvedTestTimeout,
 
     use: {

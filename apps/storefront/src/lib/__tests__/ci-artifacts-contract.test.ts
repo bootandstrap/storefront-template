@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -36,13 +36,21 @@ function riskDomain(domain: Partial<{
     }
 }
 
-function runEvidenceRunner(args: string[]) {
+function runEvidenceRunner(args: string[], env: Record<string, string | undefined> = {}) {
+    const summaryPath = env.RISK_DOMAIN_EVIDENCE_SUMMARY_PATH
+        ?? join(mkdtempSync(join(tmpdir(), 'risk-domain-evidence-run-')), 'summary.json')
+
     return spawnSync(
         process.execPath,
         [join(REPO_ROOT, 'scripts', 'run-risk-domain-evidence.mjs'), ...args],
         {
             cwd: REPO_ROOT,
             encoding: 'utf8',
+            env: {
+                ...process.env,
+                RISK_DOMAIN_EVIDENCE_SUMMARY_PATH: summaryPath,
+                ...env,
+            },
         }
     )
 }
@@ -270,5 +278,62 @@ describe('CI artifact contract', () => {
         expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder/)
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
         expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
+    })
+
+    it('writes an auditable risk-domain evidence summary without secrets', () => {
+        const tmp = mkdtempSync(join(tmpdir(), 'risk-domain-evidence-summary-'))
+        const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
+        const summaryPath = join(tmp, 'summary.json')
+
+        const result = runEvidenceRunner(
+            ['--matrix', matrixPath, '--domain', 'ci-release-artifacts'],
+            {
+                RISK_DOMAIN_EVIDENCE_SUMMARY_PATH: summaryPath,
+                STRIPE_SECRET_KEY: 'sk_live_must_not_persist',
+                API_TOKEN: 'secret-token-must-not-persist',
+            }
+        )
+
+        expect(result.status).toBe(0)
+        expect(existsSync(summaryPath)).toBe(true)
+
+        const summaryText = readFileSync(summaryPath, 'utf8')
+        expect(summaryText).not.toContain('sk_live_must_not_persist')
+        expect(summaryText).not.toContain('secret-token-must-not-persist')
+
+        const summary = JSON.parse(summaryText) as {
+            schema: string
+            status: string
+            domains: Array<{ id: string; commands: Array<{ command: string; status: string }> }>
+        }
+
+        expect(summary).toMatchObject({
+            schema: 'bootandstrap.risk-domain-evidence.summary/v1',
+            status: 'passed',
+            domains: [
+                {
+                    id: 'ci-release-artifacts',
+                    commands: [
+                        {
+                            command: 'node scripts/check-risk-test-matrix.mjs',
+                            status: 'passed',
+                        },
+                    ],
+                },
+            ],
+        })
+    })
+
+    it('uploads risk-domain visual evidence artifacts in GitHub CI with fail-closed missing files', () => {
+        const workflow = readWorkflow('ci.yml')
+        const artifactBlocks = uploadArtifactBlocks(workflow)
+        const riskEvidenceUpload = artifactBlocks.find((block) => block.includes('name: risk-domain-evidence'))
+
+        expect(riskEvidenceUpload).toBeDefined()
+        expect(riskEvidenceUpload).toContain('.artifacts/risk-domain-evidence/')
+        expect(riskEvidenceUpload).toContain('apps/storefront/test-results/')
+        expect(riskEvidenceUpload).toContain('apps/storefront/playwright-report/')
+        expect(riskEvidenceUpload).toContain('if-no-files-found: error')
+        expect(riskEvidenceUpload).toContain('retention-days: 14')
     })
 })

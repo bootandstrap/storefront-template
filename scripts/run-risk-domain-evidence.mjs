@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, normalize, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = resolve(SCRIPT_DIR, '..')
 const DEFAULT_MATRIX_PATH = join(SCRIPT_DIR, 'risk-test-matrix.json')
+const DEFAULT_SUMMARY_PATH = join(ROOT_DIR, '.artifacts', 'risk-domain-evidence', 'summary.json')
 const SENSITIVE_TOKEN_PATTERN = /\b(secret|token|password|passwd|private_key|sk_live|stripe_live)\b/i
 
 function fail(message) {
@@ -183,10 +184,32 @@ function buildSafeEnv() {
   return env
 }
 
+function buildSummary({ domains, executedCommands, matrixPath, startedAt, status }) {
+  return {
+    schema: 'bootandstrap.risk-domain-evidence.summary/v1',
+    version: 1,
+    status,
+    generatedAt: new Date().toISOString(),
+    startedAt,
+    completedAt: new Date().toISOString(),
+    matrixPath: normalize(matrixPath).replace(`${ROOT_DIR}/`, ''),
+    domains,
+    executedCommands,
+  }
+}
+
+function writeSummary(summaryPath, summary) {
+  mkdirSync(dirname(summaryPath), { recursive: true })
+  writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8')
+}
+
 const { domain: requestedDomain, matrixPath } = parseArgs(process.argv.slice(2))
 const matrix = readMatrix(matrixPath)
 const domains = selectDomains(matrix, requestedDomain)
 const env = buildSafeEnv()
+const summaryPath = process.env.RISK_DOMAIN_EVIDENCE_SUMMARY_PATH || DEFAULT_SUMMARY_PATH
+const startedAt = new Date().toISOString()
+const summaryDomains = []
 let executedCommands = 0
 
 for (const domain of domains) {
@@ -196,10 +219,18 @@ for (const domain of domains) {
   }
 
   console.log(`[risk-domain-evidence] ${domain.id}`)
+  const summaryDomain = {
+    id: domain.id,
+    severity: domain.severity ?? 'unknown',
+    owner: domain.owner ?? 'unknown',
+    commands: [],
+  }
+  summaryDomains.push(summaryDomain)
 
   for (const command of domain.runtimeEvidence) {
     const [executable, ...args] = validateCommand(command, domain.id)
     console.log(`[risk-domain-evidence] $ ${command}`)
+    const commandStartedAt = new Date().toISOString()
 
     const result = spawnSync(executable, args, {
       cwd: ROOT_DIR,
@@ -208,15 +239,56 @@ for (const domain of domains) {
     })
 
     if (result.error) {
+      summaryDomain.commands.push({
+        command,
+        status: 'failed_to_start',
+        startedAt: commandStartedAt,
+        completedAt: new Date().toISOString(),
+      })
+      writeSummary(summaryPath, buildSummary({
+        domains: summaryDomains,
+        executedCommands,
+        matrixPath,
+        startedAt,
+        status: 'failed',
+      }))
       fail(`${domain.id}: command failed to start: ${result.error.message}`)
     }
 
     if (result.status !== 0) {
+      summaryDomain.commands.push({
+        command,
+        status: 'failed',
+        exitCode: result.status,
+        startedAt: commandStartedAt,
+        completedAt: new Date().toISOString(),
+      })
+      writeSummary(summaryPath, buildSummary({
+        domains: summaryDomains,
+        executedCommands,
+        matrixPath,
+        startedAt,
+        status: 'failed',
+      }))
       fail(`${domain.id}: command exited with status ${result.status}: ${command}`)
     }
 
+    summaryDomain.commands.push({
+      command,
+      status: 'passed',
+      exitCode: result.status,
+      startedAt: commandStartedAt,
+      completedAt: new Date().toISOString(),
+    })
     executedCommands += 1
   }
 }
 
+writeSummary(summaryPath, buildSummary({
+  domains: summaryDomains,
+  executedCommands,
+  matrixPath,
+  startedAt,
+  status: 'passed',
+}))
 console.log(`[risk-domain-evidence] OK (${executedCommands} commands)`)

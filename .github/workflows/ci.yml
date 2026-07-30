@@ -142,6 +142,7 @@ jobs:
         run: node scripts/run-risk-domain-evidence.mjs
         env:
           CI: ''
+          BNS_RUNTIME_VISUAL_EVIDENCE_REPORT: '1'
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: 00000000-0000-4000-8000-000000000001
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
@@ -150,6 +151,18 @@ jobs:
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           MEDUSA_BACKEND_URL: http://localhost:9000
+
+      - name: Upload Risk Domain Evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: risk-domain-evidence
+          path: |
+            .artifacts/risk-domain-evidence/
+            apps/storefront/test-results/
+            apps/storefront/playwright-report/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Run tests with coverage
         run: cd apps/storefront && pnpm test:run --coverage
