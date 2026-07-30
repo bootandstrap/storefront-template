@@ -23,6 +23,13 @@ type LoadingStateSource = {
     expectedPatterns: RegExp[]
 }
 
+type RuntimeLoadingState = {
+    name: string
+    startPath: string
+    state: 'loading'
+    minSkeletons: number
+}
+
 type InteractiveState = {
     name: string
     path: string
@@ -39,6 +46,10 @@ type RuntimeVisualRouteRetryConfig = {
     fallbackDelayMs: number
     maxDelayMs: number
     maxTotalWaitMs: number
+}
+
+type DelayedRuntimeNavigation = {
+    release: () => Promise<void>
 }
 
 type AxeViolation = {
@@ -96,6 +107,15 @@ const loadingStateSources: LoadingStateSource[] = [
         sourcePath: 'apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx',
         state: 'loading',
         expectedPatterns: [/Skeleton/, /ProductDetailLoading/],
+    },
+]
+
+const runtimeLoadingStates: RuntimeLoadingState[] = [
+    {
+        name: 'product-detail-loading',
+        startPath: '/es/productos',
+        state: 'loading',
+        minSkeletons: 5,
     },
 ]
 
@@ -325,6 +345,34 @@ async function attachRuntimeEvidence(
     })
 }
 
+async function delayNextRuntimeVisualNavigation(page: Page, targetPath: string): Promise<DelayedRuntimeNavigation> {
+    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
+    let releaseNavigation!: () => void
+    let routeWasDelayed = false
+    const releasePromise = new Promise<void>((resolve) => {
+        releaseNavigation = resolve
+    })
+
+    await page.route(
+        (url) => url.pathname === normalizedTargetPath,
+        async (route) => {
+            routeWasDelayed = true
+            await releasePromise
+            await route.continue().catch(() => {})
+        },
+        { times: 1 }
+    )
+
+    return {
+        release: async () => {
+            releaseNavigation()
+            if (routeWasDelayed) {
+                await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => {})
+            }
+        },
+    }
+}
+
 async function prepareProductsRoute(
     page: Page,
     testInfo: TestInfo,
@@ -348,6 +396,46 @@ async function prepareProductsRoute(
     await expect(firstCard).toBeVisible({ timeout: 20_000 })
 
     return { available: true }
+}
+
+async function openFirstProductDetailWithDelayedRuntimeNavigation(
+    page: Page,
+    testInfo: TestInfo,
+    state: RuntimeLoadingState,
+    viewport: VisualViewport
+): Promise<ProductRouteAvailability & { delayedNavigation?: DelayedRuntimeNavigation }> {
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, '/es/productos', [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    if (await isMaintenanceScreen(page)) {
+        const reason = 'loading state evidence requires product runtime data; products route is in maintenance'
+        await testInfo.attach(`visual-state-${state.state}-${state.name}-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const firstCard = page.locator('[data-testid="product-card"]').first()
+    const hasProductCard = await firstCard.isVisible({ timeout: 20_000 }).catch(() => false)
+    if (!hasProductCard) {
+        const reason = 'loading state evidence requires product runtime data; no product cards are visible'
+        await testInfo.attach(`visual-state-${state.state}-${state.name}-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const href = await firstCard.getAttribute('href')
+    expect(href).toBeTruthy()
+
+    const productPath = `/${href!.replace(/^\//, '')}`
+    const delayedNavigation = await delayNextRuntimeVisualNavigation(page, productPath)
+    await firstCard.click({ noWaitAfter: true })
+    return { available: true, delayedNavigation }
 }
 
 async function openFirstProductDetail(page: Page) {
@@ -385,9 +473,15 @@ async function assertToastState(page: Page) {
     await expect(toastOrDrawer.first()).toBeVisible({ timeout: 10_000 })
 }
 
+async function assertVisibleLoadingState(page: Page, state: RuntimeLoadingState) {
+    const skeletons = page.locator('main .skeleton')
+    await expect(skeletons.nth(state.minSkeletons - 1)).toBeVisible({ timeout: 5_000 })
+}
+
 test.describe('runtime visual evidence', () => {
     test.describe.configure({ mode: 'serial' })
     test.setTimeout(120_000)
+    const loadingEvidenceViewport = viewports.find((viewport) => viewport.name === 'desktop') ?? viewports[0]
 
     test('loading route components expose source-backed visual states', async ({}, testInfo) => {
         const evidence = loadingStateSources.map((source) => {
@@ -412,6 +506,42 @@ test.describe('runtime visual evidence', () => {
             contentType: 'application/json',
         })
     })
+
+    for (const state of runtimeLoadingStates) {
+        test(`${state.name} renders ${state.state} visual evidence on ${loadingEvidenceViewport.name}`, async ({ page }, testInfo) => {
+            const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+            await page.addInitScript({ content: axeSource })
+            await page.setViewportSize({ width: loadingEvidenceViewport.width, height: loadingEvidenceViewport.height })
+            let delayedNavigation: DelayedRuntimeNavigation | undefined
+
+            try {
+                const availability = await openFirstProductDetailWithDelayedRuntimeNavigation(
+                    page,
+                    testInfo,
+                    state,
+                    loadingEvidenceViewport
+                )
+                delayedNavigation = availability.delayedNavigation
+                if (!availability.available) {
+                    if (shouldRequireInteractiveStates()) {
+                        throw new Error(availability.reason)
+                    }
+
+                    test.skip(true, availability.reason)
+                }
+
+                await assertVisibleLoadingState(page, state)
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-${state.name}-${loadingEvidenceViewport.name}`,
+                    axe: `axe-core-visual-state-loading-${state.name}-${loadingEvidenceViewport.name}`,
+                })
+                expect(blockingConsoleMessages).toEqual([])
+            } finally {
+                await delayedNavigation?.release()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+            }
+        })
+    }
 
     for (const viewport of viewports) {
         for (const route of routes) {

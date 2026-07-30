@@ -109,7 +109,7 @@ export default function ProductCard({
     return (
         <>
             <article className="product-card group relative">
-                <Link href={productHref} data-testid="product-card" className="block">
+                <Link href={productHref} prefetch={false} data-testid="product-card" className="block">
                     {/* Image */}
                     <div className="product-card-image relative aspect-square">
                         {product.thumbnail ? (

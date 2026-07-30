@@ -2,7 +2,7 @@
 
 Status: active
 Owner repo: ecommerce-template
-Last updated: 2026-07-13
+Last updated: 2026-07-30
 
 This runbook defines what "100% testable" means for the reusable tenant runtime.
 It does not authorize live money movement, physical reader payments, live
@@ -61,6 +61,36 @@ The reusable BNS 360 matrix currently automates:
   kiosk flags;
 - POS Terminal simulator contract evidence exposed by
   `/api/panel/bns-360/pos-primary`.
+- risk-domain evidence execution from `scripts/risk-test-matrix.json` through
+  `scripts/run-risk-domain-evidence.mjs`, wired into release gate and CI;
+- runtime visual evidence for primary public routes across desktop, tablet and
+  mobile, with screenshots, critical/serious axe checks, horizontal overflow
+  checks, app-shell error checks, modal/toast evidence and source-backed loading
+  component coverage;
+- deployed Lighthouse Build and Lighthouse Deploy audits for the tenant proof.
+
+## Functional Green Loop Evidence
+
+This loop targets functional green with zero known non-commercial defects. It
+does not certify live/commercial activation, live payments, Stripe Tax
+registrations or physical POS.
+
+- Template commit `30fc5bdb` added retry/backoff for transient runtime visual
+  route throttling, including `Retry-After` handling up to 65s bounded by a 75s
+  total wait budget.
+- Tenant proof commit `a96ee9deb7a5f8622d89d034615069fd2592a3c5` propagated the
+  backoff. CI, Build & Deploy and health passed, but Lighthouse Deploy exposed a
+  real `/es/productos` performance regression: mobile LCP selected the second
+  product card image, which was still lazy-loaded.
+- Template commit `e391fbab` and tenant proof commit
+  `f6752d60ca6909da547cbe297f090880708112fe` prioritize the first mobile grid
+  row for product-card image discovery. Tenant CI `30575388197`, Build & Deploy
+  `30575388231`, Lighthouse Build `30575388182`, Lighthouse Deploy `30575609077`
+  and public health all passed for `f6752d60`.
+- Source coverage now adds a visible runtime loading evidence path for product
+  detail loading. Product-grid detail links disable route prefetch so the
+  loading fallback remains observable and the grid does not fan out unnecessary
+  product-detail requests.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be
@@ -127,14 +157,22 @@ run with `BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1`.
 
 ## Next Implementation Batches
 
-1. Run the BSWEB `functional-system` canary scope against a newly deployed or
-   freshly reconciled validation tenant and record the root functional canary
-   artifact.
-2. Replace simulator-only PaymentCollection/order evidence with provider-backed
+1. Propagate the visible loading evidence and product-detail prefetch control
+   from template to tenant proof, then verify local release gates, remote CI,
+   deploy, Lighthouse Deploy and public health on the tenant commit.
+2. Expand visible loading evidence beyond the stable desktop PDP path only when
+   tablet/mobile App Router fallback can be observed without document-navigation
+   flake. Keep the existing desktop/tablet/mobile primary-route screenshots and
+   axe checks in place.
+3. Add risk-targeted coverage for the remaining highest-risk non-commercial
+   areas: security/auth tenant isolation, checkout/payment simulators, POS
+   simulator, Medusa admin helpers, provisioning/cleanup/backup/vault and
+   CI/release artifacts.
+4. Replace simulator-only PaymentCollection/order evidence with provider-backed
    test-mode evidence when the tenant-safe provider hook is available.
-3. Replace the current POS Terminal contract evidence with a Stripe test-mode
+5. Replace the current POS Terminal contract evidence with a Stripe test-mode
    simulated reader probe. Keep physical reader certification separate.
-4. Add physical reader certification only after provider, reader id/location and
+6. Add physical reader certification only after provider, reader id/location and
    explicit live drill authorization exist.
 
 ## Non-Negotiable Guards

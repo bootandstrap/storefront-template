@@ -29,4 +29,8 @@ describe('shouldPrioritizeProductCardImage', () => {
         expect(productCardSource).toContain("fetchPriority={imagePriority ? 'high' : undefined}")
         expect(productGridSource).toContain("fetchPriority={imagePriority ? 'high' : undefined}")
     })
+
+    it('does not prefetch every product-detail route from product grids', () => {
+        expect(productCardSource).toContain('prefetch={false}')
+    })
 })
