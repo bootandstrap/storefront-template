@@ -78,12 +78,13 @@ export default function NewsletterSignup() {
                         className="flex-1 px-3 py-2 rounded-xl border border-sf-3 bg-sf-0 text-sm focus:outline-none focus:ring-2 focus:ring-soft focus:border-brand transition-all min-w-0"
                     />
                     <button
+                        data-testid="newsletter-submit-button"
                         type="submit"
                         disabled={status === 'loading'}
                         className="btn btn-primary text-xs px-4 py-2 rounded-xl shrink-0 flex items-center gap-1.5"
                     >
                         {status === 'loading' ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <Loader2 data-testid="newsletter-submit-spinner" className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                             <Mail className="w-3.5 h-3.5" />
                         )}

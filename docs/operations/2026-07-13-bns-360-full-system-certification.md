@@ -87,10 +87,12 @@ registrations or physical POS.
   row for product-card image discovery. Tenant CI `30575388197`, Build & Deploy
   `30575388231`, Lighthouse Build `30575388182`, Lighthouse Deploy `30575609077`
   and public health all passed for `f6752d60`.
-- Source coverage now adds a visible runtime loading evidence path for product
-  detail loading. Product-grid detail links disable route prefetch so the
-  loading fallback remains observable and the grid does not fan out unnecessary
-  product-detail requests.
+- Source coverage records product detail, cart and checkout `loading.tsx`
+  boundaries. Runtime-visible loading evidence uses the newsletter submit
+  loading state with `/api/newsletter` intercepted by Playwright, so no
+  newsletter mutation is sent while screenshots and axe evidence prove a real
+  visible loading UI. Product-grid detail links disable route prefetch so the
+  grid does not fan out unnecessary product-detail requests.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be
@@ -157,13 +159,15 @@ run with `BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1`.
 
 ## Next Implementation Batches
 
-1. Propagate the visible loading evidence and product-detail prefetch control
-   from template to tenant proof, then verify local release gates, remote CI,
-   deploy, Lighthouse Deploy and public health on the tenant commit.
-2. Expand visible loading evidence beyond the stable desktop PDP path only when
-   tablet/mobile App Router fallback can be observed without document-navigation
-   flake. Keep the existing desktop/tablet/mobile primary-route screenshots and
-   axe checks in place.
+1. Propagate newsletter-backed visible loading evidence and product-detail
+   prefetch control from template to tenant proof, then verify local release
+   gates, remote CI, deploy, Lighthouse Deploy, public health and remote
+   Playwright on the tenant commit.
+2. Expand visible loading evidence to additional safe interactive states
+   (checkout method loading, order lookup loading, cart transition loading)
+   before revisiting App Router route fallbacks. Keep route `loading.tsx`
+   evidence source-backed unless the fallback can be observed without
+   navigation-shell flake.
 3. Add risk-targeted coverage for the remaining highest-risk non-commercial
    areas: security/auth tenant isolation, checkout/payment simulators, POS
    simulator, Medusa admin helpers, provisioning/cleanup/backup/vault and
