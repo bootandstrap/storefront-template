@@ -17,6 +17,14 @@ describe('ProductGrid accessibility contract', () => {
         expect(source).toContain('aria-label={t(\'product.filter\')}')
     })
 
+    it('does not accept filter clicks before the client grid is hydrated', () => {
+        expect(source).toContain('useSyncExternalStore')
+        expect(source).toContain('getClientHydrationSnapshot')
+        expect(source).toContain('getServerHydrationSnapshot')
+        expect(source).toContain('disabled={!hasMounted}')
+        expect(source).toContain('aria-expanded={showFilters}')
+    })
+
     it('keeps product cards in a valid heading hierarchy below the page h1', () => {
         expect(source).not.toContain('<h3 className="text-sm font-semibold text-tx line-clamp-2')
         expect(source).toContain('<h2 className="text-sm font-semibold text-tx line-clamp-2')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
 import { Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, LayoutGrid, List, Package, Check } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -20,6 +20,18 @@ interface ProductGridProps {
     quickAddEnabled?: boolean
     currentPage?: number
     totalPages?: number
+}
+
+function subscribeHydrationSnapshot() {
+    return () => {}
+}
+
+function getClientHydrationSnapshot() {
+    return true
+}
+
+function getServerHydrationSnapshot() {
+    return false
 }
 
 export default function ProductGrid({
@@ -43,6 +55,11 @@ export default function ProductGrid({
 
     const [searchInput, setSearchInput] = useState(currentQuery)
     const [showFilters, setShowFilters] = useState(false)
+    const hasMounted = useSyncExternalStore(
+        subscribeHydrationSnapshot,
+        getClientHydrationSnapshot,
+        getServerHydrationSnapshot
+    )
     const [priceMin, setPriceMin] = useState('')
     const [priceMax, setPriceMax] = useState('')
     const [inStockOnly, setInStockOnly] = useState(false)
@@ -159,8 +176,10 @@ export default function ProductGrid({
 
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className={`btn btn-ghost px-3 py-2.5 rounded-xl border border-sf-3 text-sm ${showFilters ? 'bg-brand-subtle border-brand' : ''}`}
+                        disabled={!hasMounted}
+                        className={`btn btn-ghost px-3 py-2.5 rounded-xl border border-sf-3 text-sm disabled:cursor-not-allowed disabled:opacity-60 ${showFilters ? 'bg-brand-subtle border-brand' : ''}`}
                         aria-label={t('product.filter')}
+                        aria-expanded={showFilters}
                     >
                         <SlidersHorizontal className="w-4 h-4" />
                         <span className="hidden sm:inline">{t('product.filter')}</span>
