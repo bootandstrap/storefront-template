@@ -282,6 +282,8 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('visual-state-toast')
         expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES')
         expect(visualSpec).toContain('interactive state evidence requires product runtime data')
+        expect(visualSpec).toContain("page.locator('article').first()")
+        expect(visualSpec).toContain('await expect(quickViewButton).toBeEnabled')
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/carrito/loading.tsx')
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/checkout/loading.tsx')
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx')

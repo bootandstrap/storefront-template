@@ -287,10 +287,13 @@ async function openFirstProductDetail(page: Page) {
 }
 
 async function assertModalState(page: Page) {
-    const firstCard = page.locator('[data-testid="product-card"]').first()
-    await firstCard.hover()
-    await expect(page.getByRole('button', { name: quickViewLabelPattern }).first()).toBeAttached({ timeout: 10_000 })
-    await page.getByRole('button', { name: quickViewLabelPattern }).first().click({ force: true })
+    const firstArticle = page.locator('article').first()
+    const quickViewButton = firstArticle.getByRole('button', { name: quickViewLabelPattern }).first()
+
+    await firstArticle.hover()
+    await expect(quickViewButton).toBeVisible({ timeout: 10_000 })
+    await expect(quickViewButton).toBeEnabled({ timeout: 10_000 })
+    await quickViewButton.click()
 
     const dialog = page.locator('[role="dialog"][aria-modal="true"]').first()
     await expect(dialog).toBeVisible({ timeout: 10_000 })
