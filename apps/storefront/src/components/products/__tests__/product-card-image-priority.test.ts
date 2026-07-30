@@ -8,10 +8,10 @@ const productCardSource = readFileSync(join(__dirname, '..', 'ProductCard.tsx'),
 const productGridSource = readFileSync(join(__dirname, '..', 'ProductGrid.tsx'), 'utf-8')
 
 describe('shouldPrioritizeProductCardImage', () => {
-    it('prioritizes the mobile above-the-fold grid cards for LCP discovery', () => {
+    it('prioritizes only the first product card for mobile LCP discovery', () => {
         expect([0, 1].map((index) => shouldPrioritizeProductCardImage(index))).toEqual([
             true,
-            true,
+            false,
         ])
     })
 
