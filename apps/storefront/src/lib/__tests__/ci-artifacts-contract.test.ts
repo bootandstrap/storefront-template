@@ -243,6 +243,10 @@ describe('CI artifact contract', () => {
             workflow.indexOf('- name: Checkout target tenant'),
             workflow.indexOf('- name: Template Sync')
         )
+        const templateSyncAction = workflow.slice(
+            workflow.indexOf('- name: Template Sync'),
+            workflow.indexOf('- name: Dry Run Log')
+        )
         const resolverSourceCheckout = workflow.slice(
             workflow.indexOf('- name: Checkout canonical template'),
             workflow.indexOf('- name: Query tenant repos from Supabase')
@@ -296,7 +300,8 @@ describe('CI artifact contract', () => {
         expect(templateSync).toBeGreaterThan(validateTargetPolicy)
         expect(checkoutTarget).toContain('repository: ${{ matrix.repo }}')
         expect(checkoutTarget).toContain('ref: main')
-        expect(checkoutTarget).toContain('token: ${{ secrets.TEMPLATE_SYNC_PAT }}')
+        expect(checkoutTarget).toContain('token: ${{ github.token }}')
+        expect(checkoutTarget).not.toContain('secrets.TEMPLATE_SYNC_PAT')
         expect(checkoutTarget).toContain('persist-credentials: false')
         for (const canonicalCheckout of [resolverSourceCheckout, syncPolicyCheckout]) {
             expect(canonicalCheckout).toContain(
@@ -306,6 +311,11 @@ describe('CI artifact contract', () => {
             expect(canonicalCheckout).toContain('persist-credentials: false')
         }
         expect(workflow).toContain('source_repo_path: bootandstrap/storefront-template')
+        expect(templateSyncAction).toContain(
+            'target_gh_token: ${{ secrets.TEMPLATE_SYNC_PAT }}'
+        )
+        expect(workflow.match(/secrets\.TEMPLATE_SYNC_PAT/g)).toHaveLength(1)
+        expect(workflow).toContain('permissions:\n  contents: read')
         expect(workflow).toContain('node scripts/ci/resolve-template-sync-repos.mjs')
         expect(workflow).toContain(
             'node "$RUNNER_TEMP/validate-template-sync-ignore.mjs" .templatesyncignore'

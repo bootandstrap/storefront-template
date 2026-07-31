@@ -67,6 +67,9 @@ concurrency:
   group: template-sync
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   # ────────────────────────────────────────────────────────────────────
   # Step 1: Build dynamic tenant repo list from Supabase
@@ -142,7 +145,7 @@ jobs:
         with:
           repository: ${{ matrix.repo }}
           ref: main
-          token: ${{ secrets.TEMPLATE_SYNC_PAT }}
+          token: ${{ github.token }}
           persist-credentials: false
 
       - name: Validate target template sync policy
