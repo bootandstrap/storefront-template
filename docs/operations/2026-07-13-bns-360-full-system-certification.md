@@ -2,7 +2,7 @@
 
 Status: active
 Owner repo: ecommerce-template
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 This runbook defines what "100% testable" means for the reusable tenant runtime.
 It does not authorize live money movement, physical reader payments, live
@@ -67,6 +67,9 @@ The reusable BNS 360 matrix currently automates:
   mobile, with screenshots, critical/serious axe checks, horizontal overflow
   checks, app-shell error checks, modal/toast evidence and source-backed loading
   component coverage;
+- guest order lookup loading and synthetic not-found/error evidence on desktop
+  and mobile, with the lookup POST held and fulfilled by Playwright so no order
+  data is read or mutated;
 - deployed Lighthouse Build and Lighthouse Deploy audits for the tenant proof.
 
 ## Functional Green Loop Evidence
@@ -93,6 +96,11 @@ registrations or physical POS.
   newsletter mutation is sent while screenshots and axe evidence prove a real
   visible loading UI. Product-grid detail links disable route prefetch so the
   grid does not fan out unnecessary product-detail requests.
+- Guest order lookup evidence uses the real `/es/pedido` form while Playwright
+  holds `/api/orders/lookup` pending, verifies the disabled submit button and
+  visible spinner, then returns a synthetic `404` and verifies the accessible
+  not-found alert. The harness captures loading and error screenshots plus axe
+  evidence on desktop and mobile without querying a real order.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be
@@ -159,15 +167,14 @@ run with `BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1`.
 
 ## Next Implementation Batches
 
-1. Propagate newsletter-backed visible loading evidence and product-detail
-   prefetch control from template to tenant proof, then verify local release
-   gates, remote CI, deploy, Lighthouse Deploy, public health and remote
-   Playwright on the tenant commit.
-2. Expand visible loading evidence to additional safe interactive states
-   (checkout method loading, order lookup loading, cart transition loading)
-   before revisiting App Router route fallbacks. Keep route `loading.tsx`
-   evidence source-backed unless the fallback can be observed without
-   navigation-shell flake.
+1. Propagate guest order lookup loading and synthetic not-found/error evidence
+   from template to tenant proof, then verify local release gates, remote CI,
+   deploy, Lighthouse Deploy, public health and remote Playwright on the tenant
+   commit.
+2. Expand visible loading evidence to checkout method loading and cart
+   transition loading before revisiting App Router route fallbacks. Keep route
+   `loading.tsx` evidence source-backed unless the fallback can be observed
+   without navigation-shell flake.
 3. Add risk-targeted coverage for the remaining highest-risk non-commercial
    areas: security/auth tenant isolation, checkout/payment simulators, POS
    simulator, Medusa admin helpers, provisioning/cleanup/backup/vault and
