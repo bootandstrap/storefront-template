@@ -111,6 +111,10 @@ registrations or physical POS.
   waits for that marker before submitting, so a remote test cannot click
   server-rendered markup before the client handler is attached and falsely
   report that the expected POST was never emitted.
+- Mobile PDP evidence checks the real geometry between the sticky add-to-cart
+  CTA and the fixed bottom navigation. The CTA is offset above the navigation,
+  including the safe-area inset, so full-page capture and scroll transitions
+  cannot produce overlapping controls or transient axe contrast failures.
 - Public JSON-LD scripts keep the per-request CSP nonce and use React's
   `suppressHydrationWarning` for that nonce-only attribute. Runtime evidence
   still treats every other hydration warning as blocking, while avoiding the

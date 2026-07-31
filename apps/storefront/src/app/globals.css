@@ -2275,6 +2275,11 @@ body.drawer-open .whatsapp-float {
   padding: 0 4px;
 }
 
+/* Keep the PDP mobile CTA above the fixed bottom navigation, including notches. */
+.product-sticky-cta {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* ===== RTL support (future locales: ar, he, fa, ur) ===== */
 [dir="rtl"] {
   text-align: right;

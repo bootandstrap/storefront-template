@@ -300,6 +300,27 @@ async function assertNoHorizontalOverflow(page: Page) {
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 2)
 }
 
+async function assertNoMobileFixedControlOverlap(page: Page) {
+    const overlapPixels = await page.evaluate(() => {
+        const stickyCta = document.querySelector<HTMLElement>('.product-sticky-cta')
+        const bottomNav = document.querySelector<HTMLElement>('.bottom-nav')
+        if (!stickyCta || !bottomNav) return 0
+
+        const stickyRect = stickyCta.getBoundingClientRect()
+        const navRect = bottomNav.getBoundingClientRect()
+        const stickyVisible = stickyRect.width > 0 && stickyRect.height > 0
+        const navVisible = navRect.width > 0 && navRect.height > 0
+        if (!stickyVisible || !navVisible) return 0
+
+        return Math.max(
+            0,
+            Math.min(stickyRect.bottom, navRect.bottom) - Math.max(stickyRect.top, navRect.top)
+        )
+    })
+
+    expect(overlapPixels).toBeLessThanOrEqual(1)
+}
+
 async function assertNoAppErrorShell(page: Page) {
     const bodyText = await page.locator('body').innerText()
 
@@ -377,6 +398,7 @@ async function attachRuntimeEvidence(
         contentType: 'image/png',
     })
 
+    await assertNoMobileFixedControlOverlap(page)
     const axeResults = await assertNoCriticalAxeViolations(page, axeContext)
     await testInfo.attach(names.axe, {
         body: JSON.stringify(axeResults, null, 2),

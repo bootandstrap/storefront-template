@@ -339,7 +339,7 @@ export default function ProductDetailClient({
 
             {/* Sticky CTA for mobile — appears when main CTA scrolls out of view */}
             {selectedVariant && inStock && showStickyCta && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-glass-heavy backdrop-blur-sm border-t border-sf-3 safe-area-bottom animate-slide-up">
+                <div className="product-sticky-cta fixed left-0 right-0 z-40 md:hidden bg-glass-heavy backdrop-blur-sm border-t border-sf-3 animate-slide-up">
                     <div className="flex items-center justify-between gap-4 px-4 py-3">
                         <div className="min-w-0">
                             <p className="text-xs text-tx-muted truncate">{product.title}</p>
