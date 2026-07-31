@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
 import type { CheckoutCountry } from './steps/CheckoutAddressStep'
@@ -33,6 +33,11 @@ import CheckoutPaymentStep from './steps/CheckoutPaymentStep'
 import CheckoutConfirmationStep from './steps/CheckoutConfirmationStep'
 import CheckoutOrderSummary from './steps/CheckoutOrderSummary'
 import { resolveInitialCheckoutCountryCode } from './checkout-country'
+import {
+    beginCheckoutMethodRequest,
+    invalidateCheckoutMethodRequests,
+    isCurrentCheckoutMethodRequest,
+} from './checkout-method-request-epoch'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,6 +86,10 @@ export default function CheckoutModal({
 }: CheckoutModalProps) {
     const { cart, resetCart } = useCart()
     const { t, locale } = useI18n()
+    const modalRef = useRef<HTMLDivElement>(null)
+    const closeButtonRef = useRef<HTMLButtonElement>(null)
+    const previousFocusRef = useRef<HTMLElement | null>(null)
+    const methodsRequestEpoch = useRef(0)
 
     // Step navigation
     const [step, setStep] = useState<CheckoutStep>('info')
@@ -139,6 +148,7 @@ export default function CheckoutModal({
         formatCurrencyPrice(amount, displayCurrency.toLowerCase(), locale)
 
     const loadMethods = useCallback(async () => {
+        const requestId = beginCheckoutMethodRequest(methodsRequestEpoch)
         setLoadingMethods(true)
         setMethodsError(null)
         try {
@@ -149,20 +159,40 @@ export default function CheckoutModal({
                     available: await isPaymentMethodAvailable(m.id),
                 }))
             )
+            if (!isCurrentCheckoutMethodRequest(methodsRequestEpoch, requestId)) return
             setAvailableMethods(checks.filter((c) => c.available).map((c) => c.method))
         } catch {
+            if (!isCurrentCheckoutMethodRequest(methodsRequestEpoch, requestId)) return
             setAvailableMethods([])
             setSelectedMethod(null)
             setMethodsError(t('checkout.errors.methodsLoad'))
         } finally {
-            setLoadingMethods(false)
+            if (isCurrentCheckoutMethodRequest(methodsRequestEpoch, requestId)) {
+                setLoadingMethods(false)
+            }
         }
     }, [featureFlags, planLimits, t])
 
     // Load available methods
     useEffect(() => {
-        if (isOpen) void loadMethods()
+        if (!isOpen) return
+        void loadMethods()
+        return () => invalidateCheckoutMethodRequests(methodsRequestEpoch)
     }, [isOpen, loadMethods])
+
+    useEffect(() => {
+        if (!isOpen) return
+        previousFocusRef.current = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null
+        const focusFrame = requestAnimationFrame(() => closeButtonRef.current?.focus())
+
+        return () => {
+            cancelAnimationFrame(focusFrame)
+            previousFocusRef.current?.focus()
+            previousFocusRef.current = null
+        }
+    }, [isOpen])
 
     // Reset on close / add body class for overlay management
     const cartItemCount = cart?.items?.length ?? 0
@@ -192,6 +222,30 @@ export default function CheckoutModal({
         }
         onClose()
     }, [onClose, resetCart, step])
+
+    function handleModalKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            handleModalClose()
+            return
+        }
+        if (event.key !== 'Tab' || !modalRef.current) return
+
+        const focusable = Array.from(modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ))
+        if (focusable.length === 0) return
+
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault()
+            last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault()
+            first.focus()
+        }
+    }
 
     // ---------------------------------------------------------------------------
     // Navigation
@@ -381,14 +435,17 @@ export default function CheckoutModal({
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
                 onClick={handleModalClose}
+                aria-hidden="true"
             />
 
             {/* Modal */}
             <div
+                ref={modalRef}
                 className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-sf-0 border border-sf-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="checkout-modal-title"
+                onKeyDown={handleModalKeyDown}
             >
                 {/* Header */}
                 <div className="sticky top-0 bg-glass-heavy backdrop-blur-xl border-b border-sf-3 p-4 z-10">
@@ -409,6 +466,7 @@ export default function CheckoutModal({
                             </h2>
                         </div>
                         <button
+                            ref={closeButtonRef}
                             onClick={handleModalClose}
                             className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                             type="button"

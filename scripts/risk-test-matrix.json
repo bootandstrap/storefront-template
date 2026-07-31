@@ -33,13 +33,14 @@
         "payment method discovery failures become an infinite loading state or are misreported as a valid empty configuration"
       ],
       "runtimeEvidence": [
-        "pnpm --filter=storefront exec vitest run src/lib/__tests__/checkout-payment-contract.test.ts src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts"
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/checkout-payment-contract.test.ts src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts src/components/checkout/__tests__/checkout-method-request-epoch.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/checkout-payment-contract.test.ts",
         "apps/storefront/src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts",
         "apps/storefront/src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts",
-        "apps/storefront/src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts"
+        "apps/storefront/src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts",
+        "apps/storefront/src/components/checkout/__tests__/checkout-method-request-epoch.test.ts"
       ]
     },
     {

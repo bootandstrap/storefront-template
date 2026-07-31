@@ -891,9 +891,15 @@ async function delayNextCheckoutMethodAvailabilityAction(
         async (route) => {
             const request = route.request()
             const body = request.postData() ?? ''
-            const isAvailabilityCheck = CHECKOUT_METHOD_IDS.some((methodId) =>
-                body.includes(`"${methodId}"`)
-            )
+            let args: unknown
+            try {
+                args = JSON.parse(body)
+            } catch {
+                args = null
+            }
+            const isAvailabilityCheck = Array.isArray(args)
+                && args.length === 1
+                && CHECKOUT_METHOD_IDS.some((methodId) => args[0] === methodId)
 
             if (
                 actionWasDelayed
@@ -940,6 +946,12 @@ async function reachCheckoutMethodStep(page: Page, state: CheckoutMethodRuntimeS
 
     const dialog = page.getByRole('dialog', { name: /checkout|finalizar compra|paiement|kasse/i })
     await expect(dialog).toBeVisible()
+    const closeButton = dialog.getByRole('button', { name: /cerrar|close|fermer|chiudi|schließen/i })
+    await expect(closeButton).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(dialog.locator('#checkout-phone')).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(closeButton).toBeFocused()
     await dialog.locator('#checkout-first-name').fill('Runtime')
     await dialog.locator('#checkout-last-name').fill('Evidence')
     await dialog.getByTestId(state.continueTestId).click()
@@ -1433,10 +1445,9 @@ test.describe('runtime visual evidence', () => {
                 await delayedAction.abort()
                 await expect(methodsError).toBeVisible({ timeout: 5_000 })
 
-                await checkoutDialog
-                    .getByRole('button', { name: /cerrar|close|fermer|chiudi|schließen/i })
-                    .click()
+                await page.keyboard.press('Escape')
                 await expect(checkoutDialog).toBeHidden()
+                await expect(page.getByTestId(checkoutMethodRuntimeState.proceedTestId)).toBeFocused()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
                 delayedAction = undefined
 

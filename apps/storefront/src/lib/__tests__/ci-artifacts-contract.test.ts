@@ -357,6 +357,8 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('delayNextCheckoutMethodAvailabilityAction')
         expect(visualSpec).toContain('CHECKOUT_METHOD_IDS')
         expect(visualSpec).toContain('request.headers()[\'next-action\']')
+        expect(visualSpec).toContain('JSON.parse(body)')
+        expect(visualSpec).toContain('args.length === 1')
         expect(visualSpec).toContain('does not submit an order or initialize a payment')
         expect(visualSpec).toContain('cleanupRuntimeEvidenceCart')
         expect(visualSpec).toContain(

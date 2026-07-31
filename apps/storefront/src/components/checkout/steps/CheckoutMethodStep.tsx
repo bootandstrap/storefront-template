@@ -60,7 +60,12 @@ export default function CheckoutMethodStep({
                     </button>
                 </div>
             ) : availableMethods.length === 0 ? (
-                <div data-testid="checkout-methods-empty" className="text-center py-8 text-tx-muted">
+                <div
+                    data-testid="checkout-methods-empty"
+                    role="status"
+                    aria-live="polite"
+                    className="text-center py-8 text-tx-muted"
+                >
                     <p className="text-sm">
                         {t('checkout.noMethods')}
                     </p>
