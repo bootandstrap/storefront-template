@@ -90,10 +90,14 @@ export default function GuestOrderLookup() {
 
                 <form onSubmit={handleSearch} className="glass rounded-2xl p-6 space-y-4">
                     <div>
-                        <label className="text-sm text-tx-sec block mb-1">
+                        <label
+                            htmlFor="order-lookup-email"
+                            className="text-sm text-tx-sec block mb-1"
+                        >
                             {t('auth.email')}
                         </label>
                         <input
+                            id="order-lookup-email"
                             data-testid="order-lookup-email"
                             type="email"
                             value={email}
@@ -105,10 +109,14 @@ export default function GuestOrderLookup() {
                     </div>
 
                     <div>
-                        <label className="text-sm text-tx-sec block mb-1">
+                        <label
+                            htmlFor="order-lookup-id"
+                            className="text-sm text-tx-sec block mb-1"
+                        >
                             {t('order.number')}
                         </label>
                         <input
+                            id="order-lookup-id"
                             data-testid="order-lookup-id"
                             type="text"
                             value={orderId}

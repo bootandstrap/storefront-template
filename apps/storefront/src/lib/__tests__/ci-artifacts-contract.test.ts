@@ -271,6 +271,10 @@ describe('CI artifact contract', () => {
 
     it('tracks visible loading, modal and toast runtime states with dedicated evidence', () => {
         const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+        const orderLookupPage = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/app/[lang]/(shop)/pedido/page.tsx'),
+            'utf8'
+        )
 
         expect(visualSpec).toContain("state: 'loading'")
         expect(visualSpec).toContain("state: 'modal'")
@@ -302,6 +306,11 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/carrito/loading.tsx')
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/checkout/loading.tsx')
         expect(visualSpec).toContain('apps/storefront/src/app/[lang]/(shop)/productos/[handle]/loading.tsx')
+        expect(orderLookupPage).toContain('htmlFor="order-lookup-email"')
+        expect(orderLookupPage).toContain('id="order-lookup-email"')
+        expect(orderLookupPage).toContain('htmlFor="order-lookup-id"')
+        expect(orderLookupPage).toContain('id="order-lookup-id"')
+        expect(orderLookupPage).toContain('role="alert"')
     })
 
     it('stabilizes motion before runtime visual screenshots and axe scans', () => {
