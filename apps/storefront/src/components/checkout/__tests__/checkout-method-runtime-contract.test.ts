@@ -15,8 +15,9 @@ describe('checkout method runtime contract', () => {
         const focusHook = readCheckoutFile('use-checkout-modal-focus.ts')
 
         expect(modal.split('\n').length).toBeLessThan(600)
-        expect(modal).toContain('useCheckoutMethodDiscovery')
-        expect(modal).toContain('useCheckoutModalFocus')
+        expect(modal).toContain(
+            "import { useCheckoutMethodDiscovery, useCheckoutModalFocus } from './checkout-modal-hooks'"
+        )
         expect(discoveryHook).toContain('beginCheckoutMethodRequest')
         expect(discoveryHook).toContain('invalidateCheckoutMethodRequests')
         expect(focusHook).toContain("document.addEventListener('keydown'")

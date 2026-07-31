@@ -31,8 +31,7 @@ import CheckoutPaymentStep from './steps/CheckoutPaymentStep'
 import CheckoutConfirmationStep from './steps/CheckoutConfirmationStep'
 import CheckoutOrderSummary from './steps/CheckoutOrderSummary'
 import { resolveInitialCheckoutCountryCode } from './checkout-country'
-import { useCheckoutMethodDiscovery } from './use-checkout-method-discovery'
-import { useCheckoutModalFocus } from './use-checkout-modal-focus'
+import { useCheckoutMethodDiscovery, useCheckoutModalFocus } from './checkout-modal-hooks'
 
 // ---------------------------------------------------------------------------
 // Types
