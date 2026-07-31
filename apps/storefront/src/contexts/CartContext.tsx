@@ -22,12 +22,14 @@ interface CartContextValue {
     cartId: string | null
     itemCount: number
     isLoading: boolean
+    hydrationError: boolean
     drawerOpen: boolean
     openDrawer: () => void
     closeDrawer: () => void
     setCart: (cart: MedusaCart) => void
     setCartId: (id: string) => void
     resetCart: () => void
+    retryHydration: () => void
     optimisticItems: MedusaLineItem[]
     addOptimisticItem: (item: MedusaLineItem) => void
 }
@@ -42,12 +44,14 @@ const SSR_DEFAULTS: CartContextValue = {
     cartId: null,
     itemCount: 0,
     isLoading: false,
+    hydrationError: false,
     drawerOpen: false,
     openDrawer: () => { },
     closeDrawer: () => { },
     setCart: () => { },
     setCartId: () => { },
     resetCart: () => { },
+    retryHydration: () => { },
     optimisticItems: [],
     addOptimisticItem: () => { },
 }
@@ -64,9 +68,10 @@ export function useCart(): CartContextValue {
 const CART_ID_KEY = 'bns-cart-id'
 
 export function CartProvider({ children }: { children: ReactNode }) {
-    const [cart, setCart] = useState<MedusaCart | null>(null)
+    const [cart, setCartState] = useState<MedusaCart | null>(null)
     const [cartId, setCartIdState] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [hydrationError, setHydrationError] = useState(false)
     const [drawerOpen, setDrawerOpen] = useState(false)
 
     // Optimistic items via React 19
@@ -75,29 +80,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (state: MedusaLineItem[], newItem: MedusaLineItem) => [...state, newItem]
     )
 
+    const setCart = useCallback((nextCart: MedusaCart) => {
+        setCartState(nextCart)
+        setHydrationError(false)
+        setIsLoading(false)
+    }, [])
+
+    const hydrateCart = useCallback(async (stored: string) => {
+        setIsLoading(true)
+        setHydrationError(false)
+        try {
+            const loaded = await getCartAction(stored)
+            if (loaded) {
+                setCart(loaded)
+            } else {
+                setHydrationError(true)
+            }
+        } catch (err) {
+            logger.warn('[CartContext] Cart hydration failed:', err)
+            setHydrationError(true)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [setCart])
+
     // Load cart ID from localStorage on mount + hydrate cart data
     useEffect(() => {
-        async function hydrateCart() {
-            const stored = localStorage.getItem(CART_ID_KEY)
-            if (!stored) {
-                setIsLoading(false)
-                return
-            }
-            setCartIdState(stored)
-            try {
-                const loaded = await getCartAction(stored)
-                if (loaded) setCart(loaded)
-            } catch (err) {
-                // Cart may have expired or Medusa unreachable — clear stale ID
-                logger.warn('[CartContext] Cart hydration failed:', err)
-                localStorage.removeItem(CART_ID_KEY)
-                setCartIdState(null)
-            } finally {
-                setIsLoading(false)
-            }
+        const stored = localStorage.getItem(CART_ID_KEY)
+        if (!stored) {
+            setIsLoading(false)
+            return
         }
-        hydrateCart()
-    }, [])
+        setCartIdState(stored)
+        void hydrateCart(stored)
+    }, [hydrateCart])
 
     const setCartId = useCallback((id: string) => {
         setCartIdState(id)
@@ -107,8 +123,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const resetCart = useCallback(() => {
         localStorage.removeItem(CART_ID_KEY)
         setCartIdState(null)
-        setCart(null)
+        setCartState(null)
+        setHydrationError(false)
+        setIsLoading(false)
     }, [])
+
+    const retryHydration = useCallback(() => {
+        if (cartId) void hydrateCart(cartId)
+    }, [cartId, hydrateCart])
 
     const itemCount = optimisticItems.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -122,12 +144,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 cartId,
                 itemCount,
                 isLoading,
+                hydrationError,
                 drawerOpen,
                 openDrawer,
                 closeDrawer,
                 setCart,
                 setCartId,
                 resetCart,
+                retryHydration,
                 optimisticItems,
                 addOptimisticItem,
             }}
