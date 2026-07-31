@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     beginCheckoutMethodRequest,
+    canContinueCheckoutMethod,
     invalidateCheckoutMethodRequests,
     isCurrentCheckoutMethodRequest,
     type CheckoutMethodRequestEpoch,
@@ -51,4 +52,20 @@ describe('checkout method request epoch', () => {
 
         expect(isCurrentCheckoutMethodRequest(epoch, requestId)).toBe(false)
     })
+
+    it.each([
+        { selectedMethod: null, loadingMethods: false, methodsError: null, expected: false },
+        { selectedMethod: 'cod', loadingMethods: true, methodsError: null, expected: false },
+        { selectedMethod: 'cod', loadingMethods: false, methodsError: 'unavailable', expected: false },
+        { selectedMethod: 'cod', loadingMethods: false, methodsError: null, expected: true },
+    ])(
+        'allows continuation only with a currently validated selection: $expected',
+        ({ selectedMethod, loadingMethods, methodsError, expected }) => {
+            expect(canContinueCheckoutMethod({
+                selectedMethod,
+                loadingMethods,
+                methodsError,
+            })).toBe(expected)
+        }
+    )
 })

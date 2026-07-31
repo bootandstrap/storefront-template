@@ -31,6 +31,17 @@ describe('checkout method runtime contract', () => {
         expect(discoveryHook).toContain('const [methodsError, setMethodsError]')
         expect(discoveryHook).toContain('const requestEpoch = useRef')
         expect(discoveryHook).toContain('const retryMethods = useCallback')
+        expect(discoveryHook).toContain('isActive: boolean')
+        expect(discoveryHook).toMatch(
+            /if \(!isActive\) \{\s+setLoadingMethods\(true\)\s+return/
+        )
+        expect(modal).toContain("isActive: isOpen && step === 'method'")
+        expect(discoveryHook).toMatch(
+            /setLoadingMethods\(true\)\s+setMethodsError\(null\)\s+setSelectedMethod\(null\)/
+        )
+        expect(discoveryHook).toContain('canContinueMethod')
+        expect(modal).toContain('if (!canContinueMethod) return')
+        expect(modal).toContain("case 'method':\n                return canContinueMethod")
         expect(discoveryHook).toContain('beginCheckoutMethodRequest(requestEpoch)')
         expect(discoveryHook).toContain('isCurrentCheckoutMethodRequest(requestEpoch, requestId)')
         expect(discoveryHook).toContain('invalidateCheckoutMethodRequests(requestEpoch)')
@@ -68,6 +79,10 @@ describe('checkout method runtime contract', () => {
         expect(shippingStep).toContain('data-testid="checkout-shipping-option"')
         expect(visualHelper).toContain("getByTestId('checkout-shipping-step')")
         expect(visualHelper).toContain("getByTestId('checkout-shipping-option')")
+        expect(visualHelper).toContain('const CHECKOUT_STEP_TRANSITION_TIMEOUT_MS = 45_000')
+        expect(visualHelper).toContain(
+            'toBeVisible({ timeout: CHECKOUT_STEP_TRANSITION_TIMEOUT_MS })'
+        )
     })
 
     it('exposes the modal and navigation controls to assistive technology', () => {

@@ -6,12 +6,14 @@ import type { FeatureFlags, PlanLimits } from '@/lib/config'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
 import {
     beginCheckoutMethodRequest,
+    canContinueCheckoutMethod,
     invalidateCheckoutMethodRequests,
     isCurrentCheckoutMethodRequest,
 } from './checkout-method-request-epoch'
 
 interface CheckoutMethodDiscoveryOptions {
     isOpen: boolean
+    isActive: boolean
     featureFlags: FeatureFlags
     planLimits: PlanLimits
     errorMessage: string
@@ -19,6 +21,7 @@ interface CheckoutMethodDiscoveryOptions {
 
 export function useCheckoutMethodDiscovery({
     isOpen,
+    isActive,
     featureFlags,
     planLimits,
     errorMessage,
@@ -33,6 +36,7 @@ export function useCheckoutMethodDiscovery({
         const requestId = beginCheckoutMethodRequest(requestEpoch)
         setLoadingMethods(true)
         setMethodsError(null)
+        setSelectedMethod(null)
         try {
             const checks = await Promise.all(
                 getEnabledMethods(featureFlags, planLimits).map(async (method) => ({
@@ -56,17 +60,32 @@ export function useCheckoutMethodDiscovery({
 
     useEffect(() => {
         if (!isOpen) {
+            invalidateCheckoutMethodRequests(requestEpoch)
             setSelectedMethod(null)
+            setAvailableMethods([])
+            setLoadingMethods(true)
             setMethodsError(null)
+            return
+        }
+
+        if (!isActive) {
+            setLoadingMethods(true)
             return
         }
 
         void retryMethods()
         return () => invalidateCheckoutMethodRequests(requestEpoch)
-    }, [isOpen, retryMethods])
+    }, [isActive, isOpen, retryMethods])
+
+    const canContinueMethod = canContinueCheckoutMethod({
+        selectedMethod,
+        loadingMethods,
+        methodsError,
+    })
 
     return {
         availableMethods,
+        canContinueMethod,
         loadingMethods,
         methodsError,
         retryMethods,

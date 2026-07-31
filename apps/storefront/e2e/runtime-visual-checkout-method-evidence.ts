@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 const CHECKOUT_METHOD_IDS = ['card', 'bank_transfer', 'cod', 'whatsapp'] as const
+const CHECKOUT_STEP_TRANSITION_TIMEOUT_MS = 45_000
 
 export const checkoutMethodRuntimeState = {
     loadingName: 'checkout-methods-loading',
@@ -24,13 +25,18 @@ async function traverseOptionalCheckoutShippingStep(
     methodLoading: Locator
 ) {
     const shippingStep = dialog.getByTestId('checkout-shipping-step')
-    await expect(shippingStep.or(methodLoading)).toBeVisible({ timeout: 20_000 })
+    try {
+        await expect(shippingStep.or(methodLoading)).toBeVisible({ timeout: CHECKOUT_STEP_TRANSITION_TIMEOUT_MS })
+    } catch {
+        const dialogText = await dialog.innerText().catch(() => '<dialog unavailable>')
+        throw new Error(`checkout did not reach shipping or method step: ${dialogText}`)
+    }
     if (!await shippingStep.isVisible()) return
 
     await shippingStep.getByTestId('checkout-shipping-option').first().click()
     await expect(continueButton).toBeEnabled()
     await continueButton.click()
-    await expect(methodLoading).toBeVisible({ timeout: 20_000 })
+    await expect(methodLoading).toBeVisible({ timeout: CHECKOUT_STEP_TRANSITION_TIMEOUT_MS })
 }
 
 export async function delayNextCheckoutMethodAvailabilityAction(

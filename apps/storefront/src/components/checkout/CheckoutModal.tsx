@@ -108,6 +108,7 @@ export default function CheckoutModal({
 
     const {
         availableMethods,
+        canContinueMethod,
         loadingMethods,
         methodsError,
         retryMethods,
@@ -115,6 +116,7 @@ export default function CheckoutModal({
         setSelectedMethod,
     } = useCheckoutMethodDiscovery({
         isOpen,
+        isActive: isOpen && step === 'method',
         featureFlags,
         planLimits,
         errorMessage: t('checkout.errors.methodsLoad'),
@@ -261,6 +263,7 @@ export default function CheckoutModal({
 
     // When entering payment step with Stripe, init session
     async function handleMethodContinue() {
+        if (!canContinueMethod) return
         if (!selectedMethod) return
 
         if (selectedMethod === 'card' && cart?.id) {
@@ -348,7 +351,7 @@ export default function CheckoutModal({
             case 'shipping':
                 return selectedShipping !== null
             case 'method':
-                return selectedMethod !== null
+                return canContinueMethod
             default:
                 return true
         }
