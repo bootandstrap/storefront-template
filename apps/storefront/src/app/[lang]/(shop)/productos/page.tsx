@@ -17,9 +17,12 @@ export default async function ProductosPage({
 }) {
     const { lang } = await params
     const sp = await searchParams
-    const dictionary = await getDictionary(lang as Locale)
+    const [dictionary, { featureFlags }, listing] = await Promise.all([
+        getDictionary(lang as Locale),
+        getConfig(),
+        resolveProductListingData(sp),
+    ])
     const t = createTranslator(dictionary)
-    const { featureFlags } = await getConfig()
 
     const {
         categories,
@@ -27,7 +30,7 @@ export default async function ProductosPage({
         count,
         currentPage,
         totalPages,
-    } = await resolveProductListingData(sp)
+    } = listing
 
     return (
         <div className="container-page py-8">

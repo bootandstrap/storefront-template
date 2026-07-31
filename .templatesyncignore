@@ -27,7 +27,7 @@ apps/storefront/src/lib/i18n/dictionaries/
 apps/storefront/public/
 
 # Homepage composition — which sections appear and in what order
-apps/storefront/src/app/[lang]/(shop)/page.tsx
+:(literal)apps/storefront/src/app/[lang]/(shop)/page.tsx
 
 # ── Tenant-specific config ──────────────────────────────────────────────
 

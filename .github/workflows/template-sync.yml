@@ -20,14 +20,30 @@ on:
       - 'apps/storefront/src/lib/**'
       - 'apps/storefront/src/proxy.ts'
       - 'apps/storefront/src/app/api/**'
-      - 'apps/storefront/src/app/[lang]/(panel)/**'
-      - 'apps/storefront/src/app/[lang]/(auth)/**'
+      - 'apps/storefront/src/app/*/(panel)/**'
+      - 'apps/storefront/src/app/*/(auth)/**'
       - 'apps/storefront/src/components/products/**'
+      # Critical reusable ecommerce runtime
+      - 'apps/storefront/src/components/checkout/**'
+      - 'apps/storefront/src/components/cart/**'
+      - 'apps/storefront/src/components/newsletter/**'
+      - 'apps/storefront/src/components/ui/**'
+      - 'apps/storefront/src/contexts/**'
+      - 'apps/storefront/src/app/*/(shop)/checkout/**'
+      - 'apps/storefront/src/app/*/(shop)/carrito/**'
+      - 'apps/storefront/src/app/*/(shop)/pedido/**'
+      - 'apps/storefront/src/app/*/(shop)/productos/**'
+      # Runtime evidence and release gates
+      - 'apps/storefront/e2e/**'
+      - 'apps/storefront/playwright.config.ts'
+      # Scripts and workflows are platform-owned as complete inventories.
+      - 'scripts/**'
       # Shared packages
       - 'packages/shared/**'
       # CI/CD workflows
-      - '.github/workflows/deploy.yml'
-      - '.github/workflows/build-medusa.yml'
+      - '.github/workflows/**'
+      # .templatesyncignore is intentionally tenant-local: the sync action
+      # preserves the target copy, so policy changes require controlled rollout.
       # Docker
       - 'apps/storefront/Dockerfile'
       - 'apps/medusa/Dockerfile'
@@ -65,6 +81,13 @@ jobs:
       repos: ${{ steps.list.outputs.repos }}
       count: ${{ steps.list.outputs.count }}
     steps:
+      - name: Checkout canonical template
+        uses: actions/checkout@v6
+        with:
+          repository: bootandstrap/storefront-template
+          ref: main
+          persist-credentials: false
+
       - name: Query tenant repos from Supabase
         id: list
         env:
@@ -80,9 +103,10 @@ jobs:
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
             -H "Content-Type: application/json")
           
-          # Extract owner/repo names from stored GitHub URLs
-          repos=$(echo "$response" | jq -c '[.[] | .github_repo_url | select(. != null and . != "") | sub("^https://github.com/"; "") | sub("/$"; "")]')
-          count=$(echo "$repos" | jq 'length')
+          # Fail closed before the write-capable PAT is used by the matrix job.
+          resolved=$(printf '%s' "$response" | node scripts/ci/resolve-template-sync-repos.mjs)
+          repos=$(printf '%s' "$resolved" | jq -c '.repos')
+          count=$(printf '%s' "$resolved" | jq -r '.count')
           
           echo "repos=${repos}" >> $GITHUB_OUTPUT
           echo "count=${count}" >> $GITHUB_OUTPUT
@@ -103,10 +127,26 @@ jobs:
       matrix:
         repo: ${{ fromJson(needs.resolve-tenants.outputs.repos) }}
     steps:
-      - name: Checkout
+      - name: Checkout canonical sync policy
         uses: actions/checkout@v6
         with:
+          repository: bootandstrap/storefront-template
+          ref: main
           persist-credentials: false
+
+      - name: Preserve fail-closed sync policy validator
+        run: cp scripts/ci/validate-template-sync-ignore.mjs "$RUNNER_TEMP/validate-template-sync-ignore.mjs"
+
+      - name: Checkout target tenant
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repo }}
+          ref: main
+          token: ${{ secrets.TEMPLATE_SYNC_PAT }}
+          persist-credentials: false
+
+      - name: Validate target template sync policy
+        run: node "$RUNNER_TEMP/validate-template-sync-ignore.mjs" .templatesyncignore
 
       - name: Template Sync
         if: github.event.inputs.dry_run != 'true'

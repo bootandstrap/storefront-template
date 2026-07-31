@@ -55,6 +55,41 @@ function runEvidenceRunner(args: string[], env: Record<string, string | undefine
     )
 }
 
+function resolveTemplateSyncRepos(tenants: unknown) {
+    return spawnSync(
+        process.execPath,
+        [join(REPO_ROOT, 'scripts', 'ci', 'resolve-template-sync-repos.mjs')],
+        {
+            cwd: REPO_ROOT,
+            encoding: 'utf8',
+            input: JSON.stringify(tenants),
+        }
+    )
+}
+
+function validateTemplateSyncIgnore(content?: string) {
+    const policyPath = join(
+        mkdtempSync(join(tmpdir(), 'template-sync-ignore-')),
+        '.templatesyncignore'
+    )
+
+    if (content !== undefined) {
+        writeFileSync(policyPath, content)
+    }
+
+    return spawnSync(
+        process.execPath,
+        [
+            join(REPO_ROOT, 'scripts', 'ci', 'validate-template-sync-ignore.mjs'),
+            policyPath,
+        ],
+        {
+            cwd: REPO_ROOT,
+            encoding: 'utf8',
+        }
+    )
+}
+
 function uploadArtifactBlocks(workflow: string) {
     return workflow
         .split('\n      - name:')
@@ -196,6 +231,187 @@ describe('CI artifact contract', () => {
         expect(runner).toContain('risk-test-matrix.json')
     })
 
+    it('triggers template propagation when reusable runtime evidence changes', () => {
+        const workflow = readWorkflow('template-sync.yml')
+        const publishSharedWorkflow = readWorkflow('publish-shared.yml')
+        const ignorePolicy = readFileSync(join(REPO_ROOT, '.templatesyncignore'), 'utf8')
+        const triggerPaths = workflow.slice(
+            workflow.indexOf('    paths:'),
+            workflow.indexOf('  workflow_dispatch:')
+        )
+        const checkoutTarget = workflow.slice(
+            workflow.indexOf('- name: Checkout target tenant'),
+            workflow.indexOf('- name: Template Sync')
+        )
+        const resolverSourceCheckout = workflow.slice(
+            workflow.indexOf('- name: Checkout canonical template'),
+            workflow.indexOf('- name: Query tenant repos from Supabase')
+        )
+        const syncPolicyCheckout = workflow.slice(
+            workflow.indexOf('- name: Checkout canonical sync policy'),
+            workflow.indexOf('- name: Preserve fail-closed sync policy validator')
+        )
+        const sourcePolicyCheckout = workflow.indexOf('- name: Checkout canonical sync policy')
+        const preserveValidator = workflow.indexOf(
+            '- name: Preserve fail-closed sync policy validator'
+        )
+        const targetCheckout = workflow.indexOf('- name: Checkout target tenant')
+        const validateTargetPolicy = workflow.indexOf(
+            '- name: Validate target template sync policy'
+        )
+        const templateSync = workflow.indexOf('- name: Template Sync')
+
+        for (const path of [
+            'apps/storefront/src/components/checkout/**',
+            'apps/storefront/src/components/cart/**',
+            'apps/storefront/src/components/newsletter/**',
+            'apps/storefront/src/components/ui/**',
+            'apps/storefront/src/contexts/**',
+            'apps/storefront/src/app/*/(shop)/checkout/**',
+            'apps/storefront/src/app/*/(shop)/carrito/**',
+            'apps/storefront/src/app/*/(shop)/pedido/**',
+            'apps/storefront/src/app/*/(shop)/productos/**',
+            'apps/storefront/e2e/**',
+            'apps/storefront/playwright.config.ts',
+            'scripts/**',
+            '.github/workflows/**',
+        ]) {
+            expect(triggerPaths).toContain(`- '${path}'`)
+        }
+
+        expect(triggerPaths).not.toContain('[lang]')
+        expect(triggerPaths).not.toContain("- '.templatesyncignore'")
+        expect(workflow.indexOf('    paths:')).toBeGreaterThan(-1)
+        expect(workflow.indexOf('  workflow_dispatch:')).toBeGreaterThan(
+            workflow.indexOf('    paths:')
+        )
+        expect(workflow.indexOf('- name: Checkout target tenant')).toBeGreaterThan(-1)
+        expect(workflow.indexOf('- name: Template Sync')).toBeGreaterThan(
+            workflow.indexOf('- name: Checkout target tenant')
+        )
+        expect(sourcePolicyCheckout).toBeGreaterThan(-1)
+        expect(preserveValidator).toBeGreaterThan(sourcePolicyCheckout)
+        expect(targetCheckout).toBeGreaterThan(preserveValidator)
+        expect(validateTargetPolicy).toBeGreaterThan(targetCheckout)
+        expect(templateSync).toBeGreaterThan(validateTargetPolicy)
+        expect(checkoutTarget).toContain('repository: ${{ matrix.repo }}')
+        expect(checkoutTarget).toContain('ref: main')
+        expect(checkoutTarget).toContain('token: ${{ secrets.TEMPLATE_SYNC_PAT }}')
+        expect(checkoutTarget).toContain('persist-credentials: false')
+        for (const canonicalCheckout of [resolverSourceCheckout, syncPolicyCheckout]) {
+            expect(canonicalCheckout).toContain(
+                'repository: bootandstrap/storefront-template'
+            )
+            expect(canonicalCheckout).toContain('ref: main')
+            expect(canonicalCheckout).toContain('persist-credentials: false')
+        }
+        expect(workflow).toContain('source_repo_path: bootandstrap/storefront-template')
+        expect(workflow).toContain('node scripts/ci/resolve-template-sync-repos.mjs')
+        expect(workflow).toContain(
+            'node "$RUNNER_TEMP/validate-template-sync-ignore.mjs" .templatesyncignore'
+        )
+        expect(publishSharedWorkflow).toContain(
+            "if: github.repository == 'bootandstrap/storefront-template'"
+        )
+        expect(publishSharedWorkflow).toContain(
+            "github.repository == 'bootandstrap/storefront-template' &&"
+        )
+
+        for (const protectedPath of [
+            'apps/storefront/src/app/globals.css',
+            'apps/storefront/src/components/home/',
+            'apps/storefront/src/components/layout/Header.tsx',
+            'apps/storefront/src/components/layout/Footer.tsx',
+            'apps/storefront/src/lib/i18n/dictionaries/',
+            'apps/storefront/public/',
+            ':(literal)apps/storefront/src/app/[lang]/(shop)/page.tsx',
+            '.templatesyncignore',
+        ]) {
+            expect(ignorePolicy).toContain(protectedPath)
+        }
+    })
+
+    it('allows only deduplicated tenant repositories in the authorized namespace', () => {
+        const result = resolveTemplateSyncRepos([
+            { github_repo_url: 'https://github.com/bootandstrap/store-tenant-1-0-test' },
+            { github_repo_url: 'https://github.com/bootandstrap/store-tenant-1-0-test/' },
+            { github_repo_url: 'https://github.com/bootandstrap/store-tenant-2' },
+        ])
+
+        expect(result.status).toBe(0)
+        expect(JSON.parse(result.stdout)).toEqual({
+            repos: [
+                'bootandstrap/store-tenant-1-0-test',
+                'bootandstrap/store-tenant-2',
+            ],
+            count: 2,
+        })
+    })
+
+    it('normalizes repository casing before deduplicating sync targets', () => {
+        const result = resolveTemplateSyncRepos([
+            { github_repo_url: 'https://github.com/bootandstrap/Store-Tenant-1' },
+            { github_repo_url: 'https://github.com/bootandstrap/store-tenant-1' },
+        ])
+
+        expect(result.status).toBe(0)
+        expect(JSON.parse(result.stdout)).toEqual({
+            repos: ['bootandstrap/store-tenant-1'],
+            count: 1,
+        })
+    })
+
+    it.each([
+        'https://github.com/untrusted/store-tenant',
+        'http://github.com/bootandstrap/store-tenant',
+        'https://github.com:444/bootandstrap/store-tenant',
+        'https://example.com/bootandstrap/store-tenant',
+        'https://github.com/bootandstrap/store-tenant/issues',
+        'https://github.com/bootandstrap/store-tenant?tab=readme',
+        'https://github.com/bootandstrap/store-tenant.git',
+    ])('fails closed before using the sync PAT for %s', (githubRepoUrl) => {
+        const result = resolveTemplateSyncRepos([{ github_repo_url: githubRepoUrl }])
+
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('authorized namespace')
+    })
+
+    it('accepts the canonical target template sync ignore policy', () => {
+        const result = validateTemplateSyncIgnore(
+            readFileSync(join(REPO_ROOT, '.templatesyncignore'), 'utf8')
+        )
+
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('policy valid')
+    })
+
+    it('fails closed when the target template sync ignore policy is missing', () => {
+        const result = validateTemplateSyncIgnore()
+
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('policy file is required')
+    })
+
+    it('fails closed when a mandatory customize zone is missing', () => {
+        const policy = readFileSync(join(REPO_ROOT, '.templatesyncignore'), 'utf8')
+            .replace('apps/storefront/src/app/globals.css\n', '')
+        const result = validateTemplateSyncIgnore(policy)
+
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('must match the authorized customize policy')
+    })
+
+    it('fails closed when the target excludes platform-owned code', () => {
+        const policy = [
+            readFileSync(join(REPO_ROOT, '.templatesyncignore'), 'utf8'),
+            'apps/storefront/src/lib/**',
+        ].join('\n')
+        const result = validateTemplateSyncIgnore(policy)
+
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('must match the authorized customize policy')
+    })
+
     it('executes one requested risk-domain evidence command', () => {
         const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
 
@@ -278,7 +494,14 @@ describe('CI artifact contract', () => {
                 expect.stringContaining('checkout method discovery'),
                 expect.stringContaining('cart item update'),
                 expect.stringContaining('cart hydration'),
+                expect.stringContaining('serializes independent server reads'),
             ])
+        )
+        expect(visualDomain?.requiredTestFiles).toContain(
+            'apps/storefront/src/components/products/__tests__/product-listing-page-performance-contract.test.ts'
+        )
+        expect(visualDomain?.runtimeEvidence).toContain(
+            'pnpm --filter=storefront exec vitest run src/components/products/__tests__/product-listing-page-performance-contract.test.ts'
         )
         expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
         expect(visualSpec).toContain('desktop')
