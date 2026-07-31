@@ -9,22 +9,37 @@ function readCheckoutFile(fileName: string) {
 }
 
 describe('checkout method runtime contract', () => {
+    it('keeps discovery and focus lifecycles outside the modal orchestrator', () => {
+        const modal = readCheckoutFile('CheckoutModal.tsx')
+        const discoveryHook = readCheckoutFile('use-checkout-method-discovery.ts')
+        const focusHook = readCheckoutFile('use-checkout-modal-focus.ts')
+
+        expect(modal.split('\n').length).toBeLessThan(600)
+        expect(modal).toContain('useCheckoutMethodDiscovery')
+        expect(modal).toContain('useCheckoutModalFocus')
+        expect(discoveryHook).toContain('beginCheckoutMethodRequest')
+        expect(discoveryHook).toContain('invalidateCheckoutMethodRequests')
+        expect(focusHook).toContain("document.addEventListener('keydown'")
+        expect(focusHook).toContain("document.removeEventListener('keydown'")
+    })
+
     it('leaves method discovery loading through a retryable fail-closed path', () => {
         const modal = readCheckoutFile('CheckoutModal.tsx')
+        const discoveryHook = readCheckoutFile('use-checkout-method-discovery.ts')
 
-        expect(modal).toContain('const [methodsError, setMethodsError]')
-        expect(modal).toContain('const methodsRequestEpoch = useRef')
-        expect(modal).toContain('const loadMethods = useCallback')
-        expect(modal).toContain('beginCheckoutMethodRequest(methodsRequestEpoch)')
-        expect(modal).toContain('isCurrentCheckoutMethodRequest(methodsRequestEpoch, requestId)')
-        expect(modal).toContain('invalidateCheckoutMethodRequests(methodsRequestEpoch)')
-        expect(modal).toContain('setMethodsError(null)')
-        expect(modal).toContain('setAvailableMethods([])')
-        expect(modal).toContain("setMethodsError(t('checkout.errors.methodsLoad'))")
-        expect(modal).toMatch(/catch\s*\{/)
-        expect(modal).toMatch(/finally\s*\{[\s\S]*setLoadingMethods\(false\)/)
+        expect(discoveryHook).toContain('const [methodsError, setMethodsError]')
+        expect(discoveryHook).toContain('const requestEpoch = useRef')
+        expect(discoveryHook).toContain('const retryMethods = useCallback')
+        expect(discoveryHook).toContain('beginCheckoutMethodRequest(requestEpoch)')
+        expect(discoveryHook).toContain('isCurrentCheckoutMethodRequest(requestEpoch, requestId)')
+        expect(discoveryHook).toContain('invalidateCheckoutMethodRequests(requestEpoch)')
+        expect(discoveryHook).toContain('setMethodsError(null)')
+        expect(discoveryHook).toContain('setAvailableMethods([])')
+        expect(discoveryHook).toContain('setMethodsError(errorMessage)')
+        expect(discoveryHook).toMatch(/catch\s*\{/)
+        expect(discoveryHook).toMatch(/finally\s*\{[\s\S]*setLoadingMethods\(false\)/)
         expect(modal).toContain('methodsError={methodsError}')
-        expect(modal).toContain('onRetryMethods={loadMethods}')
+        expect(modal).toContain('onRetryMethods={retryMethods}')
     })
 
     it('renders distinct accessible loading, empty, and error method states', () => {
@@ -43,6 +58,7 @@ describe('checkout method runtime contract', () => {
 
     it('exposes the modal and navigation controls to assistive technology', () => {
         const modal = readCheckoutFile('CheckoutModal.tsx')
+        const focusHook = readCheckoutFile('use-checkout-modal-focus.ts')
         const checkoutPage = readFileSync(
             join(checkoutRoot, '../../app/[lang]/(shop)/checkout/CheckoutPageClient.tsx'),
             'utf8'
@@ -52,13 +68,13 @@ describe('checkout method runtime contract', () => {
         expect(modal).toContain('aria-modal="true"')
         expect(modal).toContain('aria-labelledby="checkout-modal-title"')
         expect(modal).toContain('id="checkout-modal-title"')
-        expect(modal).toContain("document.addEventListener('keydown', handleModalKeyDown)")
-        expect(modal).toContain("document.removeEventListener('keydown', handleModalKeyDown)")
-        expect(modal).toContain("event.key === 'Escape'")
-        expect(modal).toContain("event.key !== 'Tab'")
-        expect(modal).toContain('modalRef.current.contains(document.activeElement)')
-        expect(modal).toContain('previousFocusRef.current?.focus()')
-        expect(modal).toContain('requestAnimationFrame')
+        expect(focusHook).toContain("document.addEventListener('keydown', handleModalKeyDown)")
+        expect(focusHook).toContain("document.removeEventListener('keydown', handleModalKeyDown)")
+        expect(focusHook).toContain("event.key === 'Escape'")
+        expect(focusHook).toContain("event.key !== 'Tab'")
+        expect(focusHook).toContain('modalRef.current.contains(document.activeElement)')
+        expect(focusHook).toContain('previousFocusRef.current?.focus()')
+        expect(focusHook).toContain('requestAnimationFrame')
         expect(modal).toContain("aria-label={t('common.back')}")
         expect(modal).toContain("aria-label={t('common.close')}")
         expect(modal).toContain('data-testid="checkout-modal-continue"')
