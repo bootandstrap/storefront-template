@@ -275,6 +275,7 @@ describe('CI artifact contract', () => {
                 expect.stringContaining('accessibility'),
                 expect.stringContaining('loading, empty, error, modal or toast'),
                 expect.stringContaining('order lookup'),
+                expect.stringContaining('checkout method discovery'),
                 expect.stringContaining('cart item update'),
                 expect.stringContaining('cart hydration'),
             ])
@@ -347,6 +348,16 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CHECKOUT_STATES')
         expect(visualSpec).toContain('visual-state-loading-checkout-promotion')
         expect(visualSpec).toContain('visual-state-error-checkout-promotion')
+        expect(visualSpec).toContain('checkout-methods-loading')
+        expect(visualSpec).toContain('checkout-methods-error')
+        expect(visualSpec).toContain('checkout-methods-retry')
+        expect(visualSpec).toContain('checkout method discovery renders loading, error and retry evidence')
+        expect(visualSpec).toContain('visual-state-loading-checkout-methods')
+        expect(visualSpec).toContain('visual-state-error-checkout-methods')
+        expect(visualSpec).toContain('delayNextCheckoutMethodAvailabilityAction')
+        expect(visualSpec).toContain('CHECKOUT_METHOD_IDS')
+        expect(visualSpec).toContain('request.headers()[\'next-action\']')
+        expect(visualSpec).toContain('does not submit an order or initialize a payment')
         expect(visualSpec).toContain('cleanupRuntimeEvidenceCart')
         expect(visualSpec).toContain(
             'async function cleanupRuntimeEvidenceCart(page: Page, state: CartItemUpdateRuntimeState)'

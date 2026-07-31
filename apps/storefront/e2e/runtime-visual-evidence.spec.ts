@@ -58,6 +58,17 @@ type CheckoutPromotionRuntimeState = {
     errorTestId: string
 }
 
+type CheckoutMethodRuntimeState = {
+    loadingName: string
+    errorName: string
+    path: string
+    proceedTestId: string
+    continueTestId: string
+    loadingTestId: string
+    errorTestId: string
+    retryTestId: string
+}
+
 type CartItemUpdateRuntimeState = {
     loadingName: string
     errorName: string
@@ -209,6 +220,19 @@ const checkoutPromotionRuntimeState: CheckoutPromotionRuntimeState = {
     spinnerTestId: 'checkout-promotion-spinner',
     errorTestId: 'checkout-promotion-error',
 }
+
+const checkoutMethodRuntimeState: CheckoutMethodRuntimeState = {
+    loadingName: 'checkout-methods-loading',
+    errorName: 'checkout-methods-error',
+    path: '/es/checkout',
+    proceedTestId: 'checkout-proceed-payment',
+    continueTestId: 'checkout-modal-continue',
+    loadingTestId: 'checkout-methods-loading',
+    errorTestId: 'checkout-methods-error',
+    retryTestId: 'checkout-methods-retry',
+}
+
+const CHECKOUT_METHOD_IDS = ['card', 'bank_transfer', 'cod', 'whatsapp'] as const
 
 const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
     loadingName: 'cart-item-update-loading',
@@ -850,6 +874,84 @@ async function delayNextCartAction(
     }
 }
 
+async function delayNextCheckoutMethodAvailabilityAction(
+    page: Page,
+    targetPath: string
+): Promise<InterceptedRuntimeAction> {
+    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
+    let abortAction!: () => void
+    let aborted = false
+    let actionWasDelayed = false
+    const abortPromise = new Promise<void>((resolve) => {
+        abortAction = resolve
+    })
+
+    await page.route(
+        (url) => url.pathname === normalizedTargetPath,
+        async (route) => {
+            const request = route.request()
+            const body = request.postData() ?? ''
+            const isAvailabilityCheck = CHECKOUT_METHOD_IDS.some((methodId) =>
+                body.includes(`"${methodId}"`)
+            )
+
+            if (
+                actionWasDelayed
+                || request.method() !== 'POST'
+                || !request.headers()['next-action']
+                || !isAvailabilityCheck
+            ) {
+                await route.continue()
+                return
+            }
+
+            actionWasDelayed = true
+            await abortPromise
+            await route.abort('failed').catch(() => {})
+        }
+    )
+
+    return {
+        waitUntilIntercepted: async () => {
+            await expect.poll(
+                () => actionWasDelayed,
+                {
+                    message: `expected a checkout method availability action at ${normalizedTargetPath}`,
+                    timeout: 5_000,
+                }
+            ).toBe(true)
+        },
+        abort: async () => {
+            if (!aborted) {
+                aborted = true
+                abortAction()
+            }
+            if (actionWasDelayed) {
+                await page.waitForTimeout(100)
+            }
+        },
+    }
+}
+
+async function reachCheckoutMethodStep(page: Page, state: CheckoutMethodRuntimeState) {
+    const proceed = page.getByTestId(state.proceedTestId)
+    await expect(proceed).toBeVisible({ timeout: 10_000 })
+    await proceed.click()
+
+    const dialog = page.getByRole('dialog', { name: /checkout|finalizar compra|paiement|kasse/i })
+    await expect(dialog).toBeVisible()
+    await dialog.locator('#checkout-first-name').fill('Runtime')
+    await dialog.locator('#checkout-last-name').fill('Evidence')
+    await dialog.getByTestId(state.continueTestId).click()
+
+    await dialog.locator('#checkout-street').fill('Runtime Evidence Street 1')
+    await dialog.locator('#checkout-city').fill('Test City')
+    await dialog.locator('#checkout-postal-code').fill('28001')
+    await dialog.getByTestId(state.continueTestId).click()
+
+    return dialog
+}
+
 async function prepareCartHydrationLoadingState(
     page: Page,
     testInfo: TestInfo,
@@ -1237,7 +1339,7 @@ test.describe('runtime visual evidence', () => {
     }
 
     for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
-        test(`checkout promotion and cart item update/remove render runtime evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+        test(`checkout promotion and cart item update/remove render runtime evidence while checkout method discovery renders loading, error and retry evidence on ${viewport.name}`, async ({ page }, testInfo) => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: viewport.width, height: viewport.height })
@@ -1290,6 +1392,53 @@ test.describe('runtime visual evidence', () => {
                 await delayedFetch?.release()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
                 delayedFetch = undefined
+
+                // This does not submit an order or initialize a payment: only one
+                // availability action is intercepted before the method is selected.
+                delayedAction = await delayNextCheckoutMethodAvailabilityAction(
+                    page,
+                    checkoutMethodRuntimeState.path
+                )
+                const checkoutDialog = await reachCheckoutMethodStep(page, checkoutMethodRuntimeState)
+                await delayedAction.waitUntilIntercepted()
+
+                const methodsLoading = checkoutDialog.getByTestId(checkoutMethodRuntimeState.loadingTestId)
+                await expect(methodsLoading).toBeVisible()
+                await expect(methodsLoading).toHaveAttribute('role', 'status')
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-checkout-methods-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-checkout-methods-${viewport.name}`,
+                }, '[role="dialog"]')
+
+                await delayedAction.abort()
+
+                const methodsError = checkoutDialog.getByTestId(checkoutMethodRuntimeState.errorTestId)
+                const methodsRetry = checkoutDialog.getByTestId(checkoutMethodRuntimeState.retryTestId)
+                await expect(methodsError).toBeVisible({ timeout: 5_000 })
+                await expect(methodsError).toHaveAttribute('role', 'alert')
+                await expect(methodsRetry).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-checkout-methods-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-checkout-methods-${viewport.name}`,
+                }, '[role="dialog"]')
+
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                delayedAction = await delayNextCheckoutMethodAvailabilityAction(
+                    page,
+                    checkoutMethodRuntimeState.path
+                )
+                await methodsRetry.click()
+                await delayedAction.waitUntilIntercepted()
+                await expect(methodsLoading).toBeVisible()
+                await delayedAction.abort()
+                await expect(methodsError).toBeVisible({ timeout: 5_000 })
+
+                await checkoutDialog
+                    .getByRole('button', { name: /cerrar|close|fermer|chiudi|schließen/i })
+                    .click()
+                await expect(checkoutDialog).toBeHidden()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                delayedAction = undefined
 
                 const cartAvailability = await prepareCartItemUpdateLoadingState(
                     page,

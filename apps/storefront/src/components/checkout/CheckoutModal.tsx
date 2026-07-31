@@ -564,6 +564,7 @@ export default function CheckoutModal({
                 {step !== 'payment' && step !== 'confirmation' && (
                     <div className="sticky bottom-0 bg-glass-heavy backdrop-blur-xl border-t border-sf-3 p-4">
                         <button
+                            data-testid="checkout-modal-continue"
                             onClick={
                                 step === 'address' ? handleAddressContinue
                                     : step === 'shipping' ? handleShippingContinue

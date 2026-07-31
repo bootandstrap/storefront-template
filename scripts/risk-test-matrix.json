@@ -29,15 +29,17 @@
       "failureModes": [
         "checkout exposes unavailable or disabled payment methods",
         "offline/simulated payment flow diverges from tenant config",
-        "checkout UI accepts invalid country or inaccessible form state"
+        "checkout UI accepts invalid country or inaccessible form state",
+        "payment method discovery failures become an infinite loading state or are misreported as a valid empty configuration"
       ],
       "runtimeEvidence": [
-        "pnpm --filter=storefront exec vitest run src/lib/__tests__/checkout-payment-contract.test.ts src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts"
+        "pnpm --filter=storefront exec vitest run src/lib/__tests__/checkout-payment-contract.test.ts src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/src/lib/__tests__/checkout-payment-contract.test.ts",
         "apps/storefront/src/app/[lang]/(shop)/checkout/__tests__/checkout-offline-payment-contract.test.ts",
-        "apps/storefront/src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts"
+        "apps/storefront/src/components/checkout/__tests__/checkout-form-accessibility-contract.test.ts",
+        "apps/storefront/src/components/checkout/__tests__/checkout-method-runtime-contract.test.ts"
       ]
     },
     {
@@ -108,7 +110,7 @@
       "failureModes": [
         "critical public routes render differently or overflow across desktop/tablet/mobile viewports",
         "accessibility regressions reach runtime despite static markup contracts",
-        "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup, checkout promotion loading/error, cart hydration loading/error/retry and cart item update/remove loading/error"
+        "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup, checkout promotion loading/error, checkout method discovery loading/error/retry, cart hydration loading/error/retry and cart item update/remove loading/error"
       ],
       "runtimeEvidence": [
         "pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts"

@@ -50,6 +50,7 @@ describe('checkout method runtime contract', () => {
         expect(modal).toContain('id="checkout-modal-title"')
         expect(modal).toContain("aria-label={t('common.back')}")
         expect(modal).toContain("aria-label={t('common.close')}")
+        expect(modal).toContain('data-testid="checkout-modal-continue"')
         expect(checkoutPage).toContain('data-testid="checkout-proceed-payment"')
     })
 })
