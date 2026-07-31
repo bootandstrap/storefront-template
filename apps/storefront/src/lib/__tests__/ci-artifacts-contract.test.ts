@@ -258,6 +258,7 @@ describe('CI artifact contract', () => {
                 expect.stringContaining('desktop/tablet/mobile'),
                 expect.stringContaining('accessibility'),
                 expect.stringContaining('loading, empty, error, modal or toast'),
+                expect.stringContaining('order lookup'),
             ])
         )
         expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
@@ -281,6 +282,14 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('/api/newsletter')
         expect(visualSpec).toContain('newsletter-submit-button')
         expect(visualSpec).toContain('newsletter-submit-spinner')
+        expect(visualSpec).toContain('order-lookup-loading')
+        expect(visualSpec).toContain('order-lookup-not-found')
+        expect(visualSpec).toContain('/api/orders/lookup')
+        expect(visualSpec).toContain('order-lookup-submit')
+        expect(visualSpec).toContain('order-lookup-spinner')
+        expect(visualSpec).toContain('order-lookup-error')
+        expect(visualSpec).toContain('visual-state-loading-order-lookup')
+        expect(visualSpec).toContain('visual-state-error-order-lookup')
         expect(visualSpec).toContain('cart-drawer')
         expect(visualSpec).toContain('product.quickView')
         expect(visualSpec).toContain('visual-state-loading')
