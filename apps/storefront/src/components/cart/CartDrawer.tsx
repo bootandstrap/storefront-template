@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useTransition } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, ShoppingBag, MessageCircle, CreditCard, Loader2 } from 'lucide-react'
+import { X, ShoppingBag, MessageCircle, CreditCard, Loader2, RefreshCw } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useI18n } from '@/lib/i18n/provider'
-import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { getEnabledMethods } from '@/lib/payment-methods'
 import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'
 import CartItem from './CartItem'
@@ -19,25 +18,22 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ config, featureFlags, planLimits }: CartDrawerProps) {
-    const { cart, cartId, drawerOpen, closeDrawer, setCart, itemCount } = useCart()
+    const {
+        cart,
+        drawerOpen,
+        closeDrawer,
+        itemCount,
+        isLoading: isHydrating,
+        hydrationError,
+        retryHydration,
+    } = useCart()
     const { t, locale, localizedHref } = useI18n()
     const router = useRouter()
-    const [isLoading, startTransition] = useTransition()
 
     // Compute which payment methods are available based on feature flags
     const enabledMethods = getEnabledMethods(featureFlags, planLimits)
     const hasWhatsAppCheckout = enabledMethods.some(m => m.id === 'whatsapp')
     const hasAnyCheckoutMethod = enabledMethods.length > 0
-
-    // Load cart data when drawer opens
-    useEffect(() => {
-        if (drawerOpen && cartId && !cart) {
-            startTransition(async () => {
-                const loaded = await getCartAction(cartId)
-                if (loaded) setCart(loaded)
-            })
-        }
-    }, [drawerOpen, cartId, cart, setCart])
 
     // Lock body scroll when open
     useEffect(() => {
@@ -97,9 +93,38 @@ export default function CartDrawer({ config, featureFlags, planLimits }: CartDra
 
                 {/* Items */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-6 h-6 animate-spin text-brand" />
+                    {isHydrating ? (
+                        <div
+                            data-testid="cart-drawer-hydration-loading"
+                            className="flex items-center justify-center py-12"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <Loader2 className="w-6 h-6 animate-spin text-brand" aria-hidden="true" />
+                            <span className="sr-only">{t('common.loading')}</span>
+                        </div>
+                    ) : hydrationError ? (
+                        <div
+                            data-testid="cart-drawer-hydration-error"
+                            className="flex flex-col items-center justify-center rounded-xl border border-error-200 bg-error-primary px-5 py-10 text-center"
+                            role="alert"
+                        >
+                            <ShoppingBag className="w-10 h-10 text-error-primary mb-4" aria-hidden="true" />
+                            <h3 className="text-lg font-semibold text-tx mb-2">
+                                {t('common.error')}
+                            </h3>
+                            <p className="text-sm text-tx-sec mb-6">
+                                {t('cart.hydrationError')}
+                            </p>
+                            <button
+                                type="button"
+                                data-testid="cart-drawer-hydration-retry"
+                                onClick={retryHydration}
+                                className="btn btn-primary text-sm"
+                            >
+                                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                                {t('common.retry')}
+                            </button>
                         </div>
                     ) : items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">

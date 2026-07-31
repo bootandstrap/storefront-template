@@ -30,4 +30,33 @@ describe('CartContext hydration contract', () => {
         expect(context).toContain('const retryHydration = useCallback')
         expect(hydrationBlock).not.toContain('localStorage.removeItem(CART_ID_KEY)')
     })
+
+    it('makes the cart page consume provider-owned loading, error, and retry state', () => {
+        const page = readFileSync(
+            join(srcRoot, 'app/[lang]/(shop)/carrito/page.tsx'),
+            'utf-8'
+        )
+
+        expect(page).toContain('isLoading: isHydrating')
+        expect(page).toContain('hydrationError')
+        expect(page).toContain('retryHydration')
+        expect(page).toContain('data-testid="cart-hydration-loading"')
+        expect(page).toContain('data-testid="cart-hydration-error"')
+        expect(page).toContain('data-testid="cart-hydration-retry"')
+        expect(page).not.toContain('getCartAction')
+        expect(page).not.toContain('useTransition')
+    })
+
+    it('makes the cart drawer consume the same provider-owned hydration state', () => {
+        const drawer = readFileSync(join(srcRoot, 'components/cart/CartDrawer.tsx'), 'utf-8')
+
+        expect(drawer).toContain('isLoading: isHydrating')
+        expect(drawer).toContain('hydrationError')
+        expect(drawer).toContain('retryHydration')
+        expect(drawer).toContain('data-testid="cart-drawer-hydration-loading"')
+        expect(drawer).toContain('data-testid="cart-drawer-hydration-error"')
+        expect(drawer).toContain('data-testid="cart-drawer-hydration-retry"')
+        expect(drawer).not.toContain('getCartAction')
+        expect(drawer).not.toContain('useTransition')
+    })
 })

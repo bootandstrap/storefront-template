@@ -1,29 +1,21 @@
 'use client'
 
-
-
-import { useEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { ShoppingBag, ArrowLeft, Loader2, ArrowRight } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, Loader2, ArrowRight, RefreshCw } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
-import { getCartAction } from '@/app/[lang]/(shop)/cart/actions'
 import { useI18n } from '@/lib/i18n/provider'
 import { formatPrice as formatCurrency } from '@/lib/i18n/currencies'
 import CartItem from '@/components/cart/CartItem'
 
 export default function CarritoPage() {
-    const { cart, cartId, setCart, itemCount } = useCart()
+    const {
+        cart,
+        itemCount,
+        isLoading: isHydrating,
+        hydrationError,
+        retryHydration,
+    } = useCart()
     const { t, localizedHref, locale } = useI18n()
-    const [isLoading, startTransition] = useTransition()
-
-    useEffect(() => {
-        if (cartId && !cart) {
-            startTransition(async () => {
-                const loaded = await getCartAction(cartId)
-                if (loaded) setCart(loaded)
-            })
-        }
-    }, [cartId, cart, setCart])
 
     const items = cart?.items ?? []
     const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
@@ -46,9 +38,38 @@ export default function CarritoPage() {
                 </h1>
             </div>
 
-            {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand" />
+            {isHydrating ? (
+                <div
+                    data-testid="cart-hydration-loading"
+                    className="flex items-center justify-center py-20"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <Loader2 className="w-8 h-8 animate-spin text-brand" aria-hidden="true" />
+                    <span className="sr-only">{t('common.loading')}</span>
+                </div>
+            ) : hydrationError ? (
+                <div
+                    data-testid="cart-hydration-error"
+                    className="max-w-lg mx-auto rounded-2xl border border-error-200 bg-error-primary p-8 text-center"
+                    role="alert"
+                >
+                    <ShoppingBag className="w-12 h-12 text-error-primary mx-auto mb-4" aria-hidden="true" />
+                    <h2 className="text-xl font-bold text-tx mb-2">
+                        {t('common.error')}
+                    </h2>
+                    <p className="text-tx-sec mb-6">
+                        {t('cart.hydrationError')}
+                    </p>
+                    <button
+                        type="button"
+                        data-testid="cart-hydration-retry"
+                        onClick={retryHydration}
+                        className="btn btn-primary"
+                    >
+                        <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                        {t('common.retry')}
+                    </button>
                 </div>
             ) : items.length === 0 ? (
                 <div className="text-center py-20">

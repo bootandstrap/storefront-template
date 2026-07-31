@@ -155,6 +155,7 @@
   "cart.freeShipping.applied": "El envío es gratis en este pedido",
   "cart.freeShipping.remaining": "Añade {amount} más para envío gratis",
   "cart.freeShipping.unlocked": "¡Envío gratis desbloqueado!",
+  "cart.hydrationError": "No pudimos cargar tu carrito. Comprueba la conexión e inténtalo de nuevo.",
   "cart.orderSummary": "Resumen del pedido",
   "cart.proceedToCheckout": "Ir al pago",
   "cart.products": "Productos ({{count}})",

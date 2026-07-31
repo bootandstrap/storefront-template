@@ -165,6 +165,7 @@
   "cart.freeShipping.applied": "La spedizione è gratuita su questo ordine",
   "cart.freeShipping.remaining": "Aggiungi {amount} in più per la spedizione gratuita",
   "cart.freeShipping.unlocked": "Spedizione gratuita sbloccata!",
+  "cart.hydrationError": "Non è stato possibile caricare il carrello. Controlla la connessione e riprova.",
   "cart.orderSummary": "Riepilogo ordine",
   "cart.proceedToCheckout": "Procedi al pagamento",
   "cart.products": "Prodotti ({{count}})",

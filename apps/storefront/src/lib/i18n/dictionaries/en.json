@@ -155,6 +155,7 @@
   "cart.freeShipping.applied": "Shipping is free on this order",
   "cart.freeShipping.remaining": "Add {amount} more for free shipping",
   "cart.freeShipping.unlocked": "Free shipping unlocked!",
+  "cart.hydrationError": "We couldn't load your cart. Check your connection and try again.",
   "cart.orderSummary": "Order summary",
   "cart.proceedToCheckout": "Proceed to checkout",
   "cart.products": "Products ({{count}})",
