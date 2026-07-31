@@ -1,13 +1,15 @@
 'use client'
 
-import { CreditCard, Loader2 } from 'lucide-react'
+import { AlertCircle, CreditCard, Loader2, RotateCcw } from 'lucide-react'
 import type { PaymentMethod } from '@/lib/payment-methods'
 
 interface CheckoutMethodStepProps {
     availableMethods: PaymentMethod[]
     selectedMethod: string | null
     loadingMethods: boolean
+    methodsError: string | null
     onSelectMethod: (id: string) => void
+    onRetryMethods: () => void
     t: (key: string) => string
 }
 
@@ -15,7 +17,9 @@ export default function CheckoutMethodStep({
     availableMethods,
     selectedMethod,
     loadingMethods,
+    methodsError,
     onSelectMethod,
+    onRetryMethods,
     t,
 }: CheckoutMethodStepProps) {
     return (
@@ -26,14 +30,37 @@ export default function CheckoutMethodStep({
             </div>
 
             {loadingMethods ? (
-                <div className="flex items-center justify-center py-8">
+                <div
+                    data-testid="checkout-methods-loading"
+                    role="status"
+                    aria-live="polite"
+                    className="flex items-center justify-center py-8"
+                >
                     <Loader2 className="w-5 h-5 animate-spin text-tx-muted" />
                     <span className="ml-2 text-sm text-tx-muted">
                         {t('checkout.loadingMethods')}
                     </span>
                 </div>
+            ) : methodsError ? (
+                <div
+                    data-testid="checkout-methods-error"
+                    role="alert"
+                    className="flex flex-col items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center"
+                >
+                    <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+                    <p className="text-sm text-red-600 dark:text-red-400">{methodsError}</p>
+                    <button
+                        data-testid="checkout-methods-retry"
+                        type="button"
+                        onClick={onRetryMethods}
+                        className="btn btn-secondary px-4 py-2"
+                    >
+                        <RotateCcw className="h-4 w-4" />
+                        {t('common.retry')}
+                    </button>
+                </div>
             ) : availableMethods.length === 0 ? (
-                <div className="text-center py-8 text-tx-muted">
+                <div data-testid="checkout-methods-empty" className="text-center py-8 text-tx-muted">
                     <p className="text-sm">
                         {t('checkout.noMethods')}
                     </p>

@@ -241,6 +241,7 @@
   "checkout.errorCreatingOrder": "Fehler beim Erstellen der Bestellung",
   "checkout.errors.addressSave": "Adresse konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   "checkout.errors.cardInit": "Kartenzahlung konnte nicht initialisiert werden.",
+  "checkout.errors.methodsLoad": "Zahlungsmethoden konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
   "checkout.errors.orderCreate": "Bestellung konnte nicht erstellt werden.",
   "checkout.errors.paymentDetails": "Zahlungsdetails konnten nicht geladen werden.",
   "checkout.errors.paymentInit": "Zahlung konnte nicht initialisiert werden.",

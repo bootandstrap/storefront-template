@@ -231,6 +231,7 @@
   "checkout.errorCreatingOrder": "Error al crear el pedido",
   "checkout.errors.addressSave": "No se pudo guardar la dirección. Inténtalo de nuevo.",
   "checkout.errors.cardInit": "No se pudo iniciar el pago con tarjeta. Inténtalo de nuevo.",
+  "checkout.errors.methodsLoad": "No se pudieron cargar los métodos de pago. Inténtalo de nuevo.",
   "checkout.errors.orderCreate": "No se pudo crear el pedido. Inténtalo de nuevo.",
   "checkout.errors.paymentDetails": "No se pudieron cargar los detalles del pago.",
   "checkout.errors.paymentInit": "No se pudo iniciar el pago. Inténtalo de nuevo.",

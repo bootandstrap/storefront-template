@@ -231,6 +231,7 @@
   "checkout.errorCreatingOrder": "Error creating order",
   "checkout.errors.addressSave": "Could not save address. Please try again.",
   "checkout.errors.cardInit": "Could not initialize card payment. Please try again.",
+  "checkout.errors.methodsLoad": "Could not load payment methods. Please try again.",
   "checkout.errors.orderCreate": "Could not create order. Please try again.",
   "checkout.errors.paymentDetails": "Could not load payment details.",
   "checkout.errors.paymentInit": "Could not initialize payment. Please try again.",

@@ -241,6 +241,7 @@
   "checkout.errorCreatingOrder": "Errore nella creazione dell'ordine",
   "checkout.errors.addressSave": "Impossibile salvare l indirizzo.",
   "checkout.errors.cardInit": "Impossibile inizializzare il pagamento con carta.",
+  "checkout.errors.methodsLoad": "Impossibile caricare i metodi di pagamento. Riprova.",
   "checkout.errors.orderCreate": "Impossibile creare l ordine.",
   "checkout.errors.paymentDetails": "Impossibile caricare i dettagli del pagamento.",
   "checkout.errors.paymentInit": "Impossibile inizializzare il pagamento.",

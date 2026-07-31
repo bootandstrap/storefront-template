@@ -111,6 +111,7 @@ export default function CheckoutModal({
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
     const [availableMethods, setAvailableMethods] = useState<PaymentMethod[]>([])
     const [loadingMethods, setLoadingMethods] = useState(true)
+    const [methodsError, setMethodsError] = useState<string | null>(null)
 
     // Medusa-computed cart totals
     const [cartTotals, setCartTotals] = useState<CartTotals | null>(null)
@@ -137,10 +138,10 @@ export default function CheckoutModal({
     const formatPrice = (amount: number) =>
         formatCurrencyPrice(amount, displayCurrency.toLowerCase(), locale)
 
-    // Load available methods
-    useEffect(() => {
-        async function loadMethods() {
-            setLoadingMethods(true)
+    const loadMethods = useCallback(async () => {
+        setLoadingMethods(true)
+        setMethodsError(null)
+        try {
             const allMethods = getEnabledMethods(featureFlags, planLimits)
             const checks = await Promise.all(
                 allMethods.map(async (m) => ({
@@ -149,10 +150,19 @@ export default function CheckoutModal({
                 }))
             )
             setAvailableMethods(checks.filter((c) => c.available).map((c) => c.method))
+        } catch {
+            setAvailableMethods([])
+            setSelectedMethod(null)
+            setMethodsError(t('checkout.errors.methodsLoad'))
+        } finally {
             setLoadingMethods(false)
         }
-        if (isOpen) loadMethods()
-    }, [isOpen, featureFlags, planLimits])
+    }, [featureFlags, planLimits, t])
+
+    // Load available methods
+    useEffect(() => {
+        if (isOpen) void loadMethods()
+    }, [isOpen, loadMethods])
 
     // Reset on close / add body class for overlay management
     const cartItemCount = cart?.items?.length ?? 0
@@ -168,6 +178,7 @@ export default function CheckoutModal({
             setClientSecret(null)
             setOrderResult(null)
             setError(null)
+            setMethodsError(null)
             setStripeLoading(false)
         }
         return () => {
@@ -373,7 +384,12 @@ export default function CheckoutModal({
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-sf-0 border border-sf-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom">
+            <div
+                className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-sf-0 border border-sf-3 rounded-t-2xl md:rounded-2xl shadow-2xl animate-slide-up safe-area-bottom"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="checkout-modal-title"
+            >
                 {/* Header */}
                 <div className="sticky top-0 bg-glass-heavy backdrop-blur-xl border-b border-sf-3 p-4 z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -383,11 +399,12 @@ export default function CheckoutModal({
                                     onClick={goBack}
                                     className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                                     type="button"
+                                    aria-label={t('common.back')}
                                 >
                                     <ArrowLeft className="w-4 h-4" />
                                 </button>
                             )}
-                            <h2 className="text-lg font-bold font-display">
+                            <h2 id="checkout-modal-title" className="text-lg font-bold font-display">
                                 {t('checkout.title')}
                             </h2>
                         </div>
@@ -395,6 +412,7 @@ export default function CheckoutModal({
                             onClick={handleModalClose}
                             className="p-1.5 rounded-lg hover:bg-sf-1 transition-colors"
                             type="button"
+                            aria-label={t('common.close')}
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -486,7 +504,9 @@ export default function CheckoutModal({
                             availableMethods={availableMethods}
                             selectedMethod={selectedMethod}
                             loadingMethods={loadingMethods}
+                            methodsError={methodsError}
                             onSelectMethod={setSelectedMethod}
+                            onRetryMethods={loadMethods}
                             t={t}
                         />
                     )}

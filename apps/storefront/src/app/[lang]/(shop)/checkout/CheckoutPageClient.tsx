@@ -168,6 +168,7 @@ export default function CheckoutPageClient({
                             {hasAnyMethod ? (
                                 <>
                                     <button
+                                        data-testid="checkout-proceed-payment"
                                         onClick={() => setModalOpen(true)}
                                         className="btn btn-primary w-full py-3 text-base"
                                     >
