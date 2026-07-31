@@ -2280,6 +2280,20 @@ body.drawer-open .whatsapp-float {
   bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
 }
 
+@keyframes product-sticky-cta-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-product-sticky-cta {
+  animation: product-sticky-cta-fade 0.2s var(--ease-smooth);
+}
+
 /* ===== RTL support (future locales: ar, he, fa, ur) ===== */
 [dir="rtl"] {
   text-align: right;

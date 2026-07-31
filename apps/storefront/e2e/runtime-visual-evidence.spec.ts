@@ -300,25 +300,23 @@ async function assertNoHorizontalOverflow(page: Page) {
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 2)
 }
 
-async function assertNoMobileFixedControlOverlap(page: Page) {
-    const overlapPixels = await page.evaluate(() => {
-        const stickyCta = document.querySelector<HTMLElement>('.product-sticky-cta')
-        const bottomNav = document.querySelector<HTMLElement>('.bottom-nav')
-        if (!stickyCta || !bottomNav) return 0
+async function assertMobileStickyCtaDoesNotOverlapBottomNav(page: Page) {
+    const primaryCta = page.getByTestId('product-primary-cta')
+    await expect(primaryCta).toBeVisible({ timeout: 10_000 })
+    await primaryCta.scrollIntoViewIfNeeded()
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }))
+    await expect(primaryCta).not.toBeInViewport()
 
-        const stickyRect = stickyCta.getBoundingClientRect()
-        const navRect = bottomNav.getBoundingClientRect()
-        const stickyVisible = stickyRect.width > 0 && stickyRect.height > 0
-        const navVisible = navRect.width > 0 && navRect.height > 0
-        if (!stickyVisible || !navVisible) return 0
+    const stickyCta = page.locator('.product-sticky-cta')
+    const bottomNav = page.locator('.bottom-nav')
+    await expect(stickyCta).toBeVisible({ timeout: 10_000 })
+    await expect(bottomNav).toBeVisible({ timeout: 10_000 })
 
-        return Math.max(
-            0,
-            Math.min(stickyRect.bottom, navRect.bottom) - Math.max(stickyRect.top, navRect.top)
-        )
-    })
-
-    expect(overlapPixels).toBeLessThanOrEqual(1)
+    const stickyRect = await stickyCta.boundingBox()
+    const navRect = await bottomNav.boundingBox()
+    expect(stickyRect).not.toBeNull()
+    expect(navRect).not.toBeNull()
+    expect(stickyRect!.y + stickyRect!.height).toBeLessThanOrEqual(navRect!.y + 1)
 }
 
 async function assertNoAppErrorShell(page: Page) {
@@ -398,7 +396,6 @@ async function attachRuntimeEvidence(
         contentType: 'image/png',
     })
 
-    await assertNoMobileFixedControlOverlap(page)
     const axeResults = await assertNoCriticalAxeViolations(page, axeContext)
     await testInfo.attach(names.axe, {
         body: JSON.stringify(axeResults, null, 2),
@@ -804,4 +801,29 @@ test.describe('runtime visual evidence', () => {
             })
         }
     }
+
+    test('mobile PDP sticky CTA stays above the bottom navigation', async ({ page }, testInfo) => {
+        const viewport = viewports.find((candidate) => candidate.name === 'mobile')!
+        const state = interactiveStates.find((candidate) => candidate.state === 'toast')!
+        const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+        await page.addInitScript({ content: axeSource })
+        await page.setViewportSize({ width: viewport.width, height: viewport.height })
+        const availability = await prepareProductsRoute(page, testInfo, state, viewport)
+
+        if (!availability.available) {
+            if (shouldRequireInteractiveStates()) {
+                throw new Error(availability.reason)
+            }
+
+            test.skip(true, availability.reason)
+        }
+
+        await openFirstProductDetail(page)
+        await assertMobileStickyCtaDoesNotOverlapBottomNav(page)
+        await attachRuntimeEvidence(page, testInfo, {
+            screenshot: 'visual-state-mobile-pdp-sticky-cta',
+            axe: 'axe-core-mobile-pdp-sticky-cta',
+        }, 'body')
+        expect(blockingConsoleMessages).toEqual([])
+    })
 })
