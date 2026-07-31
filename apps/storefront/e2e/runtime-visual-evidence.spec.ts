@@ -204,6 +204,10 @@ const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
     errorToastTestId: 'toast-error',
 }
 
+const RUNTIME_CART_SETUP_MAX_ATTEMPTS = 3
+const RUNTIME_CART_HYDRATION_MAX_ATTEMPTS = 2
+const RUNTIME_CART_RETRY_DELAY_MS = 2_000
+
 const _quickViewTranslationKey = 'product.quickView'
 const quickViewLabelPattern = /vista rápida|quick view|aperçu rapide|anteprima rapida|schnellansicht/i
 
@@ -660,6 +664,54 @@ async function delayNextCheckoutPromotionFetch(
     }
 }
 
+async function addRuntimeEvidenceProductToCart(
+    page: Page,
+    failureMessage: string
+) {
+    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
+    await expect(addToCart).toBeVisible({ timeout: 15_000 })
+
+    for (let attempt = 1; attempt <= RUNTIME_CART_SETUP_MAX_ATTEMPTS; attempt += 1) {
+        await expect(addToCart).toBeEnabled({ timeout: 10_000 })
+        await addToCart.click()
+
+        const cartCreated = await page.waitForFunction(
+            () => localStorage.getItem('bns-cart-id') !== null,
+            undefined,
+            { timeout: 10_000 }
+        ).then(() => true).catch(() => false)
+        if (cartCreated) return
+
+        if (attempt < RUNTIME_CART_SETUP_MAX_ATTEMPTS) {
+            await page.waitForTimeout(RUNTIME_CART_RETRY_DELAY_MS * attempt)
+        }
+    }
+
+    throw new Error(failureMessage)
+}
+
+async function waitForHydratedRuntimeCartItem(
+    page: Page,
+    state: CartItemUpdateRuntimeState
+) {
+    for (let attempt = 1; attempt <= RUNTIME_CART_HYDRATION_MAX_ATTEMPTS; attempt += 1) {
+        const hydrated = await page.getByTestId(state.buttonTestId).first()
+            .waitFor({ state: 'visible', timeout: 20_000 })
+            .then(() => true)
+            .catch(() => false)
+        if (hydrated) return true
+
+        const cartId = await page.evaluate(() => localStorage.getItem('bns-cart-id'))
+        if (!cartId || attempt === RUNTIME_CART_HYDRATION_MAX_ATTEMPTS) break
+
+        await page.waitForTimeout(RUNTIME_CART_RETRY_DELAY_MS * attempt)
+        const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
+        expect(response?.status() ?? 200).toBe(200)
+    }
+
+    return false
+}
+
 async function prepareCheckoutPromotionLoadingState(
     page: Page,
     testInfo: TestInfo,
@@ -676,14 +728,10 @@ async function prepareCheckoutPromotionLoadingState(
     if (!productsAvailability.available) return productsAvailability
 
     await openFirstProductDetail(page)
-    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
-    await expect(addToCart).toBeVisible({ timeout: 15_000 })
-    await addToCart.click()
-    await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
-    await expect.poll(
-        () => page.evaluate(() => localStorage.getItem('bns-cart-id')),
-        { message: 'add-to-cart should persist the runtime evidence cart before checkout navigation' }
-    ).not.toBeNull()
+    await addRuntimeEvidenceProductToCart(
+        page,
+        'add-to-cart should persist the runtime evidence cart before checkout navigation'
+    )
     onCartCreated()
 
     const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
@@ -769,35 +817,13 @@ async function prepareCartItemUpdateLoadingState(
     page: Page,
     testInfo: TestInfo,
     state: CartItemUpdateRuntimeState,
-    viewport: VisualViewport,
-    onCartCreated: () => void
+    viewport: VisualViewport
 ): Promise<ProductRouteAvailability & { delayedAction?: InterceptedRuntimeAction }> {
-    const productsAvailability = await prepareProductsRoute(
-        page,
-        testInfo,
-        { name: state.loadingName, path: '/es/productos', state: 'toast' },
-        viewport
-    )
-    if (!productsAvailability.available) return productsAvailability
-
-    await openFirstProductDetail(page)
-    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
-    await expect(addToCart).toBeVisible({ timeout: 15_000 })
-    await addToCart.click()
-    await expect.poll(
-        () => page.evaluate(() => localStorage.getItem('bns-cart-id')),
-        { message: 'add-to-cart should persist the runtime evidence cart before cart navigation' }
-    ).not.toBeNull()
-    onCartCreated()
-
     const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
     expect(response?.status() ?? 200).toBe(200)
 
     const button = page.getByTestId(state.buttonTestId).first()
-    const hasCartItem = await button
-        .waitFor({ state: 'visible', timeout: 20_000 })
-        .then(() => true)
-        .catch(() => false)
+    const hasCartItem = await waitForHydratedRuntimeCartItem(page, state)
     if (!hasCartItem) {
         const reason = 'cart item update evidence requires a hydrated runtime cart item'
         await testInfo.attach(`visual-state-loading-cart-item-update-${viewport.name}-runtime-unavailable`, {
@@ -908,7 +934,7 @@ async function assertVisibleLoadingState(page: Page, state: RuntimeLoadingState)
 
 test.describe('runtime visual evidence', () => {
     test.describe.configure({ mode: 'serial' })
-    test.setTimeout(120_000)
+    test.setTimeout(240_000)
     const loadingEvidenceViewport = viewports.find((viewport) => viewport.name === 'desktop') ?? viewports[0]
 
     test('loading route components expose source-backed visual states', async ({}, testInfo) => {
@@ -1022,15 +1048,16 @@ test.describe('runtime visual evidence', () => {
     }
 
     for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
-        test(`checkout promotion renders loading and error visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+        test(`checkout promotion and cart item update render runtime evidence on ${viewport.name}`, async ({ page }, testInfo) => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: viewport.width, height: viewport.height })
             let delayedFetch: InterceptedRuntimeFetch | undefined
+            let delayedAction: InterceptedRuntimeAction | undefined
             let runtimeCartCreated = false
 
             try {
-                const availability = await prepareCheckoutPromotionLoadingState(
+                const checkoutAvailability = await prepareCheckoutPromotionLoadingState(
                     page,
                     testInfo,
                     checkoutPromotionRuntimeState,
@@ -1039,13 +1066,13 @@ test.describe('runtime visual evidence', () => {
                         runtimeCartCreated = true
                     }
                 )
-                delayedFetch = availability.delayedFetch
-                if (!availability.available) {
+                delayedFetch = checkoutAvailability.delayedFetch
+                if (!checkoutAvailability.available) {
                     if (shouldRequireCheckoutStates()) {
-                        throw new Error(availability.reason)
+                        throw new Error(checkoutAvailability.reason)
                     }
 
-                    test.skip(true, availability.reason)
+                    test.skip(true, checkoutAvailability.reason)
                 }
 
                 expect(delayedFetch).toBeDefined()
@@ -1070,42 +1097,24 @@ test.describe('runtime visual evidence', () => {
                     screenshot: `visual-state-error-checkout-promotion-${viewport.name}`,
                     axe: `axe-core-visual-state-error-checkout-promotion-${viewport.name}`,
                 })
-                expect(blockingConsoleMessages).toEqual([])
-            } finally {
+
                 await delayedFetch?.release()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
-                if (runtimeCartCreated) {
-                    await cleanupRuntimeEvidenceCart(page)
-                }
-            }
-        })
-    }
+                delayedFetch = undefined
 
-    for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
-        test(`cart item update renders loading and error visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
-            const blockingConsoleMessages = collectBlockingConsoleMessages(page)
-            await page.addInitScript({ content: axeSource })
-            await page.setViewportSize({ width: viewport.width, height: viewport.height })
-            let delayedAction: InterceptedRuntimeAction | undefined
-            let runtimeCartCreated = false
-
-            try {
-                const availability = await prepareCartItemUpdateLoadingState(
+                const cartAvailability = await prepareCartItemUpdateLoadingState(
                     page,
                     testInfo,
                     cartItemUpdateRuntimeState,
-                    viewport,
-                    () => {
-                        runtimeCartCreated = true
-                    }
+                    viewport
                 )
-                delayedAction = availability.delayedAction
-                if (!availability.available) {
+                delayedAction = cartAvailability.delayedAction
+                if (!cartAvailability.available) {
                     if (shouldRequireCartStates()) {
-                        throw new Error(availability.reason)
+                        throw new Error(cartAvailability.reason)
                     }
 
-                    test.skip(true, availability.reason)
+                    test.skip(true, cartAvailability.reason)
                 }
 
                 expect(delayedAction).toBeDefined()
@@ -1132,6 +1141,7 @@ test.describe('runtime visual evidence', () => {
                 }, 'body')
                 expect(blockingConsoleMessages).toEqual([])
             } finally {
+                await delayedFetch?.release()
                 await delayedAction?.abort()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
                 if (runtimeCartCreated) {

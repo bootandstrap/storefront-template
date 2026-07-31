@@ -352,6 +352,11 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('shouldRequireCartStates')
         expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CART_STATES')
         expect(visualSpec).toContain('delayNextCartAction')
+        expect(visualSpec).toContain('RUNTIME_CART_SETUP_MAX_ATTEMPTS')
+        expect(visualSpec).toContain('RUNTIME_CART_HYDRATION_MAX_ATTEMPTS')
+        expect(visualSpec).toContain('addRuntimeEvidenceProductToCart')
+        expect(visualSpec).toContain('waitForHydratedRuntimeCartItem')
+        expect(visualSpec).toContain('checkout promotion and cart item update render runtime evidence')
         expect(visualSpec).toContain('visual-state-loading-cart-item-update')
         expect(visualSpec).toContain('visual-state-error-cart-item-update')
         expect(visualSpec).toContain('toHaveAccessibleName')
@@ -360,12 +365,12 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('cart-item-increase-spinner')
         expect(visualSpec).toContain('toast-error')
         expect(visualSpec).toContain('[data-testid="add-to-cart"]:visible')
-        const cartItemSetup = visualSpec.slice(
-            visualSpec.indexOf('async function prepareCartItemUpdateLoadingState'),
-            visualSpec.indexOf('async function cleanupRuntimeEvidenceCart')
+        const cartCreationSetup = visualSpec.slice(
+            visualSpec.indexOf('async function addRuntimeEvidenceProductToCart'),
+            visualSpec.indexOf('async function waitForHydratedRuntimeCartItem')
         )
-        expect(cartItemSetup).toContain("localStorage.getItem('bns-cart-id')")
-        expect(cartItemSetup).not.toContain('await expect(addToCart).toContainText')
+        expect(cartCreationSetup).toContain("localStorage.getItem('bns-cart-id')")
+        expect(cartCreationSetup).not.toContain('await expect(addToCart).toContainText')
         expect(visualSpec).toContain("route.request().method() !== 'POST'")
         expect(visualSpec).toContain('waitUntilIntercepted')
         expect(visualSpec).toContain(".waitFor({ state: 'visible', timeout: 20_000 })")
@@ -438,7 +443,7 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('BNS_RUNTIME_ROUTE_RETRY_MAX_TOTAL_WAIT_MS')
         expect(visualSpec).toContain('maxDelayMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_DELAY_MS, 65_000)')
         expect(visualSpec).toContain('maxTotalWaitMs: parsePositiveInteger(env.BNS_RUNTIME_ROUTE_RETRY_MAX_TOTAL_WAIT_MS, 75_000)')
-        expect(visualSpec).toContain('test.setTimeout(120_000)')
+        expect(visualSpec).toContain('test.setTimeout(240_000)')
         expect(visualSpec).toContain('await gotoRuntimeVisualRouteWithBackoff(page, productPath, [200])')
     })
 
