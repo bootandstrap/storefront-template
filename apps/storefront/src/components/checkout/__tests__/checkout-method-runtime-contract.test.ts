@@ -65,6 +65,7 @@ describe('checkout method runtime contract', () => {
         expect(step).toContain('data-testid="checkout-methods-empty"')
         expect(step).toContain('role="status"')
         expect(step).toContain('role="alert"')
+        expect(step).toContain('text-sm text-red-700 dark:text-red-300')
         expect(step).toContain("t('common.retry')")
     })
 

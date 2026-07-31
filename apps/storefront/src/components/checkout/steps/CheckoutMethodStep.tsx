@@ -48,7 +48,7 @@ export default function CheckoutMethodStep({
                     className="flex flex-col items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center"
                 >
                     <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
-                    <p className="text-sm text-red-600 dark:text-red-400">{methodsError}</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{methodsError}</p>
                     <button
                         data-testid="checkout-methods-retry"
                         type="button"
