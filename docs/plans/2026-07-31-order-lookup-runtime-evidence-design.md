@@ -75,4 +75,3 @@ The change follows RED-GREEN:
 6. Run the tenant focused checks and release gate.
 7. Push template and tenant commits, then verify tenant CI, deploy, public
    health SHA, and remote Playwright evidence.
-
