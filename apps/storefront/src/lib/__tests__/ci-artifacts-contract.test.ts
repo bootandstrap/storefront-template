@@ -290,6 +290,15 @@ describe('CI artifact contract', () => {
 
     it('tracks visible loading, modal and toast runtime states with dedicated evidence', () => {
         const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+        const checkoutMethodEvidence = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-checkout-method-evidence.ts'),
+            'utf8'
+        )
+        const cartActionEvidence = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-cart-action-evidence.ts'),
+            'utf8'
+        )
+        const visualEvidenceSource = `${visualSpec}\n${checkoutMethodEvidence}\n${cartActionEvidence}`
         const orderLookupPage = readFileSync(
             join(REPO_ROOT, 'apps/storefront/src/app/[lang]/(shop)/pedido/page.tsx'),
             'utf8'
@@ -341,24 +350,24 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('visual-state-loading-order-lookup')
         expect(visualSpec).toContain('visual-state-error-order-lookup')
         expect(visualSpec).toContain('shouldRequireOrderLookupStates')
-        expect(visualSpec).toContain('checkout-promotion-loading')
-        expect(visualSpec).toContain('checkout-promotion-error')
-        expect(visualSpec).toContain('/api/cart/promotions')
+        expect(visualEvidenceSource).toContain('checkout-promotion-loading')
+        expect(visualEvidenceSource).toContain('checkout-promotion-error')
+        expect(visualEvidenceSource).toContain('/api/cart/promotions')
         expect(visualSpec).toContain('shouldRequireCheckoutStates')
         expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CHECKOUT_STATES')
         expect(visualSpec).toContain('visual-state-loading-checkout-promotion')
         expect(visualSpec).toContain('visual-state-error-checkout-promotion')
-        expect(visualSpec).toContain('checkout-methods-loading')
-        expect(visualSpec).toContain('checkout-methods-error')
-        expect(visualSpec).toContain('checkout-methods-retry')
+        expect(visualEvidenceSource).toContain('checkout-methods-loading')
+        expect(visualEvidenceSource).toContain('checkout-methods-error')
+        expect(visualEvidenceSource).toContain('checkout-methods-retry')
         expect(visualSpec).toContain('checkout method discovery renders loading, error and retry evidence')
         expect(visualSpec).toContain('visual-state-loading-checkout-methods')
         expect(visualSpec).toContain('visual-state-error-checkout-methods')
-        expect(visualSpec).toContain('delayNextCheckoutMethodAvailabilityAction')
-        expect(visualSpec).toContain('CHECKOUT_METHOD_IDS')
-        expect(visualSpec).toContain('request.headers()[\'next-action\']')
-        expect(visualSpec).toContain('JSON.parse(body)')
-        expect(visualSpec).toContain('args.length === 1')
+        expect(visualEvidenceSource).toContain('delayNextCheckoutMethodAvailabilityAction')
+        expect(visualEvidenceSource).toContain('CHECKOUT_METHOD_IDS')
+        expect(visualEvidenceSource).toContain('request.headers()[\'next-action\']')
+        expect(visualEvidenceSource).toContain('JSON.parse(body)')
+        expect(visualEvidenceSource).toContain('args.length === 1')
         expect(visualSpec).toContain('does not submit an order or initialize a payment')
         expect(visualSpec).toContain('cleanupRuntimeEvidenceCart')
         expect(visualSpec).toContain(
@@ -386,7 +395,7 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('cart-item-remove-error')
         expect(visualSpec).toContain('shouldRequireCartStates')
         expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CART_STATES')
-        expect(visualSpec).toContain('delayNextCartAction')
+        expect(visualEvidenceSource).toContain('delayNextCartAction')
         expect(visualSpec).toContain('RUNTIME_CART_SETUP_MAX_ATTEMPTS')
         expect(visualSpec).toContain('RUNTIME_CART_HYDRATION_MAX_ATTEMPTS')
         expect(visualSpec).toContain('addRuntimeEvidenceProductToCart')

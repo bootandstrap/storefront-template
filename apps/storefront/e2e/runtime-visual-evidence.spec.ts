@@ -2,6 +2,15 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expect, test, type Page, type Response, type TestInfo } from '@playwright/test'
 import { source as axeSource } from 'axe-core'
+import {
+    checkoutMethodRuntimeState,
+    delayNextCheckoutMethodAvailabilityAction,
+    reachCheckoutMethodStep,
+} from './runtime-visual-checkout-method-evidence'
+import {
+    checkoutPromotionRuntimeState,
+    delayNextCartAction,
+} from './runtime-visual-cart-action-evidence'
 
 type VisualViewport = {
     name: 'desktop' | 'tablet' | 'mobile'
@@ -43,30 +52,6 @@ type OrderLookupRuntimeState = {
     buttonTestId: string
     spinnerTestId: string
     errorTestId: string
-}
-
-type CheckoutPromotionRuntimeState = {
-    loadingName: string
-    errorName: string
-    path: string
-    requestPath: string
-    formTestId: string
-    toggleTestId: string
-    inputTestId: string
-    buttonTestId: string
-    spinnerTestId: string
-    errorTestId: string
-}
-
-type CheckoutMethodRuntimeState = {
-    loadingName: string
-    errorName: string
-    path: string
-    proceedTestId: string
-    continueTestId: string
-    loadingTestId: string
-    errorTestId: string
-    retryTestId: string
 }
 
 type CartItemUpdateRuntimeState = {
@@ -207,32 +192,6 @@ const orderLookupRuntimeState: OrderLookupRuntimeState = {
     spinnerTestId: 'order-lookup-spinner',
     errorTestId: 'order-lookup-error',
 }
-
-const checkoutPromotionRuntimeState: CheckoutPromotionRuntimeState = {
-    loadingName: 'checkout-promotion-loading',
-    errorName: 'checkout-promotion-error',
-    path: '/es/checkout',
-    requestPath: '/api/cart/promotions',
-    formTestId: 'checkout-promotion-form',
-    toggleTestId: 'checkout-promotion-toggle',
-    inputTestId: 'checkout-promotion-input',
-    buttonTestId: 'checkout-promotion-apply',
-    spinnerTestId: 'checkout-promotion-spinner',
-    errorTestId: 'checkout-promotion-error',
-}
-
-const checkoutMethodRuntimeState: CheckoutMethodRuntimeState = {
-    loadingName: 'checkout-methods-loading',
-    errorName: 'checkout-methods-error',
-    path: '/es/checkout',
-    proceedTestId: 'checkout-proceed-payment',
-    continueTestId: 'checkout-modal-continue',
-    loadingTestId: 'checkout-methods-loading',
-    errorTestId: 'checkout-methods-error',
-    retryTestId: 'checkout-methods-retry',
-}
-
-const CHECKOUT_METHOD_IDS = ['card', 'bank_transfer', 'cod', 'whatsapp'] as const
 
 const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
     loadingName: 'cart-item-update-loading',
@@ -820,150 +779,6 @@ async function prepareCheckoutPromotionLoadingState(
     return { available: true, delayedFetch }
 }
 
-async function delayNextCartAction(
-    page: Page,
-    targetPath: string,
-    expectedBody?: string
-): Promise<InterceptedRuntimeAction> {
-    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
-    let abortAction!: () => void
-    let aborted = false
-    let actionWasDelayed = false
-    const abortPromise = new Promise<void>((resolve) => {
-        abortAction = resolve
-    })
-
-    await page.route(
-        (url) => url.pathname === normalizedTargetPath,
-        async (route) => {
-            const request = route.request()
-            if (
-                request.method() !== 'POST'
-                || !request.headers()['next-action']
-                || (expectedBody && !request.postData()?.includes(expectedBody))
-            ) {
-                await route.continue()
-                return
-            }
-
-            actionWasDelayed = true
-            await abortPromise
-            await route.abort('failed').catch(() => {})
-        }
-    )
-
-    return {
-        waitUntilIntercepted: async () => {
-            await expect.poll(
-                () => actionWasDelayed,
-                {
-                    message: `expected a Next.js Server Action POST to ${normalizedTargetPath}`,
-                    timeout: 5_000,
-                }
-            ).toBe(true)
-        },
-        abort: async () => {
-            if (!aborted) {
-                aborted = true
-                abortAction()
-            }
-            if (actionWasDelayed) {
-                await page.waitForTimeout(100)
-            }
-        },
-    }
-}
-
-async function delayNextCheckoutMethodAvailabilityAction(
-    page: Page,
-    targetPath: string
-): Promise<InterceptedRuntimeAction> {
-    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
-    let abortAction!: () => void
-    let aborted = false
-    let actionWasDelayed = false
-    const abortPromise = new Promise<void>((resolve) => {
-        abortAction = resolve
-    })
-
-    await page.route(
-        (url) => url.pathname === normalizedTargetPath,
-        async (route) => {
-            const request = route.request()
-            const body = request.postData() ?? ''
-            let args: unknown
-            try {
-                args = JSON.parse(body)
-            } catch {
-                args = null
-            }
-            const isAvailabilityCheck = Array.isArray(args)
-                && args.length === 1
-                && CHECKOUT_METHOD_IDS.some((methodId) => args[0] === methodId)
-
-            if (
-                actionWasDelayed
-                || request.method() !== 'POST'
-                || !request.headers()['next-action']
-                || !isAvailabilityCheck
-            ) {
-                await route.continue()
-                return
-            }
-
-            actionWasDelayed = true
-            await abortPromise
-            await route.abort('failed').catch(() => {})
-        }
-    )
-
-    return {
-        waitUntilIntercepted: async () => {
-            await expect.poll(
-                () => actionWasDelayed,
-                {
-                    message: `expected a checkout method availability action at ${normalizedTargetPath}`,
-                    timeout: 5_000,
-                }
-            ).toBe(true)
-        },
-        abort: async () => {
-            if (!aborted) {
-                aborted = true
-                abortAction()
-            }
-            if (actionWasDelayed) {
-                await page.waitForTimeout(100)
-            }
-        },
-    }
-}
-
-async function reachCheckoutMethodStep(page: Page, state: CheckoutMethodRuntimeState) {
-    const proceed = page.getByTestId(state.proceedTestId)
-    await expect(proceed).toBeVisible({ timeout: 10_000 })
-    await proceed.click()
-
-    const dialog = page.getByRole('dialog', { name: /checkout|finalizar compra|paiement|kasse/i })
-    await expect(dialog).toBeVisible()
-    const closeButton = dialog.getByRole('button', { name: /cerrar|close|fermer|chiudi|schließen/i })
-    await expect(closeButton).toBeFocused()
-    await page.keyboard.press('Shift+Tab')
-    await expect(dialog.locator('#checkout-phone')).toBeFocused()
-    await page.keyboard.press('Tab')
-    await expect(closeButton).toBeFocused()
-    await dialog.locator('#checkout-first-name').fill('Runtime')
-    await dialog.locator('#checkout-last-name').fill('Evidence')
-    await dialog.getByTestId(state.continueTestId).click()
-
-    await dialog.locator('#checkout-street').fill('Runtime Evidence Street 1')
-    await dialog.locator('#checkout-city').fill('Test City')
-    await dialog.locator('#checkout-postal-code').fill('28001')
-    await dialog.getByTestId(state.continueTestId).click()
-
-    return dialog
-}
-
 async function prepareCartHydrationLoadingState(
     page: Page,
     testInfo: TestInfo,
@@ -1411,7 +1226,7 @@ test.describe('runtime visual evidence', () => {
                     page,
                     checkoutMethodRuntimeState.path
                 )
-                const checkoutDialog = await reachCheckoutMethodStep(page, checkoutMethodRuntimeState)
+                const checkoutDialog = await reachCheckoutMethodStep(page)
                 await delayedAction.waitUntilIntercepted()
 
                 const methodsLoading = checkoutDialog.getByTestId(checkoutMethodRuntimeState.loadingTestId)

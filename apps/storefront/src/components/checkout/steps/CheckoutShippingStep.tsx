@@ -21,7 +21,7 @@ export default function CheckoutShippingStep({
     t,
 }: CheckoutShippingStepProps) {
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div data-testid="checkout-shipping-step" className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-5 h-5 text-brand" />
                 <h3 className="font-bold">{t('checkout.steps.shipping') || 'Envío'}</h3>
@@ -41,6 +41,7 @@ export default function CheckoutShippingStep({
                         return (
                             <button
                                 key={opt.id}
+                                data-testid="checkout-shipping-option"
                                 onClick={() => onSelectShipping(opt.id)}
                                 type="button"
                                 className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${isSelected

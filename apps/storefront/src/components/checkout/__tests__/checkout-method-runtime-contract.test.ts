@@ -56,6 +56,19 @@ describe('checkout method runtime contract', () => {
         expect(step).toContain("t('common.retry')")
     })
 
+    it('lets runtime evidence traverse the optional shipping step', () => {
+        const shippingStep = readCheckoutFile('steps/CheckoutShippingStep.tsx')
+        const visualHelper = readFileSync(
+            join(checkoutRoot, '../../../e2e/runtime-visual-checkout-method-evidence.ts'),
+            'utf8'
+        )
+
+        expect(shippingStep).toContain('data-testid="checkout-shipping-step"')
+        expect(shippingStep).toContain('data-testid="checkout-shipping-option"')
+        expect(visualHelper).toContain("getByTestId('checkout-shipping-step')")
+        expect(visualHelper).toContain("getByTestId('checkout-shipping-option')")
+    })
+
     it('exposes the modal and navigation controls to assistive technology', () => {
         const modal = readCheckoutFile('CheckoutModal.tsx')
         const focusHook = readCheckoutFile('use-checkout-modal-focus.ts')
