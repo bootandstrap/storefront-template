@@ -129,6 +129,7 @@ function ToastItem({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             role="alert"
+            data-testid={`toast-${toast.type}`}
         >
             <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${ICON_COLORS[toast.type]}`} />
             <div className="flex-1 min-w-0">

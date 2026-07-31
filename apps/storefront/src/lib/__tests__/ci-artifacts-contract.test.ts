@@ -275,6 +275,7 @@ describe('CI artifact contract', () => {
                 expect.stringContaining('accessibility'),
                 expect.stringContaining('loading, empty, error, modal or toast'),
                 expect.stringContaining('order lookup'),
+                expect.stringContaining('cart item update'),
             ])
         )
         expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
@@ -301,6 +302,10 @@ describe('CI artifact contract', () => {
         )
         const cartItem = readFileSync(
             join(REPO_ROOT, 'apps/storefront/src/components/cart/CartItem.tsx'),
+            'utf8'
+        )
+        const toaster = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/components/ui/Toaster.tsx'),
             'utf8'
         )
         const checkoutPageClient = readFileSync(
@@ -342,8 +347,19 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('visual-state-loading-checkout-promotion')
         expect(visualSpec).toContain('visual-state-error-checkout-promotion')
         expect(visualSpec).toContain('cleanupRuntimeEvidenceCart')
+        expect(visualSpec).toContain('cart-item-update-loading')
+        expect(visualSpec).toContain('cart-item-update-error')
+        expect(visualSpec).toContain('shouldRequireCartStates')
+        expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CART_STATES')
+        expect(visualSpec).toContain('delayNextCartAction')
+        expect(visualSpec).toContain('visual-state-loading-cart-item-update')
+        expect(visualSpec).toContain('visual-state-error-cart-item-update')
         expect(visualSpec).toContain('toHaveAccessibleName')
         expect(visualSpec).toContain('cart-item-remove')
+        expect(visualSpec).toContain('cart-item-increase')
+        expect(visualSpec).toContain('cart-item-increase-spinner')
+        expect(visualSpec).toContain('toast-error')
+        expect(visualSpec).toContain('[data-testid="add-to-cart"]:visible')
         expect(visualSpec).toContain("route.request().method() !== 'POST'")
         expect(visualSpec).toContain('waitUntilIntercepted')
         expect(visualSpec).toContain(".waitFor({ state: 'visible', timeout: 20_000 })")
@@ -384,8 +400,13 @@ describe('CI artifact contract', () => {
         expect(newsletterSignup).toContain('data-runtime-ready="false"')
         expect(newsletterSignup).toContain("setAttribute('data-runtime-ready', 'true')")
         expect(cartItem).toContain('data-testid="cart-item-remove"')
+        expect(cartItem).toContain('data-testid="cart-item-increase"')
+        expect(cartItem).toContain('data-testid="cart-item-increase-spinner"')
+        expect(cartItem).toContain('catch')
+        expect(cartItem).toContain('finally')
         expect(cartItem).toContain("aria-label={t('cart.drawer.decreaseQuantity')")
         expect(cartItem).toContain("aria-label={t('cart.drawer.increaseQuantity')")
+        expect(toaster).toContain('data-testid={`toast-${toast.type}`}')
         expect(checkoutPageClient).toContain("aria-label={t('common.back')}")
     })
 
@@ -431,6 +452,9 @@ describe('CI artifact contract', () => {
             "BNS_RUNTIME_REQUIRE_CHECKOUT_STATES: ${{ github.event_name == 'push' && '1' || '0' }}"
         )
         expect(riskDomainEvidenceStep).toContain(
+            "BNS_RUNTIME_REQUIRE_CART_STATES: ${{ github.event_name == 'push' && '1' || '0' }}"
+        )
+        expect(riskDomainEvidenceStep).toContain(
             "BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}"
         )
         expect(riskDomainEvidenceStep).toContain(
@@ -445,6 +469,7 @@ describe('CI artifact contract', () => {
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES'")
+        expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CART_STATES'")
         expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
     })
 

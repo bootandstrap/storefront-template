@@ -34,13 +34,18 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
         if (!cartId) return
         setPendingAction(action)
         startTransition(async () => {
-            const cart = await updateCartItemAction(cartId, item.id, newQuantity)
-            if (cart) {
-                setCart(cart)
-            } else {
+            try {
+                const cart = await updateCartItemAction(cartId, item.id, newQuantity)
+                if (cart) {
+                    setCart(cart)
+                } else {
+                    showError(t('cart.drawer.updateError'))
+                }
+            } catch {
                 showError(t('cart.drawer.updateError'))
+            } finally {
+                setPendingAction(null)
             }
-            setPendingAction(null)
         })
     }
 
@@ -53,37 +58,42 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
         const removedQuantity = item.quantity
 
         startTransition(async () => {
-            const updatedCart = await removeFromCartAction(cartId, item.id)
-            if (updatedCart) {
-                setCart(updatedCart)
-                // Show undo toast
-                showSuccess(
-                    `${removedTitle} ${t('cart.drawer.removed') || 'removed'}`,
-                    {
-                        duration: 5000,
-                        action: {
-                            label: t('common.undo') || 'Undo',
-                            onClick: async () => {
-                                // Re-add the item via addToCart action
-                                try {
-                                    const { addToCartAction } = await import('@/app/[lang]/(shop)/cart/actions')
-                                    const result = await addToCartAction(
-                                        cartId,
-                                        item.variant.id,
-                                        removedQuantity
-                                    )
-                                    if (result.cart) setCart(result.cart)
-                                } catch {
-                                    showError(t('cart.drawer.undoError') || 'Could not restore item')
-                                }
+            try {
+                const updatedCart = await removeFromCartAction(cartId, item.id)
+                if (updatedCart) {
+                    setCart(updatedCart)
+                    // Show undo toast
+                    showSuccess(
+                        `${removedTitle} ${t('cart.drawer.removed') || 'removed'}`,
+                        {
+                            duration: 5000,
+                            action: {
+                                label: t('common.undo') || 'Undo',
+                                onClick: async () => {
+                                    // Re-add the item via addToCart action
+                                    try {
+                                        const { addToCartAction } = await import('@/app/[lang]/(shop)/cart/actions')
+                                        const result = await addToCartAction(
+                                            cartId,
+                                            item.variant.id,
+                                            removedQuantity
+                                        )
+                                        if (result.cart) setCart(result.cart)
+                                    } catch {
+                                        showError(t('cart.drawer.undoError') || 'Could not restore item')
+                                    }
+                                },
                             },
-                        },
-                    }
-                )
-            } else {
+                        }
+                    )
+                } else {
+                    showError(t('cart.drawer.removeError'))
+                }
+            } catch {
                 showError(t('cart.drawer.removeError'))
+            } finally {
+                setPendingAction(null)
             }
-            setPendingAction(null)
         })
     }
 
@@ -135,10 +145,15 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
                         onClick={() => handleUpdate(item.quantity + 1, 'inc')}
                         disabled={isPending}
                         aria-label={t('cart.drawer.increaseQuantity')}
+                        data-testid="cart-item-increase"
                         className="w-9 h-9 rounded-lg border border-sf-3 flex items-center justify-center hover:bg-sf-1 transition-colors text-tx-sec touch-target"
                     >
                         {pendingAction === 'inc' ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <Loader2
+                                className="w-3 h-3 animate-spin"
+                                data-testid="cart-item-increase-spinner"
+                                aria-hidden="true"
+                            />
                         ) : (
                             <Plus className="w-3 h-3" />
                         )}

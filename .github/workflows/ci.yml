@@ -153,6 +153,7 @@ jobs:
           BNS_RUNTIME_VISUAL_EVIDENCE_REPORT: '1'
           BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
           BNS_RUNTIME_REQUIRE_CHECKOUT_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
+          BNS_RUNTIME_REQUIRE_CART_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
           BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ${{ vars.TENANT_ID }}

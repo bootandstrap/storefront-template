@@ -58,6 +58,16 @@ type CheckoutPromotionRuntimeState = {
     errorTestId: string
 }
 
+type CartItemUpdateRuntimeState = {
+    loadingName: string
+    errorName: string
+    path: string
+    actionPath: string
+    buttonTestId: string
+    spinnerTestId: string
+    errorToastTestId: string
+}
+
 type InteractiveState = {
     name: string
     path: string
@@ -82,6 +92,11 @@ type DelayedRuntimeFetch = {
 
 type InterceptedRuntimeFetch = DelayedRuntimeFetch & {
     waitUntilIntercepted: () => Promise<void>
+}
+
+type InterceptedRuntimeAction = {
+    waitUntilIntercepted: () => Promise<void>
+    abort: () => Promise<void>
 }
 
 type AxeViolation = {
@@ -179,6 +194,16 @@ const checkoutPromotionRuntimeState: CheckoutPromotionRuntimeState = {
     errorTestId: 'checkout-promotion-error',
 }
 
+const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
+    loadingName: 'cart-item-update-loading',
+    errorName: 'cart-item-update-error',
+    path: '/es/carrito',
+    actionPath: '/es/carrito',
+    buttonTestId: 'cart-item-increase',
+    spinnerTestId: 'cart-item-increase-spinner',
+    errorToastTestId: 'toast-error',
+}
+
 const _quickViewTranslationKey = 'product.quickView'
 const quickViewLabelPattern = /vista rápida|quick view|aperçu rapide|anteprima rapida|schnellansicht/i
 
@@ -205,6 +230,11 @@ function shouldRequireOrderLookupStates() {
 
 function shouldRequireCheckoutStates() {
     return process.env.BNS_RUNTIME_REQUIRE_CHECKOUT_STATES === '1'
+        || shouldRequireInteractiveStates()
+}
+
+function shouldRequireCartStates() {
+    return process.env.BNS_RUNTIME_REQUIRE_CART_STATES === '1'
         || shouldRequireInteractiveStates()
 }
 
@@ -646,7 +676,7 @@ async function prepareCheckoutPromotionLoadingState(
     if (!productsAvailability.available) return productsAvailability
 
     await openFirstProductDetail(page)
-    const addToCart = page.getByTestId('add-to-cart')
+    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
     await expect(addToCart).toBeVisible({ timeout: 15_000 })
     await addToCart.click()
     await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
@@ -684,6 +714,106 @@ async function prepareCheckoutPromotionLoadingState(
     await button.click()
 
     return { available: true, delayedFetch }
+}
+
+async function delayNextCartAction(
+    page: Page,
+    targetPath: string
+): Promise<InterceptedRuntimeAction> {
+    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
+    let abortAction!: () => void
+    let aborted = false
+    let actionWasDelayed = false
+    const abortPromise = new Promise<void>((resolve) => {
+        abortAction = resolve
+    })
+
+    await page.route(
+        (url) => url.pathname === normalizedTargetPath,
+        async (route) => {
+            const request = route.request()
+            if (request.method() !== 'POST' || !request.headers()['next-action']) {
+                await route.continue()
+                return
+            }
+
+            actionWasDelayed = true
+            await abortPromise
+            await route.abort('failed').catch(() => {})
+        }
+    )
+
+    return {
+        waitUntilIntercepted: async () => {
+            await expect.poll(
+                () => actionWasDelayed,
+                {
+                    message: `expected a Next.js Server Action POST to ${normalizedTargetPath}`,
+                    timeout: 5_000,
+                }
+            ).toBe(true)
+        },
+        abort: async () => {
+            if (!aborted) {
+                aborted = true
+                abortAction()
+            }
+            if (actionWasDelayed) {
+                await page.waitForTimeout(100)
+            }
+        },
+    }
+}
+
+async function prepareCartItemUpdateLoadingState(
+    page: Page,
+    testInfo: TestInfo,
+    state: CartItemUpdateRuntimeState,
+    viewport: VisualViewport,
+    onCartCreated: () => void
+): Promise<ProductRouteAvailability & { delayedAction?: InterceptedRuntimeAction }> {
+    const productsAvailability = await prepareProductsRoute(
+        page,
+        testInfo,
+        { name: state.loadingName, path: '/es/productos', state: 'toast' },
+        viewport
+    )
+    if (!productsAvailability.available) return productsAvailability
+
+    await openFirstProductDetail(page)
+    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
+    await expect(addToCart).toBeVisible({ timeout: 15_000 })
+    await addToCart.click()
+    await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
+    await expect.poll(
+        () => page.evaluate(() => localStorage.getItem('bns-cart-id')),
+        { message: 'add-to-cart should persist the runtime evidence cart before cart navigation' }
+    ).not.toBeNull()
+    onCartCreated()
+
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    const button = page.getByTestId(state.buttonTestId).first()
+    const hasCartItem = await button
+        .waitFor({ state: 'visible', timeout: 20_000 })
+        .then(() => true)
+        .catch(() => false)
+    if (!hasCartItem) {
+        const reason = 'cart item update evidence requires a hydrated runtime cart item'
+        await testInfo.attach(`visual-state-loading-cart-item-update-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const delayedAction = await delayNextCartAction(page, state.actionPath)
+    await button.scrollIntoViewIfNeeded()
+    await button.click()
+
+    return { available: true, delayedAction }
 }
 
 async function cleanupRuntimeEvidenceCart(page: Page) {
@@ -763,7 +893,7 @@ async function assertModalState(page: Page) {
 async function assertToastState(page: Page) {
     await openFirstProductDetail(page)
 
-    const addToCart = page.locator('[data-testid="add-to-cart"]')
+    const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
     await expect(addToCart).toBeVisible({ timeout: 15_000 })
     await addToCart.click()
 
@@ -944,6 +1074,66 @@ test.describe('runtime visual evidence', () => {
                 expect(blockingConsoleMessages).toEqual([])
             } finally {
                 await delayedFetch?.release()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                if (runtimeCartCreated) {
+                    await cleanupRuntimeEvidenceCart(page)
+                }
+            }
+        })
+    }
+
+    for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
+        test(`cart item update renders loading and error visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+            const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+            await page.addInitScript({ content: axeSource })
+            await page.setViewportSize({ width: viewport.width, height: viewport.height })
+            let delayedAction: InterceptedRuntimeAction | undefined
+            let runtimeCartCreated = false
+
+            try {
+                const availability = await prepareCartItemUpdateLoadingState(
+                    page,
+                    testInfo,
+                    cartItemUpdateRuntimeState,
+                    viewport,
+                    () => {
+                        runtimeCartCreated = true
+                    }
+                )
+                delayedAction = availability.delayedAction
+                if (!availability.available) {
+                    if (shouldRequireCartStates()) {
+                        throw new Error(availability.reason)
+                    }
+
+                    test.skip(true, availability.reason)
+                }
+
+                expect(delayedAction).toBeDefined()
+                await delayedAction!.waitUntilIntercepted()
+                const increaseButton = page.getByTestId(cartItemUpdateRuntimeState.buttonTestId).first()
+                await expect(increaseButton).toBeDisabled()
+                await expect(increaseButton).toHaveAccessibleName(/aumentar|increase|augmenter|aumenta|erhöhen/i)
+                await expect(page.getByTestId(cartItemUpdateRuntimeState.spinnerTestId).first()).toBeVisible()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-cart-item-update-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-cart-item-update-${viewport.name}`,
+                }, 'body')
+
+                await delayedAction!.abort()
+
+                const errorToast = page.getByTestId(cartItemUpdateRuntimeState.errorToastTestId).last()
+                await expect(errorToast).toBeVisible({ timeout: 5_000 })
+                await expect(errorToast).toContainText(/\S+/)
+                await expect(errorToast).toHaveAttribute('role', 'alert')
+                await expect(increaseButton).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-cart-item-update-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-cart-item-update-${viewport.name}`,
+                }, 'body')
+                expect(blockingConsoleMessages).toEqual([])
+            } finally {
+                await delayedAction?.abort()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
                 if (runtimeCartCreated) {
                     await cleanupRuntimeEvidenceCart(page)
