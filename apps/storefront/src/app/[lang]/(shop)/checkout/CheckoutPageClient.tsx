@@ -94,6 +94,7 @@ export default function CheckoutPageClient({
                 <div className="flex items-center gap-3 mb-8">
                     <Link
                         href={localizedHref('cart')}
+                        aria-label={t('common.back')}
                         className="p-2 rounded-full hover:bg-sf-1 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />

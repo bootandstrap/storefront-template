@@ -487,6 +487,7 @@ async function prepareNewsletterSubmitLoadingState(
         return { available: false, reason }
     }
 
+    await expect(page.getByTestId('newsletter-signup-form')).toHaveAttribute('data-runtime-ready', 'true')
     const delayedFetch = await delayNextRuntimeVisualFetch(page, state.requestPath)
     await button.scrollIntoViewIfNeeded()
     await page.locator('footer input[name="email"]').first().fill(`runtime-evidence-${Date.now()}@example.test`)
@@ -649,13 +650,20 @@ async function prepareCheckoutPromotionLoadingState(
     await expect(addToCart).toBeVisible({ timeout: 15_000 })
     await addToCart.click()
     await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
+    await expect.poll(
+        () => page.evaluate(() => localStorage.getItem('bns-cart-id')),
+        { message: 'add-to-cart should persist the runtime evidence cart before checkout navigation' }
+    ).not.toBeNull()
     onCartCreated()
 
     const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
     expect(response?.status() ?? 200).toBe(200)
 
     const form = page.getByTestId(state.formTestId)
-    const hasPromotionInput = await form.isVisible({ timeout: 20_000 }).catch(() => false)
+    const hasPromotionInput = await form
+        .waitFor({ state: 'visible', timeout: 20_000 })
+        .then(() => true)
+        .catch(() => false)
     if (!hasPromotionInput) {
         const reason = 'checkout promotion evidence requires a hydrated cart and enabled promotion UI'
         await testInfo.attach(`visual-state-loading-checkout-promotion-${viewport.name}-runtime-unavailable`, {

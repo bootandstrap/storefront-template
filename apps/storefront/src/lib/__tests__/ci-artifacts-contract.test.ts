@@ -295,8 +295,16 @@ describe('CI artifact contract', () => {
             join(REPO_ROOT, 'apps/storefront/src/components/checkout/PromotionInput.tsx'),
             'utf8'
         )
+        const newsletterSignup = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/components/newsletter/NewsletterSignup.tsx'),
+            'utf8'
+        )
         const cartItem = readFileSync(
             join(REPO_ROOT, 'apps/storefront/src/components/cart/CartItem.tsx'),
+            'utf8'
+        )
+        const checkoutPageClient = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/app/[lang]/(shop)/checkout/CheckoutPageClient.tsx'),
             'utf8'
         )
 
@@ -338,6 +346,7 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('cart-item-remove')
         expect(visualSpec).toContain("route.request().method() !== 'POST'")
         expect(visualSpec).toContain('waitUntilIntercepted')
+        expect(visualSpec).toContain(".waitFor({ state: 'visible', timeout: 20_000 })")
         expect(visualSpec).toContain('cart-drawer')
         expect(visualSpec).toContain('product.quickView')
         expect(visualSpec).toContain('visual-state-loading')
@@ -371,7 +380,13 @@ describe('CI artifact contract', () => {
         expect(promotionInput).toContain('data-runtime-ready="false"')
         expect(promotionInput).toContain("setAttribute('data-runtime-ready', 'true')")
         expect(promotionInput).toContain('role="alert"')
+        expect(newsletterSignup).toContain('data-testid="newsletter-signup-form"')
+        expect(newsletterSignup).toContain('data-runtime-ready="false"')
+        expect(newsletterSignup).toContain("setAttribute('data-runtime-ready', 'true')")
         expect(cartItem).toContain('data-testid="cart-item-remove"')
+        expect(cartItem).toContain("aria-label={t('cart.drawer.decreaseQuantity')")
+        expect(cartItem).toContain("aria-label={t('cart.drawer.increaseQuantity')")
+        expect(checkoutPageClient).toContain("aria-label={t('common.back')}")
     })
 
     it('stabilizes motion before runtime visual screenshots and axe scans', () => {

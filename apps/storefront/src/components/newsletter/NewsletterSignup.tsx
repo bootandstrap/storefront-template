@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Mail, CheckCircle, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 
@@ -12,9 +12,14 @@ import { useI18n } from '@/lib/i18n/provider'
 
 export default function NewsletterSignup() {
     const { t } = useI18n()
+    const formRef = useRef<HTMLFormElement>(null)
     const [email, setEmail] = useState('')
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
     const [message, setMessage] = useState('')
+
+    useEffect(() => {
+        formRef.current?.setAttribute('data-runtime-ready', 'true')
+    }, [])
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
@@ -67,7 +72,13 @@ export default function NewsletterSignup() {
                     {message}
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} className="flex gap-2">
+                <form
+                    ref={formRef}
+                    data-testid="newsletter-signup-form"
+                    data-runtime-ready="false"
+                    onSubmit={handleSubmit}
+                    className="flex gap-2"
+                >
                     <input
                         type="email"
                         name="email"

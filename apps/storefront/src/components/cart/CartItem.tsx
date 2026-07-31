@@ -121,6 +121,7 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
                             else handleUpdate(item.quantity - 1, 'dec')
                         }}
                         disabled={isPending}
+                        aria-label={t('cart.drawer.decreaseQuantity')}
                         className="w-9 h-9 rounded-lg border border-sf-3 flex items-center justify-center hover:bg-sf-1 transition-colors text-tx-sec touch-target"
                     >
                         {pendingAction === 'dec' ? (
@@ -133,6 +134,7 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
                     <button
                         onClick={() => handleUpdate(item.quantity + 1, 'inc')}
                         disabled={isPending}
+                        aria-label={t('cart.drawer.increaseQuantity')}
                         className="w-9 h-9 rounded-lg border border-sf-3 flex items-center justify-center hover:bg-sf-1 transition-colors text-tx-sec touch-target"
                     >
                         {pendingAction === 'inc' ? (

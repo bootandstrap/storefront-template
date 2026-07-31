@@ -144,6 +144,8 @@
   "cart.continueShopping": "Continue shopping",
   "cart.discount": "Discount",
   "cart.drawer.orderWhatsApp": "Order via WhatsApp",
+  "cart.drawer.decreaseQuantity": "Decrease quantity",
+  "cart.drawer.increaseQuantity": "Increase quantity",
   "cart.drawer.removeError": "Error removing product",
   "cart.drawer.removeLabel": "Remove product",
   "cart.drawer.updateError": "Error updating quantity",

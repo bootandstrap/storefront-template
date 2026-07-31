@@ -154,6 +154,8 @@
   "cart.continueShopping": "Weiter einkaufen",
   "cart.discount": "Rabatt",
   "cart.drawer.orderWhatsApp": "Per WhatsApp bestellen",
+  "cart.drawer.decreaseQuantity": "Menge verringern",
+  "cart.drawer.increaseQuantity": "Menge erhöhen",
   "cart.drawer.removeError": "Fehler beim Entfernen des Produkts",
   "cart.drawer.removeLabel": "Produkt entfernen",
   "cart.drawer.updateError": "Fehler beim Aktualisieren der Menge",
