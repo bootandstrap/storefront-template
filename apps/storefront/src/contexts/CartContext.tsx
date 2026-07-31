@@ -97,7 +97,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 setHydrationError(true)
             }
         } catch (err) {
-            logger.warn('[CartContext] Cart hydration failed:', err)
+            logger.warn('[CartContext] Cart retrieval unavailable:', err)
             setHydrationError(true)
         } finally {
             setIsLoading(false)

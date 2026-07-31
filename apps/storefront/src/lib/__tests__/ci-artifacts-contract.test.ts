@@ -276,6 +276,7 @@ describe('CI artifact contract', () => {
                 expect.stringContaining('loading, empty, error, modal or toast'),
                 expect.stringContaining('order lookup'),
                 expect.stringContaining('cart item update'),
+                expect.stringContaining('cart hydration'),
             ])
         )
         expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
@@ -358,6 +359,16 @@ describe('CI artifact contract', () => {
         expect(cartCleanup).toContain('runtime evidence cart should hydrate before cleanup')
         expect(visualSpec).toContain('cart-item-update-loading')
         expect(visualSpec).toContain('cart-item-update-error')
+        expect(visualSpec).toContain('cart-hydration-loading')
+        expect(visualSpec).toContain('cart-hydration-error')
+        expect(visualSpec).toContain('cart-hydration-retry')
+        expect(visualSpec).toContain("localStorage.setItem('bns-cart-id', 'cart_runtime_evidence_unavailable')")
+        expect(visualSpec).toContain('visual-state-loading-cart-hydration')
+        expect(visualSpec).toContain('visual-state-error-cart-hydration')
+        expect(visualSpec).toContain('cart hydration renders loading, error and retry evidence')
+        expect(visualSpec).toContain('cart-drawer-hydration-loading')
+        expect(visualSpec).toContain('cart-drawer-hydration-error')
+        expect(visualSpec).toContain('cart-drawer-hydration-retry')
         expect(visualSpec).toContain('cart-item-remove-loading')
         expect(visualSpec).toContain('cart-item-remove-error')
         expect(visualSpec).toContain('shouldRequireCartStates')

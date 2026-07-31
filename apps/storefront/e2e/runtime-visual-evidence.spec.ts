@@ -72,6 +72,18 @@ type CartItemUpdateRuntimeState = {
     errorToastTestId: string
 }
 
+type CartHydrationRuntimeState = {
+    loadingName: string
+    errorName: string
+    path: string
+    loadingTestId: string
+    errorTestId: string
+    retryTestId: string
+    drawerLoadingTestId: string
+    drawerErrorTestId: string
+    drawerRetryTestId: string
+}
+
 type InteractiveState = {
     name: string
     path: string
@@ -210,6 +222,18 @@ const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
     removeButtonTestId: 'cart-item-remove',
     removeSpinnerTestId: 'cart-item-remove-spinner',
     errorToastTestId: 'toast-error',
+}
+
+const cartHydrationRuntimeState: CartHydrationRuntimeState = {
+    loadingName: 'cart-hydration-loading',
+    errorName: 'cart-hydration-error',
+    path: '/es/carrito',
+    loadingTestId: 'cart-hydration-loading',
+    errorTestId: 'cart-hydration-error',
+    retryTestId: 'cart-hydration-retry',
+    drawerLoadingTestId: 'cart-drawer-hydration-loading',
+    drawerErrorTestId: 'cart-drawer-hydration-error',
+    drawerRetryTestId: 'cart-drawer-hydration-retry',
 }
 
 const RUNTIME_CART_SETUP_MAX_ATTEMPTS = 3
@@ -774,7 +798,8 @@ async function prepareCheckoutPromotionLoadingState(
 
 async function delayNextCartAction(
     page: Page,
-    targetPath: string
+    targetPath: string,
+    expectedBody?: string
 ): Promise<InterceptedRuntimeAction> {
     const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
     let abortAction!: () => void
@@ -788,7 +813,11 @@ async function delayNextCartAction(
         (url) => url.pathname === normalizedTargetPath,
         async (route) => {
             const request = route.request()
-            if (request.method() !== 'POST' || !request.headers()['next-action']) {
+            if (
+                request.method() !== 'POST'
+                || !request.headers()['next-action']
+                || (expectedBody && !request.postData()?.includes(expectedBody))
+            ) {
                 await route.continue()
                 return
             }
@@ -819,6 +848,34 @@ async function delayNextCartAction(
             }
         },
     }
+}
+
+async function prepareCartHydrationLoadingState(
+    page: Page,
+    testInfo: TestInfo,
+    state: CartHydrationRuntimeState,
+    viewport: VisualViewport
+): Promise<ProductRouteAvailability & { delayedAction?: InterceptedRuntimeAction }> {
+    const syntheticCartId = 'cart_runtime_evidence_unavailable'
+    await page.addInitScript(() => {
+        localStorage.setItem('bns-cart-id', 'cart_runtime_evidence_unavailable')
+    })
+    const delayedAction = await delayNextCartAction(page, state.path, syntheticCartId)
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    if (await isMaintenanceScreen(page)) {
+        await delayedAction.abort()
+        const reason = 'cart hydration evidence requires the storefront runtime outside maintenance mode'
+        await testInfo.attach(`visual-state-loading-cart-hydration-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    return { available: true, delayedAction }
 }
 
 async function prepareCartItemUpdateLoadingState(
@@ -1082,6 +1139,99 @@ test.describe('runtime visual evidence', () => {
             } finally {
                 await delayedFetch?.release()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
+            }
+        })
+    }
+
+    for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
+        test(`cart hydration renders loading, error and retry evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+            const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+            await page.addInitScript({ content: axeSource })
+            await page.setViewportSize({ width: viewport.width, height: viewport.height })
+            let delayedAction: InterceptedRuntimeAction | undefined
+
+            try {
+                const availability = await prepareCartHydrationLoadingState(
+                    page,
+                    testInfo,
+                    cartHydrationRuntimeState,
+                    viewport
+                )
+                delayedAction = availability.delayedAction
+                if (!availability.available) {
+                    if (shouldRequireCartStates()) {
+                        throw new Error(availability.reason)
+                    }
+
+                    test.skip(true, availability.reason)
+                }
+
+                expect(delayedAction).toBeDefined()
+                await delayedAction!.waitUntilIntercepted()
+
+                const loading = page.getByTestId(cartHydrationRuntimeState.loadingTestId)
+                await expect(loading).toBeVisible()
+                await expect(loading).toHaveAttribute('role', 'status')
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-cart-hydration-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-cart-hydration-${viewport.name}`,
+                })
+
+                const headerCartButton = page
+                    .getByTestId('main-header')
+                    .getByRole('button', { name: /carrito|cart|panier|carrello|warenkorb/i })
+                await headerCartButton.click()
+
+                const drawer = page.getByTestId('cart-drawer')
+                await expect(drawer.getByTestId(cartHydrationRuntimeState.drawerLoadingTestId)).toBeVisible()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-cart-drawer-hydration-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-cart-drawer-hydration-${viewport.name}`,
+                }, '[data-testid="cart-drawer"]')
+
+                await delayedAction!.abort()
+
+                const drawerError = drawer.getByTestId(cartHydrationRuntimeState.drawerErrorTestId)
+                const drawerRetry = drawer.getByTestId(cartHydrationRuntimeState.drawerRetryTestId)
+                await expect(drawerError).toBeVisible({ timeout: 5_000 })
+                await expect(drawerError).toHaveAttribute('role', 'alert')
+                await expect(drawerRetry).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-cart-drawer-hydration-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-cart-drawer-hydration-${viewport.name}`,
+                }, '[data-testid="cart-drawer"]')
+
+                await drawer
+                    .getByRole('button', { name: /cerrar|close|fermer|chiudi|schließen/i })
+                    .click()
+                await expect(drawer).toBeHidden()
+
+                const error = page.getByTestId(cartHydrationRuntimeState.errorTestId)
+                const retry = page.getByTestId(cartHydrationRuntimeState.retryTestId)
+                await expect(error).toBeVisible()
+                await expect(error).toHaveAttribute('role', 'alert')
+                await expect(retry).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-cart-hydration-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-cart-hydration-${viewport.name}`,
+                })
+
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                delayedAction = await delayNextCartAction(
+                    page,
+                    cartHydrationRuntimeState.path,
+                    'cart_runtime_evidence_unavailable'
+                )
+                await retry.click()
+                await delayedAction.waitUntilIntercepted()
+                await expect(loading).toBeVisible()
+                await delayedAction.abort()
+                await expect(error).toBeVisible({ timeout: 5_000 })
+                expect(blockingConsoleMessages).toEqual([])
+            } finally {
+                await delayedAction?.abort()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                await page.evaluate(() => localStorage.removeItem('bns-cart-id')).catch(() => {})
             }
         })
     }

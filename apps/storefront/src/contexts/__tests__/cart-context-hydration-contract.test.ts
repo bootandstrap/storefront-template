@@ -28,6 +28,8 @@ describe('CartContext hydration contract', () => {
         expect(context).toContain('if (loaded) {')
         expect(context).toContain('setHydrationError(true)')
         expect(context).toContain('const retryHydration = useCallback')
+        expect(context).toContain('[CartContext] Cart retrieval unavailable:')
+        expect(context).not.toContain('[CartContext] Cart hydration failed:')
         expect(hydrationBlock).not.toContain('localStorage.removeItem(CART_ID_KEY)')
     })
 
