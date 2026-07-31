@@ -353,13 +353,13 @@ describe('CI artifact contract', () => {
         expect(riskDomainEvidenceStep).toContain("CI: ''")
         expect(riskDomainEvidenceStep).toContain("BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'")
         expect(riskDomainEvidenceStep).toContain(
-            'NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}'
+            'NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}'
         )
         expect(riskDomainEvidenceStep).toContain(
-            'TENANT_ID: ${{ secrets.TEST_TENANT_ID }}'
+            'TENANT_ID: ${{ vars.TENANT_ID }}'
         )
         expect(riskDomainEvidenceStep).toContain(
-            'NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}'
+            'NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}'
         )
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")

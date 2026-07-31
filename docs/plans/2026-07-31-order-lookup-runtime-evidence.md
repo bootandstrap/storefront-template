@@ -149,8 +149,9 @@ Expected: PASS or an explicitly documented pre-existing coverage warning only.
 
 Require `POST /api/orders/lookup`, wait until the route is intercepted, pass
 `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES` through the evidence runner, and set
-that flag in tenant CI with the existing test Supabase/Tenant secret references.
-The contract test must reject removal of any of these safeguards.
+that flag in tenant CI with the standard tenant Supabase Actions secrets and
+tenant ID Actions variable. The contract test must reject removal of any of
+these safeguards.
 
 **Step 5: Commit documentation**
 

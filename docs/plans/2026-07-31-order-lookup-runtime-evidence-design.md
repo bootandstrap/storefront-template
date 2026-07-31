@@ -55,10 +55,11 @@ request.
 
 The interactive-state requirement remains fail-closed for remote targets and
 for runs with `BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES=1`. Tenant CI additionally
-sets the narrower `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` contract and uses
-its existing test Supabase/Tenant secret references, so maintenance-mode skips
-cannot make this evidence appear green. Local template runs may still skip when
-the test-safe runtime is intentionally unavailable.
+sets the narrower `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` contract and
+reuses the tenant's standard `NEXT_PUBLIC_SUPABASE_*` Actions secrets plus its
+`TENANT_ID` Actions variable, so maintenance-mode skips cannot make this
+evidence appear green. Local template runs may still skip when the test-safe
+runtime is intentionally unavailable.
 
 ## Contract and governance
 

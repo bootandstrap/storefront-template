@@ -102,9 +102,9 @@ registrations or physical POS.
   the accessible not-found alert. The harness waits for that exact interception
   before taking evidence, captures loading and error screenshots plus axe
   evidence on desktop and mobile, and never queries a real order. Tenant CI sets
-  `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` with its existing test-safe tenant
-  runtime references, making an unavailable form or maintenance-mode skip a
-  hard failure for this domain.
+  `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` with its standard tenant runtime
+  Actions secrets and tenant ID variable, making an unavailable form or
+  maintenance-mode skip a hard failure for this domain.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be
