@@ -94,6 +94,7 @@ export default function GuestOrderLookup() {
                             {t('auth.email')}
                         </label>
                         <input
+                            data-testid="order-lookup-email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -108,6 +109,7 @@ export default function GuestOrderLookup() {
                             {t('order.number')}
                         </label>
                         <input
+                            data-testid="order-lookup-id"
                             type="text"
                             value={orderId}
                             onChange={(e) => setOrderId(e.target.value)}
@@ -118,13 +120,17 @@ export default function GuestOrderLookup() {
                     </div>
 
                     <button
+                        data-testid="order-lookup-submit"
                         type="submit"
                         disabled={loading}
                         className="btn btn-primary w-full py-3 disabled:opacity-50"
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <Loader2
+                                    data-testid="order-lookup-spinner"
+                                    className="w-4 h-4 animate-spin"
+                                />
                                 {t('common.loading')}
                             </>
                         ) : (
@@ -138,7 +144,11 @@ export default function GuestOrderLookup() {
 
                 {/* Error */}
                 {error && (
-                    <div className="mt-4 flex items-start gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <div
+                        data-testid="order-lookup-error"
+                        role="alert"
+                        className="mt-4 flex items-start gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/20"
+                    >
                         <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
                         <p className="text-sm text-red-400">{error}</p>
                     </div>
