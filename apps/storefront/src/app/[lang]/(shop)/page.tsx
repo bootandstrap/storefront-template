@@ -86,11 +86,13 @@ export default async function HomePage({
       {/* Structured Data — Organization + WebSite with SearchAction */}
       <script
         nonce={cspNonce}
+        suppressHydrationWarning
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLD(config, siteUrl)) }}
       />
       <script
         nonce={cspNonce}
+        suppressHydrationWarning
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLD(config, siteUrl)) }}
       />

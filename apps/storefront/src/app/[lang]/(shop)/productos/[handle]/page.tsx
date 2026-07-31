@@ -87,11 +87,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {/* JSON-LD Structured Data */}
             <script
                 nonce={cspNonce}
+                suppressHydrationWarning
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />
             <script
                 nonce={cspNonce}
+                suppressHydrationWarning
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
             />

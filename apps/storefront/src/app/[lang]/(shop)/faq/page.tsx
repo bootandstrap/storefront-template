@@ -45,6 +45,7 @@ export default async function FaqPage({
             {/* FAQPage JSON-LD for Google rich results */}
             <script
                 nonce={cspNonce}
+                suppressHydrationWarning
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />

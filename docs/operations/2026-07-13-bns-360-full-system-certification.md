@@ -105,6 +105,10 @@ registrations or physical POS.
   `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` with its standard tenant runtime
   Actions secrets and tenant ID variable, making an unavailable form or
   maintenance-mode skip a hard failure for this domain.
+- Public JSON-LD scripts keep the per-request CSP nonce and use React's
+  `suppressHydrationWarning` for that nonce-only attribute. Runtime evidence
+  still treats every other hydration warning as blocking, while avoiding the
+  expected browser-side nonce normalization mismatch.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be

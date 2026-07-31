@@ -36,6 +36,7 @@ describe('CSP inline nonce contract', () => {
 
             expect(source).toContain("headersList.get('x-csp-nonce')")
             expect(source).toContain('nonce={cspNonce}')
+            expect(source).toContain('suppressHydrationWarning')
         }
     })
 })
