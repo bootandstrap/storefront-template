@@ -37,6 +37,7 @@ type OrderLookupRuntimeState = {
     notFoundName: string
     path: string
     requestPath: string
+    formTestId: string
     emailTestId: string
     orderIdTestId: string
     buttonTestId: string
@@ -144,6 +145,7 @@ const orderLookupRuntimeState: OrderLookupRuntimeState = {
     notFoundName: 'order-lookup-not-found',
     path: '/es/pedido',
     requestPath: '/api/orders/lookup',
+    formTestId: 'order-lookup-form',
     emailTestId: 'order-lookup-email',
     orderIdTestId: 'order-lookup-id',
     buttonTestId: 'order-lookup-submit',
@@ -516,6 +518,7 @@ async function prepareOrderLookupLoadingState(
         return { available: false, reason }
     }
 
+    await expect(page.getByTestId(state.formTestId)).toHaveAttribute('data-runtime-ready', 'true')
     const delayedFetch = await delayNextOrderLookupFetch(page, state.requestPath)
     await page.getByTestId(state.emailTestId).fill(`runtime-evidence-${Date.now()}@example.test`)
     await page.getByTestId(state.orderIdTestId).fill('999999999')

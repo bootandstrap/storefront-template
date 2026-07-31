@@ -144,7 +144,6 @@ describe('shared package publication contract', () => {
     )
 
     it.each([
-        ['deploy.yml', 'Post-deploy health check'],
         ['docker-publish.yml', 'Health check — Storefront'],
         ['build-medusa.yml', 'Health check — Medusa'],
     ])('%s health-check shell is syntactically complete', (workflowName, stepName) => {
@@ -154,5 +153,14 @@ describe('shared package publication contract', () => {
         expect(script).toContain('for i in 1 2 3 4; do')
         expect(script).toContain('\ndone')
         expectShellSyntaxValid(script)
+    })
+
+    it('deploy.yml verifies the exact deployed commit through the shared runtime gate', () => {
+        const workflow = readWorkflow('deploy.yml')
+
+        expect(workflow).toContain('- name: Post-deploy health check')
+        expect(workflow).toContain('run: node scripts/ci/wait-for-runtime-commit.mjs')
+        expect(workflow).toContain('BNS_RUNTIME_EXPECTED_COMMIT: ${{ github.sha }}')
+        expect(workflow).toContain('BNS_RUNTIME_HEALTH_URL: https://${{ vars.STORE_DOMAIN }}/api/health')
     })
 })

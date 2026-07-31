@@ -3,12 +3,13 @@
 // NOTE: metadata moved to layout — cannot export from 'use client'
 
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, Package, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 
 export default function GuestOrderLookup() {
     const { t, locale } = useI18n()
+    const formRef = useRef<HTMLFormElement>(null)
     const [email, setEmail] = useState('')
     const [orderId, setOrderId] = useState('')
     const [loading, setLoading] = useState(false)
@@ -20,6 +21,10 @@ export default function GuestOrderLookup() {
         total: number
         currency_code: string
     } | null>(null)
+
+    useEffect(() => {
+        formRef.current?.setAttribute('data-runtime-ready', 'true')
+    }, [])
 
     async function handleSearch(e: React.FormEvent) {
         e.preventDefault()
@@ -88,7 +93,13 @@ export default function GuestOrderLookup() {
                     </p>
                 </div>
 
-                <form onSubmit={handleSearch} className="glass rounded-2xl p-6 space-y-4">
+                <form
+                    ref={formRef}
+                    data-testid="order-lookup-form"
+                    data-runtime-ready="false"
+                    onSubmit={handleSearch}
+                    className="glass rounded-2xl p-6 space-y-4"
+                >
                     <div>
                         <label
                             htmlFor="order-lookup-email"

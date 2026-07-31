@@ -94,7 +94,7 @@ jobs:
     if: github.repository != 'bootandstrap/storefront-template'
     name: Unit Tests (Storefront)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -138,20 +138,25 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter=storefront exec playwright install --with-deps chromium
 
+      - name: Wait for exact deployed storefront commit
+        if: github.event_name == 'push'
+        run: node scripts/ci/wait-for-runtime-commit.mjs
+        env:
+          BNS_RUNTIME_HEALTH_URL: https://${{ vars.STORE_DOMAIN }}/api/health
+          BNS_RUNTIME_EXPECTED_COMMIT: ${{ github.sha }}
+          BNS_RUNTIME_WAIT_SECONDS: '360'
+
       - name: Risk Domain Evidence
         run: node scripts/run-risk-domain-evidence.mjs
         env:
           CI: ''
           BNS_RUNTIME_VISUAL_EVIDENCE_REPORT: '1'
-          BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'
+          BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
+          BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ${{ vars.TENANT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
-          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
-          NEXT_PUBLIC_STORE_URL: http://localhost:3000
-          MEDUSA_BACKEND_URL: http://localhost:9000
 
       - name: Upload Risk Domain Evidence
         uses: actions/upload-artifact@v4

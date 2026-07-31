@@ -120,6 +120,22 @@ describe('CI artifact contract', () => {
         expect(workflow).toMatch(/\n\s+lighthouse:\n(?:.*\n){1,8}\s+timeout-minutes:\s*15\n/)
     })
 
+    it('waits for the exact deployed commit before collecting tenant runtime evidence', () => {
+        const ciWorkflow = readWorkflow('ci.yml')
+        const deployWorkflow = readWorkflow('deploy.yml')
+        const waitScript = readScript('ci/wait-for-runtime-commit.mjs')
+
+        expect(ciWorkflow).toContain('Wait for exact deployed storefront commit')
+        expect(ciWorkflow).toContain("if: github.event_name == 'push'")
+        expect(ciWorkflow).toContain('BNS_RUNTIME_EXPECTED_COMMIT: ${{ github.sha }}')
+        expect(ciWorkflow).toContain("format('https://{0}', vars.STORE_DOMAIN)")
+        expect(ciWorkflow).toContain("|| 'http://localhost:3000'")
+        expect(deployWorkflow).toContain('BNS_RUNTIME_EXPECTED_COMMIT: ${{ github.sha }}')
+        expect(waitScript).toContain('build?.commitSha')
+        expect(waitScript).toContain('expectedCommit')
+        expect(waitScript).toContain('FAIL-CLOSED')
+    })
+
     it('bounds every GitHub Actions job runtime', () => {
         const missingTimeouts = readWorkflowNames().flatMap((workflowName) =>
             jobsWithoutTimeout(readWorkflow(workflowName)).map((jobName) => `${workflowName}:${jobName}`)
@@ -289,6 +305,8 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('order-lookup-loading')
         expect(visualSpec).toContain('order-lookup-not-found')
         expect(visualSpec).toContain('/api/orders/lookup')
+        expect(visualSpec).toContain('order-lookup-form')
+        expect(visualSpec).toContain("toHaveAttribute('data-runtime-ready', 'true')")
         expect(visualSpec).toContain('order-lookup-submit')
         expect(visualSpec).toContain('order-lookup-spinner')
         expect(visualSpec).toContain('order-lookup-error')
@@ -313,6 +331,9 @@ describe('CI artifact contract', () => {
         expect(orderLookupPage).toContain('id="order-lookup-email"')
         expect(orderLookupPage).toContain('htmlFor="order-lookup-id"')
         expect(orderLookupPage).toContain('id="order-lookup-id"')
+        expect(orderLookupPage).toContain('data-testid="order-lookup-form"')
+        expect(orderLookupPage).toContain('data-runtime-ready="false"')
+        expect(orderLookupPage).toContain("setAttribute('data-runtime-ready', 'true')")
         expect(orderLookupPage).toContain('text-red-700 dark:text-red-300')
         expect(orderLookupPage).not.toContain('text-sm text-red-400')
         expect(orderLookupPage).toContain('role="alert"')
@@ -342,7 +363,7 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('await gotoRuntimeVisualRouteWithBackoff(page, productPath, [200])')
     })
 
-    it('prepares CI to execute visual runtime evidence locally', () => {
+    it('prepares CI to execute local PR and exact-deploy push runtime evidence', () => {
         const workflow = readWorkflow('ci.yml')
         const runner = readScript('run-risk-domain-evidence.mjs')
         const riskDomainEvidenceStep = workflow
@@ -353,7 +374,12 @@ describe('CI artifact contract', () => {
         expect(workflow).toContain('pnpm --filter=storefront exec playwright install --with-deps chromium')
         expect(riskDomainEvidenceStep).toBeDefined()
         expect(riskDomainEvidenceStep).toContain("CI: ''")
-        expect(riskDomainEvidenceStep).toContain("BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'")
+        expect(riskDomainEvidenceStep).toContain(
+            "BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: ${{ github.event_name == 'push' && '1' || '0' }}"
+        )
+        expect(riskDomainEvidenceStep).toContain(
+            "BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}"
+        )
         expect(riskDomainEvidenceStep).toContain(
             'NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}'
         )

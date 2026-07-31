@@ -102,9 +102,15 @@ registrations or physical POS.
   the accessible not-found alert. The harness waits for that exact interception
   before taking evidence, captures loading and error screenshots plus axe
   evidence on desktop and mobile, and never queries a real order. Tenant CI sets
-  `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` with its standard tenant runtime
-  Actions secrets and tenant ID variable, making an unavailable form or
-  maintenance-mode skip a hard failure for this domain.
+  `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1`, waits until public health reports
+  the exact `${{ github.sha }}` and then runs the full risk-domain evidence
+  against that deployed tenant. This keeps product evidence on the real Medusa
+  runtime instead of an unavailable CI-local `localhost:9000`, and makes a stale
+  deploy, unavailable form or maintenance-mode skip a hard failure.
+- The order lookup form exposes a post-hydration readiness marker. Playwright
+  waits for that marker before submitting, so a remote test cannot click
+  server-rendered markup before the client handler is attached and falsely
+  report that the expected POST was never emitted.
 - Public JSON-LD scripts keep the per-request CSP nonce and use React's
   `suppressHydrationWarning` for that nonce-only attribute. Runtime evidence
   still treats every other hydration warning as blocking, while avoiding the
@@ -175,23 +181,19 @@ run with `BNS_360_FUNCTIONAL_AUTOMATED_ONLY=1`.
 
 ## Next Implementation Batches
 
-1. Propagate guest order lookup loading and synthetic not-found/error evidence
-   from template to tenant proof, then verify local release gates, remote CI,
-   deploy, Lighthouse Deploy, public health and remote Playwright on the tenant
-   commit.
-2. Expand visible loading evidence to checkout method loading and cart
+1. Expand visible loading evidence to checkout method loading and cart
    transition loading before revisiting App Router route fallbacks. Keep route
    `loading.tsx` evidence source-backed unless the fallback can be observed
    without navigation-shell flake.
-3. Add risk-targeted coverage for the remaining highest-risk non-commercial
+2. Add risk-targeted coverage for the remaining highest-risk non-commercial
    areas: security/auth tenant isolation, checkout/payment simulators, POS
    simulator, Medusa admin helpers, provisioning/cleanup/backup/vault and
    CI/release artifacts.
-4. Replace simulator-only PaymentCollection/order evidence with provider-backed
+3. Replace simulator-only PaymentCollection/order evidence with provider-backed
    test-mode evidence when the tenant-safe provider hook is available.
-5. Replace the current POS Terminal contract evidence with a Stripe test-mode
+4. Replace the current POS Terminal contract evidence with a Stripe test-mode
    simulated reader probe. Keep physical reader certification separate.
-6. Add physical reader certification only after provider, reader id/location and
+5. Add physical reader certification only after provider, reader id/location and
    explicit live drill authorization exist.
 
 ## Non-Negotiable Guards
