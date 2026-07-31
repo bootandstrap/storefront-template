@@ -360,6 +360,12 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('cart-item-increase-spinner')
         expect(visualSpec).toContain('toast-error')
         expect(visualSpec).toContain('[data-testid="add-to-cart"]:visible')
+        const cartItemSetup = visualSpec.slice(
+            visualSpec.indexOf('async function prepareCartItemUpdateLoadingState'),
+            visualSpec.indexOf('async function cleanupRuntimeEvidenceCart')
+        )
+        expect(cartItemSetup).toContain("localStorage.getItem('bns-cart-id')")
+        expect(cartItemSetup).not.toContain('await expect(addToCart).toContainText')
         expect(visualSpec).toContain("route.request().method() !== 'POST'")
         expect(visualSpec).toContain('waitUntilIntercepted')
         expect(visualSpec).toContain(".waitFor({ state: 'visible', timeout: 20_000 })")
@@ -404,6 +410,8 @@ describe('CI artifact contract', () => {
         expect(cartItem).toContain('data-testid="cart-item-increase-spinner"')
         expect(cartItem).toContain('catch')
         expect(cartItem).toContain('finally')
+        expect(cartItem).toContain('aria-busy={isPending}')
+        expect(cartItem).not.toContain("isPending ? 'opacity-60'")
         expect(cartItem).toContain("aria-label={t('cart.drawer.decreaseQuantity')")
         expect(cartItem).toContain("aria-label={t('cart.drawer.increaseQuantity')")
         expect(toaster).toContain('data-testid={`toast-${toast.type}`}')

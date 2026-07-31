@@ -98,7 +98,7 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
     }
 
     return (
-        <div className={`flex gap-3 p-3 rounded-xl transition-opacity ${isPending ? 'opacity-60' : ''}`}>
+        <div className="flex gap-3 p-3 rounded-xl" aria-busy={isPending}>
             {/* Image */}
             <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-sf-1 shrink-0">
                 {item.thumbnail ? (

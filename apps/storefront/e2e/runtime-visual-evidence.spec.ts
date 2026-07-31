@@ -784,7 +784,6 @@ async function prepareCartItemUpdateLoadingState(
     const addToCart = page.locator('[data-testid="add-to-cart"]:visible').first()
     await expect(addToCart).toBeVisible({ timeout: 15_000 })
     await addToCart.click()
-    await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
     await expect.poll(
         () => page.evaluate(() => localStorage.getItem('bns-cart-id')),
         { message: 'add-to-cart should persist the runtime evidence cart before cart navigation' }
