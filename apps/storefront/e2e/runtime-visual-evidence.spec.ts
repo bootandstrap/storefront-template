@@ -61,10 +61,14 @@ type CheckoutPromotionRuntimeState = {
 type CartItemUpdateRuntimeState = {
     loadingName: string
     errorName: string
+    removeLoadingName: string
+    removeErrorName: string
     path: string
     actionPath: string
     buttonTestId: string
     spinnerTestId: string
+    removeButtonTestId: string
+    removeSpinnerTestId: string
     errorToastTestId: string
 }
 
@@ -197,10 +201,14 @@ const checkoutPromotionRuntimeState: CheckoutPromotionRuntimeState = {
 const cartItemUpdateRuntimeState: CartItemUpdateRuntimeState = {
     loadingName: 'cart-item-update-loading',
     errorName: 'cart-item-update-error',
+    removeLoadingName: 'cart-item-remove-loading',
+    removeErrorName: 'cart-item-remove-error',
     path: '/es/carrito',
     actionPath: '/es/carrito',
     buttonTestId: 'cart-item-increase',
     spinnerTestId: 'cart-item-increase-spinner',
+    removeButtonTestId: 'cart-item-remove',
+    removeSpinnerTestId: 'cart-item-remove-spinner',
     errorToastTestId: 'toast-error',
 }
 
@@ -841,12 +849,43 @@ async function prepareCartItemUpdateLoadingState(
     return { available: true, delayedAction }
 }
 
-async function cleanupRuntimeEvidenceCart(page: Page) {
+async function prepareCartItemRemoveLoadingState(
+    page: Page,
+    testInfo: TestInfo,
+    state: CartItemUpdateRuntimeState,
+    viewport: VisualViewport
+): Promise<ProductRouteAvailability & { delayedAction?: InterceptedRuntimeAction }> {
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    const button = page.getByTestId(state.removeButtonTestId).first()
+    const hasCartItem = await waitForHydratedRuntimeCartItem(page, state)
+    if (!hasCartItem) {
+        const reason = 'cart item remove evidence requires a hydrated runtime cart item'
+        await testInfo.attach(`visual-state-loading-cart-item-remove-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const delayedAction = await delayNextCartAction(page, state.actionPath)
+    await button.scrollIntoViewIfNeeded()
+    await button.click()
+
+    return { available: true, delayedAction }
+}
+
+async function cleanupRuntimeEvidenceCart(page: Page, state: CartItemUpdateRuntimeState) {
     const response = await gotoRuntimeVisualRouteWithBackoff(page, '/es/carrito', [200])
     expect(response?.status() ?? 200).toBe(200)
 
+    const hydrated = await waitForHydratedRuntimeCartItem(page, state)
+    expect(hydrated, 'runtime evidence cart should hydrate before cleanup').toBe(true)
+
     const removeButtons = page.getByTestId('cart-item-remove')
-    await expect(removeButtons.first()).toBeVisible({ timeout: 20_000 })
+    await expect(removeButtons.first()).toBeVisible()
 
     for (let remainingAttempts = 10; remainingAttempts > 0; remainingAttempts -= 1) {
         const previousCount = await removeButtons.count()
@@ -1048,7 +1087,7 @@ test.describe('runtime visual evidence', () => {
     }
 
     for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
-        test(`checkout promotion and cart item update render runtime evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+        test(`checkout promotion and cart item update/remove render runtime evidence on ${viewport.name}`, async ({ page }, testInfo) => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: viewport.width, height: viewport.height })
@@ -1139,13 +1178,56 @@ test.describe('runtime visual evidence', () => {
                     screenshot: `visual-state-error-cart-item-update-${viewport.name}`,
                     axe: `axe-core-visual-state-error-cart-item-update-${viewport.name}`,
                 }, 'body')
+
+                await errorToast.getByRole('button', { name: 'Dismiss' }).click()
+                await expect(errorToast).toBeHidden()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                delayedAction = undefined
+
+                const removeAvailability = await prepareCartItemRemoveLoadingState(
+                    page,
+                    testInfo,
+                    cartItemUpdateRuntimeState,
+                    viewport
+                )
+                delayedAction = removeAvailability.delayedAction
+                if (!removeAvailability.available) {
+                    if (shouldRequireCartStates()) {
+                        throw new Error(removeAvailability.reason)
+                    }
+
+                    test.skip(true, removeAvailability.reason)
+                }
+
+                expect(delayedAction).toBeDefined()
+                await delayedAction!.waitUntilIntercepted()
+                const removeButton = page.getByTestId(cartItemUpdateRuntimeState.removeButtonTestId).first()
+                await expect(removeButton).toBeDisabled()
+                await expect(removeButton).toHaveAccessibleName(/eliminar|remove|supprimer|rimuovi|entfernen/i)
+                await expect(page.getByTestId(cartItemUpdateRuntimeState.removeSpinnerTestId).first()).toBeVisible()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-cart-item-remove-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-cart-item-remove-${viewport.name}`,
+                }, 'body')
+
+                await delayedAction!.abort()
+
+                const removeErrorToast = page.getByTestId(cartItemUpdateRuntimeState.errorToastTestId).last()
+                await expect(removeErrorToast).toBeVisible({ timeout: 5_000 })
+                await expect(removeErrorToast).toContainText(/\S+/)
+                await expect(removeErrorToast).toHaveAttribute('role', 'alert')
+                await expect(removeButton).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-cart-item-remove-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-cart-item-remove-${viewport.name}`,
+                }, 'body')
                 expect(blockingConsoleMessages).toEqual([])
             } finally {
                 await delayedFetch?.release()
                 await delayedAction?.abort()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
                 if (runtimeCartCreated) {
-                    await cleanupRuntimeEvidenceCart(page)
+                    await cleanupRuntimeEvidenceCart(page, cartItemUpdateRuntimeState)
                 }
             }
         })

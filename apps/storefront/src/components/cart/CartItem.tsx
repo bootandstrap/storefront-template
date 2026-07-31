@@ -174,7 +174,11 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
                     data-testid="cart-item-remove"
                 >
                     {pendingAction === 'remove' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2
+                            className="w-4 h-4 animate-spin"
+                            data-testid="cart-item-remove-spinner"
+                            aria-hidden="true"
+                        />
                     ) : (
                         <Trash2 className="w-4 h-4" />
                     )}
