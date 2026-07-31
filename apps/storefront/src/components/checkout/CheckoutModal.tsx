@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getEnabledMethods, type PaymentMethod } from '@/lib/payment-methods'
 import type { CheckoutCountry } from './steps/CheckoutAddressStep'
@@ -223,7 +223,7 @@ export default function CheckoutModal({
         onClose()
     }, [onClose, resetCart, step])
 
-    function handleModalKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const handleModalKeyDown = useCallback((event: KeyboardEvent) => {
         if (event.key === 'Escape') {
             event.preventDefault()
             handleModalClose()
@@ -238,14 +238,34 @@ export default function CheckoutModal({
 
         const first = focusable[0]
         const last = focusable[focusable.length - 1]
-        if (event.shiftKey && document.activeElement === first) {
+        if (!modalRef.current.contains(document.activeElement)) {
+            event.preventDefault()
+            ;(event.shiftKey ? last : first).focus()
+        } else if (event.shiftKey && document.activeElement === first) {
             event.preventDefault()
             last.focus()
         } else if (!event.shiftKey && document.activeElement === last) {
             event.preventDefault()
             first.focus()
         }
-    }
+    }, [handleModalClose])
+
+    useEffect(() => {
+        if (!isOpen) return
+        document.addEventListener('keydown', handleModalKeyDown)
+        return () => document.removeEventListener('keydown', handleModalKeyDown)
+    }, [handleModalKeyDown, isOpen])
+
+    useEffect(() => {
+        if (
+            !isOpen
+            || !modalRef.current
+            || modalRef.current.contains(document.activeElement)
+        ) return
+
+        const focusFrame = requestAnimationFrame(() => closeButtonRef.current?.focus())
+        return () => cancelAnimationFrame(focusFrame)
+    }, [isOpen, loadingMethods, methodsError, step])
 
     // ---------------------------------------------------------------------------
     // Navigation
@@ -445,7 +465,6 @@ export default function CheckoutModal({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="checkout-modal-title"
-                onKeyDown={handleModalKeyDown}
             >
                 {/* Header */}
                 <div className="sticky top-0 bg-glass-heavy backdrop-blur-xl border-b border-sf-3 p-4 z-10">

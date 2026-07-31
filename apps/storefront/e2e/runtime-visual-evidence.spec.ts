@@ -1442,6 +1442,11 @@ test.describe('runtime visual evidence', () => {
                 await methodsRetry.click()
                 await delayedAction.waitUntilIntercepted()
                 await expect(methodsLoading).toBeVisible()
+                await expect(
+                    checkoutDialog.getByRole('button', {
+                        name: /cerrar|close|fermer|chiudi|schließen/i,
+                    })
+                ).toBeFocused()
                 await delayedAction.abort()
                 await expect(methodsError).toBeVisible({ timeout: 5_000 })
 
