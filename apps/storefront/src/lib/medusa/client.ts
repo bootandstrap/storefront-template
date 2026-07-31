@@ -268,11 +268,11 @@ export async function removeFromCart(
     cartId: string,
     lineItemId: string
 ): Promise<MedusaCart> {
-    const res = await medusaFetch<{ cart: MedusaCart }>(
+    const res = await medusaFetch<{ parent: MedusaCart }>(
         `/store/carts/${cartId}/line-items/${lineItemId}`,
         { method: 'DELETE' }
     )
-    return res.cart
+    return res.parent
 }
 
 // ---------------------------------------------------------------------------
