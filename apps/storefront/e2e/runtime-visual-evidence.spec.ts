@@ -624,7 +624,7 @@ test.describe('runtime visual evidence', () => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: loadingEvidenceViewport.width, height: loadingEvidenceViewport.height })
-            let delayedFetch: InterceptedRuntimeFetch | undefined
+            let delayedFetch: DelayedRuntimeFetch | undefined
 
             try {
                 const availability = await prepareNewsletterSubmitLoadingState(
@@ -660,7 +660,7 @@ test.describe('runtime visual evidence', () => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: viewport.width, height: viewport.height })
-            let delayedFetch: DelayedRuntimeFetch | undefined
+            let delayedFetch: InterceptedRuntimeFetch | undefined
 
             try {
                 const availability = await prepareOrderLookupLoadingState(

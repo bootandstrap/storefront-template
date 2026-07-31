@@ -343,21 +343,23 @@ describe('CI artifact contract', () => {
     it('prepares CI to execute visual runtime evidence locally', () => {
         const workflow = readWorkflow('ci.yml')
         const runner = readScript('run-risk-domain-evidence.mjs')
+        const riskDomainEvidenceStep = workflow
+            .split(/\n(?= {6}- name: )/)
+            .find((step) => step.startsWith('      - name: Risk Domain Evidence\n'))
 
         expect(workflow).toContain('name: Install Playwright Chromium')
         expect(workflow).toContain('pnpm --filter=storefront exec playwright install --with-deps chromium')
-        expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*CI: ''/)
-        expect(workflow).toMatch(
-            /name: Risk Domain Evidence[\s\S]*BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'/
+        expect(riskDomainEvidenceStep).toBeDefined()
+        expect(riskDomainEvidenceStep).toContain("CI: ''")
+        expect(riskDomainEvidenceStep).toContain("BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'")
+        expect(riskDomainEvidenceStep).toContain(
+            'NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}'
         )
-        expect(workflow).toMatch(
-            /name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_URL: \$\{\{ secrets\.TEST_SUPABASE_URL \}\}/
+        expect(riskDomainEvidenceStep).toContain(
+            'TENANT_ID: ${{ secrets.TEST_TENANT_ID }}'
         )
-        expect(workflow).toMatch(
-            /name: Risk Domain Evidence[\s\S]*TENANT_ID: \$\{\{ secrets\.TEST_TENANT_ID \}\}/
-        )
-        expect(workflow).toMatch(
-            /name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_ANON_KEY: \$\{\{ secrets\.TEST_SUPABASE_ANON_KEY \}\}/
+        expect(riskDomainEvidenceStep).toContain(
+            'NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}'
         )
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
