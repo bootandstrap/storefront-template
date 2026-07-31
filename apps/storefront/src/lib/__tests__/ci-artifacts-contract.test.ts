@@ -313,6 +313,8 @@ describe('CI artifact contract', () => {
         expect(orderLookupPage).toContain('id="order-lookup-email"')
         expect(orderLookupPage).toContain('htmlFor="order-lookup-id"')
         expect(orderLookupPage).toContain('id="order-lookup-id"')
+        expect(orderLookupPage).toContain('text-red-700 dark:text-red-300')
+        expect(orderLookupPage).not.toContain('text-sm text-red-400')
         expect(orderLookupPage).toContain('role="alert"')
     })
 

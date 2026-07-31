@@ -157,8 +157,8 @@ export default function GuestOrderLookup() {
                         role="alert"
                         className="mt-4 flex items-start gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/20"
                     >
-                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                        <p className="text-sm text-red-400">{error}</p>
+                        <AlertCircle className="w-4 h-4 text-red-700 dark:text-red-300 mt-0.5 shrink-0" />
+                        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                     </div>
                 )}
 
