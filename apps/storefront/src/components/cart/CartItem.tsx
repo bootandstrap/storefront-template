@@ -154,6 +154,7 @@ export default function CartItem({ item, currencyCode }: CartItemProps) {
                     disabled={isPending}
                     className="p-1 text-tx-muted hover:text-red-500 transition-colors"
                     aria-label={t('cart.drawer.removeLabel')}
+                    data-testid="cart-item-remove"
                 >
                     {pendingAction === 'remove' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

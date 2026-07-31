@@ -108,7 +108,7 @@
       "failureModes": [
         "critical public routes render differently or overflow across desktop/tablet/mobile viewports",
         "accessibility regressions reach runtime despite static markup contracts",
-        "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup loading and not-found/error"
+        "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup and checkout promotion loading/error"
       ],
       "runtimeEvidence": [
         "pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts"

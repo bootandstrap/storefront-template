@@ -291,6 +291,14 @@ describe('CI artifact contract', () => {
             join(REPO_ROOT, 'apps/storefront/src/app/[lang]/(shop)/pedido/page.tsx'),
             'utf8'
         )
+        const promotionInput = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/components/checkout/PromotionInput.tsx'),
+            'utf8'
+        )
+        const cartItem = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/src/components/cart/CartItem.tsx'),
+            'utf8'
+        )
 
         expect(visualSpec).toContain("state: 'loading'")
         expect(visualSpec).toContain("state: 'modal'")
@@ -318,6 +326,16 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('visual-state-loading-order-lookup')
         expect(visualSpec).toContain('visual-state-error-order-lookup')
         expect(visualSpec).toContain('shouldRequireOrderLookupStates')
+        expect(visualSpec).toContain('checkout-promotion-loading')
+        expect(visualSpec).toContain('checkout-promotion-error')
+        expect(visualSpec).toContain('/api/cart/promotions')
+        expect(visualSpec).toContain('shouldRequireCheckoutStates')
+        expect(visualSpec).toContain('BNS_RUNTIME_REQUIRE_CHECKOUT_STATES')
+        expect(visualSpec).toContain('visual-state-loading-checkout-promotion')
+        expect(visualSpec).toContain('visual-state-error-checkout-promotion')
+        expect(visualSpec).toContain('cleanupRuntimeEvidenceCart')
+        expect(visualSpec).toContain('toHaveAccessibleName')
+        expect(visualSpec).toContain('cart-item-remove')
         expect(visualSpec).toContain("route.request().method() !== 'POST'")
         expect(visualSpec).toContain('waitUntilIntercepted')
         expect(visualSpec).toContain('cart-drawer')
@@ -342,6 +360,18 @@ describe('CI artifact contract', () => {
         expect(orderLookupPage).toContain('text-red-700 dark:text-red-300')
         expect(orderLookupPage).not.toContain('text-sm text-red-400')
         expect(orderLookupPage).toContain('role="alert"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-form"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-toggle"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-input"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-apply"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-spinner"')
+        expect(promotionInput).toContain('data-testid="checkout-promotion-error"')
+        expect(promotionInput).toContain("aria-label={t('promotions.apply')")
+        expect(promotionInput).toContain('aria-hidden="true"')
+        expect(promotionInput).toContain('data-runtime-ready="false"')
+        expect(promotionInput).toContain("setAttribute('data-runtime-ready', 'true')")
+        expect(promotionInput).toContain('role="alert"')
+        expect(cartItem).toContain('data-testid="cart-item-remove"')
     })
 
     it('stabilizes motion before runtime visual screenshots and axe scans', () => {
@@ -383,6 +413,9 @@ describe('CI artifact contract', () => {
             "BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: ${{ github.event_name == 'push' && '1' || '0' }}"
         )
         expect(riskDomainEvidenceStep).toContain(
+            "BNS_RUNTIME_REQUIRE_CHECKOUT_STATES: ${{ github.event_name == 'push' && '1' || '0' }}"
+        )
+        expect(riskDomainEvidenceStep).toContain(
             "BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}"
         )
         expect(riskDomainEvidenceStep).toContain(
@@ -396,6 +429,7 @@ describe('CI artifact contract', () => {
         )
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
+        expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES'")
         expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
     })
 

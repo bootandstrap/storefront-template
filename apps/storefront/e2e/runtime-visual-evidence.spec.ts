@@ -45,6 +45,19 @@ type OrderLookupRuntimeState = {
     errorTestId: string
 }
 
+type CheckoutPromotionRuntimeState = {
+    loadingName: string
+    errorName: string
+    path: string
+    requestPath: string
+    formTestId: string
+    toggleTestId: string
+    inputTestId: string
+    buttonTestId: string
+    spinnerTestId: string
+    errorTestId: string
+}
+
 type InteractiveState = {
     name: string
     path: string
@@ -153,6 +166,19 @@ const orderLookupRuntimeState: OrderLookupRuntimeState = {
     errorTestId: 'order-lookup-error',
 }
 
+const checkoutPromotionRuntimeState: CheckoutPromotionRuntimeState = {
+    loadingName: 'checkout-promotion-loading',
+    errorName: 'checkout-promotion-error',
+    path: '/es/checkout',
+    requestPath: '/api/cart/promotions',
+    formTestId: 'checkout-promotion-form',
+    toggleTestId: 'checkout-promotion-toggle',
+    inputTestId: 'checkout-promotion-input',
+    buttonTestId: 'checkout-promotion-apply',
+    spinnerTestId: 'checkout-promotion-spinner',
+    errorTestId: 'checkout-promotion-error',
+}
+
 const _quickViewTranslationKey = 'product.quickView'
 const quickViewLabelPattern = /vista rápida|quick view|aperçu rapide|anteprima rapida|schnellansicht/i
 
@@ -174,6 +200,11 @@ function shouldRequireInteractiveStates() {
 
 function shouldRequireOrderLookupStates() {
     return process.env.BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES === '1'
+        || shouldRequireInteractiveStates()
+}
+
+function shouldRequireCheckoutStates() {
+    return process.env.BNS_RUNTIME_REQUIRE_CHECKOUT_STATES === '1'
         || shouldRequireInteractiveStates()
 }
 
@@ -546,6 +577,132 @@ async function prepareOrderLookupLoadingState(
     return { available: true, delayedFetch }
 }
 
+async function delayNextCheckoutPromotionFetch(
+    page: Page,
+    targetPath: string
+): Promise<InterceptedRuntimeFetch> {
+    const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
+    let releaseFetch!: () => void
+    let released = false
+    let routeWasDelayed = false
+    const releasePromise = new Promise<void>((resolve) => {
+        releaseFetch = resolve
+    })
+
+    await page.route(
+        (url) => url.pathname === normalizedTargetPath,
+        async (route) => {
+            if (route.request().method() !== 'POST') {
+                await route.continue()
+                return
+            }
+
+            routeWasDelayed = true
+            await releasePromise
+            await route.fulfill({
+                status: 400,
+                contentType: 'application/json',
+                body: JSON.stringify({ error: 'Runtime evidence invalid promotion code' }),
+            }).catch(() => {})
+        }
+    )
+
+    return {
+        waitUntilIntercepted: async () => {
+            await expect.poll(
+                () => routeWasDelayed,
+                {
+                    message: `expected POST ${normalizedTargetPath} to be intercepted`,
+                    timeout: 5_000,
+                }
+            ).toBe(true)
+        },
+        release: async () => {
+            if (!released) {
+                released = true
+                releaseFetch()
+            }
+            if (routeWasDelayed) {
+                await page.waitForTimeout(100)
+            }
+        },
+    }
+}
+
+async function prepareCheckoutPromotionLoadingState(
+    page: Page,
+    testInfo: TestInfo,
+    state: CheckoutPromotionRuntimeState,
+    viewport: VisualViewport,
+    onCartCreated: () => void
+): Promise<ProductRouteAvailability & { delayedFetch?: InterceptedRuntimeFetch }> {
+    const productsAvailability = await prepareProductsRoute(
+        page,
+        testInfo,
+        { name: state.loadingName, path: '/es/productos', state: 'toast' },
+        viewport
+    )
+    if (!productsAvailability.available) return productsAvailability
+
+    await openFirstProductDetail(page)
+    const addToCart = page.getByTestId('add-to-cart')
+    await expect(addToCart).toBeVisible({ timeout: 15_000 })
+    await addToCart.click()
+    await expect(addToCart).toContainText(/añadido|added|ajouté|aggiunto|hinzugefügt/i, { timeout: 10_000 })
+    onCartCreated()
+
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    const form = page.getByTestId(state.formTestId)
+    const hasPromotionInput = await form.isVisible({ timeout: 20_000 }).catch(() => false)
+    if (!hasPromotionInput) {
+        const reason = 'checkout promotion evidence requires a hydrated cart and enabled promotion UI'
+        await testInfo.attach(`visual-state-loading-checkout-promotion-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    await expect(form).toHaveAttribute('data-runtime-ready', 'true')
+    await page.getByTestId(state.toggleTestId).click()
+    await page.getByTestId(state.inputTestId).fill('RUNTIME-EVIDENCE-NOT-REAL')
+
+    const delayedFetch = await delayNextCheckoutPromotionFetch(page, state.requestPath)
+    const button = page.getByTestId(state.buttonTestId)
+    await button.scrollIntoViewIfNeeded()
+    await button.click()
+
+    return { available: true, delayedFetch }
+}
+
+async function cleanupRuntimeEvidenceCart(page: Page) {
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, '/es/carrito', [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    const removeButtons = page.getByTestId('cart-item-remove')
+    await expect(removeButtons.first()).toBeVisible({ timeout: 20_000 })
+
+    for (let remainingAttempts = 10; remainingAttempts > 0; remainingAttempts -= 1) {
+        const previousCount = await removeButtons.count()
+        if (previousCount === 0) break
+
+        await removeButtons.first().click()
+        await expect.poll(
+            () => removeButtons.count(),
+            {
+                message: 'runtime evidence cart line item should be removed during cleanup',
+                timeout: 10_000,
+            }
+        ).toBeLessThan(previousCount)
+    }
+
+    await expect(removeButtons).toHaveCount(0)
+    await page.evaluate(() => localStorage.removeItem('bns-cart-id'))
+}
+
 async function prepareProductsRoute(
     page: Page,
     testInfo: TestInfo,
@@ -723,6 +880,66 @@ test.describe('runtime visual evidence', () => {
             } finally {
                 await delayedFetch?.release()
                 await page.unrouteAll({ behavior: 'ignoreErrors' })
+            }
+        })
+    }
+
+    for (const viewport of viewports.filter(({ name }) => name === 'desktop' || name === 'mobile')) {
+        test(`checkout promotion renders loading and error visual evidence on ${viewport.name}`, async ({ page }, testInfo) => {
+            const blockingConsoleMessages = collectBlockingConsoleMessages(page)
+            await page.addInitScript({ content: axeSource })
+            await page.setViewportSize({ width: viewport.width, height: viewport.height })
+            let delayedFetch: InterceptedRuntimeFetch | undefined
+            let runtimeCartCreated = false
+
+            try {
+                const availability = await prepareCheckoutPromotionLoadingState(
+                    page,
+                    testInfo,
+                    checkoutPromotionRuntimeState,
+                    viewport,
+                    () => {
+                        runtimeCartCreated = true
+                    }
+                )
+                delayedFetch = availability.delayedFetch
+                if (!availability.available) {
+                    if (shouldRequireCheckoutStates()) {
+                        throw new Error(availability.reason)
+                    }
+
+                    test.skip(true, availability.reason)
+                }
+
+                expect(delayedFetch).toBeDefined()
+                await delayedFetch!.waitUntilIntercepted()
+                const applyButton = page.getByTestId(checkoutPromotionRuntimeState.buttonTestId)
+                await expect(applyButton).toBeDisabled()
+                await expect(applyButton).toHaveAccessibleName(/aplicar|apply/i)
+                await expect(page.getByTestId(checkoutPromotionRuntimeState.spinnerTestId)).toBeVisible()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-loading-checkout-promotion-${viewport.name}`,
+                    axe: `axe-core-visual-state-loading-checkout-promotion-${viewport.name}`,
+                })
+
+                await delayedFetch?.release()
+
+                const error = page.getByTestId(checkoutPromotionRuntimeState.errorTestId)
+                await expect(error).toBeVisible({ timeout: 5_000 })
+                await expect(error).toContainText(/\S+/)
+                await expect(error).toHaveAttribute('role', 'alert')
+                await expect(page.getByTestId(checkoutPromotionRuntimeState.buttonTestId)).toBeEnabled()
+                await attachRuntimeEvidence(page, testInfo, {
+                    screenshot: `visual-state-error-checkout-promotion-${viewport.name}`,
+                    axe: `axe-core-visual-state-error-checkout-promotion-${viewport.name}`,
+                })
+                expect(blockingConsoleMessages).toEqual([])
+            } finally {
+                await delayedFetch?.release()
+                await page.unrouteAll({ behavior: 'ignoreErrors' })
+                if (runtimeCartCreated) {
+                    await cleanupRuntimeEvidenceCart(page)
+                }
             }
         })
     }

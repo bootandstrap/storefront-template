@@ -111,6 +111,16 @@ registrations or physical POS.
   waits for that marker before submitting, so a remote test cannot click
   server-rendered markup before the client handler is attached and falsely
   report that the expected POST was never emitted.
+- Checkout promotion evidence creates a disposable test cart through the public
+  product journey, opens the real checkout promotion control, then holds the
+  intercepted `POST /api/cart/promotions` before it can reach Medusa. It proves
+  the disabled button and visible spinner, returns a synthetic `400`, and proves
+  the accessible error on desktop and mobile. Tenant push CI makes the state
+  mandatory with `BNS_RUNTIME_REQUIRE_CHECKOUT_STATES=1`. Its fail-closed
+  cleanup removes every line item again through the cart UI and clears the
+  browser cart reference; Medusa's daily abandoned-cart job deletes the
+  resulting empty cart record after its seven-day TTL. No promotion, order or
+  payment mutation is submitted by this evidence step.
 - Mobile PDP evidence checks the real geometry between the sticky add-to-cart
   CTA and the fixed bottom navigation. The CTA is offset above the navigation,
   including the safe-area inset, so full-page capture and scroll transitions
