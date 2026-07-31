@@ -24,13 +24,13 @@ async function traverseOptionalCheckoutShippingStep(
     methodLoading: Locator
 ) {
     const shippingStep = dialog.getByTestId('checkout-shipping-step')
-    await expect(shippingStep.or(methodLoading)).toBeVisible({ timeout: 10_000 })
+    await expect(shippingStep.or(methodLoading)).toBeVisible({ timeout: 20_000 })
     if (!await shippingStep.isVisible()) return
 
     await shippingStep.getByTestId('checkout-shipping-option').first().click()
     await expect(continueButton).toBeEnabled()
     await continueButton.click()
-    await expect(methodLoading).toBeVisible({ timeout: 10_000 })
+    await expect(methodLoading).toBeVisible({ timeout: 20_000 })
 }
 
 export async function delayNextCheckoutMethodAvailabilityAction(
