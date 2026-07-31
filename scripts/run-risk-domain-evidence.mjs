@@ -157,6 +157,7 @@ function buildSafeEnv() {
     'TERM',
     'FORCE_COLOR',
     'BNS_360_BASE_URL',
+    'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES',
     'BSWEB_ROOT',
     'TENANT_ID',
     'NEXT_PUBLIC_SUPABASE_URL',

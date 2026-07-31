@@ -48,13 +48,24 @@ No new copy or locale keys are introduced.
 10. Release and remove interception in `finally` so failures cannot hang the
     suite.
 
+The harness accepts only a `POST` to `/api/orders/lookup` and waits until that
+exact request has been intercepted before asserting the loading UI. This makes
+an endpoint or method drift fail instead of accidentally exercising a different
+request.
+
 The interactive-state requirement remains fail-closed for remote targets and
-for runs with `BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES=1`.
+for runs with `BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES=1`. Tenant CI additionally
+sets the narrower `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` contract and uses
+its existing test Supabase/Tenant secret references, so maintenance-mode skips
+cannot make this evidence appear green. Local template runs may still skip when
+the test-safe runtime is intentionally unavailable.
 
 ## Contract and governance
 
 `ci-artifacts-contract.test.ts` must require the order lookup state names,
-request path, evidence hooks, and loading/error evidence attachment names.
+request path, POST-only interception, interception acknowledgment, evidence
+hooks, tenant CI enforcement flag, test-safe secret references, and
+loading/error evidence attachment names.
 The `visual-runtime-primary-routes` risk domain continues to execute the same
 Playwright spec, while its failure-mode wording is expanded to name order lookup
 loading and not-found/error evidence explicitly.

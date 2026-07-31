@@ -97,10 +97,14 @@ registrations or physical POS.
   visible loading UI. Product-grid detail links disable route prefetch so the
   grid does not fan out unnecessary product-detail requests.
 - Guest order lookup evidence uses the real `/es/pedido` form while Playwright
-  holds `/api/orders/lookup` pending, verifies the disabled submit button and
-  visible spinner, then returns a synthetic `404` and verifies the accessible
-  not-found alert. The harness captures loading and error screenshots plus axe
-  evidence on desktop and mobile without querying a real order.
+  holds the intercepted `POST /api/orders/lookup` pending, verifies the disabled
+  submit button and visible spinner, then returns a synthetic `404` and verifies
+  the accessible not-found alert. The harness waits for that exact interception
+  before taking evidence, captures loading and error screenshots plus axe
+  evidence on desktop and mobile, and never queries a real order. Tenant CI sets
+  `BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES=1` with its existing test-safe tenant
+  runtime references, making an unavailable form or maintenance-mode skip a
+  hard failure for this domain.
 
 The POS simulator evidence intentionally records no secrets and no Stripe
 PaymentIntent/client secret. It proves the runtime boundary that must later be

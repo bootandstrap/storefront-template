@@ -294,6 +294,9 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('order-lookup-error')
         expect(visualSpec).toContain('visual-state-loading-order-lookup')
         expect(visualSpec).toContain('visual-state-error-order-lookup')
+        expect(visualSpec).toContain('shouldRequireOrderLookupStates')
+        expect(visualSpec).toContain("route.request().method() !== 'POST'")
+        expect(visualSpec).toContain('waitUntilIntercepted')
         expect(visualSpec).toContain('cart-drawer')
         expect(visualSpec).toContain('product.quickView')
         expect(visualSpec).toContain('visual-state-loading')
@@ -344,8 +347,20 @@ describe('CI artifact contract', () => {
         expect(workflow).toContain('name: Install Playwright Chromium')
         expect(workflow).toContain('pnpm --filter=storefront exec playwright install --with-deps chromium')
         expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*CI: ''/)
-        expect(workflow).toMatch(/name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder/)
+        expect(workflow).toMatch(
+            /name: Risk Domain Evidence[\s\S]*BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'/
+        )
+        expect(workflow).toMatch(
+            /name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_URL: \$\{\{ secrets\.TEST_SUPABASE_URL \}\}/
+        )
+        expect(workflow).toMatch(
+            /name: Risk Domain Evidence[\s\S]*TENANT_ID: \$\{\{ secrets\.TEST_TENANT_ID \}\}/
+        )
+        expect(workflow).toMatch(
+            /name: Risk Domain Evidence[\s\S]*NEXT_PUBLIC_SUPABASE_ANON_KEY: \$\{\{ secrets\.TEST_SUPABASE_ANON_KEY \}\}/
+        )
         expect(runner).toContain("'NEXT_PUBLIC_SUPABASE_ANON_KEY'")
+        expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
         expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
     })
 

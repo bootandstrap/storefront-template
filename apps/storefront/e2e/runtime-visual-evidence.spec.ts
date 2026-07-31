@@ -66,6 +66,10 @@ type DelayedRuntimeFetch = {
     release: () => Promise<void>
 }
 
+type InterceptedRuntimeFetch = DelayedRuntimeFetch & {
+    waitUntilIntercepted: () => Promise<void>
+}
+
 type AxeViolation = {
     id: string
     impact: string | null
@@ -164,6 +168,11 @@ function shouldRequireInteractiveStates() {
     const targetsRemoteRuntime = /^https?:\/\//i.test(baseUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(baseUrl)
 
     return process.env.BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES === '1' || targetsRemoteRuntime
+}
+
+function shouldRequireOrderLookupStates() {
+    return process.env.BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES === '1'
+        || shouldRequireInteractiveStates()
 }
 
 function parsePositiveInteger(value: string | undefined, fallback: number) {
@@ -437,7 +446,7 @@ async function prepareNewsletterSubmitLoadingState(
 async function delayNextOrderLookupFetch(
     page: Page,
     targetPath: string
-): Promise<DelayedRuntimeFetch> {
+): Promise<InterceptedRuntimeFetch> {
     const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
     let releaseFetch!: () => void
     let released = false
@@ -449,6 +458,11 @@ async function delayNextOrderLookupFetch(
     await page.route(
         (url) => url.pathname === normalizedTargetPath,
         async (route) => {
+            if (route.request().method() !== 'POST') {
+                await route.continue()
+                return
+            }
+
             routeWasDelayed = true
             await releasePromise
             await route.fulfill({
@@ -456,11 +470,19 @@ async function delayNextOrderLookupFetch(
                 contentType: 'application/json',
                 body: JSON.stringify({ error: 'order not found' }),
             }).catch(() => {})
-        },
-        { times: 1 }
+        }
     )
 
     return {
+        waitUntilIntercepted: async () => {
+            await expect.poll(
+                () => routeWasDelayed,
+                {
+                    message: `expected POST ${normalizedTargetPath} to be intercepted`,
+                    timeout: 5_000,
+                }
+            ).toBe(true)
+        },
         release: async () => {
             if (!released) {
                 released = true
@@ -478,7 +500,7 @@ async function prepareOrderLookupLoadingState(
     testInfo: TestInfo,
     state: OrderLookupRuntimeState,
     viewport: VisualViewport
-): Promise<ProductRouteAvailability & { delayedFetch?: DelayedRuntimeFetch }> {
+): Promise<ProductRouteAvailability & { delayedFetch?: InterceptedRuntimeFetch }> {
     const response = await gotoRuntimeVisualRouteWithBackoff(page, state.path, [200])
     expect(response?.status() ?? 200).toBe(200)
 
@@ -602,7 +624,7 @@ test.describe('runtime visual evidence', () => {
             const blockingConsoleMessages = collectBlockingConsoleMessages(page)
             await page.addInitScript({ content: axeSource })
             await page.setViewportSize({ width: loadingEvidenceViewport.width, height: loadingEvidenceViewport.height })
-            let delayedFetch: DelayedRuntimeFetch | undefined
+            let delayedFetch: InterceptedRuntimeFetch | undefined
 
             try {
                 const availability = await prepareNewsletterSubmitLoadingState(
@@ -649,13 +671,15 @@ test.describe('runtime visual evidence', () => {
                 )
                 delayedFetch = availability.delayedFetch
                 if (!availability.available) {
-                    if (shouldRequireInteractiveStates()) {
+                    if (shouldRequireOrderLookupStates()) {
                         throw new Error(availability.reason)
                     }
 
                     test.skip(true, availability.reason)
                 }
 
+                expect(delayedFetch).toBeDefined()
+                await delayedFetch!.waitUntilIntercepted()
                 await expect(page.getByTestId(orderLookupRuntimeState.buttonTestId)).toBeDisabled()
                 await expect(page.getByTestId(orderLookupRuntimeState.spinnerTestId)).toBeVisible()
                 await attachRuntimeEvidence(page, testInfo, {

@@ -145,7 +145,14 @@ bash scripts/release-gate.sh
 
 Expected: PASS or an explicitly documented pre-existing coverage warning only.
 
-**Step 4: Commit documentation**
+**Step 4: Enforce tenant CI fail-closed**
+
+Require `POST /api/orders/lookup`, wait until the route is intercepted, pass
+`BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES` through the evidence runner, and set
+that flag in tenant CI with the existing test Supabase/Tenant secret references.
+The contract test must reject removal of any of these safeguards.
+
+**Step 5: Commit documentation**
 
 ```bash
 git add docs/operations/2026-07-13-bns-360-full-system-certification.md docs/plans/2026-07-31-order-lookup-runtime-evidence-design.md docs/plans/2026-07-31-order-lookup-runtime-evidence.md

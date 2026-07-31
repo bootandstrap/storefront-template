@@ -143,10 +143,11 @@ jobs:
         env:
           CI: ''
           BNS_RUNTIME_VISUAL_EVIDENCE_REPORT: '1'
+          BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
-          TENANT_ID: 00000000-0000-4000-8000-000000000001
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
           NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
