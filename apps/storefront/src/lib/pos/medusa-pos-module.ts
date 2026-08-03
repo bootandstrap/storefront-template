@@ -72,6 +72,64 @@ export interface PosShift {
     updated_at: string
 }
 
+export interface PosSyncOperationReceipt {
+    outcome: 'reserved' | 'committed' | 'duplicate' | 'conflict'
+    operation_id: string
+    idempotency_key: string
+    server_sequence: number
+    last_client_sequence: number
+    order_id: string | null
+    draft_order_id: string | null
+    display_id: number | null
+}
+
+export interface PosSyncReservationInput {
+    tenant_id: string
+    operation_id: string
+    idempotency_key: string
+    client_id: string
+    client_sequence: number
+    known_server_sequence: number
+    amount_minor: number
+    payload_sha256: string
+}
+
+export interface PosSyncCommitInput extends PosSyncReservationInput {
+    order_id: string
+    draft_order_id: string
+    display_id: number
+}
+
+async function writePOSSyncOperation(
+    phase: 'reserve' | 'commit',
+    sync: PosSyncReservationInput | PosSyncCommitInput,
+    scope?: TenantMedusaScope | null,
+): Promise<{ operation: PosSyncOperationReceipt | null; error: string | null }> {
+    const res = await adminFetch<{ operation: PosSyncOperationReceipt }>(
+        '/admin/pos/sync-operations',
+        {
+            method: 'POST',
+            body: JSON.stringify({ phase, sync }),
+        },
+        scope,
+    )
+    return { operation: res.data?.operation ?? null, error: res.error }
+}
+
+export function reservePOSSyncOperation(
+    sync: PosSyncReservationInput,
+    scope?: TenantMedusaScope | null,
+) {
+    return writePOSSyncOperation('reserve', sync, scope)
+}
+
+export function commitPOSSyncOperation(
+    sync: PosSyncCommitInput,
+    scope?: TenantMedusaScope | null,
+) {
+    return writePOSSyncOperation('commit', sync, scope)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Session Operations
 // ═══════════════════════════════════════════════════════════════════════════
