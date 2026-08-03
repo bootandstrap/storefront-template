@@ -150,6 +150,20 @@ describe('CI artifact contract', () => {
         expect(releaseGate).not.toContain('pnpm --filter=storefront test:run -- --coverage')
     })
 
+    it('runs the POS module persistence journey against PostgreSQL in Medusa CI', () => {
+        const workflow = readWorkflow('ci.yml')
+        const medusaJob = workflow
+            .split('\n  # ── Medusa Backend Tests ────────────────────────\n')[1]
+            ?.split('\n  # ── E2E Tests (Playwright) ─────────────────────\n')[0]
+
+        expect(medusaJob).toBeDefined()
+        expect(medusaJob).toContain('image: postgres:16-alpine')
+        expect(medusaJob).toContain('POSTGRES_HOST_AUTH_METHOD: trust')
+        expect(medusaJob).toContain('pnpm -C apps/medusa test:integration:modules')
+        expect(medusaJob).toContain('DB_HOST: localhost')
+        expect(medusaJob).toContain('DB_USERNAME: postgres')
+    })
+
     it('bounds the post-deploy Lighthouse audit runtime', () => {
         const workflow = readWorkflow('lighthouse-ci.yml')
 

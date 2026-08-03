@@ -195,6 +195,17 @@ jobs:
     timeout-minutes: 10
 
     services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
@@ -234,6 +245,13 @@ jobs:
 
       - name: Medusa unit tests
         run: pnpm -C apps/medusa test:unit
+
+      - name: Medusa POS module integration
+        run: pnpm -C apps/medusa test:integration:modules
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
 
   # ── E2E Tests (Playwright) ─────────────────────
   e2e-tests:
