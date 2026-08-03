@@ -129,9 +129,14 @@ function authoritativeResponse(
     const sync = result.sync
     const correlated = sync?.operation_id === request.operation.operationId
         && sync?.idempotency_key === request.operation.idempotencyKey
+    const allowedOutcome = ['committed', 'duplicate', 'conflict'].includes(sync?.outcome ?? '')
     const sequenced = Number.isInteger(sync?.server_sequence)
+        && (sync?.server_sequence ?? -1) >= request.knownServerSequence
         && Number.isInteger(sync?.last_client_sequence)
-    if (!correlated || !sequenced) {
+        && (sync?.last_client_sequence ?? -1) >= request.operation.clientSequence
+    const commitAdvancedServer = sync?.outcome !== 'committed'
+        || (sync?.server_sequence ?? -1) > request.knownServerSequence
+    if (!correlated || !allowedOutcome || !sequenced || !commitAdvancedServer) {
         throw new POSSyncTransportError('unavailable', 'permanent', 'afterCommit')
     }
     return {

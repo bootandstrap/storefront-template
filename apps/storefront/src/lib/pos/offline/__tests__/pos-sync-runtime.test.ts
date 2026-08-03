@@ -126,4 +126,28 @@ describe('POS offline runtime protocol adapter', () => {
             lastClientSequence: 1,
         })
     })
+
+    it('rejects malformed outcomes and incoherent authoritative sequences', async () => {
+        const valid = {
+            outcome: 'committed',
+            operation_id: 'operation-runtime-1',
+            idempotency_key: 'offline-runtime-1',
+            server_sequence: 5,
+            last_client_sequence: 1,
+        }
+        for (const sync of [
+            { ...valid, outcome: 'accepted' },
+            { ...valid, server_sequence: -1 },
+            { ...valid, server_sequence: 4 },
+            { ...valid, last_client_sequence: 0 },
+        ]) {
+            const transport = createPOSSyncTransport(
+                vi.fn().mockResolvedValue({ success: true, display_id: 42, sync }),
+            )
+            await expect(transport.commit(request)).rejects.toMatchObject({
+                code: 'unavailable',
+                barrier: 'afterCommit',
+            })
+        }
+    })
 })
