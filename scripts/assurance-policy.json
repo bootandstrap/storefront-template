@@ -110,8 +110,8 @@
         { "exact": "apps/storefront/src/lib/panel-guard.ts" }
       ],
       "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary"],
-      "ratchetThresholds": { "lines": 41.06, "functions": 42.5, "branches": 38.62 },
-      "maxZeroCoverageFiles": 3,
+      "ratchetThresholds": { "lines": 56.05, "functions": 55, "branches": 51.28 },
+      "maxZeroCoverageFiles": 0,
       "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
     },
     {
@@ -122,8 +122,8 @@
         { "exact": "apps/storefront/src/lib/safe-action.ts" }
       ],
       "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary"],
-      "ratchetThresholds": { "lines": 42.86, "functions": 44.44, "branches": 66.67 },
-      "maxZeroCoverageFiles": 1,
+      "ratchetThresholds": { "lines": 97.73, "functions": 100, "branches": 86.36 },
+      "maxZeroCoverageFiles": 0,
       "targetThresholds": { "lines": 95, "functions": 95, "branches": 90 }
     },
     {
@@ -148,7 +148,7 @@
     }
   ],
   "globalRatchet": {
-    "baseline": { "lines": 34.02, "functions": 35.37, "branches": 28.62 },
+    "baseline": { "lines": 35.23, "functions": 36.22, "branches": 29.37 },
     "milestone": { "lines": 70, "functions": 70, "branches": 70 },
     "maximumRegression": 0
   }
