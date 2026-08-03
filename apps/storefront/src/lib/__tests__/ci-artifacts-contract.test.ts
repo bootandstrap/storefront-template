@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 const REPO_ROOT = resolve(process.cwd(), '..', '..')
+const TEMPLATE_SYNC_IGNORE_VALIDATOR = 'scripts/ci/validate-template-sync-ignore.mjs'
 
 function readWorkflow(name: string) {
     return readFileSync(join(REPO_ROOT, '.github', 'workflows', name), 'utf8')
@@ -80,7 +81,7 @@ function validateTemplateSyncIgnore(content?: string) {
     return spawnSync(
         process.execPath,
         [
-            join(REPO_ROOT, 'scripts', 'ci', 'validate-template-sync-ignore.mjs'),
+            join(REPO_ROOT, TEMPLATE_SYNC_IGNORE_VALIDATOR),
             policyPath,
         ],
         {
