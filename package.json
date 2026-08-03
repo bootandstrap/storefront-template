@@ -16,6 +16,8 @@
     "pack:contracts": "node scripts/pack-contract-packages.mjs",
     "sync:supabase-types": "node scripts/sync-supabase-types.mjs",
     "check:supabase-types": "node scripts/sync-supabase-types.mjs --check",
+    "assurance:fast": "node scripts/run-assurance.mjs --profile fast",
+    "assurance:full": "node scripts/run-assurance.mjs --profile full",
     "clean": "turbo clean"
   },
   "devDependencies": {

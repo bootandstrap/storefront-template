@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    {
+      "id": "assurance-policy",
+      "dependencies": [],
+      "command": ["node", "scripts/check-assurance-policy.mjs"],
+      "inputs": ["scripts/assurance-policy.json", "scripts/check-assurance-policy.mjs", "scripts/risk-test-matrix.json"],
+      "outputs": [],
+      "environmentKeys": []
+    },
+    {
+      "id": "rls-policy",
+      "dependencies": [],
+      "command": ["bash", "scripts/check-rls.sh"],
+      "inputs": ["scripts/check-rls.sh", "supabase"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "audit-policy",
+      "dependencies": [],
+      "command": ["bash", "scripts/check-audit-waiver.sh"],
+      "inputs": ["scripts/check-audit-waiver.sh", "scripts/governance-audit.exclusions.json", "pnpm-lock.yaml"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "schema-ownership",
+      "dependencies": [],
+      "command": ["bash", "scripts/check-schema-ownership.sh", "data-plane"],
+      "inputs": ["scripts/check-schema-ownership.sh", "supabase"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "compose-security",
+      "dependencies": [],
+      "command": ["node", "scripts/run-compose-assurance.mjs"],
+      "inputs": [".compose-lint.yml", "docker-compose.yml", "docker-compose.dev.yml", "scripts/templates/docker-compose.client.yml", "scripts/run-compose-assurance.mjs"],
+      "outputs": [".artifacts/assurance/compose-lint.sarif"],
+      "environmentKeys": []
+    },
+    {
+      "id": "storefront-lint",
+      "dependencies": [],
+      "command": ["pnpm", "turbo", "lint", "--filter=storefront"],
+      "inputs": ["apps/storefront", "eslint.config.mjs", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "storefront-typecheck",
+      "dependencies": [],
+      "command": ["pnpm", "turbo", "type-check", "--filter=storefront"],
+      "inputs": ["apps/storefront", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "medusa-typecheck",
+      "dependencies": [],
+      "command": ["pnpm", "-C", "apps/medusa", "type-check"],
+      "inputs": ["apps/medusa", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "shared-typecheck",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=@bootandstrap/shared", "type-check"],
+      "inputs": ["packages/shared", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "platform-contract-typecheck",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=@bootandstrap/platform-contract", "type-check"],
+      "inputs": ["packages/platform-contract", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "security-unit",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/security", "src/lib/__tests__/panel-auth.test.ts", "src/lib/__tests__/panel-guard.behavior.test.ts"],
+      "inputs": ["apps/storefront/src/lib/security", "apps/storefront/src/lib/panel-auth.ts", "apps/storefront/src/lib/panel-guard.ts", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "checkout-unit",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/__tests__/payment-methods.test.ts", "src/lib/__tests__/order-limit-enforcement.test.ts", "src/lib/__tests__/safe-action.behavior.test.ts"],
+      "inputs": ["apps/storefront/src/lib/payment-methods.ts", "apps/storefront/src/lib/order-limits.ts", "apps/storefront/src/lib/safe-action.ts", "apps/storefront/src/lib/__tests__", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "pos-unit",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/pos"],
+      "inputs": ["apps/storefront/src/lib/pos", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "backup-unit",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/backup"],
+      "inputs": ["apps/storefront/src/lib/backup", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "storefront-assurance",
+      "dependencies": [],
+      "command": ["node", "scripts/run-storefront-assurance.mjs"],
+      "inputs": ["apps/storefront/src", "apps/storefront/vitest.config.ts", "scripts/assurance-policy.json", "scripts/run-storefront-assurance.mjs"],
+      "outputs": [".artifacts/assurance/storefront-tests.json", ".artifacts/assurance/storefront-coverage.json"],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "risk-test-matrix",
+      "dependencies": ["assurance-policy"],
+      "command": ["node", "scripts/check-risk-test-matrix.mjs"],
+      "inputs": ["scripts/check-risk-test-matrix.mjs", "scripts/risk-test-matrix.json", "scripts/assurance-policy.json"],
+      "outputs": [],
+      "environmentKeys": []
+    },
+    {
+      "id": "risk-domain-evidence",
+      "dependencies": ["risk-test-matrix", "storefront-assurance"],
+      "command": ["node", "scripts/run-risk-domain-evidence.mjs"],
+      "inputs": ["scripts/run-risk-domain-evidence.mjs", "scripts/risk-test-matrix.json", ".artifacts/assurance/storefront-tests.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "medusa-unit",
+      "dependencies": [],
+      "command": ["pnpm", "-C", "apps/medusa", "test:unit"],
+      "inputs": ["apps/medusa/src", "apps/medusa/jest.config.js", "apps/medusa/package.json", "pnpm-lock.yaml"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "storefront-build",
+      "dependencies": ["storefront-typecheck"],
+      "command": ["pnpm", "turbo", "build", "--filter=storefront"],
+      "inputs": ["apps/storefront", "package.json", "pnpm-lock.yaml", "turbo.json"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "pos-conformance",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/pos/offline/__tests__/pos-sync-conformance.test.ts"],
+      "inputs": ["apps/storefront/src/lib/pos/offline", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    }
+  ]
+}
