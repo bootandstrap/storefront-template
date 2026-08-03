@@ -79,4 +79,3 @@ Permitted exclusions are narrow generated/type-only/environment adapters with a
 reason and owner. Critical business logic cannot be excluded. Existing coverage
 debt may be carried only outside critical domains and only behind a non-regression
 ratchet; it is visible in the receipt until eliminated.
-

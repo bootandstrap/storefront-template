@@ -132,4 +132,3 @@
 3. Run browser/runtime evidence with explicit unavailable-state semantics.
 4. Verify all worktrees are clean and no secrets or baseline files changed.
 5. Report remaining non-critical ratchet debt explicitly; make no commercial-readiness claim.
-
