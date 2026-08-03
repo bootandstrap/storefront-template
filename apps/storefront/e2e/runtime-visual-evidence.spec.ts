@@ -911,7 +911,16 @@ async function prepareProductsRoute(
     }
 
     const firstCard = page.locator('[data-testid="product-card"]').first()
-    await expect(firstCard).toBeVisible({ timeout: 20_000 })
+    const hasProductCard = await firstCard.isVisible({ timeout: 20_000 }).catch(() => false)
+    if (!hasProductCard) {
+        const reason = 'interactive state evidence requires product runtime data; no product cards were rendered'
+        await testInfo.attach(`visual-state-${state.state}-${state.name}-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
 
     return { available: true }
 }

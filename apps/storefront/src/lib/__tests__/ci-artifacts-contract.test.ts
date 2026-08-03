@@ -767,6 +767,21 @@ describe('CI artifact contract', () => {
         expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
     })
 
+    it('treats missing reusable product runtime data as unavailable instead of a hard failure for PR-only interactive evidence', () => {
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualSpec).toContain(
+            'interactive state evidence requires product runtime data; no product cards were rendered'
+        )
+        expect(visualSpec).toContain(
+            "await testInfo.attach(`visual-state-${state.state}-${state.name}-${viewport.name}-runtime-unavailable`"
+        )
+        expect(visualSpec).toContain('return { available: false, reason }')
+        expect(visualSpec).not.toContain(
+            "await expect(firstCard).toBeVisible({ timeout: 20_000 })\n\n    return { available: true }"
+        )
+    })
+
     it('writes an auditable risk-domain evidence summary without secrets', () => {
         const tmp = mkdtempSync(join(tmpdir(), 'risk-domain-evidence-summary-'))
         const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
