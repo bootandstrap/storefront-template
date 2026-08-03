@@ -1,0 +1,3 @@
+# Suppressions are empty by default. Any future exception must remain visible in
+# SARIF and include Reason, Owner, and an ISO Review date in its justification.
+rules: {}

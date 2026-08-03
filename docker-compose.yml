@@ -21,7 +21,7 @@ services:
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         - NEXT_PUBLIC_STORE_URL=${NEXT_PUBLIC_STORE_URL:-https://example.com}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file: .env
     environment:
       - NODE_ENV=production
@@ -55,7 +55,7 @@ services:
   admin:
     image: ${ADMIN_IMAGE:-bootandstrap-web:latest}
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
@@ -86,7 +86,7 @@ services:
       context: ./apps/medusa
       dockerfile: Dockerfile
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     env_file: .env
     environment:
       - NODE_ENV=production
@@ -147,7 +147,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
