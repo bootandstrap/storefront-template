@@ -108,8 +108,16 @@
     {
       "id": "backup-unit",
       "dependencies": [],
-      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/backup"],
-      "inputs": ["apps/storefront/src/lib/backup", "apps/storefront/vitest.config.ts"],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/backup", "src/lib/__tests__/provisioning-schema-completeness.test.ts", "src/lib/__tests__/delete-tenant-rpc-contract.test.ts"],
+      "inputs": ["apps/storefront/src/lib/backup", "apps/storefront/src/lib/__tests__/provisioning-schema-completeness.test.ts", "apps/storefront/src/lib/__tests__/delete-tenant-rpc-contract.test.ts", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
+    },
+    {
+      "id": "assurance-contracts",
+      "dependencies": [],
+      "command": ["node", "--test", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs"],
+      "inputs": ["scripts/assurance-profiles.json", "scripts/assurance-tasks.json", "scripts/assurance-impact.json", "scripts/assurance-policy.json", "scripts/lib/assurance-profile.mjs", "scripts/lib/assurance-dag.mjs", "scripts/lib/assurance-identity.mjs", "scripts/lib/assurance-impact.mjs", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs"],
       "outputs": [],
       "environmentKeys": ["CI"]
     },

@@ -14,6 +14,7 @@ import {
   validateReceipt,
 } from './lib/assurance-dag.mjs'
 import { hashInputs, hashWorkingTree, runGit, sha256 } from './lib/assurance-identity.mjs'
+import { discoverChangedFiles, selectImpact } from './lib/assurance-impact.mjs'
 import { resolveProfile } from './lib/assurance-profile.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
@@ -37,12 +38,17 @@ const baselineEnvironmentKeys = [
 ]
 
 function parseArguments(argv) {
-  const options = { profile: undefined, dryRun: false, noCache: false }
+  const options = { profile: undefined, dryRun: false, noCache: false, base: undefined }
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
     if (argument === '--') continue
     if (argument === '--profile') {
+      if (argv[index + 1] === undefined) throw new Error('--profile requires a value')
       options.profile = argv[index + 1]
+      index += 1
+    } else if (argument === '--base') {
+      if (argv[index + 1] === undefined) throw new Error('--base requires a value')
+      options.base = argv[index + 1]
       index += 1
     } else if (argument === '--dry-run') {
       options.dryRun = true
@@ -94,8 +100,52 @@ async function main() {
   const options = parseArguments(process.argv.slice(2))
   const profiles = await readJson(path.join(scriptDir, 'assurance-profiles.json'))
   const taskConfig = await readJson(path.join(scriptDir, 'assurance-tasks.json'))
-  const resolved = resolveProfile(profiles, options.profile, [])
+  let resolved
+  let impact = null
+  let impactBase = null
+  let changedFiles = []
+  if (options.profile === 'fast') {
+    const impactConfig = await readJson(path.join(scriptDir, 'assurance-impact.json'))
+    const policy = await readJson(path.join(scriptDir, 'assurance-policy.json'))
+    impactBase = options.base ?? impactConfig.defaultBaseRef
+    changedFiles = await discoverChangedFiles(repoRoot, {
+      base: options.base,
+      defaultBaseRef: impactConfig.defaultBaseRef,
+    })
+    impact = selectImpact(impactConfig, changedFiles, { profiles, policy })
+    const profile = resolveProfile(profiles, options.profile, changedFiles)
+    const tasks = [...new Set([...profile.tasks, ...impact.tasks])]
+    resolved = {
+      ...profile,
+      tasks,
+      deferred: profile.deferred.filter((taskId) => !tasks.includes(taskId)),
+      matchedRules: [...new Set([...profile.matchedRules, ...impact.matchedRules])],
+    }
+  } else {
+    if (options.base !== undefined) throw new Error('--base is supported only by the fast profile')
+    resolved = resolveProfile(profiles, options.profile, [])
+  }
   const graph = buildTaskGraph(taskConfig, resolved.tasks)
+
+  let fullProfileDryRun = null
+  if (impact?.fullProfileDryRun) {
+    const full = resolveProfile(profiles, 'full', [])
+    const fullGraph = buildTaskGraph(taskConfig, full.tasks)
+    fullProfileDryRun = {
+      status: 'planned',
+      profile: 'full',
+      claimBoundary: full.claimBoundary,
+      tasks: fullGraph.ids,
+      batches: topologicalBatches(fullGraph),
+      deferred: full.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
+    }
+  }
+
+  const impactPlan = impact ? {
+    base: impactBase,
+    reasons: impact.reasons,
+    fullProfileDryRun,
+  } : null
 
   if (options.dryRun) {
     process.stdout.write(`${JSON.stringify({
@@ -107,8 +157,18 @@ async function main() {
       tasks: graph.ids,
       batches: topologicalBatches(graph),
       deferred: resolved.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
+      changedFiles,
+      impact: impactPlan,
     })}\n`)
     return
+  }
+
+  if (impactPlan) {
+    process.stderr.write(`[assurance] impact ${JSON.stringify({
+      changedFiles,
+      selectedTasks: graph.ids,
+      ...impactPlan,
+    })}\n`)
   }
 
   const configuredWorkers = Number.parseInt(process.env.BNS_ASSURANCE_WORKERS ?? '4', 10)
@@ -238,6 +298,8 @@ async function main() {
       path.relative(repoRoot, receiptPath).split(path.sep).join('/'),
     ])),
     deferred: resolved.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
+    changedFiles,
+    impactReasons: impact?.reasons ?? [],
     completedAt: new Date().toISOString(),
   }
   await writeJsonAtomic(path.join(artifactRoot, 'summary.json'), summary)

@@ -193,26 +193,36 @@ test('declares every profile task with argv-only execution metadata', () => {
 })
 
 test('dry-run prints deterministic batches without executing or claiming success', () => {
-  const result = spawnSync(process.execPath, [
+  const run = () => spawnSync(process.execPath, [
     'scripts/run-assurance.mjs',
     '--profile',
     'fast',
     '--dry-run',
+    '--base',
+    'HEAD',
   ], {
     cwd: new URL('..', import.meta.url),
     encoding: 'utf8',
   })
+  const result = run()
+  const repeated = run()
 
   assert.equal(result.status, 0, result.stderr)
+  assert.equal(repeated.status, 0, repeated.stderr)
   const summary = JSON.parse(result.stdout)
+  const repeatedSummary = JSON.parse(repeated.stdout)
   assert.equal(summary.dryRun, true)
   assert.equal(summary.status, 'planned')
   assert.notEqual(summary.status, 'passed')
-  assert.deepEqual(summary.batches, [[
+  assert.deepEqual(summary.tasks, repeatedSummary.tasks)
+  assert.deepEqual(summary.batches, repeatedSummary.batches)
+  for (const taskId of [
     'assurance-policy',
     'audit-policy',
     'compose-security',
     'rls-policy',
     'schema-ownership',
-  ]])
+  ]) {
+    assert.ok(summary.tasks.includes(taskId), taskId)
+  }
 })

@@ -15,6 +15,7 @@
     { "id": "checkout-unit", "kind": "behavioral" },
     { "id": "pos-unit", "kind": "behavioral" },
     { "id": "backup-unit", "kind": "behavioral" },
+    { "id": "assurance-contracts", "kind": "static" },
     {
       "id": "storefront-assurance",
       "kind": "behavioral",
