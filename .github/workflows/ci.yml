@@ -172,19 +172,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Run tests with coverage
-        run: cd apps/storefront && pnpm test:run --coverage
-        env:
-          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
-          TENANT_ID: ci-test-tenant
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      - name: Run fail-closed coverage assurance
+        run: node scripts/run-assurance-coverage.mjs
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
-          path: apps/storefront/coverage/
+          path: |
+            apps/storefront/coverage/
+            .artifacts/assurance/coverage-assurance.json
+          if-no-files-found: error
           retention-days: 14
 
   # ── Medusa Backend Tests ────────────────────────

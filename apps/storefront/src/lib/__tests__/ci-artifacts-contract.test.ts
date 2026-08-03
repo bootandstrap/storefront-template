@@ -140,14 +140,19 @@ describe('CI artifact contract', () => {
         }
     )
 
-    it('runs coverage without passing a literal separator argument to Vitest', () => {
+    it('runs revision-bound fail-closed coverage assurance in CI and the release gate', () => {
         const workflow = readWorkflow('ci.yml')
         const releaseGate = readScript('release-gate.sh')
 
-        expect(workflow).toContain('pnpm test:run --coverage')
-        expect(releaseGate).toContain('pnpm --filter=storefront test:run --coverage')
-        expect(workflow).not.toContain('pnpm test:run -- --coverage')
-        expect(releaseGate).not.toContain('pnpm --filter=storefront test:run -- --coverage')
+        expect(workflow).toContain('node scripts/run-assurance-coverage.mjs')
+        expect(workflow).toContain('.artifacts/assurance/coverage-assurance.json')
+        expect(workflow).toContain('if-no-files-found: error')
+        expect(releaseGate).toContain('gate "Coverage Assurance" node scripts/run-assurance-coverage.mjs')
+        expect(releaseGate).not.toContain('gate_warn "Coverage Threshold')
+        const runner = readScript('run-assurance-coverage.mjs')
+        expect(runner).toContain("'--no-file-parallelism'")
+        expect(runner).toContain("'--maxWorkers=1'")
+        expect(runner).toContain('workingTreeDirty')
     })
 
     it('runs the POS module persistence journey against PostgreSQL in Medusa CI', () => {

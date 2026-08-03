@@ -16,13 +16,11 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BOLD='\033[1m'
 NC='\033[0m'
 
 PASS=0
 FAIL=0
-WARN=0
 
 function gate() {
     local name="$1"
@@ -34,19 +32,6 @@ function gate() {
     else
         echo -e "${RED}❌ $name FAILED${NC}"
         FAIL=$((FAIL + 1))
-    fi
-}
-
-function gate_warn() {
-    local name="$1"
-    shift
-    echo -e "\n${BOLD}── $name ──${NC}"
-    if "$@" 2>&1; then
-        echo -e "${GREEN}✅ $name passed${NC}"
-        PASS=$((PASS + 1))
-    else
-        echo -e "${YELLOW}⚠️  $name has warnings (non-blocking)${NC}"
-        WARN=$((WARN + 1))
     fi
 }
 
@@ -66,7 +51,7 @@ gate "Storefront Unit Tests" pnpm --filter=storefront test:run
 gate "Risk Test Matrix" node scripts/check-risk-test-matrix.mjs
 gate "Risk Domain Evidence" node scripts/run-risk-domain-evidence.mjs
 gate "Medusa Unit Tests" pnpm -C apps/medusa test:unit
-gate_warn "Coverage Threshold (70%)" pnpm --filter=storefront test:run --coverage --coverage.thresholds.lines=70
+gate "Coverage Assurance" node scripts/run-assurance-coverage.mjs
 gate "Storefront Type Check" pnpm turbo type-check
 gate "Storefront Build" pnpm turbo build --filter=storefront
 
@@ -74,9 +59,6 @@ gate "Storefront Build" pnpm turbo build --filter=storefront
 echo ""
 echo -e "${BOLD}══════════════════════════════════════${NC}"
 echo -e "${GREEN}  ✅ Passed:  $PASS${NC}"
-if [[ $WARN -gt 0 ]]; then
-    echo -e "${YELLOW}  ⚠️  Warnings: $WARN${NC}"
-fi
 if [[ $FAIL -gt 0 ]]; then
     echo -e "${RED}  ❌ Failed:  $FAIL${NC}"
     echo -e "${RED}  🚫 RELEASE BLOCKED${NC}"
