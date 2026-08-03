@@ -123,6 +123,21 @@ test('maps Compose, manifests, and assurance definitions to their required evide
   assert.equal(assurance.fullProfileDryRun, true)
 })
 
+test('maps every assurance wrapper and contract test to assurance contracts and full planning', () => {
+  for (const changedPath of [
+    'scripts/run-storefront-assurance.mjs',
+    'scripts/run-compose-assurance.mjs',
+    'scripts/run-risk-domain-evidence.mjs',
+    'scripts/storefront-assurance.test.mjs',
+    'scripts/compose-assurance.test.mjs',
+    'scripts/coverage-assurance.test.mjs',
+  ]) {
+    const result = selectImpact(impactConfig, [changedPath], { profiles, policy })
+    assert.ok(result.tasks.includes('assurance-contracts'), changedPath)
+    assert.equal(result.fullProfileDryRun, true, changedPath)
+  }
+})
+
 test('maps observability boundaries to normalized evidence contract tests', () => {
   const result = selectImpact(impactConfig, [
     'apps/storefront/src/lib/observability/evidence-event.ts',

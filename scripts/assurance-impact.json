@@ -114,6 +114,12 @@
         { "prefix": "scripts/assurance-" },
         { "prefix": "scripts/lib/assurance-" },
         { "prefix": "scripts/run-assurance" },
+        { "exact": "scripts/run-storefront-assurance.mjs" },
+        { "exact": "scripts/run-compose-assurance.mjs" },
+        { "exact": "scripts/run-risk-domain-evidence.mjs" },
+        { "exact": "scripts/storefront-assurance.test.mjs" },
+        { "exact": "scripts/compose-assurance.test.mjs" },
+        { "exact": "scripts/coverage-assurance.test.mjs" },
         { "exact": "scripts/check-assurance-policy.mjs" }
       ],
       "tasks": ["assurance-policy", "assurance-contracts"],
