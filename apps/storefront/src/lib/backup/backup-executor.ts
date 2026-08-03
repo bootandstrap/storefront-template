@@ -39,6 +39,20 @@ function formatTimestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 }
 
+async function compressWithEmbeddedSize(backup: TenantBackup): Promise<Buffer> {
+    let compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+
+    // Embedding the gzip size changes the JSON and can in turn change the gzip
+    // size. Re-serialize until the artifact and its receipt agree exactly.
+    for (let attempt = 0; attempt < 5; attempt++) {
+        if (backup.stats.total_size_bytes === compressed.length) return compressed
+        backup.stats.total_size_bytes = compressed.length
+        compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+    }
+
+    throw new Error('Backup artifact size did not stabilize')
+}
+
 // ── Data Fetchers (lightweight wrappers around admin API) ────────────────────
 
 async function fetchProducts(scope: TenantMedusaScope): Promise<BackupProduct[]> {
@@ -254,12 +268,9 @@ export async function executeFullBackup(
         }
 
         // ── Compress ─────────────────────────────────────────────────────
-        const jsonStr = JSON.stringify(backup)
-        const compressed = await gzipAsync(Buffer.from(jsonStr, 'utf-8'))
-        const sizeBytes = compressed.length
-
-        stats.total_size_bytes = sizeBytes
         stats.duration_ms = Date.now() - startTime
+        const compressed = await compressWithEmbeddedSize(backup)
+        const sizeBytes = compressed.length
 
         // ── Upload to Supabase Storage ───────────────────────────────────
         const timestamp = formatTimestamp()

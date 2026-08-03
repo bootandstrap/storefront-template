@@ -142,13 +142,13 @@
         { "prefix": "apps/storefront/src/lib/backup/" }
       ],
       "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary", "cleanup-residue"],
-      "ratchetThresholds": { "lines": 0, "functions": 0, "branches": 0 },
-      "maxZeroCoverageFiles": 5,
+      "ratchetThresholds": { "lines": 97.01, "functions": 100, "branches": 69.83 },
+      "maxZeroCoverageFiles": 0,
       "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
     }
   ],
   "globalRatchet": {
-    "baseline": { "lines": 35.23, "functions": 36.22, "branches": 29.37 },
+    "baseline": { "lines": 39.59, "functions": 40.32, "branches": 32.27 },
     "milestone": { "lines": 70, "functions": 70, "branches": 70 },
     "maximumRegression": 0
   }
