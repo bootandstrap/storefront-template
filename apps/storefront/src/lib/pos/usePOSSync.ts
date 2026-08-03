@@ -102,6 +102,28 @@ const SESSION_ID = typeof crypto !== 'undefined'
 /** Debounce for cart_updated events to prevent spam during rapid edits */
 const CART_UPDATE_DEBOUNCE_MS = 300
 
+function isPOSSyncEnabled(tenantId: string | undefined, enabled: boolean) {
+    return Boolean(tenantId) && enabled
+}
+
+function resolvePOSSyncClient(syncEnabled: boolean) {
+    return syncEnabled ? getGovernanceBrowserClient() : null
+}
+
+function enabledValue<T>(syncEnabled: boolean, value: T, fallback: T): T {
+    return syncEnabled ? value : fallback
+}
+
+function isChannelUnavailable(
+    syncEnabled: boolean,
+    clientAvailable: boolean,
+    failedChannelName: string | null,
+    tenantId: string | undefined,
+) {
+    if (!syncEnabled) return false
+    return !clientAvailable || failedChannelName === `pos:${tenantId}`
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -111,11 +133,11 @@ export function usePOSSync({
     enabled,
     onEvent,
 }: UsePOSSyncOptions): UsePOSSyncReturn {
-    const syncEnabled = Boolean(tenantId && enabled)
+    const syncEnabled = isPOSSyncEnabled(tenantId, enabled)
     const [connected, setConnected] = useState(false)
     const [failedChannelName, setFailedChannelName] = useState<string | null>(null)
     const [deviceCount, setDeviceCount] = useState(0)
-    const client = syncEnabled ? getGovernanceBrowserClient() : null
+    const client = resolvePOSSyncClient(syncEnabled)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const channelRef = useRef<any>(null)
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -231,16 +253,19 @@ export function usePOSSync({
     )
 
     return {
-        connected: syncEnabled ? connected : false,
+        connected: enabledValue(syncEnabled, connected, false),
         availability: resolvePOSSyncAvailability({
             enabled,
             tenantId,
-            hasChannel: syncEnabled && connected,
-            channelUnavailable: syncEnabled && (
-                !client || failedChannelName === `pos:${tenantId}`
+            hasChannel: enabledValue(syncEnabled, connected, false),
+            channelUnavailable: isChannelUnavailable(
+                syncEnabled,
+                Boolean(client),
+                failedChannelName,
+                tenantId,
             ),
         }),
-        deviceCount: syncEnabled ? deviceCount : 0,
+        deviceCount: enabledValue(syncEnabled, deviceCount, 0),
         broadcast,
     }
 }

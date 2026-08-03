@@ -27,6 +27,52 @@ function isUnsafeRepositoryPath(relativePath) {
     || relativePath.split('/').some((segment) => segment === '.' || segment === '..')
 }
 
+function validateTaskShape(task, index, ids) {
+  if (!isObject(task) || typeof task.id !== 'string' || task.id.length === 0) {
+    throw new Error(`tasks[${index}] requires a non-empty id`)
+  }
+  if (ids.has(task.id)) throw new Error(`duplicate task id ${task.id}`)
+  ids.add(task.id)
+  requireStringArray(task.command, `task ${task.id} command`, { nonEmpty: true })
+  for (const field of ['dependencies', 'inputs', 'outputs', 'environmentKeys']) {
+    requireStringArray(task[field], `task ${task.id} ${field}`)
+  }
+}
+
+function validateTaskCommand(task) {
+  const executable = task.command[0].split('/').at(-1)
+  if (['bash', 'dash', 'ksh', 'sh', 'zsh'].includes(executable) && task.command.includes('-c')) {
+    throw new Error(`task ${task.id} uses forbidden shell evaluation`)
+  }
+}
+
+function validateTaskPaths(task) {
+  for (const input of task.inputs) {
+    if (isUnsafeRepositoryPath(input)) throw new Error(`task ${task.id} has unsafe input path ${input}`)
+  }
+  for (const output of task.outputs) {
+    if (isUnsafeRepositoryPath(output) || !output.startsWith('.artifacts/assurance/')) {
+      throw new Error(`task ${task.id} output must be under .artifacts/assurance`)
+    }
+  }
+}
+
+function validateEnvironmentKeys(task) {
+  for (const key of task.environmentKeys) {
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
+      throw new Error(`task ${task.id} has invalid environment key ${key}`)
+    }
+  }
+}
+
+function validateDependencies(tasks, ids) {
+  for (const task of tasks) {
+    for (const dependency of task.dependencies) {
+      if (!ids.has(dependency)) throw new Error(`unknown dependency ${dependency} for task ${task.id}`)
+    }
+  }
+}
+
 export function validateTaskConfig(config) {
   if (!isObject(config) || config.schemaVersion !== 1 || !Array.isArray(config.tasks)) {
     throw new Error('task config must use schemaVersion 1 and contain tasks')
@@ -34,42 +80,12 @@ export function validateTaskConfig(config) {
 
   const ids = new Set()
   for (const [index, task] of config.tasks.entries()) {
-    if (!isObject(task) || typeof task.id !== 'string' || task.id.length === 0) {
-      throw new Error(`tasks[${index}] requires a non-empty id`)
-    }
-    if (ids.has(task.id)) throw new Error(`duplicate task id ${task.id}`)
-    ids.add(task.id)
-    requireStringArray(task.command, `task ${task.id} command`, { nonEmpty: true })
-    requireStringArray(task.dependencies, `task ${task.id} dependencies`)
-    requireStringArray(task.inputs, `task ${task.id} inputs`)
-    requireStringArray(task.outputs, `task ${task.id} outputs`)
-    requireStringArray(task.environmentKeys, `task ${task.id} environmentKeys`)
-    const executable = task.command[0].split('/').at(-1)
-    if (['bash', 'dash', 'ksh', 'sh', 'zsh'].includes(executable) && task.command.includes('-c')) {
-      throw new Error(`task ${task.id} uses forbidden shell evaluation`)
-    }
-    for (const input of task.inputs) {
-      if (isUnsafeRepositoryPath(input)) throw new Error(`task ${task.id} has unsafe input path ${input}`)
-    }
-    for (const output of task.outputs) {
-      if (isUnsafeRepositoryPath(output) || !output.startsWith('.artifacts/assurance/')) {
-        throw new Error(`task ${task.id} output must be under .artifacts/assurance`)
-      }
-    }
-    for (const key of task.environmentKeys) {
-      if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
-        throw new Error(`task ${task.id} has invalid environment key ${key}`)
-      }
-    }
+    validateTaskShape(task, index, ids)
+    validateTaskCommand(task)
+    validateTaskPaths(task)
+    validateEnvironmentKeys(task)
   }
-
-  for (const task of config.tasks) {
-    for (const dependency of task.dependencies) {
-      if (!ids.has(dependency)) {
-        throw new Error(`unknown dependency ${dependency} for task ${task.id}`)
-      }
-    }
-  }
+  validateDependencies(config.tasks, ids)
   return config
 }
 
@@ -160,13 +176,48 @@ export function topologicalBatches(graph) {
   return batches
 }
 
+function collectFieldMismatches(receipt, expected, fields, reasons) {
+  for (const field of fields) {
+    if (receipt[field] !== expected[field]) reasons.push(`${field} mismatch`)
+  }
+}
+
+function collectArrayMismatches(receipt, expected, reasons) {
+  for (const field of ['outputs', 'environmentKeys']) {
+    const matches = Array.isArray(receipt[field])
+      && JSON.stringify(receipt[field]) === JSON.stringify(expected[field])
+    if (!matches) reasons.push(`${field} mismatch`)
+  }
+}
+
+function collectTimestampFailure(receipt, reasons) {
+  const startedAt = Date.parse(receipt.startedAt)
+  const completedAt = Date.parse(receipt.completedAt)
+  if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt) || completedAt < startedAt) {
+    reasons.push('invalid timestamps')
+  }
+}
+
+function collectForbiddenFields(receipt, reasons) {
+  for (const field of ['command', 'environment', 'stdout', 'stderr', 'output']) {
+    if (receipt[field] !== undefined) reasons.push(`forbidden receipt field ${field}`)
+  }
+}
+
+function collectMissingOutputs(receipt, outputExists, reasons) {
+  if (!Array.isArray(receipt.outputs)) return
+  for (const output of receipt.outputs) {
+    if (!outputExists(output)) reasons.push(`declared output missing: ${output}`)
+  }
+}
+
 export function validateReceipt(receipt, expected, outputExists) {
   const reasons = []
   if (!isObject(receipt)) return { valid: false, reasons: ['receipt must be an object'] }
   if (receipt.schema !== 'bootandstrap.assurance-task/v1') reasons.push('schema mismatch')
   if (receipt.status !== 'passed') reasons.push('status is not passed')
 
-  for (const field of [
+  const identityFields = [
     'profile',
     'claimBoundary',
     'taskId',
@@ -175,31 +226,12 @@ export function validateReceipt(receipt, expected, outputExists) {
     'inputsSha256',
     'toolchainSha256',
     'profileSha256',
-  ]) {
-    if (receipt[field] !== expected[field]) reasons.push(`${field} mismatch`)
-  }
-
-  for (const field of ['outputs', 'environmentKeys']) {
-    if (!Array.isArray(receipt[field]) || JSON.stringify(receipt[field]) !== JSON.stringify(expected[field])) {
-      reasons.push(`${field} mismatch`)
-    }
-  }
-
-  const startedAt = Date.parse(receipt.startedAt)
-  const completedAt = Date.parse(receipt.completedAt)
-  if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt) || completedAt < startedAt) {
-    reasons.push('invalid timestamps')
-  }
-
-  for (const forbiddenField of ['command', 'environment', 'stdout', 'stderr', 'output']) {
-    if (receipt[forbiddenField] !== undefined) reasons.push(`forbidden receipt field ${forbiddenField}`)
-  }
-
-  if (Array.isArray(receipt.outputs)) {
-    for (const output of receipt.outputs) {
-      if (!outputExists(output)) reasons.push(`declared output missing: ${output}`)
-    }
-  }
+  ]
+  collectFieldMismatches(receipt, expected, identityFields, reasons)
+  collectArrayMismatches(receipt, expected, reasons)
+  collectTimestampFailure(receipt, reasons)
+  collectForbiddenFields(receipt, reasons)
+  collectMissingOutputs(receipt, outputExists, reasons)
 
   return { valid: reasons.length === 0, reasons }
 }

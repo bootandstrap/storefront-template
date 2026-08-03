@@ -85,6 +85,38 @@ export async function discoverChangedFiles(repoRoot, { base, defaultBaseRef } = 
   return files
 }
 
+function validateImpactRuleFlags(rule) {
+  if (rule.critical !== undefined && typeof rule.critical !== 'boolean') {
+    throw new Error(`impact rule ${rule.id}.critical must be boolean`)
+  }
+  if (rule.fullProfileDryRun !== undefined && typeof rule.fullProfileDryRun !== 'boolean') {
+    throw new Error(`impact rule ${rule.id}.fullProfileDryRun must be boolean`)
+  }
+}
+
+function validateImpactRuleTasks(rule, knownTasks) {
+  requireStringArray(rule.tasks, `impact rule ${rule.id}.tasks`)
+  for (const taskId of rule.tasks) {
+    if (!knownTasks.has(taskId)) throw new Error(`unknown task ${taskId} in impact rule ${rule.id}`)
+  }
+}
+
+function validateImpactRule(rule, index, ids, knownTasks) {
+  if (!isObject(rule)) throw new Error(`impact rule ${index} must be an object`)
+  requireString(rule.id, `impact rule ${index}.id`)
+  if (ids.has(rule.id)) throw new Error(`duplicate impact rule ${rule.id}`)
+  ids.add(rule.id)
+  if (!Array.isArray(rule.selectors) || rule.selectors.length === 0) {
+    throw new Error(`impact rule ${rule.id}.selectors must be non-empty`)
+  }
+  rule.selectors.forEach((selector, selectorIndex) => {
+    validateSelector(selector, `impact rule ${rule.id}.selectors[${selectorIndex}]`)
+  })
+  validateImpactRuleTasks(rule, knownTasks)
+  requireString(rule.reason, `impact rule ${rule.id}.reason`)
+  validateImpactRuleFlags(rule)
+}
+
 export function validateImpactConfig(config, knownTasks) {
   if (!isObject(config) || config.schemaVersion !== 1 || !Array.isArray(config.rules)) {
     throw new Error('assurance impact config must use schemaVersion 1 and contain rules')
@@ -92,27 +124,7 @@ export function validateImpactConfig(config, knownTasks) {
   validateBase(config.defaultBaseRef)
   const ids = new Set()
   for (const [index, rule] of config.rules.entries()) {
-    if (!isObject(rule)) throw new Error(`impact rule ${index} must be an object`)
-    requireString(rule.id, `impact rule ${index}.id`)
-    if (ids.has(rule.id)) throw new Error(`duplicate impact rule ${rule.id}`)
-    ids.add(rule.id)
-    if (!Array.isArray(rule.selectors) || rule.selectors.length === 0) {
-      throw new Error(`impact rule ${rule.id}.selectors must be non-empty`)
-    }
-    rule.selectors.forEach((selector, selectorIndex) => {
-      validateSelector(selector, `impact rule ${rule.id}.selectors[${selectorIndex}]`)
-    })
-    requireStringArray(rule.tasks, `impact rule ${rule.id}.tasks`)
-    requireString(rule.reason, `impact rule ${rule.id}.reason`)
-    if (rule.critical !== undefined && typeof rule.critical !== 'boolean') {
-      throw new Error(`impact rule ${rule.id}.critical must be boolean`)
-    }
-    if (rule.fullProfileDryRun !== undefined && typeof rule.fullProfileDryRun !== 'boolean') {
-      throw new Error(`impact rule ${rule.id}.fullProfileDryRun must be boolean`)
-    }
-    for (const taskId of rule.tasks) {
-      if (!knownTasks.has(taskId)) throw new Error(`unknown task ${taskId} in impact rule ${rule.id}`)
-    }
+    validateImpactRule(rule, index, ids, knownTasks)
   }
   return config
 }

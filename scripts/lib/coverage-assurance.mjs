@@ -38,72 +38,82 @@ function aggregateMetric(entries, metric) {
   return Number(((covered / total) * 100).toFixed(2))
 }
 
-export function evaluateCoverage(policy, coverage) {
-  const failures = []
-  const metrics = ['lines', 'functions', 'branches']
+function evaluateGlobalRatchet(policy, coverage, metrics, failures) {
   const maximumRegression = policy.globalRatchet?.maximumRegression ?? 0
-
   for (const metric of metrics) {
     const actual = coverage.totals?.[metric]
     const baseline = policy.globalRatchet?.baseline?.[metric]
     if (!Number.isFinite(actual)) {
       failures.push(`global ${metric} is missing from coverage report`)
-      continue
-    }
-    if (!Number.isFinite(baseline)) {
+    } else if (!Number.isFinite(baseline)) {
       failures.push(`global ${metric} baseline is missing from policy`)
-      continue
-    }
-    if (actual < baseline - maximumRegression) {
+    } else if (actual < baseline - maximumRegression) {
       failures.push(`global ${metric} regressed: actual ${actual}, required ${baseline}`)
     }
   }
+}
+
+function matchedDomainEntries(domain, coverage) {
+  return Object.entries(coverage.files ?? {})
+    .filter(([relativePath]) => domain.sourceSelectors.some((selector) => matches(relativePath, selector)))
+}
+
+function evaluateDomainThresholds(domain, totals, metrics, failures) {
+  for (const metric of metrics) {
+    const actual = totals[metric]
+    const threshold = domain.ratchetThresholds?.[metric]
+    if (!Number.isFinite(threshold)) {
+      failures.push(`${domain.id}: missing ${metric} ratchet threshold`)
+    } else if (!Number.isFinite(actual) || actual < threshold) {
+      failures.push(`${domain.id}: ${metric} ${actual ?? 'missing'} is below ratchet ${threshold}`)
+    }
+  }
+}
+
+function evaluateCriticalDomain(domain, coverage, metrics, failures) {
+  const sourceEntries = matchedDomainEntries(domain, coverage)
+  if (sourceEntries.length === 0) {
+    failures.push(`${domain.id}: no source coverage records matched the declared selectors`)
+    return null
+  }
+  const executableSourceEntries = sourceEntries
+    .filter(([, entry]) => (entry.executableLines ?? metricWeight(entry, 'lines')) > 0)
+  if (executableSourceEntries.length === 0) {
+    failures.push(`${domain.id}: matched source coverage records contain no executable runtime`)
+    return null
+  }
+
+  const files = executableSourceEntries.map(([, entry]) => entry)
+  const totals = Object.fromEntries(metrics.map((metric) => [metric, aggregateMetric(files, metric)]))
+  const zeroCoverageFiles = executableSourceEntries
+    .filter(([, entry]) => metricPct(entry, 'lines') === 0)
+    .map(([relativePath]) => relativePath)
+  const maxZeroCoverageFiles = domain.maxZeroCoverageFiles ?? 0
+  if (zeroCoverageFiles.length > maxZeroCoverageFiles) {
+    failures.push(`${domain.id}: zero-coverage files ${zeroCoverageFiles.length}, allowed ${maxZeroCoverageFiles}`)
+  }
+  evaluateDomainThresholds(domain, totals, metrics, failures)
+
+  return {
+    id: domain.id,
+    sourceFiles: sourceEntries.length,
+    executableSourceFiles: executableSourceEntries.length,
+    zeroCoverageFiles,
+    totals,
+    ratchetThresholds: domain.ratchetThresholds,
+    targetThresholds: domain.targetThresholds,
+  }
+}
+
+export function evaluateCoverage(policy, coverage) {
+  const failures = []
+  const metrics = ['lines', 'functions', 'branches']
+  evaluateGlobalRatchet(policy, coverage, metrics, failures)
 
   const domainResults = []
   for (const domain of policy.criticalDomains ?? []) {
-    const sourceEntries = Object.entries(coverage.files ?? {})
-      .filter(([relativePath]) => domain.sourceSelectors.some((selector) => matches(relativePath, selector)))
-    if (sourceEntries.length === 0) {
-      failures.push(`${domain.id}: no source coverage records matched the declared selectors`)
-      continue
-    }
-
-    const executableSourceEntries = sourceEntries
-      .filter(([, entry]) => (entry.executableLines ?? metricWeight(entry, 'lines')) > 0)
-    if (executableSourceEntries.length === 0) {
-      failures.push(`${domain.id}: matched source coverage records contain no executable runtime`)
-      continue
-    }
-
-    const files = executableSourceEntries.map(([, entry]) => entry)
-    const totals = Object.fromEntries(metrics.map((metric) => [metric, aggregateMetric(files, metric)]))
-    const zeroCoverageFiles = executableSourceEntries
-      .filter(([, entry]) => metricPct(entry, 'lines') === 0)
-      .map(([relativePath]) => relativePath)
-    const maxZeroCoverageFiles = domain.maxZeroCoverageFiles ?? 0
-
-    if (zeroCoverageFiles.length > maxZeroCoverageFiles) {
-      failures.push(`${domain.id}: zero-coverage files ${zeroCoverageFiles.length}, allowed ${maxZeroCoverageFiles}`)
-    }
-    for (const metric of metrics) {
-      const actual = totals[metric]
-      const threshold = domain.ratchetThresholds?.[metric]
-      if (!Number.isFinite(threshold)) {
-        failures.push(`${domain.id}: missing ${metric} ratchet threshold`)
-      } else if (!Number.isFinite(actual) || actual < threshold) {
-        failures.push(`${domain.id}: ${metric} ${actual ?? 'missing'} is below ratchet ${threshold}`)
-      }
-    }
-
-    domainResults.push({
-      id: domain.id,
-      sourceFiles: sourceEntries.length,
-      executableSourceFiles: executableSourceEntries.length,
-      zeroCoverageFiles,
-      totals,
-      ratchetThresholds: domain.ratchetThresholds,
-      targetThresholds: domain.targetThresholds,
-    })
+    const result = evaluateCriticalDomain(domain, coverage, metrics, failures)
+    if (result) domainResults.push(result)
   }
 
   return {

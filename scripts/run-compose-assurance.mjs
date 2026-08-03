@@ -73,32 +73,46 @@ function assertPinnedVersion(spawn, rootDir) {
   }
 }
 
-function parseSarif(stdout) {
-  let document
+function parseSarifJson(stdout) {
   try {
-    document = JSON.parse(stdout)
+    return JSON.parse(stdout)
   } catch {
     throw new Error('compose-lint returned malformed SARIF JSON')
   }
+}
 
-  const runs = document?.runs
-  const run = Array.isArray(runs) ? runs[0] : undefined
-  const driver = run?.tool?.driver
-  if (
-    document?.version !== '2.1.0' ||
-    !Array.isArray(runs) ||
-    runs.length !== 1 ||
-    driver?.name !== 'compose-lint' ||
-    driver?.version !== PINNED_COMPOSE_LINT_VERSION ||
-    !Array.isArray(driver.rules) ||
-    !Array.isArray(run.results) ||
-    !Array.isArray(run.invocations) ||
-    run.invocations.length !== 1 ||
-    run.invocations[0]?.executionSuccessful !== true
-  ) {
+function singleSarifRun(document) {
+  if (document?.version !== '2.1.0' || !Array.isArray(document?.runs) || document.runs.length !== 1) {
     throw new Error('compose-lint returned a malformed SARIF document')
   }
+  return document.runs[0]
+}
 
+function assertSarifDriver(run) {
+  const driver = run?.tool?.driver
+  const valid = [
+    driver?.name === 'compose-lint',
+    driver?.version === PINNED_COMPOSE_LINT_VERSION,
+    Array.isArray(driver?.rules),
+  ].every(Boolean)
+  if (!valid) throw new Error('compose-lint returned a malformed SARIF document')
+}
+
+function assertSarifExecution(run) {
+  const valid = [
+    Array.isArray(run?.results),
+    Array.isArray(run?.invocations),
+    run?.invocations?.length === 1,
+    run?.invocations?.[0]?.executionSuccessful === true,
+  ].every(Boolean)
+  if (!valid) throw new Error('compose-lint returned a malformed SARIF document')
+}
+
+function parseSarif(stdout) {
+  const document = parseSarifJson(stdout)
+  const run = singleSarifRun(document)
+  assertSarifDriver(run)
+  assertSarifExecution(run)
   return { document, run }
 }
 
@@ -114,6 +128,28 @@ function assertSuppressionMetadata(suppression) {
   }
 }
 
+function assertSarifResult(result) {
+  if (!result || typeof result.ruleId !== 'string') {
+    throw new Error('compose-lint returned a malformed SARIF result')
+  }
+}
+
+function hasValidSuppressions(result) {
+  if (result.suppressions === undefined) return false
+  if (!Array.isArray(result.suppressions) || result.suppressions.length === 0) {
+    throw new Error('compose-lint returned a malformed SARIF suppression')
+  }
+  result.suppressions.forEach(assertSuppressionMetadata)
+  return true
+}
+
+function isHighOrCriticalResult(result, severities) {
+  const securitySeverity = severities.get(result.ruleId)
+  return Number.isFinite(securitySeverity) && securitySeverity >= 7
+    ? true
+    : result.level === 'error'
+}
+
 function collectHighOrCriticalFindings(run) {
   const severities = new Map(run.tool.driver.rules.map((rule) => [
     rule?.id,
@@ -122,23 +158,9 @@ function collectHighOrCriticalFindings(run) {
   const findings = []
 
   for (const result of run.results) {
-    if (!result || typeof result.ruleId !== 'string') {
-      throw new Error('compose-lint returned a malformed SARIF result')
-    }
-
-    const suppressions = result.suppressions
-    if (suppressions !== undefined) {
-      if (!Array.isArray(suppressions) || suppressions.length === 0) {
-        throw new Error('compose-lint returned a malformed SARIF suppression')
-      }
-      for (const suppression of suppressions) assertSuppressionMetadata(suppression)
-      continue
-    }
-
-    const securitySeverity = severities.get(result.ruleId)
-    if ((Number.isFinite(securitySeverity) && securitySeverity >= 7) || result.level === 'error') {
-      findings.push(result.ruleId)
-    }
+    assertSarifResult(result)
+    if (hasValidSuppressions(result)) continue
+    if (isHighOrCriticalResult(result, severities)) findings.push(result.ruleId)
   }
 
   return findings

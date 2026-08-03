@@ -37,26 +37,26 @@ const baselineEnvironmentKeys = [
   'FORCE_COLOR',
 ]
 
+function parseArgument(options, argv, index) {
+  const argument = argv[index]
+  if (argument === '--') return 0
+  if (argument === '--dry-run' || argument === '--no-cache') {
+    options[argument === '--dry-run' ? 'dryRun' : 'noCache'] = true
+    return 0
+  }
+  if (argument !== '--profile' && argument !== '--base') {
+    throw new Error(`unknown argument: ${argument}`)
+  }
+  const value = argv[index + 1]
+  if (value === undefined) throw new Error(`${argument} requires a value`)
+  options[argument === '--profile' ? 'profile' : 'base'] = value
+  return 1
+}
+
 function parseArguments(argv) {
   const options = { profile: undefined, dryRun: false, noCache: false, base: undefined }
   for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index]
-    if (argument === '--') continue
-    if (argument === '--profile') {
-      if (argv[index + 1] === undefined) throw new Error('--profile requires a value')
-      options.profile = argv[index + 1]
-      index += 1
-    } else if (argument === '--base') {
-      if (argv[index + 1] === undefined) throw new Error('--base requires a value')
-      options.base = argv[index + 1]
-      index += 1
-    } else if (argument === '--dry-run') {
-      options.dryRun = true
-    } else if (argument === '--no-cache') {
-      options.noCache = true
-    } else {
-      throw new Error(`unknown argument: ${argument}`)
-    }
+    index += parseArgument(options, argv, index)
   }
   if (!options.profile) throw new Error('--profile is required')
   return options
@@ -96,70 +96,127 @@ function outputExists(relativePath) {
   return existsSync(path.join(repoRoot, relativePath))
 }
 
+function fullProfileDryRun(profiles, taskConfig, impact) {
+  if (!impact?.fullProfileDryRun) return null
+  const full = resolveProfile(profiles, 'full', [])
+  const fullGraph = buildTaskGraph(taskConfig, full.tasks)
+  return {
+    status: 'planned',
+    profile: 'full',
+    claimBoundary: full.claimBoundary,
+    tasks: fullGraph.ids,
+    batches: topologicalBatches(fullGraph),
+    deferred: full.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
+  }
+}
+
+async function resolveRunPlan(options, profiles, taskConfig) {
+  if (options.profile !== 'fast') {
+    if (options.base !== undefined) throw new Error('--base is supported only by the fast profile')
+    const resolved = resolveProfile(profiles, options.profile, [])
+    return {
+      resolved,
+      graph: buildTaskGraph(taskConfig, resolved.tasks),
+      changedFiles: [],
+      impact: null,
+      impactPlan: null,
+    }
+  }
+
+  const impactConfig = await readJson(path.join(scriptDir, 'assurance-impact.json'))
+  const policy = await readJson(path.join(scriptDir, 'assurance-policy.json'))
+  const changedFiles = await discoverChangedFiles(repoRoot, {
+    base: options.base,
+    defaultBaseRef: impactConfig.defaultBaseRef,
+  })
+  const impact = selectImpact(impactConfig, changedFiles, { profiles, policy })
+  const profile = resolveProfile(profiles, options.profile, changedFiles)
+  const tasks = [...new Set([...profile.tasks, ...impact.tasks])]
+  const resolved = {
+    ...profile,
+    tasks,
+    deferred: profile.deferred.filter((taskId) => !tasks.includes(taskId)),
+    matchedRules: [...new Set([...profile.matchedRules, ...impact.matchedRules])],
+  }
+  const impactPlan = {
+    base: options.base ?? impactConfig.defaultBaseRef,
+    reasons: impact.reasons,
+    fullProfileDryRun: fullProfileDryRun(profiles, taskConfig, impact),
+  }
+  return {
+    resolved,
+    graph: buildTaskGraph(taskConfig, resolved.tasks),
+    changedFiles,
+    impact,
+    impactPlan,
+  }
+}
+
+function writeDryRunPlan({ resolved, graph, changedFiles, impactPlan }) {
+  process.stdout.write(`${JSON.stringify({
+    schema: 'bootandstrap.assurance-plan/v1',
+    dryRun: true,
+    status: 'planned',
+    profile: resolved.profile,
+    claimBoundary: resolved.claimBoundary,
+    tasks: graph.ids,
+    batches: topologicalBatches(graph),
+    deferred: resolved.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
+    changedFiles,
+    impact: impactPlan,
+  })}\n`)
+}
+
+function assuranceWorkerCount() {
+  const workers = Number.parseInt(process.env.BNS_ASSURANCE_WORKERS ?? '4', 10)
+  if (!Number.isInteger(workers) || workers <= 0) {
+    throw new Error('BNS_ASSURANCE_WORKERS must be a positive integer')
+  }
+  return workers
+}
+
+function bindSignalHandlers(children, interruption) {
+  const stopChildren = (signal) => {
+    interruption.active = true
+    interruption.signal = signal
+    for (const child of children) child.kill('SIGTERM')
+  }
+  process.once('SIGINT', () => stopChildren('SIGINT'))
+  process.once('SIGTERM', () => stopChildren('SIGTERM'))
+}
+
+async function executeTaskGraph(graph, states, workers, interruption, runTask) {
+  while (Object.keys(states).length < graph.ids.length) {
+    if (interruption.active) {
+      for (const taskId of graph.ids) {
+        if (states[taskId] === undefined) states[taskId] = 'interrupted'
+      }
+      break
+    }
+    Object.assign(states, propagateDependencyFailures(graph, states))
+    const ready = nextReadyBatch(graph, states, workers)
+    if (ready.length === 0) break
+    const results = await Promise.all(ready.map(async (taskId) => [taskId, await runTask(taskId)]))
+    for (const [taskId, status] of results) states[taskId] = status
+  }
+}
+
+function finalizeTaskStates(graph, states, interruption) {
+  Object.assign(states, propagateDependencyFailures(graph, states))
+  for (const taskId of graph.ids) {
+    if (states[taskId] === undefined) states[taskId] = interruption.active ? 'interrupted' : 'blocked'
+  }
+}
+
 async function main() {
   const options = parseArguments(process.argv.slice(2))
   const profiles = await readJson(path.join(scriptDir, 'assurance-profiles.json'))
   const taskConfig = await readJson(path.join(scriptDir, 'assurance-tasks.json'))
-  let resolved
-  let impact = null
-  let impactBase = null
-  let changedFiles = []
-  if (options.profile === 'fast') {
-    const impactConfig = await readJson(path.join(scriptDir, 'assurance-impact.json'))
-    const policy = await readJson(path.join(scriptDir, 'assurance-policy.json'))
-    impactBase = options.base ?? impactConfig.defaultBaseRef
-    changedFiles = await discoverChangedFiles(repoRoot, {
-      base: options.base,
-      defaultBaseRef: impactConfig.defaultBaseRef,
-    })
-    impact = selectImpact(impactConfig, changedFiles, { profiles, policy })
-    const profile = resolveProfile(profiles, options.profile, changedFiles)
-    const tasks = [...new Set([...profile.tasks, ...impact.tasks])]
-    resolved = {
-      ...profile,
-      tasks,
-      deferred: profile.deferred.filter((taskId) => !tasks.includes(taskId)),
-      matchedRules: [...new Set([...profile.matchedRules, ...impact.matchedRules])],
-    }
-  } else {
-    if (options.base !== undefined) throw new Error('--base is supported only by the fast profile')
-    resolved = resolveProfile(profiles, options.profile, [])
-  }
-  const graph = buildTaskGraph(taskConfig, resolved.tasks)
-
-  let fullProfileDryRun = null
-  if (impact?.fullProfileDryRun) {
-    const full = resolveProfile(profiles, 'full', [])
-    const fullGraph = buildTaskGraph(taskConfig, full.tasks)
-    fullProfileDryRun = {
-      status: 'planned',
-      profile: 'full',
-      claimBoundary: full.claimBoundary,
-      tasks: fullGraph.ids,
-      batches: topologicalBatches(fullGraph),
-      deferred: full.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
-    }
-  }
-
-  const impactPlan = impact ? {
-    base: impactBase,
-    reasons: impact.reasons,
-    fullProfileDryRun,
-  } : null
+  const plan = await resolveRunPlan(options, profiles, taskConfig)
+  const { resolved, graph, changedFiles, impact, impactPlan } = plan
 
   if (options.dryRun) {
-    process.stdout.write(`${JSON.stringify({
-      schema: 'bootandstrap.assurance-plan/v1',
-      dryRun: true,
-      status: 'planned',
-      profile: resolved.profile,
-      claimBoundary: resolved.claimBoundary,
-      tasks: graph.ids,
-      batches: topologicalBatches(graph),
-      deferred: resolved.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
-      changedFiles,
-      impact: impactPlan,
-    })}\n`)
+    writeDryRunPlan(plan)
     return
   }
 
@@ -171,10 +228,7 @@ async function main() {
     })}\n`)
   }
 
-  const configuredWorkers = Number.parseInt(process.env.BNS_ASSURANCE_WORKERS ?? '4', 10)
-  if (!Number.isInteger(configuredWorkers) || configuredWorkers <= 0) {
-    throw new Error('BNS_ASSURANCE_WORKERS must be a positive integer')
-  }
+  const configuredWorkers = assuranceWorkerCount()
 
   const revision = runGit(repoRoot, ['rev-parse', 'HEAD']).toString('utf8').trim()
   const workingTreeSha256 = await hashWorkingTree(repoRoot)
@@ -182,16 +236,8 @@ async function main() {
   const states = {}
   const receipts = {}
   const children = new Set()
-  let interrupted = false
-  let receivedSignal = null
-
-  const stopChildren = (signal) => {
-    interrupted = true
-    receivedSignal = signal
-    for (const child of children) child.kill('SIGTERM')
-  }
-  process.once('SIGINT', () => stopChildren('SIGINT'))
-  process.once('SIGTERM', () => stopChildren('SIGTERM'))
+  const interruption = { active: false, signal: null }
+  bindSignalHandlers(children, interruption)
 
   async function runTask(taskId) {
     const task = graph.tasks.get(taskId)
@@ -244,7 +290,7 @@ async function main() {
       })
       child.once('exit', (code, signal) => {
         children.delete(child)
-        if (interrupted || signal) resolve('interrupted')
+        if (interruption.active || signal) resolve('interrupted')
         else resolve(code === 0 ? 'passed' : 'failed')
       })
     })
@@ -263,33 +309,16 @@ async function main() {
     return finalStatus
   }
 
-  while (Object.keys(states).length < graph.ids.length) {
-    if (interrupted) {
-      for (const taskId of graph.ids) {
-        if (states[taskId] === undefined) states[taskId] = 'interrupted'
-      }
-      break
-    }
-
-    Object.assign(states, propagateDependencyFailures(graph, states))
-    const ready = nextReadyBatch(graph, states, configuredWorkers)
-    if (ready.length === 0) break
-    const results = await Promise.all(ready.map(async (taskId) => [taskId, await runTask(taskId)]))
-    for (const [taskId, status] of results) states[taskId] = status
-  }
-
-  Object.assign(states, propagateDependencyFailures(graph, states))
-  for (const taskId of graph.ids) {
-    if (states[taskId] === undefined) states[taskId] = interrupted ? 'interrupted' : 'blocked'
-  }
+  await executeTaskGraph(graph, states, configuredWorkers, interruption, runTask)
+  finalizeTaskStates(graph, states, interruption)
 
   const successful = Object.values(states).every((status) => status === 'passed' || status === 'cached')
   const summary = {
     schema: 'bootandstrap.assurance-summary/v1',
     profile: resolved.profile,
     claimBoundary: resolved.claimBoundary,
-    status: interrupted ? 'interrupted' : successful ? 'passed' : 'failed',
-    signal: receivedSignal,
+    status: interruption.active ? 'interrupted' : successful ? 'passed' : 'failed',
+    signal: interruption.signal,
     revision,
     workingTreeSha256,
     tasks: states,
@@ -304,7 +333,7 @@ async function main() {
   }
   await writeJsonAtomic(path.join(artifactRoot, 'summary.json'), summary)
   process.stdout.write(`${JSON.stringify(summary)}\n`)
-  if (!successful || interrupted) process.exitCode = 1
+  if (!successful || interruption.active) process.exitCode = 1
 }
 
 main().catch((error) => {

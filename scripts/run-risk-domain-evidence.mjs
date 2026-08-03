@@ -25,6 +25,24 @@ const DEFAULT_TASK_RECEIPT_PATH = join(
   'storefront-assurance.json',
 )
 const SENSITIVE_TOKEN_PATTERN = /\b(secret|token|password|passwd|private_key|sk_live|stripe_live)\b/i
+const SAFE_ENV_PASSTHROUGH = [
+  'PATH', 'HOME', 'SHELL', 'USER', 'TMPDIR', 'CI', 'TERM', 'FORCE_COLOR',
+  'BNS_360_BASE_URL', 'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES',
+  'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES', 'BNS_RUNTIME_REQUIRE_CART_STATES',
+  'BSWEB_ROOT', 'TENANT_ID', 'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_MEDUSA_BACKEND_URL',
+  'NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY', 'NEXT_PUBLIC_STORE_URL', 'MEDUSA_BACKEND_URL',
+]
+const SAFE_ENV_DEFAULTS = {
+  TENANT_ID: '00000000-0000-4000-8000-000000000001',
+  BNS_360_BASE_URL: 'http://localhost:3000',
+  NEXT_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder',
+  NEXT_PUBLIC_MEDUSA_BACKEND_URL: 'http://localhost:9000',
+  NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: 'placeholder',
+  NEXT_PUBLIC_STORE_URL: 'https://placeholder.com',
+  MEDUSA_BACKEND_URL: 'http://localhost:9000',
+}
 
 function readJson(filePath, label) {
   try {
@@ -76,40 +94,53 @@ function assertSafeRelativePath(relativePath, suffixPattern) {
   return normalized
 }
 
-function classifyCommand(command) {
+function assertRuntimeEvidenceCommand(command) {
   if (typeof command !== 'string' || command.trim().length === 0) {
     throw new Error('runtimeEvidence command must be a non-empty string')
   }
   if (SENSITIVE_TOKEN_PATTERN.test(command)) {
     throw new Error('runtimeEvidence command appears to include sensitive material')
   }
+}
 
-  const parts = splitCommand(command)
-  if (
-    parts.length === 2 &&
-    parts[0] === 'node' &&
-    parts[1] === 'scripts/check-risk-test-matrix.mjs'
-  ) {
-    return { kind: 'dependency', parts, paths: [] }
-  }
+function dependencyCommand(parts) {
+  const matches = parts.length === 2
+    && parts[0] === 'node'
+    && parts[1] === 'scripts/check-risk-test-matrix.mjs'
+  return matches ? { kind: 'dependency', parts, paths: [] } : null
+}
 
+function assertStorefrontCommandPrefix(parts, command) {
   const storefrontPrefix = ['pnpm', '--filter=storefront', 'exec']
   if (!storefrontPrefix.every((part, index) => parts[index] === part)) {
     throw new Error(`unsupported runtimeEvidence command: ${command}`)
   }
-  if (parts[3] === 'vitest' && parts[4] === 'run' && parts.length > 5) {
-    const paths = parts.slice(5).map((path) =>
-      assertSafeRelativePath(path, /^src\/.+\.test\.(ts|tsx)$/),
-    )
-    return { kind: 'vitest', parts, paths }
+}
+
+function testRunnerCommand(parts, command) {
+  const runner = parts[3]
+  const validRunner = runner === 'vitest'
+    ? parts[4] === 'run'
+    : runner === 'playwright' && parts[4] === 'test'
+  if (!validRunner || parts.length <= 5) {
+    throw new Error(`unsupported runtimeEvidence command: ${command}`)
   }
-  if (parts[3] === 'playwright' && parts[4] === 'test' && parts.length > 5) {
-    const paths = parts.slice(5).map((path) =>
-      assertSafeRelativePath(path, /^e2e\/.+\.spec\.ts$/),
-    )
-    return { kind: 'playwright', parts, paths }
+  const vitest = runner === 'vitest'
+  const suffix = vitest ? /^src\/.+\.test\.(ts|tsx)$/ : /^e2e\/.+\.spec\.ts$/
+  return {
+    kind: vitest ? 'vitest' : 'playwright',
+    parts,
+    paths: parts.slice(5).map((path) => assertSafeRelativePath(path, suffix)),
   }
-  throw new Error(`unsupported runtimeEvidence command: ${command}`)
+}
+
+function classifyCommand(command) {
+  assertRuntimeEvidenceCommand(command)
+  const parts = splitCommand(command)
+  const dependency = dependencyCommand(parts)
+  if (dependency) return dependency
+  assertStorefrontCommandPrefix(parts, command)
+  return testRunnerCommand(parts, command)
 }
 
 function selectedDomains(matrix, requestedDomain) {
@@ -120,77 +151,78 @@ function selectedDomains(matrix, requestedDomain) {
   return [domain]
 }
 
-export function planRiskDomainEvidence(matrix, testsArtifact) {
-  if (
-    testsArtifact?.schema !== 'bootandstrap.storefront-tests/v1' ||
-    testsArtifact?.status !== 'passed' ||
-    !Array.isArray(testsArtifact?.testFiles)
-  ) {
-    throw new Error('storefront tests artifact cannot supply risk evidence')
-  }
-  const passedFiles = new Set(testsArtifact.testFiles
+function assertPassedTestsArtifact(testsArtifact) {
+  const valid = [
+    testsArtifact?.schema === 'bootandstrap.storefront-tests/v1',
+    testsArtifact?.status === 'passed',
+    Array.isArray(testsArtifact?.testFiles),
+  ].every(Boolean)
+  if (!valid) throw new Error('storefront tests artifact cannot supply risk evidence')
+}
+
+function passedTestFiles(testsArtifact) {
+  return new Set(testsArtifact.testFiles
     .filter((entry) => entry?.status === 'passed')
     .map((entry) => entry.path))
+}
+
+function assertRiskDomainDefinition(domain) {
+  if (!domain?.id) throw new Error('risk domain entry must define an id')
+  if (!Array.isArray(domain.runtimeEvidence) || domain.runtimeEvidence.length < 1) {
+    throw new Error(`${domain.id}: runtimeEvidence must define at least one command`)
+  }
+  if (!Array.isArray(domain.requiredTestFiles) || domain.requiredTestFiles.length < 1) {
+    throw new Error(`${domain.id}: requiredTestFiles must define at least one path`)
+  }
+}
+
+function assertRequiredTestsPassed(domain, passedFiles) {
+  for (const requiredPath of domain.requiredTestFiles) {
+    if (/\.test\.(ts|tsx)$/.test(requiredPath) && !passedFiles.has(requiredPath)) {
+      throw new Error(`${domain.id}: required Vitest file ${requiredPath} is absent from passed evidence`)
+    }
+  }
+}
+
+function planDomainCommand(domain, command, passedFiles) {
+  const classified = classifyCommand(command)
+  if (classified.kind === 'vitest') {
+    for (const testPath of classified.paths) {
+      const repositoryPath = `apps/storefront/${testPath}`
+      if (!passedFiles.has(repositoryPath)) {
+        throw new Error(`${domain.id}: required Vitest file ${repositoryPath} is absent from passed evidence`)
+      }
+    }
+  }
+  return {
+    domainId: domain.id,
+    command,
+    kind: classified.kind,
+    status: classified.kind === 'playwright' ? 'execute' : 'reused',
+    parts: classified.parts,
+  }
+}
+
+export function planRiskDomainEvidence(matrix, testsArtifact) {
+  assertPassedTestsArtifact(testsArtifact)
+  const passedFiles = passedTestFiles(testsArtifact)
   const plan = []
 
   for (const domain of matrix.domains ?? []) {
-    if (!domain?.id) throw new Error('risk domain entry must define an id')
-    if (!Array.isArray(domain.runtimeEvidence) || domain.runtimeEvidence.length < 1) {
-      throw new Error(`${domain.id}: runtimeEvidence must define at least one command`)
-    }
-    if (!Array.isArray(domain.requiredTestFiles) || domain.requiredTestFiles.length < 1) {
-      throw new Error(`${domain.id}: requiredTestFiles must define at least one path`)
-    }
-
-    for (const requiredPath of domain.requiredTestFiles) {
-      if (/\.test\.(ts|tsx)$/.test(requiredPath) && !passedFiles.has(requiredPath)) {
-        throw new Error(`${domain.id}: required Vitest file ${requiredPath} is absent from passed evidence`)
-      }
-    }
-
+    assertRiskDomainDefinition(domain)
+    assertRequiredTestsPassed(domain, passedFiles)
     for (const command of domain.runtimeEvidence) {
-      const classified = classifyCommand(command)
-      if (classified.kind === 'vitest') {
-        for (const testPath of classified.paths) {
-          const repositoryPath = `apps/storefront/${testPath}`
-          if (!passedFiles.has(repositoryPath)) {
-            throw new Error(`${domain.id}: required Vitest file ${repositoryPath} is absent from passed evidence`)
-          }
-        }
-      }
-      plan.push({
-        domainId: domain.id,
-        command,
-        kind: classified.kind,
-        status: classified.kind === 'playwright' ? 'execute' : 'reused',
-        parts: classified.parts,
-      })
+      plan.push(planDomainCommand(domain, command, passedFiles))
     }
   }
   return plan
 }
 
 function buildSafeEnv() {
-  const passthrough = [
-    'PATH', 'HOME', 'SHELL', 'USER', 'TMPDIR', 'CI', 'TERM', 'FORCE_COLOR',
-    'BNS_360_BASE_URL', 'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES',
-    'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES', 'BNS_RUNTIME_REQUIRE_CART_STATES',
-    'BSWEB_ROOT', 'TENANT_ID', 'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_MEDUSA_BACKEND_URL',
-    'NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY', 'NEXT_PUBLIC_STORE_URL', 'MEDUSA_BACKEND_URL',
-  ]
-  const env = {}
-  for (const key of passthrough) if (process.env[key]) env[key] = process.env[key]
-
-  env.TENANT_ID = env.TENANT_ID ?? '00000000-0000-4000-8000-000000000001'
-  env.BNS_360_BASE_URL = env.BNS_360_BASE_URL ?? 'http://localhost:3000'
-  env.NEXT_PUBLIC_SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co'
-  env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'
-  env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? 'http://localhost:9000'
-  env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ?? 'placeholder'
-  env.NEXT_PUBLIC_STORE_URL = env.NEXT_PUBLIC_STORE_URL ?? 'https://placeholder.com'
-  env.MEDUSA_BACKEND_URL = env.MEDUSA_BACKEND_URL ?? 'http://localhost:9000'
-  return env
+  const passthrough = Object.fromEntries(
+    SAFE_ENV_PASSTHROUGH.flatMap((key) => process.env[key] ? [[key, process.env[key]]] : []),
+  )
+  return { ...SAFE_ENV_DEFAULTS, ...passthrough }
 }
 
 function buildSummary({ domains, executedCommands, reusedCommands, matrixPath, startedAt, status }) {

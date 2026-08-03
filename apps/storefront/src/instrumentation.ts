@@ -5,14 +5,22 @@ export const EVIDENCE_PROPAGATION_HEADERS = [
     "x-tenant-id",
 ] as const
 
+function requestHeaders(value: unknown): unknown {
+    if (value === null || typeof value !== "object" || !("headers" in value)) return null
+    return (value as { headers?: unknown }).headers
+}
+
+function headerValue(headers: unknown, headerName: string): string | null {
+    if (headers instanceof Headers) return headers.get(headerName)
+    if (headers === null || typeof headers !== "object" || Array.isArray(headers)) return null
+    const value = (headers as Record<string, unknown>)[headerName]
+    return typeof value === "string" ? value : null
+}
+
 function readRequestHeader(args: unknown[], headerName: string): string | null {
     for (const value of args) {
-        if (!value || typeof value !== "object" || !("headers" in value)) continue
-        const headers = (value as { headers?: unknown }).headers
-        if (headers instanceof Headers) return headers.get(headerName)
-        if (!headers || typeof headers !== "object" || Array.isArray(headers)) continue
-        const headerValue = (headers as Record<string, unknown>)[headerName]
-        if (typeof headerValue === "string") return headerValue
+        const candidate = headerValue(requestHeaders(value), headerName)
+        if (candidate !== null) return candidate
     }
     return null
 }

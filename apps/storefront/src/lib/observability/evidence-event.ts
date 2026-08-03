@@ -68,6 +68,33 @@ function rejectSecretValue(value: string, field: string): void {
     }
 }
 
+function validateAttributeKey(key: string): void {
+    requireText(key, 'attribute key')
+    if (SECRET_KEY_PATTERN.test(key)) {
+        throw new Error(`attribute ${key} is secret-shaped`)
+    }
+    if (RAW_PAYLOAD_KEY_PATTERN.test(key)) {
+        throw new Error(`attribute ${key} is a raw payload field`)
+    }
+    if (key.startsWith('bootandstrap.')) {
+        throw new Error(`attribute ${key} uses a reserved evidence namespace`)
+    }
+}
+
+function validateAttributeValue(key: string, value: EvidenceAttributeValue): void {
+    if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) {
+        throw new Error(`attribute ${key} must be a primitive value`)
+    }
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+        throw new Error(`attribute ${key} must be finite`)
+    }
+    if (typeof value !== 'string') return
+    if (value.length > MAX_ATTRIBUTE_STRING_LENGTH) {
+        throw new Error(`attribute ${key} exceeds the cardinality-safe length`)
+    }
+    rejectSecretValue(value, `attribute ${key}`)
+}
+
 function validateAttributes(
     attributes: Record<string, EvidenceAttributeValue> | undefined,
 ): Record<string, EvidenceAttributeValue> | undefined {
@@ -81,28 +108,8 @@ function validateAttributes(
         throw new Error(`attributes exceed the cardinality limit of ${MAX_ATTRIBUTES}`)
     }
     for (const [key, value] of entries) {
-        requireText(key, 'attribute key')
-        if (SECRET_KEY_PATTERN.test(key)) {
-            throw new Error(`attribute ${key} is secret-shaped`)
-        }
-        if (RAW_PAYLOAD_KEY_PATTERN.test(key)) {
-            throw new Error(`attribute ${key} is a raw payload field`)
-        }
-        if (key.startsWith('bootandstrap.')) {
-            throw new Error(`attribute ${key} uses a reserved evidence namespace`)
-        }
-        if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) {
-            throw new Error(`attribute ${key} must be a primitive value`)
-        }
-        if (typeof value === 'number' && !Number.isFinite(value)) {
-            throw new Error(`attribute ${key} must be finite`)
-        }
-        if (typeof value === 'string') {
-            if (value.length > MAX_ATTRIBUTE_STRING_LENGTH) {
-                throw new Error(`attribute ${key} exceeds the cardinality-safe length`)
-            }
-            rejectSecretValue(value, `attribute ${key}`)
-        }
+        validateAttributeKey(key)
+        validateAttributeValue(key, value)
     }
     return { ...attributes }
 }

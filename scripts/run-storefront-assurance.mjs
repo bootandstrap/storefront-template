@@ -53,35 +53,41 @@ function repoRelativeTestPath(filePath, rootDir) {
   throw new Error(`Vitest reported a test file outside storefront: ${filePath}`)
 }
 
-export function normalizeVitestResults(raw, rootDir) {
-  if (
-    raw?.success !== true ||
-    raw?.numFailedTestSuites !== 0 ||
-    raw?.numFailedTests !== 0 ||
-    !Number.isInteger(raw?.numTotalTests) ||
-    raw.numTotalTests < 1 ||
-    !Array.isArray(raw?.testResults) ||
-    raw.testResults.length < 1
-  ) {
-    throw new Error('Vitest JSON does not prove a passed non-empty test run')
-  }
+function assertPassedVitestRun(raw) {
+  const valid = [
+    raw?.success === true,
+    raw?.numFailedTestSuites === 0,
+    raw?.numFailedTests === 0,
+    Number.isInteger(raw?.numTotalTests),
+    raw?.numTotalTests > 0,
+    Array.isArray(raw?.testResults),
+    raw?.testResults?.length > 0,
+  ].every(Boolean)
+  if (!valid) throw new Error('Vitest JSON does not prove a passed non-empty test run')
+}
 
-  const testFiles = raw.testResults.map((entry) => {
-    if (entry?.status !== 'passed' || typeof entry?.name !== 'string') {
-      throw new Error('Vitest JSON contains a non-passed or malformed test file')
-    }
-    const assertions = Array.isArray(entry.assertionResults) ? entry.assertionResults : []
-    if (assertions.some((assertion) => assertion?.status === 'failed')) {
-      throw new Error(`Vitest JSON contains failed assertions in ${entry.name}`)
-    }
-    return {
-      path: repoRelativeTestPath(entry.name, rootDir),
-      status: 'passed',
-      tests: assertions.length,
-      passedTests: assertions.filter((assertion) => assertion?.status === 'passed').length,
-      pendingTests: assertions.filter((assertion) => assertion?.status === 'pending').length,
-    }
-  }).sort((left, right) => left.path.localeCompare(right.path))
+function normalizeVitestTestFile(entry, rootDir) {
+  if (entry?.status !== 'passed' || typeof entry?.name !== 'string') {
+    throw new Error('Vitest JSON contains a non-passed or malformed test file')
+  }
+  const assertions = Array.isArray(entry.assertionResults) ? entry.assertionResults : []
+  if (assertions.some((assertion) => assertion?.status === 'failed')) {
+    throw new Error(`Vitest JSON contains failed assertions in ${entry.name}`)
+  }
+  return {
+    path: repoRelativeTestPath(entry.name, rootDir),
+    status: 'passed',
+    tests: assertions.length,
+    passedTests: assertions.filter((assertion) => assertion?.status === 'passed').length,
+    pendingTests: assertions.filter((assertion) => assertion?.status === 'pending').length,
+  }
+}
+
+export function normalizeVitestResults(raw, rootDir) {
+  assertPassedVitestRun(raw)
+  const testFiles = raw.testResults
+    .map((entry) => normalizeVitestTestFile(entry, rootDir))
+    .sort((left, right) => left.path.localeCompare(right.path))
 
   if (new Set(testFiles.map(({ path }) => path)).size !== testFiles.length) {
     throw new Error('Vitest JSON contains duplicate test file results')
@@ -116,62 +122,148 @@ function assertIdentity(value, label) {
   }
 }
 
-export function validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity }) {
+function hasValidReceiptIdentity(receipt) {
+  return [
+    receipt?.schema === 'bootandstrap.assurance-task/v1',
+    receipt?.status === 'passed',
+    receipt?.taskId === 'storefront-assurance',
+    typeof receipt?.profile === 'string',
+    typeof receipt?.claimBoundary === 'string',
+  ].every(Boolean)
+}
+
+function hasValidReceiptTiming(receipt) {
   const startedAt = Date.parse(receipt?.startedAt)
   const completedAt = Date.parse(receipt?.completedAt)
-  const receiptValid =
-    receipt?.schema === 'bootandstrap.assurance-task/v1' &&
-    receipt?.status === 'passed' &&
-    receipt?.taskId === 'storefront-assurance' &&
-    typeof receipt?.profile === 'string' &&
-    typeof receipt?.claimBoundary === 'string' &&
-    Array.isArray(receipt?.environmentKeys) &&
-    Number.isFinite(startedAt) &&
-    Number.isFinite(completedAt) &&
-    completedAt >= startedAt &&
-    JSON.stringify(receipt?.outputs) === JSON.stringify(EXPECTED_OUTPUTS) &&
+  return [
+    Number.isFinite(startedAt),
+    Number.isFinite(completedAt),
+    completedAt >= startedAt,
+  ].every(Boolean)
+}
+
+function hasValidReceiptShape(receipt) {
+  return [
+    hasValidReceiptIdentity(receipt),
+    hasValidReceiptTiming(receipt),
+    Array.isArray(receipt?.environmentKeys),
+    JSON.stringify(receipt?.outputs) === JSON.stringify(EXPECTED_OUTPUTS),
     ['command', 'environment', 'stdout', 'stderr', 'output']
-      .every((field) => receipt?.[field] === undefined)
-  if (!receiptValid) throw new Error('storefront assurance receipt is missing, malformed, or failed')
+      .every((field) => receipt?.[field] === undefined),
+  ].every(Boolean)
+}
 
-  assertIdentity(currentIdentity, 'current storefront identity')
+function assertMatchingIdentity(source, expected, label, additionalSource) {
   for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
-    if (receipt[field] !== currentIdentity[field]) {
-      throw new Error(`storefront assurance receipt ${field} mismatch`)
-    }
-  }
-
-  if (
-    testsArtifact?.schema !== 'bootandstrap.storefront-tests/v1' ||
-    testsArtifact?.status !== 'passed' ||
-    !Array.isArray(testsArtifact?.testFiles) ||
-    testsArtifact.testFiles.length < 1 ||
-    testsArtifact.testFiles.some((entry) => entry?.status !== 'passed' || typeof entry?.path !== 'string')
-  ) {
-    throw new Error('storefront tests artifact is missing, malformed, or failed')
-  }
-  for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
-    if (testsArtifact[field] !== currentIdentity[field] || testsArtifact[field] !== receipt[field]) {
-      throw new Error(`storefront tests artifact ${field} mismatch`)
-    }
+    const matchesExpected = source[field] === expected[field]
+    const matchesAdditional = additionalSource === undefined || source[field] === additionalSource[field]
+    if (!matchesExpected || !matchesAdditional) throw new Error(`${label} ${field} mismatch`)
   }
 }
 
-export function validateCoverageEvidence(coverageArtifact, expectedIdentity) {
-  if (
-    coverageArtifact?.schema !== 'bootandstrap.storefront-coverage/v1' ||
-    coverageArtifact?.status !== 'passed' ||
-    !Array.isArray(coverageArtifact?.failures) ||
-    coverageArtifact.failures.length !== 0
-  ) {
-    throw new Error('storefront coverage artifact is missing, malformed, or failed')
+function isValidTestsArtifact(testsArtifact) {
+  return [
+    testsArtifact?.schema === 'bootandstrap.storefront-tests/v1',
+    testsArtifact?.status === 'passed',
+    Array.isArray(testsArtifact?.testFiles),
+    testsArtifact?.testFiles?.length > 0,
+    testsArtifact?.testFiles?.every((entry) =>
+      entry?.status === 'passed' && typeof entry?.path === 'string',
+    ),
+  ].every(Boolean)
+}
+
+export function validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity }) {
+  if (!hasValidReceiptShape(receipt)) {
+    throw new Error('storefront assurance receipt is missing, malformed, or failed')
   }
-  assertIdentity(expectedIdentity, 'current storefront identity')
+
+  assertIdentity(currentIdentity, 'current storefront identity')
+  assertMatchingIdentity(receipt, currentIdentity, 'storefront assurance receipt')
+
+  if (!isValidTestsArtifact(testsArtifact)) {
+    throw new Error('storefront tests artifact is missing, malformed, or failed')
+  }
+  assertMatchingIdentity(testsArtifact, currentIdentity, 'storefront tests artifact', receipt)
+}
+
+function hasValidCoverageArtifact(coverageArtifact) {
+  return [
+    coverageArtifact?.schema !== 'bootandstrap.storefront-coverage/v1' ||
+    coverageArtifact?.status !== 'passed',
+    !Array.isArray(coverageArtifact?.failures),
+    coverageArtifact?.failures?.length !== 0,
+  ].every((invalid) => invalid === false)
+}
+
+function assertCoverageIdentity(coverageArtifact, expectedIdentity) {
   for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
     if (coverageArtifact[field] !== expectedIdentity[field]) {
       throw new Error(`storefront coverage artifact ${field} mismatch`)
     }
   }
+}
+
+export function validateCoverageEvidence(coverageArtifact, expectedIdentity) {
+  if (!hasValidCoverageArtifact(coverageArtifact)) {
+    throw new Error('storefront coverage artifact is missing, malformed, or failed')
+  }
+  assertIdentity(expectedIdentity, 'current storefront identity')
+  assertCoverageIdentity(coverageArtifact, expectedIdentity)
+}
+
+function executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSummaryPath) {
+  const result = spawn('pnpm', args, {
+    cwd: rootDir,
+    env: process.env,
+    encoding: 'utf8',
+    stdio: 'inherit',
+    shell: false,
+  })
+  if (result?.error) throw result.error
+  if (result?.status !== 0) throw new Error(`storefront Vitest assurance exited ${result?.status}`)
+  if (!existsSync(rawTestsPath)) throw new Error('Vitest JSON result was not generated')
+  if (!existsSync(coverageSummaryPath)) throw new Error('V8 coverage summary was not generated')
+}
+
+function generateStorefrontArtifacts({
+  rootDir,
+  policyPath,
+  rawTestsPath,
+  coverageSummaryPath,
+  resolvedIdentity,
+  testsOutputPath,
+  coverageOutputPath,
+}) {
+  const policySource = readFileSync(policyPath, 'utf8')
+  const policy = JSON.parse(policySource)
+  const normalizedTests = normalizeVitestResults(readJson(rawTestsPath, 'Vitest JSON result'), rootDir)
+  const normalizedCoverage = normalizeVitestSummary(
+    readJson(coverageSummaryPath, 'V8 coverage summary'),
+    rootDir,
+  )
+  const evaluation = evaluateCoverage(policy, normalizedCoverage)
+  const generatedAt = new Date().toISOString()
+  writeJsonAtomic(testsOutputPath, {
+    schema: 'bootandstrap.storefront-tests/v1',
+    status: 'passed',
+    generatedAt,
+    ...resolvedIdentity,
+    ...normalizedTests,
+  })
+  writeJsonAtomic(coverageOutputPath, {
+    schema: 'bootandstrap.storefront-coverage/v1',
+    generatedAt,
+    ...resolvedIdentity,
+    policyId: policy.policyId,
+    policySha256: sha256(policySource),
+    claimBoundary: policy.claimBoundary,
+    ...evaluation,
+  })
+  if (evaluation.status !== 'passed') {
+    throw new Error(`coverage assurance failed: ${evaluation.failures.join('; ')}`)
+  }
+  return { normalizedTests, evaluation }
 }
 
 export async function runStorefrontAssurance({
@@ -213,49 +305,16 @@ export async function runStorefrontAssurance({
     '--maxWorkers=1',
   ]
   try {
-    const result = spawn('pnpm', args, {
-      cwd: rootDir,
-      env: process.env,
-      encoding: 'utf8',
-      stdio: 'inherit',
-      shell: false,
-    })
-    if (result?.error) throw result.error
-    if (result?.status !== 0) throw new Error(`storefront Vitest assurance exited ${result?.status}`)
-    if (!existsSync(rawTestsPath)) throw new Error('Vitest JSON result was not generated')
-    if (!existsSync(coverageSummaryPath)) throw new Error('V8 coverage summary was not generated')
-
-    const policySource = readFileSync(policyPath, 'utf8')
-    const policy = JSON.parse(policySource)
-    const normalizedTests = normalizeVitestResults(readJson(rawTestsPath, 'Vitest JSON result'), rootDir)
-    const normalizedCoverage = normalizeVitestSummary(
-      readJson(coverageSummaryPath, 'V8 coverage summary'),
+    executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSummaryPath)
+    const { normalizedTests, evaluation } = generateStorefrontArtifacts({
       rootDir,
-    )
-    const evaluation = evaluateCoverage(policy, normalizedCoverage)
-    const generatedAt = new Date().toISOString()
-    const testsArtifact = {
-      schema: 'bootandstrap.storefront-tests/v1',
-      status: 'passed',
-      generatedAt,
-      ...resolvedIdentity,
-      ...normalizedTests,
-    }
-    const coverageArtifact = {
-      schema: 'bootandstrap.storefront-coverage/v1',
-      generatedAt,
-      ...resolvedIdentity,
-      policyId: policy.policyId,
-      policySha256: sha256(policySource),
-      claimBoundary: policy.claimBoundary,
-      ...evaluation,
-    }
-    writeJsonAtomic(testsOutputPath, testsArtifact)
-    writeJsonAtomic(coverageOutputPath, coverageArtifact)
-
-    if (evaluation.status !== 'passed') {
-      throw new Error(`coverage assurance failed: ${evaluation.failures.join('; ')}`)
-    }
+      policyPath,
+      rawTestsPath,
+      coverageSummaryPath,
+      resolvedIdentity,
+      testsOutputPath,
+      coverageOutputPath,
+    })
     return {
       status: 'passed',
       tests: normalizedTests.summary,

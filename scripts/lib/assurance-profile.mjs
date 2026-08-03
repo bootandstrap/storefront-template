@@ -72,63 +72,66 @@ export function duplicates(values) {
   return [...repeated]
 }
 
-export function validateProfiles(config) {
-  requireObject(config, 'assurance profiles')
-  if (config.schemaVersion !== 1) throw new Error('assurance profiles schemaVersion must be 1')
+function validateTaskCatalog(config) {
   if (!Array.isArray(config.taskCatalog) || config.taskCatalog.length === 0) {
     throw new Error('taskCatalog must be a non-empty array')
   }
-
   for (const [index, task] of config.taskCatalog.entries()) {
     requireObject(task, `taskCatalog[${index}]`)
     requireString(task.id, `taskCatalog[${index}].id`)
     if (!TASK_KINDS.has(task.kind)) throw new Error(`invalid task kind for ${task.id}`)
     if (task.provides !== undefined) requireStringArray(task.provides, `${task.id}.provides`)
   }
-
   const taskIds = config.taskCatalog.map((task) => task.id)
   const duplicateTaskIds = duplicates(taskIds)
-  if (duplicateTaskIds.length > 0) {
-    throw new Error(`duplicate task ids: ${duplicateTaskIds.join(', ')}`)
-  }
-  const knownTasks = new Set(taskIds)
+  if (duplicateTaskIds.length > 0) throw new Error(`duplicate task ids: ${duplicateTaskIds.join(', ')}`)
+  return new Set(taskIds)
+}
 
+function validateCriticalSelectors(config) {
   if (!Array.isArray(config.criticalSourceSelectors) || config.criticalSourceSelectors.length === 0) {
     throw new Error('criticalSourceSelectors must be a non-empty array')
   }
   config.criticalSourceSelectors.forEach((selector, index) => {
     validateSelector(selector, `criticalSourceSelectors[${index}]`)
   })
+}
+
+function validateProfileRule(rule, index, knownTasks) {
+  requireObject(rule, `selector rule ${index}`)
+  requireString(rule.id, `selector rule ${index}.id`)
+  validateSelector(rule.selector, `selector rule ${rule.id}`)
+  validateTaskReferences(rule.tasks, knownTasks, `selector rule ${rule.id}`)
+  if (rule.claimBoundary !== undefined) requireString(rule.claimBoundary, `selector rule ${rule.id}.claimBoundary`)
+  if (rule.critical !== undefined && typeof rule.critical !== 'boolean') {
+    throw new Error(`selector rule ${rule.id}.critical must be boolean`)
+  }
+}
+
+function validateProfile(profileName, profile, knownTasks) {
+  requireObject(profile, `profile ${profileName}`)
+  requireString(profile.claimBoundary, `profile ${profileName}.claimBoundary`)
+  requireStringArray(profile.deferred, `profile ${profileName}.deferred`)
+  validateTaskReferences(profile.tasks ?? [], knownTasks, `profile ${profileName}.tasks`)
+  validateTaskReferences(profile.alwaysTasks ?? [], knownTasks, `profile ${profileName}.alwaysTasks`)
+  if (!Array.isArray(profile.selectorRules)) throw new Error(`profile ${profileName}.selectorRules must be an array`)
+
+  profile.selectorRules.forEach((rule, index) => validateProfileRule(rule, index, knownTasks))
+  const duplicateRuleIds = duplicates(profile.selectorRules.map((rule) => rule.id))
+  if (duplicateRuleIds.length > 0) {
+    throw new Error(`duplicate selector rule ids in ${profileName}: ${duplicateRuleIds.join(', ')}`)
+  }
+}
+
+export function validateProfiles(config) {
+  requireObject(config, 'assurance profiles')
+  if (config.schemaVersion !== 1) throw new Error('assurance profiles schemaVersion must be 1')
+  const knownTasks = validateTaskCatalog(config)
+  validateCriticalSelectors(config)
 
   requireObject(config.profiles, 'profiles')
   for (const [profileName, profile] of Object.entries(config.profiles)) {
-    requireObject(profile, `profile ${profileName}`)
-    requireString(profile.claimBoundary, `profile ${profileName}.claimBoundary`)
-    requireStringArray(profile.deferred, `profile ${profileName}.deferred`)
-    validateTaskReferences(profile.tasks ?? [], knownTasks, `profile ${profileName}.tasks`)
-    validateTaskReferences(profile.alwaysTasks ?? [], knownTasks, `profile ${profileName}.alwaysTasks`)
-
-    if (!Array.isArray(profile.selectorRules)) {
-      throw new Error(`profile ${profileName}.selectorRules must be an array`)
-    }
-    const ruleIds = []
-    for (const [index, rule] of profile.selectorRules.entries()) {
-      requireObject(rule, `profile ${profileName}.selectorRules[${index}]`)
-      requireString(rule.id, `profile ${profileName}.selectorRules[${index}].id`)
-      ruleIds.push(rule.id)
-      validateSelector(rule.selector, `selector rule ${rule.id}`)
-      validateTaskReferences(rule.tasks, knownTasks, `selector rule ${rule.id}`)
-      if (rule.claimBoundary !== undefined) {
-        requireString(rule.claimBoundary, `selector rule ${rule.id}.claimBoundary`)
-      }
-      if (rule.critical !== undefined && typeof rule.critical !== 'boolean') {
-        throw new Error(`selector rule ${rule.id}.critical must be boolean`)
-      }
-    }
-    const duplicateRuleIds = duplicates(ruleIds)
-    if (duplicateRuleIds.length > 0) {
-      throw new Error(`duplicate selector rule ids in ${profileName}: ${duplicateRuleIds.join(', ')}`)
-    }
+    validateProfile(profileName, profile, knownTasks)
   }
 
   return config
@@ -144,32 +147,23 @@ export function providedCapabilities(config, taskIds) {
   })
 }
 
-export function resolveProfile(config, profileName, changedFiles) {
-  validateProfiles(config)
-  const profile = config.profiles[profileName]
-  if (!profile) throw new Error(`unknown profile: ${profileName}`)
-  if (!Array.isArray(changedFiles)) throw new Error('changedFiles must be an array')
-  changedFiles.forEach(assertSafeChangedPath)
-
-  const catalog = taskMapFor(config)
-  const selectedTasks = []
-  const selectedTaskIds = new Set()
-  const addTasks = (taskIds) => {
+function selectedTasksForProfile(profile, matchedRules) {
+  const tasks = []
+  const selected = new Set()
+  const add = (taskIds) => {
     for (const taskId of taskIds) {
-      if (selectedTaskIds.has(taskId)) continue
-      selectedTaskIds.add(taskId)
-      selectedTasks.push(taskId)
+      if (selected.has(taskId)) continue
+      selected.add(taskId)
+      tasks.push(taskId)
     }
   }
+  add(profile.tasks ?? [])
+  add(profile.alwaysTasks ?? [])
+  matchedRules.forEach((rule) => add(rule.tasks))
+  return tasks
+}
 
-  addTasks(profile.tasks ?? [])
-  addTasks(profile.alwaysTasks ?? [])
-
-  const matchedRules = profile.selectorRules.filter((rule) =>
-    changedFiles.some((changedPath) => matches(changedPath, rule.selector)),
-  )
-  for (const rule of matchedRules) addTasks(rule.tasks)
-
+function assertCompatibleClaims(profile, matchedRules) {
   const claims = new Set([
     profile.claimBoundary,
     ...matchedRules.flatMap((rule) => rule.claimBoundary ? [rule.claimBoundary] : []),
@@ -177,7 +171,9 @@ export function resolveProfile(config, profileName, changedFiles) {
   if (claims.size > 1) {
     throw new Error(`contradictory claim boundaries selected: ${[...claims].join(', ')}`)
   }
+}
 
+function assertCriticalBehavioralMappings(config, catalog, changedFiles, matchedRules) {
   for (const changedPath of changedFiles) {
     const critical = config.criticalSourceSelectors.some((selector) => matches(changedPath, selector))
     if (!critical) continue
@@ -186,12 +182,26 @@ export function resolveProfile(config, profileName, changedFiles) {
       && matches(changedPath, rule.selector)
       && rule.tasks.some((taskId) => catalog.get(taskId).kind === 'behavioral'),
     )
-    if (behavioralRules.length === 0) {
-      const criticalRule = matchedRules.find((rule) => rule.critical && matches(changedPath, rule.selector))
-      const ruleLabel = criticalRule?.id ?? changedPath
-      throw new Error(`critical change ${ruleLabel} selects no behavioral task`)
-    }
+    if (behavioralRules.length > 0) continue
+    const criticalRule = matchedRules.find((rule) => rule.critical && matches(changedPath, rule.selector))
+    throw new Error(`critical change ${criticalRule?.id ?? changedPath} selects no behavioral task`)
   }
+}
+
+export function resolveProfile(config, profileName, changedFiles) {
+  validateProfiles(config)
+  const profile = config.profiles[profileName]
+  if (!profile) throw new Error(`unknown profile: ${profileName}`)
+  if (!Array.isArray(changedFiles)) throw new Error('changedFiles must be an array')
+  changedFiles.forEach(assertSafeChangedPath)
+
+  const catalog = taskMapFor(config)
+  const matchedRules = profile.selectorRules.filter((rule) =>
+    changedFiles.some((changedPath) => matches(changedPath, rule.selector)),
+  )
+  const selectedTasks = selectedTasksForProfile(profile, matchedRules)
+  assertCompatibleClaims(profile, matchedRules)
+  assertCriticalBehavioralMappings(config, catalog, changedFiles, matchedRules)
 
   return {
     profile: profileName,

@@ -27,6 +27,19 @@ import { logger } from '@/lib/logger'
 const PRODUCT_REFRESH_INTERVAL = 5 * 60 * 1000  // 5 minutes
 const MAX_SYNC_ATTEMPTS = 3
 
+type CreatePOSSaleAction = (input: {
+    items: PendingSale['items']
+    payment_method: 'cash' | 'card_terminal' | 'twint' | 'manual_card'
+    customer_id?: string
+    discount_amount: number
+    note: string
+}) => Promise<{
+    success: boolean
+    error?: string
+    display_id?: number
+}>
+type OfflineStore = typeof import('./offline-store')
+
 // ── Types ──
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error'
@@ -92,6 +105,82 @@ export async function syncPendingSaleWithProtocol(
         expectedTenantId,
         knownServerSequence: sale.known_server_sequence,
     }, transport)
+}
+
+function createPOSSyncTransport(createPOSSale: CreatePOSSaleAction): POSSyncTransport {
+    return {
+        async commit(request: POSSyncCommitRequest): Promise<POSSyncCommitResponse> {
+            const payload = request.operation.payload
+            const result = await createPOSSale({
+                items: payload.items as PendingSale['items'],
+                payment_method: payload.payment_method as PendingSale['payment_method'] as 'cash' | 'card_terminal' | 'twint' | 'manual_card',
+                customer_id: payload.customer_id as string | undefined,
+                discount_amount: payload.discount_amount as number,
+                note: `offline_ref:${request.operation.idempotencyKey}`,
+            })
+            if (!result.success) {
+                const errorMessage = result.error || 'POS server rejected the sale'
+                const isAuthFailure = /auth|unauthori[sz]ed|forbidden/i.test(errorMessage)
+                throw new POSSyncTransportError(
+                    isAuthFailure ? 'auth_lost' : 'unavailable',
+                    'permanent',
+                    'beforeAck',
+                )
+            }
+            if (!Number.isInteger(result.display_id) || (result.display_id ?? -1) < 0) {
+                throw new POSSyncTransportError('unavailable', 'permanent', 'afterCommit')
+            }
+            return {
+                outcome: 'committed',
+                serverSequence: result.display_id!,
+                lastClientSequence: request.operation.clientSequence,
+            }
+        },
+    }
+}
+
+async function syncQueuedSale(
+    store: OfflineStore,
+    sale: PendingSale,
+    tenantId: string | undefined,
+    transport: POSSyncTransport,
+) {
+    if (!tenantId) throw new Error('POS sync unavailable: tenant identity is missing')
+    const result = await syncPendingSaleWithProtocol(sale, tenantId, transport)
+
+    if (result.state === 'acknowledged') {
+        await store.setPOSServerSequence(result.serverSequence)
+        await store.removePendingSale(sale.id!)
+        return
+    }
+    await store.updatePendingSale({
+        ...sale,
+        sync_attempts: sale.sync_attempts + 1,
+        known_server_sequence: result.serverSequence,
+        sync_state: result.state,
+        last_error: result.outcome,
+    })
+}
+
+async function drainPendingSales(
+    store: OfflineStore,
+    pendingSales: PendingSale[],
+    tenantId: string | undefined,
+    transport: POSSyncTransport,
+) {
+    for (const sale of pendingSales) {
+        if (sale.sync_attempts >= MAX_SYNC_ATTEMPTS) continue
+        try {
+            await syncQueuedSale(store, sale, tenantId, transport)
+        } catch (error) {
+            await store.updatePendingSale({
+                ...sale,
+                sync_attempts: sale.sync_attempts + 1,
+                sync_state: 'retryable_error',
+                last_error: error instanceof Error ? error.message : 'Network error',
+            })
+        }
+    }
 }
 
 // ── Hook ──
@@ -206,66 +295,9 @@ export function useOfflineSync(tenantId?: string): UseOfflineSyncReturn {
 
             const pendingSales = await store.getPendingSales()
 
-            const transport: POSSyncTransport = {
-                async commit(request: POSSyncCommitRequest): Promise<POSSyncCommitResponse> {
-                    const payload = request.operation.payload
-                    const result = await createPOSSale({
-                        items: payload.items as PendingSale['items'],
-                        payment_method: payload.payment_method as PendingSale['payment_method'] as 'cash' | 'card_terminal' | 'twint' | 'manual_card',
-                        customer_id: payload.customer_id as string | undefined,
-                        discount_amount: payload.discount_amount as number,
-                        note: `offline_ref:${request.operation.idempotencyKey}`,
-                    })
-                    if (!result.success) {
-                        const errorMessage = result.error || 'POS server rejected the sale'
-                        const isAuthFailure = /auth|unauthori[sz]ed|forbidden/i.test(errorMessage)
-                        throw new POSSyncTransportError(
-                            isAuthFailure ? 'auth_lost' : 'unavailable',
-                            'permanent',
-                            'beforeAck',
-                        )
-                    }
-                    if (!Number.isInteger(result.display_id) || (result.display_id ?? -1) < 0) {
-                        throw new POSSyncTransportError('unavailable', 'permanent', 'afterCommit')
-                    }
-                    return {
-                        outcome: 'committed',
-                        serverSequence: result.display_id!,
-                        lastClientSequence: request.operation.clientSequence,
-                    }
-                },
-            }
+            const transport = createPOSSyncTransport(createPOSSale)
 
-            for (const sale of pendingSales) {
-                if (sale.sync_attempts >= MAX_SYNC_ATTEMPTS) continue
-
-                try {
-                    if (!tenantId) {
-                        throw new Error('POS sync unavailable: tenant identity is missing')
-                    }
-                    const result = await syncPendingSaleWithProtocol(sale, tenantId, transport)
-
-                    if (result.state === 'acknowledged') {
-                        await store.setPOSServerSequence(result.serverSequence)
-                        await store.removePendingSale(sale.id!)
-                    } else {
-                        await store.updatePendingSale({
-                            ...sale,
-                            sync_attempts: sale.sync_attempts + 1,
-                            known_server_sequence: result.serverSequence,
-                            sync_state: result.state,
-                            last_error: result.outcome,
-                        })
-                    }
-                } catch (err) {
-                    await store.updatePendingSale({
-                        ...sale,
-                        sync_attempts: sale.sync_attempts + 1,
-                        sync_state: 'retryable_error',
-                        last_error: err instanceof Error ? err.message : 'Network error',
-                    })
-                }
-            }
+            await drainPendingSales(store, pendingSales, tenantId, transport)
 
             const remaining = await store.getPendingSaleCount()
             setPendingCount(remaining)
