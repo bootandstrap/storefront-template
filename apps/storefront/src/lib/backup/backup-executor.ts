@@ -28,6 +28,7 @@ import type {
 import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
 
 const gzipAsync = promisify(gzip)
+const GZIP_EXTRA_HEADROOM_BYTES = 64
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,18 +40,40 @@ function formatTimestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 }
 
+function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
+    const addedBytes = targetLength - compressed.length
+    const maxAddedBytes = 0xffff + 2
+
+    if (addedBytes < 2 || addedBytes > maxAddedBytes || (compressed[3] & 0x04) !== 0) {
+        throw new Error('Unable to encode backup size in gzip extra field')
+    }
+
+    const extraLength = addedBytes - 2
+    const header = Buffer.alloc(12 + extraLength)
+    compressed.copy(header, 0, 0, 10)
+    header[3] |= 0x04
+    header.writeUInt16LE(extraLength, 10)
+
+    return Buffer.concat([header, compressed.subarray(10)])
+}
+
 async function compressWithEmbeddedSize(backup: TenantBackup): Promise<Buffer> {
     let compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
 
-    // Embedding the gzip size changes the JSON and can in turn change the gzip
-    // size. Re-serialize until the artifact and its receipt agree exactly.
+    // A compressed size embedded in its own JSON can oscillate without reaching
+    // a fixed point. Reserve a standards-compliant gzip FEXTRA field instead so
+    // the final byte length always agrees with the embedded receipt.
     for (let attempt = 0; attempt < 5; attempt++) {
-        if (backup.stats.total_size_bytes === compressed.length) return compressed
-        backup.stats.total_size_bytes = compressed.length
+        const targetLength = compressed.length + GZIP_EXTRA_HEADROOM_BYTES
+        backup.stats.total_size_bytes = targetLength
         compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+
+        if (compressed.length + 2 <= targetLength) {
+            return padGzipExtraField(compressed, targetLength)
+        }
     }
 
-    throw new Error('Backup artifact size did not stabilize')
+    throw new Error('Unable to reserve gzip extra field for embedded backup size')
 }
 
 // ── Data Fetchers (lightweight wrappers around admin API) ────────────────────

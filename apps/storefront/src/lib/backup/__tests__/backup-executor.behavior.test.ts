@@ -156,9 +156,12 @@ describe('full backup executor', () => {
     mocks.getConfigForTenant.mockRejectedValue(new Error('governance unavailable'))
 
     const result = await executeFullBackup('tenant-backup-1', 'tenant-backup', scope)
-    expect(result.success).toBe(true)
+    expect(result.error).toBeUndefined()
+    expect(result).toMatchObject({ success: true })
     const compressed = mocks.upload.mock.calls[0][1]
     const snapshot = JSON.parse(gunzipSync(compressed).toString('utf8'))
+    expect(compressed[3] & 0x04).toBe(0x04)
+    expect(snapshot.stats.total_size_bytes).toBe(compressed.length)
     expect(snapshot.data.promotions).toEqual([])
     expect(snapshot.data.inventory).toEqual([])
     expect(snapshot.data.governance).toEqual({ config: {}, feature_flags: {}, plan_limits: {} })
