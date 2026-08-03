@@ -125,8 +125,8 @@ jobs:
           pnpm --filter @bootandstrap/platform-contract build
           pnpm --filter @bootandstrap/tenant-context build
 
-      - name: Run unit tests
-        run: pnpm --filter=storefront test:run
+      - name: Run sealed storefront assurance
+        run: node scripts/run-storefront-assurance.mjs
         env:
           BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
           TENANT_ID: ci-test-tenant

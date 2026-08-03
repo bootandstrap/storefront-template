@@ -119,8 +119,16 @@ test('one Vitest invocation emits passed unit and coverage evidence', async () =
 
   const tests = JSON.parse(readFileSync(join(rootDir, STOREFRONT_TESTS_OUTPUT), 'utf8'))
   const coverage = JSON.parse(readFileSync(join(rootDir, STOREFRONT_COVERAGE_OUTPUT), 'utf8'))
+  const receipt = JSON.parse(readFileSync(
+    join(rootDir, '.artifacts', 'assurance', 'tasks', 'storefront-assurance.json'),
+    'utf8',
+  ))
   assert.equal(tests.status, 'passed')
   assert.equal(coverage.status, 'passed')
+  assert.equal(receipt.status, 'passed')
+  assert.deepEqual(receipt.outputs, [STOREFRONT_TESTS_OUTPUT, STOREFRONT_COVERAGE_OUTPUT])
+  assert.equal(receipt.outputSha256[STOREFRONT_TESTS_OUTPUT].length, 64)
+  assert.equal(receipt.outputSha256[STOREFRONT_COVERAGE_OUTPUT].length, 64)
   assert.deepEqual(
     { revision: tests.revision, workingTreeSha256: tests.workingTreeSha256, inputsSha256: tests.inputsSha256 },
     identity,
@@ -231,4 +239,17 @@ test('rejects missing or unsafe runtime evidence before execution', () => {
     }, tests),
     /unsupported runtimeEvidence command/i,
   )
+})
+
+test('tenant CI produces sealed storefront evidence before consuming it', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/ci.yml', import.meta.url),
+    'utf8',
+  )
+  const producer = workflow.indexOf('node scripts/run-storefront-assurance.mjs')
+  const consumer = workflow.indexOf('node scripts/run-risk-domain-evidence.mjs')
+
+  assert.notEqual(producer, -1, 'CI must run the storefront assurance producer')
+  assert.notEqual(consumer, -1, 'CI must run the risk-domain evidence consumer')
+  assert.ok(producer < consumer, 'CI must produce sealed storefront evidence before consuming it')
 })

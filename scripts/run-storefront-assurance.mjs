@@ -298,7 +298,9 @@ export async function runStorefrontAssurance({
 
   const resolvedIdentity = identity ?? await currentIdentity(rootDir)
   assertIdentity(resolvedIdentity, 'storefront assurance identity')
+  const startedAt = new Date().toISOString()
   const artifactDir = join(rootDir, '.artifacts', 'assurance')
+  const receiptPath = join(artifactDir, 'tasks', 'storefront-assurance.json')
   const rawTestsPath = join(artifactDir, `.storefront-tests.raw.${process.pid}.json`)
   const coverageDir = join(rootDir, 'apps', 'storefront', 'coverage')
   const coverageSummaryPath = join(coverageDir, 'coverage-summary.json')
@@ -334,6 +336,23 @@ export async function runStorefrontAssurance({
       resolvedIdentity,
       testsOutputPath,
       coverageOutputPath,
+    })
+    const policy = readJson(policyPath, 'assurance policy')
+    writeJsonAtomic(receiptPath, {
+      schema: 'bootandstrap.assurance-task/v1',
+      profile: 'full',
+      claimBoundary: policy.claimBoundary,
+      taskId: 'storefront-assurance',
+      ...resolvedIdentity,
+      outputs: EXPECTED_OUTPUTS,
+      outputSha256: Object.fromEntries(EXPECTED_OUTPUTS.map((relativePath) => [
+        relativePath,
+        sha256(readFileSync(join(rootDir, relativePath))),
+      ])),
+      environmentKeys: process.env.CI === undefined ? [] : ['CI'],
+      status: 'passed',
+      startedAt,
+      completedAt: new Date().toISOString(),
     })
     return {
       status: 'passed',
