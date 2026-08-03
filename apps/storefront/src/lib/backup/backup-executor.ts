@@ -40,7 +40,7 @@ function formatTimestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 }
 
-function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
+export function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
     const addedBytes = targetLength - compressed.length
     const maxAddedBytes = 0xffff + 2
 
@@ -58,22 +58,15 @@ function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
 }
 
 async function compressWithEmbeddedSize(backup: TenantBackup): Promise<Buffer> {
-    let compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+    const initial = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
 
     // A compressed size embedded in its own JSON can oscillate without reaching
     // a fixed point. Reserve a standards-compliant gzip FEXTRA field instead so
     // the final byte length always agrees with the embedded receipt.
-    for (let attempt = 0; attempt < 5; attempt++) {
-        const targetLength = compressed.length + GZIP_EXTRA_HEADROOM_BYTES
-        backup.stats.total_size_bytes = targetLength
-        compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
-
-        if (compressed.length + 2 <= targetLength) {
-            return padGzipExtraField(compressed, targetLength)
-        }
-    }
-
-    throw new Error('Unable to reserve gzip extra field for embedded backup size')
+    const targetLength = initial.length + GZIP_EXTRA_HEADROOM_BYTES
+    backup.stats.total_size_bytes = targetLength
+    const compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+    return padGzipExtraField(compressed, targetLength)
 }
 
 // ── Data Fetchers (lightweight wrappers around admin API) ────────────────────

@@ -1,4 +1,4 @@
-import { gunzipSync } from 'node:zlib'
+import { gunzipSync, gzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -37,7 +37,42 @@ vi.mock('@/lib/supabase/storage-admin', () => ({
   }),
 }))
 
-import { executeFullBackup } from '../backup-executor'
+import { executeFullBackup, padGzipExtraField } from '../backup-executor'
+
+describe('gzip backup size encoding', () => {
+  it('uses a valid FEXTRA field to reach the declared byte length', () => {
+    const source = gzipSync('backup-proof')
+    const targetLength = source.length + 64
+
+    const padded = padGzipExtraField(source, targetLength)
+
+    expect(padded).toHaveLength(targetLength)
+    expect(padded[3] & 0x04).toBe(0x04)
+    expect(gunzipSync(padded).toString('utf8')).toBe('backup-proof')
+  })
+
+  it('rejects a target too small for an FEXTRA length field', () => {
+    const source = gzipSync('backup-proof')
+    expect(() => padGzipExtraField(source, source.length + 1)).toThrow(
+      'Unable to encode backup size in gzip extra field',
+    )
+  })
+
+  it('rejects an FEXTRA payload larger than the gzip header limit', () => {
+    const source = gzipSync('backup-proof')
+    expect(() => padGzipExtraField(source, source.length + 0xffff + 3)).toThrow(
+      'Unable to encode backup size in gzip extra field',
+    )
+  })
+
+  it('rejects a gzip stream that already owns an FEXTRA field', () => {
+    const source = Buffer.from(gzipSync('backup-proof'))
+    source[3] |= 0x04
+    expect(() => padGzipExtraField(source, source.length + 64)).toThrow(
+      'Unable to encode backup size in gzip extra field',
+    )
+  })
+})
 
 const scope = {
   tenantId: 'tenant-backup-1',
