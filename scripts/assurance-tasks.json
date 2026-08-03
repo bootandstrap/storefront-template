@@ -117,7 +117,7 @@
       "id": "storefront-assurance",
       "dependencies": [],
       "command": ["node", "scripts/run-storefront-assurance.mjs"],
-      "inputs": ["apps/storefront/src", "apps/storefront/vitest.config.ts", "scripts/assurance-policy.json", "scripts/run-storefront-assurance.mjs"],
+      "inputs": ["apps/storefront/src", "apps/storefront/vitest.config.ts", "scripts/assurance-policy.json", "scripts/lib/assurance-identity.mjs", "scripts/run-storefront-assurance.mjs"],
       "outputs": [".artifacts/assurance/storefront-tests.json", ".artifacts/assurance/storefront-coverage.json"],
       "environmentKeys": ["CI"]
     },
@@ -133,7 +133,7 @@
       "id": "risk-domain-evidence",
       "dependencies": ["risk-test-matrix", "storefront-assurance"],
       "command": ["node", "scripts/run-risk-domain-evidence.mjs"],
-      "inputs": ["scripts/run-risk-domain-evidence.mjs", "scripts/risk-test-matrix.json", ".artifacts/assurance/storefront-tests.json"],
+      "inputs": ["scripts/lib/assurance-identity.mjs", "scripts/run-risk-domain-evidence.mjs", "scripts/run-storefront-assurance.mjs", "scripts/risk-test-matrix.json", ".artifacts/assurance/storefront-tests.json", ".artifacts/assurance/storefront-coverage.json", ".artifacts/assurance/tasks/storefront-assurance.json"],
       "outputs": [],
       "environmentKeys": ["CI"]
     },

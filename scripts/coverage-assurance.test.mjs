@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { evaluateCoverage } from './lib/coverage-assurance.mjs'
+import { validateCoverageEvidence } from './run-storefront-assurance.mjs'
 
 const policy = {
   globalRatchet: {
@@ -132,4 +133,31 @@ test('excludes absent per-file metrics instead of weighting them as uncovered', 
     functions: 70,
     branches: 60,
   })
+})
+
+test('coverage reuse fails closed unless the passed artifact matches exact task identity', () => {
+  const identity = {
+    revision: 'a'.repeat(40),
+    workingTreeSha256: 'b'.repeat(64),
+    inputsSha256: 'c'.repeat(64),
+  }
+  const artifact = {
+    schema: 'bootandstrap.storefront-coverage/v1',
+    status: 'passed',
+    failures: [],
+    ...identity,
+  }
+
+  assert.doesNotThrow(() => validateCoverageEvidence(artifact, identity))
+  assert.throws(() => validateCoverageEvidence(undefined, identity), /coverage artifact/i)
+  assert.throws(
+    () => validateCoverageEvidence({ ...artifact, status: 'failed' }, identity),
+    /coverage artifact/i,
+  )
+  for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
+    assert.throws(
+      () => validateCoverageEvidence({ ...artifact, [field]: 'd'.repeat(artifact[field].length) }, identity),
+      new RegExp(`${field} mismatch`, 'i'),
+    )
+  }
 })

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-import { spawn, spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -14,13 +13,13 @@ import {
   topologicalBatches,
   validateReceipt,
 } from './lib/assurance-dag.mjs'
+import { hashInputs, hashWorkingTree, runGit, sha256 } from './lib/assurance-identity.mjs'
 import { resolveProfile } from './lib/assurance-profile.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
 const artifactRoot = path.join(repoRoot, '.artifacts', 'assurance')
 const taskReceiptRoot = path.join(artifactRoot, 'tasks')
-const ignoredInputDirectories = new Set(['.artifacts', '.git', '.next', 'coverage', 'node_modules'])
 const baselineEnvironmentKeys = [
   'PATH',
   'HOME',
@@ -59,82 +58,6 @@ function parseArguments(argv) {
 
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, 'utf8'))
-}
-
-function sha256(parts) {
-  const hash = createHash('sha256')
-  for (const part of parts) hash.update(part)
-  return hash.digest('hex')
-}
-
-function runGit(args) {
-  const result = spawnSync('git', args, {
-    cwd: repoRoot,
-    encoding: null,
-    shell: false,
-  })
-  if (result.status !== 0) {
-    throw new Error(`git ${args.join(' ')} failed with exit ${result.status}`)
-  }
-  return result.stdout
-}
-
-async function hashWorkingTree() {
-  const status = runGit(['status', '--porcelain=v1', '-z', '--untracked-files=all'])
-  const diff = runGit(['diff', '--binary', 'HEAD'])
-  const untrackedOutput = runGit(['ls-files', '--others', '--exclude-standard', '-z'])
-  const untracked = untrackedOutput.toString('utf8').split('\0').filter(Boolean).sort()
-  const parts = [status, diff]
-  for (const relativePath of untracked) {
-    parts.push(relativePath)
-    const absolutePath = path.join(repoRoot, relativePath)
-    const stats = await fs.lstat(absolutePath)
-    parts.push(stats.isSymbolicLink() ? await fs.readlink(absolutePath) : await fs.readFile(absolutePath))
-  }
-  return sha256(parts)
-}
-
-async function collectInputParts(absolutePath, relativePath, parts) {
-  let stats
-  try {
-    stats = await fs.lstat(absolutePath)
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      parts.push(`missing:${relativePath}`)
-      return
-    }
-    throw error
-  }
-
-  if (stats.isSymbolicLink()) {
-    parts.push(`link:${relativePath}:${await fs.readlink(absolutePath)}`)
-    return
-  }
-  if (stats.isDirectory()) {
-    parts.push(`directory:${relativePath}`)
-    const entries = await fs.readdir(absolutePath, { withFileTypes: true })
-    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
-      if (entry.isDirectory() && ignoredInputDirectories.has(entry.name)) continue
-      await collectInputParts(
-        path.join(absolutePath, entry.name),
-        path.posix.join(relativePath, entry.name),
-        parts,
-      )
-    }
-    return
-  }
-  if (stats.isFile()) {
-    parts.push(`file:${relativePath}`)
-    parts.push(await fs.readFile(absolutePath))
-  }
-}
-
-async function hashInputs(inputs) {
-  const parts = []
-  for (const relativePath of [...inputs].sort()) {
-    await collectInputParts(path.join(repoRoot, relativePath), relativePath, parts)
-  }
-  return sha256(parts)
 }
 
 function taskEnvironment(task) {
@@ -193,8 +116,8 @@ async function main() {
     throw new Error('BNS_ASSURANCE_WORKERS must be a positive integer')
   }
 
-  const revision = runGit(['rev-parse', 'HEAD']).toString('utf8').trim()
-  const workingTreeSha256 = await hashWorkingTree()
+  const revision = runGit(repoRoot, ['rev-parse', 'HEAD']).toString('utf8').trim()
+  const workingTreeSha256 = await hashWorkingTree(repoRoot)
   const packageJson = await readJson(path.join(repoRoot, 'package.json'))
   const states = {}
   const receipts = {}
@@ -213,7 +136,7 @@ async function main() {
   async function runTask(taskId) {
     const task = graph.tasks.get(taskId)
     const environment = taskEnvironment(task)
-    const inputsSha256 = await hashInputs(task.inputs)
+    const inputsSha256 = await hashInputs(repoRoot, task.inputs)
     const toolchainSha256 = sha256([
       process.version,
       packageJson.packageManager ?? '',

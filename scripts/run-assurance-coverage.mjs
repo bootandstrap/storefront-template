@@ -1,98 +1,72 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process'
-import crypto from 'node:crypto'
-import fs from 'node:fs'
-import path from 'node:path'
+import { readFileSync, renameSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { evaluateCoverage, normalizeVitestSummary } from './lib/coverage-assurance.mjs'
+import { resolveTaskIdentity } from './lib/assurance-identity.mjs'
+import {
+  STOREFRONT_COVERAGE_OUTPUT,
+  STOREFRONT_TESTS_OUTPUT,
+  validateCoverageEvidence,
+  validateStorefrontEvidenceReceipt,
+} from './run-storefront-assurance.mjs'
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(scriptDir, '..')
-const policyPath = path.join(scriptDir, 'assurance-policy.json')
-const summaryPath = path.join(repoRoot, 'apps/storefront/coverage/coverage-summary.json')
-const artifactDir = path.join(repoRoot, '.artifacts/assurance')
-const receiptPath = path.join(artifactDir, 'coverage-assurance.json')
-const startedAt = new Date()
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
+const ROOT_DIR = resolve(SCRIPT_DIR, '..')
 
-function run(command, args) {
-  const result = spawnSync(command, args, {
-    cwd: repoRoot,
-    env: process.env,
-    encoding: 'utf8',
-    stdio: 'inherit',
-  })
-  if (result.error) throw result.error
-  if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} exited ${result.status}`)
+function readJson(filePath, label) {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8'))
+  } catch (error) {
+    throw new Error(`${label} is missing or malformed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
-function gitState() {
-  const revision = spawnSync('git', ['rev-parse', 'HEAD'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  })
-  if (revision.status !== 0) throw new Error('unable to resolve git revision')
-
-  const status = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  })
-  if (status.status !== 0) throw new Error('unable to resolve git working tree state')
-
-  return {
-    revision: revision.stdout.trim(),
-    workingTreeDirty: status.stdout.trim().length > 0,
-  }
+function writeJsonAtomic(filePath, value) {
+  mkdirSync(dirname(filePath), { recursive: true })
+  const temporaryPath = `${filePath}.${process.pid}.tmp`
+  writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+  renameSync(temporaryPath, filePath)
 }
 
-function sha256(content) {
-  return crypto.createHash('sha256').update(content).digest('hex')
-}
+async function main() {
+  const taskConfig = readJson(join(SCRIPT_DIR, 'assurance-tasks.json'), 'assurance task config')
+  const task = taskConfig.tasks?.find((entry) => entry?.id === 'storefront-assurance')
+  if (!task) throw new Error('storefront-assurance task is not declared')
+  const identity = await resolveTaskIdentity(ROOT_DIR, task)
+  const receipt = readJson(
+    join(ROOT_DIR, '.artifacts', 'assurance', 'tasks', 'storefront-assurance.json'),
+    'storefront assurance receipt',
+  )
+  const testsArtifact = readJson(join(ROOT_DIR, STOREFRONT_TESTS_OUTPUT), 'storefront tests artifact')
+  const coverageArtifact = readJson(
+    join(ROOT_DIR, STOREFRONT_COVERAGE_OUTPUT),
+    'storefront coverage artifact',
+  )
 
-try {
-  run(process.execPath, [path.join(scriptDir, 'check-assurance-policy.mjs')])
-  fs.rmSync(summaryPath, { force: true })
-  run('pnpm', [
-    '--filter=storefront',
-    'test:run',
-    '--coverage',
-    '--coverage.reporter=text',
-    '--coverage.reporter=html',
-    '--coverage.reporter=lcov',
-    '--coverage.reporter=json-summary',
-    '--no-file-parallelism',
-    '--maxWorkers=1',
-  ])
+  validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity: identity })
+  validateCoverageEvidence(coverageArtifact, identity)
 
-  if (!fs.existsSync(summaryPath)) throw new Error('coverage summary was not generated')
-  const summaryStat = fs.statSync(summaryPath)
-  if (summaryStat.mtimeMs < startedAt.getTime()) throw new Error('coverage summary is stale')
-
-  const policySource = fs.readFileSync(policyPath, 'utf8')
-  const policy = JSON.parse(policySource)
-  const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'))
-  const evaluation = evaluateCoverage(policy, normalizeVitestSummary(summary, repoRoot))
-  const receipt = {
+  const compatibilityReceipt = {
     schema: 'bootandstrap.coverage-assurance/v1',
     generatedAt: new Date().toISOString(),
-    ...gitState(),
-    policyId: policy.policyId,
-    policySha256: sha256(policySource),
-    claimBoundary: policy.claimBoundary,
-    ...evaluation,
+    ...identity,
+    policyId: coverageArtifact.policyId,
+    policySha256: coverageArtifact.policySha256,
+    claimBoundary: coverageArtifact.claimBoundary,
+    status: coverageArtifact.status,
+    failures: coverageArtifact.failures,
+    totals: coverageArtifact.totals,
+    domains: coverageArtifact.domains,
+    source: STOREFRONT_COVERAGE_OUTPUT,
   }
-
-  fs.mkdirSync(artifactDir, { recursive: true })
-  fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
-  process.stdout.write(`[coverage-assurance] ${evaluation.status.toUpperCase()} ${receiptPath}\n`)
-  if (evaluation.failures.length > 0) {
-    for (const failure of evaluation.failures) process.stderr.write(`[coverage-assurance] ${failure}\n`)
-    process.exit(1)
-  }
-} catch (error) {
-  process.stderr.write(`[coverage-assurance] FAILED: ${error instanceof Error ? error.message : String(error)}\n`)
-  process.exit(1)
+  const outputPath = join(ROOT_DIR, '.artifacts', 'assurance', 'coverage-assurance.json')
+  writeJsonAtomic(outputPath, compatibilityReceipt)
+  process.stdout.write(`[coverage-assurance] PASSED ${outputPath}\n`)
 }
+
+main().catch((error) => {
+  process.stderr.write(`[coverage-assurance] FAILED: ${error instanceof Error ? error.message : String(error)}\n`)
+  process.exitCode = 1
+})

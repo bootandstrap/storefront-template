@@ -1,0 +1,277 @@
+#!/usr/bin/env node
+
+import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { evaluateCoverage, normalizeVitestSummary } from './lib/coverage-assurance.mjs'
+import { resolveTaskIdentity } from './lib/assurance-identity.mjs'
+
+export const STOREFRONT_TESTS_OUTPUT = '.artifacts/assurance/storefront-tests.json'
+export const STOREFRONT_COVERAGE_OUTPUT = '.artifacts/assurance/storefront-coverage.json'
+
+const SCRIPT_PATH = fileURLToPath(import.meta.url)
+const DEFAULT_ROOT_DIR = resolve(dirname(SCRIPT_PATH), '..')
+const EXPECTED_OUTPUTS = [STOREFRONT_TESTS_OUTPUT, STOREFRONT_COVERAGE_OUTPUT]
+
+function sha256(content) {
+  return createHash('sha256').update(content).digest('hex')
+}
+
+function readJson(filePath, label) {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8'))
+  } catch (error) {
+    throw new Error(`${label} is missing or malformed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+function writeJsonAtomic(filePath, value) {
+  mkdirSync(dirname(filePath), { recursive: true })
+  const temporaryPath = `${filePath}.${process.pid}.tmp`
+  writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+  renameSync(temporaryPath, filePath)
+}
+
+function repoRelativeTestPath(filePath, rootDir) {
+  const normalized = filePath.replaceAll('\\', '/')
+  const normalizedRoot = rootDir.replaceAll('\\', '/')
+  let result = normalized.startsWith(`${normalizedRoot}/`)
+    ? normalized.slice(normalizedRoot.length + 1)
+    : normalized
+  if (result.startsWith('src/')) result = `apps/storefront/${result}`
+  if (result.startsWith('apps/storefront/')) return result
+  throw new Error(`Vitest reported a test file outside storefront: ${filePath}`)
+}
+
+export function normalizeVitestResults(raw, rootDir) {
+  if (
+    raw?.success !== true ||
+    raw?.numFailedTestSuites !== 0 ||
+    raw?.numFailedTests !== 0 ||
+    !Number.isInteger(raw?.numTotalTests) ||
+    raw.numTotalTests < 1 ||
+    !Array.isArray(raw?.testResults) ||
+    raw.testResults.length < 1
+  ) {
+    throw new Error('Vitest JSON does not prove a passed non-empty test run')
+  }
+
+  const testFiles = raw.testResults.map((entry) => {
+    if (entry?.status !== 'passed' || typeof entry?.name !== 'string') {
+      throw new Error('Vitest JSON contains a non-passed or malformed test file')
+    }
+    const assertions = Array.isArray(entry.assertionResults) ? entry.assertionResults : []
+    if (assertions.some((assertion) => assertion?.status === 'failed')) {
+      throw new Error(`Vitest JSON contains failed assertions in ${entry.name}`)
+    }
+    return {
+      path: repoRelativeTestPath(entry.name, rootDir),
+      status: 'passed',
+      tests: assertions.length,
+      passedTests: assertions.filter((assertion) => assertion?.status === 'passed').length,
+      pendingTests: assertions.filter((assertion) => assertion?.status === 'pending').length,
+    }
+  }).sort((left, right) => left.path.localeCompare(right.path))
+
+  if (new Set(testFiles.map(({ path }) => path)).size !== testFiles.length) {
+    throw new Error('Vitest JSON contains duplicate test file results')
+  }
+
+  return {
+    summary: {
+      testFiles: testFiles.length,
+      totalTests: raw.numTotalTests,
+      passedTests: raw.numPassedTests,
+      pendingTests: raw.numPendingTests,
+    },
+    testFiles,
+  }
+}
+
+async function currentIdentity(rootDir) {
+  const tasks = readJson(join(rootDir, 'scripts', 'assurance-tasks.json'), 'assurance task config')
+  const task = tasks.tasks?.find((entry) => entry?.id === 'storefront-assurance')
+  if (!task) throw new Error('storefront-assurance task is not declared')
+  return resolveTaskIdentity(rootDir, task)
+}
+
+function assertIdentity(value, label) {
+  if (
+    !value ||
+    !/^[0-9a-f]{40}$/.test(value.revision) ||
+    !/^[0-9a-f]{64}$/.test(value.workingTreeSha256) ||
+    !/^[0-9a-f]{64}$/.test(value.inputsSha256)
+  ) {
+    throw new Error(`${label} has malformed revision, dirty-tree, or input hashes`)
+  }
+}
+
+export function validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity }) {
+  const startedAt = Date.parse(receipt?.startedAt)
+  const completedAt = Date.parse(receipt?.completedAt)
+  const receiptValid =
+    receipt?.schema === 'bootandstrap.assurance-task/v1' &&
+    receipt?.status === 'passed' &&
+    receipt?.taskId === 'storefront-assurance' &&
+    typeof receipt?.profile === 'string' &&
+    typeof receipt?.claimBoundary === 'string' &&
+    Array.isArray(receipt?.environmentKeys) &&
+    Number.isFinite(startedAt) &&
+    Number.isFinite(completedAt) &&
+    completedAt >= startedAt &&
+    JSON.stringify(receipt?.outputs) === JSON.stringify(EXPECTED_OUTPUTS) &&
+    ['command', 'environment', 'stdout', 'stderr', 'output']
+      .every((field) => receipt?.[field] === undefined)
+  if (!receiptValid) throw new Error('storefront assurance receipt is missing, malformed, or failed')
+
+  assertIdentity(currentIdentity, 'current storefront identity')
+  for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
+    if (receipt[field] !== currentIdentity[field]) {
+      throw new Error(`storefront assurance receipt ${field} mismatch`)
+    }
+  }
+
+  if (
+    testsArtifact?.schema !== 'bootandstrap.storefront-tests/v1' ||
+    testsArtifact?.status !== 'passed' ||
+    !Array.isArray(testsArtifact?.testFiles) ||
+    testsArtifact.testFiles.length < 1 ||
+    testsArtifact.testFiles.some((entry) => entry?.status !== 'passed' || typeof entry?.path !== 'string')
+  ) {
+    throw new Error('storefront tests artifact is missing, malformed, or failed')
+  }
+  for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
+    if (testsArtifact[field] !== currentIdentity[field] || testsArtifact[field] !== receipt[field]) {
+      throw new Error(`storefront tests artifact ${field} mismatch`)
+    }
+  }
+}
+
+export function validateCoverageEvidence(coverageArtifact, expectedIdentity) {
+  if (
+    coverageArtifact?.schema !== 'bootandstrap.storefront-coverage/v1' ||
+    coverageArtifact?.status !== 'passed' ||
+    !Array.isArray(coverageArtifact?.failures) ||
+    coverageArtifact.failures.length !== 0
+  ) {
+    throw new Error('storefront coverage artifact is missing, malformed, or failed')
+  }
+  assertIdentity(expectedIdentity, 'current storefront identity')
+  for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
+    if (coverageArtifact[field] !== expectedIdentity[field]) {
+      throw new Error(`storefront coverage artifact ${field} mismatch`)
+    }
+  }
+}
+
+export async function runStorefrontAssurance({
+  rootDir = DEFAULT_ROOT_DIR,
+  identity,
+  spawn = spawnSync,
+} = {}) {
+  const policyPath = join(rootDir, 'scripts', 'assurance-policy.json')
+  const configPath = join(rootDir, 'apps', 'storefront', 'vitest.config.ts')
+  if (!existsSync(policyPath)) throw new Error('assurance policy is missing')
+  if (!existsSync(configPath)) throw new Error('storefront Vitest config is missing')
+
+  const resolvedIdentity = identity ?? await currentIdentity(rootDir)
+  assertIdentity(resolvedIdentity, 'storefront assurance identity')
+  const artifactDir = join(rootDir, '.artifacts', 'assurance')
+  const rawTestsPath = join(artifactDir, `.storefront-tests.raw.${process.pid}.json`)
+  const coverageDir = join(rootDir, 'apps', 'storefront', 'coverage')
+  const coverageSummaryPath = join(coverageDir, 'coverage-summary.json')
+  const testsOutputPath = join(rootDir, STOREFRONT_TESTS_OUTPUT)
+  const coverageOutputPath = join(rootDir, STOREFRONT_COVERAGE_OUTPUT)
+  mkdirSync(artifactDir, { recursive: true })
+  rmSync(rawTestsPath, { force: true })
+  rmSync(coverageSummaryPath, { force: true })
+
+  const args = [
+    '--filter=storefront',
+    'exec',
+    'vitest',
+    'run',
+    '--coverage',
+    '--reporter=json',
+    '--outputFile', rawTestsPath,
+    '--coverage.reportsDirectory', coverageDir,
+    '--coverage.reporter=text',
+    '--coverage.reporter=html',
+    '--coverage.reporter=lcov',
+    '--coverage.reporter=json-summary',
+    '--no-file-parallelism',
+    '--maxWorkers=1',
+  ]
+  try {
+    const result = spawn('pnpm', args, {
+      cwd: rootDir,
+      env: process.env,
+      encoding: 'utf8',
+      stdio: 'inherit',
+      shell: false,
+    })
+    if (result?.error) throw result.error
+    if (result?.status !== 0) throw new Error(`storefront Vitest assurance exited ${result?.status}`)
+    if (!existsSync(rawTestsPath)) throw new Error('Vitest JSON result was not generated')
+    if (!existsSync(coverageSummaryPath)) throw new Error('V8 coverage summary was not generated')
+
+    const policySource = readFileSync(policyPath, 'utf8')
+    const policy = JSON.parse(policySource)
+    const normalizedTests = normalizeVitestResults(readJson(rawTestsPath, 'Vitest JSON result'), rootDir)
+    const normalizedCoverage = normalizeVitestSummary(
+      readJson(coverageSummaryPath, 'V8 coverage summary'),
+      rootDir,
+    )
+    const evaluation = evaluateCoverage(policy, normalizedCoverage)
+    const generatedAt = new Date().toISOString()
+    const testsArtifact = {
+      schema: 'bootandstrap.storefront-tests/v1',
+      status: 'passed',
+      generatedAt,
+      ...resolvedIdentity,
+      ...normalizedTests,
+    }
+    const coverageArtifact = {
+      schema: 'bootandstrap.storefront-coverage/v1',
+      generatedAt,
+      ...resolvedIdentity,
+      policyId: policy.policyId,
+      policySha256: sha256(policySource),
+      claimBoundary: policy.claimBoundary,
+      ...evaluation,
+    }
+    writeJsonAtomic(testsOutputPath, testsArtifact)
+    writeJsonAtomic(coverageOutputPath, coverageArtifact)
+
+    if (evaluation.status !== 'passed') {
+      throw new Error(`coverage assurance failed: ${evaluation.failures.join('; ')}`)
+    }
+    return {
+      status: 'passed',
+      tests: normalizedTests.summary,
+      coverage: evaluation.totals,
+      outputs: EXPECTED_OUTPUTS,
+    }
+  } finally {
+    rmSync(rawTestsPath, { force: true })
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === SCRIPT_PATH) {
+  runStorefrontAssurance()
+    .then((summary) => process.stdout.write(`${JSON.stringify(summary)}\n`))
+    .catch((error) => {
+      process.stderr.write(`[storefront-assurance] ${error instanceof Error ? error.message : String(error)}\n`)
+      process.exitCode = 1
+    })
+}

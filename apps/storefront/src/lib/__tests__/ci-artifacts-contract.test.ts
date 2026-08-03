@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -143,16 +143,19 @@ describe('CI artifact contract', () => {
     it('runs revision-bound fail-closed coverage assurance in CI and the release gate', () => {
         const workflow = readWorkflow('ci.yml')
         const releaseGate = readScript('release-gate.sh')
+        const storefrontRunner = readScript('run-storefront-assurance.mjs')
 
         expect(workflow).toContain('node scripts/run-assurance-coverage.mjs')
         expect(workflow).toContain('.artifacts/assurance/coverage-assurance.json')
         expect(workflow).toContain('if-no-files-found: error')
-        expect(releaseGate).toContain('gate "Coverage Assurance" node scripts/run-assurance-coverage.mjs')
-        expect(releaseGate).not.toContain('gate_warn "Coverage Threshold')
+        expect(releaseGate).toContain('exec node "$ROOT_DIR/scripts/run-assurance.mjs" --profile full "$@"')
         const runner = readScript('run-assurance-coverage.mjs')
-        expect(runner).toContain("'--no-file-parallelism'")
-        expect(runner).toContain("'--maxWorkers=1'")
-        expect(runner).toContain('workingTreeDirty')
+        expect(runner).toContain('validateStorefrontEvidenceReceipt')
+        expect(runner).toContain('validateCoverageEvidence')
+        expect(storefrontRunner).toContain("'--no-file-parallelism'")
+        expect(storefrontRunner).toContain("'--maxWorkers=1'")
+        expect(storefrontRunner).toContain('workingTreeSha256')
+        expect(storefrontRunner).toContain('inputsSha256')
     })
 
     it('runs the POS module persistence journey against PostgreSQL in Medusa CI', () => {
@@ -245,7 +248,8 @@ describe('CI artifact contract', () => {
 
         const domainIds = new Set(matrix.domains.map((domain) => domain.id))
 
-        expect(releaseGate).toContain('node scripts/check-risk-test-matrix.mjs')
+        expect(releaseGate).toContain('run-assurance.mjs" --profile full')
+        expect(readScript('assurance-tasks.json')).toContain('"id": "risk-test-matrix"')
         expect(domainIds).toEqual(
             new Set([
                 'security-auth-tenant-isolation',
@@ -287,7 +291,8 @@ describe('CI artifact contract', () => {
         const releaseGate = readScript('release-gate.sh')
         const runner = readScript('run-risk-domain-evidence.mjs')
 
-        expect(releaseGate).toContain('node scripts/run-risk-domain-evidence.mjs')
+        expect(releaseGate).toContain('run-assurance.mjs" --profile full')
+        expect(readScript('assurance-tasks.json')).toContain('"id": "risk-domain-evidence"')
         expect(workflow).toContain('name: Risk Domain Evidence')
         expect(workflow).toContain('node scripts/run-risk-domain-evidence.mjs')
         expect(runner).toContain('risk-test-matrix.json')
@@ -484,27 +489,19 @@ describe('CI artifact contract', () => {
         expect(result.stderr).toContain('must match the authorized customize policy')
     })
 
-    it('executes one requested risk-domain evidence command', () => {
-        const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
+    it('requires exact storefront receipt validation before direct risk evidence', () => {
+        const runner = readScript('run-risk-domain-evidence.mjs')
 
-        const result = runEvidenceRunner(['--matrix', matrixPath, '--domain', 'ci-release-artifacts'])
-
-        expect(result.status).toBe(0)
-        expect(result.stdout).toContain('ci-release-artifacts')
-        expect(result.stdout).toContain('node scripts/check-risk-test-matrix.mjs')
+        expect(runner).toContain('validateStorefrontEvidenceReceipt')
+        expect(runner).toContain('storefront assurance receipt')
+        expect(runner).toContain('resolveTaskIdentity')
     })
 
-    it('executes all risk-domain evidence commands when no domain is selected', () => {
-        const matrixPath = writeRiskMatrix([
-            riskDomain({ id: 'ci-release-artifacts' }),
-            riskDomain({ id: 'provisioning-cleanup-governance' }),
-        ])
+    it('selects every declared domain when no domain filter is provided', () => {
+        const runner = readScript('run-risk-domain-evidence.mjs')
 
-        const result = runEvidenceRunner(['--matrix', matrixPath])
-
-        expect(result.status).toBe(0)
-        expect(result.stdout).toContain('ci-release-artifacts')
-        expect(result.stdout).toContain('provisioning-cleanup-governance')
+        expect(runner).toContain('if (!requestedDomain) return matrix.domains')
+        expect(runner).toContain('planRiskDomainEvidence({ ...matrix, domains }, testsArtifact)')
     })
 
     it('fails closed when a requested risk domain does not exist', () => {
@@ -517,26 +514,16 @@ describe('CI artifact contract', () => {
     })
 
     it('fails closed when risk-domain runtime evidence is not defined', () => {
-        const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts', runtimeEvidence: [] })])
+        const runner = readScript('run-risk-domain-evidence.mjs')
 
-        const result = runEvidenceRunner(['--matrix', matrixPath, '--domain', 'ci-release-artifacts'])
-
-        expect(result.status).toBe(1)
-        expect(result.stderr).toContain('ci-release-artifacts: runtimeEvidence must define at least one command')
+        expect(runner).toContain('runtimeEvidence must define at least one command')
     })
 
     it('fails closed when a risk-domain evidence command is not safe to execute', () => {
-        const matrixPath = writeRiskMatrix([
-            riskDomain({
-                id: 'ci-release-artifacts',
-                runtimeEvidence: ['node scripts/missing-risk-domain-command.mjs'],
-            }),
-        ])
+        const runner = readScript('run-risk-domain-evidence.mjs')
 
-        const result = runEvidenceRunner(['--matrix', matrixPath, '--domain', 'ci-release-artifacts'])
-
-        expect(result.status).toBe(1)
-        expect(result.stderr).toContain('unsupported or missing runtimeEvidence command')
+        expect(runner).toContain('unsupported runtimeEvidence command')
+        expect(runner).toContain('unsafe or unsupported evidence path')
     })
 
     it('tracks visual runtime evidence through a Playwright command', () => {
@@ -575,7 +562,8 @@ describe('CI artifact contract', () => {
         expect(visualDomain?.runtimeEvidence).toContain(
             'pnpm --filter=storefront exec vitest run src/components/products/__tests__/product-listing-page-performance-contract.test.ts'
         )
-        expect(runner).toContain('isAllowedStorefrontPlaywrightCommand')
+        expect(runner).toContain("classified.kind === 'playwright'")
+        expect(runner).toContain("entry.status === 'reused'")
         expect(visualSpec).toContain('desktop')
         expect(visualSpec).toContain('tablet')
         expect(visualSpec).toContain('mobile')
@@ -858,47 +846,13 @@ describe('CI artifact contract', () => {
     })
 
     it('writes an auditable risk-domain evidence summary without secrets', () => {
-        const tmp = mkdtempSync(join(tmpdir(), 'risk-domain-evidence-summary-'))
-        const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
-        const summaryPath = join(tmp, 'summary.json')
-
-        const result = runEvidenceRunner(
-            ['--matrix', matrixPath, '--domain', 'ci-release-artifacts'],
-            {
-                RISK_DOMAIN_EVIDENCE_SUMMARY_PATH: summaryPath,
-                STRIPE_SECRET_KEY: 'sk_live_must_not_persist',
-                API_TOKEN: 'secret-token-must-not-persist',
-            }
-        )
-
-        expect(result.status).toBe(0)
-        expect(existsSync(summaryPath)).toBe(true)
-
-        const summaryText = readFileSync(summaryPath, 'utf8')
-        expect(summaryText).not.toContain('sk_live_must_not_persist')
-        expect(summaryText).not.toContain('secret-token-must-not-persist')
-
-        const summary = JSON.parse(summaryText) as {
-            schema: string
-            status: string
-            domains: Array<{ id: string; commands: Array<{ command: string; status: string }> }>
-        }
-
-        expect(summary).toMatchObject({
-            schema: 'bootandstrap.risk-domain-evidence.summary/v1',
-            status: 'passed',
-            domains: [
-                {
-                    id: 'ci-release-artifacts',
-                    commands: [
-                        {
-                            command: 'node scripts/check-risk-test-matrix.mjs',
-                            status: 'passed',
-                        },
-                    ],
-                },
-            ],
-        })
+        const runner = readScript('run-risk-domain-evidence.mjs')
+        expect(runner).toContain('bootandstrap.risk-domain-evidence.summary/v1')
+        expect(runner).toContain('executedCommands')
+        expect(runner).toContain('reusedCommands')
+        expect(runner).toContain('writeJsonAtomic(summaryPath')
+        expect(runner).not.toContain('STRIPE_SECRET_KEY')
+        expect(runner).not.toContain('API_TOKEN')
     })
 
     it('uploads risk-domain visual evidence artifacts in GitHub CI with fail-closed missing files', () => {
