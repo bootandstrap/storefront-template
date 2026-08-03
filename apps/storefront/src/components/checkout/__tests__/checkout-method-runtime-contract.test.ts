@@ -86,6 +86,17 @@ describe('checkout method runtime contract', () => {
         )
     })
 
+    it('aborts the complete checkout-method discovery batch for deterministic error evidence', () => {
+        const visualHelper = readFileSync(
+            join(checkoutRoot, '../../../e2e/runtime-visual-checkout-method-evidence.ts'),
+            'utf8'
+        )
+
+        expect(visualHelper).toContain('let interceptedActionCount = 0')
+        expect(visualHelper).toContain('interceptedActionCount += 1')
+        expect(visualHelper).not.toMatch(/actionWasDelayed\s*\|\|/)
+    })
+
     it('exposes the modal and navigation controls to assistive technology', () => {
         const modal = readCheckoutFile('CheckoutModal.tsx')
         const focusHook = readCheckoutFile('use-checkout-modal-focus.ts')

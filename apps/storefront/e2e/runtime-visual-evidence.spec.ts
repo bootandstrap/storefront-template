@@ -877,14 +877,19 @@ async function cleanupRuntimeEvidenceCart(page: Page, state: CartItemUpdateRunti
         const previousCount = await removeButtons.count()
         if (previousCount === 0) break
 
+        await expect(removeButtons.first()).toBeEnabled({ timeout: 5_000 })
         await removeButtons.first().click()
-        await expect.poll(
+        const removed = await expect.poll(
             () => removeButtons.count(),
             {
                 message: 'runtime evidence cart line item should be removed during cleanup',
-                timeout: 10_000,
+                timeout: 5_000,
             }
-        ).toBeLessThan(previousCount)
+        ).toBeLessThan(previousCount).then(() => true).catch(() => false)
+
+        if (!removed) {
+            await expect(removeButtons.first()).toBeEnabled({ timeout: 5_000 }).catch(() => {})
+        }
     }
 
     await expect(removeButtons).toHaveCount(0)

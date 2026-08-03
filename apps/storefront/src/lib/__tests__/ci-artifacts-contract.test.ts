@@ -644,6 +644,8 @@ describe('CI artifact contract', () => {
         )
         expect(cartCleanup).toContain('waitForHydratedRuntimeCartItem(page, state)')
         expect(cartCleanup).toContain('runtime evidence cart should hydrate before cleanup')
+        expect(cartCleanup).toContain('const removed = await expect.poll')
+        expect(cartCleanup).toContain('if (!removed)')
         expect(visualSpec).toContain('cart-item-update-loading')
         expect(visualSpec).toContain('cart-item-update-error')
         expect(visualSpec).toContain('cart-hydration-loading')

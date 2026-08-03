@@ -46,7 +46,7 @@ export async function delayNextCheckoutMethodAvailabilityAction(
     const normalizedTargetPath = `/${targetPath.replace(/^\//, '').split('?')[0]}`
     let abortAction!: () => void
     let aborted = false
-    let actionWasDelayed = false
+    let interceptedActionCount = 0
     const abortPromise = new Promise<void>((resolve) => {
         abortAction = resolve
     })
@@ -67,8 +67,7 @@ export async function delayNextCheckoutMethodAvailabilityAction(
                 && CHECKOUT_METHOD_IDS.some((methodId) => args[0] === methodId)
 
             if (
-                actionWasDelayed
-                || request.method() !== 'POST'
+                request.method() !== 'POST'
                 || !request.headers()['next-action']
                 || !isAvailabilityCheck
             ) {
@@ -76,7 +75,7 @@ export async function delayNextCheckoutMethodAvailabilityAction(
                 return
             }
 
-            actionWasDelayed = true
+            interceptedActionCount += 1
             await abortPromise
             await route.abort('failed').catch(() => {})
         }
@@ -85,7 +84,7 @@ export async function delayNextCheckoutMethodAvailabilityAction(
     return {
         waitUntilIntercepted: async () => {
             await expect.poll(
-                () => actionWasDelayed,
+                () => interceptedActionCount > 0,
                 {
                     message: `expected a checkout method availability action at ${normalizedTargetPath}`,
                     timeout: 5_000,
@@ -97,7 +96,7 @@ export async function delayNextCheckoutMethodAvailabilityAction(
                 aborted = true
                 abortAction()
             }
-            if (actionWasDelayed) {
+            if (interceptedActionCount > 0) {
                 await page.waitForTimeout(100)
             }
         },
