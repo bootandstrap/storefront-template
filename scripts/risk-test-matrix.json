@@ -47,20 +47,25 @@
       "id": "pos-simulator",
       "severity": "critical",
       "owner": "storefront-runtime",
-      "minTestFiles": 4,
+      "minTestFiles": 7,
       "failureModes": [
         "POS action mutates data without owner/operator boundary",
         "simulated payment or offline queue loses cart state",
-        "virtual receipt/printer evidence cannot be generated"
+        "virtual receipt/printer evidence cannot be generated",
+        "terminal simulator diverges from plan limits or performs a live mutation",
+        "refund and sales history state is missing or not linked to the receipt"
       ],
       "runtimeEvidence": [
-        "pnpm --filter=storefront exec vitest run src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts src/lib/pos/payments/__tests__/payment-adapter.test.ts src/lib/pos/offline/__tests__/offline-store.test.ts src/lib/pos/__tests__/virtual-printer.test.ts"
+        "pnpm --filter=storefront exec vitest run src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts src/lib/pos/payments/__tests__/payment-adapter.test.ts src/lib/pos/offline/__tests__/offline-store.test.ts src/lib/pos/__tests__/virtual-printer.test.ts src/lib/bns-360/__tests__/pos-primary-journey.test.ts src/lib/pos/customers/__tests__/customer-refund.test.ts src/lib/pos/history/__tests__/history.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts",
         "apps/storefront/src/lib/pos/payments/__tests__/payment-adapter.test.ts",
         "apps/storefront/src/lib/pos/offline/__tests__/offline-store.test.ts",
-        "apps/storefront/src/lib/pos/__tests__/virtual-printer.test.ts"
+        "apps/storefront/src/lib/pos/__tests__/virtual-printer.test.ts",
+        "apps/storefront/src/lib/bns-360/__tests__/pos-primary-journey.test.ts",
+        "apps/storefront/src/lib/pos/customers/__tests__/customer-refund.test.ts",
+        "apps/storefront/src/lib/pos/history/__tests__/history.test.ts"
       ]
     },
     {
