@@ -76,6 +76,23 @@ function taskEnvironment(task) {
   }
 }
 
+function hashEnvironment(environment) {
+  return sha256(environment.names.map((name) => `${name}\0${environment.values[name]}\0`))
+}
+
+async function hashTaskOutputs(outputs) {
+  const outputSha256 = {}
+  for (const relativePath of [...outputs].sort()) {
+    try {
+      outputSha256[relativePath] = sha256([await fs.readFile(path.join(repoRoot, relativePath))])
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+      outputSha256[relativePath] = null
+    }
+  }
+  return outputSha256
+}
+
 async function writeJsonAtomic(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true })
   const temporaryPath = `${filePath}.${process.pid}.tmp`
@@ -260,6 +277,7 @@ async function main() {
       workingTreeSha256,
       inputsSha256,
       toolchainSha256,
+      environmentSha256: hashEnvironment(environment),
       profileSha256,
       outputs: task.outputs,
       environmentKeys: environment.names,
@@ -268,7 +286,8 @@ async function main() {
 
     if (!options.noCache) {
       const cached = await readReceipt(receiptPath)
-      if (validateReceipt(cached, expected, outputExists).valid) {
+      const cachedExpected = { ...expected, outputSha256: await hashTaskOutputs(task.outputs) }
+      if (validateReceipt(cached, cachedExpected, outputExists).valid) {
         receipts[taskId] = receiptPath
         return 'cached'
       }
@@ -296,9 +315,11 @@ async function main() {
     })
     const outputsPresent = task.outputs.every(outputExists)
     const finalStatus = status === 'passed' && !outputsPresent ? 'failed' : status
+    const outputSha256 = await hashTaskOutputs(task.outputs)
     const receipt = {
       schema: 'bootandstrap.assurance-task/v1',
       ...expected,
+      outputSha256,
       status: finalStatus,
       startedAt,
       completedAt: new Date().toISOString(),

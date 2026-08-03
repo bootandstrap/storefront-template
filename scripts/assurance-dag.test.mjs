@@ -124,8 +124,12 @@ test('invalidates receipts on any identity, input, toolchain, profile, or output
     workingTreeSha256: 'b'.repeat(64),
     inputsSha256: 'c'.repeat(64),
     toolchainSha256: 'd'.repeat(64),
+    environmentSha256: 'f'.repeat(64),
     profileSha256: 'e'.repeat(64),
     outputs: ['.artifacts/assurance/typecheck.json'],
+    outputSha256: {
+      '.artifacts/assurance/typecheck.json': '1'.repeat(64),
+    },
     environmentKeys: ['CI'],
   }
   const receipt = {
@@ -147,6 +151,7 @@ test('invalidates receipts on any identity, input, toolchain, profile, or output
     'workingTreeSha256',
     'inputsSha256',
     'toolchainSha256',
+    'environmentSha256',
     'profileSha256',
   ]) {
     const mismatched = { ...receipt, [field]: `${receipt[field]}-stale` }
@@ -155,6 +160,10 @@ test('invalidates receipts on any identity, input, toolchain, profile, or output
 
   assert.equal(validateReceipt({ ...receipt, status: 'failed' }, expected, outputExists).valid, false)
   assert.equal(validateReceipt({ ...receipt, outputs: [] }, expected, outputExists).valid, false)
+  assert.equal(validateReceipt({
+    ...receipt,
+    outputSha256: { [expected.outputs[0]]: '2'.repeat(64) },
+  }, expected, outputExists).valid, false)
   assert.equal(validateReceipt(receipt, expected, () => false).valid, false)
 })
 
@@ -167,8 +176,10 @@ test('rejects malformed receipts and environment values', () => {
     workingTreeSha256: 'b'.repeat(64),
     inputsSha256: 'c'.repeat(64),
     toolchainSha256: 'd'.repeat(64),
+    environmentSha256: 'f'.repeat(64),
     profileSha256: 'e'.repeat(64),
     outputs: [],
+    outputSha256: {},
     environmentKeys: [],
   }
 

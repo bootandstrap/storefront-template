@@ -17,6 +17,10 @@ const identity = {
   workingTreeSha256: 'b'.repeat(64),
   inputsSha256: 'c'.repeat(64),
 }
+const outputSha256 = {
+  [STOREFRONT_TESTS_OUTPUT]: '1'.repeat(64),
+  [STOREFRONT_COVERAGE_OUTPUT]: '2'.repeat(64),
+}
 
 function makeRoot() {
   const rootDir = mkdtempSync(join(tmpdir(), 'bns-storefront-assurance-'))
@@ -72,6 +76,7 @@ function passedReceipt(overrides = {}) {
     claimBoundary: 'functional_system_without_commercial_activation',
     ...identity,
     outputs: [STOREFRONT_TESTS_OUTPUT, STOREFRONT_COVERAGE_OUTPUT],
+    outputSha256,
     environmentKeys: [],
     startedAt: '2026-08-03T10:00:00.000Z',
     completedAt: '2026-08-03T10:00:01.000Z',
@@ -127,6 +132,7 @@ test('reuses storefront evidence only for a passed receipt with exact identity h
     receipt: passedReceipt(),
     testsArtifact: passedTestsArtifact(),
     currentIdentity: identity,
+    outputSha256,
   }))
 
   const invalidCases = [
@@ -145,6 +151,7 @@ test('reuses storefront evidence only for a passed receipt with exact identity h
       receipt,
       testsArtifact: passedTestsArtifact(),
       currentIdentity: identity,
+      outputSha256,
     }), /storefront assurance receipt/i)
   }
 
@@ -152,7 +159,15 @@ test('reuses storefront evidence only for a passed receipt with exact identity h
     receipt: passedReceipt(),
     testsArtifact: { ...passedTestsArtifact(), status: 'failed' },
     currentIdentity: identity,
+    outputSha256,
   }), /storefront tests artifact/i)
+
+  assert.throws(() => validateStorefrontEvidenceReceipt({
+    receipt: passedReceipt(),
+    testsArtifact: passedTestsArtifact(),
+    currentIdentity: identity,
+    outputSha256: { ...outputSha256, [STOREFRONT_TESTS_OUTPUT]: '3'.repeat(64) },
+  }), /output hash/i)
 })
 
 test('fails closed when a required Vitest file is absent from the passed result', () => {

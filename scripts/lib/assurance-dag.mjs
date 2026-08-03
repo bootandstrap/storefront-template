@@ -190,6 +190,12 @@ function collectArrayMismatches(receipt, expected, reasons) {
   }
 }
 
+function collectOutputHashMismatch(receipt, expected, reasons) {
+  const matches = isObject(receipt.outputSha256)
+    && JSON.stringify(receipt.outputSha256) === JSON.stringify(expected.outputSha256)
+  if (!matches) reasons.push('outputSha256 mismatch')
+}
+
 function collectTimestampFailure(receipt, reasons) {
   const startedAt = Date.parse(receipt.startedAt)
   const completedAt = Date.parse(receipt.completedAt)
@@ -225,10 +231,12 @@ export function validateReceipt(receipt, expected, outputExists) {
     'workingTreeSha256',
     'inputsSha256',
     'toolchainSha256',
+    'environmentSha256',
     'profileSha256',
   ]
   collectFieldMismatches(receipt, expected, identityFields, reasons)
   collectArrayMismatches(receipt, expected, reasons)
+  collectOutputHashMismatch(receipt, expected, reasons)
   collectTimestampFailure(receipt, reasons)
   collectForbiddenFields(receipt, reasons)
   collectMissingOutputs(receipt, outputExists, reasons)

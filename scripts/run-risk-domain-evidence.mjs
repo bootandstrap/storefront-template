@@ -9,6 +9,7 @@ import { resolveTaskIdentity } from './lib/assurance-identity.mjs'
 import {
   STOREFRONT_COVERAGE_OUTPUT,
   STOREFRONT_TESTS_OUTPUT,
+  hashEvidenceFile,
   validateStorefrontEvidenceReceipt,
 } from './run-storefront-assurance.mjs'
 
@@ -263,9 +264,18 @@ export async function runRiskDomainEvidence({
     throw new Error('storefront assurance outputs are missing')
   }
   const testsArtifact = readJson(testsPath, 'storefront tests artifact')
+  readJson(coveragePath, 'storefront coverage artifact')
   const receipt = readJson(taskReceiptPath, 'storefront assurance receipt')
   const currentIdentity = await storefrontIdentity(rootDir)
-  validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity })
+  validateStorefrontEvidenceReceipt({
+    receipt,
+    testsArtifact,
+    currentIdentity,
+    outputSha256: {
+      [STOREFRONT_TESTS_OUTPUT]: hashEvidenceFile(testsPath),
+      [STOREFRONT_COVERAGE_OUTPUT]: hashEvidenceFile(coveragePath),
+    },
+  })
 
   const plan = planRiskDomainEvidence({ ...matrix, domains }, testsArtifact)
   const env = buildSafeEnv()

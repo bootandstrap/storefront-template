@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { evaluateCoverage } from './lib/coverage-assurance.mjs'
-import { validateCoverageEvidence } from './run-storefront-assurance.mjs'
+import {
+  STOREFRONT_COVERAGE_OUTPUT,
+  validateCoverageEvidence,
+} from './run-storefront-assurance.mjs'
 
 const policy = {
   globalRatchet: {
@@ -147,17 +150,31 @@ test('coverage reuse fails closed unless the passed artifact matches exact task 
     failures: [],
     ...identity,
   }
+  const outputSha256 = { [STOREFRONT_COVERAGE_OUTPUT]: '2'.repeat(64) }
+  const receipt = { outputSha256 }
+  const integrity = { receipt, outputSha256 }
 
-  assert.doesNotThrow(() => validateCoverageEvidence(artifact, identity))
-  assert.throws(() => validateCoverageEvidence(undefined, identity), /coverage artifact/i)
+  assert.doesNotThrow(() => validateCoverageEvidence(artifact, identity, integrity))
+  assert.throws(() => validateCoverageEvidence(undefined, identity, integrity), /coverage artifact/i)
   assert.throws(
-    () => validateCoverageEvidence({ ...artifact, status: 'failed' }, identity),
+    () => validateCoverageEvidence({ ...artifact, status: 'failed' }, identity, integrity),
     /coverage artifact/i,
   )
   for (const field of ['revision', 'workingTreeSha256', 'inputsSha256']) {
     assert.throws(
-      () => validateCoverageEvidence({ ...artifact, [field]: 'd'.repeat(artifact[field].length) }, identity),
+      () => validateCoverageEvidence(
+        { ...artifact, [field]: 'd'.repeat(artifact[field].length) },
+        identity,
+        integrity,
+      ),
       new RegExp(`${field} mismatch`, 'i'),
     )
   }
+  assert.throws(
+    () => validateCoverageEvidence(artifact, identity, {
+      receipt,
+      outputSha256: { [STOREFRONT_COVERAGE_OUTPUT]: '3'.repeat(64) },
+    }),
+    /output hash/i,
+  )
 })

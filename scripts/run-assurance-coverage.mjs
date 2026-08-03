@@ -8,6 +8,7 @@ import { resolveTaskIdentity } from './lib/assurance-identity.mjs'
 import {
   STOREFRONT_COVERAGE_OUTPUT,
   STOREFRONT_TESTS_OUTPUT,
+  hashEvidenceFile,
   validateCoverageEvidence,
   validateStorefrontEvidenceReceipt,
 } from './run-storefront-assurance.mjs'
@@ -44,9 +45,18 @@ async function main() {
     join(ROOT_DIR, STOREFRONT_COVERAGE_OUTPUT),
     'storefront coverage artifact',
   )
+  const outputSha256 = {
+    [STOREFRONT_TESTS_OUTPUT]: hashEvidenceFile(join(ROOT_DIR, STOREFRONT_TESTS_OUTPUT)),
+    [STOREFRONT_COVERAGE_OUTPUT]: hashEvidenceFile(join(ROOT_DIR, STOREFRONT_COVERAGE_OUTPUT)),
+  }
 
-  validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity: identity })
-  validateCoverageEvidence(coverageArtifact, identity)
+  validateStorefrontEvidenceReceipt({
+    receipt,
+    testsArtifact,
+    currentIdentity: identity,
+    outputSha256,
+  })
+  validateCoverageEvidence(coverageArtifact, identity, { receipt, outputSha256 })
 
   const compatibilityReceipt = {
     schema: 'bootandstrap.coverage-assurance/v1',

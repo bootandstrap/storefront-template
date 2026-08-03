@@ -147,10 +147,23 @@ function hasValidReceiptShape(receipt) {
     hasValidReceiptIdentity(receipt),
     hasValidReceiptTiming(receipt),
     Array.isArray(receipt?.environmentKeys),
+    receipt?.outputSha256 && typeof receipt.outputSha256 === 'object' && !Array.isArray(receipt.outputSha256),
     JSON.stringify(receipt?.outputs) === JSON.stringify(EXPECTED_OUTPUTS),
     ['command', 'environment', 'stdout', 'stderr', 'output']
       .every((field) => receipt?.[field] === undefined),
   ].every(Boolean)
+}
+
+function assertOutputHash(receipt, outputSha256, outputPath) {
+  const receiptHash = receipt?.outputSha256?.[outputPath]
+  const actualHash = outputSha256?.[outputPath]
+  if (!/^[0-9a-f]{64}$/.test(receiptHash) || receiptHash !== actualHash) {
+    throw new Error(`storefront assurance output hash mismatch: ${outputPath}`)
+  }
+}
+
+export function hashEvidenceFile(filePath) {
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex')
 }
 
 function assertMatchingIdentity(source, expected, label, additionalSource) {
@@ -173,13 +186,19 @@ function isValidTestsArtifact(testsArtifact) {
   ].every(Boolean)
 }
 
-export function validateStorefrontEvidenceReceipt({ receipt, testsArtifact, currentIdentity }) {
+export function validateStorefrontEvidenceReceipt({
+  receipt,
+  testsArtifact,
+  currentIdentity,
+  outputSha256,
+}) {
   if (!hasValidReceiptShape(receipt)) {
     throw new Error('storefront assurance receipt is missing, malformed, or failed')
   }
 
   assertIdentity(currentIdentity, 'current storefront identity')
   assertMatchingIdentity(receipt, currentIdentity, 'storefront assurance receipt')
+  for (const outputPath of EXPECTED_OUTPUTS) assertOutputHash(receipt, outputSha256, outputPath)
 
   if (!isValidTestsArtifact(testsArtifact)) {
     throw new Error('storefront tests artifact is missing, malformed, or failed')
@@ -204,12 +223,13 @@ function assertCoverageIdentity(coverageArtifact, expectedIdentity) {
   }
 }
 
-export function validateCoverageEvidence(coverageArtifact, expectedIdentity) {
+export function validateCoverageEvidence(coverageArtifact, expectedIdentity, integrity) {
   if (!hasValidCoverageArtifact(coverageArtifact)) {
     throw new Error('storefront coverage artifact is missing, malformed, or failed')
   }
   assertIdentity(expectedIdentity, 'current storefront identity')
   assertCoverageIdentity(coverageArtifact, expectedIdentity)
+  assertOutputHash(integrity?.receipt, integrity?.outputSha256, STOREFRONT_COVERAGE_OUTPUT)
 }
 
 function executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSummaryPath) {
