@@ -925,6 +925,39 @@ async function prepareProductsRoute(
     return { available: true }
 }
 
+async function preparePrimaryProductsRoute(
+    page: Page,
+    testInfo: TestInfo,
+    viewport: VisualViewport
+): Promise<ProductRouteAvailability> {
+    const response = await gotoRuntimeVisualRouteWithBackoff(page, '/es/productos', [200])
+    expect(response?.status() ?? 200).toBe(200)
+
+    if (await isMaintenanceScreen(page)) {
+        const reason = 'primary products route visual evidence requires product runtime data; products route is in maintenance'
+        await testInfo.attach(`visual-products-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    const firstCard = page.locator('[data-testid="product-card"]').first()
+    const hasProductCard = await firstCard.isVisible({ timeout: 20_000 }).catch(() => false)
+    if (!hasProductCard) {
+        const reason = 'primary products route visual evidence requires product runtime data; no product cards were rendered'
+        await testInfo.attach(`visual-products-${viewport.name}-runtime-unavailable`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+        })
+
+        return { available: false, reason }
+    }
+
+    return { available: true }
+}
+
 async function openFirstProductDetail(page: Page) {
     const firstCard = page.locator('[data-testid="product-card"]').first()
     const href = await firstCard.getAttribute('href')
@@ -1379,8 +1412,21 @@ test.describe('runtime visual evidence', () => {
                 await page.addInitScript({ content: axeSource })
                 await page.setViewportSize({ width: viewport.width, height: viewport.height })
 
-                const response = await gotoRuntimeVisualRouteWithBackoff(page, route.path, route.expectedStatus)
-                expect(route.expectedStatus).toContain(response?.status() ?? 200)
+                if (route.name === 'products') {
+                    const availability = await preparePrimaryProductsRoute(page, testInfo, viewport)
+
+                    if (!availability.available) {
+                        if (shouldRequireInteractiveStates()) {
+                            throw new Error(availability.reason)
+                        }
+
+                        test.skip(true, availability.reason)
+                    }
+                } else {
+                    const response = await gotoRuntimeVisualRouteWithBackoff(page, route.path, route.expectedStatus)
+                    expect(route.expectedStatus).toContain(response?.status() ?? 200)
+                }
+
                 await assertVisibleState(page, route)
                 await assertNoAppErrorShell(page)
                 await assertNoHorizontalOverflow(page)

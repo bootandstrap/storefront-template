@@ -782,6 +782,17 @@ describe('CI artifact contract', () => {
         )
     })
 
+    it('treats missing reusable product runtime data as unavailable instead of a hard failure for PR-only primary products route evidence', () => {
+        const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+
+        expect(visualSpec).toContain(
+            'primary products route visual evidence requires product runtime data; no product cards were rendered'
+        )
+        expect(visualSpec).toContain('visual-products-${viewport.name}-runtime-unavailable')
+        expect(visualSpec).toContain("if (route.name === 'products')")
+        expect(visualSpec).toContain('test.skip(true, availability.reason)')
+    })
+
     it('writes an auditable risk-domain evidence summary without secrets', () => {
         const tmp = mkdtempSync(join(tmpdir(), 'risk-domain-evidence-summary-'))
         const matrixPath = writeRiskMatrix([riskDomain({ id: 'ci-release-artifacts' })])
