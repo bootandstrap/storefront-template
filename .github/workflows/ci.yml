@@ -281,7 +281,7 @@ jobs:
           cp -R ../static apps/storefront/.next/static
           cp -R ../../public apps/storefront/public
           PORT=3000 node apps/storefront/server.js &
-          bash ../../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
+          bash ../../../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
         env:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co

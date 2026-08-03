@@ -165,6 +165,7 @@ describe('CI artifact contract', () => {
         expect(e2eJob).toContain('name: Run PR-local runtime visual evidence')
         expect(e2eJob).toContain('playwright test e2e/runtime-visual-evidence.spec.ts')
         expect(e2eJob).toContain("BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES: '0'")
+        expect(e2eJob).toContain('bash ../../../../scripts/ci/wait-for-health.sh')
         expect(e2eJob).not.toContain('services:')
         expect(e2eJob).not.toContain('scripts/ci/start-medusa-stack.sh')
         expect(e2eJob).not.toContain('secrets.TEST_TENANT_ID')
