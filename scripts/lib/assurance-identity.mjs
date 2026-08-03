@@ -3,14 +3,6 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const IGNORED_INPUT_DIRECTORIES = new Set([
-  '.artifacts',
-  '.git',
-  '.next',
-  'coverage',
-  'node_modules',
-])
-
 export function sha256(parts) {
   const hash = createHash('sha256')
   for (const part of parts) hash.update(part)
@@ -60,19 +52,7 @@ async function collectInputParts(absolutePath, relativePath, parts) {
     parts.push(`link:${relativePath}:${await fs.readlink(absolutePath)}`)
     return
   }
-  if (stats.isDirectory()) {
-    parts.push(`directory:${relativePath}`)
-    const entries = await fs.readdir(absolutePath, { withFileTypes: true })
-    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
-      if (entry.isDirectory() && IGNORED_INPUT_DIRECTORIES.has(entry.name)) continue
-      await collectInputParts(
-        path.join(absolutePath, entry.name),
-        path.posix.join(relativePath, entry.name),
-        parts,
-      )
-    }
-    return
-  }
+  if (stats.isDirectory()) throw new Error(`input file unexpectedly became a directory: ${relativePath}`)
   if (stats.isFile()) {
     parts.push(`file:${relativePath}`)
     parts.push(await fs.readFile(absolutePath))
@@ -81,8 +61,41 @@ async function collectInputParts(absolutePath, relativePath, parts) {
 
 export async function hashInputs(repoRoot, inputs) {
   const parts = []
+  const directories = []
   for (const relativePath of [...inputs].sort()) {
-    await collectInputParts(path.join(repoRoot, relativePath), relativePath, parts)
+    const absolutePath = path.join(repoRoot, relativePath)
+    let stats
+    try {
+      stats = await fs.lstat(absolutePath)
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        parts.push(`missing:${relativePath}`)
+        continue
+      }
+      throw error
+    }
+
+    if (stats.isDirectory()) {
+      parts.push(`directory:${relativePath}`)
+      directories.push(relativePath)
+    } else {
+      await collectInputParts(absolutePath, relativePath, parts)
+    }
+  }
+
+  if (directories.length > 0) {
+    const listed = runGit(repoRoot, [
+      'ls-files',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '-z',
+      '--',
+      ...directories,
+    ]).toString('utf8').split('\0').filter(Boolean).sort()
+    for (const relativePath of listed) {
+      await collectInputParts(path.join(repoRoot, relativePath), relativePath, parts)
+    }
   }
   return sha256(parts)
 }
