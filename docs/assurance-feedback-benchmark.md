@@ -26,3 +26,14 @@ The second run used the same clean revision and working-tree identity. Every req
 The compatibility coverage consumer accepted the exact task identity, and `scripts/release-gate.sh --dry-run` selected the same 13-task `full` DAG with no deferred evidence.
 
 This benchmark establishes local feedback-loop behavior only. It does not claim commercial or production readiness, deployment readiness, live payment behavior, or physical POS behavior.
+
+## POS-only fast-loop budget
+
+- Date: 2026-08-03 (Europe/Paris)
+- Revision: `58e7bba082e6715ff69683cd8cce6836e5867ced`
+- Profile and base: `fast --base HEAD`
+- Changed scope: one temporary untracked TypeScript probe under `apps/storefront/src/lib/pos/`, removed immediately after the run
+- Command: `/usr/bin/time -p pnpm assurance:fast -- --base HEAD`
+- Result: 8 passed, 0 cached; `real 15.23 s`, `user 30.43 s`, `sys 3.62 s`
+
+The selector chose policy, audit, Compose security, RLS, schema ownership, POS behavioral tests, storefront lint, and storefront type-check. POS evidence passed 17 files and 187 tests. Full storefront assurance, full risk-domain evidence, Medusa unit, storefront build, and POS conformance remained explicitly `deferred`; none was reported as passed. The measured wall time is below the 90-second local budget. No probe file was retained or committed.
