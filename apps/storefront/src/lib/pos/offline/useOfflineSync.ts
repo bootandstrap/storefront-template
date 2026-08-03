@@ -33,10 +33,25 @@ type CreatePOSSaleAction = (input: {
     customer_id?: string
     discount_amount: number
     note: string
+    sync: {
+        tenant_id: string
+        operation_id: string
+        idempotency_key: string
+        client_id: string
+        client_sequence: number
+        known_server_sequence: number
+    }
 }) => Promise<{
     success: boolean
     error?: string
     display_id?: number
+    sync?: {
+        outcome: POSSyncCommitResponse['outcome']
+        operation_id: string
+        idempotency_key: string
+        server_sequence: number
+        last_client_sequence: number
+    }
 }>
 type OfflineStore = typeof import('./offline-store')
 
@@ -107,7 +122,26 @@ export async function syncPendingSaleWithProtocol(
     }, transport)
 }
 
-function createPOSSyncTransport(createPOSSale: CreatePOSSaleAction): POSSyncTransport {
+function authoritativeResponse(
+    request: POSSyncCommitRequest,
+    result: Awaited<ReturnType<CreatePOSSaleAction>>,
+): POSSyncCommitResponse {
+    const sync = result.sync
+    const correlated = sync?.operation_id === request.operation.operationId
+        && sync?.idempotency_key === request.operation.idempotencyKey
+    const sequenced = Number.isInteger(sync?.server_sequence)
+        && Number.isInteger(sync?.last_client_sequence)
+    if (!correlated || !sequenced) {
+        throw new POSSyncTransportError('unavailable', 'permanent', 'afterCommit')
+    }
+    return {
+        outcome: sync.outcome,
+        serverSequence: sync.server_sequence,
+        lastClientSequence: sync.last_client_sequence,
+    }
+}
+
+export function createPOSSyncTransport(createPOSSale: CreatePOSSaleAction): POSSyncTransport {
     return {
         async commit(request: POSSyncCommitRequest): Promise<POSSyncCommitResponse> {
             const payload = request.operation.payload
@@ -117,6 +151,14 @@ function createPOSSyncTransport(createPOSSale: CreatePOSSaleAction): POSSyncTran
                 customer_id: payload.customer_id as string | undefined,
                 discount_amount: payload.discount_amount as number,
                 note: `offline_ref:${request.operation.idempotencyKey}`,
+                sync: {
+                    tenant_id: request.operation.tenantId,
+                    operation_id: request.operation.operationId,
+                    idempotency_key: request.operation.idempotencyKey,
+                    client_id: request.operation.clientId,
+                    client_sequence: request.operation.clientSequence,
+                    known_server_sequence: request.knownServerSequence,
+                },
             })
             if (!result.success) {
                 const errorMessage = result.error || 'POS server rejected the sale'
@@ -127,14 +169,7 @@ function createPOSSyncTransport(createPOSSale: CreatePOSSaleAction): POSSyncTran
                     'beforeAck',
                 )
             }
-            if (!Number.isInteger(result.display_id) || (result.display_id ?? -1) < 0) {
-                throw new POSSyncTransportError('unavailable', 'permanent', 'afterCommit')
-            }
-            return {
-                outcome: 'committed',
-                serverSequence: result.display_id!,
-                lastClientSequence: request.operation.clientSequence,
-            }
+            return authoritativeResponse(request, result)
         },
     }
 }

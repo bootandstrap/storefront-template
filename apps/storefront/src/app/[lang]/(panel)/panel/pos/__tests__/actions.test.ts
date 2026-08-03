@@ -145,6 +145,28 @@ describe('/[lang]/panel/pos server actions', () => {
         expect(mockConvertDraftToOrder).not.toHaveBeenCalled()
     })
 
+    it('fails closed before creating an offline sale when no durable sync boundary is available', async () => {
+        const { createPOSSale } = await import('../actions')
+
+        await expect(createPOSSale({
+            items: [{ variant_id: 'variant_1', quantity: 1, unit_price: 500 }],
+            payment_method: 'cash',
+            sync: {
+                tenant_id: 'tenant_123',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                client_id: 'client_1',
+                client_sequence: 1,
+                known_server_sequence: 0,
+            },
+        })).resolves.toEqual({
+            success: false,
+            error: 'POS authoritative sync boundary unavailable',
+        })
+        expect(mockCreateDraftOrder).not.toHaveBeenCalled()
+        expect(mockConvertDraftToOrder).not.toHaveBeenCalled()
+    })
+
     it('searches POS products and customers through tenant-scoped Medusa helpers', async () => {
         const { lookupPOSCustomer, searchPOSProducts } = await import('../actions')
 

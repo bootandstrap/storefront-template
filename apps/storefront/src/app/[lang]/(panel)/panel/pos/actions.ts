@@ -48,6 +48,14 @@ interface CreatePOSSaleInput {
     terminal_id?: string
     /** Cash tendered (for change calculation on cash payments) */
     cash_tendered?: number
+    sync?: {
+        tenant_id: string
+        operation_id: string
+        idempotency_key: string
+        client_id: string
+        client_sequence: number
+        known_server_sequence: number
+    }
 }
 
 interface POSSaleResult {
@@ -66,6 +74,14 @@ interface POSSaleResult {
 export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleResult> {
     try {
         const { tenantId } = await withPanelGuard()
+        if (input.sync) {
+            return {
+                success: false,
+                error: input.sync.tenant_id === tenantId
+                    ? 'POS authoritative sync boundary unavailable'
+                    : 'POS sync tenant mismatch',
+            }
+        }
         const scope = await getTenantMedusaScope(tenantId)
 
         // Get region for the draft order
