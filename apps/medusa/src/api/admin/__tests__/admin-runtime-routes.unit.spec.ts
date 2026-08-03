@@ -2,6 +2,7 @@ import { GET as getAutomationExecutions } from "../automation/executions/route"
 import { GET as getAutomationRules, POST as postAutomationRule } from "../automation/rules/route"
 import { GET as getCrmContacts, POST as postCrmContact } from "../crm/contacts/route"
 import { GET as getPosSessions, POST as postPosSession } from "../pos/sessions/route"
+import { POST as postPosSyncOperation } from "../pos/sync-operations/route"
 import { GET as getPosTransactions, POST as postPosTransaction } from "../pos/transactions/route"
 import { AUTOMATION_MODULE } from "../../../modules/automation"
 import { CRM_MODULE } from "../../../modules/crm"
@@ -258,5 +259,49 @@ describe("admin POS runtime routes", () => {
         })
         expect(res.status).toHaveBeenCalledWith(201)
         expect(res.json).toHaveBeenCalledWith({ transaction: { id: "tx_1" } })
+    })
+
+    it("POST /admin/pos/sync-operations delegates validated reserve and commit phases", async () => {
+        const service = {
+            reservePOSSyncOperation: jest.fn().mockResolvedValue({ outcome: "reserved", server_sequence: 1 }),
+            commitPOSSyncOperation: jest.fn().mockResolvedValue({ outcome: "committed", server_sequence: 1 }),
+        }
+        const sync = {
+            tenant_id: "tenant_1",
+            operation_id: "operation_1",
+            idempotency_key: "offline_1",
+            client_id: "terminal_1",
+            client_sequence: 1,
+            known_server_sequence: 0,
+            amount_minor: 1000,
+            payload_sha256: "a".repeat(64),
+        }
+
+        const invalidRes = createResponse()
+        await postPosSyncOperation(createRequest(service, {}, { phase: "reserve" }), invalidRes as any)
+        expect(invalidRes.status).toHaveBeenCalledWith(400)
+        expect(service.reservePOSSyncOperation).not.toHaveBeenCalled()
+
+        const reserveRes = createResponse()
+        await postPosSyncOperation(createRequest(service, {}, { phase: "reserve", sync }), reserveRes as any)
+        expect(service.reservePOSSyncOperation).toHaveBeenCalledWith(sync)
+        expect(reserveRes.status).toHaveBeenCalledWith(201)
+        expect(reserveRes.json).toHaveBeenCalledWith({
+            operation: { outcome: "reserved", server_sequence: 1 },
+        })
+
+        const commit = {
+            ...sync,
+            order_id: "order_1",
+            draft_order_id: "draft_1",
+            display_id: 42,
+        }
+        const commitRes = createResponse()
+        await postPosSyncOperation(createRequest(service, {}, { phase: "commit", sync: commit }), commitRes as any)
+        expect(service.commitPOSSyncOperation).toHaveBeenCalledWith(commit)
+        expect(commitRes.status).toHaveBeenCalledWith(200)
+        expect(commitRes.json).toHaveBeenCalledWith({
+            operation: { outcome: "committed", server_sequence: 1 },
+        })
     })
 })
