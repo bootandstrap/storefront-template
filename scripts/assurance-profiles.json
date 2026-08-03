@@ -26,7 +26,8 @@
     { "id": "medusa-unit", "kind": "behavioral" },
     { "id": "storefront-build", "kind": "build" },
     { "id": "pos-conformance", "kind": "behavioral" },
-    { "id": "pos-mutation-canary", "kind": "behavioral" }
+    { "id": "pos-mutation-canary", "kind": "behavioral" },
+    { "id": "observability-unit", "kind": "behavioral" }
   ],
   "criticalSourceSelectors": [
     { "prefix": "apps/storefront/src/lib/security/" },
@@ -124,6 +125,26 @@
           "selector": { "prefix": "apps/storefront/src/lib/backup/" },
           "tasks": ["backup-unit"],
           "critical": true
+        },
+        {
+          "id": "observability-contract",
+          "selector": { "prefix": "apps/storefront/src/lib/observability/" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "structured-logger",
+          "selector": { "exact": "apps/storefront/src/lib/logger.ts" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "storefront-instrumentation",
+          "selector": { "exact": "apps/storefront/src/instrumentation.ts" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "medusa-instrumentation",
+          "selector": { "exact": "apps/medusa/instrumentation.ts" },
+          "tasks": ["observability-unit"]
         }
       ]
     },
@@ -143,7 +164,8 @@
         "storefront-typecheck",
         "storefront-build",
         "pos-conformance",
-        "pos-mutation-canary"
+        "pos-mutation-canary",
+        "observability-unit"
       ],
       "deferred": [],
       "selectorRules": []

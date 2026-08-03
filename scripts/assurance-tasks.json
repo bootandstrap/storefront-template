@@ -176,6 +176,14 @@
       "inputs": ["apps/storefront/src/lib/pos/offline", "apps/storefront/vitest.config.ts"],
       "outputs": [],
       "environmentKeys": ["CI"]
+    },
+    {
+      "id": "observability-unit",
+      "dependencies": [],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/observability/__tests__/evidence-event.test.ts", "src/lib/observability/__tests__/report-error.test.ts", "src/lib/observability/__tests__/instrumentation-evidence.test.ts", "src/lib/__tests__/logger.test.ts"],
+      "inputs": ["apps/storefront/src/lib/observability", "apps/storefront/src/lib/logger.ts", "apps/storefront/src/instrumentation.ts", "apps/medusa/instrumentation.ts", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
     }
   ]
 }

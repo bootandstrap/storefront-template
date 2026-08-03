@@ -4,6 +4,7 @@ const mockWithScope = vi.fn()
 const mockCaptureException = vi.fn()
 const mockLogTenantError = vi.fn()
 const mockLoggerError = vi.fn()
+const mockLoggerEvidence = vi.fn()
 
 vi.mock('@sentry/nextjs', () => ({
     withScope: mockWithScope,
@@ -15,7 +16,7 @@ vi.mock('@/lib/log-tenant-error', () => ({
 }))
 
 vi.mock('@/lib/logger', () => ({
-    logger: { error: mockLoggerError },
+    logger: { error: mockLoggerError, evidence: mockLoggerEvidence },
 }))
 
 describe('reportError', () => {
@@ -24,6 +25,7 @@ describe('reportError', () => {
         vi.resetModules()
         delete process.env.NEXT_PUBLIC_SENTRY_DSN
         mockLogTenantError.mockResolvedValue(undefined)
+        mockLoggerEvidence.mockResolvedValue(undefined)
         mockWithScope.mockImplementation((callback: (scope: {
             setTag: ReturnType<typeof vi.fn>
             setExtras: ReturnType<typeof vi.fn>
@@ -55,6 +57,14 @@ describe('reportError', () => {
             severity: 'warning',
             details: { tenant_id: 'tenant_123' },
         })
+        expect(mockLoggerEvidence).toHaveBeenCalledWith(expect.objectContaining({
+            trace_id: expect.any(String),
+            tenant_id: 'tenant_123',
+            revision: expect.any(String),
+            operation: 'error.checkout',
+            outcome: 'failure',
+            error_class: 'Error',
+        }))
     })
 
     it('captures configured Sentry errors and still records tenant error evidence', async () => {
@@ -78,5 +88,25 @@ describe('reportError', () => {
             severity: 'critical',
             details: { operation: 'sync' },
         })
+    })
+
+    it('keeps tenant error recording independent from evidence sink failure', async () => {
+        mockLoggerEvidence.mockRejectedValue(new Error('OTLP sink unavailable'))
+        const { reportError } = await import('../report-error')
+
+        await expect(reportError({
+            error: new TypeError('synthetic failure'),
+            source: 'medusa',
+            details: {
+                tenant_id: 'tenant-safe',
+                password: 'must-not-propagate',
+                payload: { raw: true },
+            },
+        })).resolves.toBeUndefined()
+
+        expect(mockLogTenantError).toHaveBeenCalledWith(expect.objectContaining({
+            details: { tenant_id: 'tenant-safe' },
+        }))
+        expect(mockLoggerError).toHaveBeenCalledWith('[reportError] Evidence emission failed')
     })
 })

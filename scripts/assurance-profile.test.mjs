@@ -73,6 +73,16 @@ test('fast selects type checks for each affected package', () => {
   assert.ok(result.tasks.includes('platform-contract-typecheck'))
 })
 
+test('observability contract changes select sink and redaction evidence', () => {
+  const result = resolveProfile(profiles, 'fast', [
+    'apps/storefront/src/lib/observability/evidence-event.ts',
+  ])
+
+  assert.ok(result.tasks.includes('observability-unit'))
+  assert.ok(result.tasks.includes('storefront-lint'))
+  assert.ok(result.tasks.includes('storefront-typecheck'))
+})
+
 test('full profile provides every current release gate exactly once', () => {
   const result = resolveProfile(profiles, 'full', [])
   const capabilities = providedCapabilities(profiles, result.tasks)

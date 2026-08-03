@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLogger } from '../logger'
+import { createInMemoryEvidenceSink } from '../observability/evidence-event'
 
 describe('Structured Logger', () => {
     let consoleSpy: ReturnType<typeof vi.spyOn>
@@ -88,5 +89,27 @@ describe('Structured Logger', () => {
         const parsed = JSON.parse(errorSpy.mock.calls[0][0])
         expect(parsed.level).toBe('error')
         expect(parsed.code).toBe('ERR_001')
+    })
+
+    it('emits normalized evidence with inherited trace and tenant context', async () => {
+        const sink = createInMemoryEvidenceSink()
+        const scoped = createLogger({
+            trace_id: 'trace-logger-test',
+            tenant_id: 'tenant-logger-test',
+        })
+
+        await scoped.evidence({
+            revision: 'revision-test',
+            operation: 'checkout.test',
+            outcome: 'success',
+            duration_ms: 3,
+            error_class: 'none',
+        }, sink)
+
+        expect(sink.events[0]).toMatchObject({
+            trace_id: 'trace-logger-test',
+            tenant_id: 'tenant-logger-test',
+            operation: 'checkout.test',
+        })
     })
 })

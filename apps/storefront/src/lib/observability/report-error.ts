@@ -24,6 +24,26 @@ interface ReportErrorParams {
     details?: Record<string, unknown>
 }
 
+const ALLOWLISTED_DETAIL_KEYS = new Set([
+    'trace_id',
+    'tenant_id',
+    'revision',
+    'operation',
+    'outcome',
+    'duration_ms',
+    'error_class',
+    'request_id',
+])
+
+function allowlistedDetails(details: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(details).filter(([key, value]) =>
+            ALLOWLISTED_DETAIL_KEYS.has(key)
+            && (value === null || ['string', 'number', 'boolean'].includes(typeof value)),
+        ),
+    )
+}
+
 /**
  * Reports an error to both Sentry and the tenant_errors table.
  * Non-blocking — will not throw.
@@ -36,6 +56,16 @@ export async function reportError({
 }: ReportErrorParams): Promise<void> {
     const message = error instanceof Error ? error.message : error
     const errorObj = error instanceof Error ? error : new Error(error)
+    const safeDetails = allowlistedDetails(details)
+    const traceId = typeof safeDetails.trace_id === 'string'
+        ? safeDetails.trace_id
+        : crypto.randomUUID()
+    const tenantId = typeof safeDetails.tenant_id === 'string'
+        ? safeDetails.tenant_id
+        : null
+    const revision = typeof safeDetails.revision === 'string'
+        ? safeDetails.revision
+        : process.env.DEPLOY_SHA || process.env.npm_package_version || 'dev'
 
     // 1. Sentry — if configured and initialized
     try {
@@ -43,7 +73,7 @@ export async function reportError({
             Sentry.withScope((scope) => {
                 scope.setTag('source', source)
                 scope.setTag('severity', severity)
-                scope.setExtras(details)
+                scope.setExtras(safeDetails)
 
                 if (severity === 'critical') {
                     scope.setLevel('fatal')
@@ -61,8 +91,25 @@ export async function reportError({
         logger.error('[reportError] Sentry capture failed')
     }
 
+    try {
+        await logger.evidence({
+            trace_id: traceId,
+            tenant_id: tenantId,
+            revision,
+            operation: `error.${source}`,
+            outcome: 'failure',
+            duration_ms: typeof safeDetails.duration_ms === 'number'
+                ? safeDetails.duration_ms
+                : 0,
+            error_class: errorObj.name,
+            attributes: { severity, source },
+        })
+    } catch {
+        logger.error('[reportError] Evidence emission failed')
+    }
+
     // 2. Supabase tenant_errors table — always (the fallback)
-    await logTenantError({ source, message, severity, details })
+    await logTenantError({ source, message, severity, details: safeDetails })
 }
 
 /**

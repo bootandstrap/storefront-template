@@ -63,6 +63,17 @@
       "critical": true
     },
     {
+      "id": "observability-boundaries",
+      "selectors": [
+        { "prefix": "apps/storefront/src/lib/observability/" },
+        { "exact": "apps/storefront/src/lib/logger.ts" },
+        { "exact": "apps/storefront/src/instrumentation.ts" },
+        { "exact": "apps/medusa/instrumentation.ts" }
+      ],
+      "tasks": ["observability-unit"],
+      "reason": "observability boundaries require normalized schema, redaction, correlation, and sink-isolation evidence"
+    },
+    {
       "id": "compose-definitions",
       "selectors": [
         { "exact": "docker-compose.yml" },

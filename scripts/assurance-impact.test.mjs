@@ -123,6 +123,18 @@ test('maps Compose, manifests, and assurance definitions to their required evide
   assert.equal(assurance.fullProfileDryRun, true)
 })
 
+test('maps observability boundaries to normalized evidence contract tests', () => {
+  const result = selectImpact(impactConfig, [
+    'apps/storefront/src/lib/observability/evidence-event.ts',
+    'apps/storefront/src/instrumentation.ts',
+    'apps/medusa/instrumentation.ts',
+  ], { profiles, policy })
+
+  assert.ok(result.tasks.includes('observability-unit'))
+  assert.ok(result.tasks.includes('storefront-typecheck'))
+  assert.ok(result.tasks.includes('medusa-typecheck'))
+})
+
 test('fails closed when a policy-critical source has no behavioral impact mapping', () => {
   const modifiedPolicy = structuredClone(policy)
   modifiedPolicy.classificationRules.unshift({
