@@ -816,7 +816,8 @@ describe('CI artifact contract', () => {
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CART_STATES'")
-        expect(runner).toContain("env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'")
+        expect(runner).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder'")
+        expect(runner).toContain('return { ...SAFE_ENV_DEFAULTS, ...passthrough }')
     })
 
     it('treats missing reusable product runtime data as unavailable instead of a hard failure for PR-only interactive evidence', () => {
