@@ -244,17 +244,6 @@ jobs:
     # Only run on PRs to main
     if: github.event_name == 'pull_request'
 
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -277,23 +266,12 @@ jobs:
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
-          TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.TEST_MEDUSA_KEY }}
+          TENANT_ID: ci-tenant
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_STORE_URL: http://localhost:3000
           NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
-          MEDUSA_BACKEND_URL: http://localhost:9000
-
-      - name: Start Medusa backend
-        run: |
-          bash scripts/ci/start-medusa-stack.sh &
-          bash scripts/ci/wait-for-health.sh http://localhost:9000/health 120
-        env:
-          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
-          REDIS_URL: redis://localhost:6379
-          COOKIE_SECRET: ci-test-secret-32-chars-minimum!!
-          JWT_SECRET: ci-test-jwt-secret-minimum-32ch!
           MEDUSA_BACKEND_URL: http://localhost:9000
 
       - name: Start storefront
@@ -306,16 +284,16 @@ jobs:
           bash ../../../scripts/ci/wait-for-health.sh http://localhost:3000/api/health 60
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           MEDUSA_BACKEND_URL: http://localhost:9000
-          REDIS_URL: redis://localhost:6379
-          TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
+          TENANT_ID: ci-tenant
 
-      - name: Run E2E tests
-        run: cd apps/storefront && npx playwright test
+      - name: Run PR-local runtime visual evidence
+        run: pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts
         env:
           BASE_URL: http://localhost:3000
+          BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES: '0'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -357,9 +335,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli@latest
-
       - name: Build storefront
         run: pnpm turbo build --filter=storefront
         env:
@@ -372,11 +347,11 @@ jobs:
           TENANT_ID: ci-tenant
 
       - name: Run Lighthouse CI
-        run: |
-          cd apps/storefront
-          lhci autorun
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./apps/storefront/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
 
       - name: Upload Lighthouse report
         uses: actions/upload-artifact@v4

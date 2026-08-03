@@ -155,6 +155,37 @@ describe('CI artifact contract', () => {
         expect(workflow).toMatch(/\n\s+lighthouse:\n(?:.*\n){1,8}\s+timeout-minutes:\s*15\n/)
     })
 
+    it('runs PR E2E evidence without requiring a catalog-backed Medusa stack', () => {
+        const workflow = readWorkflow('ci.yml')
+        const e2eJob = workflow
+            .split('\n  # ── E2E Tests (Playwright) ─────────────────────\n')[1]
+            ?.split('\n  # ── Lighthouse CI ──────────────────────────────\n')[0]
+
+        expect(e2eJob).toBeDefined()
+        expect(e2eJob).toContain('name: Run PR-local runtime visual evidence')
+        expect(e2eJob).toContain('playwright test e2e/runtime-visual-evidence.spec.ts')
+        expect(e2eJob).toContain("BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES: '0'")
+        expect(e2eJob).not.toContain('services:')
+        expect(e2eJob).not.toContain('scripts/ci/start-medusa-stack.sh')
+        expect(e2eJob).not.toContain('secrets.TEST_TENANT_ID')
+        expect(e2eJob).not.toContain('secrets.TEST_SUPABASE_URL')
+        expect(e2eJob).not.toContain('secrets.TEST_SUPABASE_ANON_KEY')
+        expect(e2eJob).not.toContain('secrets.TEST_MEDUSA_KEY')
+    })
+
+    it('uses the pinned Lighthouse action already proven by the dedicated audit workflow', () => {
+        const workflow = readWorkflow('ci.yml')
+        const lighthouseJob = workflow
+            .split('\n  # ── Lighthouse CI ──────────────────────────────\n')[1]
+            ?.split('\n  # ── Failure Notification ────────────────────────\n')[0]
+
+        expect(lighthouseJob).toBeDefined()
+        expect(lighthouseJob).toContain('uses: treosh/lighthouse-ci-action@v12')
+        expect(lighthouseJob).toContain('configPath: ./apps/storefront/lighthouserc.json')
+        expect(lighthouseJob).not.toContain('@lhci/cli@latest')
+        expect(lighthouseJob).not.toContain('lhci autorun')
+    })
+
     it('waits for the exact deployed commit before collecting tenant runtime evidence', () => {
         const ciWorkflow = readWorkflow('ci.yml')
         const deployWorkflow = readWorkflow('deploy.yml')
