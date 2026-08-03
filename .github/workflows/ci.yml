@@ -106,7 +106,7 @@ jobs:
           repository: bootandstrap/bootandstrap-web
           token: ${{ secrets.BSWEB_READ_TOKEN || github.token }}
           ssh-key: ${{ secrets.BSWEB_READ_KEY }}
-          path: BOOTANDSTRAP_WEB
+          path: .artifacts/ci/BOOTANDSTRAP_WEB
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -128,7 +128,7 @@ jobs:
       - name: Run sealed storefront assurance
         run: node scripts/run-storefront-assurance.mjs
         env:
-          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
+          BSWEB_ROOT: ${{ github.workspace }}/.artifacts/ci/BOOTANDSTRAP_WEB
           TENANT_ID: ci-test-tenant
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
 
@@ -155,7 +155,7 @@ jobs:
           BNS_RUNTIME_REQUIRE_CHECKOUT_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
           BNS_RUNTIME_REQUIRE_CART_STATES: ${{ github.event_name == 'push' && '1' || '0' }}
           BNS_360_BASE_URL: ${{ github.event_name == 'push' && format('https://{0}', vars.STORE_DOMAIN) || 'http://localhost:3000' }}
-          BSWEB_ROOT: ${{ github.workspace }}/BOOTANDSTRAP_WEB
+          BSWEB_ROOT: ${{ github.workspace }}/.artifacts/ci/BOOTANDSTRAP_WEB
           TENANT_ID: ${{ vars.TENANT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

@@ -252,4 +252,14 @@ test('tenant CI produces sealed storefront evidence before consuming it', () => 
   assert.notEqual(producer, -1, 'CI must run the storefront assurance producer')
   assert.notEqual(consumer, -1, 'CI must run the risk-domain evidence consumer')
   assert.ok(producer < consumer, 'CI must produce sealed storefront evidence before consuming it')
+  assert.match(
+    workflow,
+    /path: \.artifacts\/ci\/BOOTANDSTRAP_WEB/,
+    'CI must keep the canonical BSWEB checkout outside the tenant worktree identity',
+  )
+  assert.match(
+    workflow,
+    /BSWEB_ROOT: \$\{\{ github\.workspace \}\}\/\.artifacts\/ci\/BOOTANDSTRAP_WEB/,
+    'CI must consume the ignored canonical BSWEB checkout',
+  )
 })
