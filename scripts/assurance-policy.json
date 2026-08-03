@@ -132,8 +132,8 @@
         { "prefix": "apps/storefront/src/lib/pos/" }
       ],
       "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary", "postgres-integration"],
-      "ratchetThresholds": { "lines": 22.98, "functions": 30.04, "branches": 21.69 },
-      "maxZeroCoverageFiles": 13,
+      "ratchetThresholds": { "lines": 27.53, "functions": 33.57, "branches": 25.16 },
+      "maxZeroCoverageFiles": 10,
       "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
     },
     {
@@ -148,7 +148,7 @@
     }
   ],
   "globalRatchet": {
-    "baseline": { "lines": 39.59, "functions": 40.32, "branches": 32.27 },
+    "baseline": { "lines": 40.66, "functions": 41.17, "branches": 32.92 },
     "milestone": { "lines": 70, "functions": 70, "branches": 70 },
     "maximumRegression": 0
   }
