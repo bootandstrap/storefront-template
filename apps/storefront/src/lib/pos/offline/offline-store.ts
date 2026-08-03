@@ -34,6 +34,12 @@ export interface CachedVariant {
 export interface PendingSale {
     id?: number                     // IDB auto-increment
     offline_ref: string             // UUID — idempotency key
+    tenant_id: string
+    operation_id: string
+    client_id: string
+    client_sequence: number
+    known_server_sequence: number
+    sync_state: 'queued' | 'retryable_error' | 'rejected' | 'conflicted'
     items: { variant_id: string; quantity: number; unit_price: number }[]
     payment_method: string
     customer_id?: string
@@ -234,6 +240,48 @@ export async function getLastSyncTime(): Promise<number | null> {
 export async function setLastSyncTime(ts: number): Promise<void> {
     const { store, tx: transaction } = await tx(STORE_META, 'readwrite')
     store.put({ key: 'last_sync', value: ts })
+    await txComplete(transaction)
+}
+
+async function getMetadata<T>(key: string): Promise<T | undefined> {
+    const { store } = await tx(STORE_META)
+    const result = await promisify(store.get(key))
+    return result?.value as T | undefined
+}
+
+export async function getOrCreatePOSClientId(): Promise<string> {
+    const existing = await getMetadata<string>('pos_client_id')
+    if (existing) return existing
+    if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') {
+        throw new Error('POS sync unavailable: secure client identity generator is unavailable')
+    }
+
+    const clientId = crypto.randomUUID()
+    const { store, tx: transaction } = await tx(STORE_META, 'readwrite')
+    store.put({ key: 'pos_client_id', value: clientId })
+    await txComplete(transaction)
+    return clientId
+}
+
+export async function nextPOSClientSequence(): Promise<number> {
+    const { store, tx: transaction } = await tx(STORE_META, 'readwrite')
+    const current = await promisify(store.get('pos_client_sequence'))
+    const next = (current?.value ?? 0) + 1
+    store.put({ key: 'pos_client_sequence', value: next })
+    await txComplete(transaction)
+    return next
+}
+
+export async function getPOSServerSequence(): Promise<number> {
+    return (await getMetadata<number>('pos_server_sequence')) ?? 0
+}
+
+export async function setPOSServerSequence(sequence: number): Promise<void> {
+    if (!Number.isInteger(sequence) || sequence < 0) {
+        throw new Error('POS server sequence must be a non-negative integer')
+    }
+    const { store, tx: transaction } = await tx(STORE_META, 'readwrite')
+    store.put({ key: 'pos_server_sequence', value: sequence })
     await txComplete(transaction)
 }
 

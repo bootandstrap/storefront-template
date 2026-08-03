@@ -168,6 +168,14 @@
       "inputs": ["apps/storefront/src/lib/pos/offline", "apps/storefront/vitest.config.ts"],
       "outputs": [],
       "environmentKeys": ["CI"]
+    },
+    {
+      "id": "pos-mutation-canary",
+      "dependencies": ["pos-conformance"],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/pos/offline/__tests__/pos-sync-mutation-canary.test.ts"],
+      "inputs": ["apps/storefront/src/lib/pos/offline", "apps/storefront/vitest.config.ts"],
+      "outputs": [],
+      "environmentKeys": ["CI"]
     }
   ]
 }

@@ -14,6 +14,11 @@ export interface InjectedFault {
     effect: FaultEffect
 }
 
+export interface POSSyncServerMutations {
+    acceptDuplicateAsNew?: boolean
+    invertSequenceComparison?: boolean
+}
+
 interface CommittedOperation {
     serverSequence: number
     clientSequence: number
@@ -22,6 +27,7 @@ interface CommittedOperation {
 export class POSSyncFaultTransport implements POSSyncTransport {
     readonly visitedBarriers: Array<{ attempt: number; barrier: FaultBarrier }> = []
     readonly committed = new Map<string, CommittedOperation>()
+    committedCount = 0
     calls = 0
     serverSequence: number
     lastClientSequence: number
@@ -31,6 +37,7 @@ export class POSSyncFaultTransport implements POSSyncTransport {
         initialServerSequence: number,
         initialLastClientSequence: number,
         private readonly faults: InjectedFault[],
+        private readonly mutations: POSSyncServerMutations = {},
     ) {
         this.serverSequence = initialServerSequence
         this.lastClientSequence = initialLastClientSequence
@@ -54,7 +61,7 @@ export class POSSyncFaultTransport implements POSSyncTransport {
         this.crossBarrier(attempt, 'beforeCommit')
 
         const existing = this.committed.get(request.operation.idempotencyKey)
-        if (existing) {
+        if (existing && !this.mutations.acceptDuplicateAsNew) {
             this.crossBarrier(attempt, 'beforeAck')
             return {
                 outcome: 'duplicate',
@@ -63,7 +70,10 @@ export class POSSyncFaultTransport implements POSSyncTransport {
             }
         }
 
-        if (request.operation.clientSequence <= this.lastClientSequence) {
+        const hasSequenceConflict = this.mutations.invertSequenceComparison
+            ? request.operation.clientSequence > this.lastClientSequence
+            : request.operation.clientSequence <= this.lastClientSequence
+        if (hasSequenceConflict && !(existing && this.mutations.acceptDuplicateAsNew)) {
             return {
                 outcome: 'conflict',
                 serverSequence: this.serverSequence,
@@ -72,6 +82,7 @@ export class POSSyncFaultTransport implements POSSyncTransport {
         }
 
         this.serverSequence += 1
+        this.committedCount += 1
         this.lastClientSequence = request.operation.clientSequence
         this.committed.set(request.operation.idempotencyKey, {
             serverSequence: this.serverSequence,

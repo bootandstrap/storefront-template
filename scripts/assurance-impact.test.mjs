@@ -80,6 +80,8 @@ test('maps critical POS, security, and backup changes to scoped behavioral and s
 
   for (const taskId of [
     'pos-unit',
+    'pos-conformance',
+    'pos-mutation-canary',
     'security-unit',
     'backup-unit',
     'storefront-lint',

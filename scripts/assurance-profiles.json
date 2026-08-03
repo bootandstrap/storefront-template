@@ -25,7 +25,8 @@
     { "id": "risk-domain-evidence", "kind": "behavioral" },
     { "id": "medusa-unit", "kind": "behavioral" },
     { "id": "storefront-build", "kind": "build" },
-    { "id": "pos-conformance", "kind": "behavioral" }
+    { "id": "pos-conformance", "kind": "behavioral" },
+    { "id": "pos-mutation-canary", "kind": "behavioral" }
   ],
   "criticalSourceSelectors": [
     { "prefix": "apps/storefront/src/lib/security/" },
@@ -52,7 +53,8 @@
         "full-risk-domain-evidence",
         "medusa-unit",
         "storefront-build",
-        "pos-conformance"
+        "pos-conformance",
+        "pos-mutation-canary"
       ],
       "selectorRules": [
         {
@@ -114,7 +116,7 @@
         {
           "id": "pos-critical",
           "selector": { "prefix": "apps/storefront/src/lib/pos/" },
-          "tasks": ["pos-unit"],
+          "tasks": ["pos-unit", "pos-conformance", "pos-mutation-canary"],
           "critical": true
         },
         {
@@ -140,7 +142,8 @@
         "medusa-unit",
         "storefront-typecheck",
         "storefront-build",
-        "pos-conformance"
+        "pos-conformance",
+        "pos-mutation-canary"
       ],
       "deferred": [],
       "selectorRules": []

@@ -110,7 +110,7 @@ export default function POSClient({
     // ═══════════════════════════════════════════════════════════════════════
 
     const { playBeep, playTick, playCashRegister, playError } = usePOSSounds()
-    const { isOnline, syncStatus, pendingCount, lastSyncTime, offlineInventoryOffsets, syncNow, queueOfflineSale, cachedProducts } = useOfflineSync()
+    const { isOnline, syncStatus, pendingCount, lastSyncTime, offlineInventoryOffsets, syncNow, queueOfflineSale, cachedProducts } = useOfflineSync(tenantId)
     const { status: printerStatus, printReceipt: thermalPrintReceipt, printRefund: thermalPrintRefund } = usePrinterConnection()
 
     // ── Multi-device sync ──

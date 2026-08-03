@@ -14,6 +14,7 @@ export type POSSyncOutcome =
     | 'tenant_mismatch'
     | 'auth_lost'
     | 'timeout'
+    | 'unavailable'
 
 export interface POSSyncOperation {
     tenantId: string
@@ -49,9 +50,16 @@ export interface POSSyncResult {
     retryClassification: POSSyncRetryClassification
 }
 
+export interface POSSyncClientDecisions {
+    tenantMatches(leftTenantId: string, rightTenantId: string): boolean
+    classifyTransportError(
+        error: POSSyncTransportError,
+    ): Exclude<POSSyncRetryClassification, 'none'>
+}
+
 export class POSSyncTransportError extends Error {
     constructor(
-        readonly code: 'auth_lost' | 'timeout',
+        readonly code: 'auth_lost' | 'timeout' | 'unavailable',
         readonly classification: Exclude<POSSyncRetryClassification, 'none'>,
         readonly barrier?: 'beforeCommit' | 'afterCommit' | 'beforeAck',
     ) {
@@ -104,58 +112,75 @@ export function retryDelayMs(attempt: number): number {
     return Math.min(250 * (2 ** (attempt - 1)), 8000)
 }
 
-export async function synchronizePOSOperation(
-    input: {
-        operation: POSSyncOperation
-        expectedTenantId: string
-        knownServerSequence: number
-    },
-    transport: POSSyncTransport,
-): Promise<POSSyncResult> {
-    const operation = createPOSSyncOperation(input.operation)
-    requireNonEmpty(input.expectedTenantId, 'expectedTenantId')
-    if (!Number.isInteger(input.knownServerSequence) || input.knownServerSequence < 0) {
-        throw new Error('knownServerSequence must be a non-negative integer')
-    }
-    if (operation.tenantId !== input.expectedTenantId) {
-        return {
-            state: 'rejected',
-            outcome: 'tenant_mismatch',
-            serverSequence: input.knownServerSequence,
-            retryClassification: 'permanent',
-        }
+const defaultClientDecisions: POSSyncClientDecisions = {
+    tenantMatches: (leftTenantId, rightTenantId) => leftTenantId === rightTenantId,
+    classifyTransportError: (error) => error.classification,
+}
+
+export function createPOSSyncSynchronizer(
+    overrides: Partial<POSSyncClientDecisions> = {},
+) {
+    const decisions: POSSyncClientDecisions = {
+        ...defaultClientDecisions,
+        ...overrides,
     }
 
-    try {
-        const response = await transport.commit({
-            operation,
-            knownServerSequence: input.knownServerSequence,
-        })
-        if (response.outcome === 'conflict') {
+    return async function synchronize(
+        input: {
+            operation: POSSyncOperation
+            expectedTenantId: string
+            knownServerSequence: number
+        },
+        transport: POSSyncTransport,
+    ): Promise<POSSyncResult> {
+        const operation = createPOSSyncOperation(input.operation)
+        requireNonEmpty(input.expectedTenantId, 'expectedTenantId')
+        if (!Number.isInteger(input.knownServerSequence) || input.knownServerSequence < 0) {
+            throw new Error('knownServerSequence must be a non-negative integer')
+        }
+        if (!decisions.tenantMatches(operation.tenantId, input.expectedTenantId)) {
             return {
-                state: 'conflicted',
-                outcome: 'conflict',
-                serverSequence: response.serverSequence,
-                lastClientSequence: response.lastClientSequence,
+                state: 'rejected',
+                outcome: 'tenant_mismatch',
+                serverSequence: input.knownServerSequence,
                 retryClassification: 'permanent',
             }
         }
-        return {
-            state: 'acknowledged',
-            outcome: response.outcome,
-            serverSequence: response.serverSequence,
-            lastClientSequence: response.lastClientSequence,
-            retryClassification: 'none',
-        }
-    } catch (error) {
-        if (error instanceof POSSyncTransportError) {
-            return {
-                state: error.classification === 'retryable' ? 'retryable_error' : 'rejected',
-                outcome: error.code,
-                serverSequence: input.knownServerSequence,
-                retryClassification: error.classification,
+
+        try {
+            const response = await transport.commit({
+                operation,
+                knownServerSequence: input.knownServerSequence,
+            })
+            if (response.outcome === 'conflict') {
+                return {
+                    state: 'conflicted',
+                    outcome: 'conflict',
+                    serverSequence: response.serverSequence,
+                    lastClientSequence: response.lastClientSequence,
+                    retryClassification: 'permanent',
+                }
             }
+            return {
+                state: 'acknowledged',
+                outcome: response.outcome,
+                serverSequence: response.serverSequence,
+                lastClientSequence: response.lastClientSequence,
+                retryClassification: 'none',
+            }
+        } catch (error) {
+            if (error instanceof POSSyncTransportError) {
+                const classification = decisions.classifyTransportError(error)
+                return {
+                    state: classification === 'retryable' ? 'retryable_error' : 'rejected',
+                    outcome: error.code,
+                    serverSequence: input.knownServerSequence,
+                    retryClassification: classification,
+                }
+            }
+            throw error
         }
-        throw error
     }
 }
+
+export const synchronizePOSOperation = createPOSSyncSynchronizer()

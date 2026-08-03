@@ -55,6 +55,8 @@ test('critical POS changes select POS behavioral evidence', () => {
   ])
 
   assert.ok(result.tasks.includes('pos-unit'))
+  assert.ok(result.tasks.includes('pos-conformance'))
+  assert.ok(result.tasks.includes('pos-mutation-canary'))
   assert.ok(result.tasks.includes('storefront-lint'))
   assert.ok(result.tasks.includes('storefront-typecheck'))
 })
@@ -79,6 +81,7 @@ test('full profile provides every current release gate exactly once', () => {
   assert.deepEqual(duplicates(capabilities), [])
   assert.ok(CURRENT_RELEASE_GATES.every((gate) => capabilities.includes(gate)))
   assert.ok(result.tasks.includes('pos-conformance'))
+  assert.ok(result.tasks.includes('pos-mutation-canary'))
   assert.equal(result.claimBoundary, 'functional_system_without_commercial_activation')
 })
 
