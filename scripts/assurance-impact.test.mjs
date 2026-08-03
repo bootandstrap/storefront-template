@@ -97,6 +97,17 @@ test('maps critical POS, security, and backup changes to scoped behavioral and s
   assert.ok(backupTask.command.includes('src/lib/__tests__/delete-tenant-rpc-contract.test.ts'))
 })
 
+test('maps the POS sale action to the task that executes its behavioral test', () => {
+  const changedPath = 'apps/storefront/src/app/[lang]/(panel)/panel/pos/actions.ts'
+  const result = selectImpact(impactConfig, [changedPath], { profiles, policy })
+
+  for (const taskId of ['pos-unit', 'pos-conformance', 'pos-mutation-canary']) {
+    assert.ok(result.tasks.includes(taskId), taskId)
+  }
+  const posTask = taskConfig.tasks.find((task) => task.id === 'pos-unit')
+  assert.ok(posTask.command.includes('src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts'))
+})
+
 test('maps Compose, manifests, and assurance definitions to their required evidence', () => {
   const compose = selectImpact(impactConfig, ['scripts/templates/docker-compose.client.yml'], {
     profiles,
@@ -128,9 +139,11 @@ test('maps every assurance wrapper and contract test to assurance contracts and 
     'scripts/run-storefront-assurance.mjs',
     'scripts/run-compose-assurance.mjs',
     'scripts/run-risk-domain-evidence.mjs',
+    'scripts/run-medusa-postgres-assurance.mjs',
     'scripts/storefront-assurance.test.mjs',
     'scripts/compose-assurance.test.mjs',
     'scripts/coverage-assurance.test.mjs',
+    'scripts/medusa-postgres-assurance.test.mjs',
   ]) {
     const result = selectImpact(impactConfig, [changedPath], { profiles, policy })
     assert.ok(result.tasks.includes('assurance-contracts'), changedPath)

@@ -133,7 +133,8 @@
     {
       "id": "pos-simulator",
       "sourceSelectors": [
-        { "prefix": "apps/storefront/src/lib/pos/" }
+        { "prefix": "apps/storefront/src/lib/pos/" },
+        { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" }
       ],
       "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary", "postgres-integration"],
       "ratchetThresholds": { "lines": 27.53, "functions": 33.57, "branches": 25.16 },

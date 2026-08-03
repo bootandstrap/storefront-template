@@ -24,6 +24,7 @@
     { "id": "risk-test-matrix", "kind": "static" },
     { "id": "risk-domain-evidence", "kind": "behavioral" },
     { "id": "medusa-unit", "kind": "behavioral" },
+    { "id": "medusa-pos-postgres", "kind": "behavioral" },
     { "id": "storefront-build", "kind": "build" },
     { "id": "pos-conformance", "kind": "behavioral" },
     { "id": "pos-mutation-canary", "kind": "behavioral" },
@@ -37,6 +38,7 @@
     { "exact": "apps/storefront/src/lib/order-limits.ts" },
     { "exact": "apps/storefront/src/lib/safe-action.ts" },
     { "prefix": "apps/storefront/src/lib/pos/" },
+    { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" },
     { "prefix": "apps/storefront/src/lib/backup/" }
   ],
   "profiles": {
@@ -53,6 +55,7 @@
         "full-storefront-assurance",
         "full-risk-domain-evidence",
         "medusa-unit",
+        "medusa-pos-postgres",
         "storefront-build",
         "pos-conformance",
         "pos-mutation-canary"
@@ -121,6 +124,12 @@
           "critical": true
         },
         {
+          "id": "pos-actions-critical",
+          "selector": { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" },
+          "tasks": ["pos-unit", "pos-conformance", "pos-mutation-canary"],
+          "critical": true
+        },
+        {
           "id": "backup-critical",
           "selector": { "prefix": "apps/storefront/src/lib/backup/" },
           "tasks": ["backup-unit"],
@@ -161,6 +170,7 @@
         "risk-test-matrix",
         "risk-domain-evidence",
         "medusa-unit",
+        "medusa-pos-postgres",
         "storefront-typecheck",
         "storefront-build",
         "pos-conformance",

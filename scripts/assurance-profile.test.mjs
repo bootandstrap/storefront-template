@@ -34,6 +34,7 @@ test('fast never claims full functional assurance', () => {
 
   assert.equal(result.claimBoundary, 'changed_scope_feedback_only')
   assert.ok(result.deferred.includes('full-storefront-assurance'))
+  assert.ok(result.deferred.includes('medusa-pos-postgres'))
   assert.notEqual(result.claimBoundary, 'functional_system_without_commercial_activation')
 })
 
@@ -59,6 +60,16 @@ test('critical POS changes select POS behavioral evidence', () => {
   assert.ok(result.tasks.includes('pos-mutation-canary'))
   assert.ok(result.tasks.includes('storefront-lint'))
   assert.ok(result.tasks.includes('storefront-typecheck'))
+})
+
+test('critical POS sale actions select their scoped behavioral evidence', () => {
+  const result = resolveProfile(profiles, 'fast', [
+    'apps/storefront/src/app/[lang]/(panel)/panel/pos/actions.ts',
+  ])
+
+  assert.ok(result.tasks.includes('pos-unit'))
+  assert.ok(result.tasks.includes('pos-conformance'))
+  assert.ok(result.tasks.includes('pos-mutation-canary'))
 })
 
 test('fast selects type checks for each affected package', () => {
@@ -92,6 +103,7 @@ test('full profile provides every current release gate exactly once', () => {
   assert.ok(CURRENT_RELEASE_GATES.every((gate) => capabilities.includes(gate)))
   assert.ok(result.tasks.includes('pos-conformance'))
   assert.ok(result.tasks.includes('pos-mutation-canary'))
+  assert.ok(result.tasks.includes('medusa-pos-postgres'))
   assert.equal(result.claimBoundary, 'functional_system_without_commercial_activation')
 })
 

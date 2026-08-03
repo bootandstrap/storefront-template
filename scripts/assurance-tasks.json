@@ -100,8 +100,8 @@
     {
       "id": "pos-unit",
       "dependencies": [],
-      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/pos"],
-      "inputs": ["apps/storefront/src/lib/pos", "apps/storefront/vitest.config.ts"],
+      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/pos", "src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts"],
+      "inputs": ["apps/storefront/src/lib/pos", "apps/storefront/src/app/[lang]/(panel)/panel/pos/actions.ts", "apps/storefront/src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts", "apps/storefront/vitest.config.ts"],
       "outputs": [],
       "environmentKeys": ["CI"]
     },
@@ -116,8 +116,8 @@
     {
       "id": "assurance-contracts",
       "dependencies": [],
-      "command": ["node", "--test", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs"],
-      "inputs": ["scripts/assurance-profiles.json", "scripts/assurance-tasks.json", "scripts/assurance-impact.json", "scripts/assurance-policy.json", "scripts/lib/assurance-profile.mjs", "scripts/lib/assurance-dag.mjs", "scripts/lib/assurance-identity.mjs", "scripts/lib/assurance-impact.mjs", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs"],
+      "command": ["node", "--test", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/medusa-postgres-assurance.test.mjs"],
+      "inputs": ["scripts/assurance-profiles.json", "scripts/assurance-tasks.json", "scripts/assurance-impact.json", "scripts/assurance-policy.json", "scripts/lib/assurance-profile.mjs", "scripts/lib/assurance-dag.mjs", "scripts/lib/assurance-identity.mjs", "scripts/lib/assurance-impact.mjs", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/run-medusa-postgres-assurance.mjs", "scripts/medusa-postgres-assurance.test.mjs"],
       "outputs": [],
       "environmentKeys": ["CI"]
     },
@@ -152,6 +152,14 @@
       "inputs": ["apps/medusa/src", "apps/medusa/jest.config.js", "apps/medusa/package.json", "pnpm-lock.yaml"],
       "outputs": [],
       "environmentKeys": ["CI"]
+    },
+    {
+      "id": "medusa-pos-postgres",
+      "dependencies": [],
+      "command": ["node", "scripts/run-medusa-postgres-assurance.mjs"],
+      "inputs": ["scripts/run-medusa-postgres-assurance.mjs", "apps/medusa/src/modules/pos", "apps/medusa/src/api/admin/pos", "apps/medusa/jest.config.js", "apps/medusa/package.json", "pnpm-lock.yaml"],
+      "outputs": [],
+      "environmentKeys": ["CI", "DOCKER_HOST", "PATH"]
     },
     {
       "id": "storefront-build",
