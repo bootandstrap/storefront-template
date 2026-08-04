@@ -201,5 +201,21 @@ describe('Security Posture — Enterprise Invariants', () => {
             expect(() => reportDegradedMode('tenant-4', 'test')).not.toThrow()
             process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey
         })
+
+        it('swallows tenant error delivery failures after emitting the local alert', async () => {
+            const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const originalAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            const fetchMock = vi.fn().mockRejectedValue(new Error('local delivery unavailable'))
+            vi.stubGlobal('fetch', fetchMock)
+            process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://local.invalid'
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'local-placeholder'
+
+            expect(() => reportDegradedMode('tenant-5', 'test')).not.toThrow()
+            await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+            vi.unstubAllGlobals()
+            process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey
+        })
     })
 })

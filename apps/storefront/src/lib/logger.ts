@@ -12,6 +12,12 @@
  *   const result = await logger.timed('fetch-config', fetchConfig)
  */
 
+import {
+    emitEvidence,
+    type EvidenceEventInput,
+    type EvidenceSink,
+} from './observability/evidence-event'
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
@@ -29,6 +35,17 @@ interface LogEntry {
 
 const SERVICE_NAME = 'storefront'
 const SERVICE_VERSION = process.env.npm_package_version || process.env.DEPLOY_SHA || 'dev'
+
+type ScopedEvidenceInput = Omit<EvidenceEventInput, 'trace_id' | 'tenant_id'> & {
+    trace_id?: string
+    tenant_id?: string | null
+}
+
+const consoleEvidenceSink: EvidenceSink = {
+    emit(event) {
+        console.log(JSON.stringify(event))
+    },
+}
 
 function formatEntry(
     level: LogLevel,
@@ -79,6 +96,14 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
 
         error(message: string, data?: unknown) {
             console.error(formatEntry('error', message, normalizeData(data), context))
+        },
+
+        evidence(input: ScopedEvidenceInput, sink: EvidenceSink = consoleEvidenceSink) {
+            return emitEvidence({
+                ...input,
+                trace_id: input.trace_id ?? context.trace_id ?? '',
+                tenant_id: input.tenant_id ?? context.tenant_id ?? null,
+            }, sink)
         },
 
         /**

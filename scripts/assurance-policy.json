@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "policyId": "bootandstrap.local-assurance/v1",
+  "claimBoundary": "functional_system_without_commercial_activation",
+  "claimBoundaries": {
+    "fast": "changed_scope_feedback_only",
+    "full": "functional_system_without_commercial_activation"
+  },
+  "sourceUniverse": {
+    "roots": [
+      "apps/storefront/src/lib"
+    ],
+    "extensions": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclusions": [
+      {
+        "selector": { "contains": "/__tests__/" },
+        "reason": "test source is evidence, not production source",
+        "owner": "release-engineering"
+      },
+      {
+        "selector": { "contains": "/__mocks__/" },
+        "reason": "test-only replacement modules",
+        "owner": "release-engineering"
+      },
+      {
+        "selector": { "suffix": ".d.ts" },
+        "reason": "type declarations have no executable runtime",
+        "owner": "storefront-runtime"
+      },
+      {
+        "selector": { "exact": "apps/storefront/src/lib/supabase/database.types.ts" },
+        "reason": "generated type-only Supabase surface; coherence is contract-tested",
+        "owner": "schema-governance"
+      }
+    ]
+  },
+  "classificationRules": [
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/security/" },
+      "domain": "security-auth-tenant-isolation",
+      "severity": "critical",
+      "owner": "storefront-security"
+    },
+    {
+      "selector": { "exact": "apps/storefront/src/lib/panel-auth.ts" },
+      "domain": "security-auth-tenant-isolation",
+      "severity": "critical",
+      "owner": "storefront-security"
+    },
+    {
+      "selector": { "exact": "apps/storefront/src/lib/panel-guard.ts" },
+      "domain": "security-auth-tenant-isolation",
+      "severity": "critical",
+      "owner": "storefront-security"
+    },
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/pos/" },
+      "domain": "pos-simulator",
+      "severity": "critical",
+      "owner": "storefront-pos"
+    },
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/backup/" },
+      "domain": "provisioning-cleanup-governance",
+      "severity": "critical",
+      "owner": "storefront-recovery"
+    },
+    {
+      "selector": { "exact": "apps/storefront/src/lib/payment-methods.ts" },
+      "domain": "checkout-payment-simulators",
+      "severity": "critical",
+      "owner": "storefront-checkout"
+    },
+    {
+      "selector": { "exact": "apps/storefront/src/lib/order-limits.ts" },
+      "domain": "checkout-payment-simulators",
+      "severity": "critical",
+      "owner": "storefront-checkout"
+    },
+    {
+      "selector": { "exact": "apps/storefront/src/lib/safe-action.ts" },
+      "domain": "checkout-payment-simulators",
+      "severity": "critical",
+      "owner": "storefront-checkout"
+    },
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/bns-360/" },
+      "domain": "module-runtime-primary-journeys",
+      "severity": "high",
+      "owner": "functional-certification"
+    },
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/medusa/" },
+      "domain": "medusa-runtime",
+      "severity": "high",
+      "owner": "storefront-medusa"
+    },
+    {
+      "selector": { "prefix": "apps/storefront/src/lib/" },
+      "domain": "storefront-runtime-long-tail",
+      "severity": "medium",
+      "owner": "storefront-runtime"
+    }
+  ],
+  "criticalDomains": [
+    {
+      "id": "security-auth-tenant-isolation",
+      "sourceSelectors": [
+        { "prefix": "apps/storefront/src/lib/security/" },
+        { "exact": "apps/storefront/src/lib/panel-auth.ts" },
+        { "exact": "apps/storefront/src/lib/panel-guard.ts" }
+      ],
+      "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary"],
+      "ratchetThresholds": { "lines": 56.05, "functions": 55, "branches": 51.28 },
+      "maxZeroCoverageFiles": 0,
+      "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
+    },
+    {
+      "id": "checkout-payment-simulators",
+      "sourceSelectors": [
+        { "exact": "apps/storefront/src/lib/payment-methods.ts" },
+        { "exact": "apps/storefront/src/lib/order-limits.ts" },
+        { "exact": "apps/storefront/src/lib/safe-action.ts" }
+      ],
+      "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary"],
+      "ratchetThresholds": { "lines": 97.73, "functions": 100, "branches": 86.36 },
+      "maxZeroCoverageFiles": 0,
+      "targetThresholds": { "lines": 95, "functions": 95, "branches": 90 }
+    },
+    {
+      "id": "pos-simulator",
+      "sourceSelectors": [
+        { "prefix": "apps/storefront/src/lib/pos/" },
+        { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" }
+      ],
+      "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary", "postgres-integration"],
+      "ratchetThresholds": { "lines": 27.53, "functions": 33.57, "branches": 25.16 },
+      "maxZeroCoverageFiles": 10,
+      "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
+    },
+    {
+      "id": "provisioning-cleanup-governance",
+      "sourceSelectors": [
+        { "prefix": "apps/storefront/src/lib/backup/" }
+      ],
+      "assuranceModes": ["behavioral-tests", "coverage", "mutation-canary", "cleanup-residue"],
+      "ratchetThresholds": { "lines": 97.01, "functions": 100, "branches": 69.83 },
+      "maxZeroCoverageFiles": 0,
+      "targetThresholds": { "lines": 90, "functions": 90, "branches": 85 }
+    }
+  ],
+  "globalRatchet": {
+    "baseline": { "lines": 40.66, "functions": 41.17, "branches": 32.92 },
+    "milestone": { "lines": 70, "functions": 70, "branches": 70 },
+    "maximumRegression": 0
+  }
+}

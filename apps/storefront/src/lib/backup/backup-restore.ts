@@ -24,11 +24,70 @@ import 'server-only'
 
 import { gunzip } from 'zlib'
 import { promisify } from 'util'
+import { z } from 'zod'
 import type { TenantBackup, BackupProduct, BackupCategory } from './backup-types'
 import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { logger } from '@/lib/logger'
 
 const gunzipAsync = promisify(gunzip)
+
+const restoreBackupSchema = z.object({
+    version: z.literal('1.0'),
+    tenant_id: z.string().min(1),
+    tenant_slug: z.string().min(1),
+    created_at: z.string().min(1),
+    type: z.enum(['full', 'incremental']),
+    data: z.object({
+        categories: z.array(z.object({
+            id: z.string(),
+            name: z.string(),
+            handle: z.string(),
+            description: z.string().nullable(),
+            parent_category_id: z.string().nullable(),
+        })),
+        products: z.array(z.object({
+            id: z.string(),
+            title: z.string(),
+            handle: z.string(),
+            description: z.string().nullable(),
+            status: z.string(),
+            thumbnail: z.string().nullable(),
+            images: z.array(z.object({ url: z.string() })),
+            categories: z.array(z.object({ id: z.string(), name: z.string() })),
+            variants: z.array(z.object({
+                id: z.string(),
+                title: z.string(),
+                sku: z.string().nullable(),
+                prices: z.array(z.object({ amount: z.number(), currency_code: z.string() })),
+                manage_inventory: z.boolean(),
+                inventory_quantity: z.number().nullable(),
+            })),
+            metadata: z.record(z.string(), z.unknown()).nullable(),
+            created_at: z.string(),
+            updated_at: z.string(),
+        })),
+        orders: z.array(z.unknown()),
+        customers: z.array(z.unknown()),
+        promotions: z.array(z.unknown()),
+        inventory: z.array(z.unknown()),
+        governance: z.object({
+            config: z.record(z.string(), z.unknown()),
+            feature_flags: z.record(z.string(), z.boolean()),
+            plan_limits: z.record(z.string(), z.number()),
+        }),
+    }),
+    stats: z.object({
+        products_count: z.number(),
+        orders_count: z.number(),
+        customers_count: z.number(),
+        categories_count: z.number(),
+        promotions_count: z.number(),
+        inventory_count: z.number(),
+        total_size_bytes: z.number(),
+        duration_ms: z.number(),
+    }),
+    checksums: z.record(z.string(), z.string()),
+})
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,15 +138,24 @@ export async function downloadBackup(backupKey: string): Promise<TenantBackup | 
             jsonStr = buffer.toString('utf-8')
         }
 
-        const backup = JSON.parse(jsonStr) as TenantBackup
+        const parsed = JSON.parse(jsonStr) as unknown
 
         // Validate version
-        if (backup.version !== '1.0') {
-            logger.error('[backup-restore] Unsupported backup version:', backup.version)
+        if (!parsed || typeof parsed !== 'object' || !('version' in parsed) || parsed.version !== '1.0') {
+            const version = parsed && typeof parsed === 'object' && 'version' in parsed
+                ? parsed.version
+                : undefined
+            logger.error('[backup-restore] Unsupported backup version:', version)
             return null
         }
 
-        return backup
+        const validation = restoreBackupSchema.safeParse(parsed)
+        if (!validation.success) {
+            logger.error('[backup-restore] Invalid backup structure:', validation.error.message)
+            return null
+        }
+
+        return validation.data as TenantBackup
     } catch (err) {
         logger.error('[backup-restore] Parse error:', err)
         return null

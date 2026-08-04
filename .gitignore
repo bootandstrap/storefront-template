@@ -81,3 +81,6 @@ secrets/
 
 # Generated email previews (build artifacts)
 apps/storefront/email-previews/
+
+# Generated local/CI assurance receipts
+.artifacts/

@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "taskCatalog": [
+    { "id": "assurance-policy", "kind": "static" },
+    { "id": "rls-policy", "kind": "static" },
+    { "id": "audit-policy", "kind": "static" },
+    { "id": "schema-ownership", "kind": "static" },
+    { "id": "compose-security", "kind": "static" },
+    { "id": "storefront-lint", "kind": "static" },
+    { "id": "storefront-typecheck", "kind": "static" },
+    { "id": "medusa-typecheck", "kind": "static" },
+    { "id": "shared-typecheck", "kind": "static" },
+    { "id": "platform-contract-typecheck", "kind": "static" },
+    { "id": "security-unit", "kind": "behavioral" },
+    { "id": "checkout-unit", "kind": "behavioral" },
+    { "id": "pos-unit", "kind": "behavioral" },
+    { "id": "backup-unit", "kind": "behavioral" },
+    { "id": "assurance-contracts", "kind": "static" },
+    {
+      "id": "storefront-assurance",
+      "kind": "behavioral",
+      "provides": ["storefront-unit", "coverage-assurance"]
+    },
+    { "id": "risk-test-matrix", "kind": "static" },
+    { "id": "risk-domain-evidence", "kind": "behavioral" },
+    { "id": "medusa-unit", "kind": "behavioral" },
+    { "id": "medusa-pos-postgres", "kind": "behavioral" },
+    { "id": "storefront-build", "kind": "build" },
+    { "id": "pos-conformance", "kind": "behavioral" },
+    { "id": "pos-mutation-canary", "kind": "behavioral" },
+    { "id": "observability-unit", "kind": "behavioral" }
+  ],
+  "criticalSourceSelectors": [
+    { "prefix": "apps/storefront/src/lib/security/" },
+    { "exact": "apps/storefront/src/lib/panel-auth.ts" },
+    { "exact": "apps/storefront/src/lib/panel-guard.ts" },
+    { "exact": "apps/storefront/src/lib/payment-methods.ts" },
+    { "exact": "apps/storefront/src/lib/order-limits.ts" },
+    { "exact": "apps/storefront/src/lib/safe-action.ts" },
+    { "prefix": "apps/storefront/src/lib/pos/" },
+    { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" },
+    { "prefix": "apps/storefront/src/lib/backup/" }
+  ],
+  "profiles": {
+    "fast": {
+      "claimBoundary": "changed_scope_feedback_only",
+      "alwaysTasks": [
+        "assurance-policy",
+        "rls-policy",
+        "audit-policy",
+        "schema-ownership",
+        "compose-security"
+      ],
+      "deferred": [
+        "full-storefront-assurance",
+        "full-risk-domain-evidence",
+        "medusa-unit",
+        "medusa-pos-postgres",
+        "storefront-build",
+        "pos-conformance",
+        "pos-mutation-canary"
+      ],
+      "selectorRules": [
+        {
+          "id": "storefront-package",
+          "selector": { "prefix": "apps/storefront/" },
+          "tasks": ["storefront-lint", "storefront-typecheck"]
+        },
+        {
+          "id": "medusa-package",
+          "selector": { "prefix": "apps/medusa/" },
+          "tasks": ["medusa-typecheck"]
+        },
+        {
+          "id": "shared-package",
+          "selector": { "prefix": "packages/shared/" },
+          "tasks": ["shared-typecheck"]
+        },
+        {
+          "id": "platform-contract-package",
+          "selector": { "prefix": "packages/platform-contract/" },
+          "tasks": ["platform-contract-typecheck"]
+        },
+        {
+          "id": "security-critical",
+          "selector": { "prefix": "apps/storefront/src/lib/security/" },
+          "tasks": ["security-unit"],
+          "critical": true
+        },
+        {
+          "id": "panel-auth-critical",
+          "selector": { "exact": "apps/storefront/src/lib/panel-auth.ts" },
+          "tasks": ["security-unit"],
+          "critical": true
+        },
+        {
+          "id": "panel-guard-critical",
+          "selector": { "exact": "apps/storefront/src/lib/panel-guard.ts" },
+          "tasks": ["security-unit"],
+          "critical": true
+        },
+        {
+          "id": "payment-methods-critical",
+          "selector": { "exact": "apps/storefront/src/lib/payment-methods.ts" },
+          "tasks": ["checkout-unit"],
+          "critical": true
+        },
+        {
+          "id": "order-limits-critical",
+          "selector": { "exact": "apps/storefront/src/lib/order-limits.ts" },
+          "tasks": ["checkout-unit"],
+          "critical": true
+        },
+        {
+          "id": "safe-action-critical",
+          "selector": { "exact": "apps/storefront/src/lib/safe-action.ts" },
+          "tasks": ["checkout-unit"],
+          "critical": true
+        },
+        {
+          "id": "pos-critical",
+          "selector": { "prefix": "apps/storefront/src/lib/pos/" },
+          "tasks": ["pos-unit", "pos-conformance", "pos-mutation-canary"],
+          "critical": true
+        },
+        {
+          "id": "pos-actions-critical",
+          "selector": { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" },
+          "tasks": ["pos-unit", "pos-conformance", "pos-mutation-canary"],
+          "critical": true
+        },
+        {
+          "id": "backup-critical",
+          "selector": { "prefix": "apps/storefront/src/lib/backup/" },
+          "tasks": ["backup-unit"],
+          "critical": true
+        },
+        {
+          "id": "observability-contract",
+          "selector": { "prefix": "apps/storefront/src/lib/observability/" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "structured-logger",
+          "selector": { "exact": "apps/storefront/src/lib/logger.ts" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "storefront-instrumentation",
+          "selector": { "exact": "apps/storefront/src/instrumentation.ts" },
+          "tasks": ["observability-unit"]
+        },
+        {
+          "id": "medusa-instrumentation",
+          "selector": { "exact": "apps/medusa/instrumentation.ts" },
+          "tasks": ["observability-unit"]
+        }
+      ]
+    },
+    "full": {
+      "claimBoundary": "functional_system_without_commercial_activation",
+      "tasks": [
+        "assurance-policy",
+        "rls-policy",
+        "audit-policy",
+        "schema-ownership",
+        "compose-security",
+        "storefront-lint",
+        "storefront-assurance",
+        "risk-test-matrix",
+        "risk-domain-evidence",
+        "medusa-unit",
+        "medusa-pos-postgres",
+        "storefront-typecheck",
+        "storefront-build",
+        "pos-conformance",
+        "pos-mutation-canary",
+        "observability-unit"
+      ],
+      "deferred": [],
+      "selectorRules": []
+    }
+  }
+}

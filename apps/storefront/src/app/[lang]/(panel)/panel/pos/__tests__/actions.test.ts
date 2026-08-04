@@ -7,6 +7,8 @@ const mockCreateDraftOrder = vi.fn()
 const mockConvertDraftToOrder = vi.fn()
 const mockRecordPOSTransaction = vi.fn()
 const mockUpdateShiftAggregates = vi.fn()
+const mockReservePOSSyncOperation = vi.fn()
+const mockCommitPOSSyncOperation = vi.fn()
 const mockGetAdminProductsFull = vi.fn()
 const mockGetAdminCustomers = vi.fn()
 const mockAdminFetch = vi.fn()
@@ -36,6 +38,8 @@ vi.mock('@/lib/medusa/admin-draft-orders', () => ({
 vi.mock('@/lib/pos/medusa-pos-module', () => ({
     recordPOSTransaction: mockRecordPOSTransaction,
     updateShiftAggregates: mockUpdateShiftAggregates,
+    reservePOSSyncOperation: mockReservePOSSyncOperation,
+    commitPOSSyncOperation: mockCommitPOSSyncOperation,
 }))
 
 vi.mock('@/lib/medusa/admin-core', () => ({
@@ -81,6 +85,32 @@ describe('/[lang]/panel/pos server actions', () => {
         mockConvertDraftToOrder.mockResolvedValue({ order_id: 'order_1', display_id: 42, error: null })
         mockRecordPOSTransaction.mockResolvedValue({ transaction: { id: 'tx_1' }, error: null })
         mockUpdateShiftAggregates.mockResolvedValue({ error: null })
+        mockReservePOSSyncOperation.mockResolvedValue({
+            operation: {
+                outcome: 'reserved',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                server_sequence: 1,
+                last_client_sequence: 1,
+                order_id: null,
+                draft_order_id: null,
+                display_id: null,
+            },
+            error: null,
+        })
+        mockCommitPOSSyncOperation.mockResolvedValue({
+            operation: {
+                outcome: 'committed',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                server_sequence: 1,
+                last_client_sequence: 1,
+                order_id: 'order_1',
+                draft_order_id: 'draft_1',
+                display_id: 42,
+            },
+            error: null,
+        })
         mockGetAdminProductsFull.mockResolvedValue({ products: [{ id: 'prod_1' }] })
         mockGetAdminCustomers.mockResolvedValue({ customers: [{ id: 'cus_1' }] })
     })
@@ -143,6 +173,162 @@ describe('/[lang]/panel/pos server actions', () => {
             error: 'STALE_CART: Some items in cart no longer exist.',
         })
         expect(mockConvertDraftToOrder).not.toHaveBeenCalled()
+    })
+
+    it('commits an offline sale only with an authoritative durable acknowledgement', async () => {
+        const { createPOSSale } = await import('../actions')
+
+        await expect(createPOSSale({
+            items: [{ variant_id: 'variant_1', quantity: 1, unit_price: 500 }],
+            payment_method: 'cash',
+            sync: {
+                tenant_id: 'tenant_123',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                client_id: 'client_1',
+                client_sequence: 1,
+                known_server_sequence: 0,
+            },
+        })).resolves.toMatchObject({
+            success: true,
+            order_id: 'order_1',
+            draft_order_id: 'draft_1',
+            display_id: 42,
+            sync: {
+                outcome: 'committed',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                server_sequence: 1,
+                last_client_sequence: 1,
+            },
+        })
+        expect(mockReservePOSSyncOperation).toHaveBeenCalledWith(expect.objectContaining({
+            tenant_id: 'tenant_123',
+            operation_id: 'operation_1',
+            idempotency_key: 'offline_1',
+            amount_minor: 500,
+            payload_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        }), scope)
+        expect(mockCommitPOSSyncOperation).toHaveBeenCalledWith(expect.objectContaining({
+            order_id: 'order_1',
+            draft_order_id: 'draft_1',
+            display_id: 42,
+        }), scope)
+    })
+
+    it('acknowledges a committed replay without creating a duplicate draft', async () => {
+        mockReservePOSSyncOperation.mockResolvedValueOnce({
+            operation: {
+                outcome: 'duplicate',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                server_sequence: 7,
+                last_client_sequence: 1,
+                order_id: 'order_existing',
+                draft_order_id: 'draft_existing',
+                display_id: 77,
+            },
+            error: null,
+        })
+        const { createPOSSale } = await import('../actions')
+
+        await expect(createPOSSale({
+            items: [{ variant_id: 'variant_1', quantity: 1, unit_price: 500 }],
+            payment_method: 'cash',
+            sync: {
+                tenant_id: 'tenant_123',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                client_id: 'client_1',
+                client_sequence: 1,
+                known_server_sequence: 0,
+            },
+        })).resolves.toEqual({
+            success: true,
+            order_id: 'order_existing',
+            display_id: 77,
+            draft_order_id: 'draft_existing',
+            sync: {
+                outcome: 'duplicate',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                server_sequence: 7,
+                last_client_sequence: 1,
+            },
+        })
+        expect(mockCreateDraftOrder).not.toHaveBeenCalled()
+        expect(mockConvertDraftToOrder).not.toHaveBeenCalled()
+        expect(mockCommitPOSSyncOperation).not.toHaveBeenCalled()
+    })
+
+    it('returns an authoritative conflict without creating a sale', async () => {
+        mockReservePOSSyncOperation.mockResolvedValueOnce({
+            operation: {
+                outcome: 'conflict',
+                operation_id: 'operation_existing',
+                idempotency_key: 'offline_1',
+                server_sequence: 7,
+                last_client_sequence: 1,
+                order_id: null,
+                draft_order_id: null,
+                display_id: null,
+            },
+            error: null,
+        })
+        const { createPOSSale } = await import('../actions')
+
+        await expect(createPOSSale({
+            items: [{ variant_id: 'variant_1', quantity: 1, unit_price: 500 }],
+            payment_method: 'cash',
+            sync: {
+                tenant_id: 'tenant_123',
+                operation_id: 'operation_conflicting',
+                idempotency_key: 'offline_1',
+                client_id: 'client_1',
+                client_sequence: 1,
+                known_server_sequence: 0,
+            },
+        })).resolves.toEqual({
+            success: true,
+            sync: {
+                outcome: 'conflict',
+                operation_id: 'operation_existing',
+                idempotency_key: 'offline_1',
+                server_sequence: 7,
+                last_client_sequence: 1,
+            },
+        })
+        expect(mockCreateDraftOrder).not.toHaveBeenCalled()
+        expect(mockCommitPOSSyncOperation).not.toHaveBeenCalled()
+    })
+
+    it('does not emit a sync acknowledgement when durable finalization fails', async () => {
+        mockCommitPOSSyncOperation.mockResolvedValueOnce({
+            operation: null,
+            error: 'sync database unavailable',
+        })
+        const { createPOSSale } = await import('../actions')
+
+        await expect(createPOSSale({
+            items: [{ variant_id: 'variant_1', quantity: 1, unit_price: 500 }],
+            payment_method: 'cash',
+            sync: {
+                tenant_id: 'tenant_123',
+                operation_id: 'operation_1',
+                idempotency_key: 'offline_1',
+                client_id: 'client_1',
+                client_sequence: 1,
+                known_server_sequence: 0,
+            },
+        })).resolves.toEqual({
+            success: false,
+            order_id: 'order_1',
+            display_id: 42,
+            draft_order_id: 'draft_1',
+            error: 'sync database unavailable',
+        })
+        expect(mockCreateDraftOrder).toHaveBeenCalledTimes(1)
+        expect(mockConvertDraftToOrder).toHaveBeenCalledTimes(1)
     })
 
     it('searches POS products and customers through tenant-scoped Medusa helpers', async () => {

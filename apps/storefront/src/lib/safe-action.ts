@@ -90,11 +90,15 @@ export const panelAction = actionClient.use(async ({ next, metadata }) => {
     },
   })
 
+  // Inner middleware and the action can fail without throwing back through
+  // `next()`. Never record a rejected/blocked operation as successful audit.
+  if (!result.success) return result
+
   // ── Auto-audit: log AFTER successful execution (non-blocking) ──
   const duration = Math.round(performance.now() - startTime)
   try {
     const admin = createAdminClient()
-    await admin.from('audit_log').insert({
+    const { error: auditError } = await admin.from('audit_log').insert({
       tenant_id: auth.tenantId,
       action: `${metadata.category}.${metadata.actionName}`,
       user_id: auth.user.id,
@@ -107,6 +111,7 @@ export const panelAction = actionClient.use(async ({ next, metadata }) => {
         role: auth.role,
       },
     })
+    if (auditError) throw auditError
   } catch (err) {
     // Non-blocking — audit logging should never break the action
     logger.warn(`[audit] Failed to log: ${metadata.category}.${metadata.actionName}`, err)

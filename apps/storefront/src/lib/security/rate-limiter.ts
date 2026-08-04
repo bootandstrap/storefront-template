@@ -38,6 +38,12 @@ export function checkRateLimit(
     maxRequests: number,
     windowMs: number
 ): { allowed: boolean; remaining: number; retryAfterMs: number | null } {
+    // A malformed security policy must never disable throttling or emit NaN
+    // retry metadata. Callers need an explicit, fail-closed result instead.
+    if (!Number.isInteger(maxRequests) || maxRequests <= 0 || !Number.isFinite(windowMs) || windowMs <= 0) {
+        return { allowed: false, remaining: 0, retryAfterMs: null }
+    }
+
     const now = Date.now()
     const windowStart = now - windowMs
 

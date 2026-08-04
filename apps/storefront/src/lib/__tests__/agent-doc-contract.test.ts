@@ -61,10 +61,16 @@ describe("Agent doc contract", () => {
       join(MONOREPO_ROOT, ".github/workflows/ci.yml"),
       "utf-8",
     );
+    const assuranceTasks = readFileSync(
+      join(MONOREPO_ROOT, "scripts/assurance-tasks.json"),
+      "utf-8",
+    );
 
     expect(releaseGate).toContain(
-      'gate "Schema Ownership" bash scripts/check-schema-ownership.sh data-plane',
+      'exec node "$ROOT_DIR/scripts/run-assurance.mjs" --profile full "$@"',
     );
+    expect(assuranceTasks).toContain('"id": "schema-ownership"');
+    expect(assuranceTasks).toContain('"scripts/check-schema-ownership.sh", "data-plane"');
     expect(workflow).toContain(
       "bash scripts/check-schema-ownership.sh data-plane",
     );

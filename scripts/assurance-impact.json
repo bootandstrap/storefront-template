@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "defaultBaseRef": "main",
+  "rules": [
+    {
+      "id": "storefront-package",
+      "selectors": [{ "prefix": "apps/storefront/" }],
+      "tasks": ["storefront-lint", "storefront-typecheck"],
+      "reason": "storefront source requires lint and type-check feedback"
+    },
+    {
+      "id": "medusa-package",
+      "selectors": [{ "prefix": "apps/medusa/" }],
+      "tasks": ["medusa-typecheck"],
+      "reason": "Medusa source requires package type-check feedback"
+    },
+    {
+      "id": "shared-package",
+      "selectors": [{ "prefix": "packages/shared/" }],
+      "tasks": ["shared-typecheck"],
+      "reason": "shared runtime source requires package type-check feedback"
+    },
+    {
+      "id": "platform-contract-package",
+      "selectors": [{ "prefix": "packages/platform-contract/" }],
+      "tasks": ["platform-contract-typecheck"],
+      "reason": "platform contract source requires package type-check feedback"
+    },
+    {
+      "id": "security-critical",
+      "selectors": [
+        { "prefix": "apps/storefront/src/lib/security/" },
+        { "exact": "apps/storefront/src/lib/panel-auth.ts" },
+        { "exact": "apps/storefront/src/lib/panel-guard.ts" }
+      ],
+      "tasks": ["security-unit"],
+      "reason": "security and authorization decisions require scoped behavioral evidence",
+      "critical": true
+    },
+    {
+      "id": "checkout-critical",
+      "selectors": [
+        { "exact": "apps/storefront/src/lib/payment-methods.ts" },
+        { "exact": "apps/storefront/src/lib/order-limits.ts" },
+        { "exact": "apps/storefront/src/lib/safe-action.ts" }
+      ],
+      "tasks": ["checkout-unit"],
+      "reason": "checkout and safe-action decisions require scoped behavioral evidence",
+      "critical": true
+    },
+    {
+      "id": "pos-critical",
+      "selectors": [
+        { "prefix": "apps/storefront/src/lib/pos/" },
+        { "prefix": "apps/storefront/src/app/[lang]/(panel)/panel/pos/" }
+      ],
+      "tasks": ["pos-unit", "pos-conformance", "pos-mutation-canary"],
+      "reason": "POS changes require scoped behavioral evidence; policy and static gates are always selected",
+      "critical": true
+    },
+    {
+      "id": "backup-critical",
+      "selectors": [{ "prefix": "apps/storefront/src/lib/backup/" }],
+      "tasks": ["backup-unit"],
+      "reason": "backup and restore changes require recovery behavioral evidence",
+      "critical": true
+    },
+    {
+      "id": "observability-boundaries",
+      "selectors": [
+        { "prefix": "apps/storefront/src/lib/observability/" },
+        { "exact": "apps/storefront/src/lib/logger.ts" },
+        { "exact": "apps/storefront/src/instrumentation.ts" },
+        { "exact": "apps/medusa/instrumentation.ts" }
+      ],
+      "tasks": ["observability-unit"],
+      "reason": "observability boundaries require normalized schema, redaction, correlation, and sink-isolation evidence"
+    },
+    {
+      "id": "compose-definitions",
+      "selectors": [
+        { "exact": "docker-compose.yml" },
+        { "exact": "docker-compose.dev.yml" },
+        { "exact": "scripts/templates/docker-compose.client.yml" }
+      ],
+      "tasks": ["compose-security"],
+      "reason": "approved Compose definitions require pinned read-only security assurance"
+    },
+    {
+      "id": "dependency-manifests",
+      "selectors": [
+        { "exact": "package.json" },
+        { "suffix": "/package.json" },
+        { "exact": "pnpm-lock.yaml" },
+        { "exact": "pnpm-workspace.yaml" },
+        { "exact": "turbo.json" }
+      ],
+      "tasks": [
+        "audit-policy",
+        "storefront-lint",
+        "storefront-typecheck",
+        "medusa-typecheck",
+        "shared-typecheck",
+        "platform-contract-typecheck",
+        "security-unit",
+        "checkout-unit",
+        "pos-unit",
+        "backup-unit",
+        "medusa-unit",
+        "storefront-build"
+      ],
+      "reason": "dependency graph changes require audit, affected static checks, tests, and build"
+    },
+    {
+      "id": "assurance-definitions",
+      "selectors": [
+        { "prefix": "scripts/assurance-" },
+        { "prefix": "scripts/lib/assurance-" },
+        { "prefix": "scripts/run-assurance" },
+        { "exact": "scripts/run-storefront-assurance.mjs" },
+        { "exact": "scripts/run-compose-assurance.mjs" },
+        { "exact": "scripts/run-risk-domain-evidence.mjs" },
+        { "exact": "scripts/run-medusa-postgres-assurance.mjs" },
+        { "exact": "scripts/storefront-assurance.test.mjs" },
+        { "exact": "scripts/compose-assurance.test.mjs" },
+        { "exact": "scripts/coverage-assurance.test.mjs" },
+        { "exact": "scripts/medusa-postgres-assurance.test.mjs" },
+        { "exact": "scripts/check-assurance-policy.mjs" }
+      ],
+      "tasks": ["assurance-policy", "assurance-contracts"],
+      "reason": "assurance definitions require all assurance contracts and full-profile planning",
+      "fullProfileDryRun": true
+    }
+  ]
+}

@@ -30,6 +30,10 @@ describe('Offline Store — API Contract', () => {
         expect(typeof store.hasPendingSaleRef).toBe('function')
         expect(typeof store.getLastSyncTime).toBe('function')
         expect(typeof store.setLastSyncTime).toBe('function')
+        expect(typeof store.getOrCreatePOSClientId).toBe('function')
+        expect(typeof store.nextPOSClientSequence).toBe('function')
+        expect(typeof store.getPOSServerSequence).toBe('function')
+        expect(typeof store.setPOSServerSequence).toBe('function')
         expect(typeof store.destroyDB).toBe('function')
     })
 
@@ -59,6 +63,12 @@ describe('Offline Store — API Contract', () => {
         type PendingSale = import('../offline-store').PendingSale
         const sale: PendingSale = {
             offline_ref: crypto.randomUUID(),
+            tenant_id: 'tenant-test',
+            operation_id: crypto.randomUUID(),
+            client_id: crypto.randomUUID(),
+            client_sequence: 1,
+            known_server_sequence: 0,
+            sync_state: 'queued',
             items: [{ variant_id: 'v_1', quantity: 2, unit_price: 1500 }],
             payment_method: 'cash',
             discount_amount: 0,
@@ -75,6 +85,7 @@ describe('Offline Store — SyncStatus helper', () => {
     it('useOfflineSync exports expected type', async () => {
         const mod = await import('../useOfflineSync')
         expect(typeof mod.useOfflineSync).toBe('function')
+        expect(typeof mod.syncPendingSaleWithProtocol).toBe('function')
     })
 })
 

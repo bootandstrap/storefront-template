@@ -28,6 +28,7 @@ import type {
 import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
 
 const gzipAsync = promisify(gzip)
+const GZIP_EXTRA_HEADROOM_BYTES = 64
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,35 @@ function hashContent(data: unknown): string {
 
 function formatTimestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+}
+
+export function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
+    const addedBytes = targetLength - compressed.length
+    const maxAddedBytes = 0xffff + 2
+
+    if (addedBytes < 2 || addedBytes > maxAddedBytes || (compressed[3] & 0x04) !== 0) {
+        throw new Error('Unable to encode backup size in gzip extra field')
+    }
+
+    const extraLength = addedBytes - 2
+    const header = Buffer.alloc(12 + extraLength)
+    compressed.copy(header, 0, 0, 10)
+    header[3] |= 0x04
+    header.writeUInt16LE(extraLength, 10)
+
+    return Buffer.concat([header, compressed.subarray(10)])
+}
+
+async function compressWithEmbeddedSize(backup: TenantBackup): Promise<Buffer> {
+    const initial = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+
+    // A compressed size embedded in its own JSON can oscillate without reaching
+    // a fixed point. Reserve a standards-compliant gzip FEXTRA field instead so
+    // the final byte length always agrees with the embedded receipt.
+    const targetLength = initial.length + GZIP_EXTRA_HEADROOM_BYTES
+    backup.stats.total_size_bytes = targetLength
+    const compressed = await gzipAsync(Buffer.from(JSON.stringify(backup), 'utf-8'))
+    return padGzipExtraField(compressed, targetLength)
 }
 
 // ── Data Fetchers (lightweight wrappers around admin API) ────────────────────
@@ -254,12 +284,9 @@ export async function executeFullBackup(
         }
 
         // ── Compress ─────────────────────────────────────────────────────
-        const jsonStr = JSON.stringify(backup)
-        const compressed = await gzipAsync(Buffer.from(jsonStr, 'utf-8'))
-        const sizeBytes = compressed.length
-
-        stats.total_size_bytes = sizeBytes
         stats.duration_ms = Date.now() - startTime
+        const compressed = await compressWithEmbeddedSize(backup)
+        const sizeBytes = compressed.length
 
         // ── Upload to Supabase Storage ───────────────────────────────────
         const timestamp = formatTimestamp()

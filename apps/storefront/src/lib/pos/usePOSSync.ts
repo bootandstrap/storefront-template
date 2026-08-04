@@ -62,10 +62,29 @@ export interface UsePOSSyncOptions {
 export interface UsePOSSyncReturn {
     /** Whether the realtime channel is connected */
     connected: boolean
+    /** Explicit lifecycle state; unavailable is never reported as success. */
+    availability: POSSyncAvailability
     /** Number of other devices currently subscribed */
     deviceCount: number
     /** Broadcast an event to other devices */
-    broadcast: (type: POSSyncEventType, payload?: Record<string, unknown>) => void
+    broadcast: (
+        type: POSSyncEventType,
+        payload?: Record<string, unknown>,
+    ) => { status: 'queued' } | { status: 'unavailable'; reason: string }
+}
+
+export type POSSyncAvailability = 'disabled' | 'unavailable' | 'connecting' | 'available'
+
+export function resolvePOSSyncAvailability(input: {
+    enabled: boolean
+    tenantId: string | undefined
+    hasChannel: boolean
+    channelUnavailable?: boolean
+}): POSSyncAvailability {
+    if (!input.enabled) return 'disabled'
+    if (!input.tenantId) return 'unavailable'
+    if (input.channelUnavailable) return 'unavailable'
+    return input.hasChannel ? 'available' : 'connecting'
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +102,28 @@ const SESSION_ID = typeof crypto !== 'undefined'
 /** Debounce for cart_updated events to prevent spam during rapid edits */
 const CART_UPDATE_DEBOUNCE_MS = 300
 
+function isPOSSyncEnabled(tenantId: string | undefined, enabled: boolean) {
+    return Boolean(tenantId) && enabled
+}
+
+function resolvePOSSyncClient(syncEnabled: boolean) {
+    return syncEnabled ? getGovernanceBrowserClient() : null
+}
+
+function enabledValue<T>(syncEnabled: boolean, value: T, fallback: T): T {
+    return syncEnabled ? value : fallback
+}
+
+function isChannelUnavailable(
+    syncEnabled: boolean,
+    clientAvailable: boolean,
+    failedChannelName: string | null,
+    tenantId: string | undefined,
+) {
+    if (!syncEnabled) return false
+    return !clientAvailable || failedChannelName === `pos:${tenantId}`
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -92,9 +133,11 @@ export function usePOSSync({
     enabled,
     onEvent,
 }: UsePOSSyncOptions): UsePOSSyncReturn {
-    const syncEnabled = Boolean(tenantId && enabled)
+    const syncEnabled = isPOSSyncEnabled(tenantId, enabled)
     const [connected, setConnected] = useState(false)
+    const [failedChannelName, setFailedChannelName] = useState<string | null>(null)
     const [deviceCount, setDeviceCount] = useState(0)
+    const client = resolvePOSSyncClient(syncEnabled)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const channelRef = useRef<any>(null)
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -111,7 +154,6 @@ export function usePOSSync({
             return
         }
 
-        const client = getGovernanceBrowserClient()
         if (!client) {
             logger.warn('[pos-sync] No Supabase client — multi-device disabled')
             return
@@ -146,6 +188,7 @@ export function usePOSSync({
         channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 setConnected(true)
+                setFailedChannelName(null)
                 // Track this session in presence
                 await channel.track({
                     session_id: SESSION_ID,
@@ -154,6 +197,7 @@ export function usePOSSync({
                 logger.info(`[pos-sync] Connected to ${channelName} (session: ${SESSION_ID.slice(0, 8)}…)`)
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                 setConnected(false)
+                setFailedChannelName(channelName)
                 logger.warn(`[pos-sync] Channel ${status} for ${channelName}`)
             }
         })
@@ -165,13 +209,18 @@ export function usePOSSync({
             channel.unsubscribe()
             channelRef.current = null
         }
-    }, [tenantId, syncEnabled])
+    }, [tenantId, syncEnabled, client])
 
     // ── Broadcast function ──
     const broadcast = useCallback(
         (type: POSSyncEventType, payload: Record<string, unknown> = {}) => {
             const channel = channelRef.current
-            if (!channel) return
+            if (!channel) {
+                return {
+                    status: 'unavailable' as const,
+                    reason: 'POS realtime channel is not available',
+                }
+            }
 
             const event: POSSyncEvent = {
                 type,
@@ -198,13 +247,25 @@ export function usePOSSync({
                     payload: event,
                 })
             }
+            return { status: 'queued' as const }
         },
         []
     )
 
     return {
-        connected: syncEnabled ? connected : false,
-        deviceCount: syncEnabled ? deviceCount : 0,
+        connected: enabledValue(syncEnabled, connected, false),
+        availability: resolvePOSSyncAvailability({
+            enabled,
+            tenantId,
+            hasChannel: enabledValue(syncEnabled, connected, false),
+            channelUnavailable: isChannelUnavailable(
+                syncEnabled,
+                Boolean(client),
+                failedChannelName,
+                tenantId,
+            ),
+        }),
+        deviceCount: enabledValue(syncEnabled, deviceCount, 0),
         broadcast,
     }
 }

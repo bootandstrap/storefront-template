@@ -14,12 +14,20 @@
  */
 'use server'
 
+import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import { logOwnerAction } from '@/lib/panel/log-owner-action'
 import { createDraftOrder, convertDraftToOrder } from '@/lib/medusa/admin-draft-orders'
-import { recordPOSTransaction, updateShiftAggregates } from '@/lib/pos/medusa-pos-module'
+import {
+    commitPOSSyncOperation,
+    recordPOSTransaction,
+    reservePOSSyncOperation,
+    updateShiftAggregates,
+    type PosSyncOperationReceipt,
+    type PosSyncReservationInput,
+} from '@/lib/pos/medusa-pos-module'
 import { getAdminProductsFull, getAdminCustomers } from '@/lib/medusa/admin'
 import type { AdminProductFull, AdminCustomer } from '@/lib/medusa/admin'
 import type { PaymentMethod } from '@/lib/pos/pos-config'
@@ -48,6 +56,14 @@ interface CreatePOSSaleInput {
     terminal_id?: string
     /** Cash tendered (for change calculation on cash payments) */
     cash_tendered?: number
+    sync?: {
+        tenant_id: string
+        operation_id: string
+        idempotency_key: string
+        client_id: string
+        client_sequence: number
+        known_server_sequence: number
+    }
 }
 
 interface POSSaleResult {
@@ -56,7 +72,57 @@ interface POSSaleResult {
     display_id?: number
     draft_order_id?: string
     transaction_id?: string
+    sync?: {
+        outcome: 'committed' | 'duplicate' | 'conflict'
+        operation_id: string
+        idempotency_key: string
+        server_sequence: number
+        last_client_sequence: number
+    }
     error?: string
+}
+
+function syncAcknowledgement(operation: PosSyncOperationReceipt): POSSaleResult['sync'] {
+    if (operation.outcome === 'reserved') return undefined
+    return {
+        outcome: operation.outcome,
+        operation_id: operation.operation_id,
+        idempotency_key: operation.idempotency_key,
+        server_sequence: operation.server_sequence,
+        last_client_sequence: operation.last_client_sequence,
+    }
+}
+
+function payloadSha256(input: CreatePOSSaleInput): string {
+    const payload = {
+        items: input.items.map(item => ({
+            variant_id: item.variant_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+        })),
+        payment_method: input.payment_method,
+        customer_id: input.customer_id ?? null,
+        discount_amount: input.discount_amount ?? 0,
+    }
+    return createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+}
+
+function replayResult(operation: PosSyncOperationReceipt): POSSaleResult {
+    const sync = syncAcknowledgement(operation)
+    if (!sync) return { success: false, error: 'POS sync reservation is incomplete' }
+    if (operation.outcome === 'duplicate') {
+        if (!operation.order_id || !operation.draft_order_id || !operation.display_id) {
+            return { success: false, error: 'POS duplicate acknowledgement is incomplete' }
+        }
+        return {
+            success: true,
+            order_id: operation.order_id,
+            display_id: operation.display_id,
+            draft_order_id: operation.draft_order_id,
+            sync,
+        }
+    }
+    return { success: true, sync }
 }
 
 // ---------------------------------------------------------------------------
@@ -66,7 +132,32 @@ interface POSSaleResult {
 export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleResult> {
     try {
         const { tenantId } = await withPanelGuard()
+        if (input.sync && input.sync.tenant_id !== tenantId) {
+            return {
+                success: false,
+                error: 'POS sync tenant mismatch',
+            }
+        }
         const scope = await getTenantMedusaScope(tenantId)
+        const totalAmount = input.items.reduce(
+            (sum, item) => sum + (item.unit_price * item.quantity),
+            0
+        )
+        let syncInput: PosSyncReservationInput | undefined
+        let syncAck: POSSaleResult['sync']
+
+        if (input.sync) {
+            syncInput = {
+                ...input.sync,
+                amount_minor: Math.max(0, totalAmount - (input.discount_amount ?? 0)),
+                payload_sha256: payloadSha256(input),
+            }
+            const { operation, error } = await reservePOSSyncOperation(syncInput, scope)
+            if (error || !operation) {
+                return { success: false, error: error || 'POS sync reservation unavailable' }
+            }
+            if (operation.outcome !== 'reserved') return replayResult(operation)
+        }
 
         // Get region for the draft order
         const { adminFetch } = await import('@/lib/medusa/admin-core')
@@ -129,13 +220,42 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
             }
         }
 
-        // ─── Step 3: Record POS transaction in POS module ────────────
-        // Calculate total from items
-        const totalAmount = input.items.reduce(
-            (sum, item) => sum + (item.unit_price * item.quantity),
-            0
-        )
+        if (syncInput) {
+            if (!order_id || !display_id) {
+                return {
+                    success: false,
+                    draft_order_id: draft_order.id,
+                    error: 'POS order is missing authoritative identifiers',
+                }
+            }
+            const { operation, error } = await commitPOSSyncOperation({
+                ...syncInput,
+                order_id,
+                draft_order_id: draft_order.id,
+                display_id,
+            }, scope)
+            if (error || !operation) {
+                return {
+                    success: false,
+                    order_id,
+                    display_id,
+                    draft_order_id: draft_order.id,
+                    error: error || 'POS sync commit acknowledgement unavailable',
+                }
+            }
+            syncAck = syncAcknowledgement(operation)
+            if (!syncAck) {
+                return {
+                    success: false,
+                    order_id,
+                    display_id,
+                    draft_order_id: draft_order.id,
+                    error: 'POS sync commit remained reserved',
+                }
+            }
+        }
 
+        // ─── Step 3: Record POS transaction in POS module ────────────
         const receiptNumber = `POS-${display_id ?? Date.now()}`
         const paymentMethodMap: Record<string, 'cash' | 'card' | 'mixed' | 'voucher' | 'other'> = {
             cash: 'cash',
@@ -253,6 +373,7 @@ export async function createPOSSale(input: CreatePOSSaleInput): Promise<POSSaleR
             display_id: display_id ?? undefined,
             draft_order_id: draft_order.id,
             transaction_id: transactionId,
+            sync: syncAck,
         }
     } catch (err) {
         logger.error('[pos] createPOSSale exception', {

@@ -2,12 +2,11 @@
  * Provisioning Schema Completeness Test
  *
  * Validates that governance-contract.json flags/limits ALL exist as
- * provisioning-ready keys in demo-constants.ts (MAX_FEATURE_FLAGS + MAX_PLAN_LIMITS),
- * and that DB migration SQL covers all contract flags/limits as columns.
+ * provisioning-ready keys in the generated database contract.
  *
  * This catches the root cause of "silently ignored flags" — when a new module
- * adds flags to the contract but nobody adds the corresponding DB columns
- * or demo-constants entries.
+ * adds flags to the contract but nobody propagates the corresponding DB
+ * columns into the runtime's generated types.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -21,164 +20,27 @@ const contractFlagKeys: string[] = contract.flags.keys;
 const contractLimitKeys: string[] = contract.limits.numeric_keys;
 
 describe("Provisioning Schema Completeness", () => {
-  describe("demo-constants covers all contract flags", () => {
-    const bswebRoot = path.resolve(
-      __dirname,
-      "../../../../../../BOOTANDSTRAP_WEB",
-    );
-    const demoConstantsPath = path.join(
-      bswebRoot,
-      "src/lib/governance/tenants/demo-constants.ts",
-    );
-    const demoConstantsSrc = fs.existsSync(demoConstantsPath)
-      ? fs.readFileSync(demoConstantsPath, "utf-8")
-      : null;
-
-    if (!demoConstantsSrc) {
-      it.skip("BSWEB repo not found — skipping demo-constants check", () => {});
-      return;
-    }
-
-    // Extract keys from MAX_FEATURE_FLAGS block
-    const flagBlockMatch = demoConstantsSrc.match(
-      /MAX_FEATURE_FLAGS[^{]*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/,
-    );
-    const flagKeys = flagBlockMatch
-      ? [...flagBlockMatch[1].matchAll(/(\w+)\s*:/g)].map(
-          (m: RegExpMatchArray) => m[1],
-        )
-      : [];
-
-    // Extract keys from MAX_PLAN_LIMITS block
-    const limitBlockMatch = demoConstantsSrc.match(
-      /MAX_PLAN_LIMITS[^{]*\{([^}]+)\}/,
-    );
-    const limitKeys = limitBlockMatch
-      ? [...limitBlockMatch[1].matchAll(/(\w+)\s*:/g)].map(
-          (m: RegExpMatchArray) => m[1],
-        )
-      : [];
-
-    it("MAX_FEATURE_FLAGS has entries for all contract flags", () => {
-      const missingFromConstants = contractFlagKeys.filter(
-        (f: string) => !flagKeys.includes(f),
-      );
-      expect(missingFromConstants).toEqual([]);
-    });
-
-    it("MAX_PLAN_LIMITS has entries for all contract limits", () => {
-      const missingFromConstants = contractLimitKeys.filter(
-        (l: string) => !limitKeys.includes(l),
-      );
-      expect(missingFromConstants).toEqual([]);
-    });
-
-    it("demo-constants flags are superset of contract (extras allowed for legacy)", () => {
-      // Constants MAY have extra flags not yet in contract (legacy).
-      // This test warns but doesn't fail.
-      const extraInConstants = flagKeys.filter(
-        (f: string) => !contractFlagKeys.includes(f),
-      );
-      if (extraInConstants.length > 0) {
-        console.warn(
-          "[WARN] Extra flags in demo-constants not in contract:",
-          extraInConstants,
-        );
-      }
-      // We don't fail — extras are harmless. The critical test is the one above.
-      expect(true).toBe(true);
-    });
-
-    it("demo-constants limits may contain legacy extras, but not miss contract limits", () => {
-      const extraInConstants = limitKeys.filter(
-        (l: string) => !contractLimitKeys.includes(l),
-      );
-      if (extraInConstants.length > 0) {
-        console.warn(
-          "[WARN] Extra limits in demo-constants not in contract:",
-          extraInConstants,
-        );
-      }
-      expect(true).toBe(true);
-    });
-
-    it("demo-constants no longer carries retired max_pos_kiosk_devices", () => {
-      expect(limitKeys).not.toContain("max_pos_kiosk_devices");
-    });
-  });
-
-  describe("DB migration covers all contract flags", () => {
-    const migrationsDir = path.resolve(
-      __dirname,
-      "../../../../../../BOOTANDSTRAP_WEB/supabase/migrations",
-    );
-    if (!fs.existsSync(migrationsDir)) {
-      it.skip("BSWEB migrations not found", () => {});
-      return;
-    }
-
-    // Collect all flag columns mentioned across ALL migration files
-    const migrationFiles = fs
-      .readdirSync(migrationsDir)
-      .filter((f: string) => f.endsWith(".sql"));
-    let allMigrationSQL = "";
-    for (const file of migrationFiles) {
-      allMigrationSQL +=
-        fs.readFileSync(path.join(migrationsDir, file), "utf-8") + "\n";
-    }
-
-    // Extract column names from CREATE TABLE feature_flags and ALTER TABLE feature_flags
-    const createTableMatch = allMigrationSQL.match(
-      /CREATE TABLE[^(]*public\.feature_flags\s*\(([\s\S]*?)\n\);/,
-    );
-    const createColumns = createTableMatch
-      ? [
-          ...createTableMatch[1].matchAll(
-            /^\s*(enable_\w+|require_\w+|owner_\w+)/gm,
-          ),
-        ].map((m: RegExpMatchArray) => m[1])
-      : [];
-
-    const alterColumns = [
-      ...allMigrationSQL.matchAll(
-        /ALTER TABLE\s+(?:public\.)?feature_flags\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(enable_\w+|require_\w+|owner_\w+)/gi,
+  describe("generated database contract covers governance keys", () => {
+    const databaseTypes = fs.readFileSync(
+      path.resolve(
+      process.cwd(),
+      "src/lib/supabase/database.types.ts",
       ),
-    ].map((m: RegExpMatchArray) => m[1]);
+      "utf8",
+    );
 
-    const allDBFlagColumns = new Set([...createColumns, ...alterColumns]);
-
-    it("migration SQL defines all contract flags as columns", () => {
-      const missingFromMigrations = contractFlagKeys.filter(
-        (f: string) => !allDBFlagColumns.has(f),
+    it("generated feature_flags row exposes all contract flags", () => {
+      const missingFromTypes = contractFlagKeys.filter(
+        (flag: string) => !new RegExp(`\\b${flag}\\??:\\s*boolean`).test(databaseTypes),
       );
-      expect(missingFromMigrations).toEqual([]);
+      expect(missingFromTypes).toEqual([]);
     });
 
-    // Same for limits
-    const createLimitsMatch = allMigrationSQL.match(
-      /CREATE TABLE[^(]*public\.plan_limits\s*\(([\s\S]*?)\n\);/,
-    );
-    const createLimitCols = createLimitsMatch
-      ? [
-          ...createLimitsMatch[1].matchAll(
-            /^\s*(max_\w+|storage_\w+|backup_frequency_hours)/gm,
-          ),
-        ].map((m: RegExpMatchArray) => m[1])
-      : [];
-
-    const alterLimitCols = [
-      ...allMigrationSQL.matchAll(
-        /ALTER TABLE\s+(?:public\.)?plan_limits\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(max_\w+|storage_\w+|backup_frequency_hours)/gi,
-      ),
-    ].map((m: RegExpMatchArray) => m[1]);
-
-    const allDBLimitColumns = new Set([...createLimitCols, ...alterLimitCols]);
-
-    it("migration SQL defines all contract limits as columns", () => {
-      const missingFromMigrations = contractLimitKeys.filter(
-        (l: string) => !allDBLimitColumns.has(l),
+    it("generated plan_limits row exposes all numeric contract limits", () => {
+      const missingFromTypes = contractLimitKeys.filter(
+        (limit: string) => !new RegExp(`\\b${limit}\\??:\\s*number`).test(databaseTypes),
       );
-      expect(missingFromMigrations).toEqual([]);
+      expect(missingFromTypes).toEqual([]);
     });
   });
 

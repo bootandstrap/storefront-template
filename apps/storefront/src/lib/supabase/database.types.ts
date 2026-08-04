@@ -3171,6 +3171,7 @@ export type Database = {
           enable_crm_interactions: boolean | null
           enable_crm_segmentation: boolean
           enable_crm_segments: boolean | null
+          enable_custom_email_domain: boolean
           enable_custom_webhooks: boolean | null
           enable_customer_accounts: boolean
           enable_ecommerce: boolean
@@ -3205,6 +3206,7 @@ export type Database = {
           enable_pos_multi_device: boolean
           enable_pos_offline_cart: boolean
           enable_pos_quick_sale: boolean
+          enable_pos_reports: boolean
           enable_pos_shifts: boolean
           enable_pos_thermal_printer: boolean
           enable_product_badges: boolean
@@ -3261,6 +3263,7 @@ export type Database = {
           enable_crm_interactions?: boolean | null
           enable_crm_segmentation?: boolean
           enable_crm_segments?: boolean | null
+          enable_custom_email_domain?: boolean
           enable_custom_webhooks?: boolean | null
           enable_customer_accounts?: boolean
           enable_ecommerce?: boolean
@@ -3295,6 +3298,7 @@ export type Database = {
           enable_pos_multi_device?: boolean
           enable_pos_offline_cart?: boolean
           enable_pos_quick_sale?: boolean
+          enable_pos_reports?: boolean
           enable_pos_shifts?: boolean
           enable_pos_thermal_printer?: boolean
           enable_product_badges?: boolean
@@ -3351,6 +3355,7 @@ export type Database = {
           enable_crm_interactions?: boolean | null
           enable_crm_segmentation?: boolean
           enable_crm_segments?: boolean | null
+          enable_custom_email_domain?: boolean
           enable_custom_webhooks?: boolean | null
           enable_customer_accounts?: boolean
           enable_ecommerce?: boolean
@@ -3385,6 +3390,7 @@ export type Database = {
           enable_pos_multi_device?: boolean
           enable_pos_offline_cart?: boolean
           enable_pos_quick_sale?: boolean
+          enable_pos_reports?: boolean
           enable_pos_shifts?: boolean
           enable_pos_thermal_printer?: boolean
           enable_product_badges?: boolean

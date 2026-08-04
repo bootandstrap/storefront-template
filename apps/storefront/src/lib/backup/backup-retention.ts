@@ -50,9 +50,19 @@ export interface RetentionResult {
  * Resolve which retention tier to use based on max_backups governance limit.
  */
 export function resolveRetentionPolicy(maxBackups: number): RetentionPolicy {
-    if (maxBackups >= 28) return RETENTION_TIERS.enterprise
-    if (maxBackups >= 14) return RETENTION_TIERS.standard
-    return RETENTION_TIERS.base
+    const governedMaximum = Number.isFinite(maxBackups)
+        ? Math.max(0, Math.floor(maxBackups))
+        : 0
+    const tier = governedMaximum >= 28
+        ? RETENTION_TIERS.enterprise
+        : governedMaximum >= 14
+            ? RETENTION_TIERS.standard
+            : RETENTION_TIERS.base
+
+    return {
+        ...tier,
+        max_total: Math.min(tier.max_total, governedMaximum),
+    }
 }
 
 /**
