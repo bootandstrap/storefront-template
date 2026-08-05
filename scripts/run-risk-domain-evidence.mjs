@@ -17,7 +17,7 @@ const SCRIPT_PATH = fileURLToPath(import.meta.url)
 const SCRIPT_DIR = dirname(SCRIPT_PATH)
 const ROOT_DIR = resolve(SCRIPT_DIR, '..')
 const DEFAULT_MATRIX_PATH = join(SCRIPT_DIR, 'risk-test-matrix.json')
-const DEFAULT_SUMMARY_PATH = join(ROOT_DIR, '.artifacts', 'risk-domain-evidence', 'summary.json')
+const DEFAULT_SUMMARY_PATH = join(ROOT_DIR, '.artifacts', 'assurance', 'risk-domain-evidence.json')
 const DEFAULT_TASK_RECEIPT_PATH = join(
   ROOT_DIR,
   '.artifacts',

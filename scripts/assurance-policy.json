@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "policyId": "bootandstrap.local-assurance/v1",
-  "claimBoundary": "functional_system_without_commercial_activation",
+  "claimBoundary": "local_runtime_assurance_without_commercial_activation",
   "claimBoundaries": {
     "fast": "changed_scope_feedback_only",
-    "full": "functional_system_without_commercial_activation"
+    "full": "local_runtime_assurance_without_commercial_activation"
   },
   "sourceUniverse": {
     "roots": [

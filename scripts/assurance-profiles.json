@@ -158,7 +158,7 @@
       ]
     },
     "full": {
-      "claimBoundary": "functional_system_without_commercial_activation",
+      "claimBoundary": "local_runtime_assurance_without_commercial_activation",
       "tasks": [
         "assurance-policy",
         "rls-policy",

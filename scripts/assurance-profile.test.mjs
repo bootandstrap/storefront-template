@@ -35,7 +35,7 @@ test('fast never claims full functional assurance', () => {
   assert.equal(result.claimBoundary, 'changed_scope_feedback_only')
   assert.ok(result.deferred.includes('full-storefront-assurance'))
   assert.ok(result.deferred.includes('medusa-pos-postgres'))
-  assert.notEqual(result.claimBoundary, 'functional_system_without_commercial_activation')
+  assert.notEqual(result.claimBoundary, 'local_runtime_assurance_without_commercial_activation')
 })
 
 test('fast always selects policy and static security checks', () => {
@@ -104,13 +104,13 @@ test('full profile provides every current release gate exactly once', () => {
   assert.ok(result.tasks.includes('pos-conformance'))
   assert.ok(result.tasks.includes('pos-mutation-canary'))
   assert.ok(result.tasks.includes('medusa-pos-postgres'))
-  assert.equal(result.claimBoundary, 'functional_system_without_commercial_activation')
+  assert.equal(result.claimBoundary, 'local_runtime_assurance_without_commercial_activation')
 })
 
 test('profile claim boundaries match the assurance policy', () => {
   assert.deepEqual(policy.claimBoundaries, {
     fast: 'changed_scope_feedback_only',
-    full: 'functional_system_without_commercial_activation',
+    full: 'local_runtime_assurance_without_commercial_activation',
   })
 })
 
@@ -145,7 +145,7 @@ test('rejects overlapping selector rules with contradictory claims', () => {
     id: 'contradict-pos-claim',
     selector: { prefix: 'apps/storefront/src/lib/pos/' },
     tasks: ['pos-unit'],
-    claimBoundary: 'functional_system_without_commercial_activation',
+    claimBoundary: 'local_runtime_assurance_without_commercial_activation',
   })
 
   assert.throws(

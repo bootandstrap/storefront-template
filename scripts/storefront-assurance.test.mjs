@@ -12,6 +12,10 @@ import {
 } from './run-storefront-assurance.mjs'
 import { planRiskDomainEvidence } from './run-risk-domain-evidence.mjs'
 
+const assuranceTasks = JSON.parse(
+  readFileSync(new URL('./assurance-tasks.json', import.meta.url), 'utf8'),
+)
+
 const identity = {
   revision: 'a'.repeat(40),
   workingTreeSha256: 'b'.repeat(64),
@@ -29,7 +33,7 @@ function makeRoot() {
   writeFileSync(join(rootDir, 'apps', 'storefront', 'vitest.config.ts'), 'export default {}\n')
   writeFileSync(join(rootDir, 'scripts', 'assurance-policy.json'), `${JSON.stringify({
     policyId: 'test-policy/v1',
-    claimBoundary: 'functional_system_without_commercial_activation',
+    claimBoundary: 'local_runtime_assurance_without_commercial_activation',
     globalRatchet: { baseline: { lines: 0, functions: 0, branches: 0 }, maximumRegression: 0 },
     criticalDomains: [],
   })}\n`)
@@ -73,7 +77,7 @@ function passedReceipt(overrides = {}) {
     status: 'passed',
     taskId: 'storefront-assurance',
     profile: 'full',
-    claimBoundary: 'functional_system_without_commercial_activation',
+    claimBoundary: 'local_runtime_assurance_without_commercial_activation',
     ...identity,
     outputs: [STOREFRONT_TESTS_OUTPUT, STOREFRONT_COVERAGE_OUTPUT],
     outputSha256,
@@ -219,6 +223,12 @@ test('reuses passed Vitest files but keeps Playwright as separate executable evi
     { kind: 'vitest', status: 'reused' },
     { kind: 'playwright', status: 'execute' },
   ])
+})
+
+test('risk-domain task binds its normalized summary as receipt output', () => {
+  const task = assuranceTasks.tasks.find(({ id }) => id === 'risk-domain-evidence')
+
+  assert.deepEqual(task.outputs, ['.artifacts/assurance/risk-domain-evidence.json'])
 })
 
 test('rejects missing or unsafe runtime evidence before execution', () => {

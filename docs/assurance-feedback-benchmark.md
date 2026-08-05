@@ -5,7 +5,7 @@
 - Date: 2026-08-03 (Europe/Paris)
 - Revision: `9ca4f46c58cca343269cf25abf79c2f99fe74d55`
 - Profile: `full --no-cache`
-- Claim boundary: `functional_system_without_commercial_activation`
+- Claim boundary: `local_runtime_assurance_without_commercial_activation`
 - Result: 15 passed, 0 failed, 0 blocked, 0 deferred
 - Receipt window: 85.298 s from the first task start to the final summary
 - Cache context: assurance receipt reuse disabled; local shared Turborepo cache retained
@@ -69,7 +69,7 @@ POS behavior.
 - Date: 2026-08-03 (Europe/Paris)
 - Revision: `6289284bbfd632c79667bf03a586dd97e4a1e402`
 - Profile: `full`
-- Claim boundary: `functional_system_without_commercial_activation`
+- Claim boundary: `local_runtime_assurance_without_commercial_activation`
 - Command: `/usr/bin/time -p pnpm assurance:full`
 - Assurance workers: 4 (default; `BNS_ASSURANCE_WORKERS` unset)
 - Machine: Apple M4 Pro, arm64, 14 logical CPUs

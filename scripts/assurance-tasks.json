@@ -142,7 +142,7 @@
       "dependencies": ["risk-test-matrix", "storefront-assurance"],
       "command": ["node", "scripts/run-risk-domain-evidence.mjs"],
       "inputs": ["scripts/lib/assurance-identity.mjs", "scripts/run-risk-domain-evidence.mjs", "scripts/run-storefront-assurance.mjs", "scripts/risk-test-matrix.json", ".artifacts/assurance/storefront-tests.json", ".artifacts/assurance/storefront-coverage.json", ".artifacts/assurance/tasks/storefront-assurance.json"],
-      "outputs": [],
+      "outputs": [".artifacts/assurance/risk-domain-evidence.json"],
       "environmentKeys": ["CI"]
     },
     {
