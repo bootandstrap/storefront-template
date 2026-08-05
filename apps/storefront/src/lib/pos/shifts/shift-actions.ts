@@ -7,8 +7,8 @@
  * Data flow:
  *   Frontend → shift-actions.ts → medusa-pos-module.ts → Medusa Admin API
  *
- * Each action is gated by `withPanelGuard()` and scoped to the tenant's
- * Medusa instance via `getTenantMedusaScope()`.
+ * Each action is gated by the `enable_pos_shifts` capability and scoped to
+ * the tenant's Medusa instance via `getTenantMedusaScope()`.
  *
  * @module lib/pos/shifts/shift-actions
  */
@@ -41,7 +41,7 @@ export async function openShiftAction(
     input: OpenShiftInput
 ): Promise<{ shift: PosShift | null; error: string | null }> {
     try {
-        const { tenantId, appConfig } = await withPanelGuard()
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
 
         // Gate: shifts require Pro+ tier
         if (!appConfig?.featureFlags?.enable_pos_shifts) {
@@ -113,7 +113,7 @@ export async function closeShiftAction(
     error: string | null
 }> {
     try {
-        const { tenantId } = await withPanelGuard()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
         const scope = await getTenantMedusaScope(tenantId)
 
         // Fetch current shift for discrepancy calculation
@@ -181,7 +181,7 @@ export async function getActiveShiftAction(
     operator?: string
 ): Promise<{ shift: PosShift | null; error: string | null }> {
     try {
-        const { tenantId } = await withPanelGuard()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
         const scope = await getTenantMedusaScope(tenantId)
 
         const filters: { status: string; operator?: string } = { status: 'open' }
@@ -208,7 +208,7 @@ export async function listShiftsAction(
     filters?: { status?: string; operator?: string }
 ): Promise<{ shifts: PosShift[]; error: string | null }> {
     try {
-        const { tenantId, appConfig } = await withPanelGuard()
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
 
         // Gate: shifts require Pro+ tier
         if (!appConfig?.featureFlags?.enable_pos_shifts) {
@@ -240,7 +240,7 @@ export async function getShiftDetailAction(
     shiftId: string
 ): Promise<{ shift: ShiftDetail | null; error: string | null }> {
     try {
-        const { tenantId } = await withPanelGuard()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
         const scope = await getTenantMedusaScope(tenantId)
 
         const raw = await getPOSShift(shiftId, scope)
