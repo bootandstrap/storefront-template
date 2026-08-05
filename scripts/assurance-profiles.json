@@ -46,6 +46,7 @@
       "claimBoundary": "changed_scope_feedback_only",
       "alwaysTasks": [
         "assurance-policy",
+        "assurance-contracts",
         "rls-policy",
         "audit-policy",
         "schema-ownership",
@@ -161,6 +162,7 @@
       "claimBoundary": "local_runtime_assurance_without_commercial_activation",
       "tasks": [
         "assurance-policy",
+        "assurance-contracts",
         "rls-policy",
         "audit-policy",
         "schema-ownership",

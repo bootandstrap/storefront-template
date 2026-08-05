@@ -16,6 +16,7 @@ import {
 import { hashInputs, hashWorkingTree, runGit, sha256 } from './lib/assurance-identity.mjs'
 import { discoverChangedFiles, selectImpact } from './lib/assurance-impact.mjs'
 import { resolveProfile } from './lib/assurance-profile.mjs'
+import { resolveAssuranceWorkerCount } from './lib/assurance-workers.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
@@ -184,14 +185,6 @@ function writeDryRunPlan({ resolved, graph, changedFiles, impactPlan }) {
   })}\n`)
 }
 
-function assuranceWorkerCount() {
-  const workers = Number.parseInt(process.env.BNS_ASSURANCE_WORKERS ?? '4', 10)
-  if (!Number.isInteger(workers) || workers <= 0) {
-    throw new Error('BNS_ASSURANCE_WORKERS must be a positive integer')
-  }
-  return workers
-}
-
 function bindSignalHandlers(children, interruption) {
   const stopChildren = (signal) => {
     interruption.active = true
@@ -245,7 +238,7 @@ async function main() {
     })}\n`)
   }
 
-  const configuredWorkers = assuranceWorkerCount()
+  const configuredWorkers = resolveAssuranceWorkerCount(process.env.BNS_ASSURANCE_WORKERS)
 
   const revision = runGit(repoRoot, ['rev-parse', 'HEAD']).toString('utf8').trim()
   const workingTreeSha256 = await hashWorkingTree(repoRoot)

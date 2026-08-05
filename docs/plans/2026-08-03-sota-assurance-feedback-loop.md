@@ -161,7 +161,11 @@ Expected: FAIL because the DAG implementation is absent.
 **Step 3: Implement execution and cache validity**
 
 - Use `spawn` with `shell: false`.
-- Limit parallelism to the number of ready tasks and a configurable `BNS_ASSURANCE_WORKERS`, defaulting conservatively to `4`.
+- Limit parallelism to the number of ready tasks and a configurable
+  `BNS_ASSURANCE_WORKERS`. The original default of `4` was superseded by `2`
+  on 2026-08-05 after fresh full runs reproduced local lint process failures
+  under concurrent coverage, Playwright and build load; the isolated lint input
+  remained green.
 - Cache only successful tasks whose revision, dirty-tree hash, inputs hash, toolchain hash, profile semantics, and declared outputs still match.
 - Write receipts atomically under `.artifacts/assurance/tasks/<task-id>.json`.
 - On `SIGINT`/`SIGTERM`, stop scheduling new tasks, terminate children, and write an interrupted summary.
