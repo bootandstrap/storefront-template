@@ -80,8 +80,8 @@ export async function createPOSRefundAction(input: {
     try {
         const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
 
-        if (input.refund_amount <= 0) {
-            return { success: false, refund: null, error: 'Refund amount must be positive' }
+        if (!Number.isSafeInteger(input.refund_amount) || input.refund_amount <= 0) {
+            return { success: false, refund: null, error: 'Refund amount must use positive integer minor units' }
         }
 
         if (input.items.length === 0) {
@@ -92,6 +92,50 @@ export async function createPOSRefundAction(input: {
         const order = await getAdminOrderDetail(input.order_id, scope)
         if (!order) {
             return { success: false, refund: null, error: 'Order not found' }
+        }
+
+        const seenItemIds = new Set<string>()
+        const validatedItems: Array<{ title: string; quantity: number; amount: number }> = []
+        let serverRefundAmount = 0
+        for (const selectedItem of input.items) {
+            if (seenItemIds.has(selectedItem.item_id)) {
+                return { success: false, refund: null, error: 'Duplicate refund item' }
+            }
+            seenItemIds.add(selectedItem.item_id)
+
+            const orderItem = order.items.find(item => item.id === selectedItem.item_id)
+            if (!orderItem) {
+                return { success: false, refund: null, error: 'Refund item does not belong to order' }
+            }
+            if (
+                !Number.isSafeInteger(selectedItem.quantity)
+                || selectedItem.quantity <= 0
+                || selectedItem.quantity > orderItem.quantity
+            ) {
+                return { success: false, refund: null, error: 'Invalid refund item quantity' }
+            }
+            if (!Number.isSafeInteger(orderItem.unit_price) || orderItem.unit_price < 0) {
+                return { success: false, refund: null, error: 'Order item price is invalid' }
+            }
+
+            const amount = orderItem.unit_price * selectedItem.quantity
+            if (!Number.isSafeInteger(amount)) {
+                return { success: false, refund: null, error: 'Refund amount exceeds safe integer range' }
+            }
+            serverRefundAmount += amount
+            validatedItems.push({
+                title: orderItem.title,
+                quantity: selectedItem.quantity,
+                amount,
+            })
+        }
+        if (
+            !Number.isSafeInteger(serverRefundAmount)
+            || serverRefundAmount <= 0
+            || serverRefundAmount > order.total
+            || serverRefundAmount !== input.refund_amount
+        ) {
+            return { success: false, refund: null, error: 'Refund amount does not match selected order items' }
         }
 
         // Build refund note
@@ -114,7 +158,7 @@ export async function createPOSRefundAction(input: {
         const { error } = await createOrderRefund(
             input.order_id,
             {
-                amount: input.refund_amount,
+                amount: serverRefundAmount,
                 reason: input.reason === 'other' ? 'other' : 'return',
                 note,
             },
@@ -126,22 +170,13 @@ export async function createPOSRefundAction(input: {
         }
 
         // Build receipt data
-        const refundItems = input.items.map(i => {
-            const orderItem = order.items.find(oi => oi.id === i.item_id)
-            return {
-                title: orderItem?.title || 'Unknown',
-                quantity: i.quantity,
-                amount: (orderItem?.unit_price || 0) * i.quantity,
-            }
-        })
-
         const refund: POSRefund = {
             id: `ref_${Date.now()}`,
             order_id: input.order_id,
-            items: refundItems,
+            items: validatedItems,
             reason: input.reason,
             reason_note: input.reason_note,
-            total_refund: input.refund_amount,
+            total_refund: serverRefundAmount,
             currency_code: order.currency_code,
             created_at: new Date().toISOString(),
             status: 'completed',

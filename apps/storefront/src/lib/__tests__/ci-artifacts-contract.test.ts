@@ -273,11 +273,13 @@ describe('CI artifact contract', () => {
             'apps/storefront/src/lib/bns-360/__tests__/pos-primary-journey.test.ts',
             'apps/storefront/src/lib/pos/__tests__/medusa-pos-module.behavior.test.ts',
             'apps/storefront/src/lib/pos/customers/__tests__/customer-refund.test.ts',
+            'apps/storefront/src/lib/pos/refunds/__tests__/refund-actions.behavior.test.ts',
             'apps/storefront/src/lib/pos/history/__tests__/history.test.ts',
         ]))
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('pos-primary-journey.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('medusa-pos-module.behavior.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('customer-refund.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('refund-actions.behavior.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('history.test.ts')
     })
 
