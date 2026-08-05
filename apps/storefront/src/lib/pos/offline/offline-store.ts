@@ -160,6 +160,25 @@ export async function cacheProducts(products: CachedProduct[]): Promise<void> {
     await txComplete(transaction)
 }
 
+/** Replace the full product snapshot atomically, including an empty catalog. */
+export async function replaceProducts(products: CachedProduct[]): Promise<void> {
+    const { store, tx: transaction } = await tx(STORE_PRODUCTS, 'readwrite')
+
+    store.clear()
+    for (const product of products) {
+        const skus = product.variants
+            .map(v => v.sku)
+            .filter((sku): sku is string => !!sku)
+
+        store.put({
+            ...product,
+            variants_skus: skus,
+        })
+    }
+
+    await txComplete(transaction)
+}
+
 /** Get all cached products */
 export async function getProducts(): Promise<CachedProduct[]> {
     const { store } = await tx(STORE_PRODUCTS)

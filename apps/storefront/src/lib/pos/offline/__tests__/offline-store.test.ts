@@ -19,6 +19,7 @@ describe('Offline Store — API Contract', () => {
         const store = await import('../offline-store')
 
         expect(typeof store.cacheProducts).toBe('function')
+        expect(typeof store.replaceProducts).toBe('function')
         expect(typeof store.getProducts).toBe('function')
         expect(typeof store.getProductBySku).toBe('function')
         expect(typeof store.clearProductCache).toBe('function')

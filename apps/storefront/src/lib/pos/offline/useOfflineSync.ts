@@ -54,6 +54,7 @@ type CreatePOSSaleAction = (input: {
     }
 }>
 type OfflineStore = typeof import('./offline-store')
+type ProductSyncResult = import('./product-sync').ProductSyncResult
 
 // ── Types ──
 
@@ -80,6 +81,19 @@ export interface UseOfflineSyncReturn {
         | 'known_server_sequence'
         | 'sync_state'
     >) => Promise<void>
+}
+
+export async function applyProductCatalogSyncResult(
+    store: Pick<OfflineStore, 'replaceProducts' | 'setLastSyncTime' | 'getProducts'>,
+    result: ProductSyncResult,
+): Promise<CachedProduct[]> {
+    if (result.error) {
+        throw new Error(result.error)
+    }
+
+    await store.replaceProducts(result.products)
+    await store.setLastSyncTime(result.serverTime)
+    return store.getProducts()
 }
 
 export async function syncPendingSaleWithProtocol(
@@ -368,15 +382,8 @@ export function useOfflineSync(tenantId?: string): UseOfflineSyncReturn {
             const lastSync = await store.getLastSyncTime()
             const result = await syncProductCatalogAction(lastSync ?? undefined)
 
-            if (result.products.length > 0) {
-                await store.cacheProducts(result.products)
-            }
-
-            await store.setLastSyncTime(result.serverTime)
+            const allProducts = await applyProductCatalogSyncResult(store, result)
             setLastSyncTime(new Date(result.serverTime))
-
-            // Reload full cache
-            const allProducts = await store.getProducts()
             setCachedProducts(allProducts)
         } catch {
             // Silent failure — cached products still available

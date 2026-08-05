@@ -1,14 +1,15 @@
 /**
  * POS Product Sync — Server Action + Client Logic
  *
- * Handles incremental product catalog synchronization:
+ * Handles authoritative full-snapshot product catalog synchronization:
  * - Server action fetches products from Medusa admin API
- * - Client function orchestrates cache refresh via IndexedDB
+ * - Client function atomically replaces the IndexedDB cache
  */
 'use server'
 
 import { withPanelGuard } from '@/lib/panel-guard'
-import { resolveScope, getAdminProductsFull } from '@/lib/medusa/admin'
+import { getAdminProductsFull } from '@/lib/medusa/admin'
+import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
 import type { CachedProduct } from './offline-store'
 
 // ── Types ──
@@ -30,13 +31,19 @@ export async function syncProductCatalogAction(
     _since?: number
 ): Promise<ProductSyncResult> {
     try {
-        await withPanelGuard()
-        const scope = await resolveScope()
+        const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_offline_cart' })
+        const scope = await getTenantMedusaScope(tenantId)
+        if (!scope) {
+            throw new Error('POS product sync unavailable: tenant scope is missing')
+        }
 
-        const { products } = await getAdminProductsFull({
+        const { products, error } = await getAdminProductsFull({
             limit: 500,
             status: 'published',
         }, scope)
+        if (error) {
+            throw new Error('POS product sync unavailable')
+        }
 
         const cached: CachedProduct[] = products.map(p => ({
             id: p.id,

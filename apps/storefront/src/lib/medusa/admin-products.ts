@@ -129,7 +129,7 @@ export async function getAdminProductsFull(params?: {
     offset?: number
     status?: string
     q?: string
-}, scope?: TenantMedusaScope | null): Promise<{ products: AdminProductFull[]; count: number }> {
+}, scope?: TenantMedusaScope | null): Promise<{ products: AdminProductFull[]; count: number; error: string | null }> {
     const normalized = normalizeAdminListParams({
         limit: params?.limit,
         offset: params?.offset,
@@ -157,6 +157,7 @@ export async function getAdminProductsFull(params?: {
     return {
         products: res.data?.products ?? [],
         count: res.data?.count ?? 0,
+        error: res.error,
     }
 }
 
