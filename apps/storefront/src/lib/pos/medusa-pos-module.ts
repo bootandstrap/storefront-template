@@ -100,6 +100,19 @@ export interface PosSyncCommitInput extends PosSyncReservationInput {
     display_id: number
 }
 
+export class POSModuleUnavailableError extends Error {
+    readonly code = 'pos_runtime_unavailable'
+
+    constructor() {
+        super('POS runtime unavailable')
+        this.name = 'POSModuleUnavailableError'
+    }
+}
+
+function requirePOSReadAvailable(error: string | null): void {
+    if (error) throw new POSModuleUnavailableError()
+}
+
 async function writePOSSyncOperation(
     phase: 'reserve' | 'commit',
     sync: PosSyncReservationInput | PosSyncCommitInput,
@@ -179,22 +192,18 @@ export async function listPOSSessions(
     filters?: { status?: string; terminal_id?: string },
     scope?: TenantMedusaScope | null
 ): Promise<PosSession[]> {
-    try {
-        const params = new URLSearchParams()
-        if (filters?.status) params.set('status', filters.status)
-        if (filters?.terminal_id) params.set('terminal_id', filters.terminal_id)
-        const qs = params.toString()
+    const params = new URLSearchParams()
+    if (filters?.status) params.set('status', filters.status)
+    if (filters?.terminal_id) params.set('terminal_id', filters.terminal_id)
+    const qs = params.toString()
 
-        const res = await adminFetch<{ sessions: PosSession[] }>(
-            `/admin/pos/sessions${qs ? `?${qs}` : ''}`,
-            {},
-            scope
-        )
-        return res.data?.sessions ?? []
-    } catch {
-        // Graceful: POS module not deployed → empty list
-        return []
-    }
+    const res = await adminFetch<{ sessions: PosSession[] }>(
+        `/admin/pos/sessions${qs ? `?${qs}` : ''}`,
+        {},
+        scope
+    )
+    requirePOSReadAvailable(res.error)
+    return res.data?.sessions ?? []
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -234,22 +243,18 @@ export async function listPOSTransactions(
     filters?: { session_id?: string; payment_method?: string },
     scope?: TenantMedusaScope | null
 ): Promise<PosTransaction[]> {
-    try {
-        const params = new URLSearchParams()
-        if (filters?.session_id) params.set('session_id', filters.session_id)
-        if (filters?.payment_method) params.set('payment_method', filters.payment_method)
-        const qs = params.toString()
+    const params = new URLSearchParams()
+    if (filters?.session_id) params.set('session_id', filters.session_id)
+    if (filters?.payment_method) params.set('payment_method', filters.payment_method)
+    const qs = params.toString()
 
-        const res = await adminFetch<{ transactions: PosTransaction[] }>(
-            `/admin/pos/transactions${qs ? `?${qs}` : ''}`,
-            {},
-            scope
-        )
-        return res.data?.transactions ?? []
-    } catch {
-        // Graceful: POS module not deployed → empty list
-        return []
-    }
+    const res = await adminFetch<{ transactions: PosTransaction[] }>(
+        `/admin/pos/transactions${qs ? `?${qs}` : ''}`,
+        {},
+        scope
+    )
+    requirePOSReadAvailable(res.error)
+    return res.data?.transactions ?? []
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -303,39 +308,31 @@ export async function getPOSShift(
     shiftId: string,
     scope?: TenantMedusaScope | null
 ): Promise<PosShift | null> {
-    try {
-        const res = await adminFetch<{ shift: PosShift }>(
-            `/admin/pos/shifts/${shiftId}`,
-            {},
-            scope
-        )
-        return res.data?.shift ?? null
-    } catch {
-        // Graceful: POS module not deployed
-        return null
-    }
+    const res = await adminFetch<{ shift: PosShift }>(
+        `/admin/pos/shifts/${shiftId}`,
+        {},
+        scope
+    )
+    requirePOSReadAvailable(res.error)
+    return res.data?.shift ?? null
 }
 
 export async function listPOSShifts(
     filters?: { status?: string; operator?: string },
     scope?: TenantMedusaScope | null
 ): Promise<PosShift[]> {
-    try {
-        const params = new URLSearchParams()
-        if (filters?.status) params.set('status', filters.status)
-        if (filters?.operator) params.set('operator', filters.operator)
-        const qs = params.toString()
+    const params = new URLSearchParams()
+    if (filters?.status) params.set('status', filters.status)
+    if (filters?.operator) params.set('operator', filters.operator)
+    const qs = params.toString()
 
-        const res = await adminFetch<{ shifts: PosShift[] }>(
-            `/admin/pos/shifts${qs ? `?${qs}` : ''}`,
-            {},
-            scope
-        )
-        return res.data?.shifts ?? []
-    } catch {
-        // Graceful: POS module not deployed → empty list
-        return []
-    }
+    const res = await adminFetch<{ shifts: PosShift[] }>(
+        `/admin/pos/shifts${qs ? `?${qs}` : ''}`,
+        {},
+        scope
+    )
+    requirePOSReadAvailable(res.error)
+    return res.data?.shifts ?? []
 }
 
 /**
