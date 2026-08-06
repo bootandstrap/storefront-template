@@ -277,6 +277,11 @@ describe('CI artifact contract', () => {
             'apps/storefront/src/lib/pos/shifts/__tests__/shift-actions.behavior.test.ts',
             'apps/storefront/src/lib/pos/offline/__tests__/product-sync.behavior.test.ts',
             'apps/storefront/src/lib/pos/history/__tests__/history.test.ts',
+            'apps/storefront/src/lib/pos/__tests__/use-barcode-scanner.behavior.test.ts',
+            'apps/storefront/src/lib/pos/__tests__/use-pos-sounds.behavior.test.ts',
+            'apps/storefront/src/lib/pos/__tests__/use-printer-connection.behavior.test.ts',
+            'apps/storefront/src/lib/pos/history/__tests__/sales-history.behavior.test.ts',
+            'apps/storefront/src/lib/pos/history/__tests__/daily-stats.behavior.test.ts',
         ]))
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('pos-primary-journey.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('medusa-pos-module.behavior.test.ts')
@@ -285,6 +290,11 @@ describe('CI artifact contract', () => {
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('shift-actions.behavior.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('product-sync.behavior.test.ts')
         expect(posDomain?.runtimeEvidence.join('\n')).toContain('history.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('use-barcode-scanner.behavior.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('use-pos-sounds.behavior.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('use-printer-connection.behavior.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('sales-history.behavior.test.ts')
+        expect(posDomain?.runtimeEvidence.join('\n')).toContain('daily-stats.behavior.test.ts')
     })
 
     it('runs the critical risk-domain test matrix in GitHub CI', () => {

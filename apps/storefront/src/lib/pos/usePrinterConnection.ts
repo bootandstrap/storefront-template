@@ -12,7 +12,7 @@
  *   const { status, device, connect, disconnect, printReceipt } = usePrinterConnection()
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
     createPrintEngine,
     type PrintEngine,
@@ -44,6 +44,57 @@ function getEngine(): PrintEngine {
 }
 
 const printerEngine = getEngine()
+
+export interface PrinterConnectionSnapshot {
+    availability: 'ready' | 'unavailable'
+    status: PrinterStatus
+    device: PrinterDevice | null
+    lastError: string | null
+    isPrinting: boolean
+}
+
+export interface PrinterConnectionController {
+    getSnapshot(): PrinterConnectionSnapshot
+    connect(): Promise<boolean>
+    disconnect(): Promise<void>
+    dispose(): void
+}
+
+export function createPrinterConnectionController(
+    engine: PrintEngine,
+    onChange?: (snapshot: PrinterConnectionSnapshot, event: PrintEngineEvent) => void,
+): PrinterConnectionController {
+    const initial = engine.getState()
+    let snapshot: PrinterConnectionSnapshot = {
+        availability: engine.isSerialAvailable() ? 'ready' : 'unavailable',
+        status: initial.status,
+        device: initial.device,
+        lastError: initial.lastError,
+        isPrinting: false,
+    }
+    const unsubscribe = engine.on((event) => {
+        switch (event.type) {
+            case 'status-change': snapshot = { ...snapshot, status: event.status }; break
+            case 'connected': snapshot = { ...snapshot, device: event.device, lastError: null }; break
+            case 'disconnected': snapshot = { ...snapshot, device: null }; break
+            case 'print-start': snapshot = { ...snapshot, isPrinting: true }; break
+            case 'print-complete': snapshot = { ...snapshot, isPrinting: false }; break
+            case 'print-error': snapshot = { ...snapshot, isPrinting: false, lastError: event.error }; break
+        }
+        onChange?.({ ...snapshot }, event)
+    })
+    let disposed = false
+    return {
+        getSnapshot: () => ({ ...snapshot }),
+        connect: () => snapshot.availability === 'unavailable' ? Promise.resolve(false) : engine.connect(),
+        disconnect: () => engine.disconnect(),
+        dispose() {
+            if (disposed) return
+            disposed = true
+            unsubscribe()
+        },
+    }
+}
 
 export interface UsePrinterConnectionReturn {
     /** Current connection status */
@@ -86,44 +137,32 @@ export function usePrinterConnection(): UsePrinterConnectionReturn {
     const [isPrinting, setIsPrinting] = useState(false)
     const [virtualPrintJobs, setVirtualPrintJobs] = useState<VirtualPrintJob[]>(() => printerEngine.getVirtualPrintJobs())
     const [virtualPrinters] = useState<VirtualPrinterProfile[]>(() => printerEngine.getVirtualPrinters())
+    const controllerRef = useRef<PrinterConnectionController | null>(null)
 
     // Subscribe to engine events
     useEffect(() => {
-        const unsubscribe = printerEngine.on((event: PrintEngineEvent) => {
-            switch (event.type) {
-                case 'status-change':
-                    setStatus(event.status)
-                    break
-                case 'connected':
-                    setDevice(event.device)
-                    setLastError(null)
-                    break
-                case 'disconnected':
-                    setDevice(null)
-                    break
-                case 'print-start':
-                    setIsPrinting(true)
-                    break
-                case 'print-complete':
-                    setIsPrinting(false)
-                    setVirtualPrintJobs(printerEngine.getVirtualPrintJobs())
-                    break
-                case 'print-error':
-                    setIsPrinting(false)
-                    setLastError(event.error)
-                    setVirtualPrintJobs(printerEngine.getVirtualPrintJobs())
-                    break
+        const controller = createPrinterConnectionController(printerEngine, (snapshot, event) => {
+            setStatus(snapshot.status)
+            setDevice(snapshot.device)
+            setLastError(snapshot.lastError)
+            setIsPrinting(snapshot.isPrinting)
+            if (event.type === 'print-complete' || event.type === 'print-error') {
+                setVirtualPrintJobs(printerEngine.getVirtualPrintJobs())
             }
         })
-        return unsubscribe
+        controllerRef.current = controller
+        return () => {
+            controller.dispose()
+            if (controllerRef.current === controller) controllerRef.current = null
+        }
     }, [])
 
     const connect = useCallback(async () => {
-        return printerEngine.connect()
+        return controllerRef.current?.connect() ?? false
     }, [])
 
     const disconnect = useCallback(async () => {
-        return printerEngine.disconnect()
+        return controllerRef.current?.disconnect()
     }, [])
 
     const printReceipt = useCallback(async (sale: POSSale, business: BusinessInfo, options?: Partial<PrintOptions>) => {

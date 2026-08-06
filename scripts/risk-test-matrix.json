@@ -47,7 +47,7 @@
       "id": "pos-simulator",
       "severity": "critical",
       "owner": "storefront-runtime",
-      "minTestFiles": 14,
+      "minTestFiles": 19,
       "failureModes": [
         "POS action mutates data without owner/operator boundary",
         "simulated payment or offline queue loses cart state",
@@ -58,10 +58,12 @@
         "Medusa POS unavailability is misreported as an available empty session, transaction or shift state",
         "a tampered refund amount, item or quantity reaches the Medusa mutation boundary",
         "shift read or mutation bypasses the enable_pos_shifts capability boundary",
-        "offline catalog sync loses tenant scope or advances freshness after a failed snapshot"
+        "offline catalog sync loses tenant scope or advances freshness after a failed snapshot",
+        "browser device adapters leak listeners, timers, audio contexts or serial resources",
+        "POS history converts runtime unavailability into a valid empty result"
       ],
       "runtimeEvidence": [
-        "pnpm --filter=storefront exec vitest run src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts src/lib/pos/payments/__tests__/payment-adapter.test.ts src/lib/pos/offline/__tests__/offline-store.test.ts src/lib/pos/offline/__tests__/pos-sync-conformance.test.ts src/lib/pos/offline/__tests__/pos-sync-runtime.test.ts src/lib/pos/offline/__tests__/pos-sync-mutation-canary.test.ts src/lib/pos/offline/__tests__/product-sync.behavior.test.ts src/lib/pos/__tests__/virtual-printer.test.ts src/lib/pos/__tests__/medusa-pos-module.behavior.test.ts src/lib/bns-360/__tests__/pos-primary-journey.test.ts src/lib/pos/customers/__tests__/customer-refund.test.ts src/lib/pos/refunds/__tests__/refund-actions.behavior.test.ts src/lib/pos/shifts/__tests__/shift-actions.behavior.test.ts src/lib/pos/history/__tests__/history.test.ts"
+        "pnpm --filter=storefront exec vitest run src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts src/lib/pos/payments/__tests__/payment-adapter.test.ts src/lib/pos/offline/__tests__/offline-store.test.ts src/lib/pos/offline/__tests__/pos-sync-conformance.test.ts src/lib/pos/offline/__tests__/pos-sync-runtime.test.ts src/lib/pos/offline/__tests__/pos-sync-mutation-canary.test.ts src/lib/pos/offline/__tests__/product-sync.behavior.test.ts src/lib/pos/__tests__/virtual-printer.test.ts src/lib/pos/__tests__/medusa-pos-module.behavior.test.ts src/lib/pos/__tests__/use-barcode-scanner.behavior.test.ts src/lib/pos/__tests__/use-pos-sounds.behavior.test.ts src/lib/pos/__tests__/use-printer-connection.behavior.test.ts src/lib/bns-360/__tests__/pos-primary-journey.test.ts src/lib/pos/customers/__tests__/customer-refund.test.ts src/lib/pos/refunds/__tests__/refund-actions.behavior.test.ts src/lib/pos/shifts/__tests__/shift-actions.behavior.test.ts src/lib/pos/history/__tests__/history.test.ts src/lib/pos/history/__tests__/sales-history.behavior.test.ts src/lib/pos/history/__tests__/daily-stats.behavior.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/src/app/[lang]/(panel)/panel/pos/__tests__/actions.test.ts",
@@ -73,11 +75,16 @@
         "apps/storefront/src/lib/pos/offline/__tests__/product-sync.behavior.test.ts",
         "apps/storefront/src/lib/pos/__tests__/virtual-printer.test.ts",
         "apps/storefront/src/lib/pos/__tests__/medusa-pos-module.behavior.test.ts",
+        "apps/storefront/src/lib/pos/__tests__/use-barcode-scanner.behavior.test.ts",
+        "apps/storefront/src/lib/pos/__tests__/use-pos-sounds.behavior.test.ts",
+        "apps/storefront/src/lib/pos/__tests__/use-printer-connection.behavior.test.ts",
         "apps/storefront/src/lib/bns-360/__tests__/pos-primary-journey.test.ts",
         "apps/storefront/src/lib/pos/customers/__tests__/customer-refund.test.ts",
         "apps/storefront/src/lib/pos/refunds/__tests__/refund-actions.behavior.test.ts",
         "apps/storefront/src/lib/pos/shifts/__tests__/shift-actions.behavior.test.ts",
-        "apps/storefront/src/lib/pos/history/__tests__/history.test.ts"
+        "apps/storefront/src/lib/pos/history/__tests__/history.test.ts",
+        "apps/storefront/src/lib/pos/history/__tests__/sales-history.behavior.test.ts",
+        "apps/storefront/src/lib/pos/history/__tests__/daily-stats.behavior.test.ts"
       ]
     },
     {

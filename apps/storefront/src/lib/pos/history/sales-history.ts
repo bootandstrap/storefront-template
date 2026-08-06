@@ -18,14 +18,10 @@ export async function getPOSSalesAction(
     filters: POSSalesFilter = {}
 ): Promise<{ sales: POSSaleRecord[]; total: number; error?: string }> {
     try {
-        const { tenantId, appConfig } = await withPanelGuard()
-
-        // Gate check: Pro+ required
-        if (!appConfig?.featureFlags?.enable_pos_shifts) {
-            return { sales: [], total: 0, error: 'Upgrade to Pro for sales history' }
-        }
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
 
         const scope = await getTenantMedusaScope(tenantId)
+        if (!scope) return { sales: [], total: 0, error: 'pos_runtime_unavailable' }
         const { adminFetch } = await import('@/lib/medusa/admin-core')
 
         // Build query params
@@ -86,13 +82,10 @@ export async function getPOSSaleDetailAction(
     orderId: string
 ): Promise<{ sale: POSSaleRecord | null; error?: string }> {
     try {
-        const { tenantId, appConfig } = await withPanelGuard()
-
-        if (!appConfig?.featureFlags?.enable_pos_shifts) {
-            return { sale: null, error: 'Upgrade to Pro for sale details' }
-        }
+        const { tenantId, appConfig } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
 
         const scope = await getTenantMedusaScope(tenantId)
+        if (!scope) return { sale: null, error: 'pos_runtime_unavailable' }
         const { adminFetch } = await import('@/lib/medusa/admin-core')
 
         // v2: Use fields=*relation syntax for cart expansion
@@ -102,7 +95,9 @@ export async function getPOSSaleDetailAction(
             scope
         )
 
-        if (res.error || !res.data?.draft_order) return { sale: null }
+        if (res.error || !res.data?.draft_order) {
+            return { sale: null, error: res.error || 'No data returned' }
+        }
 
         return { sale: mapDraftOrderToSaleRecord(res.data.draft_order, appConfig.config.default_currency) }
     } catch (err) {

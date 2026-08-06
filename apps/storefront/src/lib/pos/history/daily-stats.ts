@@ -17,25 +17,24 @@ export async function getDailyStatsAction(
     date?: string // YYYY-MM-DD, defaults to today
 ): Promise<{ stats: DailyStats | null; error?: string }> {
     try {
-        const { appConfig } = await withPanelGuard()
-
-        // Enterprise gate — daily analytics requires enable_pos_reports
-        if (!appConfig?.featureFlags?.enable_pos_reports) {
-            return { stats: null, error: 'Upgrade to Enterprise for analytics' }
-        }
+        await withPanelGuard({ requiredFlag: 'enable_pos_reports' })
 
         // Fetch all POS sales for the target date
         const targetDate = date || new Date().toISOString().split('T')[0]
+        if (!isValidUTCDate(targetDate)) {
+            return { stats: null, error: 'Invalid report date' }
+        }
         const dayStart = `${targetDate}T00:00:00.000Z`
         const dayEnd = `${targetDate}T23:59:59.999Z`
 
         // Use sales-history action internally
         const { getPOSSalesAction } = await import('./sales-history')
-        const { sales } = await getPOSSalesAction({
+        const { sales, error } = await getPOSSalesAction({
             from: dayStart,
             to: dayEnd,
             limit: 500,
         })
+        if (error) return { stats: null, error }
 
         if (sales.length === 0) {
             return {
@@ -58,6 +57,12 @@ export async function getDailyStatsAction(
             error: err instanceof Error ? err.message : 'Stats failed',
         }
     }
+}
+
+function isValidUTCDate(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+    const date = new Date(`${value}T00:00:00.000Z`)
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
 // ---------------------------------------------------------------------------

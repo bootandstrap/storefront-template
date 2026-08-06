@@ -24,72 +24,109 @@ interface UseBarcodeOptions {
     enabled?: boolean
 }
 
+interface BarcodeEventTarget {
+    addEventListener(type: 'keydown', listener: (event: KeyboardEvent) => void, options?: AddEventListenerOptions): void
+    removeEventListener(type: 'keydown', listener: (event: KeyboardEvent) => void, options?: EventListenerOptions): void
+}
+
+export interface BarcodeScannerControllerOptions extends UseBarcodeOptions {
+    eventTarget?: BarcodeEventTarget | null
+}
+
+export interface BarcodeScannerController {
+    availability: 'ready' | 'unavailable'
+    manualScan(barcode: string): void
+    dispose(): void
+}
+
+export function createBarcodeScannerController({
+    onScan,
+    minLength = 4,
+    maxKeyInterval = 50,
+    enabled = true,
+    eventTarget = typeof window === 'undefined' ? null : window,
+}: BarcodeScannerControllerOptions): BarcodeScannerController {
+    let buffer = ''
+    let lastKeyTime = 0
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let disposed = false
+
+    const clearTimer = () => {
+        if (timer !== null) clearTimeout(timer)
+        timer = null
+    }
+    const processBuffer = () => {
+        timer = null
+        if (disposed) return
+        const barcode = buffer.trim()
+        buffer = ''
+        if (barcode.length >= minLength) onScan(barcode)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+        const element = event.target as HTMLElement | null
+        const tag = element?.tagName?.toLowerCase()
+        if ((tag === 'input' || tag === 'textarea') && element?.dataset?.posSearch !== 'true') return
+
+        const now = Date.now()
+        if (now - lastKeyTime > maxKeyInterval && buffer.length > 0) buffer = ''
+        lastKeyTime = now
+
+        if (event.key === 'Enter' && buffer.length >= minLength) {
+            event.preventDefault()
+            event.stopPropagation()
+            clearTimer()
+            processBuffer()
+            return
+        }
+        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            buffer += event.key
+            clearTimer()
+            timer = setTimeout(processBuffer, 100)
+        }
+    }
+
+    if (enabled && eventTarget) eventTarget.addEventListener('keydown', handleKeyDown, { capture: true })
+
+    return {
+        availability: enabled && eventTarget ? 'ready' : 'unavailable',
+        manualScan(barcode) {
+            const normalized = barcode.trim()
+            if (!disposed && normalized.length >= minLength) onScan(normalized)
+        },
+        dispose() {
+            if (disposed) return
+            disposed = true
+            buffer = ''
+            clearTimer()
+            if (enabled && eventTarget) eventTarget.removeEventListener('keydown', handleKeyDown, { capture: true })
+        },
+    }
+}
+
 export function useBarcodeScanner({
     onScan,
     minLength = 4,
     maxKeyInterval = 50,
     enabled = true,
 }: UseBarcodeOptions) {
-    const bufferRef = useRef('')
-    const lastKeyTimeRef = useRef(0)
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    const processBuffer = useCallback(() => {
-        const barcode = bufferRef.current.trim()
-        if (barcode.length >= minLength) {
-            onScan(barcode)
-        }
-        bufferRef.current = ''
-    }, [onScan, minLength])
+    const controllerRef = useRef<BarcodeScannerController | null>(null)
 
     useEffect(() => {
-        if (!enabled) return
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if user is typing in an input/textarea
-            const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
-            const isSearchField = (e.target as HTMLElement)?.dataset?.posSearch === 'true'
-            if ((tag === 'input' || tag === 'textarea') && !isSearchField) return
-
-            const now = Date.now()
-            const elapsed = now - lastKeyTimeRef.current
-            lastKeyTimeRef.current = now
-
-            // If too much time passed, reset buffer
-            if (elapsed > maxKeyInterval && bufferRef.current.length > 0) {
-                bufferRef.current = ''
-            }
-
-            // Enter key = end of barcode
-            if (e.key === 'Enter' && bufferRef.current.length >= minLength) {
-                e.preventDefault()
-                e.stopPropagation()
-                if (timerRef.current) clearTimeout(timerRef.current)
-                processBuffer()
-                return
-            }
-
-            // Accumulate printable characters
-            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                bufferRef.current += e.key
-
-                // Auto-process after a brief pause (scanner sends Enter, but just in case)
-                if (timerRef.current) clearTimeout(timerRef.current)
-                timerRef.current = setTimeout(processBuffer, 100)
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown, { capture: true })
+        const controller = createBarcodeScannerController({ onScan, minLength, maxKeyInterval, enabled })
+        controllerRef.current = controller
         return () => {
-            window.removeEventListener('keydown', handleKeyDown, { capture: true })
-            if (timerRef.current) clearTimeout(timerRef.current)
+            controller.dispose()
+            if (controllerRef.current === controller) controllerRef.current = null
         }
-    }, [enabled, maxKeyInterval, minLength, processBuffer])
+    }, [enabled, maxKeyInterval, minLength, onScan])
 
     /** Manual barcode input (e.g., typed into the search bar) */
     const manualScan = useCallback((barcode: string) => {
-        if (barcode.trim().length >= minLength) {
-            onScan(barcode.trim())
+        const controller = controllerRef.current
+        if (controller) controller.manualScan(barcode)
+        else {
+            const normalized = barcode.trim()
+            if (normalized.length >= minLength) onScan(normalized)
         }
     }, [onScan, minLength])
 

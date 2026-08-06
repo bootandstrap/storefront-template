@@ -6,7 +6,7 @@
  */
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 function getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null
@@ -19,56 +19,119 @@ function getAudioContext(): AudioContext | null {
     }
 }
 
-function playTone(ctx: AudioContext, freq: number, duration: number, type: OscillatorType = 'sine', volume = 0.3) {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = type
-    osc.frequency.setValueAtTime(freq, ctx.currentTime)
-    gain.gain.setValueAtTime(volume, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration)
-    osc.connect(gain).connect(ctx.destination)
-    osc.start()
-    osc.stop(ctx.currentTime + duration)
+export interface POSSoundsControllerOptions {
+    createAudioContext?: (() => AudioContext) | null
+    prefersReducedMotion?: () => boolean
+}
+
+export interface POSSoundsController {
+    readonly availability: 'ready' | 'unavailable' | 'error'
+    playBeep(): void
+    playCashRegister(): void
+    playError(): void
+    playTick(): void
+    dispose(): Promise<void>
+}
+
+export function createPOSSoundsController({
+    createAudioContext = typeof window === 'undefined' ? null : () => getAudioContext() as AudioContext,
+    prefersReducedMotion = () => typeof window !== 'undefined'
+        && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
+}: POSSoundsControllerOptions = {}): POSSoundsController {
+    let availability: POSSoundsController['availability'] = !createAudioContext || prefersReducedMotion()
+        ? 'unavailable'
+        : 'ready'
+    let context: AudioContext | null = null
+    let disposed = false
+    const timers = new Set<ReturnType<typeof setTimeout>>()
+    const nodes = new Set<{ oscillator: OscillatorNode; gain: GainNode }>()
+
+    const ensureContext = () => {
+        if (disposed || availability === 'unavailable' || !createAudioContext) return null
+        try {
+            context ??= createAudioContext()
+            if (context.state === 'suspended') void context.resume().catch(() => { availability = 'error' })
+            return context
+        } catch {
+            availability = 'error'
+            return null
+        }
+    }
+    const playTone = (frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.3) => {
+        const audioContext = ensureContext()
+        if (!audioContext) return false
+        const oscillator = audioContext.createOscillator()
+        const gain = audioContext.createGain()
+        nodes.add({ oscillator, gain })
+        oscillator.type = type
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
+        gain.gain.setValueAtTime(volume, audioContext.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration)
+        oscillator.connect(gain)
+        gain.connect(audioContext.destination)
+        oscillator.start()
+        oscillator.stop(audioContext.currentTime + duration)
+        return true
+    }
+    const scheduleTone = (delay: number, tone: () => void) => {
+        const timer = setTimeout(() => {
+            timers.delete(timer)
+            if (!disposed) tone()
+        }, delay)
+        timers.add(timer)
+    }
+
+    return {
+        get availability() { return availability },
+        playBeep: () => playTone(1200, 0.1, 'sine', 0.2),
+        playCashRegister() {
+            if (!playTone(800, 0.08, 'square', 0.15)) return
+            scheduleTone(80, () => playTone(1200, 0.08, 'square', 0.15))
+            scheduleTone(160, () => playTone(1600, 0.15, 'sine', 0.2))
+        },
+        playError: () => playTone(200, 0.3, 'sawtooth', 0.15),
+        playTick: () => playTone(600, 0.05, 'sine', 0.1),
+        async dispose() {
+            if (disposed) return
+            disposed = true
+            for (const timer of timers) clearTimeout(timer)
+            timers.clear()
+            for (const { oscillator, gain } of nodes) {
+                try { oscillator.stop() } catch { /* already stopped */ }
+                oscillator.disconnect()
+                gain.disconnect()
+            }
+            nodes.clear()
+            if (context && context.state !== 'closed') await context.close()
+            context = null
+        },
+    }
 }
 
 export function usePOSSounds() {
-    const ctxRef = useRef<AudioContext | null>(null)
-
-    const ensureCtx = useCallback(() => {
-        if (!ctxRef.current) ctxRef.current = getAudioContext()
-        if (ctxRef.current?.state === 'suspended') ctxRef.current.resume()
-        return ctxRef.current
-    }, [])
+    const controllerRef = useRef<POSSoundsController | null>(null)
+    if (!controllerRef.current) controllerRef.current = createPOSSoundsController()
+    useEffect(() => () => { void controllerRef.current?.dispose() }, [])
 
     /** High-pitched beep — product scanned or added */
     const playBeep = useCallback(() => {
-        const ctx = ensureCtx()
-        if (!ctx) return
-        playTone(ctx, 1200, 0.1, 'sine', 0.2)
-    }, [ensureCtx])
+        controllerRef.current?.playBeep()
+    }, [])
 
     /** Cha-ching! — sale completed */
     const playCashRegister = useCallback(() => {
-        const ctx = ensureCtx()
-        if (!ctx) return
-        playTone(ctx, 800, 0.08, 'square', 0.15)
-        setTimeout(() => playTone(ctx, 1200, 0.08, 'square', 0.15), 80)
-        setTimeout(() => playTone(ctx, 1600, 0.15, 'sine', 0.2), 160)
-    }, [ensureCtx])
+        controllerRef.current?.playCashRegister()
+    }, [])
 
     /** Low buzz — error */
     const playError = useCallback(() => {
-        const ctx = ensureCtx()
-        if (!ctx) return
-        playTone(ctx, 200, 0.3, 'sawtooth', 0.15)
-    }, [ensureCtx])
+        controllerRef.current?.playError()
+    }, [])
 
     /** Subtle tick — quantity change */
     const playTick = useCallback(() => {
-        const ctx = ensureCtx()
-        if (!ctx) return
-        playTone(ctx, 600, 0.05, 'sine', 0.1)
-    }, [ensureCtx])
+        controllerRef.current?.playTick()
+    }, [])
 
     return { playBeep, playCashRegister, playError, playTick }
 }
