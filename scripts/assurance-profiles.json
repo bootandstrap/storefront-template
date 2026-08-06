@@ -78,6 +78,11 @@
           "tasks": ["shared-typecheck"]
         },
         {
+          "id": "shared-observability-contract",
+          "selector": { "prefix": "packages/shared/src/observability/" },
+          "tasks": ["observability-unit"]
+        },
+        {
           "id": "platform-contract-package",
           "selector": { "prefix": "packages/platform-contract/" },
           "tasks": ["platform-contract-typecheck"]

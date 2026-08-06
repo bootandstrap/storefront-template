@@ -101,6 +101,15 @@ test('observability contract changes select sink and redaction evidence', () => 
   assert.ok(result.tasks.includes('storefront-typecheck'))
 })
 
+test('shared observability changes select the cross-plane behavioral gate', () => {
+  const result = resolveProfile(profiles, 'fast', [
+    'packages/shared/src/observability/evidence-event.ts',
+  ])
+
+  assert.ok(result.tasks.includes('shared-typecheck'))
+  assert.ok(result.tasks.includes('observability-unit'))
+})
+
 test('full profile provides every current release gate exactly once', () => {
   const result = resolveProfile(profiles, 'full', [])
   const capabilities = providedCapabilities(profiles, result.tasks)

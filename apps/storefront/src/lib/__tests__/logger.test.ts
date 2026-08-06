@@ -94,22 +94,23 @@ describe('Structured Logger', () => {
     it('emits normalized evidence with inherited trace and tenant context', async () => {
         const sink = createInMemoryEvidenceSink()
         const scoped = createLogger({
-            trace_id: 'trace-logger-test',
+            trace_id: '0123456789abcdef0123456789abcdef',
             tenant_id: 'tenant-logger-test',
         })
 
         await scoped.evidence({
+            request_id: 'request-logger-test',
+            operation_id: 'operation-logger-test',
             revision: 'revision-test',
-            operation: 'checkout.test',
+            event_name: 'checkout.test',
             outcome: 'success',
-            duration_ms: 3,
-            error_class: 'none',
+            error_code: 'none',
         }, sink)
 
         expect(sink.events[0]).toMatchObject({
-            trace_id: 'trace-logger-test',
+            trace_id: '0123456789abcdef0123456789abcdef',
             tenant_id: 'tenant-logger-test',
-            operation: 'checkout.test',
+            event_name: 'checkout.test',
         })
     })
 })

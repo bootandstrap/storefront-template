@@ -2,7 +2,9 @@ import { logger } from "./lib/logger"
 
 export const EVIDENCE_PROPAGATION_HEADERS = [
     "x-trace-id",
+    "x-request-id",
     "x-tenant-id",
+    "x-operation-id",
 ] as const
 
 function requestHeaders(value: unknown): unknown {
@@ -39,18 +41,24 @@ export const onRequestError = async (...args: unknown[]) => {
     const Sentry = await import("@sentry/nextjs")
     const sentryResult = (Sentry.captureRequestError as (...a: unknown[]) => void)(...args)
     const error = args[0]
-    const traceId = readRequestHeader(args, "x-trace-id") || crypto.randomUUID()
+    const traceId = readRequestHeader(args, "x-trace-id") || crypto.randomUUID().replaceAll("-", "")
+    const requestId = readRequestHeader(args, "x-request-id") || crypto.randomUUID()
     const tenantId = readRequestHeader(args, "x-tenant-id")
+        || process.env.TENANT_ID
+        || process.env.NEXT_PUBLIC_TENANT_ID
+        || "tenant-unavailable"
+    const operationId = readRequestHeader(args, "x-operation-id") || `request-error:${requestId}`
 
     try {
         await logger.evidence({
             trace_id: traceId,
+            request_id: requestId,
             tenant_id: tenantId,
+            operation_id: operationId,
+            event_name: "storefront.request_error",
             revision: process.env.DEPLOY_SHA || process.env.npm_package_version || "dev",
-            operation: "storefront.request_error",
             outcome: "failure",
-            duration_ms: 0,
-            error_class: error instanceof Error ? error.name : "UnknownError",
+            error_code: error instanceof Error ? error.name : "unknown_error",
         })
     } catch {
         logger.error("[instrumentation] Evidence emission failed")

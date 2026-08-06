@@ -26,6 +26,7 @@ interface ReportErrorParams {
 
 const ALLOWLISTED_DETAIL_KEYS = new Set([
     'trace_id',
+    'operation_id',
     'tenant_id',
     'revision',
     'operation',
@@ -59,10 +60,16 @@ export async function reportError({
     const safeDetails = allowlistedDetails(details)
     const traceId = typeof safeDetails.trace_id === 'string'
         ? safeDetails.trace_id
+        : crypto.randomUUID().replaceAll('-', '')
+    const requestId = typeof safeDetails.request_id === 'string'
+        ? safeDetails.request_id
         : crypto.randomUUID()
     const tenantId = typeof safeDetails.tenant_id === 'string'
         ? safeDetails.tenant_id
-        : null
+        : process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID || 'tenant-unavailable'
+    const operationId = typeof safeDetails.operation_id === 'string'
+        ? safeDetails.operation_id
+        : `error:${source}:${requestId}`
     const revision = typeof safeDetails.revision === 'string'
         ? safeDetails.revision
         : process.env.DEPLOY_SHA || process.env.npm_package_version || 'dev'
@@ -94,14 +101,13 @@ export async function reportError({
     try {
         await logger.evidence({
             trace_id: traceId,
+            request_id: requestId,
             tenant_id: tenantId,
+            operation_id: operationId,
             revision,
-            operation: `error.${source}`,
+            event_name: `storefront.error.${source}`,
             outcome: 'failure',
-            duration_ms: typeof safeDetails.duration_ms === 'number'
-                ? safeDetails.duration_ms
-                : 0,
-            error_class: errorObj.name,
+            error_code: errorObj.name,
             attributes: { severity, source },
         })
     } catch {

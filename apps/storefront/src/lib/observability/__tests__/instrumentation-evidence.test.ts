@@ -26,22 +26,28 @@ describe('storefront request instrumentation evidence', () => {
         const error = new TypeError('synthetic request failure')
         const request = {
             headers: {
-                'x-trace-id': 'trace-instrumentation-test',
+                'x-trace-id': '0123456789abcdef0123456789abcdef',
+                'x-request-id': 'request-instrumentation-test',
                 'x-tenant-id': 'tenant-instrumentation-test',
+                'x-operation-id': 'operation-instrumentation-test',
                 authorization: 'Bearer must-not-propagate',
             },
         }
 
         await onRequestError(error, request, { raw: 'context' })
 
-        expect(EVIDENCE_PROPAGATION_HEADERS).toEqual(['x-trace-id', 'x-tenant-id'])
+        expect(EVIDENCE_PROPAGATION_HEADERS).toEqual([
+            'x-trace-id', 'x-request-id', 'x-tenant-id', 'x-operation-id',
+        ])
         expect(mockCaptureRequestError).toHaveBeenCalledWith(error, request, { raw: 'context' })
         expect(mockEvidence).toHaveBeenCalledWith(expect.objectContaining({
-            trace_id: 'trace-instrumentation-test',
+            trace_id: '0123456789abcdef0123456789abcdef',
+            request_id: 'request-instrumentation-test',
             tenant_id: 'tenant-instrumentation-test',
-            operation: 'storefront.request_error',
+            operation_id: 'operation-instrumentation-test',
+            event_name: 'storefront.request_error',
             outcome: 'failure',
-            error_class: 'TypeError',
+            error_code: 'TypeError',
         }))
         expect(mockEvidence.mock.calls[0][0]).not.toHaveProperty('authorization')
         expect(mockEvidence.mock.calls[0][0]).not.toHaveProperty('raw')

@@ -58,12 +58,14 @@ describe('reportError', () => {
             details: { tenant_id: 'tenant_123' },
         })
         expect(mockLoggerEvidence).toHaveBeenCalledWith(expect.objectContaining({
-            trace_id: expect.any(String),
+            trace_id: expect.stringMatching(/^[0-9a-f]{32}$/),
+            request_id: expect.any(String),
             tenant_id: 'tenant_123',
+            operation_id: expect.any(String),
             revision: expect.any(String),
-            operation: 'error.checkout',
+            event_name: 'storefront.error.checkout',
             outcome: 'failure',
-            error_class: 'Error',
+            error_code: 'Error',
         }))
     })
 

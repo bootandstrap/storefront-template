@@ -116,8 +116,8 @@
     {
       "id": "assurance-contracts",
       "dependencies": [],
-      "command": ["node", "--test", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/assurance-workers.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/medusa-postgres-assurance.test.mjs"],
-      "inputs": ["scripts/assurance-profiles.json", "scripts/assurance-tasks.json", "scripts/assurance-impact.json", "scripts/assurance-policy.json", "scripts/lib/assurance-profile.mjs", "scripts/lib/assurance-dag.mjs", "scripts/lib/assurance-identity.mjs", "scripts/lib/assurance-impact.mjs", "scripts/lib/assurance-workers.mjs", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/assurance-workers.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/run-medusa-postgres-assurance.mjs", "scripts/medusa-postgres-assurance.test.mjs"],
+      "command": ["node", "--experimental-strip-types", "--test", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/assurance-workers.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/medusa-postgres-assurance.test.mjs", "scripts/cross-plane-runtime-evidence.test.mjs"],
+      "inputs": ["scripts/assurance-profiles.json", "scripts/assurance-tasks.json", "scripts/assurance-impact.json", "scripts/assurance-policy.json", "scripts/lib/assurance-profile.mjs", "scripts/lib/assurance-dag.mjs", "scripts/lib/assurance-identity.mjs", "scripts/lib/assurance-impact.mjs", "scripts/lib/assurance-workers.mjs", "scripts/assurance-profile.test.mjs", "scripts/assurance-dag.test.mjs", "scripts/assurance-identity.test.mjs", "scripts/assurance-workers.test.mjs", "scripts/storefront-assurance.test.mjs", "scripts/compose-assurance.test.mjs", "scripts/assurance-impact.test.mjs", "scripts/coverage-assurance.test.mjs", "scripts/run-medusa-postgres-assurance.mjs", "scripts/medusa-postgres-assurance.test.mjs", "scripts/generate-cross-plane-runtime-evidence.mjs", "scripts/cross-plane-runtime-evidence.test.mjs", "packages/shared/dist/observability", "apps/storefront/src/lib/observability/synthetic-failure.ts", "apps/medusa/src/lib/observability/synthetic-failure.ts"],
       "outputs": [],
       "environmentKeys": ["CI"]
     },
@@ -188,8 +188,8 @@
     {
       "id": "observability-unit",
       "dependencies": [],
-      "command": ["pnpm", "--filter=storefront", "exec", "vitest", "run", "src/lib/observability/__tests__/evidence-event.test.ts", "src/lib/observability/__tests__/report-error.test.ts", "src/lib/observability/__tests__/instrumentation-evidence.test.ts", "src/lib/__tests__/logger.test.ts"],
-      "inputs": ["apps/storefront/src/lib/observability", "apps/storefront/src/lib/logger.ts", "apps/storefront/src/instrumentation.ts", "apps/medusa/instrumentation.ts", "apps/storefront/vitest.config.ts"],
+      "command": ["node", "scripts/run-observability-assurance.mjs"],
+      "inputs": ["scripts/run-observability-assurance.mjs", "packages/shared/src/observability", "packages/shared/dist/observability", "apps/storefront/src/lib/observability", "apps/storefront/src/lib/logger.ts", "apps/storefront/src/instrumentation.ts", "apps/medusa/src/lib/observability", "apps/medusa/instrumentation.ts", "apps/storefront/vitest.config.ts"],
       "outputs": [],
       "environmentKeys": ["CI"]
     }

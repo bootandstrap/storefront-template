@@ -29,16 +29,18 @@ interface LogEntry {
     tenant_id?: string | null
     request_id?: string | null
     trace_id?: string | null
-    duration_ms?: number
+    operation_id?: string | null
     [key: string]: unknown
 }
 
 const SERVICE_NAME = 'storefront'
 const SERVICE_VERSION = process.env.npm_package_version || process.env.DEPLOY_SHA || 'dev'
 
-type ScopedEvidenceInput = Omit<EvidenceEventInput, 'trace_id' | 'tenant_id'> & {
+type ScopedEvidenceInput = Omit<EvidenceEventInput, 'trace_id' | 'request_id' | 'tenant_id' | 'operation_id' | 'service'> & {
     trace_id?: string
-    tenant_id?: string | null
+    request_id?: string
+    tenant_id?: string
+    operation_id?: string
 }
 
 const consoleEvidenceSink: EvidenceSink = {
@@ -51,7 +53,7 @@ function formatEntry(
     level: LogLevel,
     message: string,
     data: Record<string, unknown> = {},
-    context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null } = {}
+    context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}
 ): string {
     const entry: LogEntry = {
         level,
@@ -70,7 +72,7 @@ function formatEntry(
     )
 }
 
-function createLogger(context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null } = {}) {
+function createLogger(context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}) {
     /** Normalize any log data to Record<string, unknown> for JSON output */
     function normalizeData(data: unknown): Record<string, unknown> | undefined {
         if (data === undefined || data === null) return undefined
@@ -101,8 +103,11 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
         evidence(input: ScopedEvidenceInput, sink: EvidenceSink = consoleEvidenceSink) {
             return emitEvidence({
                 ...input,
+                service: 'storefront',
                 trace_id: input.trace_id ?? context.trace_id ?? '',
-                tenant_id: input.tenant_id ?? context.tenant_id ?? null,
+                request_id: input.request_id ?? context.request_id ?? '',
+                tenant_id: input.tenant_id ?? context.tenant_id ?? '',
+                operation_id: input.operation_id ?? context.operation_id ?? '',
             }, sink)
         },
 
@@ -130,6 +135,15 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
          */
         withTrace(traceId: string) {
             return createLogger({ ...context, trace_id: traceId })
+        },
+
+        withCorrelation(correlation: {
+            trace_id: string
+            request_id: string
+            tenant_id: string
+            operation_id: string
+        }) {
+            return createLogger({ ...context, ...correlation })
         },
 
         /**
