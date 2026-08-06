@@ -17,8 +17,10 @@
 | **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
 | **Review By** | 2026-08-26 |
+| **Last Re-evaluated** | 2026-08-06 |
 | **Owner** | Platform team |
-| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. |
+| **Current Evidence** | The npm bulk advisory audit still reports this advisory. `@medusajs/dashboard` 2.18.0 still pins `react-router-dom` 6.30.4, while the advisory lists `react-router` 7.18.0 as the patched line. |
+| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
 ---
 
@@ -32,8 +34,10 @@
 | **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
 | **Review By** | 2026-08-26 |
+| **Last Re-evaluated** | 2026-08-06 |
 | **Owner** | Platform team |
-| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. |
+| **Current Evidence** | The npm bulk advisory audit still reports this advisory. `@medusajs/dashboard` 2.18.0 still pins `react-router-dom` 6.30.4, while the advisory lists `react-router` 7.18.0 as the patched line. |
+| **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
 ---
 
@@ -47,10 +51,21 @@
 | **Impact** | Medusa admin dashboard routing dependency. npm reports no patched 6.x replacement for this advisory. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Major override was not accepted because it introduces route-stack peer mismatch risk. |
 | **Review By** | 2026-08-26 |
+| **Last Re-evaluated** | 2026-08-06 |
 | **Owner** | Platform team |
-| **Action** | Track Medusa upstream for a compatible dashboard release; remove this acceptance once patched. |
+| **Current Evidence** | The npm bulk advisory audit still reports this advisory. `@medusajs/dashboard` 2.18.0 still pins affected `react-router-dom` 6.30.4 and the advisory lists no patched 6.x version. |
+| **Action** | Track Medusa upstream for a compatible dashboard release; remove this acceptance once patched. Recheck no later than the review date. |
 
 ---
+
+## Historical Acceptances Not Returned by the 2026-08-06 Audit
+
+The moderate-or-higher npm bulk advisory audit on the current lockfile returned
+only the three React Router advisories above. The entries below are retained for
+audit history but are not consumed as active waivers by the current gate. If a
+future audit returns any of them again, their historical review dates do not
+authorize acceptance; they require a new owner, reason, compatibility analysis
+and future review date.
 
 ### GHSA-mh99-v99m-4gvg — Brace Expansion DoS via Legacy Minimatch
 
@@ -142,9 +157,7 @@
 
 ---
 
-## Expired / Resolved
-
-_None yet._
+## Historical Register Continuation
 
 ---
 
