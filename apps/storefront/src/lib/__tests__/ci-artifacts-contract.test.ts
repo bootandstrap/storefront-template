@@ -316,6 +316,47 @@ describe('CI artifact contract', () => {
         expect(runner).toContain('risk-test-matrix.json')
     })
 
+    it('provides an isolated read-only dispatch mode for exact full assurance evidence', () => {
+        const workflow = readWorkflow('governance-gate.yml')
+        const localAssurance = workflow.slice(
+            workflow.indexOf('  local-assurance:'),
+            workflow.indexOf('  summary:')
+        )
+
+        expect(workflow).toContain('assurance_only:')
+        expect(workflow).toContain('permissions:\n  contents: read')
+        for (const job of [
+            'shared-package-tests',
+            'governance-drift',
+            'architecture-gate',
+            'medusa-typecheck',
+        ]) {
+            expect(workflow).toContain(
+                `  ${job}:\n` +
+                "    if: github.event_name != 'workflow_dispatch' || !inputs.assurance_only"
+            )
+        }
+        expect(localAssurance).toContain(
+            "if: github.event_name == 'workflow_dispatch' && inputs.assurance_only"
+        )
+        expect(localAssurance).toContain('persist-credentials: false')
+        expect(localAssurance).toContain('node-version: 24')
+        expect(localAssurance).toContain(
+            'astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0'
+        )
+        expect(localAssurance).toContain("version: '0.9.15'")
+        expect(localAssurance).toContain('pnpm install --frozen-lockfile')
+        expect(localAssurance).toContain(
+            'pnpm --filter=storefront exec playwright install --with-deps chromium'
+        )
+        expect(localAssurance).toContain('pnpm assurance:full -- --no-cache')
+        expect(localAssurance).toContain('node scripts/verify-ci-assurance-evidence.mjs')
+        expect(localAssurance).toContain('name: assurance-full-${{ github.sha }}')
+        expect(localAssurance).toContain('if-no-files-found: error')
+        expect(localAssurance).toContain('retention-days: 14')
+        expect(localAssurance).not.toMatch(/secrets\.|environment:|deploy|publish|curl\s/)
+    })
+
     it('triggers template propagation when reusable runtime evidence changes', () => {
         const workflow = readWorkflow('template-sync.yml')
         const publishSharedWorkflow = readWorkflow('publish-shared.yml')

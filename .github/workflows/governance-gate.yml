@@ -15,6 +15,12 @@ name: Governance Quality Gate
 
 on:
   workflow_dispatch:
+    inputs:
+      assurance_only:
+        description: Run only sealed read-only full assurance for this exact revision
+        required: false
+        default: false
+        type: boolean
   pull_request:
     branches: [main, develop]
   push:
@@ -28,12 +34,16 @@ on:
       - 'apps/medusa/src/**'
       - '.github/workflows/governance-gate.yml'
 
+permissions:
+  contents: read
+
 concurrency:
   group: governance-gate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   shared-package-tests:
+    if: github.event_name != 'workflow_dispatch' || !inputs.assurance_only
     name: "📦 Shared Package Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -57,6 +67,7 @@ jobs:
         run: pnpm --filter @bootandstrap/shared test
 
   governance-drift:
+    if: github.event_name != 'workflow_dispatch' || !inputs.assurance_only
     name: "🏛️ Governance Drift Check"
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -104,6 +115,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   architecture-gate:
+    if: github.event_name != 'workflow_dispatch' || !inputs.assurance_only
     name: "🏛️ Architecture Quality"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -129,6 +141,7 @@ jobs:
         run: sentrux gate .
 
   medusa-typecheck:
+    if: github.event_name != 'workflow_dispatch' || !inputs.assurance_only
     name: "⚡ Medusa Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -152,12 +165,63 @@ jobs:
           echo "✅ Medusa TypeScript check complete"
         continue-on-error: true  # Non-blocking for now (Medusa types can be noisy)
 
+  local-assurance:
+    if: github.event_name == 'workflow_dispatch' && inputs.assurance_only
+    name: "Read-only Full Assurance"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact revision without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Setup pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: '0.9.15'
+          enable-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter=storefront exec playwright install --with-deps chromium
+
+      - name: Run uncached full assurance
+        run: pnpm assurance:full -- --no-cache
+        env:
+          BNS_ASSURANCE_WORKERS: '2'
+
+      - name: Verify exact assurance evidence
+        run: node scripts/verify-ci-assurance-evidence.mjs
+
+      - name: Upload exact assurance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: assurance-full-${{ github.sha }}
+          path: |
+            .artifacts/assurance/
+            apps/storefront/test-results/
+            apps/storefront/playwright-report/
+          if-no-files-found: error
+          retention-days: 14
+
   summary:
     name: "📊 Gate Summary"
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: [shared-package-tests, governance-drift, architecture-gate, medusa-typecheck]
-    if: always()
+    if: always() && (github.event_name != 'workflow_dispatch' || !inputs.assurance_only)
     steps:
       - name: Report
         run: |
