@@ -6,7 +6,7 @@
  */
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 function getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null
@@ -109,29 +109,28 @@ export function createPOSSoundsController({
 }
 
 export function usePOSSounds() {
-    const controllerRef = useRef<POSSoundsController | null>(null)
-    if (!controllerRef.current) controllerRef.current = createPOSSoundsController()
-    useEffect(() => () => { void controllerRef.current?.dispose() }, [])
+    const [controller] = useState(createPOSSoundsController)
+    useEffect(() => () => { void controller.dispose() }, [controller])
 
     /** High-pitched beep — product scanned or added */
     const playBeep = useCallback(() => {
-        controllerRef.current?.playBeep()
-    }, [])
+        controller.playBeep()
+    }, [controller])
 
     /** Cha-ching! — sale completed */
     const playCashRegister = useCallback(() => {
-        controllerRef.current?.playCashRegister()
-    }, [])
+        controller.playCashRegister()
+    }, [controller])
 
     /** Low buzz — error */
     const playError = useCallback(() => {
-        controllerRef.current?.playError()
-    }, [])
+        controller.playError()
+    }, [controller])
 
     /** Subtle tick — quantity change */
     const playTick = useCallback(() => {
-        controllerRef.current?.playTick()
-    }, [])
+        controller.playTick()
+    }, [controller])
 
     return { playBeep, playCashRegister, playError, playTick }
 }

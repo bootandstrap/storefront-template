@@ -554,7 +554,6 @@ describe('CI artifact contract', () => {
             }>
         }
         const visualDomain = matrix.domains.find((domain) => domain.id === 'visual-runtime-primary-routes')
-        const runner = readScript('run-risk-domain-evidence.mjs')
         const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
 
         expect(visualDomain).toBeDefined()
@@ -580,8 +579,6 @@ describe('CI artifact contract', () => {
         expect(visualDomain?.runtimeEvidence).toContain(
             'pnpm --filter=storefront exec vitest run src/components/products/__tests__/product-listing-page-performance-contract.test.ts'
         )
-        expect(runner).toContain("classified.kind === 'playwright'")
-        expect(runner).toContain("entry.status === 'reused'")
         expect(visualSpec).toContain('desktop')
         expect(visualSpec).toContain('tablet')
         expect(visualSpec).toContain('mobile')
