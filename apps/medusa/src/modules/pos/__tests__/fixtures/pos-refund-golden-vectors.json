@@ -1,0 +1,61 @@
+{
+  "schema": "bootandstrap.pos-refund-golden-vectors/v1",
+  "vectors": [
+    {
+      "id": "first_refund",
+      "initial": [],
+      "requests": [{ "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 1 }] }],
+      "expected": ["reserved", "acknowledged"]
+    },
+    {
+      "id": "exact_replay",
+      "initial": [{ "operation_id": "op-1", "idempotency_key": "key-1", "status": "acknowledged", "refund_id": "refund-1" }],
+      "requests": [{ "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 1 }] }],
+      "expected": ["replay_acknowledged"]
+    },
+    {
+      "id": "conflicting_replay",
+      "initial": [{ "operation_id": "op-1", "idempotency_key": "key-1", "status": "acknowledged", "refund_id": "refund-1" }],
+      "requests": [{ "operation_id": "op-2", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 2 }] }],
+      "expected": ["conflict"]
+    },
+    {
+      "id": "partial_then_remaining",
+      "initial": [],
+      "requests": [
+        { "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 1 }] },
+        { "operation_id": "op-2", "idempotency_key": "key-2", "items": [{ "item_id": "line-a", "quantity": 1 }] }
+      ],
+      "expected": ["acknowledged", "acknowledged"]
+    },
+    {
+      "id": "over_refund",
+      "initial": [{ "operation_id": "op-1", "idempotency_key": "key-1", "status": "acknowledged", "items": [{ "item_id": "line-a", "quantity": 1 }] }],
+      "requests": [{ "operation_id": "op-2", "idempotency_key": "key-2", "items": [{ "item_id": "line-a", "quantity": 2 }] }],
+      "expected": ["over_refund"]
+    },
+    {
+      "id": "concurrent_last_quantity",
+      "initial": [],
+      "requests": [
+        { "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 2 }] },
+        { "operation_id": "op-2", "idempotency_key": "key-2", "items": [{ "item_id": "line-a", "quantity": 2 }] }
+      ],
+      "expected": ["one_reserved", "one_over_refund"]
+    },
+    {
+      "id": "timeout_before_commit",
+      "initial": [],
+      "fault": "before_reservation_commit",
+      "requests": [{ "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 1 }] }],
+      "expected": ["no_row", "retry_reserved"]
+    },
+    {
+      "id": "timeout_after_commit",
+      "initial": [],
+      "fault": "after_payment_commit_before_response",
+      "requests": [{ "operation_id": "op-1", "idempotency_key": "key-1", "items": [{ "item_id": "line-a", "quantity": 1 }] }],
+      "expected": ["acknowledged", "replay_acknowledged", "provider_calls_1"]
+    }
+  ]
+}
