@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { X, RotateCcw, Check, Minus, Plus, Loader2, AlertCircle, HeartCrack, RefreshCw, Frown, FileText } from 'lucide-react'
 import type { POSRefund, RefundReason } from '@/lib/pos/pos-config'
@@ -45,6 +45,11 @@ export default function POSRefundModal({
     const [reason, setReason] = useState<RefundReason>('damaged')
     const [reasonNote, setReasonNote] = useState('')
     const [processing, setProcessing] = useState(false)
+    const refundOperation = useRef<{
+        fingerprint: string
+        operation_id: string
+        idempotency_key: string
+    } | null>(null)
 
     // ── Load refundable items ──
     useEffect(() => {
@@ -117,16 +122,27 @@ export default function POSRefundModal({
         setProcessing(true)
         setError('')
         try {
+            const selected = Array.from(selectedItems.entries()).map(([id, qty]) => ({
+                item_id: id,
+                quantity: qty,
+            }))
+            const fingerprint = JSON.stringify({ orderId, selected, reason, reasonNote })
+            if (!refundOperation.current || refundOperation.current.fingerprint !== fingerprint) {
+                refundOperation.current = {
+                    fingerprint,
+                    operation_id: crypto.randomUUID(),
+                    idempotency_key: crypto.randomUUID(),
+                }
+            }
             const { createPOSRefundAction } = await import('@/lib/pos/refunds/refund-actions')
             const result = await createPOSRefundAction({
                 order_id: orderId,
-                items: Array.from(selectedItems.entries()).map(([id, qty]) => ({
-                    item_id: id,
-                    quantity: qty,
-                })),
+                items: selected,
                 reason,
                 reason_note: reasonNote || undefined,
                 refund_amount: refundAmount,
+                operation_id: refundOperation.current.operation_id,
+                idempotency_key: refundOperation.current.idempotency_key,
             })
 
             if (result.error || !result.refund) {

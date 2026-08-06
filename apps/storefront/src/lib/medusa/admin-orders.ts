@@ -402,6 +402,45 @@ export async function createOrderRefund(
     return { error: res.error }
 }
 
+export interface POSRefundOperationResponse {
+    outcome: string
+    status: 'pending' | 'acknowledged' | 'failed'
+    refund_id: string | null
+    failure_code?: string | null
+}
+
+/** Execute the versioned POS refund operation owned by the Medusa runtime. */
+export async function createPOSRefundOperation(
+    data: {
+        order_id: string
+        operation_id: string
+        idempotency_key: string
+        items: Array<{ item_id: string; quantity: number }>
+        reason: 'damaged' | 'wrong_item' | 'dissatisfied' | 'other'
+        reason_note?: string
+    },
+    scope?: TenantMedusaScope | null
+): Promise<{ operation: POSRefundOperationResponse | null; error: string | null }> {
+    const res = await adminFetch<{ operation: POSRefundOperationResponse }>(
+        '/admin/pos/refunds',
+        { method: 'POST', body: JSON.stringify(data) },
+        scope
+    )
+    return { operation: res.data?.operation ?? null, error: res.error }
+}
+
+export async function getPOSRefundedQuantities(
+    orderId: string,
+    scope?: TenantMedusaScope | null
+): Promise<{ refunded_quantities: Record<string, number>; error: string | null }> {
+    const res = await adminFetch<{ refunded_quantities: Record<string, number> }>(
+        `/admin/pos/refunds?order_id=${encodeURIComponent(orderId)}`,
+        {},
+        scope
+    )
+    return { refunded_quantities: res.data?.refunded_quantities ?? {}, error: res.error }
+}
+
 // ---------------------------------------------------------------------------
 // Order Notes
 // ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@
 
 import { withPanelGuard } from '@/lib/panel-guard'
 import { getTenantMedusaScope } from '@/lib/medusa/tenant-scope'
-import { getAdminOrderDetail, createOrderRefund } from '@/lib/medusa/admin-orders'
+import { getAdminOrderDetail, createPOSRefundOperation, getPOSRefundedQuantities } from '@/lib/medusa/admin-orders'
 import type { POSRefund, RefundReason } from '@/lib/pos/pos-config'
 
 // ---------------------------------------------------------------------------
@@ -39,16 +39,24 @@ export async function getRefundableItemsAction(
             return { items: [], order_total: 0, currency_code: fallbackCurrency, error: 'Order not found' }
         }
 
-        const items: RefundableItem[] = (order.items || []).map(item => ({
-            id: item.id,
-            title: item.title,
-            variant_title: item.variant_title,
-            thumbnail: item.thumbnail,
-            quantity: item.quantity,
-            refundable_quantity: item.quantity,
-            unit_price: item.unit_price,
-            total: item.total,
-        }))
+        const availability = await getPOSRefundedQuantities(orderId, scope)
+        if (availability.error) {
+            return { items: [], order_total: 0, currency_code: fallbackCurrency, error: availability.error }
+        }
+
+        const items: RefundableItem[] = (order.items || []).flatMap(item => {
+            const refundableQuantity = Math.max(0, item.quantity - (availability.refunded_quantities[item.id] ?? 0))
+            return refundableQuantity === 0 ? [] : [{
+                id: item.id,
+                title: item.title,
+                variant_title: item.variant_title,
+                thumbnail: item.thumbnail,
+                quantity: item.quantity,
+                refundable_quantity: refundableQuantity,
+                unit_price: item.unit_price,
+                total: item.total,
+            }]
+        })
 
         return {
             items,
@@ -76,6 +84,8 @@ export async function createPOSRefundAction(input: {
     reason: RefundReason
     reason_note?: string
     refund_amount: number // minor units
+    operation_id: string
+    idempotency_key: string
 }): Promise<{ success: boolean; refund: POSRefund | null; error?: string }> {
     try {
         const { tenantId } = await withPanelGuard({ requiredFlag: 'enable_pos_shifts' })
@@ -138,29 +148,18 @@ export async function createPOSRefundAction(input: {
             return { success: false, refund: null, error: 'Refund amount does not match selected order items' }
         }
 
-        // Build refund note
-        const reasonLabels: Record<RefundReason, string> = {
-            damaged: 'Producto dañado',
-            wrong_item: 'Producto equivocado',
-            dissatisfied: 'Cliente insatisfecho',
-            other: 'Otro',
+        if (!input.operation_id.trim() || !input.idempotency_key.trim()) {
+            return { success: false, refund: null, error: 'Refund operation identity is required' }
         }
-        const note = [
-            `POS Refund: ${reasonLabels[input.reason]}`,
-            input.reason_note ? `Nota: ${input.reason_note}` : '',
-            `Items: ${input.items.map(i => {
-                const orderItem = order.items.find(oi => oi.id === i.item_id)
-                return orderItem ? `${orderItem.title} x${i.quantity}` : i.item_id
-            }).join(', ')}`,
-        ].filter(Boolean).join(' | ')
 
-        // Process refund via Medusa admin API
-        const { error } = await createOrderRefund(
-            input.order_id,
+        const { operation, error } = await createPOSRefundOperation(
             {
-                amount: serverRefundAmount,
-                reason: input.reason === 'other' ? 'other' : 'return',
-                note,
+                order_id: input.order_id,
+                operation_id: input.operation_id,
+                idempotency_key: input.idempotency_key,
+                items: input.items,
+                reason: input.reason,
+                reason_note: input.reason_note,
             },
             scope
         )
@@ -168,10 +167,17 @@ export async function createPOSRefundAction(input: {
         if (error) {
             return { success: false, refund: null, error }
         }
+        if (operation?.status !== 'acknowledged' || !operation.refund_id) {
+            return {
+                success: false,
+                refund: null,
+                error: 'Refund outcome is pending authoritative acknowledgement',
+            }
+        }
 
         // Build receipt data
         const refund: POSRefund = {
-            id: `ref_${Date.now()}`,
+            id: operation.refund_id,
             order_id: input.order_id,
             items: validatedItems,
             reason: input.reason,
