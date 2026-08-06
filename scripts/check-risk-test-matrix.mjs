@@ -42,9 +42,10 @@ function validateTestFile(relativePath, domainId) {
 
   const isStorefrontVitestTest = /^apps\/storefront\/src\/.+\.test\.(ts|tsx)$/.test(normalized)
   const isStorefrontPlaywrightSpec = /^apps\/storefront\/e2e\/.+\.spec\.ts$/.test(normalized)
+  const isMedusaJestSpec = /^apps\/medusa\/src\/.+\.spec\.ts$/.test(normalized)
 
-  if (!isStorefrontVitestTest && !isStorefrontPlaywrightSpec) {
-    fail(`${domainId}: ${relativePath} is not a storefront Vitest test or Playwright spec path`)
+  if (!isStorefrontVitestTest && !isStorefrontPlaywrightSpec && !isMedusaJestSpec) {
+    fail(`${domainId}: ${relativePath} is not a supported storefront or Medusa test path`)
     return
   }
 
@@ -54,7 +55,8 @@ function validateTestFile(relativePath, domainId) {
   }
 
   const source = readFileSync(absolutePath, 'utf8')
-  if (isStorefrontVitestTest && (!/\bdescribe\s*\(/.test(source) || !/\bit\s*\(/.test(source))) {
+  const hasExecutableSuite = /\bdescribe\s*\(/.test(source) || /\bmoduleIntegrationTestRunner\s*</.test(source)
+  if ((isStorefrontVitestTest || isMedusaJestSpec) && (!hasExecutableSuite || !/\bit\s*\(/.test(source))) {
     fail(`${domainId}: ${relativePath} must contain executable describe/it tests`)
   }
 

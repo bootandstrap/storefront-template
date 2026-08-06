@@ -225,6 +225,28 @@ test('reuses passed Vitest files but keeps Playwright as separate executable evi
   ])
 })
 
+test('executes Medusa unit and PostgreSQL evidence inside the POS risk receipt', () => {
+  const matrix = {
+    domains: [{
+      id: 'pos-simulator',
+      runtimeEvidence: [
+        'pnpm --dir apps/medusa test:unit -- src/api/admin/__tests__/pos-refunds-route.unit.spec.ts',
+        'node scripts/run-medusa-postgres-assurance.mjs',
+      ],
+      requiredTestFiles: [
+        'apps/medusa/src/api/admin/__tests__/pos-refunds-route.unit.spec.ts',
+      ],
+    }],
+  }
+
+  const plan = planRiskDomainEvidence(matrix, passedTestsArtifact())
+
+  assert.deepEqual(plan.map(({ kind, status }) => ({ kind, status })), [
+    { kind: 'medusa-unit', status: 'execute' },
+    { kind: 'medusa-postgres', status: 'execute' },
+  ])
+})
+
 test('risk-domain task binds its normalized summary as receipt output', () => {
   const task = assuranceTasks.tasks.find(({ id }) => id === 'risk-domain-evidence')
 
