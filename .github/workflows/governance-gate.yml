@@ -172,15 +172,15 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout exact revision without credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -207,7 +207,7 @@ jobs:
         run: node scripts/verify-ci-assurance-evidence.mjs
 
       - name: Upload exact assurance evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: assurance-full-${{ github.sha }}
           path: |

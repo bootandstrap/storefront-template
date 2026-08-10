@@ -340,6 +340,13 @@ describe('CI artifact contract', () => {
             "if: github.event_name == 'workflow_dispatch' && inputs.assurance_only"
         )
         expect(localAssurance).toContain('persist-credentials: false')
+        expect(localAssurance).toContain('uses: actions/checkout@v7')
+        expect(localAssurance).toContain('uses: pnpm/action-setup@v6')
+        expect(localAssurance).toContain('uses: actions/setup-node@v7')
+        expect(localAssurance).toContain('uses: actions/upload-artifact@v7')
+        expect(localAssurance).not.toMatch(
+            /uses: (?:actions\/(?:checkout|setup-node|upload-artifact)|pnpm\/action-setup)@v4/
+        )
         expect(localAssurance).toContain('node-version: 24')
         expect(localAssurance).toContain(
             'astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0'
