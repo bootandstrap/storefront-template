@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import {
   PINNED_POSTGRES_IMAGE,
   runMedusaPostgresAssurance,
 } from './run-medusa-postgres-assurance.mjs'
+
+const MEDUSA_PACKAGE = JSON.parse(readFileSync(new URL('../apps/medusa/package.json', import.meta.url), 'utf8'))
+
+test('Medusa test commands exit naturally instead of masking open handles', () => {
+  for (const script of ['test:unit', 'test:integration:http', 'test:integration:modules']) {
+    assert.ok(MEDUSA_PACKAGE.scripts[script], `${script} must exist`)
+    assert.doesNotMatch(MEDUSA_PACKAGE.scripts[script], /--forceExit\b/)
+  }
+})
 
 function successfulSpawn(calls) {
   return (command, args, options) => {
