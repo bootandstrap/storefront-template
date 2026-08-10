@@ -91,7 +91,7 @@ function assertSummary(summary, expectedRevision, fullTasks) {
   }
 }
 
-function assertReceipt(receipt, { taskId, task, expectedRevision }) {
+function assertReceiptIdentity(receipt, taskId, expectedRevision) {
   if (receipt?.schema !== 'bootandstrap.assurance-task/v1') throw new Error(`${taskId} receipt schema mismatch`)
   if (receipt?.profile !== 'full' || receipt?.claimBoundary !== LOCAL_CLAIM) {
     throw new Error(`${taskId} receipt profile or claim mismatch`)
@@ -100,22 +100,42 @@ function assertReceipt(receipt, { taskId, task, expectedRevision }) {
   if (receipt?.revision !== expectedRevision) throw new Error(`${taskId} receipt revision mismatch`)
   if (receipt?.workingTreeSha256 !== EMPTY_TREE_SHA256) throw new Error(`${taskId} receipt clean tree mismatch`)
   if (receipt?.status !== 'passed') throw new Error(`${taskId} receipt must be passed`)
+}
+
+function assertReceiptHashes(receipt, taskId) {
   for (const field of ['inputsSha256', 'toolchainSha256', 'environmentSha256', 'profileSha256']) {
     if (!HASH_PATTERN.test(receipt?.[field] ?? '')) throw new Error(`${taskId} receipt ${field} is malformed`)
   }
+}
+
+function assertReceiptEnvironment(receipt, taskId) {
   if (!Array.isArray(receipt?.environmentKeys)) throw new Error(`${taskId} receipt environment keys are malformed`)
   if (receipt.environmentKeys.some((key) => SENSITIVE_FIELD_PATTERN.test(key))) {
     throw new Error(`${taskId} receipt contains a sensitive environment key`)
   }
+}
+
+function assertReceiptOutputs(receipt, taskId, task) {
   if (JSON.stringify(receipt?.outputs) !== JSON.stringify(task.outputs)) {
     throw new Error(`${taskId} receipt output declaration mismatch`)
   }
   if (JSON.stringify(sortedKeys(receipt?.outputSha256)) !== JSON.stringify([...task.outputs].sort())) {
     throw new Error(`${taskId} receipt output hash set mismatch`)
   }
+}
+
+function assertReceiptNoEmbeddedOutput(receipt, taskId) {
   for (const prohibited of ['command', 'stdout', 'stderr', 'output']) {
     if (receipt[prohibited] !== undefined) throw new Error(`${taskId} receipt embeds prohibited ${prohibited}`)
   }
+}
+
+function assertReceipt(receipt, { taskId, task, expectedRevision }) {
+  assertReceiptIdentity(receipt, taskId, expectedRevision)
+  assertReceiptHashes(receipt, taskId)
+  assertReceiptEnvironment(receipt, taskId)
+  assertReceiptOutputs(receipt, taskId, task)
+  assertReceiptNoEmbeddedOutput(receipt, taskId)
   assertNoSensitiveFields(receipt, `receipt.${taskId}`)
 }
 

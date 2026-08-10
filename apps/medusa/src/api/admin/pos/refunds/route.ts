@@ -8,6 +8,7 @@ import { POS_MODULE } from "../../../../modules/pos"
 import {
     executePOSRefundOperation,
     POSRefundExecutionError,
+    type POSRefundExecutionDependencies,
     type POSRefundOperationInput,
 } from "../../../../modules/pos/refund-coordinator"
 import type PosModuleService from "../../../../modules/pos/service"
@@ -118,6 +119,154 @@ async function requireScopedOrder(req: MedusaRequest, orderId: string, salesChan
     return order
 }
 
+type RefundRequest = z.infer<typeof requestSchema>
+
+function buildRefundOperation(
+    request: RefundRequest,
+    order: OrderRecord,
+    tenantId: string,
+): POSRefundOperationInput {
+    const orderItems = new Map((order.items ?? []).map((item) => [item.id, item]))
+    const seen = new Set<string>()
+    let amountMinor = 0
+    const items = request.items.map((selected) => {
+        if (seen.has(selected.item_id)) throw new RequestFailure(400, "duplicate_refund_item")
+        seen.add(selected.item_id)
+        const authoritative = orderItems.get(selected.item_id)
+        if (!authoritative) throw new RequestFailure(422, "refund_item_not_in_order")
+        const orderedQuantity = safeInteger(authoritative.quantity)
+        if (selected.quantity > orderedQuantity) throw new RequestFailure(422, "refund_quantity_exceeded")
+        const unitPrice = safeInteger(authoritative.unit_price)
+        const lineAmount = unitPrice * selected.quantity
+        if (!Number.isSafeInteger(lineAmount)) throw new RequestFailure(422, "invalid_order_amount")
+        amountMinor += lineAmount
+        return { item_id: selected.item_id, quantity: selected.quantity, ordered_quantity: orderedQuantity }
+    }).sort((left, right) => left.item_id.localeCompare(right.item_id))
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
+        throw new RequestFailure(422, "invalid_refund_amount")
+    }
+
+    const canonicalPayload = JSON.stringify({
+        schema: REFUND_SCHEMA,
+        tenant_id: tenantId,
+        order_id: request.order_id,
+        operation_id: request.operation_id,
+        idempotency_key: request.idempotency_key,
+        items,
+        amount_minor: amountMinor,
+        reason: request.reason,
+        reason_note: request.reason_note ?? null,
+    })
+    return {
+        tenant_id: tenantId,
+        order_id: request.order_id,
+        operation_id: request.operation_id,
+        idempotency_key: request.idempotency_key,
+        payload_sha256: createHash("sha256").update(canonicalPayload).digest("hex"),
+        amount_minor: amountMinor,
+        items,
+    }
+}
+
+async function listScopedPayments(
+    paymentService: PaymentService,
+    collections: Array<{ id: string }>,
+): Promise<PaymentRecord[]> {
+    const scoped = await Promise.all(collections.map((collection) => paymentService.listPayments(
+        { payment_collection_id: collection.id },
+        { relations: ["refunds"] },
+    )))
+    return scoped.flat()
+}
+
+function refundMetadata(operation: POSRefundOperationInput) {
+    return {
+        schema: REFUND_SCHEMA,
+        tenant_id: operation.tenant_id,
+        order_id: operation.order_id,
+        operation_id: operation.operation_id,
+        idempotency_key: operation.idempotency_key,
+        payload_sha256: operation.payload_sha256,
+    }
+}
+
+async function findCommittedRefund(
+    paymentService: PaymentService,
+    collections: Array<{ id: string }>,
+    input: POSRefundOperationInput,
+): Promise<{ refund_id: string } | null> {
+    for (const payment of await listScopedPayments(paymentService, collections)) {
+        const refund = exactRefund(payment.refunds, input)
+        if (refund) return { refund_id: refund.id }
+    }
+    return null
+}
+
+function selectRefundPayment(payments: PaymentRecord[], amountMinor: number): PaymentRecord | null {
+    return payments.find((payment) => {
+        if (!payment.captured_at) return false
+        const refunded = (payment.refunds ?? []).reduce(
+            (sum, refund) => sum + safeInteger(refund.amount ?? 0),
+            0,
+        )
+        return safeInteger(payment.amount) - refunded >= amountMinor
+    }) ?? null
+}
+
+async function commitRefund(
+    paymentService: PaymentService,
+    collections: Array<{ id: string }>,
+    input: POSRefundOperationInput,
+    actorId: string | undefined,
+    reasonNote: string | undefined,
+): Promise<{ refund_id: string }> {
+    const selected = selectRefundPayment(await listScopedPayments(paymentService, collections), input.amount_minor)
+    if (!selected) throw new POSRefundExecutionError("captured_amount_unavailable", true)
+    let updated: PaymentRecord
+    try {
+        updated = await paymentService.refundPayment({
+            payment_id: selected.id,
+            amount: input.amount_minor,
+            created_by: actorId,
+            note: reasonNote,
+            metadata: refundMetadata(input),
+        })
+    } catch {
+        // Provider errors are ambiguous: Medusa may have committed before
+        // the response was lost. Preserve pending for metadata reconciliation.
+        throw new POSRefundExecutionError("provider_outcome_unknown", false)
+    }
+    const refund = exactRefund(updated.refunds, input)
+    if (!refund) throw new POSRefundExecutionError("refund_acknowledgement_missing", false)
+    return { refund_id: refund.id }
+}
+
+function refundDependencies({
+    ledger,
+    paymentService,
+    collections,
+    actorId,
+    reasonNote,
+}: {
+    ledger: PosModuleService
+    paymentService: PaymentService
+    collections: Array<{ id: string }>
+    actorId: string | undefined
+    reasonNote: string | undefined
+}): POSRefundExecutionDependencies {
+    return {
+        ledger: {
+            reserve: (input) => ledger.reservePOSRefundOperation(input),
+            acknowledge: (input, refundId) => ledger.acknowledgePOSRefundOperation(input, refundId),
+            fail: (input, code) => ledger.failPOSRefundOperation(input, code),
+        },
+        payment: {
+            findCommittedRefund: (input) => findCommittedRefund(paymentService, collections, input),
+            refund: (input) => commitRefund(paymentService, collections, input, actorId, reasonNote),
+        },
+    }
+}
+
 /** Return quantities reserved by pending or acknowledged POS refund operations. */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const runtime = authorizedRuntime(req)
@@ -166,105 +315,17 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         const paymentService = req.scope.resolve(Modules.PAYMENT) as unknown as PaymentService
         const ledger = req.scope.resolve(POS_MODULE) as PosModuleService
         const order = await requireScopedOrder(req, parsed.data.order_id, runtime.salesChannelId)
-
-        const orderItems = new Map((order.items ?? []).map((item) => [item.id, item]))
-        const seen = new Set<string>()
-        let amountMinor = 0
-        const items = parsed.data.items.map((selected) => {
-            if (seen.has(selected.item_id)) throw new RequestFailure(400, "duplicate_refund_item")
-            seen.add(selected.item_id)
-            const authoritative = orderItems.get(selected.item_id)
-            if (!authoritative) throw new RequestFailure(422, "refund_item_not_in_order")
-            const orderedQuantity = safeInteger(authoritative.quantity)
-            if (selected.quantity > orderedQuantity) throw new RequestFailure(422, "refund_quantity_exceeded")
-            const unitPrice = safeInteger(authoritative.unit_price)
-            const lineAmount = unitPrice * selected.quantity
-            if (!Number.isSafeInteger(lineAmount)) throw new RequestFailure(422, "invalid_order_amount")
-            amountMinor += lineAmount
-            return { item_id: selected.item_id, quantity: selected.quantity, ordered_quantity: orderedQuantity }
-        }).sort((left, right) => left.item_id.localeCompare(right.item_id))
-        if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
-            throw new RequestFailure(422, "invalid_refund_amount")
-        }
-
-        const canonicalPayload = JSON.stringify({
-            schema: REFUND_SCHEMA,
-            tenant_id: runtime.tenantId,
-            order_id: parsed.data.order_id,
-            operation_id: parsed.data.operation_id,
-            idempotency_key: parsed.data.idempotency_key,
-            items,
-            amount_minor: amountMinor,
-            reason: parsed.data.reason,
-            reason_note: parsed.data.reason_note ?? null,
-        })
-        const operation: POSRefundOperationInput = {
-            tenant_id: runtime.tenantId,
-            order_id: parsed.data.order_id,
-            operation_id: parsed.data.operation_id,
-            idempotency_key: parsed.data.idempotency_key,
-            payload_sha256: createHash("sha256").update(canonicalPayload).digest("hex"),
-            amount_minor: amountMinor,
-            items,
-        }
+        const operation = buildRefundOperation(parsed.data, order, runtime.tenantId)
         const collections = order.payment_collections ?? []
-        const listScopedPayments = async () => {
-            const scoped = await Promise.all(collections.map((collection) => paymentService.listPayments(
-                { payment_collection_id: collection.id },
-                { relations: ["refunds"] },
-            )))
-            return scoped.flat()
-        }
-        const metadata = {
-            schema: REFUND_SCHEMA,
-            tenant_id: runtime.tenantId,
-            order_id: operation.order_id,
-            operation_id: operation.operation_id,
-            idempotency_key: operation.idempotency_key,
-            payload_sha256: operation.payload_sha256,
-        }
-        const result = await executePOSRefundOperation(operation, {
-            ledger: {
-                reserve: (input) => ledger.reservePOSRefundOperation(input),
-                acknowledge: (input, refundId) => ledger.acknowledgePOSRefundOperation(input, refundId),
-                fail: (input, code) => ledger.failPOSRefundOperation(input, code),
-            },
-            payment: {
-                findCommittedRefund: async (input) => {
-                    for (const payment of await listScopedPayments()) {
-                        const refund = exactRefund(payment.refunds, input)
-                        if (refund) return { refund_id: refund.id }
-                    }
-                    return null
-                },
-                refund: async (input) => {
-                    const payments = await listScopedPayments()
-                    const selected = payments.find((payment) => {
-                        if (!payment.captured_at) return false
-                        const refunded = (payment.refunds ?? []).reduce((sum, refund) => sum + safeInteger(refund.amount ?? 0), 0)
-                        return safeInteger(payment.amount) - refunded >= input.amount_minor
-                    })
-                    if (!selected) throw new POSRefundExecutionError("captured_amount_unavailable", true)
-                    let updated: PaymentRecord
-                    try {
-                        updated = await paymentService.refundPayment({
-                            payment_id: selected.id,
-                            amount: input.amount_minor,
-                            created_by: (req as MedusaRequest & { auth_context?: { actor_id?: string } }).auth_context?.actor_id,
-                            note: parsed.data.reason_note,
-                            metadata,
-                        })
-                    } catch {
-                        // Provider errors are ambiguous: Medusa may have committed before
-                        // the response was lost. Preserve pending for metadata reconciliation.
-                        throw new POSRefundExecutionError("provider_outcome_unknown", false)
-                    }
-                    const refund = exactRefund(updated.refunds, input)
-                    if (!refund) throw new POSRefundExecutionError("refund_acknowledgement_missing", false)
-                    return { refund_id: refund.id }
-                },
-            },
+        const actorId = (req as MedusaRequest & { auth_context?: { actor_id?: string } }).auth_context?.actor_id
+        const dependencies = refundDependencies({
+            ledger,
+            paymentService,
+            collections,
+            actorId,
+            reasonNote: parsed.data.reason_note,
         })
+        const result = await executePOSRefundOperation(operation, dependencies)
         return res.status(operationStatus(result.outcome, result.status)).json({ operation: result })
     } catch (error) {
         if (error instanceof RequestFailure) return res.status(error.status).json({ error_code: error.code })

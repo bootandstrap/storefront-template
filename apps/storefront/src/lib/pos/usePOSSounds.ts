@@ -33,36 +33,47 @@ export interface POSSoundsController {
     dispose(): Promise<void>
 }
 
-export function createPOSSoundsController({
-    createAudioContext = typeof window === 'undefined' ? null : () => getAudioContext() as AudioContext,
-    prefersReducedMotion = () => typeof window !== 'undefined'
-        && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
-}: POSSoundsControllerOptions = {}): POSSoundsController {
-    let availability: POSSoundsController['availability'] = !createAudioContext || prefersReducedMotion()
-        ? 'unavailable'
-        : 'ready'
-    let context: AudioContext | null = null
-    let disposed = false
-    const timers = new Set<ReturnType<typeof setTimeout>>()
-    const nodes = new Set<{ oscillator: OscillatorNode; gain: GainNode }>()
+class POSSoundsControllerImpl implements POSSoundsController {
+    private availabilityState: POSSoundsController['availability']
+    private readonly createAudioContext: (() => AudioContext) | null
+    private context: AudioContext | null = null
+    private disposed = false
+    private readonly timers = new Set<ReturnType<typeof setTimeout>>()
+    private readonly nodes = new Set<{ oscillator: OscillatorNode; gain: GainNode }>()
 
-    const ensureContext = () => {
-        if (disposed || availability === 'unavailable' || !createAudioContext) return null
+    constructor({
+        createAudioContext = typeof window === 'undefined' ? null : () => getAudioContext() as AudioContext,
+        prefersReducedMotion = () => typeof window !== 'undefined'
+            && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
+    }: POSSoundsControllerOptions) {
+        this.createAudioContext = createAudioContext
+        this.availabilityState = !createAudioContext || prefersReducedMotion() ? 'unavailable' : 'ready'
+    }
+
+    get availability() {
+        return this.availabilityState
+    }
+
+    private ensureContext(): AudioContext | null {
+        if (this.disposed || this.availabilityState === 'unavailable' || !this.createAudioContext) return null
         try {
-            context ??= createAudioContext()
-            if (context.state === 'suspended') void context.resume().catch(() => { availability = 'error' })
-            return context
+            this.context ??= this.createAudioContext()
+            if (this.context.state === 'suspended') {
+                void this.context.resume().catch(() => { this.availabilityState = 'error' })
+            }
+            return this.context
         } catch {
-            availability = 'error'
+            this.availabilityState = 'error'
             return null
         }
     }
-    const playTone = (frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.3) => {
-        const audioContext = ensureContext()
+
+    private playTone(frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.3): boolean {
+        const audioContext = this.ensureContext()
         if (!audioContext) return false
         const oscillator = audioContext.createOscillator()
         const gain = audioContext.createGain()
-        nodes.add({ oscillator, gain })
+        this.nodes.add({ oscillator, gain })
         oscillator.type = type
         oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
         gain.gain.setValueAtTime(volume, audioContext.currentTime)
@@ -73,39 +84,51 @@ export function createPOSSoundsController({
         oscillator.stop(audioContext.currentTime + duration)
         return true
     }
-    const scheduleTone = (delay: number, tone: () => void) => {
+
+    private scheduleTone(delay: number, tone: () => void): void {
         const timer = setTimeout(() => {
-            timers.delete(timer)
-            if (!disposed) tone()
+            this.timers.delete(timer)
+            if (!this.disposed) tone()
         }, delay)
-        timers.add(timer)
+        this.timers.add(timer)
     }
 
-    return {
-        get availability() { return availability },
-        playBeep: () => playTone(1200, 0.1, 'sine', 0.2),
-        playCashRegister() {
-            if (!playTone(800, 0.08, 'square', 0.15)) return
-            scheduleTone(80, () => playTone(1200, 0.08, 'square', 0.15))
-            scheduleTone(160, () => playTone(1600, 0.15, 'sine', 0.2))
-        },
-        playError: () => playTone(200, 0.3, 'sawtooth', 0.15),
-        playTick: () => playTone(600, 0.05, 'sine', 0.1),
-        async dispose() {
-            if (disposed) return
-            disposed = true
-            for (const timer of timers) clearTimeout(timer)
-            timers.clear()
-            for (const { oscillator, gain } of nodes) {
-                try { oscillator.stop() } catch { /* already stopped */ }
-                oscillator.disconnect()
-                gain.disconnect()
-            }
-            nodes.clear()
-            if (context && context.state !== 'closed') await context.close()
-            context = null
-        },
+    playBeep(): void {
+        this.playTone(1200, 0.1, 'sine', 0.2)
     }
+
+    playCashRegister(): void {
+        if (!this.playTone(800, 0.08, 'square', 0.15)) return
+        this.scheduleTone(80, () => { this.playTone(1200, 0.08, 'square', 0.15) })
+        this.scheduleTone(160, () => { this.playTone(1600, 0.15, 'sine', 0.2) })
+    }
+
+    playError(): void {
+        this.playTone(200, 0.3, 'sawtooth', 0.15)
+    }
+
+    playTick(): void {
+        this.playTone(600, 0.05, 'sine', 0.1)
+    }
+
+    async dispose(): Promise<void> {
+        if (this.disposed) return
+        this.disposed = true
+        for (const timer of this.timers) clearTimeout(timer)
+        this.timers.clear()
+        for (const { oscillator, gain } of this.nodes) {
+            try { oscillator.stop() } catch { /* already stopped */ }
+            oscillator.disconnect()
+            gain.disconnect()
+        }
+        this.nodes.clear()
+        if (this.context && this.context.state !== 'closed') await this.context.close()
+        this.context = null
+    }
+}
+
+export function createPOSSoundsController(options: POSSoundsControllerOptions = {}): POSSoundsController {
+    return new POSSoundsControllerImpl(options)
 }
 
 export function usePOSSounds() {
