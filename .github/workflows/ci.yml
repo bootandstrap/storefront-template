@@ -166,7 +166,7 @@ jobs:
         with:
           name: risk-domain-evidence
           path: |
-            .artifacts/risk-domain-evidence/
+            .artifacts/assurance/risk-domain-evidence.json
             apps/storefront/test-results/
             apps/storefront/playwright-report/
           if-no-files-found: error

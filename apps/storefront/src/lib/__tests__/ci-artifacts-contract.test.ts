@@ -920,13 +920,14 @@ describe('CI artifact contract', () => {
         expect(runner).not.toContain('API_TOKEN')
     })
 
-    it('uploads risk-domain visual evidence artifacts in GitHub CI with fail-closed missing files', () => {
+    it('uploads the authoritative risk-domain summary and optional visual outputs in GitHub CI', () => {
         const workflow = readWorkflow('ci.yml')
         const artifactBlocks = uploadArtifactBlocks(workflow)
         const riskEvidenceUpload = artifactBlocks.find((block) => block.includes('name: risk-domain-evidence'))
 
         expect(riskEvidenceUpload).toBeDefined()
-        expect(riskEvidenceUpload).toContain('.artifacts/risk-domain-evidence/')
+        expect(riskEvidenceUpload).toContain('.artifacts/assurance/risk-domain-evidence.json')
+        expect(riskEvidenceUpload).not.toContain('.artifacts/risk-domain-evidence/')
         expect(riskEvidenceUpload).toContain('apps/storefront/test-results/')
         expect(riskEvidenceUpload).toContain('apps/storefront/playwright-report/')
         expect(riskEvidenceUpload).toContain('if-no-files-found: error')
