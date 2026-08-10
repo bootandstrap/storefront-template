@@ -200,6 +200,7 @@ jobs:
       - name: Run uncached full assurance
         run: pnpm assurance:full -- --no-cache
         env:
+          CI: ''
           BNS_ASSURANCE_WORKERS: '2'
 
       - name: Verify exact assurance evidence

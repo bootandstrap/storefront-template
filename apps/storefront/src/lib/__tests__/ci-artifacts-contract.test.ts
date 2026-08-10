@@ -350,6 +350,7 @@ describe('CI artifact contract', () => {
             'pnpm --filter=storefront exec playwright install --with-deps chromium'
         )
         expect(localAssurance).toContain('pnpm assurance:full -- --no-cache')
+        expect(localAssurance).toContain("CI: ''")
         expect(localAssurance).toContain('node scripts/verify-ci-assurance-evidence.mjs')
         expect(localAssurance).toContain('name: assurance-full-${{ github.sha }}')
         expect(localAssurance).toContain('if-no-files-found: error')
