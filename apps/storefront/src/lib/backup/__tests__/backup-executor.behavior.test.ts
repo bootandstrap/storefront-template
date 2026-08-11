@@ -129,7 +129,14 @@ describe('full backup executor', () => {
     })
     mocks.getConfigForTenant.mockResolvedValue({
       config: { business_name: 'Local tenant' },
-      featureFlags: { enable_backups: true },
+      featureFlags: {
+        id: 'feature-flags-row-1',
+        tenant_id: 'tenant-backup-1',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-02-01T00:00:00.000Z',
+        enable_backups: true,
+        enable_manual_backup: null,
+      },
       planLimits: {
         max_backups: 4,
         plan_name: 'enterprise_max',
@@ -172,7 +179,10 @@ describe('full backup executor', () => {
       plan_expires_at: null,
     })
     expect(snapshot.checksums.products).toMatch(/^[a-f0-9]{16}$/)
-    expect(snapshot.data.governance.feature_flags).toEqual({ enable_backups: true })
+    expect(snapshot.data.governance.feature_flags).toEqual({
+      enable_backups: true,
+      enable_manual_backup: null,
+    })
   })
 
   it('returns a failed receipt without a backup key when upload is rejected', async () => {
@@ -183,6 +193,21 @@ describe('full backup executor', () => {
       error: 'Upload failed: storage denied',
       duration_ms: 0,
     })
+  })
+
+  it('fails closed before upload when a real feature flag has an invalid scalar type', async () => {
+    mocks.getConfigForTenant.mockResolvedValue({
+      config: {},
+      featureFlags: { enable_backups: 'true' },
+      planLimits: { max_backups: 4 },
+    })
+
+    await expect(executeFullBackup('tenant-backup-1', 'tenant-backup', scope)).resolves.toEqual({
+      success: false,
+      error: 'Invalid backup feature flag type: enable_backups',
+      duration_ms: 0,
+    })
+    expect(mocks.upload).not.toHaveBeenCalled()
   })
 
   it('fails closed when a required Medusa data source is unavailable', async () => {

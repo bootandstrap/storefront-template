@@ -95,7 +95,10 @@ describe('backup restore', () => {
         inventory: [],
         governance: {
           config: {},
-          feature_flags: {},
+          feature_flags: {
+            enable_backups: true,
+            enable_manual_backup: null,
+          },
           plan_limits: {
             max_backups: 4,
             plan_name: 'enterprise_max',
@@ -110,6 +113,10 @@ describe('backup restore', () => {
     await expect(downloadBackup('tenant/production-shaped.json.gz')).resolves.toMatchObject({
       data: {
         governance: {
+          feature_flags: {
+            enable_backups: true,
+            enable_manual_backup: null,
+          },
           plan_limits: {
             max_backups: 4,
             plan_name: 'enterprise_max',

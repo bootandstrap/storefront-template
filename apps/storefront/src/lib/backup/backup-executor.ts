@@ -29,6 +29,7 @@ import type { TenantMedusaScope } from '@/lib/medusa/tenant-scope'
 
 const gzipAsync = promisify(gzip)
 const GZIP_EXTRA_HEADROOM_BYTES = 64
+const FEATURE_FLAG_ROW_METADATA_KEYS = new Set(['id', 'tenant_id', 'created_at', 'updated_at'])
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,22 @@ function hashContent(data: unknown): string {
 
 function formatTimestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+}
+
+function sanitizeBackupFeatureFlags(
+    featureFlags: Record<string, unknown>,
+): Record<string, boolean | null> {
+    const sanitized: Record<string, boolean | null> = {}
+
+    for (const [key, value] of Object.entries(featureFlags)) {
+        if (FEATURE_FLAG_ROW_METADATA_KEYS.has(key)) continue
+        if (typeof value !== 'boolean' && value !== null) {
+            throw new Error(`Invalid backup feature flag type: ${key}`)
+        }
+        sanitized[key] = value
+    }
+
+    return sanitized
 }
 
 export function padGzipExtraField(compressed: Buffer, targetLength: number): Buffer {
@@ -184,16 +201,20 @@ async function fetchInventory(scope: TenantMedusaScope): Promise<BackupInventory
 }
 
 async function fetchGovernance(tenantId: string): Promise<BackupGovernance> {
+    let appConfig: Awaited<ReturnType<typeof import('@/lib/config')['getConfigForTenant']>>
     try {
         const { getConfigForTenant } = await import('@/lib/config')
-        const appConfig = await getConfigForTenant(tenantId)
-        return {
-            config: appConfig.config as Record<string, unknown>,
-            feature_flags: appConfig.featureFlags as Record<string, boolean>,
-            plan_limits: appConfig.planLimits as Record<string, number | string | null>,
-        }
+        appConfig = await getConfigForTenant(tenantId)
     } catch {
         return { config: {}, feature_flags: {}, plan_limits: {} }
+    }
+
+    return {
+        config: appConfig.config as Record<string, unknown>,
+        feature_flags: sanitizeBackupFeatureFlags(
+            appConfig.featureFlags as unknown as Record<string, unknown>,
+        ),
+        plan_limits: appConfig.planLimits as Record<string, number | string | null>,
     }
 }
 

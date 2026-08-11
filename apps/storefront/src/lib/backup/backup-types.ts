@@ -130,7 +130,7 @@ export interface BackupInventoryItem {
 
 export interface BackupGovernance {
     config: Record<string, unknown>
-    feature_flags: Record<string, boolean>
+    feature_flags: Record<string, boolean | null>
     plan_limits: Record<string, number | string | null>
 }
 
