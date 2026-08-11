@@ -17,9 +17,9 @@
 | **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
 | **Review By** | 2026-08-26 |
-| **Last Re-evaluated** | 2026-08-10 |
+| **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
-| **Current Evidence** | The 2026-08-10 npm bulk advisory audit still reports this advisory. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. Latest `@medusajs/dashboard` 2.18.0 still pins `react-router-dom` 6.30.4. |
+| **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins `react-router-dom` 6.30.4. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
 ---
@@ -34,9 +34,9 @@
 | **Impact** | Medusa admin dashboard routing dependency. Not used by the public storefront or customer runtime. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Forcing `react-router` 8.3.0 was tested and removed because it creates a React 18/19 peer mismatch in the Medusa dashboard. |
 | **Review By** | 2026-08-26 |
-| **Last Re-evaluated** | 2026-08-10 |
+| **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
-| **Current Evidence** | The 2026-08-10 npm bulk advisory audit still reports this advisory. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. Latest `@medusajs/dashboard` 2.18.0 still pins `react-router-dom` 6.30.4. |
+| **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins `react-router-dom` 6.30.4. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
 ---
@@ -51,9 +51,9 @@
 | **Impact** | Medusa admin dashboard routing dependency. npm reports no patched 6.x replacement for this advisory. |
 | **Mitigation** | Medusa admin is authenticated/operator-only and not part of public tenant checkout. Major override was not accepted because it introduces route-stack peer mismatch risk. |
 | **Review By** | 2026-08-26 |
-| **Last Re-evaluated** | 2026-08-10 |
+| **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
-| **Current Evidence** | The 2026-08-10 npm bulk advisory audit still reports this advisory. GitHub Advisory Database still lists no patched `react-router-dom` version. Latest `@medusajs/dashboard` 2.18.0 still pins affected 6.30.4. |
+| **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins affected 6.30.4. GitHub Advisory Database still lists no patched `react-router-dom` 6.x replacement. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Track Medusa upstream for a compatible dashboard release; remove this acceptance once patched. Recheck no later than the review date. |
 
 ---
