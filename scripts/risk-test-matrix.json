@@ -142,6 +142,7 @@
       "failureModes": [
         "critical public routes render differently or overflow across desktop/tablet/mobile viewports",
         "a tenant business name forces mobile header actions outside the viewport",
+        "duplicate rendered product surfaces make the visual probe observe a non-authoritative CTA",
         "accessibility regressions reach runtime despite static markup contracts",
         "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup, checkout promotion loading/error, checkout method discovery loading/error/retry, cart hydration loading/error/retry and cart item update/remove loading/error",
         "product listing serializes independent server reads and delays server-rendered catalog availability"

@@ -614,6 +614,7 @@ describe('CI artifact contract', () => {
         expect(visualDomain?.failureModes).toEqual(
             expect.arrayContaining([
                 expect.stringContaining('desktop/tablet/mobile'),
+                expect.stringContaining('non-authoritative CTA'),
                 expect.stringContaining('accessibility'),
                 expect.stringContaining('loading, empty, error, modal or toast'),
                 expect.stringContaining('order lookup'),
@@ -643,6 +644,7 @@ describe('CI artifact contract', () => {
 
     it('tracks visible loading, modal and toast runtime states with dedicated evidence', () => {
         const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
+        const visualAuthority = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-authority.ts'), 'utf8')
         const checkoutMethodEvidence = readFileSync(
             join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-checkout-method-evidence.ts'),
             'utf8'
@@ -694,7 +696,8 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain("toHaveAttribute('data-runtime-ready', 'true')")
         expect(visualSpec).toContain('assertMobileStickyCtaDoesNotOverlapBottomNav')
         expect(visualSpec).toContain("toBeVisible({ timeout: 10_000 })")
-        expect(visualSpec).toContain('product-primary-cta')
+        expect(visualSpec).toContain('getAuthoritativeProductPrimaryCta')
+        expect(visualAuthority).toContain("locator('#main-content').getByTestId('product-primary-cta')")
         expect(visualSpec).toContain('.product-sticky-cta')
         expect(visualSpec).toContain('.bottom-nav')
         expect(visualSpec).toContain('order-lookup-submit')

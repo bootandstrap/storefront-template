@@ -11,6 +11,7 @@ import {
     checkoutPromotionRuntimeState,
     delayNextCartAction,
 } from './runtime-visual-cart-action-evidence'
+import { getAuthoritativeProductPrimaryCta } from './runtime-visual-authority'
 
 type VisualViewport = {
     name: 'desktop' | 'tablet' | 'mobile'
@@ -381,7 +382,7 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 async function assertMobileStickyCtaDoesNotOverlapBottomNav(page: Page) {
-    const primaryCta = page.getByTestId('product-primary-cta')
+    const primaryCta = getAuthoritativeProductPrimaryCta(page)
     await expect(primaryCta).toBeVisible({ timeout: 10_000 })
     await primaryCta.scrollIntoViewIfNeeded()
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }))

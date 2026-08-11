@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
+import { getAuthoritativeProductPrimaryCta } from './runtime-visual-authority'
 
 const headerStyles = readFileSync(
     resolve(process.cwd(), 'src/components/layout/Header.module.css'),
@@ -62,5 +63,23 @@ test.describe('responsive storefront header', () => {
         expect(layout.businessNameScrollWidth).toBeGreaterThan(layout.businessNameClientWidth)
         expect(layout.actionsRight).toBeLessThanOrEqual(layout.clientWidth)
         expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth)
+    })
+})
+
+test.describe('runtime visual authority', () => {
+    test('selects the PDP CTA owned by main content when another rendered CTA shares its test id', async ({ page }) => {
+        await page.setContent(`
+            <main id="main-content">
+                <div data-testid="product-primary-cta">Authoritative PDP CTA</div>
+            </main>
+            <aside aria-label="Detached product surface">
+                <div data-testid="product-primary-cta">Detached duplicate CTA</div>
+            </aside>
+        `)
+
+        const primaryCta = getAuthoritativeProductPrimaryCta(page)
+
+        await expect(primaryCta).toHaveCount(1)
+        await expect(primaryCta).toHaveText('Authoritative PDP CTA')
     })
 })
