@@ -19,6 +19,7 @@
 | **Review By** | 2026-08-26 |
 | **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
+| **Justification** | No compatible Medusa dashboard release currently removes the affected route stack; the admin surface is authenticated and isolated from public tenant checkout while upstream remediation is tracked. |
 | **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins `react-router-dom` 6.30.4. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
@@ -36,6 +37,7 @@
 | **Review By** | 2026-08-26 |
 | **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
+| **Justification** | No compatible Medusa dashboard release currently removes the affected route stack; the admin surface is authenticated and isolated from public tenant checkout while upstream remediation is tracked. |
 | **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins `react-router-dom` 6.30.4. GitHub Advisory Database still lists `react-router` 7.18.0 as the first patched version. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Upgrade Medusa dashboard when upstream releases a compatible patched route stack, then remove this acceptance. Recheck no later than the review date. |
 
@@ -53,6 +55,7 @@
 | **Review By** | 2026-08-26 |
 | **Last Re-evaluated** | 2026-08-11 |
 | **Owner** | Platform team |
+| **Justification** | No patched 6.x replacement is available through Medusa; a major route-stack override introduces incompatible peer requirements, so the authenticated admin-only exposure is accepted only until the dated upstream recheck. |
 | **Current Evidence** | On 2026-08-11, `bash scripts/check-audit-waiver.sh` still returned this advisory and validated only the three active React Router waivers. `npm view @medusajs/dashboard@2.18.0 dependencies --json` confirms that the current Medusa dashboard release still pins affected 6.30.4. GitHub Advisory Database still lists no patched `react-router-dom` 6.x replacement. A Medusa 2.18.0 upgrade therefore does not close this waiver. |
 | **Action** | Track Medusa upstream for a compatible dashboard release; remove this acceptance once patched. Recheck no later than the review date. |
 

@@ -88,9 +88,31 @@ export function filterAdvisoriesBySeverity(response, auditLevel = 'moderate') {
     return advisories.sort((a, b) => a.id.localeCompare(b.id))
 }
 
+function extractWaiverSection(registerText, advisoryId) {
+    const heading = `### ${advisoryId}`
+    const headingIndex = registerText.indexOf(heading)
+    if (headingIndex === -1) return null
+
+    const afterHeading = registerText.slice(headingIndex + heading.length)
+    const nextHeadingIndex = afterHeading.search(/\n###\s+/)
+    return nextHeadingIndex === -1
+        ? registerText.slice(headingIndex)
+        : registerText.slice(headingIndex, headingIndex + heading.length + nextHeadingIndex)
+}
+
+function extractTableField(section, field) {
+    const match = section.match(new RegExp(`\\|\\s*\\*\\*${field}\\*\\*\\s*\\|\\s*([^|\\r\\n]+?)\\s*\\|`, 'i'))
+    return match?.[1]?.trim() ?? null
+}
+
+function isConcreteMetadata(value) {
+    return Boolean(value && !/^(?:n\/?a|none|tbd|unknown|-+)$/i.test(value))
+}
+
 export function validateWaivers(advisories, registerText, today = new Date().toISOString().slice(0, 10)) {
     const accepted = []
     const expired = []
+    const invalid = []
     const missing = []
     const seen = new Set()
 
@@ -98,26 +120,36 @@ export function validateWaivers(advisories, registerText, today = new Date().toI
         if (seen.has(advisory.id)) continue
         seen.add(advisory.id)
 
-        const index = registerText.indexOf(advisory.id)
-        if (index === -1) {
+        const section = extractWaiverSection(registerText, advisory.id)
+        if (!section) {
             missing.push(advisory)
             continue
         }
 
-        const section = registerText.slice(index, index + 1200)
         const reviewBy = section.match(/Review By[^0-9]*([0-9]{4}-[0-9]{2}-[0-9]{2})/i)?.[1]
         if (!reviewBy || today > reviewBy) {
             expired.push({ ...advisory, reviewBy: reviewBy ?? null })
             continue
         }
 
-        accepted.push({ ...advisory, reviewBy })
+        const owner = extractTableField(section, 'Owner')
+        const justification = extractTableField(section, 'Justification')
+        const reasons = []
+        if (!isConcreteMetadata(owner)) reasons.push('owner')
+        if (!isConcreteMetadata(justification)) reasons.push('justification')
+        if (reasons.length > 0) {
+            invalid.push({ ...advisory, reviewBy, reasons })
+            continue
+        }
+
+        accepted.push({ ...advisory, reviewBy, owner, justification })
     }
 
     return {
-        valid: expired.length === 0 && missing.length === 0,
+        valid: expired.length === 0 && invalid.length === 0 && missing.length === 0,
         accepted,
         expired,
+        invalid,
         missing,
     }
 }
@@ -189,6 +221,9 @@ async function main() {
     }
     for (const advisory of waiverResult.expired) {
         console.error(`EXPIRED ${advisory.id} ${advisory.packageName} ${advisory.severity} Review By: ${advisory.reviewBy ?? 'missing'}`)
+    }
+    for (const advisory of waiverResult.invalid) {
+        console.error(`INVALID ${advisory.id} ${advisory.packageName} ${advisory.severity} Missing: ${advisory.reasons.join(',')}`)
     }
     for (const advisory of waiverResult.missing) {
         console.error(`MISSING ${advisory.id} ${advisory.packageName} ${advisory.severity}`)

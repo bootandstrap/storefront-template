@@ -61,20 +61,35 @@ snapshots:
         const result = validateWaivers([
             { id: 'GHSA-3ppc-4f35-3m26', packageName: 'minimatch', severity: 'high', title: 'waived' },
             { id: 'GHSA-exp1-exp1-exp1', packageName: 'rollup', severity: 'high', title: 'expired' },
+            { id: 'GHSA-meta-meta-meta', packageName: 'router', severity: 'moderate', title: 'incomplete metadata' },
             { id: 'GHSA-miss-miss-miss', packageName: 'multer', severity: 'high', title: 'missing' },
         ], `
 ## Active Acceptances
 
 ### GHSA-3ppc-4f35-3m26
 | **Review By** | 2026-12-31 |
+| **Owner** | Platform team |
+| **Justification** | Upstream has no compatible patched release. |
 
 ### GHSA-exp1-exp1-exp1
 | **Review By** | 2026-01-01 |
+| **Owner** | Platform team |
+| **Justification** | Historical acceptance awaiting upstream. |
+
+### GHSA-meta-meta-meta
+| **Review By** | 2026-12-31 |
+
+### Neighboring-complete-section
+| **Owner** | Must not be borrowed |
+| **Justification** | Must not be borrowed from the next section. |
 `, '2026-07-15')
 
         assert.equal(result.valid, false)
         assert.deepEqual(result.accepted.map((item) => item.id), ['GHSA-3ppc-4f35-3m26'])
         assert.deepEqual(result.expired.map((item) => item.id), ['GHSA-exp1-exp1-exp1'])
+        assert.deepEqual(result.invalid.map((item) => ({ id: item.id, reasons: item.reasons })), [
+            { id: 'GHSA-meta-meta-meta', reasons: ['owner', 'justification'] },
+        ])
         assert.deepEqual(result.missing.map((item) => item.id), ['GHSA-miss-miss-miss'])
     })
 })
