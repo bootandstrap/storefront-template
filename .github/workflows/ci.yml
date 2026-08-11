@@ -307,7 +307,7 @@ jobs:
           TENANT_ID: ci-tenant
 
       - name: Run PR-local runtime visual evidence
-        run: pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts
+        run: pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts e2e/header-mobile-layout.spec.ts
         env:
           BASE_URL: http://localhost:3000
           BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES: '0'

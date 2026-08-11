@@ -138,19 +138,21 @@
       "id": "visual-runtime-primary-routes",
       "severity": "high",
       "owner": "storefront-runtime",
-      "minTestFiles": 1,
+      "minTestFiles": 3,
       "failureModes": [
         "critical public routes render differently or overflow across desktop/tablet/mobile viewports",
+        "a tenant business name forces mobile header actions outside the viewport",
         "accessibility regressions reach runtime despite static markup contracts",
         "loading, empty, error, modal or toast states lose visible runtime coverage, including order lookup, checkout promotion loading/error, checkout method discovery loading/error/retry, cart hydration loading/error/retry and cart item update/remove loading/error",
         "product listing serializes independent server reads and delays server-rendered catalog availability"
       ],
       "runtimeEvidence": [
-        "pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts",
+        "pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts e2e/header-mobile-layout.spec.ts",
         "pnpm --filter=storefront exec vitest run src/components/products/__tests__/product-listing-page-performance-contract.test.ts"
       ],
       "requiredTestFiles": [
         "apps/storefront/e2e/runtime-visual-evidence.spec.ts",
+        "apps/storefront/e2e/header-mobile-layout.spec.ts",
         "apps/storefront/src/components/products/__tests__/product-listing-page-performance-contract.test.ts"
       ]
     },

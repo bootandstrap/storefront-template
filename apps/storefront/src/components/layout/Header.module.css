@@ -1,0 +1,30 @@
+.brand {
+    min-width: 0;
+    max-width: 10rem;
+    flex: 1 1 auto;
+}
+
+.businessName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logo {
+    max-width: 100%;
+    object-fit: contain;
+}
+
+@media (min-width: 40rem) {
+    .brand {
+        max-width: 14rem;
+        flex: 0 1 auto;
+    }
+}
+
+@media (min-width: 64rem) {
+    .brand {
+        max-width: 18rem;
+    }
+}

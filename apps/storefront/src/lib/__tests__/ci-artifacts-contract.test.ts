@@ -608,8 +608,9 @@ describe('CI artifact contract', () => {
         expect(visualDomain).toBeDefined()
         expect(visualDomain?.requiredTestFiles).toContain('apps/storefront/e2e/runtime-visual-evidence.spec.ts')
         expect(visualDomain?.runtimeEvidence).toContain(
-            'pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts'
+            'pnpm --filter=storefront exec playwright test e2e/runtime-visual-evidence.spec.ts e2e/header-mobile-layout.spec.ts'
         )
+        expect(visualDomain?.requiredTestFiles).toContain('apps/storefront/e2e/header-mobile-layout.spec.ts')
         expect(visualDomain?.failureModes).toEqual(
             expect.arrayContaining([
                 expect.stringContaining('desktop/tablet/mobile'),
@@ -633,6 +634,11 @@ describe('CI artifact contract', () => {
         expect(visualSpec).toContain('mobile')
         expect(visualSpec).toContain('axe-core')
         expect(visualSpec).toContain('screenshot')
+
+        const workflow = readFileSync(join(REPO_ROOT, '.github/workflows/ci.yml'), 'utf8')
+        expect(workflow).toContain(
+            'playwright test e2e/runtime-visual-evidence.spec.ts e2e/header-mobile-layout.spec.ts'
+        )
     })
 
     it('tracks visible loading, modal and toast runtime states with dedicated evidence', () => {

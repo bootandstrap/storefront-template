@@ -13,6 +13,7 @@ import LanguageSelector from './LanguageSelector'
 import CurrencySelector from './CurrencySelector'
 import MegaMenu from './MegaMenu'
 import ThemeToggle from '@/components/ui/ThemeToggle'
+import styles from './Header.module.css'
 
 interface HeaderProps {
     config: StoreConfig
@@ -55,18 +56,18 @@ export default function Header({ config, featureFlags, activeLanguages, activeCu
                 <div className="container-page">
                     <div className="flex items-center justify-between h-16 md:h-18">
                         {/* Logo */}
-                        <Link href={localizedHref('home')} className="flex items-center gap-2 shrink-0">
+                        <Link href={localizedHref('home')} className={`flex items-center gap-2 ${styles.brand}`}>
                             {config.logo_url ? (
                                 <Image
                                     src={config.logo_url}
                                     alt={config.business_name}
                                     width={120}
                                     height={32}
-                                    className="h-8 w-auto"
+                                    className={`h-8 w-auto ${styles.logo}`}
                                     priority
                                 />
                             ) : (
-                                <span className="text-xl font-bold font-display text-brand">
+                                <span className={`text-xl font-bold font-display text-brand ${styles.businessName}`}>
                                     {config.business_name}
                                 </span>
                             )}
