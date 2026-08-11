@@ -130,7 +130,12 @@ describe('full backup executor', () => {
     mocks.getConfigForTenant.mockResolvedValue({
       config: { business_name: 'Local tenant' },
       featureFlags: { enable_backups: true },
-      planLimits: { max_backups: 4 },
+      planLimits: {
+        max_backups: 4,
+        plan_name: 'enterprise_max',
+        plan_tier: null,
+        plan_expires_at: null,
+      },
     })
     mocks.upload.mockResolvedValue({ error: null })
   })
@@ -160,6 +165,12 @@ describe('full backup executor', () => {
     expect(options).toEqual({ contentType: 'application/gzip', upsert: false })
     expect(snapshot.stats.total_size_bytes).toBe(compressed.length)
     expect(snapshot.stats.duration_ms).toBe(result.stats?.duration_ms)
+    expect(snapshot.data.governance.plan_limits).toMatchObject({
+      max_backups: 4,
+      plan_name: 'enterprise_max',
+      plan_tier: null,
+      plan_expires_at: null,
+    })
     expect(snapshot.checksums.products).toMatch(/^[a-f0-9]{16}$/)
     expect(snapshot.data.governance.feature_flags).toEqual({ enable_backups: true })
   })

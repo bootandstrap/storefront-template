@@ -84,6 +84,43 @@ describe('backup restore', () => {
     await expect(downloadBackup('tenant/compressed.json.gz')).resolves.toMatchObject({ version: '1.0' })
   })
 
+  it('accepts production-shaped plan metadata in a versioned backup', async () => {
+    const snapshot = backup({
+      data: {
+        categories: [],
+        products: [],
+        orders: [],
+        customers: [],
+        promotions: [],
+        inventory: [],
+        governance: {
+          config: {},
+          feature_flags: {},
+          plan_limits: {
+            max_backups: 4,
+            plan_name: 'enterprise_max',
+            plan_tier: null,
+            plan_expires_at: null,
+          },
+        },
+      },
+    })
+    mocks.download.mockResolvedValueOnce({ data: asBlob(snapshot, true), error: null })
+
+    await expect(downloadBackup('tenant/production-shaped.json.gz')).resolves.toMatchObject({
+      data: {
+        governance: {
+          plan_limits: {
+            max_backups: 4,
+            plan_name: 'enterprise_max',
+            plan_tier: null,
+            plan_expires_at: null,
+          },
+        },
+      },
+    })
+  })
+
   it('rejects unsupported, malformed, and structurally incomplete snapshots', async () => {
     mocks.download.mockResolvedValueOnce({ data: asBlob(backup({ version: '2.0' })), error: null })
     mocks.download.mockResolvedValueOnce({ data: new Blob(['not-json']), error: null })

@@ -131,7 +131,7 @@ export interface BackupInventoryItem {
 export interface BackupGovernance {
     config: Record<string, unknown>
     feature_flags: Record<string, boolean>
-    plan_limits: Record<string, number>
+    plan_limits: Record<string, number | string | null>
 }
 
 // ── Storage Usage (from RPC) ─────────────────────────────────────────────────

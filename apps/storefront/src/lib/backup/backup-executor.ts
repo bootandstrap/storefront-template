@@ -190,7 +190,7 @@ async function fetchGovernance(tenantId: string): Promise<BackupGovernance> {
         return {
             config: appConfig.config as Record<string, unknown>,
             feature_flags: appConfig.featureFlags as Record<string, boolean>,
-            plan_limits: appConfig.planLimits as unknown as Record<string, number>,
+            plan_limits: appConfig.planLimits as Record<string, number | string | null>,
         }
     } catch {
         return { config: {}, feature_flags: {}, plan_limits: {} }
