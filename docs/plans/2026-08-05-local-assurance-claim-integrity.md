@@ -65,8 +65,10 @@
 
 1. Run template `pnpm assurance:full -- --no-cache`.
 2. Run tenant `pnpm assurance:full -- --no-cache`.
+   Both summaries and every task receipt must declare
+   `executionMode: forced_no_cache`; receipt reuse and nested Turbo cache hits
+   are prohibited for these two final runs.
 3. Generate the BSWEB v2 receipt from clean exact revisions.
 4. Run BSWEB focused consumer/harness tests and `git diff --check` in all repos.
 5. Report local functional assurance only; retain commercial, deployment, real
    payment/refund and physical POS prohibitions.
-

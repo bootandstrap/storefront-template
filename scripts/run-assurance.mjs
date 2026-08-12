@@ -13,6 +13,10 @@ import {
   topologicalBatches,
   validateReceipt,
 } from './lib/assurance-dag.mjs'
+import {
+  assuranceExecutionMode,
+  buildTaskProcessEnvironment,
+} from './lib/assurance-execution.mjs'
 import { hashInputs, hashWorkingTree, runGit, sha256 } from './lib/assurance-identity.mjs'
 import { discoverChangedFiles, selectImpact } from './lib/assurance-impact.mjs'
 import { resolveProfile } from './lib/assurance-profile.mjs'
@@ -177,6 +181,7 @@ function writeDryRunPlan({ resolved, graph, changedFiles, impactPlan }) {
     status: 'planned',
     profile: resolved.profile,
     claimBoundary: resolved.claimBoundary,
+    executionMode: 'planned_not_executed',
     tasks: graph.ids,
     batches: topologicalBatches(graph),
     deferred: resolved.deferred.map((taskId) => ({ taskId, status: 'deferred' })),
@@ -239,6 +244,7 @@ async function main() {
   }
 
   const configuredWorkers = resolveAssuranceWorkerCount(process.env.BNS_ASSURANCE_WORKERS)
+  const executionMode = assuranceExecutionMode(options)
 
   const revision = runGit(repoRoot, ['rev-parse', 'HEAD']).toString('utf8').trim()
   const workingTreeSha256 = await hashWorkingTree(repoRoot)
@@ -263,6 +269,7 @@ async function main() {
       JSON.stringify(task),
     ])
     const expected = {
+      executionMode,
       profile: resolved.profile,
       claimBoundary: resolved.claimBoundary,
       taskId,
@@ -291,7 +298,7 @@ async function main() {
     const status = await new Promise((resolve) => {
       const child = spawn(task.command[0], task.command.slice(1), {
         cwd: repoRoot,
-        env: environment.values,
+        env: buildTaskProcessEnvironment(environment.values, options),
         shell: false,
         stdio: 'inherit',
       })
@@ -331,6 +338,7 @@ async function main() {
     schema: 'bootandstrap.assurance-summary/v1',
     profile: resolved.profile,
     claimBoundary: resolved.claimBoundary,
+    executionMode,
     status: interruption.active ? 'interrupted' : successful ? 'passed' : 'failed',
     signal: interruption.signal,
     revision,

@@ -5,6 +5,7 @@ import { isAbsolute, join, normalize } from 'node:path'
 const EMPTY_TREE_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 const LOCAL_CLAIM = 'local_runtime_assurance_without_commercial_activation'
 const REMOTE_CLAIM = 'remote_read_only_ci_assurance_without_deployment'
+const FORCED_EXECUTION_MODE = 'forced_no_cache'
 const HASH_PATTERN = /^[0-9a-f]{64}$/
 const REVISION_PATTERN = /^[0-9a-f]{40}$/
 const SENSITIVE_FIELD_PATTERN = /(^|_)(secret|token|password|passwd|authorization|cookie|private_key)($|_)/i
@@ -75,6 +76,9 @@ function assertSummary(summary, expectedRevision, fullTasks) {
   if (summary?.profile !== 'full' || summary?.claimBoundary !== LOCAL_CLAIM) {
     throw new Error('summary profile or claim mismatch')
   }
+  if (summary?.executionMode !== FORCED_EXECUTION_MODE) {
+    throw new Error('summary does not prove forced no-cache execution')
+  }
   if (summary?.status !== 'passed' || summary?.signal !== null) throw new Error('summary is not passed')
   if (summary?.revision !== expectedRevision) throw new Error('summary revision mismatch')
   if (summary?.workingTreeSha256 !== EMPTY_TREE_SHA256) throw new Error('summary does not prove a clean tree')
@@ -95,6 +99,9 @@ function assertReceiptIdentity(receipt, taskId, expectedRevision) {
   if (receipt?.schema !== 'bootandstrap.assurance-task/v1') throw new Error(`${taskId} receipt schema mismatch`)
   if (receipt?.profile !== 'full' || receipt?.claimBoundary !== LOCAL_CLAIM) {
     throw new Error(`${taskId} receipt profile or claim mismatch`)
+  }
+  if (receipt?.executionMode !== FORCED_EXECUTION_MODE) {
+    throw new Error(`${taskId} receipt does not prove forced no-cache execution`)
   }
   if (receipt?.taskId !== taskId) throw new Error(`${taskId} receipt task identity mismatch`)
   if (receipt?.revision !== expectedRevision) throw new Error(`${taskId} receipt revision mismatch`)
@@ -208,6 +215,7 @@ export function verifyCiAssuranceEvidence({
     runId: String(runId),
     runAttempt: String(runAttempt),
     sourceClaimBoundary: LOCAL_CLAIM,
+    sourceExecutionMode: FORCED_EXECUTION_MODE,
     tasks: [...fullTasks],
     summarySha256: sha256(summaryFile.source),
     taskReceiptsSha256,

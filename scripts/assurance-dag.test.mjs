@@ -11,6 +11,10 @@ import {
   validateReceipt,
   validateTaskConfig,
 } from './lib/assurance-dag.mjs'
+import {
+  assuranceExecutionMode,
+  buildTaskProcessEnvironment,
+} from './lib/assurance-execution.mjs'
 
 function task(id, dependencies = []) {
   return {
@@ -50,6 +54,19 @@ test('limits a parallel-ready batch without changing deterministic order', () =>
   }, ['a', 'b', 'c'])
 
   assert.deepEqual(nextReadyBatch(graph, {}, 2), ['a', 'b'])
+})
+
+test('no-cache forces nested Turbo tasks while preserving the declared task environment', () => {
+  const declared = { PATH: '/usr/bin', CI: 'true' }
+
+  assert.deepEqual(buildTaskProcessEnvironment(declared, { noCache: false }), declared)
+  assert.deepEqual(buildTaskProcessEnvironment(declared, { noCache: true }), {
+    ...declared,
+    TURBO_FORCE: 'true',
+  })
+  assert.deepEqual(declared, { PATH: '/usr/bin', CI: 'true' })
+  assert.equal(assuranceExecutionMode({ noCache: true }), 'forced_no_cache')
+  assert.equal(assuranceExecutionMode({ noCache: false }), 'receipt_reuse_allowed')
 })
 
 test('rejects dependency cycles', () => {
@@ -117,6 +134,7 @@ test('rejects shell evaluation flags and paths outside the repository', () => {
 
 test('invalidates receipts on any identity, input, toolchain, profile, or output mismatch', () => {
   const expected = {
+    executionMode: 'forced_no_cache',
     profile: 'fast',
     claimBoundary: 'changed_scope_feedback_only',
     taskId: 'storefront-typecheck',
@@ -153,6 +171,7 @@ test('invalidates receipts on any identity, input, toolchain, profile, or output
     'toolchainSha256',
     'environmentSha256',
     'profileSha256',
+    'executionMode',
   ]) {
     const mismatched = { ...receipt, [field]: `${receipt[field]}-stale` }
     assert.equal(validateReceipt(mismatched, expected, outputExists).valid, false, field)
@@ -169,6 +188,7 @@ test('invalidates receipts on any identity, input, toolchain, profile, or output
 
 test('rejects malformed receipts and environment values', () => {
   const expected = {
+    executionMode: 'forced_no_cache',
     profile: 'fast',
     claimBoundary: 'changed_scope_feedback_only',
     taskId: 'policy',

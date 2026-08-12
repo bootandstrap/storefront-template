@@ -27,6 +27,8 @@ test('the full assurance contract task executes and hashes remote CI evidence su
 
   assert.ok(assuranceContracts.command.includes('scripts/ci-assurance-evidence.test.mjs'))
   for (const path of [
+    'scripts/run-assurance.mjs',
+    'scripts/lib/assurance-execution.mjs',
     'scripts/lib/ci-assurance-evidence.mjs',
     'scripts/verify-ci-assurance-evidence.mjs',
     'scripts/ci-assurance-evidence.test.mjs',
@@ -67,6 +69,7 @@ function fixture() {
       schema: 'bootandstrap.assurance-task/v1',
       profile: 'full',
       claimBoundary: 'local_runtime_assurance_without_commercial_activation',
+      executionMode: 'forced_no_cache',
       taskId,
       revision: REVISION,
       workingTreeSha256: EMPTY_TREE_SHA256,
@@ -89,6 +92,7 @@ function fixture() {
     schema: 'bootandstrap.assurance-summary/v1',
     profile: 'full',
     claimBoundary: 'local_runtime_assurance_without_commercial_activation',
+    executionMode: 'forced_no_cache',
     status: 'passed',
     signal: null,
     revision: REVISION,
@@ -131,6 +135,7 @@ test('seals the exact passed full profile and every receipt/output hash', () => 
     assert.equal(result.schema, 'bootandstrap.ci-assurance-evidence/v1')
     assert.equal(result.status, 'passed')
     assert.equal(result.revision, REVISION)
+    assert.equal(result.sourceExecutionMode, 'forced_no_cache')
     assert.deepEqual(result.tasks, FULL_TASKS)
     assert.equal(Object.keys(result.taskReceiptsSha256).length, 17)
     assert.match(result.summarySha256, /^[0-9a-f]{64}$/)
@@ -145,6 +150,7 @@ test('seals the exact passed full profile and every receipt/output hash', () => 
 })
 
 const summaryCases = [
+  ['reusable execution mode', (summary) => { summary.executionMode = 'receipt_reuse_allowed' }, /forced no-cache execution/],
   ['wrong revision', (summary) => { summary.revision = '1'.repeat(40) }, /revision mismatch/],
   ['dirty tree', (summary) => { summary.workingTreeSha256 = '2'.repeat(64) }, /clean tree/],
   ['cached task', (summary) => { summary.tasks[FULL_TASKS[0]] = 'cached' }, /must be passed/],
@@ -181,6 +187,19 @@ test('rejects receipt identity mismatch and sensitive fields', () => {
     receipt.api_token = 'must-never-be-sealed'
     current.writeReceipt(taskId, receipt)
     assert.throws(() => verify(current.rootDir), /sensitive field/i)
+  } finally {
+    current.cleanup()
+  }
+})
+
+test('rejects a receipt that does not prove forced no-cache execution', () => {
+  const current = fixture()
+  try {
+    const taskId = FULL_TASKS[0]
+    const receipt = current.readReceipt(taskId)
+    receipt.executionMode = 'receipt_reuse_allowed'
+    current.writeReceipt(taskId, receipt)
+    assert.throws(() => verify(current.rootDir), /receipt does not prove forced no-cache execution/)
   } finally {
     current.cleanup()
   }

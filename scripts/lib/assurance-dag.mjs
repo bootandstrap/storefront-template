@@ -233,6 +233,7 @@ export function validateReceipt(receipt, expected, outputExists) {
     'toolchainSha256',
     'environmentSha256',
     'profileSha256',
+    'executionMode',
   ]
   collectFieldMismatches(receipt, expected, identityFields, reasons)
   collectArrayMismatches(receipt, expected, reasons)

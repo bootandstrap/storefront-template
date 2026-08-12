@@ -1,5 +1,24 @@
 # Assurance Feedback Benchmark
 
+## 2026-08-12 no-cache execution contract correction
+
+The historical `full --no-cache` runs below disabled assurance receipt reuse but
+explicitly retained the shared Turborepo cache. They remain valid historical
+evidence for their exact runner semantics, but they do not satisfy the later
+requirement that a final no-cache regeneration execute nested Turbo tasks.
+
+The runner now distinguishes `receipt_reuse_allowed` from `forced_no_cache`.
+In forced mode it sets Turborepo's force option through the allowlisted child
+environment, records the mode in the summary and every task receipt, and makes
+the read-only CI evidence consumer reject a reusable-mode summary or receipt.
+The runner, execution-mode helper and consumer are hashed inputs of the
+`assurance-contracts` task. A direct local probe against Turbo 2.10.2 reported
+one successful task and `0 cached` while the force option was active.
+
+No replacement 17/17 receipt is claimed by this correction alone. A new clean
+template run and exact template-to-tenant propagation are required before the
+final aggregate can consume this stronger evidence.
+
 ## Task 9 closure run
 
 - Date: 2026-08-03 (Europe/Paris)
