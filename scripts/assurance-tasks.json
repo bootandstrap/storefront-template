@@ -21,8 +21,8 @@
       "id": "audit-policy",
       "dependencies": [],
       "command": ["bash", "scripts/check-audit-waiver.sh"],
-      "inputs": ["scripts/check-audit-waiver.sh", "scripts/governance-audit.exclusions.json", "pnpm-lock.yaml"],
-      "outputs": [],
+      "inputs": ["scripts/check-audit-waiver.sh", "scripts/audit-bulk-advisory.mjs", "scripts/governance-audit.exclusions.json", "docs/operations/DEPENDENCY_RISK_REGISTER.md", "pnpm-lock.yaml"],
+      "outputs": [".artifacts/assurance/dependency-audit.json"],
       "environmentKeys": ["CI"]
     },
     {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SEVERITY_RANK = {
@@ -154,6 +154,52 @@ export function validateWaivers(advisories, registerText, today = new Date().toI
     }
 }
 
+export function buildAuditReceipt({
+    packageCount,
+    auditLevel,
+    advisories,
+    waiverResult,
+    generatedAt = new Date().toISOString(),
+}) {
+    const residuals = [
+        ...waiverResult.expired.map(item => `expired_waiver:${item.id}`),
+        ...waiverResult.invalid.map(item => `invalid_waiver:${item.id}`),
+        ...waiverResult.missing.map(item => `missing_waiver:${item.id}`),
+    ].sort()
+    const blockedIds = new Set([
+        ...waiverResult.expired,
+        ...waiverResult.invalid,
+        ...waiverResult.missing,
+    ].map(item => item.id))
+    return {
+        schema: 'bootandstrap.supply-chain-audit/v1',
+        status: waiverResult.valid ? 'passed' : 'failed',
+        auditLevel,
+        packageCount,
+        counts: {
+            advisories: advisories.length,
+            high: advisories.filter(item => item.severity === 'high').length,
+            critical: advisories.filter(item => item.severity === 'critical').length,
+            acceptedWaivers: waiverResult.accepted.length,
+            expiredWaivers: waiverResult.expired.length,
+            invalidWaivers: waiverResult.invalid.length,
+            missingWaivers: waiverResult.missing.length,
+            unwaivedHighCritical: advisories.filter(item =>
+                (item.severity === 'high' || item.severity === 'critical') && blockedIds.has(item.id)
+            ).length,
+        },
+        acceptedWaivers: waiverResult.accepted.map(item => ({
+            id: item.id,
+            severity: item.severity,
+            reviewBy: item.reviewBy,
+            owner: item.owner,
+            justification: item.justification,
+        })).sort((left, right) => left.id.localeCompare(right.id)),
+        residuals,
+        generatedAt,
+    }
+}
+
 async function fetchBulkAdvisories(packages, chunkSize = 500) {
     const entries = Object.entries(packages)
     const merged = {}
@@ -192,11 +238,20 @@ function parseArgs(argv) {
         else if (arg === '--lockfile') args.lockfile = argv[++index]
         else if (arg === '--register') args.register = argv[++index]
         else if (arg === '--audit-level') args.auditLevel = argv[++index]
+        else if (arg === '--output') args.output = argv[++index]
     }
 
     args.lockfile ??= resolve(args.root, 'pnpm-lock.yaml')
     args.register ??= resolve(args.root, 'docs/operations/DEPENDENCY_RISK_REGISTER.md')
     return args
+}
+
+function writeReceipt(outputPath, receipt) {
+    const resolved = resolve(outputPath)
+    mkdirSync(dirname(resolved), { recursive: true })
+    const temporary = `${resolved}.tmp-${process.pid}`
+    writeFileSync(temporary, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 })
+    renameSync(temporary, resolved)
 }
 
 async function main() {
@@ -210,9 +265,17 @@ async function main() {
     const response = await fetchBulkAdvisories(packages)
     const advisories = filterAdvisoriesBySeverity(response, args.auditLevel)
     const waiverResult = validateWaivers(advisories, registerText)
+    const receipt = buildAuditReceipt({
+        packageCount: Object.keys(packages).length,
+        auditLevel: args.auditLevel,
+        advisories,
+        waiverResult,
+    })
+    if (args.output) writeReceipt(args.output, receipt)
 
     if (advisories.length === 0) {
         console.log('No moderate+ advisories found')
+        console.log(JSON.stringify({ status: receipt.status, counts: receipt.counts }))
         return
     }
 
@@ -232,6 +295,7 @@ async function main() {
     if (!waiverResult.valid) {
         process.exitCode = 1
     }
+    console.log(JSON.stringify({ status: receipt.status, counts: receipt.counts }))
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it } from 'node:test'
 
 import {
+    buildAuditReceipt,
     extractAdvisoryId,
     filterAdvisoriesBySeverity,
     parsePnpmLockPackages,
@@ -91,5 +94,64 @@ snapshots:
             { id: 'GHSA-meta-meta-meta', reasons: ['owner', 'justification'] },
         ])
         assert.deepEqual(result.missing.map((item) => item.id), ['GHSA-miss-miss-miss'])
+    })
+
+    it('builds a fail-closed structured receipt with severity and waiver counts', () => {
+        const advisories = [
+            { id: 'GHSA-high-high-high', packageName: 'high-package', severity: 'high', title: 'high' },
+            { id: 'GHSA-modr-modr-modr', packageName: 'moderate-package', severity: 'moderate', title: 'moderate' },
+        ]
+        const waiverResult = {
+            valid: false,
+            accepted: [{ ...advisories[1], reviewBy: '2026-12-31', owner: 'Platform', justification: 'Bounded' }],
+            expired: [],
+            invalid: [],
+            missing: [advisories[0]],
+        }
+
+        assert.deepEqual(buildAuditReceipt({
+            packageCount: 42,
+            auditLevel: 'moderate',
+            advisories,
+            waiverResult,
+            generatedAt: '2026-08-12T17:00:00.000Z',
+        }), {
+            schema: 'bootandstrap.supply-chain-audit/v1',
+            status: 'failed',
+            auditLevel: 'moderate',
+            packageCount: 42,
+            counts: {
+                advisories: 2,
+                high: 1,
+                critical: 0,
+                acceptedWaivers: 1,
+                expiredWaivers: 0,
+                invalidWaivers: 0,
+                missingWaivers: 1,
+                unwaivedHighCritical: 1,
+            },
+            acceptedWaivers: [{
+                id: 'GHSA-modr-modr-modr',
+                severity: 'moderate',
+                reviewBy: '2026-12-31',
+                owner: 'Platform',
+                justification: 'Bounded',
+            }],
+            residuals: ['missing_waiver:GHSA-high-high-high'],
+            generatedAt: '2026-08-12T17:00:00.000Z',
+        })
+    })
+
+    it('binds the audit producer, waiver register and structured output into the assurance task', () => {
+        const root = resolve(import.meta.dirname, '..')
+        const definitions = JSON.parse(readFileSync(resolve(root, 'scripts/assurance-tasks.json'), 'utf8'))
+        const task = definitions.tasks.find(candidate => candidate.id === 'audit-policy')
+        const wrapper = readFileSync(resolve(root, 'scripts/check-audit-waiver.sh'), 'utf8')
+
+        assert.deepEqual(task.command, ['bash', 'scripts/check-audit-waiver.sh'])
+        assert.deepEqual(task.outputs, ['.artifacts/assurance/dependency-audit.json'])
+        assert.ok(task.inputs.includes('scripts/audit-bulk-advisory.mjs'))
+        assert.ok(task.inputs.includes('docs/operations/DEPENDENCY_RISK_REGISTER.md'))
+        assert.match(wrapper, /--output "\$ROOT_DIR\/\.artifacts\/assurance\/dependency-audit\.json"/)
     })
 })

@@ -32,4 +32,5 @@ fi
 node "$ROOT_DIR/scripts/audit-bulk-advisory.mjs" \
     --root "$ROOT_DIR" \
     --register "$REGISTER" \
-    --audit-level moderate
+    --audit-level moderate \
+    --output "$ROOT_DIR/.artifacts/assurance/dependency-audit.json"
