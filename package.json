@@ -18,6 +18,8 @@
     "check:supabase-types": "node scripts/sync-supabase-types.mjs --check",
     "assurance:fast": "node scripts/run-assurance.mjs --profile fast",
     "assurance:full": "node scripts/run-assurance.mjs --profile full",
+    "assurance:profiles": "node scripts/run-assurance-profiles.mjs",
+    "assurance:verify-profiles": "node scripts/verify-assurance-profiles.mjs",
     "clean": "turbo clean"
   },
   "devDependencies": {

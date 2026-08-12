@@ -17,6 +17,7 @@ import {
   assuranceExecutionMode,
   buildTaskProcessEnvironment,
 } from './lib/assurance-execution.mjs'
+import { snapshotAssuranceProfile } from './lib/assurance-profile-receipts.mjs'
 import { hashInputs, hashWorkingTree, runGit, sha256 } from './lib/assurance-identity.mjs'
 import { discoverChangedFiles, selectImpact } from './lib/assurance-impact.mjs'
 import { resolveProfile } from './lib/assurance-profile.mjs'
@@ -354,6 +355,7 @@ async function main() {
     completedAt: new Date().toISOString(),
   }
   await writeJsonAtomic(path.join(artifactRoot, 'summary.json'), summary)
+  if (successful && !interruption.active) await snapshotAssuranceProfile({ rootDir: repoRoot })
   process.stdout.write(`${JSON.stringify(summary)}\n`)
   if (!successful || interruption.active) process.exitCode = 1
 }
