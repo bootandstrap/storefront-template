@@ -1,6 +1,7 @@
 {
     "name": "@bootandstrap/shared",
     "version": "0.5.0",
+    "type": "module",
     "description": "Shared types, governance, billing, provisioning, and module registry for BootandStrap platform",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",

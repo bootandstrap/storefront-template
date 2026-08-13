@@ -6,6 +6,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLogger } from '../logger'
 import { createInMemoryEvidenceSink } from '../observability/evidence-event'
 
+function parseConsoleOutput(output: unknown): Record<string, unknown> {
+    expect(typeof output).toBe('string')
+    if (typeof output !== 'string') {
+        throw new TypeError('Expected the structured logger to emit a JSON string')
+    }
+    return JSON.parse(output) as Record<string, unknown>
+}
+
 describe('Structured Logger', () => {
     let consoleSpy: ReturnType<typeof vi.spyOn>
 
@@ -25,7 +33,7 @@ describe('Structured Logger', () => {
 
         expect(consoleSpy).toHaveBeenCalledOnce()
         const output = consoleSpy.mock.calls[0][0]
-        const parsed = JSON.parse(output)
+        const parsed = parseConsoleOutput(output)
         expect(parsed.level).toBe('info')
         expect(parsed.message).toBe('test message')
         expect(parsed.service).toBe('storefront')
@@ -36,7 +44,7 @@ describe('Structured Logger', () => {
         const logger = createLogger()
         logger.info('order placed', { orderId: '123', amount: 29.99 })
 
-        const parsed = JSON.parse(consoleSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(consoleSpy.mock.calls[0][0])
         expect(parsed.orderId).toBe('123')
         expect(parsed.amount).toBe(29.99)
     })
@@ -46,7 +54,7 @@ describe('Structured Logger', () => {
         const reqLogger = logger.withRequest('req-abc', 'tenant-xyz')
         reqLogger.info('handling request')
 
-        const parsed = JSON.parse(consoleSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(consoleSpy.mock.calls[0][0])
         expect(parsed.request_id).toBe('req-abc')
         expect(parsed.tenant_id).toBe('tenant-xyz')
     })
@@ -56,7 +64,7 @@ describe('Structured Logger', () => {
         const tenantLogger = logger.withTenant('tenant-123')
         tenantLogger.info('tenant operation')
 
-        const parsed = JSON.parse(consoleSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(consoleSpy.mock.calls[0][0])
         expect(parsed.tenant_id).toBe('tenant-123')
     })
 
@@ -65,7 +73,7 @@ describe('Structured Logger', () => {
         const child = logger.withRequest('req-1')
         child.info('child log')
 
-        const parsed = JSON.parse(consoleSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(consoleSpy.mock.calls[0][0])
         expect(parsed.tenant_id).toBe('base-tenant')
         expect(parsed.request_id).toBe('req-1')
     })
@@ -76,7 +84,7 @@ describe('Structured Logger', () => {
         logger.warn('something concerning')
 
         expect(warnSpy).toHaveBeenCalledOnce()
-        const parsed = JSON.parse(warnSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(warnSpy.mock.calls[0][0])
         expect(parsed.level).toBe('warn')
     })
 
@@ -86,7 +94,7 @@ describe('Structured Logger', () => {
         logger.error('something broke', { code: 'ERR_001' })
 
         expect(errorSpy).toHaveBeenCalledOnce()
-        const parsed = JSON.parse(errorSpy.mock.calls[0][0])
+        const parsed = parseConsoleOutput(errorSpy.mock.calls[0][0])
         expect(parsed.level).toBe('error')
         expect(parsed.code).toBe('ERR_001')
     })

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { describe, it } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import {
     buildAuditReceipt,
@@ -143,7 +144,7 @@ snapshots:
     })
 
     it('binds the audit producer, waiver register and structured output into the assurance task', () => {
-        const root = resolve(import.meta.dirname, '..')
+        const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
         const definitions = JSON.parse(readFileSync(resolve(root, 'scripts/assurance-tasks.json'), 'utf8'))
         const task = definitions.tasks.find(candidate => candidate.id === 'audit-policy')
         const wrapper = readFileSync(resolve(root, 'scripts/check-audit-waiver.sh'), 'utf8')
