@@ -28,7 +28,8 @@
     { "id": "storefront-build", "kind": "build" },
     { "id": "pos-conformance", "kind": "behavioral" },
     { "id": "pos-mutation-canary", "kind": "behavioral" },
-    { "id": "observability-unit", "kind": "behavioral" }
+    { "id": "observability-unit", "kind": "behavioral" },
+    { "id": "reproducible-bootstrap", "kind": "build" }
   ],
   "criticalSourceSelectors": [
     { "prefix": "apps/storefront/src/lib/security/" },
@@ -166,9 +167,10 @@
     "full": {
       "claimBoundary": "local_runtime_assurance_without_commercial_activation",
       "tasks": [
-        "assurance-policy",
-        "assurance-contracts",
-        "rls-policy",
+      "assurance-policy",
+      "assurance-contracts",
+      "reproducible-bootstrap",
+      "rls-policy",
         "audit-policy",
         "schema-ownership",
         "compose-security",

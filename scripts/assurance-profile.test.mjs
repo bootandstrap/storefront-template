@@ -55,6 +55,10 @@ test('full assurance gates the runner that produces its receipts', () => {
   const result = resolveProfile(profiles, 'full', [])
 
   assert.ok(result.tasks.includes('assurance-contracts'))
+  assert.ok(result.tasks.includes('reproducible-bootstrap'))
+  assert.ok(
+    result.tasks.indexOf('reproducible-bootstrap') > result.tasks.indexOf('assurance-contracts'),
+  )
 })
 
 test('critical POS changes select POS behavioral evidence', () => {
