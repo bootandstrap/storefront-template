@@ -45,6 +45,10 @@ export function buildBootstrapInstallCommands(storeDir) {
   }
 }
 
+export function buildRuntimeProbeCommand() {
+  return ['--filter=storefront', 'exec', 'next', '--version']
+}
+
 function run(command, args, options = {}) {
   const startedAt = Date.now()
   const result = spawnSync(command, args, {
@@ -114,12 +118,13 @@ function main() {
       LEADS_RATE_LIMIT_SALT: 'synthetic-nonsecret-bootstrap-salt',
     }
     const cold = run('pnpm', commands.cold, { cwd: sourceRoot, env: environment })
-    const coldRuntime = run('pnpm', ['--filter=storefront', 'exec', 'next', '--version'], {
+    const runtimeProbeCommand = buildRuntimeProbeCommand()
+    const coldRuntime = run('pnpm', runtimeProbeCommand, {
       cwd: sourceRoot,
       env: environment,
     })
     const warmOffline = run('pnpm', commands.warmOffline, { cwd: sourceRoot, env: environment })
-    const warmRuntime = run('pnpm', ['--offline', '--filter=storefront', 'exec', 'next', '--version'], {
+    const warmRuntime = run('pnpm', runtimeProbeCommand, {
       cwd: sourceRoot,
       env: environment,
     })

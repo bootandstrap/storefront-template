@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   buildBootstrapInstallCommands,
+  buildRuntimeProbeCommand,
   validateBootstrapRuntime,
 } from './run-reproducible-bootstrap.mjs'
 
@@ -65,4 +66,11 @@ test('defines cold and warm-offline frozen-lockfile bootstrap phases', () => {
   assert.ok(commands.warmOffline.includes('--offline'))
   assert.ok(commands.warmOffline.includes('--frozen-lockfile'))
   assert.ok(commands.warmOffline.includes('/tmp/bns-bootstrap-store'))
+})
+
+test('keeps the post-offline-install runtime probe local and pnpm-compatible', () => {
+  const command = buildRuntimeProbeCommand()
+
+  assert.deepEqual(command, ['--filter=storefront', 'exec', 'next', '--version'])
+  assert.ok(!command.includes('--offline'))
 })
