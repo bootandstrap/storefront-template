@@ -38,3 +38,14 @@ test('keeps the storefront test toolchain executable on the bootstrap runtime', 
     assert.doesNotMatch(readFileSync(resolve(root, relativePath), 'utf8'), /import\.meta\.dirname/)
   }
 })
+
+test('keeps the ESM shared observability boundary consumable from CommonJS Medusa', () => {
+  const medusaBoundary = readFileSync(
+    resolve(root, 'apps/medusa/src/lib/observability/synthetic-failure.ts'),
+    'utf8',
+  )
+
+  assert.match(medusaBoundary, /import type \{ EvidenceSink \}[\s\S]*"resolution-mode": "import"/)
+  assert.match(medusaBoundary, /await import\("@bootandstrap\/shared\/observability"\)/)
+  assert.doesNotMatch(medusaBoundary, /import \{[\s\S]*acceptCorrelationHeaders[\s\S]*\} from/)
+})

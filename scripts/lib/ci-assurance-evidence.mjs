@@ -170,8 +170,8 @@ export function verifyCiAssuranceEvidence({
   const profiles = readJsonFile(rootDir, 'scripts/assurance-profiles.json', 'assurance profiles').value
   const taskCatalog = readJsonFile(rootDir, 'scripts/assurance-tasks.json', 'assurance tasks').value
   const fullTasks = profiles?.profiles?.full?.tasks
-  if (!Array.isArray(fullTasks) || fullTasks.length !== 17 || new Set(fullTasks).size !== fullTasks.length) {
-    throw new Error('full assurance profile must contain exactly 17 unique tasks')
+  if (!Array.isArray(fullTasks) || fullTasks.length === 0 || new Set(fullTasks).size !== fullTasks.length) {
+    throw new Error('full assurance profile must contain a non-empty set of unique tasks')
   }
   const taskById = new Map((taskCatalog?.tasks ?? []).map((task) => [task.id, task]))
   if (fullTasks.some((taskId) => !taskById.has(taskId))) throw new Error('full assurance task catalog is incomplete')

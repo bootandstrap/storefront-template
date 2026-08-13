@@ -178,6 +178,7 @@
         "risk-domain-evidence",
         "medusa-unit",
         "medusa-pos-postgres",
+        "medusa-typecheck",
         "storefront-typecheck",
         "storefront-build",
         "pos-conformance",

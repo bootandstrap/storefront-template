@@ -1,8 +1,4 @@
-import {
-    acceptCorrelationHeaders,
-    emitEvidence,
-    type EvidenceSink,
-} from "@bootandstrap/shared/observability"
+import type { EvidenceSink } from "@bootandstrap/shared/observability" with { "resolution-mode": "import" }
 
 type CorrelationHeaders = Record<string, string | string[] | undefined>
 
@@ -24,6 +20,7 @@ export async function runMedusaSyntheticFailure(input: {
     now?: () => string
     eventId?: () => string
 }): Promise<never> {
+    const { acceptCorrelationHeaders, emitEvidence } = await import("@bootandstrap/shared/observability")
     const correlation = acceptCorrelationHeaders(input.headers, { tenant_id: input.tenant_id })
     await emitEvidence({
         ...correlation,

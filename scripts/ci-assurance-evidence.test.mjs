@@ -108,12 +108,28 @@ function fixture() {
   return {
     rootDir,
     cleanup: () => rmSync(rootDir, { recursive: true, force: true }),
+    readProfiles: () => JSON.parse(readFileSync(join(rootDir, 'scripts/assurance-profiles.json'), 'utf8')),
+    writeProfiles: (value) => writeJson(join(rootDir, 'scripts/assurance-profiles.json'), value),
     readSummary: () => JSON.parse(readFileSync(join(rootDir, '.artifacts/assurance/summary.json'), 'utf8')),
     writeSummary: (value) => writeJson(join(rootDir, '.artifacts/assurance/summary.json'), value),
     readReceipt: (taskId) => JSON.parse(readFileSync(join(rootDir, `.artifacts/assurance/tasks/${taskId}.json`), 'utf8')),
     writeReceipt: (taskId, value) => writeJson(join(rootDir, `.artifacts/assurance/tasks/${taskId}.json`), value),
   }
 }
+
+test('rejects an empty or duplicate full profile without imposing a stale task count', () => {
+  for (const fullTasks of [[], [FULL_TASKS[0], FULL_TASKS[0]]]) {
+    const current = fixture()
+    try {
+      const profiles = current.readProfiles()
+      profiles.profiles.full.tasks = fullTasks
+      current.writeProfiles(profiles)
+      assert.throws(() => verify(current.rootDir), /non-empty set of unique tasks/)
+    } finally {
+      current.cleanup()
+    }
+  }
+})
 
 function verify(rootDir) {
   return verifyCiAssuranceEvidence({
@@ -137,7 +153,7 @@ test('seals the exact passed full profile and every receipt/output hash', () => 
     assert.equal(result.revision, REVISION)
     assert.equal(result.sourceExecutionMode, 'forced_no_cache')
     assert.deepEqual(result.tasks, FULL_TASKS)
-    assert.equal(Object.keys(result.taskReceiptsSha256).length, 17)
+    assert.equal(Object.keys(result.taskReceiptsSha256).length, FULL_TASKS.length)
     assert.match(result.summarySha256, /^[0-9a-f]{64}$/)
     assert.deepEqual(result.restrictions, {
       deployment: 'not_claimed',
