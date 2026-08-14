@@ -186,7 +186,7 @@ export function formatPrice(
     const formatted = new Intl.NumberFormat('de-CH', {
         style: 'decimal',
         minimumFractionDigits: 0,
-    }).format(price)
+    }).format(price).replace(/[\u2019\u02bc]/g, "'")
 
     if (interval === 'one_time') return `${formatted} ${currency}`
     return `${formatted} ${currency}/${interval === 'month' ? 'mo' : 'yr'}`
