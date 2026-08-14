@@ -166,7 +166,7 @@
       "dependencies": [],
       "command": ["node", "scripts/run-medusa-postgres-assurance.mjs"],
       "inputs": ["scripts/run-medusa-postgres-assurance.mjs", "apps/medusa/src/modules/pos", "apps/medusa/src/api/admin/pos", "apps/medusa/jest.config.js", "apps/medusa/package.json", "pnpm-lock.yaml"],
-      "outputs": [],
+      "outputs": [".artifacts/assurance/medusa-pos-postgres.json"],
       "environmentKeys": ["CI", "DOCKER_HOST", "PATH"]
     },
     {

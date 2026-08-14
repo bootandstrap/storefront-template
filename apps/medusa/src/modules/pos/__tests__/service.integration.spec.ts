@@ -255,6 +255,35 @@ moduleIntegrationTestRunner<PosModuleService>({
 
             const residue = await refundService.listPosRefundOperations({ tenant_id: base.tenant_id })
             for (const row of residue) await refundService.deletePosRefundOperations(row.id)
+            expect(await refundService.listPosRefundOperations({ tenant_id: base.tenant_id })).toEqual([])
+        })
+
+        it('isolates tenant ledgers for shared operation and idempotency identifiers and leaves zero residue', async () => {
+            const syncService = service as PosModuleService & POSSyncService
+            const common = {
+                operation_id: 'shared_operation',
+                idempotency_key: 'shared_idempotency_key',
+                client_id: 'shared_terminal',
+                client_sequence: 1,
+                known_server_sequence: 0,
+                amount_minor: 500,
+                payload_sha256: '4'.repeat(64),
+            }
+            const tenantA = { ...common, tenant_id: 'tenant_isolation_a' }
+            const tenantB = { ...common, tenant_id: 'tenant_isolation_b' }
+
+            await expect(syncService.reservePOSSyncOperation(tenantA)).resolves.toMatchObject({ outcome: 'reserved' })
+            await expect(syncService.reservePOSSyncOperation(tenantB)).resolves.toMatchObject({ outcome: 'reserved' })
+
+            const tenantARows = await syncService.listPosSyncOperations({ tenant_id: tenantA.tenant_id })
+            const tenantBRows = await syncService.listPosSyncOperations({ tenant_id: tenantB.tenant_id })
+            expect(tenantARows).toHaveLength(1)
+            expect(tenantBRows).toHaveLength(1)
+            expect(tenantARows[0].id).not.toBe(tenantBRows[0].id)
+
+            for (const row of [...tenantARows, ...tenantBRows]) await syncService.deletePosSyncOperations(row.id)
+            expect(await syncService.listPosSyncOperations({ tenant_id: tenantA.tenant_id })).toEqual([])
+            expect(await syncService.listPosSyncOperations({ tenant_id: tenantB.tenant_id })).toEqual([])
         })
     },
 })

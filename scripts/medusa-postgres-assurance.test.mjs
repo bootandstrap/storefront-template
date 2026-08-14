@@ -29,26 +29,63 @@ function successfulSpawn(calls) {
   }
 }
 
+function passingJestReport() {
+  const titles = [
+    'persists and cleans up a complete local cash POS journey',
+    'persists an authoritative idempotent sync acknowledgement and leaves zero residue',
+    'persists partial refunds, exact replay and cumulative line-item authority',
+    'serializes concurrent last-quantity reservations and rolls back before commit faults',
+    'isolates tenant ledgers for shared operation and idempotency identifiers and leaves zero residue',
+  ]
+  return {
+    success: true,
+    numTotalTests: titles.length,
+    numPassedTests: titles.length,
+    numFailedTests: 0,
+    numPendingTests: 0,
+    testResults: [{
+      assertionResults: titles.map((title) => ({ title, status: 'passed' })),
+    }],
+  }
+}
+
 test('runs Medusa integration against pinned loopback PostgreSQL and removes its exact container', async () => {
   const calls = []
+  let evidence
   const result = await runMedusaPostgresAssurance({
     rootDir: '/repo',
     containerName: 'bns-pos-test-123',
     spawn: successfulSpawn(calls),
     delay: async () => {},
+    readTestReport: () => passingJestReport(),
+    writeEvidence: (_path, value) => { evidence = value },
+    removeTestReport: () => {},
   })
 
   assert.deepEqual(result, {
+    schema: 'bootandstrap.medusa-pos-postgres-assurance/v2',
     status: 'passed',
+    database: 'postgresql',
     image: PINNED_POSTGRES_IMAGE,
-    integrationTests: 'passed',
-    cleanup: 'removed',
+    tests: { total: 5, passed: 5, failed: 0, skipped: 0 },
+    semanticChecks: {
+      tenantIsolation: {
+        status: 'passed',
+        crossTenantRowsObserved: 0,
+        idempotencyScopeCollisions: 0,
+      },
+      cleanup: { status: 'passed', rowsAfterCleanup: 0, container: 'removed' },
+    },
   })
+  assert.deepEqual(evidence, result)
   assert.ok(calls.some(({ command, args }) => command === 'docker' && args.join(' ').includes(
     `run -d --name bns-pos-test-123 -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1::5432 ${PINNED_POSTGRES_IMAGE}`,
   )))
   const integration = calls.find(({ command }) => command === 'pnpm')
-  assert.deepEqual(integration.args, ['-C', 'apps/medusa', 'test:integration:modules'])
+  assert.equal(integration.args.slice(0, 3).join(' '), '-C apps/medusa test:integration:modules')
+  assert.equal(integration.args.includes('--'), false)
+  assert.ok(integration.args.includes('--json'))
+  assert.ok(integration.args.some((arg) => arg.startsWith('--outputFile=')))
   assert.equal(integration.options.env.DB_HOST, '127.0.0.1')
   assert.equal(integration.options.env.DB_PORT, '55432')
   assert.equal(integration.options.env.DB_USERNAME, 'postgres')
@@ -72,9 +109,31 @@ test('fails closed on integration failure and still removes the exact container'
         return spawn(command, args, options)
       },
       delay: async () => {},
+      readTestReport: () => passingJestReport(),
+      writeEvidence: () => {},
+      removeTestReport: () => {},
     }),
     /integration failed/i,
   )
   assert.ok(calls.some(({ command, args }) => command === 'docker'
     && args.join(' ') === 'rm -f bns-pos-test-failure'))
+})
+
+test('fails closed when PostgreSQL passes without the exact isolation behavior', async () => {
+  const calls = []
+  const report = passingJestReport()
+  report.testResults[0].assertionResults = report.testResults[0].assertionResults
+    .filter(({ title }) => !title.startsWith('isolates tenant ledgers'))
+
+  await assert.rejects(runMedusaPostgresAssurance({
+    rootDir: '/repo',
+    containerName: 'bns-pos-test-missing-isolation',
+    spawn: successfulSpawn(calls),
+    delay: async () => {},
+    readTestReport: () => report,
+    writeEvidence: () => {},
+    removeTestReport: () => {},
+  }), /tenant isolation assertion is missing or did not pass/)
+  assert.ok(calls.some(({ command, args }) => command === 'docker'
+    && args.join(' ') === 'rm -f bns-pos-test-missing-isolation'))
 })
