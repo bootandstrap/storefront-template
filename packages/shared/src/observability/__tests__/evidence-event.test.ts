@@ -17,6 +17,7 @@ const context = {
     trace_id: "0123456789abcdef0123456789abcdef",
     request_id: "request-cross-plane-1",
     tenant_id: "tenant-cross-plane-1",
+    principal_id: "principal-cross-plane-1",
     operation_id: "operation-cross-plane-1",
 }
 
@@ -30,7 +31,7 @@ const input: EvidenceEventInput = {
     attributes: { attempt: 1 },
 }
 
-describe("vendor-neutral evidence event v2", () => {
+describe("vendor-neutral evidence event v3", () => {
     it("requires the complete correlation and outcome contract", () => {
         const event = createEvidenceEvent(
             input,
@@ -39,17 +40,17 @@ describe("vendor-neutral evidence event v2", () => {
         )
 
         expect(event).toEqual({
-            schema: "bootandstrap.evidence-event/v2",
+            schema: "bootandstrap.evidence-event/v3",
             redaction_policy: "bootandstrap.evidence-redaction/v1",
             event_id: "event-1",
             occurred_at: "2026-08-06T20:00:00.000Z",
             ...input,
         })
-        expect(EVIDENCE_EVENT_SCHEMA).toBe("bootandstrap.evidence-event/v2")
+        expect(EVIDENCE_EVENT_SCHEMA).toBe("bootandstrap.evidence-event/v3")
     })
 
     it.each([
-        "trace_id", "request_id", "tenant_id", "operation_id", "service",
+        "trace_id", "request_id", "tenant_id", "principal_id", "operation_id", "service",
         "revision", "event_name", "outcome", "error_code",
     ] as const)("fails closed when %s is missing", (field) => {
         expect(() => createEvidenceEvent({ ...input, [field]: "" })).toThrow(new RegExp(field, "i"))
@@ -66,10 +67,11 @@ describe("vendor-neutral evidence event v2", () => {
 
     it("lets only the control plane create IDs and makes downstream services preserve them", () => {
         expect(CORRELATION_HEADERS).toEqual([
-            "x-trace-id", "x-request-id", "x-tenant-id", "x-operation-id",
+            "x-trace-id", "x-request-id", "x-tenant-id", "x-principal-id", "x-operation-id",
         ])
         const created = createCorrelationContext({
             tenant_id: context.tenant_id,
+            principal_id: context.principal_id,
             operation_id: context.operation_id,
         }, {
             traceId: () => context.trace_id,
@@ -85,11 +87,22 @@ describe("vendor-neutral evidence event v2", () => {
             "x-trace-id": context.trace_id,
             "x-request-id": context.request_id,
             "x-tenant-id": context.tenant_id,
+            "x-principal-id": context.principal_id,
             "x-operation-id": context.operation_id,
         })
-        expect(acceptCorrelationHeaders(headers, { tenant_id: context.tenant_id })).toEqual(context)
-        expect(() => acceptCorrelationHeaders(headers, { tenant_id: "tenant-other" })).toThrow(/tenant_mismatch/i)
-        expect(() => acceptCorrelationHeaders({ ...headers, "x-trace-id": "" }, { tenant_id: context.tenant_id }))
+        expect(acceptCorrelationHeaders(headers, {
+            tenant_id: context.tenant_id,
+            principal_id: context.principal_id,
+        })).toEqual(context)
+        expect(() => acceptCorrelationHeaders(headers, {
+            tenant_id: "tenant-other", principal_id: context.principal_id,
+        })).toThrow(/tenant_mismatch/i)
+        expect(() => acceptCorrelationHeaders(headers, {
+            tenant_id: context.tenant_id, principal_id: "principal-other",
+        })).toThrow(/principal_mismatch/i)
+        expect(() => acceptCorrelationHeaders({ ...headers, "x-trace-id": "" }, {
+            tenant_id: context.tenant_id, principal_id: context.principal_id,
+        }))
             .toThrow(/trace_id.*missing/i)
     })
 
@@ -117,6 +130,7 @@ describe("vendor-neutral evidence event v2", () => {
                 "bootandstrap.event_id": "event-1",
                 "bootandstrap.request_id": input.request_id,
                 "bootandstrap.tenant_id": input.tenant_id,
+                "bootandstrap.principal_id": input.principal_id,
                 "bootandstrap.operation_id": input.operation_id,
                 "service.name": "storefront",
             }),

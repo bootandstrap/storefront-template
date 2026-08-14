@@ -28,6 +28,7 @@ const ALLOWLISTED_DETAIL_KEYS = new Set([
     'trace_id',
     'operation_id',
     'tenant_id',
+    'principal_id',
     'revision',
     'operation',
     'outcome',
@@ -70,6 +71,9 @@ export async function reportError({
     const operationId = typeof safeDetails.operation_id === 'string'
         ? safeDetails.operation_id
         : `error:${source}:${requestId}`
+    const principalId = typeof safeDetails.principal_id === 'string'
+        ? safeDetails.principal_id
+        : 'system'
     const revision = typeof safeDetails.revision === 'string'
         ? safeDetails.revision
         : process.env.DEPLOY_SHA || process.env.npm_package_version || 'dev'
@@ -103,6 +107,7 @@ export async function reportError({
             trace_id: traceId,
             request_id: requestId,
             tenant_id: tenantId,
+            principal_id: principalId,
             operation_id: operationId,
             revision,
             event_name: `storefront.error.${source}`,

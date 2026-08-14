@@ -20,13 +20,17 @@ function safeErrorCode(error: unknown): string {
 export async function runStorefrontSyntheticFailure(input: {
     headers: CorrelationHeaders
     tenant_id: string
+    principal_id: string
     revision: string
     sink: EvidenceSink
     callMedusa: (headers: Record<string, string>) => Promise<unknown>
     now?: () => string
     eventId?: () => string
 }): Promise<unknown> {
-    const correlation = acceptCorrelationHeaders(input.headers, { tenant_id: input.tenant_id })
+    const correlation = acceptCorrelationHeaders(input.headers, {
+        tenant_id: input.tenant_id,
+        principal_id: input.principal_id,
+    })
     await emitEvidence({
         ...correlation,
         service: 'storefront',

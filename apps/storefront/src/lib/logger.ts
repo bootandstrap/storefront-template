@@ -27,6 +27,7 @@ interface LogEntry {
     service: string
     version?: string
     tenant_id?: string | null
+    principal_id?: string | null
     request_id?: string | null
     trace_id?: string | null
     operation_id?: string | null
@@ -36,10 +37,11 @@ interface LogEntry {
 const SERVICE_NAME = 'storefront'
 const SERVICE_VERSION = process.env.npm_package_version || process.env.DEPLOY_SHA || 'dev'
 
-type ScopedEvidenceInput = Omit<EvidenceEventInput, 'trace_id' | 'request_id' | 'tenant_id' | 'operation_id' | 'service'> & {
+type ScopedEvidenceInput = Omit<EvidenceEventInput, 'trace_id' | 'request_id' | 'tenant_id' | 'principal_id' | 'operation_id' | 'service'> & {
     trace_id?: string
     request_id?: string
     tenant_id?: string
+    principal_id?: string
     operation_id?: string
 }
 
@@ -53,7 +55,7 @@ function formatEntry(
     level: LogLevel,
     message: string,
     data: Record<string, unknown> = {},
-    context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}
+    context: { tenant_id?: string | null; principal_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}
 ): string {
     const entry: LogEntry = {
         level,
@@ -72,7 +74,7 @@ function formatEntry(
     )
 }
 
-function createLogger(context: { tenant_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}) {
+function createLogger(context: { tenant_id?: string | null; principal_id?: string | null; request_id?: string | null; trace_id?: string | null; operation_id?: string | null } = {}) {
     /** Normalize any log data to Record<string, unknown> for JSON output */
     function normalizeData(data: unknown): Record<string, unknown> | undefined {
         if (data === undefined || data === null) return undefined
@@ -107,6 +109,7 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
                 trace_id: input.trace_id ?? context.trace_id ?? '',
                 request_id: input.request_id ?? context.request_id ?? '',
                 tenant_id: input.tenant_id ?? context.tenant_id ?? '',
+                principal_id: input.principal_id ?? context.principal_id ?? '',
                 operation_id: input.operation_id ?? context.operation_id ?? '',
             }, sink)
         },
@@ -141,6 +144,7 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
             trace_id: string
             request_id: string
             tenant_id: string
+            principal_id: string
             operation_id: string
         }) {
             return createLogger({ ...context, ...correlation })
@@ -175,6 +179,7 @@ function createLogger(context: { tenant_id?: string | null; request_id?: string 
  */
 export const logger = createLogger({
     tenant_id: process.env.TENANT_ID || process.env.NEXT_PUBLIC_TENANT_ID || null,
+    principal_id: 'system',
 })
 
 export type { LogLevel, LogEntry }

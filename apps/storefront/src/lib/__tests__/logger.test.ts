@@ -104,6 +104,7 @@ describe('Structured Logger', () => {
         const scoped = createLogger({
             trace_id: '0123456789abcdef0123456789abcdef',
             tenant_id: 'tenant-logger-test',
+            principal_id: 'principal-logger-test',
         })
 
         await scoped.evidence({
@@ -118,6 +119,7 @@ describe('Structured Logger', () => {
         expect(sink.events[0]).toMatchObject({
             trace_id: '0123456789abcdef0123456789abcdef',
             tenant_id: 'tenant-logger-test',
+            principal_id: 'principal-logger-test',
             event_name: 'checkout.test',
         })
     })

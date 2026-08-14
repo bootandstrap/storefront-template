@@ -1,16 +1,17 @@
-export const EVIDENCE_EVENT_SCHEMA = "bootandstrap.evidence-event/v2";
+export const EVIDENCE_EVENT_SCHEMA = "bootandstrap.evidence-event/v3";
 export const EVIDENCE_REDACTION_POLICY = "bootandstrap.evidence-redaction/v1";
 export const CORRELATION_HEADERS = [
     "x-trace-id",
     "x-request-id",
     "x-tenant-id",
+    "x-principal-id",
     "x-operation-id",
 ];
 const MAX_ATTRIBUTES = 16;
 const MAX_ATTRIBUTE_STRING_LENGTH = 256;
 const MAX_CORRELATION_LENGTH = 128;
 const ALLOWED_INPUT_KEYS = new Set([
-    "trace_id", "request_id", "tenant_id", "operation_id", "service", "revision",
+    "trace_id", "request_id", "tenant_id", "principal_id", "operation_id", "service", "revision",
     "event_name", "outcome", "error_code", "attributes",
 ]);
 const SECRET_KEY_PATTERN = /(?:authorization|cookie|password|passwd|secret|token|api[_-]?key|private[_-]?key|sentry[_-]?dsn)/i;
@@ -82,6 +83,7 @@ export function createCorrelationContext(authority, ids = {}) {
         trace_id: (ids.traceId ?? defaultTraceId)(),
         request_id: (ids.requestId ?? defaultId)(),
         tenant_id: authority.tenant_id,
+        principal_id: authority.principal_id,
         operation_id: authority.operation_id,
     };
     validateCorrelation(context);
@@ -91,7 +93,7 @@ function validateCorrelation(context) {
     requireText(context.trace_id, "trace_id");
     if (!/^[0-9a-f]{32}$/.test(context.trace_id))
         throw new Error("trace_id must be 32 lowercase hexadecimal characters");
-    for (const field of ["request_id", "tenant_id", "operation_id"]) {
+    for (const field of ["request_id", "tenant_id", "principal_id", "operation_id"]) {
         requireText(context[field], field);
         rejectSecretValue(context[field], field);
     }
@@ -102,6 +104,7 @@ export function correlationHeaders(context) {
         "x-trace-id": context.trace_id,
         "x-request-id": context.request_id,
         "x-tenant-id": context.tenant_id,
+        "x-principal-id": context.principal_id,
         "x-operation-id": context.operation_id,
     };
 }
@@ -110,15 +113,18 @@ export function acceptCorrelationHeaders(headers, authority) {
         trace_id: headerValue(headers, "x-trace-id"),
         request_id: headerValue(headers, "x-request-id"),
         tenant_id: headerValue(headers, "x-tenant-id"),
+        principal_id: headerValue(headers, "x-principal-id"),
         operation_id: headerValue(headers, "x-operation-id"),
     };
-    for (const field of ["trace_id", "request_id", "tenant_id", "operation_id"]) {
+    for (const field of ["trace_id", "request_id", "tenant_id", "principal_id", "operation_id"]) {
         if (!context[field])
             throw new Error(`${field}_missing`);
     }
     validateCorrelation(context);
     if (context.tenant_id !== authority.tenant_id)
         throw new Error("tenant_mismatch");
+    if (context.principal_id !== authority.principal_id)
+        throw new Error("principal_mismatch");
     return context;
 }
 export function createEvidenceEvent(input, now = () => new Date().toISOString(), eventId = defaultId) {
@@ -144,6 +150,7 @@ export function createEvidenceEvent(input, now = () => new Date().toISOString(),
         trace_id: input.trace_id,
         request_id: input.request_id,
         tenant_id: input.tenant_id,
+        principal_id: input.principal_id,
         operation_id: input.operation_id,
         service: input.service,
         revision: input.revision,
@@ -182,6 +189,7 @@ export function createOTLPEvidenceSink(exportRecord) {
                     "bootandstrap.event_id": event.event_id,
                     "bootandstrap.request_id": event.request_id,
                     "bootandstrap.tenant_id": event.tenant_id,
+                    "bootandstrap.principal_id": event.principal_id,
                     "bootandstrap.operation_id": event.operation_id,
                     "bootandstrap.revision": event.revision,
                     "bootandstrap.outcome": event.outcome,

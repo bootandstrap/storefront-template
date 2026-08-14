@@ -51,7 +51,7 @@ function assertRuntimeChain(events, context, revision) {
       || event.outcome !== outcome || event.error_code !== errorCode) {
       throw new Error(`runtime event ${index} does not match the synthetic failure contract`)
     }
-    for (const field of ['trace_id', 'request_id', 'tenant_id', 'operation_id']) {
+    for (const field of ['trace_id', 'request_id', 'tenant_id', 'principal_id', 'operation_id']) {
       if (event[field] !== context[field]) throw new Error(`runtime event ${index} ${field} mismatch`)
     }
     if (event.revision !== revision) throw new Error(`runtime event ${index} revision mismatch`)
@@ -71,6 +71,7 @@ export async function generateRuntimeEvidence({
   revision,
   outputPath,
   authorityTenantId = context?.tenant_id,
+  authorityPrincipalId = context?.principal_id,
   startedAt = new Date().toISOString(),
 }) {
   if (!/^[0-9a-f]{40}$/.test(revision ?? '')) throw new Error('revision must be an exact 40-character commit SHA')
@@ -89,6 +90,7 @@ export async function generateRuntimeEvidence({
     await runStorefrontSyntheticFailure({
       headers: correlationHeaders(context),
       tenant_id: authorityTenantId,
+      principal_id: authorityPrincipalId,
       revision,
       sink,
       now,
@@ -96,6 +98,7 @@ export async function generateRuntimeEvidence({
       callMedusa: (headers) => runMedusaSyntheticFailure({
         headers,
         tenant_id: authorityTenantId,
+        principal_id: authorityPrincipalId,
         revision,
         sink,
         now,
@@ -156,9 +159,11 @@ async function main() {
       trace_id: args['trace-id'],
       request_id: args['request-id'],
       tenant_id: args['tenant-id'],
+      principal_id: args['principal-id'],
       operation_id: args['operation-id'],
     },
     authorityTenantId: args['authority-tenant-id'] ?? args['tenant-id'],
+    authorityPrincipalId: args['authority-principal-id'] ?? args['principal-id'],
     revision: args.revision,
     outputPath: args.output,
     startedAt: args['started-at'],

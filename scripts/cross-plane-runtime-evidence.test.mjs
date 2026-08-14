@@ -11,6 +11,7 @@ const context = {
   trace_id: '0123456789abcdef0123456789abcdef',
   request_id: 'request-cross-plane-proof',
   tenant_id: 'tenant-cross-plane-proof',
+  principal_id: 'principal-cross-plane-proof',
   operation_id: 'operation-cross-plane-proof',
 }
 

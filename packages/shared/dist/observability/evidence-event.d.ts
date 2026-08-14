@@ -1,11 +1,12 @@
-export declare const EVIDENCE_EVENT_SCHEMA: "bootandstrap.evidence-event/v2";
+export declare const EVIDENCE_EVENT_SCHEMA: "bootandstrap.evidence-event/v3";
 export declare const EVIDENCE_REDACTION_POLICY: "bootandstrap.evidence-redaction/v1";
-export declare const CORRELATION_HEADERS: readonly ["x-trace-id", "x-request-id", "x-tenant-id", "x-operation-id"];
+export declare const CORRELATION_HEADERS: readonly ["x-trace-id", "x-request-id", "x-tenant-id", "x-principal-id", "x-operation-id"];
 export type EvidenceAttributeValue = string | number | boolean | null;
 export interface CorrelationContext {
     trace_id: string;
     request_id: string;
     tenant_id: string;
+    principal_id: string;
     operation_id: string;
 }
 export interface EvidenceEventInput extends CorrelationContext {
@@ -42,6 +43,7 @@ export interface OTLPEvidenceRecord {
 type HeadersRecord = Record<string, string | string[] | undefined>;
 export declare function createCorrelationContext(authority: {
     tenant_id: string;
+    principal_id: string;
     operation_id: string;
 }, ids?: {
     traceId?: () => string;
@@ -50,6 +52,7 @@ export declare function createCorrelationContext(authority: {
 export declare function correlationHeaders(context: CorrelationContext): Record<(typeof CORRELATION_HEADERS)[number], string>;
 export declare function acceptCorrelationHeaders(headers: HeadersRecord, authority: {
     tenant_id: string;
+    principal_id: string;
 }): CorrelationContext;
 export declare function createEvidenceEvent(input: EvidenceEventInput, now?: () => string, eventId?: () => string): EvidenceEvent;
 export declare function createInMemoryEvidenceSink(): InMemoryEvidenceSink;

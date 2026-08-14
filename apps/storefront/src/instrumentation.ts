@@ -4,6 +4,7 @@ export const EVIDENCE_PROPAGATION_HEADERS = [
     "x-trace-id",
     "x-request-id",
     "x-tenant-id",
+    "x-principal-id",
     "x-operation-id",
 ] as const
 
@@ -48,12 +49,14 @@ export const onRequestError = async (...args: unknown[]) => {
         || process.env.NEXT_PUBLIC_TENANT_ID
         || "tenant-unavailable"
     const operationId = readRequestHeader(args, "x-operation-id") || `request-error:${requestId}`
+    const principalId = readRequestHeader(args, "x-principal-id") || "anonymous"
 
     try {
         await logger.evidence({
             trace_id: traceId,
             request_id: requestId,
             tenant_id: tenantId,
+            principal_id: principalId,
             operation_id: operationId,
             event_name: "storefront.request_error",
             revision: process.env.DEPLOY_SHA || process.env.npm_package_version || "dev",

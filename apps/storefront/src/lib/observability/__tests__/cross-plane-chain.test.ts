@@ -11,7 +11,12 @@ import { runStorefrontSyntheticFailure } from '../synthetic-failure'
 
 const revision = 'a'.repeat(40)
 const tenantId = 'tenant-observability-proof'
-const context = createCorrelationContext({ tenant_id: tenantId, operation_id: 'operation-observability-proof' }, {
+const principalId = 'principal-observability-proof'
+const context = createCorrelationContext({
+    tenant_id: tenantId,
+    principal_id: principalId,
+    operation_id: 'operation-observability-proof',
+}, {
     traceId: () => '0123456789abcdef0123456789abcdef',
     requestId: () => 'request-observability-proof',
 })
@@ -39,6 +44,7 @@ describe('cross-plane synthetic observability chain', () => {
         await expect(runStorefrontSyntheticFailure({
             headers,
             tenant_id: tenantId,
+            principal_id: principalId,
             revision,
             sink,
             now,
@@ -46,6 +52,7 @@ describe('cross-plane synthetic observability chain', () => {
             callMedusa: (forwardedHeaders) => runMedusaSyntheticFailure({
                 headers: forwardedHeaders,
                 tenant_id: tenantId,
+                principal_id: principalId,
                 revision,
                 sink,
                 now,
@@ -73,6 +80,7 @@ describe('cross-plane synthetic observability chain', () => {
         await expect(runStorefrontSyntheticFailure({
             headers,
             tenant_id: 'tenant-other',
+            principal_id: principalId,
             revision,
             sink,
             callMedusa: async () => undefined,
@@ -80,6 +88,7 @@ describe('cross-plane synthetic observability chain', () => {
         await expect(runStorefrontSyntheticFailure({
             headers: { ...headers, 'x-trace-id': '' },
             tenant_id: tenantId,
+            principal_id: principalId,
             revision,
             sink,
             callMedusa: async () => undefined,
@@ -95,6 +104,7 @@ describe('cross-plane synthetic observability chain', () => {
         await expect(runStorefrontSyntheticFailure({
             headers: correlationHeaders(context),
             tenant_id: tenantId,
+            principal_id: principalId,
             revision,
             sink,
             callMedusa: async () => { throw raw },

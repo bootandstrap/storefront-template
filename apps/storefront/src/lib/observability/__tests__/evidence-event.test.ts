@@ -13,6 +13,7 @@ const validInput: EvidenceEventInput = {
     trace_id: '0123456789abcdef0123456789abcdef',
     request_id: 'request-storefront-test',
     tenant_id: 'tenant-storefront-test',
+    principal_id: 'principal-storefront-test',
     operation_id: 'operation-storefront-test',
     service: 'storefront',
     revision: 'a'.repeat(40),
@@ -22,9 +23,9 @@ const validInput: EvidenceEventInput = {
 }
 
 describe('storefront shared evidence boundary', () => {
-    it('re-exports the complete v2 contract without a local fork', () => {
+    it('re-exports the complete v3 contract without a local fork', () => {
         const event = createEvidenceEvent(validInput, () => '2026-08-06T20:00:00.000Z', () => 'event-1')
-        expect(EVIDENCE_EVENT_SCHEMA).toBe('bootandstrap.evidence-event/v2')
+        expect(EVIDENCE_EVENT_SCHEMA).toBe('bootandstrap.evidence-event/v3')
         expect(event).toMatchObject({
             schema: EVIDENCE_EVENT_SCHEMA,
             event_id: 'event-1',
