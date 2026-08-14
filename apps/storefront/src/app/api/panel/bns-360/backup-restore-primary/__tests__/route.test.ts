@@ -33,7 +33,7 @@ describe('POST /api/panel/bns-360/backup-restore-primary', () => {
             status: 'verified',
             runId: 'run-1',
             tenantRef: 'tenant-1',
-            runtime: { restoreDryRun: { safe: true } },
+            runtime: { restore: { executed: true, success: true } },
             cleanup: { status: 'verified' },
             residue: { zero: true },
         })
@@ -48,7 +48,8 @@ describe('POST /api/panel/bns-360/backup-restore-primary', () => {
         expect(response.status).toBe(200)
         expect(mockWithPanelGuard).toHaveBeenCalledWith()
         expect(mockRunBns360BackupRestorePrimaryJourney).toHaveBeenCalledWith({ tenantId: 'tenant-1' })
-        expect(json.runtime.restoreDryRun.safe).toBe(true)
+        expect(json.runtime.restore.executed).toBe(true)
+        expect(json.runtime.restore.success).toBe(true)
         expect(JSON.stringify(json)).not.toContain('password')
         expect(JSON.stringify(json)).not.toContain('token')
     })

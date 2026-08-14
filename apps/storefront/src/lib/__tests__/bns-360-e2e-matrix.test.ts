@@ -26,6 +26,7 @@ import {
     isBns360CustomerOwnerPanelBoundaryStatus,
     isBns360RetriablePanelStatus,
     recordBns360ScenarioEvidenceArtifact,
+    runBns360AutomatedFunctionalEvidence,
     serializeBns360CookieHeader,
     resolveBns360ApiHeaders,
     resolveBns360RetryAfterMs,
@@ -500,7 +501,9 @@ describe('BNS 360 reusable runtime matrix', () => {
                 method: 'POST',
                 expectedJsonValues: expect.objectContaining({
                     status: 'verified',
-                    'runtime.restoreDryRun.safe': true,
+                    'runtime.restore.executed': true,
+                    'runtime.restore.success': true,
+                    'runtime.codeData.sourceDataMixedWithCode': false,
                     'cleanup.status': 'verified',
                     'residue.zero': true,
                 }),
@@ -574,7 +577,7 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(recoveryScenario?.functionalEvidence).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'backup_restore_journey',
-                target: expect.stringContaining('/api/panel/vault/download'),
+                target: expect.stringContaining('re-snapshot the disposable tenant'),
             }),
         ]))
     })
@@ -936,6 +939,11 @@ describe('BNS 360 reusable runtime matrix', () => {
                 status: 'verified',
                 executionMode: 'functional',
                 functionalStatus: 'verified',
+                functionalMeasurements: {
+                    'runtime.equivalence.beforeDigest': 'sha256-before',
+                    'runtime.equivalence.recordsBefore': 2,
+                    'runtime.restore.success': true,
+                },
             })
 
             recordBns360ScenarioEvidenceArtifact({
@@ -984,6 +992,11 @@ describe('BNS 360 reusable runtime matrix', () => {
                         credentialState: 'provided_redacted',
                         pass: true,
                         cleanupStatus: 'not_applicable',
+                        functionalMeasurements: {
+                            'runtime.equivalence.beforeDigest': 'sha256-before',
+                            'runtime.equivalence.recordsBefore': 2,
+                            'runtime.restore.success': true,
+                        },
                         paths: [
                             expect.objectContaining({
                                 path: '/api/panel/limits?resources=products,categories,badges',
@@ -1548,6 +1561,53 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(bns360JsonValueMatches(grantsPayload, 'summary.missingCount', 0)).toBe(true)
         expect(bns360JsonValueMatches(grantsPayload, 'summary.missingCount', 1)).toBe(false)
         expect(bns360JsonValueMatches(grantsPayload, 'summary.extra', null)).toBe(false)
+    })
+
+    it('extracts only allowlisted scalar semantic measurements from functional responses', async () => {
+        const measurements: Record<string, string | number | boolean | null> = {}
+        const payload = {
+            status: 'verified',
+            runtime: {
+                restore: { executed: true },
+                equivalence: { beforeDigest: 'd'.repeat(64), recordsBefore: 2 },
+            },
+            authorization: 'Bearer must-not-persist',
+        }
+        const request = {
+            post: async () => ({
+                ok: () => true,
+                status: () => 200,
+                text: async () => JSON.stringify(payload),
+                json: async () => payload,
+            }),
+        }
+
+        await expect(runBns360AutomatedFunctionalEvidence(request as never, [{
+            kind: 'backup_restore_journey',
+            target: 'semantic restore',
+            reversible: true,
+            routes: ['/api/panel/bns-360/backup-restore-primary'],
+            method: 'POST',
+            expectedJsonPaths: [
+                'status',
+                'runtime.restore.executed',
+                'runtime.equivalence.beforeDigest',
+                'runtime.equivalence.recordsBefore',
+            ],
+            receiptJsonPaths: [
+                'runtime.restore.executed',
+                'runtime.equivalence.beforeDigest',
+                'runtime.equivalence.recordsBefore',
+            ],
+        }], undefined, undefined, measurements)).resolves.toBe('verified')
+
+        expect(measurements).toEqual({
+            'runtime.restore.executed': true,
+            'runtime.equivalence.beforeDigest': 'd'.repeat(64),
+            'runtime.equivalence.recordsBefore': 2,
+        })
+        expect(JSON.stringify(measurements)).not.toContain('authorization')
+        expect(JSON.stringify(measurements)).not.toContain('Bearer')
     })
 
     it('keeps mutating functional journeys opt-in', () => {

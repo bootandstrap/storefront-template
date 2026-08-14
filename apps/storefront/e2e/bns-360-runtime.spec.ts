@@ -82,12 +82,14 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 }
             }
 
+            const functionalMeasurements: Record<string, string | number | boolean | null> = {}
             const functionalStatus = executionMode === 'functional'
                 ? await runBns360AutomatedFunctionalEvidence(
                     scenario.requiresAuth ? page.request : request,
                     functionalEvidence,
                     functionalEvidenceHeaders,
-                    page
+                    page,
+                    functionalMeasurements,
                 )
                 : undefined
             const deployedBuild = await resolveBns360DeployedBuild(request, baseApiHeaders)
@@ -109,6 +111,7 @@ for (const scenario of BNS_360_RUNTIME_MATRIX) {
                 status: 'verified',
                 executionMode,
                 functionalStatus,
+                functionalMeasurements,
             })
             await testInfo.attach('bns-360-scenario-evidence', {
                 body: JSON.stringify(evidence, null, 2),

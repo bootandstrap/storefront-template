@@ -143,6 +143,7 @@ export interface Bns360ScenarioEvidenceInput {
     executionMode?: Bns360ExecutionMode
     routeStatus?: Bns360RouteStatus
     functionalStatus?: Bns360FunctionalStatus
+    functionalMeasurements?: Record<string, string | number | boolean | null>
 }
 
 export interface Bns360ScenarioEvidence {
@@ -157,6 +158,7 @@ export interface Bns360ScenarioEvidence {
     routes: string[]
     functionalEvidence: Bns360FunctionalEvidenceTarget[]
     credentialState: 'not_required' | 'missing' | 'provided_redacted'
+    functionalMeasurements: Record<string, string | number | boolean | null>
 }
 
 export type Bns360EvidenceRouteCheck = {
@@ -196,10 +198,12 @@ type Bns360RuntimeEvidenceScenario = {
         method: Bns360FunctionalEvidenceTarget['method']
         routes: string[]
         expectedJsonPaths: string[]
+        receiptJsonPaths: string[]
     }>
     credentialState: Bns360ScenarioEvidence['credentialState']
     pass: boolean
     cleanupStatus: string
+    functionalMeasurements: Record<string, string | number | boolean | null>
 }
 
 type Bns360RuntimeEvidenceArtifact = {
@@ -239,6 +243,7 @@ export function buildBns360ScenarioEvidence(input: Bns360ScenarioEvidenceInput):
         routes: input.routes,
         functionalEvidence: input.functionalEvidence ?? [],
         credentialState,
+        functionalMeasurements: input.functionalMeasurements ?? {},
     }
 }
 
@@ -369,10 +374,12 @@ function buildBns360RuntimeEvidenceScenario(
             method: target.method ?? 'GET',
             routes: target.routes ?? [],
             expectedJsonPaths: target.expectedJsonPaths ?? [],
+            receiptJsonPaths: target.receiptJsonPaths ?? [],
         })),
         credentialState: input.evidence.credentialState,
         pass: isBns360ScenarioEvidencePassing(input.evidence),
         cleanupStatus: input.cleanupStatus ?? 'not_applicable',
+        functionalMeasurements: input.evidence.functionalMeasurements,
     }
 }
 
@@ -546,7 +553,8 @@ export async function runBns360AutomatedFunctionalEvidence(
     request: APIRequestContext,
     targets: Bns360FunctionalEvidenceTarget[],
     headers?: Record<string, string>,
-    page?: Page
+    page?: Page,
+    measurements?: Record<string, string | number | boolean | null>,
 ): Promise<Bns360FunctionalStatus> {
     const status = getBns360AutomatedFunctionalEvidenceStatus(targets)
     if (status !== 'verified') {
@@ -582,6 +590,26 @@ export async function runBns360AutomatedFunctionalEvidence(
                         bns360JsonValueMatches(payload, path, expected),
                         `Expected ${route} JSON payload ${path} to equal ${String(expected)}`
                     ).toBe(true)
+                }
+                for (const path of target.receiptJsonPaths ?? []) {
+                    if (!target.expectedJsonPaths.includes(path)) {
+                        throw new Error(`Receipt JSON path is not an expected path: ${path}`)
+                    }
+                    if (/(?:authorization|cookie|password|secret|token|api[_-]?key)/i.test(path)) {
+                        throw new Error(`Receipt JSON path is secret-shaped: ${path}`)
+                    }
+                    const result = getBns360JsonPath(payload, path)
+                    if (!result.found || !['string', 'number', 'boolean'].includes(typeof result.value)) {
+                        throw new Error(`Receipt JSON value must be a present scalar: ${path}`)
+                    }
+                    if (typeof result.value === 'string'
+                        && /(?:\bBearer\s+\S+|\bsk_(?:live|test)_\S+)/i.test(result.value)) {
+                        throw new Error(`Receipt JSON value is secret-shaped: ${path}`)
+                    }
+                    if (measurements && path in measurements && !Object.is(measurements[path], result.value)) {
+                        throw new Error(`Receipt JSON path changed within scenario: ${path}`)
+                    }
+                    if (measurements) measurements[path] = result.value as string | number | boolean
                 }
             }
         }

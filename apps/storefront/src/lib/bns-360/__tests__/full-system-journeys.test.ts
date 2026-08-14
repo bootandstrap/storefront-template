@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
     createCart: vi.fn(),
     deleteAuthAddress: vi.fn(),
     executeFullBackup: vi.fn(),
+    executeRestore: vi.fn(),
     getAdminCustomers: vi.fn(),
     downloadBackup: vi.fn(),
     getAdminOrders: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('@/lib/backup/backup-executor', () => ({
 
 vi.mock('@/lib/backup/backup-restore', () => ({
     downloadBackup: mocks.downloadBackup,
+    executeRestore: mocks.executeRestore,
 }))
 
 vi.mock('@/lib/backup/tenant-slug', () => ({
@@ -201,23 +203,32 @@ function mockTenantOrder() {
 }
 
 function mockBackupDefaults() {
-    mocks.executeFullBackup.mockResolvedValue({
+    const stats = {
+        products_count: 1,
+        orders_count: 0,
+        customers_count: 0,
+        categories_count: 1,
+        promotions_count: 0,
+        inventory_count: 0,
+        total_size_bytes: 512,
+        duration_ms: 25,
+    }
+    mocks.executeFullBackup
+        .mockResolvedValueOnce({
         success: true,
         backup_key: 'tenant-slug/2026-07-18T11-34-00_full.json.gz',
         size_bytes: 512,
         duration_ms: 25,
-        stats: {
-            products_count: 1,
-            orders_count: 0,
-            customers_count: 0,
-            categories_count: 1,
-            promotions_count: 0,
-            inventory_count: 0,
-            total_size_bytes: 512,
-            duration_ms: 25,
-        },
+        stats,
     })
-    mocks.downloadBackup.mockResolvedValue({
+        .mockResolvedValueOnce({
+            success: true,
+            backup_key: 'tenant-slug/2026-07-18T11-35-00_full.json.gz',
+            size_bytes: 512,
+            duration_ms: 25,
+            stats,
+        })
+    const snapshot = {
         version: '1.0',
         tenant_id: 'tenant-1',
         tenant_slug: 'tenant-slug',
@@ -232,17 +243,17 @@ function mockBackupDefaults() {
             inventory: [],
             governance: {},
         },
-        stats: {
-            products_count: 1,
-            orders_count: 0,
-            customers_count: 0,
-            categories_count: 1,
-            promotions_count: 0,
-            inventory_count: 0,
-            total_size_bytes: 512,
-            duration_ms: 25,
-        },
-        checksums: { products: 'hash', categories: 'hash' },
+        stats,
+        checksums: { products: 'product-hash', categories: 'category-hash' },
+    }
+    mocks.downloadBackup.mockResolvedValue(snapshot)
+    mocks.executeRestore.mockResolvedValue({
+        success: true,
+        duration_ms: 10,
+        categories: { created: 0, skipped: 1, failed: 0, errors: [] },
+        products: { created: 0, skipped: 1, failed: 0, errors: [] },
+        errors: [],
+        skipped_entities: ['orders', 'customers', 'governance'],
     })
     mocks.remove.mockResolvedValue({ data: [{ name: 'tenant-slug/2026-07-18T11-34-00_full.json.gz' }], error: null })
 }
@@ -466,7 +477,7 @@ describe('BNS 360 full-system journeys', () => {
         expect(JSON.stringify(result)).not.toContain('token')
     })
 
-    it('verifies backup metadata and restore dry-run without mutating tenant data', async () => {
+    it('executes restore and proves before/after equivalence without mixing code and data', async () => {
         const result = await runBns360BackupRestorePrimaryJourney({ tenantId: 'tenant-1', runId: 'run-1' })
 
         expect(result).toMatchObject({
@@ -474,19 +485,40 @@ describe('BNS 360 full-system journeys', () => {
             status: 'verified',
             runtime: {
                 backup: { metadataReadable: true, payloadRedacted: true },
-                restoreDryRun: { safe: true, mutation: false },
+                restore: { executed: true, success: true },
+                equivalence: {
+                    beforeDigest: expect.stringMatching(/^[0-9a-f]{64}$/),
+                    afterDigest: expect.stringMatching(/^[0-9a-f]{64}$/),
+                    recordsBefore: 2,
+                    recordsAfter: 2,
+                    constraintsVerified: 2,
+                    tenantScopeViolations: 0,
+                },
+                codeData: {
+                    codeRevisionUnchanged: true,
+                    sourceDataMixedWithCode: false,
+                    backupsRestored: 1,
+                },
             },
             cleanup: { status: 'verified' },
             residue: { zero: true },
         })
         expect(result.error).toBeUndefined()
+        expect(mocks.executeFullBackup).toHaveBeenCalledTimes(2)
         expect(mocks.executeFullBackup).toHaveBeenCalledWith(
             'tenant-1',
             'tenant-slug',
             expect.objectContaining({ medusaUrl: 'https://medusa.example.com' }),
         )
         expect(mocks.downloadBackup).toHaveBeenCalledWith('tenant-slug/2026-07-18T11-34-00_full.json.gz')
-        expect(mocks.remove).toHaveBeenCalledWith(['tenant-slug/2026-07-18T11-34-00_full.json.gz'])
+        expect(mocks.executeRestore).toHaveBeenCalledWith(
+            'tenant-slug/2026-07-18T11-34-00_full.json.gz',
+            expect.objectContaining({ medusaSalesChannelId: 'sc_1' }),
+        )
+        expect(mocks.remove).toHaveBeenCalledWith([
+            'tenant-slug/2026-07-18T11-34-00_full.json.gz',
+            'tenant-slug/2026-07-18T11-35-00_full.json.gz',
+        ])
         expect(JSON.stringify(result)).not.toContain('client_secret')
         expect(JSON.stringify(result)).not.toContain('password')
         expect(JSON.stringify(result)).not.toContain('token')

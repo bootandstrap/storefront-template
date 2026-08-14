@@ -57,6 +57,7 @@ export interface Bns360FunctionalEvidenceTarget {
     method?: 'GET' | 'POST'
     expectedJsonPaths?: string[]
     expectedJsonValues?: Record<string, string | number | boolean | null>
+    receiptJsonPaths?: string[]
 }
 
 const MODULE_RUNTIME_ROUTE_MAP: Record<string, string[]> = {

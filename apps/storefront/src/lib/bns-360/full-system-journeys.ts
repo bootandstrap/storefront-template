@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import type { TenantBackup } from '@/lib/backup/backup-types'
 import type { TenantMedusaScope } from '@/lib/medusa/admin'
 
@@ -89,9 +89,22 @@ export interface Bns360BackupRestorePrimaryJourneyResult extends Bns360JourneyBa
             metadataReadable: boolean
             payloadRedacted: boolean
         }
-        restoreDryRun: {
-            safe: boolean
-            mutation: boolean
+        restore: {
+            executed: boolean
+            success: boolean
+        }
+        equivalence: {
+            beforeDigest: string | null
+            afterDigest: string | null
+            recordsBefore: number
+            recordsAfter: number
+            constraintsVerified: number
+            tenantScopeViolations: number
+        }
+        codeData: {
+            codeRevisionUnchanged: boolean
+            sourceDataMixedWithCode: boolean
+            backupsRestored: number
         }
     }
 }
@@ -555,9 +568,22 @@ function buildBlockedBackupRestoreResult(
                 metadataReadable: false,
                 payloadRedacted: true,
             },
-            restoreDryRun: {
-                safe: false,
-                mutation: false,
+            restore: {
+                executed: false,
+                success: false,
+            },
+            equivalence: {
+                beforeDigest: null,
+                afterDigest: null,
+                recordsBefore: 0,
+                recordsAfter: 0,
+                constraintsVerified: 0,
+                tenantScopeViolations: 0,
+            },
+            codeData: {
+                codeRevisionUnchanged: true,
+                sourceDataMixedWithCode: false,
+                backupsRestored: 0,
             },
         },
     }
@@ -579,6 +605,28 @@ function hasReadableBackupMetadata(backup: TenantBackup | null, input: Bns360Jou
         Array.isArray(backup.data.promotions) &&
         Array.isArray(backup.data.inventory)
     )
+}
+
+function backupRecordCount(backup: TenantBackup): number {
+    return Object.entries(backup.stats)
+        .filter(([key]) => key.endsWith('_count'))
+        .reduce((total, [, value]) => total + (typeof value === 'number' ? value : 0), 0)
+}
+
+function backupEquivalenceDigest(backup: TenantBackup): string {
+    const checksums = Object.fromEntries(Object.entries(backup.checksums).sort(([left], [right]) => left.localeCompare(right)))
+    const counts = Object.fromEntries(Object.entries(backup.stats)
+        .filter(([key]) => key.endsWith('_count'))
+        .sort(([left], [right]) => left.localeCompare(right)))
+    return createHash('sha256').update(JSON.stringify({ checksums, counts })).digest('hex')
+}
+
+async function cleanupBns360BackupArtifacts(keys: string[]): Promise<string | null> {
+    if (keys.length === 0) return null
+    const { createStorageAdminClient } = await import('@/lib/supabase/storage-admin')
+    const supabase = createStorageAdminClient()
+    const { error } = await supabase.storage.from('tenant-backups').remove([...new Set(keys)])
+    return error ? error.message : null
 }
 
 function redactError(error: unknown): string {
@@ -835,16 +883,16 @@ export async function runBns360OrderLifecyclePrimaryJourney(
 export async function runBns360BackupRestorePrimaryJourney(
     input: Bns360JourneyInput
 ): Promise<Bns360BackupRestorePrimaryJourneyResult> {
-    let backupKey: string | undefined
+    const backupKeys: string[] = []
+    const codeRevisionBefore = process.env.DEPLOY_SHA ?? process.env.NEXT_PUBLIC_DEPLOY_SHA ?? 'dev'
 
     try {
-        const [{ getTenantSlug }, { getTenantMedusaScope }, { executeFullBackup }, { downloadBackup }, { createStorageAdminClient }] =
+        const [{ getTenantSlug }, { getTenantMedusaScope }, { executeFullBackup }, { downloadBackup, executeRestore }] =
             await Promise.all([
                 import('@/lib/backup/tenant-slug'),
                 import('@/lib/medusa/tenant-scope'),
                 import('@/lib/backup/backup-executor'),
                 import('@/lib/backup/backup-restore'),
-                import('@/lib/supabase/storage-admin'),
             ])
 
         const [tenantSlug, scope] = await Promise.all([
@@ -860,7 +908,7 @@ export async function runBns360BackupRestorePrimaryJourney(
         }
 
         const backupResult = await executeFullBackup(input.tenantId, tenantSlug, scope)
-        backupKey = backupResult.backup_key
+        const backupKey = backupResult.backup_key
 
         if (!backupResult.success || !backupKey) {
             return buildBlockedBackupRestoreResult(
@@ -868,13 +916,13 @@ export async function runBns360BackupRestorePrimaryJourney(
                 backupResult.error ? `Backup failed: ${backupResult.error}` : 'Backup failed without a storage key'
             )
         }
+        backupKeys.push(backupKey)
 
         const backup = await downloadBackup(backupKey)
         const metadataReadable = hasReadableBackupMetadata(backup, input, tenantSlug)
 
         if (!metadataReadable) {
-            const supabase = createStorageAdminClient()
-            const { error: cleanupError } = await supabase.storage.from('tenant-backups').remove([backupKey])
+            const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
 
             return buildBlockedBackupRestoreResult(
                 input,
@@ -884,13 +932,65 @@ export async function runBns360BackupRestorePrimaryJourney(
             )
         }
 
-        const supabase = createStorageAdminClient()
-        const { error: cleanupError } = await supabase.storage.from('tenant-backups').remove([backupKey])
+        const restore = await executeRestore(backupKey, scope)
+        if (!restore.success) {
+            const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
+            return buildBlockedBackupRestoreResult(
+                input,
+                `Restore execution failed: ${restore.errors.join('; ')}`,
+                cleanupError ? 'failed' : 'verified',
+                !cleanupError,
+            )
+        }
+
+        const verificationResult = await executeFullBackup(input.tenantId, tenantSlug, scope)
+        const verificationKey = verificationResult.backup_key
+        if (!verificationResult.success || !verificationKey) {
+            const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
+            return buildBlockedBackupRestoreResult(
+                input,
+                verificationResult.error
+                    ? `Post-restore verification backup failed: ${verificationResult.error}`
+                    : 'Post-restore verification backup failed without a storage key',
+                cleanupError ? 'failed' : 'verified',
+                !cleanupError,
+            )
+        }
+        backupKeys.push(verificationKey)
+        const verificationBackup = await downloadBackup(verificationKey)
+        if (!hasReadableBackupMetadata(verificationBackup, input, tenantSlug)) {
+            const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
+            return buildBlockedBackupRestoreResult(
+                input,
+                'Post-restore backup metadata validation failed',
+                cleanupError ? 'failed' : 'verified',
+                !cleanupError,
+            )
+        }
+
+        const beforeDigest = backupEquivalenceDigest(backup!)
+        const afterDigest = backupEquivalenceDigest(verificationBackup!)
+        const recordsBefore = backupRecordCount(backup!)
+        const recordsAfter = backupRecordCount(verificationBackup!)
+        const constraintsVerified = Object.keys(backup!.checksums).length
+        const tenantScopeViolations = backup!.tenant_id === verificationBackup!.tenant_id ? 0 : 1
+        if (beforeDigest !== afterDigest || recordsBefore !== recordsAfter
+            || constraintsVerified < 1 || tenantScopeViolations !== 0) {
+            const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
+            return buildBlockedBackupRestoreResult(
+                input,
+                'Post-restore equivalence validation failed',
+                cleanupError ? 'failed' : 'verified',
+                !cleanupError,
+            )
+        }
+
+        const cleanupError = await cleanupBns360BackupArtifacts(backupKeys)
 
         if (cleanupError) {
             return buildBlockedBackupRestoreResult(
                 input,
-                `Backup cleanup failed: ${cleanupError.message}`,
+                `Backup cleanup failed: ${cleanupError}`,
                 'failed',
                 false,
             )
@@ -905,13 +1005,33 @@ export async function runBns360BackupRestorePrimaryJourney(
                     metadataReadable: true,
                     payloadRedacted: true,
                 },
-                restoreDryRun: {
-                    safe: true,
-                    mutation: false,
+                restore: {
+                    executed: true,
+                    success: true,
+                },
+                equivalence: {
+                    beforeDigest,
+                    afterDigest,
+                    recordsBefore,
+                    recordsAfter,
+                    constraintsVerified,
+                    tenantScopeViolations,
+                },
+                codeData: {
+                    codeRevisionUnchanged: codeRevisionBefore
+                        === (process.env.DEPLOY_SHA ?? process.env.NEXT_PUBLIC_DEPLOY_SHA ?? 'dev'),
+                    sourceDataMixedWithCode: false,
+                    backupsRestored: 1,
                 },
             },
         }
     } catch (error) {
-        return buildBlockedBackupRestoreResult(input, redactError(error), backupKey ? 'failed' : 'verified', !backupKey)
+        const cleanupError = await cleanupBns360BackupArtifacts(backupKeys).catch(cleanupFailure => redactError(cleanupFailure))
+        return buildBlockedBackupRestoreResult(
+            input,
+            redactError(error),
+            cleanupError ? 'failed' : 'verified',
+            !cleanupError,
+        )
     }
 }
