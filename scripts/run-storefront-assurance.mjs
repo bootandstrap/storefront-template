@@ -241,7 +241,25 @@ function executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSum
     shell: false,
   })
   if (result?.error) throw result.error
-  if (result?.status !== 0) throw new Error(`storefront Vitest assurance exited ${result?.status}`)
+  if (result?.status !== 0) {
+    let tests = existsSync(rawTestsPath) ? 'malformed' : 'missing'
+    if (existsSync(rawTestsPath)) {
+      try {
+        const raw = readJson(rawTestsPath, 'Vitest JSON result')
+        tests = raw?.success === true && raw?.numFailedTestSuites === 0 && raw?.numFailedTests === 0
+          ? 'passed'
+          : `failed(${Number.isInteger(raw?.numFailedTests) ? raw.numFailedTests : 'unknown'})`
+      } catch {
+        tests = 'malformed'
+      }
+    }
+    const coverage = existsSync(coverageSummaryPath) ? 'present' : 'missing'
+    const signal = typeof result?.signal === 'string' && result.signal ? result.signal : 'none'
+    throw new Error(
+      `storefront Vitest assurance failed: status=${String(result?.status)}; `
+      + `signal=${signal}; tests=${tests}; coverage=${coverage}`,
+    )
+  }
   if (!existsSync(rawTestsPath)) throw new Error('Vitest JSON result was not generated')
   if (!existsSync(coverageSummaryPath)) throw new Error('V8 coverage summary was not generated')
 }

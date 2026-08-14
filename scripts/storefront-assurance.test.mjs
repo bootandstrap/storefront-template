@@ -139,6 +139,20 @@ test('one Vitest invocation emits passed unit and coverage evidence', async () =
   )
 })
 
+test('reports whether non-zero Vitest completed tests and coverage before deleting raw output', async () => {
+  const rootDir = makeRoot()
+  const spawn = (_executable, args) => {
+    const outputFile = args[args.indexOf('--outputFile') + 1]
+    writeFileSync(outputFile, `${JSON.stringify(rawVitest())}\n`)
+    return { status: 1, signal: null }
+  }
+
+  await assert.rejects(
+    runStorefrontAssurance({ rootDir, identity, spawn }),
+    /status=1.*tests=passed.*coverage=missing/,
+  )
+})
+
 test('reuses storefront evidence only for a passed receipt with exact identity hashes', () => {
   assert.doesNotThrow(() => validateStorefrontEvidenceReceipt({
     receipt: passedReceipt(),
