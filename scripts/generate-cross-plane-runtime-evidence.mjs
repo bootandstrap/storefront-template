@@ -126,6 +126,8 @@ export async function generateRuntimeEvidence({
     redactionPolicy: events[0].redaction_policy,
     query: {
       trace_id: context.trace_id,
+      tenant_id: context.tenant_id,
+      principal_id: context.principal_id,
       operation_id: context.operation_id,
       event_ids: events.map((event) => event.event_id),
     },
