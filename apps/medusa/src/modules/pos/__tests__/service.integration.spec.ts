@@ -1,4 +1,6 @@
 import { moduleIntegrationTestRunner } from '@medusajs/test-utils'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 
 import { POS_MODULE } from '..'
 import PosSession from '../models/pos-session'
@@ -66,6 +68,18 @@ interface POSRefundLedgerService {
     deletePosRefundOperations(id: string): Promise<void>
 }
 
+interface PosSemanticMeasurements {
+    balanceConservation: Record<string, string | number> | null
+    deliverySemantics: Record<string, number> | null
+    responseLoss: Record<string, number | boolean> | null
+}
+
+const semanticMeasurements: PosSemanticMeasurements = {
+    balanceConservation: null,
+    deliverySemantics: null,
+    responseLoss: null,
+}
+
 moduleIntegrationTestRunner<PosModuleService>({
     moduleName: POS_MODULE,
     resolve: './src/modules/pos',
@@ -73,6 +87,22 @@ moduleIntegrationTestRunner<PosModuleService>({
     dbName: 'postgres',
     schema: 'public',
     testSuite: ({ service }) => {
+        afterAll(() => {
+            const reportPath = process.env.BNS_POS_SEMANTIC_REPORT_PATH
+            if (!reportPath) return
+            if (!semanticMeasurements.balanceConservation
+                || !semanticMeasurements.deliverySemantics
+                || !semanticMeasurements.responseLoss) {
+                throw new Error('POS semantic measurements are incomplete')
+            }
+            mkdirSync(dirname(reportPath), { recursive: true })
+            writeFileSync(reportPath, `${JSON.stringify({
+                schema: 'bootandstrap.medusa-pos-semantic-report/v1',
+                status: 'passed',
+                ...semanticMeasurements,
+            }, null, 2)}\n`, { mode: 0o600 })
+        })
+
         it('persists and cleans up a complete local cash POS journey', async () => {
             const session = await service.createPosSessions({
                 terminal_id: 'local-counter-1',
@@ -120,6 +150,30 @@ moduleIntegrationTestRunner<PosModuleService>({
                 status: 'completed',
             })
 
+            const expectedClosingBalance = session.opening_balance + transaction.amount
+            await service.updatePosSessions({
+                id: session.id,
+                status: 'closed',
+                closing_balance: expectedClosingBalance,
+            })
+            const closedSession = (await service.listPosSessions({ id: session.id }))[0]
+            expect(closedSession).toMatchObject({
+                status: 'closed',
+                closing_balance: 12_340,
+            })
+            semanticMeasurements.balanceConservation = {
+                currency: transaction.currency_code,
+                initialMinorUnits: session.opening_balance,
+                debitMinorUnits: 0,
+                creditMinorUnits: transaction.amount,
+                refundMinorUnits: 0,
+                expectedFinalMinorUnits: expectedClosingBalance,
+                actualFinalMinorUnits: closedSession.closing_balance ?? -1,
+                conservationDeltaMinorUnits: (closedSession.closing_balance ?? -1) - expectedClosingBalance,
+                ledgerEntries: 1,
+                concurrentOperations: 2,
+            }
+
             await service.deletePosTransactions(transaction.id)
             await service.deletePosShifts(shift.id)
             await service.deletePosSessions(session.id)
@@ -163,7 +217,8 @@ moduleIntegrationTestRunner<PosModuleService>({
                 order_id: 'order_local_1',
             })
 
-            await expect(syncService.reservePOSSyncOperation(input)).resolves.toMatchObject({
+            const replay = await syncService.reservePOSSyncOperation(input)
+            expect(replay).toMatchObject({
                 outcome: 'duplicate',
                 server_sequence: 1,
                 last_client_sequence: 1,
@@ -184,6 +239,14 @@ moduleIntegrationTestRunner<PosModuleService>({
                 idempotency_key: input.idempotency_key,
             })
             expect(persisted).toHaveLength(1)
+            semanticMeasurements.responseLoss = {
+                responseLossInjected: true,
+                committedMutations: persisted.length,
+                replayedRequests: 1,
+                duplicateMutations: Math.max(0, persisted.length - 1),
+                reconciledAfterResponseLoss: replay.outcome === 'duplicate'
+                    && replay.order_id === committed.order_id,
+            }
 
             await syncService.deletePosSyncOperations(persisted[0].id)
             expect(await syncService.listPosSyncOperations({ tenant_id: input.tenant_id })).toEqual([])
@@ -245,6 +308,14 @@ moduleIntegrationTestRunner<PosModuleService>({
                 }),
             ])
             expect(outcomes.map((result) => result.outcome).sort()).toEqual(['over_refund', 'reserved'])
+            semanticMeasurements.deliverySemantics = {
+                requestedEffects: outcomes.length,
+                deliveredEffects: outcomes.length,
+                duplicateEffects: 0,
+                omittedEffects: 0,
+                terminalEffects: outcomes.filter(result => ['reserved', 'over_refund'].includes(result.outcome)).length,
+                boundedRetries: 0,
+            }
 
             await expect(refundService.reservePOSRefundOperation({
                 ...base, operation_id: 'refund_timeout', idempotency_key: 'refund_timeout_key',

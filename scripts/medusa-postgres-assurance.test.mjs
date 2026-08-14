@@ -49,6 +49,27 @@ function passingJestReport() {
   }
 }
 
+function passingSemanticReport() {
+  return {
+    schema: 'bootandstrap.medusa-pos-semantic-report/v1',
+    status: 'passed',
+    balanceConservation: {
+      currency: 'CHF', initialMinorUnits: 10_000, debitMinorUnits: 0,
+      creditMinorUnits: 2_340, refundMinorUnits: 0, expectedFinalMinorUnits: 12_340,
+      actualFinalMinorUnits: 12_340, conservationDeltaMinorUnits: 0,
+      ledgerEntries: 1, concurrentOperations: 2,
+    },
+    deliverySemantics: {
+      requestedEffects: 2, deliveredEffects: 2, duplicateEffects: 0,
+      omittedEffects: 0, terminalEffects: 2, boundedRetries: 1,
+    },
+    responseLoss: {
+      responseLossInjected: true, committedMutations: 1, replayedRequests: 1,
+      duplicateMutations: 0, reconciledAfterResponseLoss: true,
+    },
+  }
+}
+
 test('runs Medusa integration against pinned loopback PostgreSQL and removes its exact container', async () => {
   const calls = []
   let evidence
@@ -58,6 +79,7 @@ test('runs Medusa integration against pinned loopback PostgreSQL and removes its
     spawn: successfulSpawn(calls),
     delay: async () => {},
     readTestReport: () => passingJestReport(),
+    readSemanticReport: () => passingSemanticReport(),
     writeEvidence: (_path, value) => { evidence = value },
     removeTestReport: () => {},
   })
@@ -75,6 +97,9 @@ test('runs Medusa integration against pinned loopback PostgreSQL and removes its
         idempotencyScopeCollisions: 0,
       },
       cleanup: { status: 'passed', rowsAfterCleanup: 0, container: 'removed' },
+      balanceConservation: passingSemanticReport().balanceConservation,
+      deliverySemantics: passingSemanticReport().deliverySemantics,
+      responseLoss: passingSemanticReport().responseLoss,
     },
   })
   assert.deepEqual(evidence, result)
@@ -89,6 +114,7 @@ test('runs Medusa integration against pinned loopback PostgreSQL and removes its
   assert.equal(integration.options.env.DB_HOST, '127.0.0.1')
   assert.equal(integration.options.env.DB_PORT, '55432')
   assert.equal(integration.options.env.DB_USERNAME, 'postgres')
+  assert.match(integration.options.env.BNS_POS_SEMANTIC_REPORT_PATH, /\.medusa-pos-semantic-\d+\.json$/)
   assert.ok(calls.some(({ command, args }) => command === 'docker'
     && args.join(' ') === 'rm -f bns-pos-test-123'))
 })
@@ -110,6 +136,7 @@ test('fails closed on integration failure and still removes the exact container'
       },
       delay: async () => {},
       readTestReport: () => passingJestReport(),
+      readSemanticReport: () => passingSemanticReport(),
       writeEvidence: () => {},
       removeTestReport: () => {},
     }),
@@ -131,9 +158,33 @@ test('fails closed when PostgreSQL passes without the exact isolation behavior',
     spawn: successfulSpawn(calls),
     delay: async () => {},
     readTestReport: () => report,
+    readSemanticReport: () => passingSemanticReport(),
     writeEvidence: () => {},
     removeTestReport: () => {},
   }), /tenant isolation assertion is missing or did not pass/)
   assert.ok(calls.some(({ command, args }) => command === 'docker'
     && args.join(' ') === 'rm -f bns-pos-test-missing-isolation'))
+})
+
+test('fails closed when semantic measurements are missing or non-conserving', async () => {
+  const calls = []
+  await assert.rejects(runMedusaPostgresAssurance({
+    rootDir: '/repo',
+    containerName: 'bns-pos-test-missing-semantic',
+    spawn: successfulSpawn(calls),
+    delay: async () => {},
+    readTestReport: () => passingJestReport(),
+    readSemanticReport: () => ({
+      ...passingSemanticReport(),
+      balanceConservation: {
+        ...passingSemanticReport().balanceConservation,
+        conservationDeltaMinorUnits: 1,
+      },
+    }),
+    writeEvidence: () => {},
+    removeTestReport: () => {},
+    removeSemanticReport: () => {},
+  }), /balance conservation semantic report did not pass/)
+  assert.ok(calls.some(({ command, args }) => command === 'docker'
+    && args.join(' ') === 'rm -f bns-pos-test-missing-semantic'))
 })
