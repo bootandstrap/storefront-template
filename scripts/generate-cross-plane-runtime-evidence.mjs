@@ -27,19 +27,40 @@ function deterministicSequence(values) {
 function timestampSequence(startedAt) {
   const start = Date.parse(startedAt)
   if (!Number.isFinite(start)) throw new Error('startedAt must be an ISO timestamp')
-  return deterministicSequence([1, 2, 3].map((offset) => new Date(start + offset).toISOString()))
+  return deterministicSequence([1, 2, 3, 4, 5, 6].map((offset) => new Date(start + offset).toISOString()))
 }
 
 function eventIdSequence(context) {
   return deterministicSequence([
+    'storefront.synthetic.mutation_forwarded',
+    'medusa.synthetic.mutation_committed',
+    'storefront.synthetic.mutation_acknowledged',
     'storefront.synthetic.forwarded',
     'medusa.synthetic.failure',
     'storefront.synthetic.failure',
   ].map((eventName) => `event-${sha256(`${context.trace_id}:${context.operation_id}:${eventName}`).slice(0, 32)}`))
 }
 
+class RecordingMutationMap extends Map {
+  setCalls = 0
+  deleteCalls = 0
+
+  set(key, value) {
+    this.setCalls += 1
+    return super.set(key, value)
+  }
+
+  delete(key) {
+    this.deleteCalls += 1
+    return super.delete(key)
+  }
+}
+
 function assertRuntimeChain(events, context, revision) {
   const expected = [
+    ['storefront', 'storefront.synthetic.mutation_forwarded', 'forwarded', 'none'],
+    ['medusa', 'medusa.synthetic.mutation_committed', 'committed', 'none'],
+    ['storefront', 'storefront.synthetic.mutation_acknowledged', 'committed', 'none'],
     ['storefront', 'storefront.synthetic.forwarded', 'forwarded', 'none'],
     ['medusa', 'medusa.synthetic.failure', 'failure', 'synthetic_medusa_failure'],
     ['storefront', 'storefront.synthetic.failure', 'failure', 'synthetic_medusa_failure'],
@@ -77,7 +98,10 @@ export async function generateRuntimeEvidence({
   if (!/^[0-9a-f]{40}$/.test(revision ?? '')) throw new Error('revision must be an exact 40-character commit SHA')
   if (!outputPath) throw new Error('outputPath is required')
 
-  const [{ runStorefrontSyntheticFailure }, { runMedusaSyntheticFailure }] = await Promise.all([
+  const [
+    { runStorefrontSyntheticFailure, runStorefrontSyntheticMutation },
+    { runMedusaSyntheticFailure, runMedusaSyntheticMutation },
+  ] = await Promise.all([
     import('../apps/storefront/src/lib/observability/synthetic-failure.ts'),
     import('../apps/medusa/src/lib/observability/synthetic-failure.ts'),
   ])
@@ -85,8 +109,29 @@ export async function generateRuntimeEvidence({
   const now = timestampSequence(startedAt)
   const eventId = eventIdSequence(context)
   let controlledFailureObserved = false
+  const mutationState = new RecordingMutationMap()
+  let mutationResult
 
   try {
+    mutationResult = await runStorefrontSyntheticMutation({
+      headers: correlationHeaders(context),
+      tenant_id: authorityTenantId,
+      principal_id: authorityPrincipalId,
+      revision,
+      sink,
+      now,
+      eventId,
+      callMedusa: (headers) => runMedusaSyntheticMutation({
+        headers,
+        tenant_id: authorityTenantId,
+        principal_id: authorityPrincipalId,
+        revision,
+        sink,
+        mutationState,
+        now,
+        eventId,
+      }),
+    })
     await runStorefrontSyntheticFailure({
       headers: correlationHeaders(context),
       tenant_id: authorityTenantId,
@@ -121,6 +166,7 @@ export async function generateRuntimeEvidence({
     schema: RECEIPT_SCHEMA,
     status: 'passed',
     claimBoundary: 'local_cross_plane_observability_without_deployment',
+    executionBoundary: 'local_deterministic_loopback',
     generatedAt: events.at(-1).occurred_at,
     producerRevisions: { storefront: revision, medusa: revision },
     redactionPolicy: events[0].redaction_policy,
@@ -132,10 +178,18 @@ export async function generateRuntimeEvidence({
       event_ids: events.map((event) => event.event_id),
     },
     eventSha256,
+    localMutationProof: {
+      mutationId: mutationResult.mutation_id,
+      stateWrites: mutationState.setCalls,
+      stateDeletes: mutationState.deleteCalls,
+      rollbackVerified: mutationResult.rollback_verified,
+      residualEntries: mutationState.size,
+    },
     events,
     restrictions: {
       externalNetwork: 'not_used',
       providerMutation: 'prohibited_not_executed',
+      localMutation: 'in_memory_reversible',
       deployment: 'not_claimed',
     },
   }

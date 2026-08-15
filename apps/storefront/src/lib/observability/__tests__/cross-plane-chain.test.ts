@@ -6,8 +6,14 @@ import {
     createInMemoryEvidenceSink,
 } from '@bootandstrap/shared/observability'
 
-import { runMedusaSyntheticFailure } from '../../../../../medusa/src/lib/observability/synthetic-failure'
-import { runStorefrontSyntheticFailure } from '../synthetic-failure'
+import {
+    runMedusaSyntheticFailure,
+    runMedusaSyntheticMutation,
+} from '../../../../../medusa/src/lib/observability/synthetic-failure'
+import {
+    runStorefrontSyntheticFailure,
+    runStorefrontSyntheticMutation,
+} from '../synthetic-failure'
 
 const revision = 'a'.repeat(40)
 const tenantId = 'tenant-observability-proof'
@@ -27,6 +33,69 @@ function sequence(values: string[]) {
 }
 
 describe('cross-plane synthetic observability chain', () => {
+    it('correlates a reversible local mutation across storefront and Medusa', async () => {
+        const sink = createInMemoryEvidenceSink()
+        const mutationState = new RecordingMutationMap()
+        const now = sequence([
+            '2026-08-06T19:59:58.000Z',
+            '2026-08-06T19:59:59.000Z',
+            '2026-08-06T20:00:00.000Z',
+        ])
+        const eventId = sequence(['event-storefront-mutation', 'event-medusa-mutation', 'event-storefront-ack'])
+
+        const result = await runStorefrontSyntheticMutation({
+            headers: correlationHeaders(context),
+            tenant_id: tenantId,
+            principal_id: principalId,
+            revision,
+            sink,
+            now,
+            eventId,
+            callMedusa: (headers) => runMedusaSyntheticMutation({
+                headers,
+                tenant_id: tenantId,
+                principal_id: principalId,
+                revision,
+                sink,
+                mutationState,
+                now,
+                eventId,
+            }),
+        })
+
+        expect(result).toEqual({
+            mutation_id: 'synthetic-local-mutation',
+            committed: true,
+            rollback_verified: true,
+        })
+        expect(mutationState.setCalls).toBe(1)
+        expect(mutationState.deleteCalls).toBe(1)
+        expect(mutationState.size).toBe(0)
+        expect(sink.query({ operation_id: context.operation_id }).map(({ service, event_name, outcome }) => ({
+            service, event_name, outcome,
+        }))).toEqual([
+            { service: 'storefront', event_name: 'storefront.synthetic.mutation_forwarded', outcome: 'forwarded' },
+            { service: 'medusa', event_name: 'medusa.synthetic.mutation_committed', outcome: 'committed' },
+            { service: 'storefront', event_name: 'storefront.synthetic.mutation_acknowledged', outcome: 'committed' },
+        ])
+    })
+
+    it('rolls back the in-memory mutation when state verification fails', async () => {
+        const mutationState = new FaultingMutationMap()
+
+        await expect(runMedusaSyntheticMutation({
+            headers: correlationHeaders(context),
+            tenant_id: tenantId,
+            principal_id: principalId,
+            revision,
+            mutationState,
+            sink: createInMemoryEvidenceSink(),
+        })).rejects.toThrow(/synthetic_state_read_failed/)
+        expect(mutationState.setCalls).toBe(1)
+        expect(mutationState.deleteCalls).toBe(1)
+        expect(mutationState.size).toBe(0)
+    })
+
     it('correlates a redacted storefront to Medusa failure', async () => {
         const sink = createInMemoryEvidenceSink()
         const now = sequence([
@@ -114,3 +183,24 @@ describe('cross-plane synthetic observability chain', () => {
         expect(JSON.stringify(sink.events)).not.toMatch(/sk_live|Bearer|raw provider body/)
     })
 })
+
+class RecordingMutationMap extends Map<string, string> {
+    setCalls = 0
+    deleteCalls = 0
+
+    override set(key: string, value: string): this {
+        this.setCalls += 1
+        return super.set(key, value)
+    }
+
+    override delete(key: string): boolean {
+        this.deleteCalls += 1
+        return super.delete(key)
+    }
+}
+
+class FaultingMutationMap extends RecordingMutationMap {
+    override get(_key: string): string | undefined {
+        throw new Error('synthetic_state_read_failed')
+    }
+}

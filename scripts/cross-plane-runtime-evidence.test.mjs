@@ -31,6 +31,9 @@ test('writes a queryable, ordered and redacted storefront to Medusa receipt', as
     assert.equal(receipt.status, 'passed')
     assert.deepEqual(receipt.producerRevisions, { storefront: revision, medusa: revision })
     assert.deepEqual(receipt.events.map(({ service, event_name }) => ({ service, event_name })), [
+      { service: 'storefront', event_name: 'storefront.synthetic.mutation_forwarded' },
+      { service: 'medusa', event_name: 'medusa.synthetic.mutation_committed' },
+      { service: 'storefront', event_name: 'storefront.synthetic.mutation_acknowledged' },
       { service: 'storefront', event_name: 'storefront.synthetic.forwarded' },
       { service: 'medusa', event_name: 'medusa.synthetic.failure' },
       { service: 'storefront', event_name: 'storefront.synthetic.failure' },
@@ -42,8 +45,17 @@ test('writes a queryable, ordered and redacted storefront to Medusa receipt', as
       operation_id: context.operation_id,
       event_ids: receipt.events.map((event) => event.event_id),
     })
-    assert.equal(Object.keys(receipt.eventSha256).length, 3)
+    assert.equal(Object.keys(receipt.eventSha256).length, 6)
     assert.match(Object.values(receipt.eventSha256)[0], /^[0-9a-f]{64}$/)
+    assert.equal(receipt.executionBoundary, 'local_deterministic_loopback')
+    assert.equal(receipt.restrictions.localMutation, 'in_memory_reversible')
+    assert.deepEqual(receipt.localMutationProof, {
+      mutationId: 'synthetic-local-mutation',
+      stateWrites: 1,
+      stateDeletes: 1,
+      rollbackVerified: true,
+      residualEntries: 0,
+    })
     assert.doesNotMatch(JSON.stringify(receipt), /authorization|cookie|Bearer|sk_live|raw provider body/i)
   } finally {
     rmSync(directory, { recursive: true, force: true })
