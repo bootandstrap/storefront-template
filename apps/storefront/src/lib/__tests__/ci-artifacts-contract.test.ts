@@ -347,7 +347,7 @@ describe('CI artifact contract', () => {
         expect(localAssurance).not.toMatch(
             /uses: (?:actions\/(?:checkout|setup-node|upload-artifact)|pnpm\/action-setup)@v4/
         )
-        expect(localAssurance).toContain('node-version: 24')
+        expect(localAssurance).toContain('node-version: 20.9.0')
         expect(localAssurance).toContain(
             'astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0'
         )
