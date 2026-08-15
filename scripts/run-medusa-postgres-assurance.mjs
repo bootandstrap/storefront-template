@@ -115,16 +115,19 @@ function requireSafeInteger(value, label, { positive = false } = {}) {
   return value
 }
 
-function summarizeSemanticReport(report) {
-  if (!report || typeof report !== 'object'
-    || report.schema !== 'bootandstrap.medusa-pos-semantic-report/v1'
-    || report.status !== 'passed') {
-    throw new Error('POS semantic report did not pass')
-  }
-  const balance = report.balanceConservation
-  if (!balance || typeof balance !== 'object' || !/^[A-Z]{3}$/.test(balance.currency ?? '')) {
-    throw new Error('balance conservation semantic report did not pass')
-  }
+function requireSemanticObject(value, message) {
+  if (!value || typeof value !== 'object') throw new Error(message)
+  return value
+}
+
+function requireSemanticCondition(condition, message) {
+  if (!condition) throw new Error(message)
+}
+
+function summarizeBalanceConservation(value) {
+  const message = 'balance conservation semantic report did not pass'
+  const balance = requireSemanticObject(value, message)
+  requireSemanticCondition(/^[A-Z]{3}$/.test(balance.currency ?? ''), message)
   const initial = requireSafeInteger(balance.initialMinorUnits, 'balance initial')
   const debit = requireSafeInteger(balance.debitMinorUnits, 'balance debit')
   const credit = requireSafeInteger(balance.creditMinorUnits, 'balance credit')
@@ -132,42 +135,66 @@ function summarizeSemanticReport(report) {
   const expected = requireSafeInteger(balance.expectedFinalMinorUnits, 'balance expected')
   const actual = requireSafeInteger(balance.actualFinalMinorUnits, 'balance actual')
   const delta = balance.conservationDeltaMinorUnits
-  if (!Number.isSafeInteger(delta)
-    || expected !== initial + credit - debit - refund
-    || actual !== expected
-    || delta !== actual - expected
-    || delta !== 0
-    || requireSafeInteger(balance.ledgerEntries, 'balance ledger entries', { positive: true }) < 1
-    || requireSafeInteger(balance.concurrentOperations, 'balance concurrency', { positive: true }) < 2) {
-    throw new Error('balance conservation semantic report did not pass')
-  }
+  requireSemanticCondition(Number.isSafeInteger(delta), message)
+  requireSemanticCondition(expected === initial + credit - debit - refund, message)
+  requireSemanticCondition(actual === expected, message)
+  requireSemanticCondition(delta === actual - expected, message)
+  requireSemanticCondition(delta === 0, message)
+  requireSafeInteger(balance.ledgerEntries, 'balance ledger entries', { positive: true })
+  const concurrentOperations = requireSafeInteger(
+    balance.concurrentOperations,
+    'balance concurrency',
+    { positive: true },
+  )
+  requireSemanticCondition(concurrentOperations >= 2, message)
+  return balance
+}
 
-  const delivery = report.deliverySemantics
-  if (!delivery || typeof delivery !== 'object') throw new Error('delivery semantics semantic report did not pass')
+function summarizeDeliverySemantics(value) {
+  const message = 'delivery semantics semantic report did not pass'
+  const delivery = requireSemanticObject(value, message)
   const requested = requireSafeInteger(delivery.requestedEffects, 'requested effects', { positive: true })
   const delivered = requireSafeInteger(delivery.deliveredEffects, 'delivered effects')
   const terminal = requireSafeInteger(delivery.terminalEffects, 'terminal effects')
-  if (delivered !== requested
-    || terminal !== requested
-    || requireSafeInteger(delivery.duplicateEffects, 'duplicate effects') !== 0
-    || requireSafeInteger(delivery.omittedEffects, 'omitted effects') !== 0) {
-    throw new Error('delivery semantics semantic report did not pass')
-  }
+  requireSemanticCondition(delivered === requested, message)
+  requireSemanticCondition(terminal === requested, message)
+  requireSemanticCondition(requireSafeInteger(delivery.duplicateEffects, 'duplicate effects') === 0, message)
+  requireSemanticCondition(requireSafeInteger(delivery.omittedEffects, 'omitted effects') === 0, message)
   requireSafeInteger(delivery.boundedRetries, 'bounded retries')
+  return delivery
+}
 
-  const responseLoss = report.responseLoss
-  if (!responseLoss || typeof responseLoss !== 'object'
-    || responseLoss.responseLossInjected !== true
-    || requireSafeInteger(responseLoss.committedMutations, 'committed mutations', { positive: true }) !== 1
-    || requireSafeInteger(responseLoss.replayedRequests, 'replayed requests', { positive: true }) < 1
-    || requireSafeInteger(responseLoss.duplicateMutations, 'duplicate mutations') !== 0
-    || responseLoss.reconciledAfterResponseLoss !== true) {
-    throw new Error('response loss semantic report did not pass')
-  }
+function summarizeResponseLoss(value) {
+  const message = 'response loss semantic report did not pass'
+  const responseLoss = requireSemanticObject(value, message)
+  requireSemanticCondition(responseLoss.responseLossInjected === true, message)
+  requireSemanticCondition(
+    requireSafeInteger(responseLoss.committedMutations, 'committed mutations', { positive: true }) === 1,
+    message,
+  )
+  requireSemanticCondition(
+    requireSafeInteger(responseLoss.replayedRequests, 'replayed requests', { positive: true }) >= 1,
+    message,
+  )
+  requireSemanticCondition(
+    requireSafeInteger(responseLoss.duplicateMutations, 'duplicate mutations') === 0,
+    message,
+  )
+  requireSemanticCondition(responseLoss.reconciledAfterResponseLoss === true, message)
+  return responseLoss
+}
+
+function summarizeSemanticReport(value) {
+  const report = requireSemanticObject(value, 'POS semantic report did not pass')
+  requireSemanticCondition(
+    report.schema === 'bootandstrap.medusa-pos-semantic-report/v1',
+    'POS semantic report did not pass',
+  )
+  requireSemanticCondition(report.status === 'passed', 'POS semantic report did not pass')
   return {
-    balanceConservation: balance,
-    deliverySemantics: delivery,
-    responseLoss,
+    balanceConservation: summarizeBalanceConservation(report.balanceConservation),
+    deliverySemantics: summarizeDeliverySemantics(report.deliverySemantics),
+    responseLoss: summarizeResponseLoss(report.responseLoss),
   }
 }
 

@@ -549,6 +549,92 @@ export function getBns360AutomatedFunctionalEvidenceStatus(
     return targets.every(canAutomateFunctionalEvidence) ? 'verified' : 'manual_required'
 }
 
+async function runBns360PageFunctionalTarget(
+    page: Page | undefined,
+    target: Bns360FunctionalEvidenceTarget,
+): Promise<Bns360FunctionalStatus | null> {
+    if (!BNS_360_PAGE_AUTOMATED_KINDS.has(target.kind)) return null
+    if (!page) return 'blocked'
+
+    if (target.kind === 'owner_panel_operations_journey') {
+        await runBns360OwnerPanelOperations(page, target.routes ?? [])
+    } else {
+        await runBns360CustomerPanelOperations(page, target.routes ?? [])
+    }
+    return 'verified'
+}
+
+function assertBns360ExpectedJsonPayload(
+    payload: unknown,
+    route: string,
+    target: Bns360FunctionalEvidenceTarget,
+): void {
+    for (const path of target.expectedJsonPaths ?? []) {
+        expect(
+            bns360JsonHasPath(payload, path),
+            `Expected ${route} JSON payload to include ${path}; ` +
+            `shape=${JSON.stringify(summarizeBns360JsonShape(payload))}`
+        ).toBe(true)
+    }
+    for (const [path, expected] of Object.entries(target.expectedJsonValues ?? {})) {
+        expect(
+            bns360JsonValueMatches(payload, path, expected),
+            `Expected ${route} JSON payload ${path} to equal ${String(expected)}`
+        ).toBe(true)
+    }
+}
+
+function recordBns360ReceiptMeasurement(
+    payload: unknown,
+    path: string,
+    measurements: Record<string, string | number | boolean | null> | undefined,
+): void {
+    if (/(?:authorization|cookie|password|secret|token|api[_-]?key)/i.test(path)) {
+        throw new Error(`Receipt JSON path is secret-shaped: ${path}`)
+    }
+    const result = getBns360JsonPath(payload, path)
+    if (!result.found || !['string', 'number', 'boolean'].includes(typeof result.value)) {
+        throw new Error(`Receipt JSON value must be a present scalar: ${path}`)
+    }
+    if (typeof result.value === 'string'
+        && /(?:\bBearer\s+\S+|\bsk_(?:live|test)_\S+)/i.test(result.value)) {
+        throw new Error(`Receipt JSON value is secret-shaped: ${path}`)
+    }
+    if (measurements && path in measurements && !Object.is(measurements[path], result.value)) {
+        throw new Error(`Receipt JSON path changed within scenario: ${path}`)
+    }
+    if (measurements) measurements[path] = result.value as string | number | boolean
+}
+
+function recordBns360ReceiptMeasurements(
+    payload: unknown,
+    target: Bns360FunctionalEvidenceTarget,
+    measurements: Record<string, string | number | boolean | null> | undefined,
+): void {
+    for (const path of target.receiptJsonPaths ?? []) {
+        if (!target.expectedJsonPaths?.includes(path)) {
+            throw new Error(`Receipt JSON path is not an expected path: ${path}`)
+        }
+        recordBns360ReceiptMeasurement(payload, path, measurements)
+    }
+}
+
+async function runBns360ApiFunctionalTarget(
+    request: APIRequestContext,
+    target: Bns360FunctionalEvidenceTarget,
+    headers: Record<string, string> | undefined,
+    measurements: Record<string, string | number | boolean | null> | undefined,
+): Promise<void> {
+    for (const route of target.routes ?? []) {
+        const response = await expectApiHealthy(request, route, headers, target.method)
+        if (!target.expectedJsonPaths?.length) continue
+
+        const payload = await response.json()
+        assertBns360ExpectedJsonPayload(payload, route, target)
+        recordBns360ReceiptMeasurements(payload, target, measurements)
+    }
+}
+
 export async function runBns360AutomatedFunctionalEvidence(
     request: APIRequestContext,
     targets: Bns360FunctionalEvidenceTarget[],
@@ -562,57 +648,12 @@ export async function runBns360AutomatedFunctionalEvidence(
     }
 
     for (const target of targets) {
-        if (target.kind === 'owner_panel_operations_journey') {
-            if (!page) return 'blocked'
-            await runBns360OwnerPanelOperations(page, target.routes ?? [])
+        const pageStatus = await runBns360PageFunctionalTarget(page, target)
+        if (pageStatus) {
+            if (pageStatus === 'blocked') return pageStatus
             continue
         }
-        if (target.kind === 'customer_panel_operations_journey') {
-            if (!page) return 'blocked'
-            await runBns360CustomerPanelOperations(page, target.routes ?? [])
-            continue
-        }
-
-        for (const route of target.routes ?? []) {
-            const response = await expectApiHealthy(request, route, headers, target.method)
-
-            if (target.expectedJsonPaths?.length) {
-                const payload = await response.json()
-                for (const path of target.expectedJsonPaths) {
-                    expect(
-                        bns360JsonHasPath(payload, path),
-                        `Expected ${route} JSON payload to include ${path}; ` +
-                        `shape=${JSON.stringify(summarizeBns360JsonShape(payload))}`
-                    ).toBe(true)
-                }
-                for (const [path, expected] of Object.entries(target.expectedJsonValues ?? {})) {
-                    expect(
-                        bns360JsonValueMatches(payload, path, expected),
-                        `Expected ${route} JSON payload ${path} to equal ${String(expected)}`
-                    ).toBe(true)
-                }
-                for (const path of target.receiptJsonPaths ?? []) {
-                    if (!target.expectedJsonPaths.includes(path)) {
-                        throw new Error(`Receipt JSON path is not an expected path: ${path}`)
-                    }
-                    if (/(?:authorization|cookie|password|secret|token|api[_-]?key)/i.test(path)) {
-                        throw new Error(`Receipt JSON path is secret-shaped: ${path}`)
-                    }
-                    const result = getBns360JsonPath(payload, path)
-                    if (!result.found || !['string', 'number', 'boolean'].includes(typeof result.value)) {
-                        throw new Error(`Receipt JSON value must be a present scalar: ${path}`)
-                    }
-                    if (typeof result.value === 'string'
-                        && /(?:\bBearer\s+\S+|\bsk_(?:live|test)_\S+)/i.test(result.value)) {
-                        throw new Error(`Receipt JSON value is secret-shaped: ${path}`)
-                    }
-                    if (measurements && path in measurements && !Object.is(measurements[path], result.value)) {
-                        throw new Error(`Receipt JSON path changed within scenario: ${path}`)
-                    }
-                    if (measurements) measurements[path] = result.value as string | number | boolean
-                }
-            }
-        }
+        await runBns360ApiFunctionalTarget(request, target, headers, measurements)
     }
 
     return status
