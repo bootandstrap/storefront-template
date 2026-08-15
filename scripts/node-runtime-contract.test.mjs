@@ -22,6 +22,18 @@ test('pins the reproducible Node 20.9 and pnpm 9.15 bootstrap contract', () => {
   assert.equal(rootPackage.devDependencies?.tsx, '4.21.0')
 })
 
+test('runs the sealed read-only full assurance job on the exact bootstrap runtime', () => {
+  const workflow = readFileSync(resolve(root, '.github/workflows/governance-gate.yml'), 'utf8')
+  const localAssurance = workflow.match(/\n  local-assurance:\n([\s\S]*?)(?=\n  [a-z][a-z-]+:\n)/)?.[1]
+
+  assert.ok(localAssurance, 'governance workflow must define the local-assurance job')
+  assert.match(localAssurance, /name: "Read-only Full Assurance"/)
+  assert.match(
+    localAssurance,
+    /- name: Setup Node\.js\n\s+uses: actions\/setup-node@v7\n\s+with:\n\s+node-version: 20\.9\.0\n\s+cache: pnpm/,
+  )
+})
+
 test('keeps the storefront test toolchain executable on the bootstrap runtime', () => {
   const storefront = JSON.parse(readFileSync(resolve(root, 'apps/storefront/package.json'), 'utf8'))
   const shared = JSON.parse(readFileSync(resolve(root, 'packages/shared/package.json'), 'utf8'))
