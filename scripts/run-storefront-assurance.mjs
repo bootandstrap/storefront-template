@@ -104,6 +104,44 @@ export function normalizeVitestResults(raw, rootDir) {
   }
 }
 
+function normalizeVitestFailure(raw, rootDir) {
+  const valid = [
+    raw?.success === false,
+    Number.isInteger(raw?.numTotalTests),
+    Number.isInteger(raw?.numPassedTests),
+    Number.isInteger(raw?.numFailedTests),
+    raw?.numFailedTests > 0,
+    Number.isInteger(raw?.numPendingTests),
+    Array.isArray(raw?.testResults),
+    raw?.testResults?.length > 0,
+  ].every(Boolean)
+  if (!valid) throw new Error('Vitest JSON does not contain a valid failed test run')
+
+  const failures = raw.testResults
+    .map((entry) => ({
+      path: typeof entry?.name === 'string' ? repoRelativeTestPath(entry.name, rootDir) : null,
+      failedTests: Array.isArray(entry?.assertionResults)
+        ? entry.assertionResults.filter((assertion) => assertion?.status === 'failed').length
+        : 0,
+      failedFile: entry?.status === 'failed',
+    }))
+    .filter((entry) => entry.path !== null && (entry.failedFile || entry.failedTests > 0))
+    .map(({ path, failedTests }) => ({ path, failedTests }))
+    .sort((left, right) => left.path.localeCompare(right.path))
+
+  if (failures.length === 0) throw new Error('Vitest JSON failure has no failed test files')
+  return {
+    summary: {
+      testFiles: raw.testResults.length,
+      totalTests: raw.numTotalTests,
+      passedTests: raw.numPassedTests,
+      failedTests: raw.numFailedTests,
+      pendingTests: raw.numPendingTests,
+    },
+    failures,
+  }
+}
+
 async function currentIdentity(rootDir) {
   const tasks = readJson(join(rootDir, 'scripts', 'assurance-tasks.json'), 'assurance task config')
   const task = tasks.tasks?.find((entry) => entry?.id === 'storefront-assurance')
@@ -327,6 +365,8 @@ export async function runStorefrontAssurance({
   mkdirSync(artifactDir, { recursive: true })
   rmSync(rawTestsPath, { force: true })
   rmSync(coverageSummaryPath, { force: true })
+  rmSync(testsOutputPath, { force: true })
+  rmSync(coverageOutputPath, { force: true })
 
   const args = [
     '--filter=storefront',
@@ -345,7 +385,29 @@ export async function runStorefrontAssurance({
     '--maxWorkers=1',
   ]
   try {
-    executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSummaryPath)
+    try {
+      executeStorefrontVitest(spawn, rootDir, args, rawTestsPath, coverageSummaryPath)
+    } catch (error) {
+      if (existsSync(rawTestsPath)) {
+        try {
+          const failedRun = normalizeVitestFailure(readJson(rawTestsPath, 'Vitest JSON result'), rootDir)
+          writeJsonAtomic(testsOutputPath, {
+            schema: 'bootandstrap.storefront-tests/v1',
+            status: 'failed',
+            generatedAt: new Date().toISOString(),
+            ...resolvedIdentity,
+            ...failedRun,
+          })
+        } catch (normalizationError) {
+          const originalMessage = error instanceof Error ? error.message : String(error)
+          const normalizationMessage = normalizationError instanceof Error
+            ? normalizationError.message
+            : String(normalizationError)
+          throw new Error(`${originalMessage}; failed evidence normalization failed: ${normalizationMessage}`)
+        }
+      }
+      throw error
+    }
     const { normalizedTests, evaluation } = generateStorefrontArtifacts({
       rootDir,
       policyPath,

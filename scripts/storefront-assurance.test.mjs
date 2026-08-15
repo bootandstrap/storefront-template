@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -139,18 +139,51 @@ test('one Vitest invocation emits passed unit and coverage evidence', async () =
   )
 })
 
-test('reports whether non-zero Vitest completed tests and coverage before deleting raw output', async () => {
+test('replaces stale passed outputs with revision-bound failed Vitest evidence', async () => {
   const rootDir = makeRoot()
+  const testsOutputPath = join(rootDir, STOREFRONT_TESTS_OUTPUT)
+  const coverageOutputPath = join(rootDir, STOREFRONT_COVERAGE_OUTPUT)
+  mkdirSync(join(rootDir, '.artifacts', 'assurance'), { recursive: true })
+  writeFileSync(testsOutputPath, '{"status":"passed","stale":true}\n')
+  writeFileSync(coverageOutputPath, '{"status":"passed","stale":true}\n')
   const spawn = (_executable, args) => {
     const outputFile = args[args.indexOf('--outputFile') + 1]
-    writeFileSync(outputFile, `${JSON.stringify(rawVitest())}\n`)
+    const failed = rawVitest()
+    failed.success = false
+    failed.numPassedTestSuites = 0
+    failed.numFailedTestSuites = 1
+    failed.numPassedTests = 0
+    failed.numFailedTests = 1
+    failed.testResults[0].status = 'failed'
+    failed.testResults[0].assertionResults[0].status = 'failed'
+    writeFileSync(outputFile, `${JSON.stringify(failed)}\n`)
     return { status: 1, signal: null }
   }
 
   await assert.rejects(
     runStorefrontAssurance({ rootDir, identity, spawn }),
-    /status=1.*tests=passed.*coverage=missing/,
+    /status=1.*tests=failed\(1\).*coverage=missing/,
   )
+
+  const failedTests = JSON.parse(readFileSync(testsOutputPath, 'utf8'))
+  assert.equal(failedTests.schema, 'bootandstrap.storefront-tests/v1')
+  assert.equal(failedTests.status, 'failed')
+  assert.deepEqual(
+    { revision: failedTests.revision, workingTreeSha256: failedTests.workingTreeSha256, inputsSha256: failedTests.inputsSha256 },
+    identity,
+  )
+  assert.deepEqual(failedTests.summary, {
+    testFiles: 1,
+    totalTests: 1,
+    passedTests: 0,
+    failedTests: 1,
+    pendingTests: 0,
+  })
+  assert.deepEqual(failedTests.failures, [{
+    path: 'apps/storefront/src/lib/example/__tests__/example.test.ts',
+    failedTests: 1,
+  }])
+  assert.equal(existsSync(coverageOutputPath), false)
 })
 
 test('reuses storefront evidence only for a passed receipt with exact identity hashes', () => {
