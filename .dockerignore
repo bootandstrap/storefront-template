@@ -15,6 +15,3 @@ test-results
 **/test-results
 artifacts
 docs
-apps/storefront
-packages/platform-contract
-packages/tenant-context
