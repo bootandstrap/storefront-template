@@ -49,11 +49,27 @@ describe("Medusa dependency lock contract", () => {
         }
     })
 
-    it("uses the lockfile as the Docker build authority", () => {
+    it("builds workspace dependencies from the canonical pnpm root", () => {
         const appRoot = resolveAppRoot()
+        const repoRoot = resolve(appRoot, "../..")
         const dockerfile = readFileSync(resolve(appRoot, "Dockerfile"), "utf8")
+        const workflow = readFileSync(
+            resolve(repoRoot, ".github/workflows/build-medusa.yml"),
+            "utf8"
+        )
+        const dockerignore = readFileSync(resolve(repoRoot, ".dockerignore"), "utf8")
 
-        expect(dockerfile).toContain("RUN npm ci")
+        expect(workflow).toContain("context: .")
+        const nodeImage = "node:20.9.0-bookworm-slim@sha256:d272d96f3ad3a4e5bb2b6c36ea7427b4e83d1b23fb24b9df8b71d01aa59951b1"
+        expect(dockerfile).toContain(`FROM ${nodeImage} AS builder`)
+        expect(dockerfile).toContain(`FROM ${nodeImage} AS runner`)
+        expect(dockerfile).toContain("pnpm install --frozen-lockfile")
+        expect(dockerfile).toContain("pnpm --filter @bootandstrap/shared build")
+        expect(dockerfile).toContain("pnpm --filter apps/medusa deploy --prod /opt/medusa")
+        expect(dockerignore).toContain("node_modules")
+        expect(dockerignore).toContain("**/.env*")
+        expect(dockerignore).toContain("\n.artifacts\n")
         expect(dockerfile).not.toContain("RUN npm install")
+        expect(dockerfile).not.toContain("RUN npm ci")
     })
 })
