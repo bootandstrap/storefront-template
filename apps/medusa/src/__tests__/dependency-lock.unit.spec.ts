@@ -133,6 +133,17 @@ describe("Medusa dependency lock contract", () => {
         expect(entrypoint).not.toMatch(/echo .*MEDUSA_ADMIN_EMAIL/)
     })
 
+    it("runs the storefront image gate when the root Docker context changes", () => {
+        const appRoot = resolveAppRoot()
+        const repoRoot = resolve(appRoot, "../..")
+        const workflow = readFileSync(
+            resolve(repoRoot, ".github/workflows/docker-publish.yml"),
+            "utf8"
+        )
+
+        expect(workflow).toMatch(/^\s+- ['"]?\.dockerignore['"]?\s*$/m)
+    })
+
     it("fails closed at migration and admin boundaries without fixed-delay retries", () => {
         const appRoot = resolveAppRoot()
         const migrationFailure = runEntrypoint(appRoot, {

@@ -17,6 +17,7 @@ on:
   push:
     branches: [main]
     paths:
+      - '.dockerignore'
       - 'apps/storefront/**'
       - 'packages/**'
       - 'docker-compose.yml'
