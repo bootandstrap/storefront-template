@@ -276,16 +276,27 @@ describe('BNS 360 reusable runtime matrix', () => {
         expect(fixtures).toContain("page.locator('main').first()")
     })
 
-    it('Medusa entrypoint repairs admin bootstrap after the HTTP server starts', () => {
+    it('Medusa entrypoint completes fail-closed bootstrap before the HTTP server starts', () => {
         const medusaEntrypoint = readFileSync(
             join(process.cwd(), '..', 'medusa/docker-entrypoint.sh'),
             'utf8'
         )
 
-        expect(medusaEntrypoint).toContain('ensure_admin_user')
-        expect(medusaEntrypoint).toContain('npx medusa user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"')
-        expect(medusaEntrypoint).toContain('npx medusa start &')
-        expect(medusaEntrypoint).toContain('wait "$MEDUSA_PID"')
+        const migrateIndex = medusaEntrypoint.indexOf('"$MEDUSA_CLI" db:migrate')
+        const adminIndex = medusaEntrypoint.indexOf(
+            '"$MEDUSA_CLI" user -e "$MEDUSA_ADMIN_EMAIL" -p "$MEDUSA_ADMIN_PASSWORD"'
+        )
+        const startIndex = medusaEntrypoint.indexOf('exec "$MEDUSA_CLI" start')
+
+        expect(migrateIndex).toBeGreaterThan(-1)
+        expect(adminIndex).toBeGreaterThan(migrateIndex)
+        expect(startIndex).toBeGreaterThan(adminIndex)
+        expect(medusaEntrypoint).toContain('set -eu')
+        expect(medusaEntrypoint).toContain('Migration failed; runtime start is prohibited')
+        expect(medusaEntrypoint).toContain('Admin user ensure failed; runtime start is prohibited')
+        expect(medusaEntrypoint).not.toContain('start &')
+        expect(medusaEntrypoint).not.toContain('|| true')
+        expect(medusaEntrypoint).not.toContain('sleep ')
     })
 
     it('keeps panel route coverage explicit instead of relying on broad smoke labels', () => {
