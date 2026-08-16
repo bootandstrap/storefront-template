@@ -14,10 +14,12 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 test('pins the reproducible Node 20.9 and pnpm 9.15 bootstrap contract', () => {
   const rootPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
+  const medusaPackage = JSON.parse(readFileSync(resolve(root, 'apps/medusa/package.json'), 'utf8'))
 
   assert.equal(readFileSync(resolve(root, '.node-version'), 'utf8').trim(), '20.9.0')
   assert.equal(rootPackage.engines?.node, '20.9.0')
   assert.equal(rootPackage.packageManager, 'pnpm@9.15.4')
+  assert.equal(medusaPackage.packageManager, rootPackage.packageManager)
   assert.equal(rootPackage.devDependencies?.npm, '10.1.0')
   assert.equal(rootPackage.devDependencies?.tsx, '4.21.0')
 })
