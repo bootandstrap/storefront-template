@@ -141,7 +141,7 @@ function ToastItem({
                             toast.action!.onClick()
                             onDismiss(toast.id)
                         }}
-                        className="mt-1 text-xs font-bold underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/50 rounded-sm"
+                        className="mt-1 text-xs font-bold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/50 rounded-sm"
                     >
                         {toast.action.label} →
                     </button>
