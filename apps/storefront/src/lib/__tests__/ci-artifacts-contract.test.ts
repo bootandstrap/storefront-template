@@ -893,6 +893,26 @@ describe('CI artifact contract', () => {
         expect(runner).toContain('return { ...SAFE_ENV_DEFAULTS, ...passthrough }')
     })
 
+    it('starts local runtime evidence on its governed port without reusing another server', () => {
+        const runner = readScript('run-risk-domain-evidence.mjs')
+        const playwrightConfig = readFileSync(
+            join(REPO_ROOT, 'apps/storefront/playwright.config.ts'),
+            'utf8'
+        )
+
+        expect(runner).toContain("BNS_360_BASE_URL: 'http://127.0.0.1:3100'")
+        expect(runner).toContain("'BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES'")
+        expect(runner).toContain("BNS_RUNTIME_REQUIRE_INTERACTIVE_STATES: '1'")
+        expect(runner).toContain("BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES: '1'")
+        expect(runner).toContain("BNS_RUNTIME_REQUIRE_CHECKOUT_STATES: '1'")
+        expect(runner).toContain("BNS_RUNTIME_REQUIRE_CART_STATES: '1'")
+        expect(playwrightConfig).toContain('const localServerUrl = new URL(resolvedBaseUrl)')
+        expect(playwrightConfig).toContain('command: `pnpm dev --hostname ${localServerUrl.hostname} --port ${localServerPort}`')
+        expect(playwrightConfig).toContain('url: resolvedBaseUrl')
+        expect(playwrightConfig).toContain('reuseExistingServer: false')
+        expect(playwrightConfig).not.toContain('reuseExistingServer: true')
+    })
+
     it('treats missing reusable product runtime data as unavailable instead of a hard failure for PR-only interactive evidence', () => {
         const visualSpec = readFileSync(join(REPO_ROOT, 'apps/storefront/e2e/runtime-visual-evidence.spec.ts'), 'utf8')
 

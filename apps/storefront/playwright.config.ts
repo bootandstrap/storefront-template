@@ -12,6 +12,8 @@ const resolvedBaseUrl =
 const shouldStartLocalServer =
     !process.env.CI &&
     /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(resolvedBaseUrl)
+const localServerUrl = new URL(resolvedBaseUrl)
+const localServerPort = localServerUrl.port || (localServerUrl.protocol === 'https:' ? '443' : '80')
 const shouldWriteHtmlReport = Boolean(process.env.CI || process.env.BNS_RUNTIME_VISUAL_EVIDENCE_REPORT)
 
 function parsePositiveInteger(value: string | undefined, fallback: number): number {
@@ -100,9 +102,9 @@ export default defineConfig({
     // Start storefront dev server before running tests
     webServer: shouldStartLocalServer
         ? {
-            command: 'pnpm dev',
-            url: 'http://localhost:3000',
-            reuseExistingServer: true,
+            command: `pnpm dev --hostname ${localServerUrl.hostname} --port ${localServerPort}`,
+            url: resolvedBaseUrl,
+            reuseExistingServer: false,
             timeout: 60_000,
         }
         : undefined, // In CI or remote-runtime mode, services are already available
