@@ -165,11 +165,48 @@ test('seals the exact passed full profile and every receipt/output hash', () => 
   }
 })
 
+test('seals exact failed full evidence without promoting it to passed', () => {
+  const current = fixture()
+  try {
+    const failedTask = FULL_TASKS.at(-1)
+    const summary = current.readSummary()
+    summary.status = 'failed'
+    summary.tasks[failedTask] = 'failed'
+    current.writeSummary(summary)
+    const receipt = current.readReceipt(failedTask)
+    receipt.status = 'failed'
+    current.writeReceipt(failedTask, receipt)
+
+    const result = verify(current.rootDir)
+
+    assert.equal(result.status, 'failed')
+    assert.equal(result.revision, REVISION)
+    assert.equal(Object.keys(result.taskReceiptsSha256).length, FULL_TASKS.length)
+  } finally {
+    current.cleanup()
+  }
+})
+
+test('rejects failed summary and receipt state drift', () => {
+  const current = fixture()
+  try {
+    const failedTask = FULL_TASKS.at(-1)
+    const summary = current.readSummary()
+    summary.status = 'failed'
+    summary.tasks[failedTask] = 'failed'
+    current.writeSummary(summary)
+
+    assert.throws(() => verify(current.rootDir), /receipt status mismatch/)
+  } finally {
+    current.cleanup()
+  }
+})
+
 const summaryCases = [
   ['reusable execution mode', (summary) => { summary.executionMode = 'receipt_reuse_allowed' }, /forced no-cache execution/],
   ['wrong revision', (summary) => { summary.revision = '1'.repeat(40) }, /revision mismatch/],
   ['dirty tree', (summary) => { summary.workingTreeSha256 = '2'.repeat(64) }, /clean tree/],
-  ['cached task', (summary) => { summary.tasks[FULL_TASKS[0]] = 'cached' }, /must be passed/],
+  ['cached task', (summary) => { summary.tasks[FULL_TASKS[0]] = 'cached' }, /must be terminal/],
   ['missing task', (summary) => { delete summary.tasks[FULL_TASKS[0]] }, /task set mismatch/],
   ['extra task', (summary) => { summary.tasks.invented = 'passed' }, /task set mismatch/],
   ['deferred task', (summary) => { summary.deferred = [{ taskId: 'invented', status: 'deferred' }] }, /deferred/],

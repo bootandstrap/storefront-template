@@ -204,9 +204,11 @@ jobs:
           BNS_ASSURANCE_WORKERS: '2'
 
       - name: Verify exact assurance evidence
+        if: always()
         run: node scripts/verify-ci-assurance-evidence.mjs
 
       - name: Upload exact assurance evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: assurance-full-${{ github.sha }}

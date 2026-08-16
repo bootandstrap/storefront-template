@@ -79,7 +79,9 @@ function assertSummary(summary, expectedRevision, fullTasks) {
   if (summary?.executionMode !== FORCED_EXECUTION_MODE) {
     throw new Error('summary does not prove forced no-cache execution')
   }
-  if (summary?.status !== 'passed' || summary?.signal !== null) throw new Error('summary is not passed')
+  if (!['passed', 'failed'].includes(summary?.status) || summary?.signal !== null) {
+    throw new Error('summary status is not terminal')
+  }
   if (summary?.revision !== expectedRevision) throw new Error('summary revision mismatch')
   if (summary?.workingTreeSha256 !== EMPTY_TREE_SHA256) throw new Error('summary does not prove a clean tree')
   if (!Array.isArray(summary?.deferred) || summary.deferred.length !== 0) {
@@ -91,11 +93,20 @@ function assertSummary(summary, expectedRevision, fullTasks) {
   assertExactKeys(summary.tasks, fullTasks, 'summary')
   assertExactKeys(summary.receipts, fullTasks, 'summary receipts')
   for (const taskId of fullTasks) {
-    if (summary.tasks[taskId] !== 'passed') throw new Error(`${taskId} must be passed, not cached or skipped`)
+    if (!['passed', 'failed'].includes(summary.tasks[taskId])) {
+      throw new Error(`${taskId} must be terminal, not cached, skipped or deferred`)
+    }
+  }
+  const failedTasks = fullTasks.filter((taskId) => summary.tasks[taskId] === 'failed')
+  if (summary.status === 'passed' && failedTasks.length > 0) {
+    throw new Error('passed summary contains failed tasks')
+  }
+  if (summary.status === 'failed' && failedTasks.length === 0) {
+    throw new Error('failed summary must identify at least one failed task')
   }
 }
 
-function assertReceiptIdentity(receipt, taskId, expectedRevision) {
+function assertReceiptIdentity(receipt, taskId, expectedRevision, expectedStatus) {
   if (receipt?.schema !== 'bootandstrap.assurance-task/v1') throw new Error(`${taskId} receipt schema mismatch`)
   if (receipt?.profile !== 'full' || receipt?.claimBoundary !== LOCAL_CLAIM) {
     throw new Error(`${taskId} receipt profile or claim mismatch`)
@@ -106,7 +117,7 @@ function assertReceiptIdentity(receipt, taskId, expectedRevision) {
   if (receipt?.taskId !== taskId) throw new Error(`${taskId} receipt task identity mismatch`)
   if (receipt?.revision !== expectedRevision) throw new Error(`${taskId} receipt revision mismatch`)
   if (receipt?.workingTreeSha256 !== EMPTY_TREE_SHA256) throw new Error(`${taskId} receipt clean tree mismatch`)
-  if (receipt?.status !== 'passed') throw new Error(`${taskId} receipt must be passed`)
+  if (receipt?.status !== expectedStatus) throw new Error(`${taskId} receipt status mismatch`)
 }
 
 function assertReceiptHashes(receipt, taskId) {
@@ -137,8 +148,8 @@ function assertReceiptNoEmbeddedOutput(receipt, taskId) {
   }
 }
 
-function assertReceipt(receipt, { taskId, task, expectedRevision }) {
-  assertReceiptIdentity(receipt, taskId, expectedRevision)
+function assertReceipt(receipt, { taskId, task, expectedRevision, expectedStatus }) {
+  assertReceiptIdentity(receipt, taskId, expectedRevision, expectedStatus)
   assertReceiptHashes(receipt, taskId)
   assertReceiptEnvironment(receipt, taskId)
   assertReceiptOutputs(receipt, taskId, task)
@@ -190,7 +201,12 @@ export function verifyCiAssuranceEvidence({
     const receiptFile = readJsonFile(rootDir, expectedReceiptPath, `${taskId} receipt`)
     const receipt = receiptFile.value
     const task = taskById.get(taskId)
-    assertReceipt(receipt, { taskId, task, expectedRevision })
+    assertReceipt(receipt, {
+      taskId,
+      task,
+      expectedRevision,
+      expectedStatus: summary.tasks[taskId],
+    })
     taskReceiptsSha256[taskId] = sha256(receiptFile.source)
     for (const output of task.outputs) {
       const outputSource = readRegularFile(rootDir, output, `${taskId} output ${output}`)
@@ -206,7 +222,7 @@ export function verifyCiAssuranceEvidence({
 
   const evidence = {
     schema: 'bootandstrap.ci-assurance-evidence/v1',
-    status: 'passed',
+    status: summary.status,
     claimBoundary: REMOTE_CLAIM,
     generatedAt,
     repository,

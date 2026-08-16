@@ -359,6 +359,8 @@ describe('CI artifact contract', () => {
         expect(localAssurance).toContain('pnpm assurance:full -- --no-cache')
         expect(localAssurance).toContain("CI: ''")
         expect(localAssurance).toContain('node scripts/verify-ci-assurance-evidence.mjs')
+        expect(localAssurance).toContain('- name: Verify exact assurance evidence\n        if: always()')
+        expect(localAssurance).toContain('- name: Upload exact assurance evidence\n        if: always()')
         expect(localAssurance).toContain('name: assurance-full-${{ github.sha }}')
         expect(localAssurance).toContain('if-no-files-found: error')
         expect(localAssurance).toContain('retention-days: 14')
