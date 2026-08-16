@@ -891,7 +891,8 @@ describe('CI artifact contract', () => {
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_ORDER_LOOKUP_STATES'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CHECKOUT_STATES'")
         expect(runner).toContain("'BNS_RUNTIME_REQUIRE_CART_STATES'")
-        expect(runner).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder'")
+        expect(runner).toContain("BNS_RUNTIME_LOCAL_FIXTURE_ORIGIN: 'http://127.0.0.1:3101'")
+        expect(runner).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY: 'local-assurance-public-anon'")
         expect(runner).toContain('return { ...SAFE_ENV_DEFAULTS, ...passthrough }')
     })
 

@@ -14,6 +14,14 @@ const shouldStartLocalServer =
     /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(resolvedBaseUrl)
 const localServerUrl = new URL(resolvedBaseUrl)
 const localServerPort = localServerUrl.port || (localServerUrl.protocol === 'https:' ? '443' : '80')
+const localFixtureUrl = process.env.BNS_RUNTIME_LOCAL_FIXTURE_ORIGIN
+    ? new URL(process.env.BNS_RUNTIME_LOCAL_FIXTURE_ORIGIN)
+    : null
+const shouldStartLocalFixture = Boolean(
+    shouldStartLocalServer
+    && localFixtureUrl
+    && /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(localFixtureUrl.hostname)
+)
 const shouldWriteHtmlReport = Boolean(process.env.CI || process.env.BNS_RUNTIME_VISUAL_EVIDENCE_REPORT)
 
 function parsePositiveInteger(value: string | undefined, fallback: number): number {
@@ -101,11 +109,19 @@ export default defineConfig({
 
     // Start storefront dev server before running tests
     webServer: shouldStartLocalServer
-        ? {
-            command: `pnpm dev --hostname ${localServerUrl.hostname} --port ${localServerPort}`,
-            url: resolvedBaseUrl,
-            reuseExistingServer: false,
-            timeout: 60_000,
-        }
+        ? [
+            ...(shouldStartLocalFixture && localFixtureUrl ? [{
+                command: `node ../../scripts/local-runtime-fixture-server.mjs --host ${localFixtureUrl.hostname} --port ${localFixtureUrl.port || '3101'}`,
+                url: `${localFixtureUrl.origin}/__assurance/health`,
+                reuseExistingServer: false,
+                timeout: 10_000,
+            }] : []),
+            {
+                command: `pnpm dev --hostname ${localServerUrl.hostname} --port ${localServerPort}`,
+                url: resolvedBaseUrl,
+                reuseExistingServer: false,
+                timeout: 60_000,
+            },
+        ]
         : undefined, // In CI or remote-runtime mode, services are already available
 })

@@ -897,6 +897,12 @@ async function cleanupRuntimeEvidenceCart(page: Page, state: CartItemUpdateRunti
     await page.evaluate(() => localStorage.removeItem('bns-cart-id'))
 }
 
+async function cleanupRuntimeEvidenceCartIfPresent(page: Page, state: CartItemUpdateRuntimeState) {
+    const cartId = await page.evaluate(() => localStorage.getItem('bns-cart-id')).catch(() => null)
+    if (!cartId) return
+    await cleanupRuntimeEvidenceCart(page, state)
+}
+
 async function prepareProductsRoute(
     page: Page,
     testInfo: TestInfo,
@@ -1458,43 +1464,49 @@ test.describe('runtime visual evidence', () => {
                 const blockingConsoleMessages = collectBlockingConsoleMessages(page)
                 await page.addInitScript({ content: axeSource })
                 await page.setViewportSize({ width: viewport.width, height: viewport.height })
-                const availability = await prepareProductsRoute(page, testInfo, state, viewport)
+                try {
+                    const availability = await prepareProductsRoute(page, testInfo, state, viewport)
 
-                if (!availability.available) {
-                    if (shouldRequireInteractiveStates()) {
-                        throw new Error(availability.reason)
+                    if (!availability.available) {
+                        if (shouldRequireInteractiveStates()) {
+                            throw new Error(availability.reason)
+                        }
+
+                        test.skip(true, availability.reason)
                     }
 
-                    test.skip(true, availability.reason)
-                }
+                    if (state.state === 'modal') {
+                        await assertModalState(page)
+                        await attachRuntimeEvidence(
+                            page,
+                            testInfo,
+                            {
+                                screenshot: `visual-state-modal-${state.name}-${viewport.name}`,
+                                axe: `axe-core-visual-state-modal-${state.name}-${viewport.name}`,
+                            },
+                            '.quick-view-modal'
+                        )
+                    }
 
-                if (state.state === 'modal') {
-                    await assertModalState(page)
-                    await attachRuntimeEvidence(
-                        page,
-                        testInfo,
-                        {
-                            screenshot: `visual-state-modal-${state.name}-${viewport.name}`,
-                            axe: `axe-core-visual-state-modal-${state.name}-${viewport.name}`,
-                        },
-                        '.quick-view-modal'
-                    )
-                }
+                    if (state.state === 'toast') {
+                        await assertToastState(page)
+                        await attachRuntimeEvidence(
+                            page,
+                            testInfo,
+                            {
+                                screenshot: `visual-state-toast-${state.name}-${viewport.name}`,
+                                axe: `axe-core-visual-state-toast-${state.name}-${viewport.name}`,
+                            },
+                            'body'
+                        )
+                    }
 
-                if (state.state === 'toast') {
-                    await assertToastState(page)
-                    await attachRuntimeEvidence(
-                        page,
-                        testInfo,
-                        {
-                            screenshot: `visual-state-toast-${state.name}-${viewport.name}`,
-                            axe: `axe-core-visual-state-toast-${state.name}-${viewport.name}`,
-                        },
-                        'body'
-                    )
+                    expect(blockingConsoleMessages).toEqual([])
+                } finally {
+                    if (state.state === 'toast') {
+                        await cleanupRuntimeEvidenceCartIfPresent(page, cartItemUpdateRuntimeState)
+                    }
                 }
-
-                expect(blockingConsoleMessages).toEqual([])
             })
         }
     }
@@ -1522,5 +1534,20 @@ test.describe('runtime visual evidence', () => {
             axe: 'axe-core-mobile-pdp-sticky-cta',
         }, 'body')
         expect(blockingConsoleMessages).toEqual([])
+    })
+
+    test('local runtime fixture reports zero residue', async ({ request }) => {
+        const fixtureOrigin = process.env.BNS_RUNTIME_LOCAL_FIXTURE_ORIGIN
+        test.skip(!fixtureOrigin, 'local fixture residue applies only to governed local assurance')
+
+        const response = await request.get(`${fixtureOrigin}/__assurance/health`)
+        expect(response.status()).toBe(200)
+        const health = await response.json()
+        expect(health).toMatchObject({
+            schema: 'bootandstrap.local-runtime-fixture/v1',
+            status: 'ready',
+            activeCarts: 0,
+            lineItems: 0,
+        })
     })
 })
